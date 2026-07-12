@@ -24,7 +24,18 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   async connect(): Promise<void> {
     try {
-      this.connection = await connectGanCube();
+      this.connection = await connectGanCube(async (device, isFallback) => {
+        if (isFallback) {
+          const isSupported = typeof device.watchAdvertisements === 'function';
+          const msg = isSupported 
+            ? 'No se pudo detectar la MAC automáticamente.\nPor favor, introduce la dirección MAC de tu cubo GAN (ej. AA:BB:CC:DD:EE:FF):'
+            : 'Tu navegador bloquea la lectura automática.\nPara que funcione solo, copia y pega esto en una nueva pestaña y ponlo en "Enabled":\n\nchrome://flags/#enable-experimental-web-platform-features\n\nO si lo prefieres, introduce la MAC de tu cubo aquí a mano:';
+          
+          const mac = prompt(msg);
+          return mac || null;
+        }
+        return null;
+      });
     } catch (error) {
       console.error('Failed to connect GAN Cube:', error);
       throw error;

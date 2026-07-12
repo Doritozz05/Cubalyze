@@ -87,15 +87,38 @@ async function connectGanCube(customMacAddressProvider?: MacAddressProvider): Pr
                 { namePrefix: "MG" },
                 { namePrefix: "AiCube" }
             ],
-            optionalServices: [def.GAN_GEN2_SERVICE, def.GAN_GEN3_SERVICE, def.GAN_GEN4_SERVICE],
+            optionalServices: [def.GAN_GEN2_SERVICE, def.GAN_GEN3_SERVICE, def.GAN_GEN4_SERVICE, 'device_information'],
             optionalManufacturerData: def.GAN_CIC_LIST
         }
     );
 
+    // Connect to GATT early to try reading MAC from System ID
+    var gatt = await device.gatt!.connect();
+
+    var systemIdMac: string | null = null;
+    try {
+        var infoService = await gatt.getPrimaryService('device_information');
+        var sysIdChar = await infoService.getCharacteristic('system_id');
+        var sysId = new Uint8Array((await sysIdChar.readValue()).buffer);
+        if (sysId.length >= 6) {
+            var macBytes: Array<string> = [];
+            for (let i = 0; i < 6; i++) {
+                macBytes.push(sysId[sysId.length - 1 - i].toString(16).toUpperCase().padStart(2, "0"));
+            }
+            systemIdMac = macBytes.join(":");
+        } else {
+            console.warn("GAN Cube System ID was too short:", sysId);
+        }
+    } catch (e) {
+        console.error("Failed to read GAN Cube System ID (0x2A23):", e);
+        // System ID reading failed, fallback to advertisements
+    }
+
     // Retrieve cube MAC address needed for key salting
-    var mac = customMacAddressProvider && await customMacAddressProvider(device, false)
+    var mac = systemIdMac
+        || (customMacAddressProvider && await customMacAddressProvider(device, false))
         || await autoRetrieveMacAddress(device)
-        || customMacAddressProvider && await customMacAddressProvider(device, true);
+        || (customMacAddressProvider && await customMacAddressProvider(device, true));
 
     if (!mac)
         throw new Error('Unable to determine cube MAC address, connection is not possible!');
@@ -104,8 +127,7 @@ async function connectGanCube(customMacAddressProvider?: MacAddressProvider): Pr
     // Create encryption salt from MAC address bytes placed in reverse order
     var salt = new Uint8Array(device.mac.split(/[:-\s]+/).map((c) => parseInt(c, 16)).reverse());
 
-    // Connect to GATT and get device primary services
-    var gatt = await device.gatt!.connect();
+    // Get device primary services for protocol driver setup
     var services = await gatt.getPrimaryServices();
 
     var conn: GanCubeConnection | null = null;
