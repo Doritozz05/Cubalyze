@@ -21,6 +21,8 @@ importers:
         specifier: ^2.10.4
         version: 2.10.4
 
+  apps/api: {}
+
   apps/web:
     dependencies:
       react:
@@ -70,17 +72,29 @@ importers:
         specifier: ^8.1.1
         version: 8.1.4(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
 
+  packages/ai-core: {}
+
+  packages/analysis-engine: {}
+
   packages/bluetooth: {}
 
   packages/config-eslint: {}
 
   packages/config-typescript: {}
 
+  packages/database: {}
+
   packages/math-core: {}
 
   packages/models: {}
 
+  packages/solver-engine: {}
+
   packages/state: {}
+
+  packages/sync-engine: {}
+
+  packages/training: {}
 
   packages/ui: {}
 
