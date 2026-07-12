@@ -47,9 +47,9 @@ Every research investigation MUST adhere to the following metadata structure to 
 - **Outputs**: `02-architecture/research/platform/PWA_Storage_Report.md`
 - **Exit Criteria**: Absolute certainty on data safety on iOS.
 - **Risks**: Complete data loss for offline users.
-- **Confidence Level**: Low.
-- **Status**: Not Started.
-- **Next Step**: Build storage eviction prototype for iOS.
+- **Confidence Level**: High.
+- **Status**: Complete.
+- **Next Step**: Draft RFC for Database & Storage Strategy.
 
 #### A.2 Web Bluetooth & Mobile Fallbacks
 - **Purpose**: Determine how mobile users connect smart cubes.
@@ -63,9 +63,9 @@ Every research investigation MUST adhere to the following metadata structure to 
 - **Outputs**: `02-architecture/research/platform/Bluetooth_Connectivity_Report.md`
 - **Exit Criteria**: A viable path for iOS Bluetooth is identified and tested.
 - **Risks**: Loss of the iOS user base for smart cube features.
-- **Confidence Level**: Medium.
-- **Status**: Not Started.
-- **Next Step**: Test WebBLE wrapper on iOS.
+- **Confidence Level**: High.
+- **Status**: Complete.
+- **Next Step**: Draft RFC for Hardware Abstraction Layer (HAL).
 
 ### Phase B — Core Architecture
 
