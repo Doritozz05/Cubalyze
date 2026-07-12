@@ -1,121 +1,126 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useState, useRef, useEffect } from 'react'
+import * as Comlink from 'comlink'
+import { GanCubeAdapter } from '@cubeforge/hardware-hal'
+import { SyncBridge } from '../../../packages/cube-3d-engine/src/hardware/SyncBridge'
+import type { EngineWorkerAPI } from '@cubeforge/cube-3d-engine/src/workers/EngineWorker'
+
+// Instantiate worker using native Vite handling
+import EngineWorker from '@cubeforge/cube-3d-engine/src/workers/EngineWorker?worker'
+
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [status, setStatus] = useState('Disconnected');
+  const [showMacInput, setShowMacInput] = useState(false);
+  const [manualMac, setManualMac] = useState('');
+  
+  const workerProxy = useRef<Comlink.Remote<EngineWorkerAPI>>(null);
+  const syncBridge = useRef<SyncBridge>(null);
+  const workerInstance = useRef<Worker>(null);
+
+  const isInitialized = useRef(false);
+
+  useEffect(() => {
+    if (!canvasRef.current || isInitialized.current) return;
+    isInitialized.current = true;
+    
+    // Setup Worker
+    workerInstance.current = new EngineWorker();
+    workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current);
+    syncBridge.current = new SyncBridge(workerProxy.current);
+
+    // Setup OffscreenCanvas robustly for HMR
+    let offscreen: OffscreenCanvas;
+    try {
+      offscreen = canvasRef.current.transferControlToOffscreen();
+    } catch {
+      console.warn('Canvas already transferred by previous render');
+      return; // Abort second initialization
+    }
+    
+    // Init Engine
+    workerProxy.current.init(
+      Comlink.transfer(offscreen, [offscreen]), 
+      canvasRef.current.clientWidth, 
+      canvasRef.current.clientHeight, 
+      window.devicePixelRatio
+    );
+
+    return () => {
+      // In strict mode dev, React unmounts and remounts.
+      // But we can't un-transfer a canvas. So we only clean up if the component truly dies.
+      // For a robust dev environment, it's better to just keep it alive or recreate the canvas.
+    }
+  }, []);
+
+  const connectCube = async () => {
+    try {
+      setStatus('Connecting...');
+      const adapter = new GanCubeAdapter();
+      await adapter.connect(showMacInput ? manualMac : undefined);
+      setStatus('Connected!');
+      setShowMacInput(false);
+      
+      // Bind moves
+      if (syncBridge.current && adapter.moves$) {
+        syncBridge.current.bindCube(adapter.moves$, adapter.gyro$);
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      // MAC_REQUIRED es lanzado por GanCubeAdapter, y errores sobre 'requestDevice' suelen significar que falta la API web bluetooth (por la flag).
+      const requiresExperimental = errMsg === 'MAC_REQUIRED' || errMsg.includes('requestDevice') || errMsg.includes('bluetooth') || !('bluetooth' in navigator);
+      
+      if (requiresExperimental) {
+        setStatus('Automatic MAC reading or Web Bluetooth is blocked by the browser.');
+        setShowMacInput(true);
+      } else {
+        setStatus('Failed to connect: ' + errMsg);
+      }
+    }
+  }
+
+  const instructions = /Edg\//i.test(navigator.userAgent) 
+    ? 'edge://flags/#enable-experimental-web-platform-features'
+    : 'chrome://flags/#enable-experimental-web-platform-features';
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', padding: '2rem', fontFamily: 'sans-serif' }}>
+      <h1>CubeForge Engine Test</h1>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+        <button onClick={connectCube} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
+          Connect GAN Cube
         </button>
-      </section>
+        <p style={{ fontWeight: 'bold' }}>Status: {status}</p>
 
-      <div className="ticks"></div>
+        {showMacInput && (
+          <div style={{ background: '#333', padding: '15px', borderRadius: '8px', color: '#fff', maxWidth: '400px', textAlign: 'center' }}>
+            <p style={{ marginBottom: '10px' }}>Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:</p>
+            <code style={{ background: '#111', padding: '5px', display: 'block', marginBottom: '15px' }}>{instructions}</code>
+            <p style={{ marginBottom: '10px' }}>Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
+            <input 
+              type="text" 
+              value={manualMac} 
+              onChange={e => setManualMac(e.target.value)} 
+              placeholder="MAC Address"
+              style={{ padding: '8px', width: '200px' }}
+            />
+          </div>
+        )}
+      </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <canvas 
+        ref={canvasRef} 
+        style={{ width: '400px', height: '400px', backgroundColor: '#1e1e1e', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }} 
+        width="400" 
+        height="400"
+      />
+      <p style={{ maxWidth: '600px', textAlign: 'center', color: '#666', lineHeight: 1.5 }}>
+        Perform moves on your physical cube. The hardware HAL will decode them and send them to the Web Worker via RxJS and Comlink, bypassing the React main thread for pure 60FPS tweening.
+      </p>
+    </main>
   )
 }
 

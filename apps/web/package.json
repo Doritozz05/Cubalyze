@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cubeforge/cube-3d-engine": "workspace:*",
+    "@cubeforge/hardware-hal": "workspace:*",
+    "comlink": "^4.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "three": "^0.185.1",

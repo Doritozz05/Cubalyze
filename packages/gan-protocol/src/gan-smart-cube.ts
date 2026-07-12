@@ -92,33 +92,37 @@ async function connectGanCube(customMacAddressProvider?: MacAddressProvider): Pr
         }
     );
 
-    // Connect to GATT early to try reading MAC from System ID
+    // Retrieve cube MAC address via advertisements first (before GATT connection, because GATT connection stops advertisements)
+    var mac = (customMacAddressProvider && await customMacAddressProvider(device, false))
+        || await autoRetrieveMacAddress(device);
+
+    // Connect to GATT
     var gatt = await device.gatt!.connect();
 
-    var systemIdMac: string | null = null;
-    try {
-        var infoService = await gatt.getPrimaryService('device_information');
-        var sysIdChar = await infoService.getCharacteristic('system_id');
-        var sysId = new Uint8Array((await sysIdChar.readValue()).buffer);
-        if (sysId.length >= 6) {
-            var macBytes: Array<string> = [];
-            for (let i = 0; i < 6; i++) {
-                macBytes.push(sysId[sysId.length - 1 - i].toString(16).toUpperCase().padStart(2, "0"));
+    if (!mac) {
+        // Fallback: Try reading MAC from System ID via GATT
+        try {
+            var infoService = await gatt.getPrimaryService('device_information');
+            var sysIdChar = await infoService.getCharacteristic('system_id');
+            var sysId = new Uint8Array((await sysIdChar.readValue()).buffer);
+            if (sysId.length >= 6) {
+                var macBytes: Array<string> = [];
+                for (let i = 0; i < 6; i++) {
+                    macBytes.push(sysId[sysId.length - 1 - i].toString(16).toUpperCase().padStart(2, "0"));
+                }
+                mac = macBytes.join(":");
+            } else {
+                console.warn("GAN Cube System ID was too short:", sysId);
             }
-            systemIdMac = macBytes.join(":");
-        } else {
-            console.warn("GAN Cube System ID was too short:", sysId);
+        } catch (e) {
+            console.error("Failed to read GAN Cube System ID (0x2A23):", e);
         }
-    } catch (e) {
-        console.error("Failed to read GAN Cube System ID (0x2A23):", e);
-        // System ID reading failed, fallback to advertisements
     }
 
-    // Retrieve cube MAC address needed for key salting
-    var mac = systemIdMac
-        || (customMacAddressProvider && await customMacAddressProvider(device, false))
-        || await autoRetrieveMacAddress(device)
-        || (customMacAddressProvider && await customMacAddressProvider(device, true));
+    if (!mac && customMacAddressProvider) {
+        // Final fallback: ask user
+        mac = await customMacAddressProvider(device, true);
+    }
 
     if (!mac)
         throw new Error('Unable to determine cube MAC address, connection is not possible!');

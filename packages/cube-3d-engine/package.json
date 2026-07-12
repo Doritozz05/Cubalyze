@@ -1,0 +1,22 @@
+{
+  "name": "@cubeforge/cube-3d-engine",
+  "version": "1.0.0",
+  "description": "Core 3D Engine for CubeForge using Three.js and Web Workers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts src/workers/EngineWorker.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts src/workers/EngineWorker.ts --format esm,cjs --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "three": "^0.160.0",
+    "comlink": "^4.4.1",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.160.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}

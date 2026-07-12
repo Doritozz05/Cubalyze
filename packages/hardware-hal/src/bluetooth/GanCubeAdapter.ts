@@ -22,26 +22,15 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.reconciler = new ClockDriftReconciler();
   }
 
-  async connect(): Promise<void> {
+  async connect(manualMac?: string): Promise<void> {
     try {
       this.connection = await connectGanCube(async (device, isFallback) => {
+        if (manualMac) return manualMac;
+        
         if (isFallback) {
-          const isSupported = typeof device.watchAdvertisements === 'function';
-          
-          let instructions = 'chrome://flags/#enable-experimental-web-platform-features\nand set it to "Enabled".';
-          const ua = navigator.userAgent;
-          if (/iPhone|iPad|iPod/i.test(ua)) {
-            instructions = 'Turn on "Enable BLE Advertisements" in Bluefy browser settings.';
-          } else if (/Edg\//i.test(ua)) {
-            instructions = 'edge://flags/#enable-experimental-web-platform-features\nand set it to "Enabled".';
-          }
-          
-          const msg = isSupported 
-            ? 'Could not auto-detect MAC Address.\nPlease enter your GAN Cube MAC address (e.g., AA:BB:CC:DD:EE:FF):'
-            : `Your browser blocks automatic MAC reading.\nFor automatic connection, copy & paste this in a new tab:\n\n${instructions}\n\nOr manually enter your cube's MAC address here:`;
-          
-          const mac = prompt(msg);
-          return mac || null;
+          // Instead of window.prompt which is blocked by Chrome after Bluetooth dialog,
+          // we throw a specific error so the UI can ask for it.
+          throw new Error('MAC_REQUIRED');
         }
         return null;
       });
