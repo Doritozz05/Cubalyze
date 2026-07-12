@@ -9,6 +9,7 @@ The documentation is organized sequentially to match the software development li
 - `00-product/` - Product requirements and vision.
 - `01-roadmap/` - Strategic roadmap and planning.
 - `02-architecture/` - High-level system design.
+  - [Initial Architecture Research Report](02-architecture/research/Intial_Architecture_Research_Report.md)
 - `03-adr/` - Architecture Decision Records.
 - `04-rfc/` - Requests for Comments (Proposals).
 - `05-tdd/` - Technical Design Documents (Implementation plans).
