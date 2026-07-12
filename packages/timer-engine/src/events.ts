@@ -21,6 +21,10 @@ export interface TimerStopEventDetail {
   finalTimeMs: number;
 }
 
+export interface TimerInspectionWarningEventDetail {
+  type: '8s' | '12s';
+}
+
 // Custom Event classes to preserve typing
 export class TimerTickEvent extends CustomEvent<TimerTickEventDetail> {
   constructor(detail: TimerTickEventDetail) {
@@ -43,5 +47,11 @@ export class TimerPenaltyEvent extends CustomEvent<TimerPenaltyEventDetail> {
 export class TimerStopEvent extends CustomEvent<TimerStopEventDetail> {
   constructor(detail: TimerStopEventDetail) {
     super('stop', { detail });
+  }
+}
+
+export class TimerInspectionWarningEvent extends CustomEvent<TimerInspectionWarningEventDetail> {
+  constructor(detail: TimerInspectionWarningEventDetail) {
+    super('inspectionWarning', { detail });
   }
 }

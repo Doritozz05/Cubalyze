@@ -2,16 +2,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TimerEngine } from '../src/TimerEngine';
 import { TimerState } from '../src/TimerState';
 import { Penalty } from '../src/WcaRules';
-import { TimerStateChangeEvent, TimerStopEvent, TimerPenaltyEvent } from '../src/events';
+import { 
+  TimerStateChangeEvent, 
+  TimerStopEvent, 
+  TimerPenaltyEvent, 
+  TimerInspectionWarningEvent 
+} from '../src/events';
 
-describe('TimerEngine', () => {
+describe('Advanced WCA TimerEngine', () => {
   let timer: TimerEngine;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance', 'Date'] });
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 16));
     vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id));
-    timer = new TimerEngine();
+    timer = new TimerEngine({ holdToStartDelay: 300, cooldownDelay: 500 });
   });
 
   afterEach(() => {
@@ -24,133 +29,105 @@ describe('TimerEngine', () => {
     expect(timer.getPenalty()).toBe(Penalty.NONE);
   });
 
-  it('should transition to INSPECTION', () => {
-    let stateChangeEmitted = false;
-    timer.addEventListener('stateChange', (e: Event) => {
-      const event = e as TimerStateChangeEvent;
-      if (event.detail.newState === TimerState.INSPECTION) {
-        stateChangeEmitted = true;
-      }
-    });
-
-    timer.startInspection();
-    expect(timer.getState()).toBe(TimerState.INSPECTION);
-    expect(stateChangeEmitted).toBe(true);
-  });
-
-  it('should handle WCA +2 penalty during inspection', () => {
-    timer.startInspection();
+  it('should transition to TOUCHING then READY then RUNNING', () => {
+    timer.handleDown();
+    expect(timer.getState()).toBe(TimerState.TOUCHING);
     
-    let penaltyEmitted = Penalty.NONE;
-    timer.addEventListener('penalty', (e: Event) => {
-      const event = e as TimerPenaltyEvent;
-      penaltyEmitted = event.detail.penalty;
-    });
-
-    // Advance 15.5 seconds
-    vi.advanceTimersByTime(15500);
-    
-    // Stop inspection and get ready
-    timer.ready();
-    
-    expect(timer.getPenalty()).toBe(Penalty.PLUS_TWO);
-    expect(penaltyEmitted).toBe(Penalty.PLUS_TWO);
-  });
-
-  it('should handle WCA DNF penalty during inspection', () => {
-    timer.startInspection();
-    
-    // Advance 17.5 seconds
-    vi.advanceTimersByTime(17500);
-    
-    timer.ready();
-    
-    expect(timer.getPenalty()).toBe(Penalty.DNF);
-  });
-
-  it('should transition to READY', () => {
-    timer.startInspection();
-    timer.ready();
+    vi.advanceTimersByTime(300);
     expect(timer.getState()).toBe(TimerState.READY);
-  });
-
-  it('should transition to RUNNING and track time', () => {
-    timer.startInspection();
-    timer.ready();
-    timer.start();
     
+    timer.handleUp();
     expect(timer.getState()).toBe(TimerState.RUNNING);
   });
 
-  it('should stop and calculate final time with +2 penalty', () => {
-    let stopEventDetail: any = null;
-    timer.addEventListener('stop', (e: Event) => {
-      const event = e as TimerStopEvent;
-      stopEventDetail = event.detail;
+  it('should revert to IDLE if released too early', () => {
+    timer.handleDown();
+    expect(timer.getState()).toBe(TimerState.TOUCHING);
+    
+    vi.advanceTimersByTime(100);
+    timer.handleUp();
+    expect(timer.getState()).toBe(TimerState.IDLE);
+  });
+
+  it('should handle WCA inspection and warnings', () => {
+    let mockTime = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => mockTime);
+
+    let warnings: string[] = [];
+    timer.addEventListener('inspectionWarning', (e: Event) => {
+      warnings.push((e as TimerInspectionWarningEvent).detail.type);
     });
 
-    timer.startInspection();
-    vi.advanceTimersByTime(15500); // Trigger +2
-    timer.ready();
+    timer.startInspection(); // inspectionStartTimestamp = 1000
+    expect(timer.getState()).toBe(TimerState.INSPECTION);
+
+    mockTime = 9100;
+    (timer as any).tick();
+    expect(warnings).toContain('8s');
+
+    mockTime = 13200;
+    (timer as any).tick();
+    expect(warnings).toContain('12s');
+  });
+
+  it('should stop and calculate final time correctly', () => {
+    let stopEventDetail: any = null;
+    timer.addEventListener('stop', (e: Event) => {
+      stopEventDetail = (e as TimerStopEvent).detail;
+    });
+
+    // Start timer
+    timer.handleDown();
+    vi.advanceTimersByTime(300);
+    timer.handleUp();
     
-    timer.start();
-    vi.advanceTimersByTime(5000); // 5 seconds solve
-    timer.stop();
+    // Solve
+    vi.advanceTimersByTime(5000);
     
-    expect(timer.getState()).toBe(TimerState.STOPPED);
+    // Stop
+    timer.handleDown();
+    expect(timer.getState()).toBe(TimerState.COOLDOWN);
     expect(stopEventDetail).not.toBeNull();
     expect(stopEventDetail.timeMs).toBe(5000);
-    expect(stopEventDetail.penalty).toBe(Penalty.PLUS_TWO);
-    expect(stopEventDetail.finalTimeMs).toBe(7000); // 5000 + 2000
-  });
-
-  it('should stop and calculate final time with DNF', () => {
-    let stopEventDetail: any = null;
-    timer.addEventListener('stop', (e: Event) => {
-      const event = e as TimerStopEvent;
-      stopEventDetail = event.detail;
-    });
-
-    timer.startInspection();
-    vi.advanceTimersByTime(18000); // Trigger DNF
-    timer.ready();
-    
-    timer.start();
-    vi.advanceTimersByTime(5000); // 5 seconds solve
-    timer.stop();
-    
-    expect(stopEventDetail.timeMs).toBe(5000);
-    expect(stopEventDetail.penalty).toBe(Penalty.DNF);
-    expect(stopEventDetail.finalTimeMs).toBe(Infinity);
-  });
-
-  it('should correctly calculate clean solve time', () => {
-    let stopEventDetail: any = null;
-    timer.addEventListener('stop', (e: Event) => {
-      const event = e as TimerStopEvent;
-      stopEventDetail = event.detail;
-    });
-
-    timer.startInspection();
-    vi.advanceTimersByTime(5000); // Clean inspection
-    timer.ready();
-    
-    timer.start();
-    vi.advanceTimersByTime(10000); // 10 seconds solve
-    timer.stop();
-    
-    expect(stopEventDetail.timeMs).toBe(10000);
     expect(stopEventDetail.penalty).toBe(Penalty.NONE);
-    expect(stopEventDetail.finalTimeMs).toBe(10000);
+    
+    // Cooldown pass
+    vi.advanceTimersByTime(500);
+    expect(timer.getState()).toBe(TimerState.STOPPED);
   });
 
-  it('should reset state correctly', () => {
-    timer.startInspection();
-    timer.ready();
-    timer.start();
-    timer.reset();
+  it('should allow manual modifiers post-solve', () => {
+    // Start
+    timer.handleDown();
+    vi.advanceTimersByTime(300);
+    timer.handleUp();
     
-    expect(timer.getState()).toBe(TimerState.IDLE);
+    // Solve
+    vi.advanceTimersByTime(5000);
+    timer.handleDown(); // COOLDOWN
+    vi.advanceTimersByTime(500); // STOPPED
+    
     expect(timer.getPenalty()).toBe(Penalty.NONE);
+    
+    timer.addModifier('+2');
+    expect(timer.getPenalty()).toBe(Penalty.PLUS_TWO);
+    
+    timer.addModifier('DNF');
+    expect(timer.getPenalty()).toBe(Penalty.DNF);
+  });
+
+  it('should reset correctly ignoring if in cooldown', () => {
+    timer.handleDown();
+    vi.advanceTimersByTime(300);
+    timer.handleUp(); // RUNNING
+    
+    timer.handleDown(); // COOLDOWN
+    
+    timer.reset();
+    expect(timer.getState()).toBe(TimerState.COOLDOWN); // Should ignore reset
+    
+    vi.advanceTimersByTime(500); // STOPPED
+    timer.reset();
+    expect(timer.getState()).toBe(TimerState.IDLE);
   });
 });
