@@ -6,31 +6,31 @@
 
 ## Architecture Decision Tracker
 
-| ID | Decision | Category | Current Status | Decision Gate | Confidence | Dependencies | Risk Level | Validation Required | RFC Status | ADR Status | Next Action | Owner |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **DEC-01** | Licensing Compatibility (MIT) | Legal | ADR Created | Gate 1 | High | Ninguna | Critical | None | Aprobado (RFC-010) | Creado (ADR-010) | Mantener licencia actual | Architecture Lead |
-| **DEC-02** | PWA Storage & Eviction Policies | Platform | ADR Created | Gate 1 | High | Ninguna | Critical | None | Aprobado (RFC-011) | Creado (ADR-011) | Implementar wrapper OPFS | Architecture Lead |
-| **DEC-03** | Web Bluetooth & Mobile Fallbacks | Platform | ADR Created | Gate 1 | High | Ninguna | High | None | Aprobado (RFC-012) | Creado (ADR-012) | Inicializar abstracción BLE | Architecture Lead |
-| **DEC-04** | Monorepo Strategy (Turborepo) | Tooling | ADR Created | Gate 1 | Very High | Ninguna | Medium | None | Aprobado (RFC-001) | Creado (ADR-001) | Implementar Monorepo | Architecture Lead |
-| **DEC-05** | Package Manager (pnpm) | Tooling | ADR Created | Gate 1 | Very High | DEC-04 | Low | None | Aprobado (RFC-002) | Creado (ADR-002) | Implementar pnpm | Architecture Lead |
-| **DEC-06** | Repository Structure | Tooling | ADR Created | Gate 1 | High | DEC-04, DEC-05 | Medium | None | Aprobado (RFC-003) | Creado (ADR-003) | Implementar estructura | Architecture Lead |
-| **DEC-07** | Frontend Framework (React+Vite SPA) | Core App | ADR Created | Gate 1 | High | DEC-02, DEC-03 | High | None | Aprobado (RFC-008) | Creado (ADR-008) | Configurar proyecto base Vite | Architecture Lead |
-| **DEC-08** | State Management (Zustand) | Core App | ADR Created | Gate 1 | High | DEC-07 | High | None | Aprobado (RFC-009) | Creado (ADR-009) | Configurar stores de Zustand | Architecture Lead |
-| **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | Ready For RFC | Gate 1 | High | DEC-02 | High | None | No iniciado | No creado | Crear RFC para SQLite WASM OPFS | Architecture Lead |
-| **DEC-10** | Rendering Strategy (Pure Three.js) | Graphics | Ready For RFC | Gate 1 | High | DEC-01, DEC-08, DEC-11 | Medium | None | No iniciado | No creado | Crear RFC para motor 3D propio | Architecture Lead |
-| **DEC-11** | Solver Engine & WASM (min2phase) | Core App | Ready For RFC | Gate 1 | High | DEC-07, DEC-09 | Medium | None | No iniciado | No creado | Crear RFC para integración de min2phase WASM | Architecture Lead |
-| **DEC-12** | Perf. Strategies (Comlink/ArrayBuffer) | Core App | Ready For RFC | Gate 1 | High | DEC-10, DEC-11 | Medium | None | No iniciado | No creado | Crear RFC para uso de Web Workers | Architecture Lead |
-| **DEC-13** | Code Quality & Standards | Tooling | ADR Created | Gate 1 | Very High | DEC-06 | Low | None | Aprobado (RFC-004) | Creado (ADR-004) | Implementar estándares | Architecture Lead |
-| **DEC-14** | Testing Stack (Vitest, Playwright) | Tooling | ADR Created | Gate 1 | High | DEC-05 | Medium | None | Aprobado (RFC-005) | Creado (ADR-005) | Configurar testing stack | Architecture Lead |
-| **DEC-15** | CI/NPM Publishing (GitHub Actions) | Ops | ADR Created | Gate 1 | Very High | DEC-04, DEC-14 | Low | None | Aprobado (RFC-006) | Creado (ADR-006) | Crear workflows de CI | Architecture Lead |
-| **DEC-16** | Plugin System (Native ESM Imports) | Core App | Ready For RFC | Gate 1 | High | DEC-06, DEC-07 | High | None | No iniciado | No creado | Crear RFC para inyección dinámica ESM | Architecture Lead |
-| **DEC-17** | Security (Crypto signatures) | Security | Ready For RFC | Gate 1 | High | DEC-09 | Medium | None | No iniciado | No creado | Crear RFC sobre firmas criptográficas | Architecture Lead |
-| **DEC-18** | Backend (Supabase/Append-only) | Cloud | Ready For RFC | Gate 1 | High | DEC-09, DEC-17 | High | None | No iniciado | No creado | Crear RFC sobre Supabase y eventos Append-only | Product Lead |
-| **DEC-19** | Accessibility (WAI-ARIA Live Regions) | UI/UX | Ready For RFC | Gate 1 | High | DEC-07 | Low | None | No iniciado | No creado | Crear RFC sobre WAI-ARIA Live Regions | Architecture Lead |
-| **DEC-20** | Documentation Stack | Tooling | Ready For RFC | Gate 1 | Very High | DEC-04, DEC-07 | Low | None | No iniciado | No creado | Crear RFC para stack de documentación | Architecture Lead |
-| **DEC-21** | Open Source Readiness | Ops | Ready For RFC | Gate 1 | Very High | DEC-20 | Low | None | No iniciado | No creado | Crear RFC de gobernanza OSS | Architecture Lead |
-| **DEC-22** | Desktop & Mobile Wrappers (Tauri/RN) | Platform | Blocked | Gate 0 | Medium | DEC-03, DEC-07 | Medium | Prototype | No iniciado | No creado | Diferir decisión formal a Milestone 2+ | Architecture Lead |
-| **DEC-23** | Hosting Strategy (Vercel+Supabase) | Ops | ADR Created | Gate 1 | Very High | DEC-07 | Low | None | Aprobado (RFC-007) | Creado (ADR-007) | Configurar proyectos Vercel y Supabase | Architecture Lead |
+| ID               | Decision                               | Category | Current Status | Decision Gate | Confidence | Dependencies           | Risk Level | Validation Required | RFC Status         | ADR Status       | Next Action                                    | Owner             |
+| ---------------- | -------------------------------------- | -------- | -------------- | ------------- | ---------- | ---------------------- | ---------- | ------------------- | ------------------ | ---------------- | ---------------------------------------------- | ----------------- |
+| **DEC-01** | Licensing Compatibility (MIT)          | Legal    | ADR Created    | Gate 1        | High       | Ninguna                | Critical   | None                | Aprobado (RFC-010) | Creado (ADR-010) | Mantener licencia actual                       | Architecture Lead |
+| **DEC-02** | PWA Storage & Eviction Policies        | Platform | ADR Created    | Gate 1        | High       | Ninguna                | Critical   | None                | Aprobado (RFC-011) | Creado (ADR-011) | Implementar wrapper OPFS                       | Architecture Lead |
+| **DEC-03** | Web Bluetooth & Mobile Fallbacks       | Platform | ADR Created    | Gate 1        | High       | Ninguna                | High       | None                | Aprobado (RFC-012) | Creado (ADR-012) | Inicializar abstracción BLE                   | Architecture Lead |
+| **DEC-04** | Monorepo Strategy (Turborepo)          | Tooling  | ADR Created    | Gate 1        | Very High  | Ninguna                | Medium     | None                | Aprobado (RFC-001) | Creado (ADR-001) | Implementar Monorepo                           | Architecture Lead |
+| **DEC-05** | Package Manager (pnpm)                 | Tooling  | ADR Created    | Gate 1        | Very High  | DEC-04                 | Low        | None                | Aprobado (RFC-002) | Creado (ADR-002) | Implementar pnpm                               | Architecture Lead |
+| **DEC-06** | Repository Structure                   | Tooling  | ADR Created    | Gate 1        | High       | DEC-04, DEC-05         | Medium     | None                | Aprobado (RFC-003) | Creado (ADR-003) | Implementar estructura                         | Architecture Lead |
+| **DEC-07** | Frontend Framework (React+Vite SPA)    | Core App | ADR Created    | Gate 1        | High       | DEC-02, DEC-03         | High       | None                | Aprobado (RFC-008) | Creado (ADR-008) | Configurar proyecto base Vite                  | Architecture Lead |
+| **DEC-08** | State Management (Zustand)             | Core App | ADR Created    | Gate 1        | High       | DEC-07                 | High       | None                | Aprobado (RFC-009) | Creado (ADR-009) | Configurar stores de Zustand                   | Architecture Lead |
+| **DEC-09** | Offline Database (SQLite WASM/OPFS)    | Data     | Ready For RFC  | Gate 1        | High       | DEC-02                 | High       | None                | No iniciado        | No creado        | Crear RFC para SQLite WASM OPFS                | Architecture Lead |
+| **DEC-10** | Rendering Strategy (Pure Three.js)     | Graphics | Ready For RFC  | Gate 1        | High       | DEC-01, DEC-08, DEC-11 | Medium     | None                | No iniciado        | No creado        | Crear RFC para motor 3D propio                 | Architecture Lead |
+| **DEC-11** | Solver Engine & WASM (min2phase)       | Core App | Ready For RFC  | Gate 1        | High       | DEC-07, DEC-09         | Medium     | None                | No iniciado        | No creado        | Crear RFC para integración de min2phase WASM  | Architecture Lead |
+| **DEC-12** | Perf. Strategies (Comlink/ArrayBuffer) | Core App | Ready For RFC  | Gate 1        | High       | DEC-10, DEC-11         | Medium     | None                | No iniciado        | No creado        | Crear RFC para uso de Web Workers              | Architecture Lead |
+| **DEC-13** | Code Quality & Standards               | Tooling  | ADR Created    | Gate 1        | Very High  | DEC-06                 | Low        | None                | Aprobado (RFC-004) | Creado (ADR-004) | Implementar estándares                        | Architecture Lead |
+| **DEC-14** | Testing Stack (Vitest, Playwright)     | Tooling  | ADR Created    | Gate 1        | High       | DEC-05                 | Medium     | None                | Aprobado (RFC-005) | Creado (ADR-005) | Configurar testing stack                       | Architecture Lead |
+| **DEC-15** | CI/NPM Publishing (GitHub Actions)     | Ops      | ADR Created    | Gate 1        | Very High  | DEC-04, DEC-14         | Low        | None                | Aprobado (RFC-006) | Creado (ADR-006) | Crear workflows de CI                          | Architecture Lead |
+| **DEC-16** | Plugin System (Native ESM Imports)     | Core App | Ready For RFC  | Gate 1        | High       | DEC-06, DEC-07         | High       | None                | No iniciado        | No creado        | Crear RFC para inyección dinámica ESM        | Architecture Lead |
+| **DEC-17** | Security (Crypto signatures)           | Security | Ready For RFC  | Gate 1        | High       | DEC-09                 | Medium     | None                | No iniciado        | No creado        | Crear RFC sobre firmas criptográficas         | Architecture Lead |
+| **DEC-18** | Backend (Supabase/Append-only)         | Cloud    | Ready For RFC  | Gate 1        | High       | DEC-09, DEC-17         | High       | None                | No iniciado        | No creado        | Crear RFC sobre Supabase y eventos Append-only | Product Lead      |
+| **DEC-19** | Accessibility (WAI-ARIA Live Regions)  | UI/UX    | Ready For RFC  | Gate 1        | High       | DEC-07                 | Low        | None                | No iniciado        | No creado        | Crear RFC sobre WAI-ARIA Live Regions          | Architecture Lead |
+| **DEC-20** | Documentation Stack                    | Tooling  | Ready For RFC  | Gate 1        | Very High  | DEC-04, DEC-07         | Low        | None                | No iniciado        | No creado        | Crear RFC para stack de documentación         | Architecture Lead |
+| **DEC-21** | Open Source Readiness                  | Ops      | Ready For RFC  | Gate 1        | Very High  | DEC-20                 | Low        | None                | No iniciado        | No creado        | Crear RFC de gobernanza OSS                    | Architecture Lead |
+| **DEC-22** | Desktop & Mobile Wrappers (Tauri/RN)   | Platform | Blocked        | Gate 0        | Medium     | DEC-03, DEC-07         | Medium     | Prototype           | No iniciado        | No creado        | Diferir decisión formal a Milestone 2+        | Architecture Lead |
+| **DEC-23** | Hosting Strategy (Vercel+Supabase)     | Ops      | ADR Created    | Gate 1        | Very High  | DEC-07                 | Low        | None                | Aprobado (RFC-007) | Creado (ADR-007) | Configurar proyectos Vercel y Supabase         | Architecture Lead |
 
 ---
 
@@ -38,9 +38,7 @@
 
 El "Critical Path" identifica las decisiones que bloquean el desarrollo arquitectónico primario y que, de invalidarse, obligarían a rehacer gran parte de la plataforma:
 
-1. ~~**DEC-01 (Licensing Compatibility):**~~ (Resuelto: Proyecto Open Source GPLv3).
-2. ~~**DEC-02 (PWA Storage & Eviction):**~~ (Resuelto: PWA Install + Cloud Sync Backup).
-3. ~~**DEC-03 (Web Bluetooth & Fallbacks):**~~ (Resuelto: Capacitor Wrapper para iOS).
+(Ninguna)
 
 *Actualmente, el Critical Path de investigación inicial está completamente desbloqueado. Se puede proceder con la creación de RFCs y desarrollo base.*
 
@@ -58,7 +56,6 @@ Las siguientes decisiones tienen el `Research completado` (Gate 1), un `Confiden
 ### Decisions in RFC Review
 
 *(Ninguna)*
-
 
 ---
 
