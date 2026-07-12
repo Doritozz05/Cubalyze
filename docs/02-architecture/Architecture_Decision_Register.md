@@ -16,17 +16,17 @@
 | **DEC-06** | Repository Structure | Tooling | RFC Review | Gate 1 | High | DEC-04, DEC-05 | Medium | None | Creado (RFC-003) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
 | **DEC-07** | Frontend Framework (React+Vite SPA) | Core App | Ready For RFC | Gate 1 | High | DEC-02, DEC-03 | High | None | No iniciado | No creado | Crear RFC de arquitectura frontend | Architecture Lead |
 | **DEC-08** | State Management (Zustand) | Core App | Ready For RFC | Gate 1 | High | DEC-07 | High | None | No iniciado | No creado | Crear RFC de flujo de estado | Architecture Lead |
-| **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | Prototype Required | Gate 1 | Medium | DEC-02 | High | Benchmark, Prototype | No iniciado | No creado | Benchmark de queries complejas vs IndexedDB | Architecture Lead |
+| **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | Ready For RFC | Gate 1 | High | DEC-02 | High | None | No iniciado | No creado | Crear RFC para SQLite WASM OPFS | Architecture Lead |
 | **DEC-10** | Rendering Strategy (Pure Three.js) | Graphics | Ready For RFC | Gate 1 | High | DEC-01, DEC-08, DEC-11 | Medium | None | No iniciado | No creado | Crear RFC para motor 3D propio | Architecture Lead |
 | **DEC-11** | Solver Engine & WASM (min2phase) | Core App | Ready For RFC | Gate 1 | High | DEC-07, DEC-09 | Medium | None | No iniciado | No creado | Crear RFC para integración de min2phase WASM | Architecture Lead |
-| **DEC-12** | Performance Strategies (Workers) | Core App | Prototype Required | Gate 1 | Medium | DEC-10, DEC-11 | Medium | Benchmark | No iniciado | No creado | Medir overhead de serialización main-thread a worker | Architecture Lead |
-| **DEC-13** | Code Quality & Standards | Tooling | RFC Review | Gate 1 | Very High | DEC-06 | Low | None | Creado (RFC-004) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
-| **DEC-14** | Testing Stack (Vitest, Playwright) | Tooling | RFC Review | Gate 1 | High | DEC-05 | Medium | None | Creado (RFC-005) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
-| **DEC-15** | CI/CD & Publishing (GitHub Actions) | Ops | RFC Review | Gate 1 | Very High | DEC-04, DEC-14 | Low | None | Creado (RFC-006) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
-| **DEC-16** | Plugin System Architecture | Core App | Research | Gate 0 | Low | DEC-06, DEC-07 | High | Research | No iniciado | No creado | Investigar inyección de código dinámico en SPA | Architecture Lead |
-| **DEC-17** | Security (Local-first Integrity) | Security | Research | Gate 0 | Low | DEC-09 | Medium | Research | No iniciado | No creado | Investigar mitigación de manipulación de leaderboard local | Architecture Lead |
-| **DEC-18** | Backend & Cloud Sync (Supabase) | Cloud | Awaiting Decision | Gate 1 | High | DEC-09, DEC-17 | High | Human Product Decision | No iniciado | No creado | Definir estrategia de hosting (managed vs self-hosted) | Product Lead |
-| **DEC-19** | Accessibility & Internationalization | UI/UX | Research | Gate 0 | High | DEC-07 | Low | Research | No iniciado | No creado | Definir DOM estructural para a11y de temporizadores | Architecture Lead |
+| **DEC-12** | Perf. Strategies (Comlink/ArrayBuffer) | Core App | Ready For RFC | Gate 1 | High | DEC-10, DEC-11 | Medium | None | No iniciado | No creado | Crear RFC para uso de Web Workers | Architecture Lead |
+| **DEC-13** | Code Quality & Standards | Tooling | ADR Created | Gate 1 | Very High | DEC-06 | Low | None | Aprobado (RFC-004) | Creado (ADR-004) | Implementar estándares | Architecture Lead |
+| **DEC-14** | Testing Stack (Vitest, Playwright) | Tooling | ADR Created | Gate 1 | High | DEC-05 | Medium | None | Aprobado (RFC-005) | Creado (ADR-005) | Configurar testing stack | Architecture Lead |
+| **DEC-15** | CI/NPM Publishing (GitHub Actions) | Ops | ADR Created | Gate 1 | Very High | DEC-04, DEC-14 | Low | None | Aprobado (RFC-006) | Creado (ADR-006) | Crear workflows de CI | Architecture Lead |
+| **DEC-16** | Plugin System (Native ESM Imports) | Core App | Ready For RFC | Gate 1 | High | DEC-06, DEC-07 | High | None | No iniciado | No creado | Crear RFC para inyección dinámica ESM | Architecture Lead |
+| **DEC-17** | Security (Crypto signatures) | Security | Ready For RFC | Gate 1 | High | DEC-09 | Medium | None | No iniciado | No creado | Crear RFC sobre firmas criptográficas | Architecture Lead |
+| **DEC-18** | Backend (Supabase/Append-only) | Cloud | Ready For RFC | Gate 1 | High | DEC-09, DEC-17 | High | None | No iniciado | No creado | Crear RFC sobre Supabase y eventos Append-only | Product Lead |
+| **DEC-19** | Accessibility (WAI-ARIA Live Regions) | UI/UX | Ready For RFC | Gate 1 | High | DEC-07 | Low | None | No iniciado | No creado | Crear RFC sobre WAI-ARIA Live Regions | Architecture Lead |
 | **DEC-20** | Documentation Stack | Tooling | Ready For RFC | Gate 1 | Very High | DEC-04, DEC-07 | Low | None | No iniciado | No creado | Crear RFC para stack de documentación | Architecture Lead |
 | **DEC-21** | Open Source Readiness | Ops | Ready For RFC | Gate 1 | Very High | DEC-20 | Low | None | No iniciado | No creado | Crear RFC de gobernanza OSS | Architecture Lead |
 | **DEC-22** | Desktop & Mobile Wrappers (Tauri/RN) | Platform | Blocked | Gate 0 | Medium | DEC-03, DEC-07 | Medium | Prototype | No iniciado | No creado | Diferir decisión formal a Milestone 2+ | Architecture Lead |
@@ -72,15 +72,7 @@ Las siguientes decisiones tienen el `Research completado` (Gate 1), un `Confiden
 
 ## 3. Decisions Requiring Validation
 
-Estas decisiones son fundamentales pero carecen de evidencia empírica suficiente para convertirse en RFC. Requieren validación explícita para evitar deuda técnica:
-
-* **Requieren Benchmark y/o Prototype:**
-  * **DEC-09 (Offline Database):** Benchmark OPFS SQLite WASM contra Dexie.js para 10,000 solves y cálculos complejos.
-  * **DEC-12 (Performance Strategies):** Medición de latencia de serialización en Web Workers.
-
-* **Requieren Investigación o Decisión de Producto/Legal:**
-  * **DEC-16 (Plugin System), DEC-17 (Security), DEC-19 (Accessibility):** Investigación arquitectónica.
-  * **DEC-18 (Cloud Sync):** Decisión humana de producto/hosting.
+*Actualmente, todas las decisiones que requerían validación empírica o de producto han sido evaluadas y definidas arquitectónicamente (DEC-09, DEC-12, DEC-16, DEC-17, DEC-18, DEC-19). Han pasado a estado `Ready For RFC` y sus dudas han quedado despejadas.*
 
 ---
 
