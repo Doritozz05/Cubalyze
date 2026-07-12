@@ -1,0 +1,28 @@
+{
+  "name": "@cubeforge/hardware-hal",
+  "version": "1.0.0",
+  "description": "Hardware Abstraction Layer for Smart Cubes and Timers",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@cubeforge/gan-protocol": "workspace:*",
+    "@cubeforge/timer-engine": "workspace:*",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@cubeforge/config-typescript": "workspace:*",
+    "@types/web-bluetooth": "^0.0.20",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
+  }
+}
