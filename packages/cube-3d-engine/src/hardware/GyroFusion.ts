@@ -42,7 +42,7 @@ export class GyroFusion {
     // 1. Intercambiamos Y y Z (para pasar de Z-up a Y-up).
     // 2. Invertimos X (o ajustamos signos según el sensor) para corregir la "inversión"
     //    percibida y alinear el movimiento físico con la cámara.
-    this.rawTargetQuat.set(-x, z, y, w).normalize();
+    this.rawTargetQuat.set(x, z, -y, w).normalize();
   }
 
   /**

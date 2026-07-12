@@ -23,7 +23,7 @@ export class SceneManager {
     this.scene.background = new Color('#1e1e1e');
 
     this.camera = new PerspectiveCamera(45, this.width / this.height, 0.1, 100);
-    this.camera.position.set(5, 5, 5);
+    this.camera.position.set(0, 0, 7);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
