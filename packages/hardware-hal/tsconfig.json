@@ -2,8 +2,7 @@
   "extends": "@cubeforge/config-typescript/tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "types": ["web-bluetooth"]
+    "types": ["web-bluetooth", "audioworklet"]
   },
   "include": ["src", "tests"],
   "exclude": ["node_modules", "dist"]

@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@cubeforge/config-typescript": "workspace:*",
+    "@types/audioworklet": "^0.0.100",
     "@types/web-bluetooth": "^0.0.20",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3",
