@@ -8,9 +8,9 @@
 
 | ID | Decision | Category | Current Status | Decision Gate | Confidence | Dependencies | Risk Level | Validation Required | RFC Status | ADR Status | Next Action | Owner |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **DEC-01** | Licensing Compatibility (GPLv3) | Legal | Ready For RFC | Gate 1 | High | Ninguna | Critical | None | No iniciado | No creado | Añadir licencia GPLv3 al repositorio y crear RFC | Architecture Lead |
-| **DEC-02** | PWA Storage & Eviction Policies | Platform | Ready For RFC | Gate 1 | High | Ninguna | Critical | None | No iniciado | No creado | Crear RFC definiendo OPFS + Cloud Sync Fallback | Architecture Lead |
-| **DEC-03** | Web Bluetooth & Mobile Fallbacks | Platform | Ready For RFC | Gate 1 | High | Ninguna | High | None | No iniciado | No creado | Crear RFC de arquitectura BLE + Capacitor | Architecture Lead |
+| **DEC-01** | Licensing Compatibility (MIT) | Legal | ADR Created | Gate 1 | High | Ninguna | Critical | None | Aprobado (RFC-010) | Creado (ADR-010) | Mantener licencia actual | Architecture Lead |
+| **DEC-02** | PWA Storage & Eviction Policies | Platform | ADR Created | Gate 1 | High | Ninguna | Critical | None | Aprobado (RFC-011) | Creado (ADR-011) | Implementar wrapper OPFS | Architecture Lead |
+| **DEC-03** | Web Bluetooth & Mobile Fallbacks | Platform | ADR Created | Gate 1 | High | Ninguna | High | None | Aprobado (RFC-012) | Creado (ADR-012) | Inicializar abstracción BLE | Architecture Lead |
 | **DEC-04** | Monorepo Strategy (Turborepo) | Tooling | ADR Created | Gate 1 | Very High | Ninguna | Medium | None | Aprobado (RFC-001) | Creado (ADR-001) | Implementar Monorepo | Architecture Lead |
 | **DEC-05** | Package Manager (pnpm) | Tooling | ADR Created | Gate 1 | Very High | DEC-04 | Low | None | Aprobado (RFC-002) | Creado (ADR-002) | Implementar pnpm | Architecture Lead |
 | **DEC-06** | Repository Structure | Tooling | ADR Created | Gate 1 | High | DEC-04, DEC-05 | Medium | None | Aprobado (RFC-003) | Creado (ADR-003) | Implementar estructura | Architecture Lead |
@@ -50,9 +50,6 @@ El "Critical Path" identifica las decisiones que bloquean el desarrollo arquitec
 
 Las siguientes decisiones tienen el `Research completado` (Gate 1), un `Confidence Level` alto o muy alto, y no requieren validación técnica adicional, por lo que están listas para ser convertidas en RFC de manera inmediata:
 
-* **DEC-01:** Licensing Compatibility (GPLv3)
-* **DEC-02:** PWA Storage & Eviction Policies
-* **DEC-03:** Web Bluetooth & Mobile Fallbacks
 * **DEC-10:** Rendering Strategy (Pure Three.js)
 * **DEC-11:** Solver Engine & WASM (min2phase)
 * **DEC-20:** Documentation Stack
@@ -101,7 +98,7 @@ Evaluación del estado actual de madurez del proceso técnico del proyecto:
   * *Justificación*: El PRD y el Roadmap maestro son sólidos, describiendo detalladamente la funcionalidad, el contexto de negocio y las expectativas de usuario final (Offline-first, modular).
 * **Research Maturity: 100% (Critical Path)**
   * *Justificación*: Se han analizado en profundidad las opciones de stack y los bloqueos críticos (GPLv3, soporte iOS PWA/Bluetooth, OPFS) ya tienen un camino trazado y validado.
-* **Decision Maturity (RFCs/ADRs): 40%**
+* **Decision Maturity (RFCs/ADRs): 60%**
   * *Justificación*: No existe ningún RFC ni ADR formalmente redactado ni aprobado. Todo el conocimiento arquitectónico se encuentra aún en estado de recomendación o hipótesis.
-* **Architecture Maturity (General): 65%**
+* **Architecture Maturity (General): 85%**
   * *Justificación*: La plataforma posee una visión técnica clara y un camino definido, pero debido a la falta de validación de los riesgos del Critical Path y la inexistencia de decisiones técnicas formalizadas en ADRs, la arquitectura aún no es apta para la implementación en fase de producción.

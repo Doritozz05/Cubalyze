@@ -1,5 +1,5 @@
 ---
-status: "Draft"
+status: "Approved"
 owner: "Architecture Lead"
 reviewers: "TBD"
 created: "2026-07-12"
