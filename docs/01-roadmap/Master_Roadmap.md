@@ -238,60 +238,77 @@ This epic establishes the foundational architecture, CI/CD pipelines, state mana
 
 ---
 
-## EPIC 2: HARDWARE ABSTRACTION LAYER (SMART CUBES)
-This epic handles the physical connection to external Bluetooth Smart Cubes.
+## EPIC 2: HARDWARE ABSTRACTION LAYER (SMART CUBES & TIMERS)
+This epic handles the physical connection to external devices: Bluetooth Smart Cubes and physical Timers (Stackmat, GAN Timer).
 
-### Phase 2.1: Web Bluetooth Infrastructure
-**Goal**: Establish a robust wrapper around the Web Bluetooth API for device discovery and connection.
-**Motivation**: Browser Bluetooth APIs are complex and fail frequently. A stable wrapper is necessary before implementing specific cube protocols.
+### Phase 2.1: Hardware Infrastructure (Web Bluetooth & Web Audio)
+**Goal**: Establish a robust wrapper around the Web Bluetooth API (for cubes/timers) and Web Audio API (for Stackmat).
+**Motivation**: Browser APIs for hardware are complex and fail frequently. A stable wrapper is necessary before implementing specific protocols.
 **Dependencies**: Phase 1.1.
 **References**: [PRD Part 5.1.](../00-product/PRD.md)
 **Scope**:
-- Request device, connect to GATT server, handle disconnections.
-- *Excludes*: Parsing specific cube data.
-**Deliverables**: A generic Bluetooth connection manager.
-**Exit Criteria**: Ability to connect to a generic BLE device, read a characteristic, and detect disconnects reliably.
-**Risks**: Browser compatibility issues.
+- Request device, connect to GATT server, handle BLE disconnections.
+- Request microphone permissions and setup `AudioContext` / `AudioWorklet` for Stackmat.
+- *Excludes*: Parsing specific cube or timer data.
+**Deliverables**: A generic hardware connection manager.
+**Exit Criteria**: Ability to connect to a generic BLE device and successfully capture a raw audio stream.
+**Risks**: Browser compatibility issues (Safari lacks Web Bluetooth; microphone permissions can be strict).
 **Future Preparation**: Unlocks the HAL Interface Definition.
 
-### Phase 2.2: HAL Interface Definition
-**Goal**: Define the standard Interface that all Smart Cubes must implement.
-**Motivation**: Prevents vendor lock-in. The app should interact with a 'Generic Smart Cube', not a 'GAN Cube'.
+### Phase 2.2: HAL Interface Definition (Cubes & Timers)
+**Goal**: Define the standard Interfaces that all Smart Cubes and Timers must implement.
+**Motivation**: Prevents vendor lock-in. The app should interact with a 'Generic Smart Cube' or a 'Generic Timer', not specifically GAN or Stackmat.
 **Dependencies**: Phase 2.1.
 **References**: [PRD Part 5.1](../00-product/PRD.md), 5.4.
 **Scope**:
-- Define the standard event payload (face turns, gyroscope data, battery level).
-- *Excludes*: Implementing the interface for a specific cube.
-**Deliverables**: Interface definitions and abstract base classes for Smart Cubes.
+- Define `SmartCubeAdapter` (face turns, gyroscope data, battery level).
+- Define `HardwareTimerAdapter` (emits `handleDown()` and `handleUp()`).
+- *Excludes*: Implementing the interface for a specific device.
+**Deliverables**: Interface definitions and abstract base classes.
 **Exit Criteria**: Code review approval of the interface design by the architectural lead.
 **Risks**: Missing critical data fields required by future algorithms.
 **Future Preparation**: Unlocks manufacturer-specific integrations.
 
-### Phase 2.3: GAN Cube Protocol Integration
-**Goal**: Implement the HAL for GAN Smart Cubes.
+### Phase 2.3: Hardware Timers Integration (Stackmat & GAN Timer)
+**Goal**: Implement the HAL for official physical timers.
+**Motivation**: Advanced speedcubers train with physical timers. The platform must support them seamlessly.
+**Dependencies**: Phase 2.2, Phase 1.4.
+**References**: PRD Part 0.4.1 (GAN Timers)
+**Scope**:
+- **Stackmat**: Decodificador de señal FSK desde el micrófono usando `AudioWorklet`.
+- **GAN Timer**: Decodificador de paquetes BLE para el cronómetro de GAN.
+- Ambos adaptadores se acoplarán al `TimerEngine` refactorizado en la Fase 1.4.
+**Deliverables**: Adaptadores funcionales para Stackmat y GAN Timer.
+**Exit Criteria**: Un toque en un Stackmat físico o GAN Timer dispara los eventos `handleDown` y `handleUp` en el motor headless.
+**Risks**: Ruido en la señal de audio del micrófono o variaciones en los protocolos (Stackmat G4 vs G5).
+**Future Preparation**: Unlocks hardware-driven timing sessions.
+
+### Phase 2.4: Smart Cubes Protocol Integration (GAN Cube)
+**Goal**: Implement the HAL for GAN Smart Cubes via a fork of `gan-web-bluetooth`.
 **Motivation**: GAN is the most documented and widely used smart cube. It serves as the ideal proof-of-concept for the HAL.
 **Dependencies**: Phase 2.2.
 **References**: [PRD Part 5.3](../00-product/PRD.md), 0.4.1.
 **Scope**:
+- Port/Fork de la librería `gan-web-bluetooth` a nuestro monorepo.
 - Decrypt/Parse GAN BLE payloads.
 - Map GAN moves to the standard HAL events.
 - *Excludes*: MoYu, QiYi, or other brands.
 **Deliverables**: A working GAN adapter for the HAL.
 **Exit Criteria**: A physical GAN cube emits accurate standard events to the console when turned.
 **Risks**: Undocumented firmware changes from GAN breaking the parser.
-**Future Preparation**: Unlocks hardware-driven timers and hardware-to-3D syncing.
+**Future Preparation**: Unlocks hardware-to-3D syncing and analysis.
 
-### Phase 2.4: Sync & Clock Drift Correction
-**Goal**: Ensure physical cube timestamps perfectly align with local system time.
+### Phase 2.5: Sync & Clock Drift Correction
+**Goal**: Ensure physical cube/timer timestamps perfectly align with local system time.
 **Motivation**: Bluetooth latency and hardware clock drift will ruin solve analysis if not aggressively corrected.
-**Dependencies**: Phase 2.3.
+**Dependencies**: Phase 2.4.
 **References**: [PRD Part 5.2.](../00-product/PRD.md)
 **Scope**:
-- Implement timestamp reconciliation algorithms.
+- Implement timestamp reconciliation algorithms (Linear regression).
 - Establish baseline latency metrics.
 - *Excludes*: Post-solve analysis.
 **Deliverables**: A middleware that corrects incoming event timestamps in real-time.
-**Exit Criteria**: Move timestamps are proven accurate within a <15ms margin of error compared to a high-speed camera baseline (or simulated equivalent).
+**Exit Criteria**: Move timestamps are proven accurate within a <15ms margin of error.
 **Risks**: Severe inconsistencies in hardware BLE reporting rates.
 **Future Preparation**: Unlocks accurate TPS (Turns Per Second) computation in the Analysis Engine.
 
