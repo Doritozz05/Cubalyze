@@ -23,10 +23,17 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   }
 
   async connect(): Promise<void> {
-    this.connection = await connectGanCube();
+    try {
+      this.connection = await connectGanCube();
+    } catch (error) {
+      console.error('Failed to connect GAN Cube:', error);
+      throw error;
+    }
     
     this.connection.events$.subscribe((evt) => {
-      if (evt.type === 'BATTERY') {
+      if (evt.type === 'DISCONNECT') {
+        this.disconnect();
+      } else if (evt.type === 'BATTERY') {
         this.batterySubject.next(evt.batteryLevel);
       } else if (evt.type === 'MOVE') {
         const hostNow = performance.now();
@@ -39,12 +46,14 @@ export class GanCubeAdapter implements SmartCubeAdapter {
           hostTimestamp: this.reconciler.reconcile(cubeTs)
         });
       } else if (evt.type === 'GYRO') {
-        this.gyroSubject.next({
-          x: evt.quaternion.x,
-          y: evt.quaternion.y,
-          z: evt.quaternion.z,
-          w: evt.quaternion.w
-        });
+        if (evt.quaternion) {
+          this.gyroSubject.next({
+            x: evt.quaternion.x,
+            y: evt.quaternion.y,
+            z: evt.quaternion.z,
+            w: evt.quaternion.w
+          });
+        }
       }
     });
   }

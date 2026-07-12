@@ -1,7 +1,6 @@
 import { Observable, Subject } from 'rxjs';
 import { HardwareTimerAdapter, HardwareTimerEvent } from '../interfaces/HardwareTimerAdapter';
-import { connectGanTimer, GanTimerConnection } from '@cubeforge/gan-protocol';
-
+import { connectGanTimer, GanTimerConnection, GanTimerState } from '@cubeforge/gan-protocol';
 export class GanTimerAdapter implements HardwareTimerAdapter {
   public readonly name = 'GAN Smart Timer';
   
@@ -13,13 +12,22 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
   constructor() {}
 
   async connect(): Promise<void> {
-    this.connection = await connectGanTimer();
+    try {
+      this.connection = await connectGanTimer();
+    } catch (error) {
+      console.error('Failed to connect GAN Timer:', error);
+      throw error;
+    }
     
     this.connection.events$.subscribe((evt) => {
+      if (evt.state === GanTimerState.DISCONNECT) {
+        this.disconnect();
+      }
+
       switch (evt.state) {
-        case 0:
-        case 4:
-        case 5:
+        case GanTimerState.DISCONNECT:
+        case GanTimerState.STOPPED:
+        case GanTimerState.IDLE:
           this.eventsSubject.next({
             type: 'hardwareUp',
             leftHand: false,
@@ -27,9 +35,9 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
             timestamp: performance.now()
           });
           break;
-        case 1:
-        case 6:
-        case 7:
+        case GanTimerState.GET_SET:
+        case GanTimerState.HANDS_ON:
+        case GanTimerState.FINISHED:
           this.eventsSubject.next({
             type: 'hardwareDown',
             leftHand: true,
@@ -37,7 +45,7 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
             timestamp: performance.now()
           });
           break;
-        case 2:
+        case GanTimerState.HANDS_OFF:
           this.eventsSubject.next({
             type: 'hardwareDown',
             leftHand: true,
