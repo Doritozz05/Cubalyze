@@ -658,7 +658,7 @@ User (1) ───< Goal (N)
 
 # PARTE 16 — ROADMAP POR FASES
 
-### Fase 0 — FundacIones
+### Fase 0 — Fundaciones
 
 **Objetivo**: Timer core offline-first + arquitectura base + primer adaptador de hardware (GAN).
 
