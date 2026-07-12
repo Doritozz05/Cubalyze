@@ -656,72 +656,19 @@ User (1) ───< Goal (N)
 
 ---
 
-# PARTE 16 — ROADMAP POR FASES
+# PARTE 16 — ROADMAP DE IMPLEMENTACIÓN
 
-### Fase 0 — Fundaciones
+El roadmap de implementación ha sido extraído de este documento para mantener la responsabilidad única y ahora reside en su propio documento maestro.
 
-**Objetivo**: Timer core offline-first + arquitectura base + primer adaptador de hardware (GAN).
+Por favor, consulte [roadmap.md](./roadmap.md) para acceder a:
+- Estrategia de entrega incremental
+- Gestión de dependencias
+- Desglose en Fases Atómicas
+- Criterios de salida y entregables
+- Gestión de riesgos y deuda técnica
 
-- Timer manual y por smart cube (GAN).
-- HAL con un único adaptador productivo.
-- Modelo de datos base (Solve, MoveEvent, Session).
-- Solver Engine embebido (min2phase) para scrambles y solución óptima de referencia.
-- **Dependencias**: ninguna externa crítica más allá de las librerías identificadas en Parte 0.3-0.4.
-- **Riesgos**: estabilidad del protocolo BLE de GAN entre generaciones (Gen2/3/4) — mitigado reutilizando librerías ya validadas por la comunidad.
-- **Complejidad**: Media-alta (la integración BLE es la parte más delicada).
-
-### Fase 1 — Análisis y Cubo 3D
-
-**Objetivo**: Analysis Engine básico (detección de fase, TPS, comparación con óptimo) + Cube3D Engine funcional.
-
-- Reproducción de solves grabados.
-- Split de fases para CFOP como primer método soportado.
-- **Dependencias**: Fase 0 completa (necesita el stream de MoveEvent).
-- **Riesgos**: precisión de reconstrucción de estado facelet a partir de streams con posible pérdida de eventos BLE.
-- **Complejidad**: Alta.
-
-### Fase 2 — Biblioteca de algoritmos y entrenamiento base
-
-**Objetivo**: Algorithm Database + F2L/OLL/PLL Trainers + repetición espaciada.
-
-- Importación de catálogo base compatible con formatos existentes del sector.
-- **Dependencias**: Fase 1 (el entrenador se apoya en Cube3D y en el Solver Engine para scrambles filtrados por caso).
-- **Riesgos**: calidad/curación del contenido inicial del catálogo.
-- **Complejidad**: Media.
-
-### Fase 3 — Tracking avanzado y multi-método
-
-**Objetivo**: Estadísticas avanzadas completas (Parte 11) + soporte Roux/ZZ/Petrus/LBL como method plugins.
-
-- **Dependencias**: Fase 1 y 2.
-- **Riesgos**: correcta definición de fases y detección de transición para métodos no-CFOP, cada uno con su propia lógica.
-- **Complejidad**: Alta.
-
-### Fase 4 — Multi-fabricante de hardware
-
-**Objetivo**: Adaptadores MoYu, QiYi, Giiker vía HAL; SDK público de adaptadores.
-
-- **Dependencias**: Fase 0 (HAL debe estar ya estabilizado como contrato).
-- **Riesgos**: variabilidad y falta de documentación oficial de protocolos no-GAN; dependencia de ingeniería inversa comunitaria.
-- **Complejidad**: Alta.
-
-### Fase 5 — Inteligencia Artificial
-
-**Objetivo**: AI Service completo (explicación, recomendación, generación de entrenamientos personalizados).
-
-- **Dependencias**: Fases 1-3 (la IA necesita datos de análisis y tracking maduros para ser útil, no genérica).
-- **Riesgos**: calidad/confianza de las recomendaciones tempranas con poco histórico por usuario; mitigado con umbrales mínimos de datos antes de activar recomendaciones fuertes.
-- **Complejidad**: Alta.
-
-### Fase 6 — Comunidad y escalado
-
-**Objetivo**: Comparativas, retos, compartición pública opcional; hardening de infraestructura para escala (particionado de MoveEvent, cache avanzada).
-
-- **Dependencias**: todas las anteriores.
-- **Riesgos**: privacidad de datos compartidos; coste de infraestructura a escala.
-- **Complejidad**: Media-alta (más organizativa/infraestructura que algorítmica).
-
----
+El documento 
+oadmap.md es la única fuente de verdad para la planificación y el orden de ejecución del proyecto CubeForge.
 
 # PARTE 17 — REFERENCIAS, REPOSITORIOS Y BIBLIOGRAFÍA
 
