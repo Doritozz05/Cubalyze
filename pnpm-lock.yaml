@@ -72,6 +72,8 @@ importers:
         specifier: ^8.1.1
         version: 8.1.4(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
 
+  packages/3d-engine: {}
+
   packages/ai-core: {}
 
   packages/analysis-engine: {}
@@ -92,7 +94,11 @@ importers:
 
   packages/state: {}
 
+  packages/statistics: {}
+
   packages/sync-engine: {}
+
+  packages/timer-engine: {}
 
   packages/training: {}
 
