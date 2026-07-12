@@ -11,11 +11,11 @@
 | **DEC-01** | Licensing Compatibility (GPLv3) | Legal | Ready For RFC | Gate 1 | High | Ninguna | Critical | None | No iniciado | No creado | Añadir licencia GPLv3 al repositorio y crear RFC | Architecture Lead |
 | **DEC-02** | PWA Storage & Eviction Policies | Platform | Ready For RFC | Gate 1 | High | Ninguna | Critical | None | No iniciado | No creado | Crear RFC definiendo OPFS + Cloud Sync Fallback | Architecture Lead |
 | **DEC-03** | Web Bluetooth & Mobile Fallbacks | Platform | Ready For RFC | Gate 1 | High | Ninguna | High | None | No iniciado | No creado | Crear RFC de arquitectura BLE + Capacitor | Architecture Lead |
-| **DEC-04** | Monorepo Strategy (Turborepo) | Tooling | RFC Review | Gate 1 | Very High | Ninguna | Medium | None | Creado (RFC-001) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
-| **DEC-05** | Package Manager (pnpm) | Tooling | RFC Review | Gate 1 | Very High | DEC-04 | Low | None | Creado (RFC-002) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
-| **DEC-06** | Repository Structure | Tooling | RFC Review | Gate 1 | High | DEC-04, DEC-05 | Medium | None | Creado (RFC-003) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
-| **DEC-07** | Frontend Framework (React+Vite SPA) | Core App | Ready For RFC | Gate 1 | High | DEC-02, DEC-03 | High | None | No iniciado | No creado | Crear RFC de arquitectura frontend | Architecture Lead |
-| **DEC-08** | State Management (Zustand) | Core App | Ready For RFC | Gate 1 | High | DEC-07 | High | None | No iniciado | No creado | Crear RFC de flujo de estado | Architecture Lead |
+| **DEC-04** | Monorepo Strategy (Turborepo) | Tooling | ADR Created | Gate 1 | Very High | Ninguna | Medium | None | Aprobado (RFC-001) | Creado (ADR-001) | Implementar Monorepo | Architecture Lead |
+| **DEC-05** | Package Manager (pnpm) | Tooling | ADR Created | Gate 1 | Very High | DEC-04 | Low | None | Aprobado (RFC-002) | Creado (ADR-002) | Implementar pnpm | Architecture Lead |
+| **DEC-06** | Repository Structure | Tooling | ADR Created | Gate 1 | High | DEC-04, DEC-05 | Medium | None | Aprobado (RFC-003) | Creado (ADR-003) | Implementar estructura | Architecture Lead |
+| **DEC-07** | Frontend Framework (React+Vite SPA) | Core App | ADR Created | Gate 1 | High | DEC-02, DEC-03 | High | None | Aprobado (RFC-008) | Creado (ADR-008) | Configurar proyecto base Vite | Architecture Lead |
+| **DEC-08** | State Management (Zustand) | Core App | ADR Created | Gate 1 | High | DEC-07 | High | None | Aprobado (RFC-009) | Creado (ADR-009) | Configurar stores de Zustand | Architecture Lead |
 | **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | Ready For RFC | Gate 1 | High | DEC-02 | High | None | No iniciado | No creado | Crear RFC para SQLite WASM OPFS | Architecture Lead |
 | **DEC-10** | Rendering Strategy (Pure Three.js) | Graphics | Ready For RFC | Gate 1 | High | DEC-01, DEC-08, DEC-11 | Medium | None | No iniciado | No creado | Crear RFC para motor 3D propio | Architecture Lead |
 | **DEC-11** | Solver Engine & WASM (min2phase) | Core App | Ready For RFC | Gate 1 | High | DEC-07, DEC-09 | Medium | None | No iniciado | No creado | Crear RFC para integración de min2phase WASM | Architecture Lead |
@@ -30,6 +30,7 @@
 | **DEC-20** | Documentation Stack | Tooling | Ready For RFC | Gate 1 | Very High | DEC-04, DEC-07 | Low | None | No iniciado | No creado | Crear RFC para stack de documentación | Architecture Lead |
 | **DEC-21** | Open Source Readiness | Ops | Ready For RFC | Gate 1 | Very High | DEC-20 | Low | None | No iniciado | No creado | Crear RFC de gobernanza OSS | Architecture Lead |
 | **DEC-22** | Desktop & Mobile Wrappers (Tauri/RN) | Platform | Blocked | Gate 0 | Medium | DEC-03, DEC-07 | Medium | Prototype | No iniciado | No creado | Diferir decisión formal a Milestone 2+ | Architecture Lead |
+| **DEC-23** | Hosting Strategy (Vercel+Supabase) | Ops | ADR Created | Gate 1 | Very High | DEC-07 | Low | None | Aprobado (RFC-007) | Creado (ADR-007) | Configurar proyectos Vercel y Supabase | Architecture Lead |
 
 ---
 
@@ -52,8 +53,6 @@ Las siguientes decisiones tienen el `Research completado` (Gate 1), un `Confiden
 * **DEC-01:** Licensing Compatibility (GPLv3)
 * **DEC-02:** PWA Storage & Eviction Policies
 * **DEC-03:** Web Bluetooth & Mobile Fallbacks
-* **DEC-07:** Frontend Framework & Architecture
-* **DEC-08:** State Management
 * **DEC-10:** Rendering Strategy (Pure Three.js)
 * **DEC-11:** Solver Engine & WASM (min2phase)
 * **DEC-20:** Documentation Stack
@@ -61,12 +60,8 @@ Las siguientes decisiones tienen el `Research completado` (Gate 1), un `Confiden
 
 ### Decisions in RFC Review
 
-* **DEC-04:** Monorepo Strategy (RFC-001)
-* **DEC-05:** Package Manager (RFC-002)
-* **DEC-06:** Repository Structure (RFC-003)
-* **DEC-13:** Code Quality & Standards (RFC-004)
-* **DEC-14:** Testing Stack (RFC-005)
-* **DEC-15:** CI/CD & Publishing (RFC-006)
+*(Ninguna)*
+
 
 ---
 
@@ -106,7 +101,7 @@ Evaluación del estado actual de madurez del proceso técnico del proyecto:
   * *Justificación*: El PRD y el Roadmap maestro son sólidos, describiendo detalladamente la funcionalidad, el contexto de negocio y las expectativas de usuario final (Offline-first, modular).
 * **Research Maturity: 100% (Critical Path)**
   * *Justificación*: Se han analizado en profundidad las opciones de stack y los bloqueos críticos (GPLv3, soporte iOS PWA/Bluetooth, OPFS) ya tienen un camino trazado y validado.
-* **Decision Maturity (RFCs/ADRs): 0%**
+* **Decision Maturity (RFCs/ADRs): 40%**
   * *Justificación*: No existe ningún RFC ni ADR formalmente redactado ni aprobado. Todo el conocimiento arquitectónico se encuentra aún en estado de recomendación o hipótesis.
-* **Architecture Maturity (General): 35%**
+* **Architecture Maturity (General): 65%**
   * *Justificación*: La plataforma posee una visión técnica clara y un camino definido, pero debido a la falta de validación de los riesgos del Critical Path y la inexistencia de decisiones técnicas formalizadas en ADRs, la arquitectura aún no es apta para la implementación en fase de producción.
