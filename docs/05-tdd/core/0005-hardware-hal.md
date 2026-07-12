@@ -59,13 +59,14 @@ export interface HardwareTimerAdapter extends EventTarget {
 
 ## 3. Integración de Cronómetros (Fase 2.3)
 
-### 3.1. Stackmat Timer (Audio FSK)
+### 3.1. Stackmat Timer (Audio RS-232 Bit-banging)
 
-El protocolo Stackmat transmite datos seriales a través de una onda de audio mediante *Frequency-shift keying* (FSK).
+El protocolo Stackmat **NO** utiliza FSK. Transmite una señal serial estándar **RS-232 a 1200 baudios (8N1: 8 bits, sin paridad, 1 stop bit)** directamente inyectada por el cable de audio. A diferencia de los cubos, transmite datos *continuamente* (ráfagas cada ~0.1s).
 
 *   **Infraestructura**: Usaremos la `Web Audio API` pidiendo permisos con `navigator.mediaDevices.getUserMedia({ audio: true })`.
-*   **Decodificación**: Se escribirá un `AudioWorkletProcessor` para aislar el proceso del hilo principal. Este procesador analizará la amplitud de la onda a 44100Hz para detectar los "bits" de inicio y fin, decodificando las ráfagas en números y estados (luces verde/roja, manos puestas).
-*   **Traducción**: Cuando el decodificador detecta "manos puestas", el `StackmatAdapter` dispara el evento `hardwareDown`. Al soltarlas, `hardwareUp`.
+*   **Decodificación UART por Software**: Escribiremos un `AudioWorkletProcessor` para aislar el proceso. Analizará los cruces por cero (*zero-crossings*) en el búfer de Float32 a 44100Hz para medir la anchura de los pulsos, deducir los bits a 1200 baudios y ensamblarlos en paquetes de 9 bytes.
+*   **Protocolo de Paquete (Gen4)**: Cada paquete contiene un Byte de Comando ('I', 'A', 'S', 'L', 'R'), 5 bytes ASCII de tiempo, 1 byte de Checksum, y CR+LF.
+*   **Traducción**: Al recibir el comando 'A' o 'C' (ambas manos), el `StackmatAdapter` dispara el evento `hardwareDown`. Al pasar a ' ' o 'S', `hardwareUp`.
 
 ### 3.2. GAN Timer (Web Bluetooth)
 
@@ -76,9 +77,9 @@ El cronómetro de GAN usa Bluetooth Low Energy (BLE).
 
 ## 4. Integración de Smart Cubes: GAN (Fase 2.4)
 
-En lugar de reescribir la ingeniería inversa desde cero, CubeForge integrará la librería `gan-web-bluetooth`.
+A diferencia de los Timers, los Smart Cubes **son impulsados por eventos (Event-Driven)**. Para ahorrar batería, no transmiten datos continuamente; solo emiten notificaciones BLE (paquetes AES de 20 bytes) cuando ocurre un giro físico (o a 20-50Hz si el giroscopio está activado explícitamente). En lugar de reescribir la ingeniería inversa desde cero, CubeForge integrará la librería `gan-web-bluetooth`.
 
-1.  **Fork de la Librería**: El código fuente de `gan-web-bluetooth` se copiará y adaptará dentro de nuestro monorepo como el paquete `@cubeforge/gan-protocol` (o directamente dentro del HAL).
+1.  **Fork de la Librería**: El código fuente de `gan-web-bluetooth` se copiará y adaptará dentro de nuestro monorepo como el paquete `@cubeforge/gan-protocol`.
 2.  **Adaptador GAN**: Se escribirá una clase `GanCubeAdapter` que implemente `SmartCubeAdapter`, enrutando las notificaciones GATT a la lógica de descifrado AES del fork, y finalmente emitiendo `CubeMoveEvent`.
 
 ## 5. Middleware de Clock Drift (Fase 2.5)
