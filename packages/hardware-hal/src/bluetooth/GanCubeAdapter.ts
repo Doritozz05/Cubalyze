@@ -27,9 +27,18 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       this.connection = await connectGanCube(async (device, isFallback) => {
         if (isFallback) {
           const isSupported = typeof device.watchAdvertisements === 'function';
+          
+          let instructions = 'chrome://flags/#enable-experimental-web-platform-features\nand set it to "Enabled".';
+          const ua = navigator.userAgent;
+          if (/iPhone|iPad|iPod/i.test(ua)) {
+            instructions = 'Turn on "Enable BLE Advertisements" in Bluefy browser settings.';
+          } else if (/Edg\//i.test(ua)) {
+            instructions = 'edge://flags/#enable-experimental-web-platform-features\nand set it to "Enabled".';
+          }
+          
           const msg = isSupported 
-            ? 'No se pudo detectar la MAC automáticamente.\nPor favor, introduce la dirección MAC de tu cubo GAN (ej. AA:BB:CC:DD:EE:FF):'
-            : 'Tu navegador bloquea la lectura automática.\nPara que funcione solo, copia y pega esto en una nueva pestaña y ponlo en "Enabled":\n\nchrome://flags/#enable-experimental-web-platform-features\n\nO si lo prefieres, introduce la MAC de tu cubo aquí a mano:';
+            ? 'Could not auto-detect MAC Address.\nPlease enter your GAN Cube MAC address (e.g., AA:BB:CC:DD:EE:FF):'
+            : `Your browser blocks automatic MAC reading.\nFor automatic connection, copy & paste this in a new tab:\n\n${instructions}\n\nOr manually enter your cube's MAC address here:`;
           
           const mac = prompt(msg);
           return mac || null;
