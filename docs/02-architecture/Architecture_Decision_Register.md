@@ -11,18 +11,18 @@
 | **DEC-01** | Licensing Compatibility (GPLv3) | Legal | Ready For RFC | Gate 1 | High | Ninguna | Critical | None | No iniciado | No creado | Añadir licencia GPLv3 al repositorio y crear RFC | Architecture Lead |
 | **DEC-02** | PWA Storage & Eviction Policies | Platform | Ready For RFC | Gate 1 | High | Ninguna | Critical | None | No iniciado | No creado | Crear RFC definiendo OPFS + Cloud Sync Fallback | Architecture Lead |
 | **DEC-03** | Web Bluetooth & Mobile Fallbacks | Platform | Ready For RFC | Gate 1 | High | Ninguna | High | None | No iniciado | No creado | Crear RFC de arquitectura BLE + Capacitor | Architecture Lead |
-| **DEC-04** | Monorepo Strategy (Turborepo) | Tooling | Ready For RFC | Gate 1 | Very High | Ninguna | Medium | None | No iniciado | No creado | Crear RFC para configuración del Monorepo | Architecture Lead |
-| **DEC-05** | Package Manager (pnpm) | Tooling | Ready For RFC | Gate 1 | Very High | DEC-04 | Low | None | No iniciado | No creado | Crear RFC | Architecture Lead |
-| **DEC-06** | Repository Structure | Tooling | Ready For RFC | Gate 1 | High | DEC-04, DEC-05 | Medium | None | No iniciado | No creado | Crear RFC para estructura base | Architecture Lead |
+| **DEC-04** | Monorepo Strategy (Turborepo) | Tooling | RFC Review | Gate 1 | Very High | Ninguna | Medium | None | Creado (RFC-001) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
+| **DEC-05** | Package Manager (pnpm) | Tooling | RFC Review | Gate 1 | Very High | DEC-04 | Low | None | Creado (RFC-002) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
+| **DEC-06** | Repository Structure | Tooling | RFC Review | Gate 1 | High | DEC-04, DEC-05 | Medium | None | Creado (RFC-003) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
 | **DEC-07** | Frontend Framework (React+Vite SPA) | Core App | Ready For RFC | Gate 1 | High | DEC-02, DEC-03 | High | None | No iniciado | No creado | Crear RFC de arquitectura frontend | Architecture Lead |
 | **DEC-08** | State Management (Zustand) | Core App | Ready For RFC | Gate 1 | High | DEC-07 | High | None | No iniciado | No creado | Crear RFC de flujo de estado | Architecture Lead |
 | **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | Prototype Required | Gate 1 | Medium | DEC-02 | High | Benchmark, Prototype | No iniciado | No creado | Benchmark de queries complejas vs IndexedDB | Architecture Lead |
 | **DEC-10** | Rendering Strategy (Pure Three.js) | Graphics | Ready For RFC | Gate 1 | High | DEC-01, DEC-08, DEC-11 | Medium | None | No iniciado | No creado | Crear RFC para motor 3D propio | Architecture Lead |
 | **DEC-11** | Solver Engine & WASM (min2phase) | Core App | Ready For RFC | Gate 1 | High | DEC-07, DEC-09 | Medium | None | No iniciado | No creado | Crear RFC para integración de min2phase WASM | Architecture Lead |
 | **DEC-12** | Performance Strategies (Workers) | Core App | Prototype Required | Gate 1 | Medium | DEC-10, DEC-11 | Medium | Benchmark | No iniciado | No creado | Medir overhead de serialización main-thread a worker | Architecture Lead |
-| **DEC-13** | Code Quality & Standards | Tooling | Ready For RFC | Gate 1 | Very High | DEC-06 | Low | None | No iniciado | No creado | Crear RFC para linters y pre-commits | Architecture Lead |
-| **DEC-14** | Testing Stack (Vitest, Playwright) | Tooling | Ready For RFC | Gate 1 | High | DEC-05 | Medium | None | No iniciado | No creado | Crear RFC de Testing | Architecture Lead |
-| **DEC-15** | CI/CD & Publishing (GitHub Actions) | Ops | Ready For RFC | Gate 1 | Very High | DEC-04, DEC-14 | Low | None | No iniciado | No creado | Crear RFC de workflows CI/CD | Architecture Lead |
+| **DEC-13** | Code Quality & Standards | Tooling | RFC Review | Gate 1 | Very High | DEC-06 | Low | None | Creado (RFC-004) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
+| **DEC-14** | Testing Stack (Vitest, Playwright) | Tooling | RFC Review | Gate 1 | High | DEC-05 | Medium | None | Creado (RFC-005) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
+| **DEC-15** | CI/CD & Publishing (GitHub Actions) | Ops | RFC Review | Gate 1 | Very High | DEC-04, DEC-14 | Low | None | Creado (RFC-006) | No creado | Aprobar RFC y crear ADR | Architecture Lead |
 | **DEC-16** | Plugin System Architecture | Core App | Research | Gate 0 | Low | DEC-06, DEC-07 | High | Research | No iniciado | No creado | Investigar inyección de código dinámico en SPA | Architecture Lead |
 | **DEC-17** | Security (Local-first Integrity) | Security | Research | Gate 0 | Low | DEC-09 | Medium | Research | No iniciado | No creado | Investigar mitigación de manipulación de leaderboard local | Architecture Lead |
 | **DEC-18** | Backend & Cloud Sync (Supabase) | Cloud | Awaiting Decision | Gate 1 | High | DEC-09, DEC-17 | High | Human Product Decision | No iniciado | No creado | Definir estrategia de hosting (managed vs self-hosted) | Product Lead |
@@ -52,18 +52,21 @@ Las siguientes decisiones tienen el `Research completado` (Gate 1), un `Confiden
 * **DEC-01:** Licensing Compatibility (GPLv3)
 * **DEC-02:** PWA Storage & Eviction Policies
 * **DEC-03:** Web Bluetooth & Mobile Fallbacks
-* **DEC-04:** Monorepo Strategy
-* **DEC-05:** Package Manager
-* **DEC-06:** Repository Structure
 * **DEC-07:** Frontend Framework & Architecture
 * **DEC-08:** State Management
 * **DEC-10:** Rendering Strategy (Pure Three.js)
 * **DEC-11:** Solver Engine & WASM (min2phase)
-* **DEC-13:** Code Quality & Standards
-* **DEC-14:** Testing Stack
-* **DEC-15:** CI/CD & Publishing
 * **DEC-20:** Documentation Stack
 * **DEC-21:** Open Source Readiness
+
+### Decisions in RFC Review
+
+* **DEC-04:** Monorepo Strategy (RFC-001)
+* **DEC-05:** Package Manager (RFC-002)
+* **DEC-06:** Repository Structure (RFC-003)
+* **DEC-13:** Code Quality & Standards (RFC-004)
+* **DEC-14:** Testing Stack (RFC-005)
+* **DEC-15:** CI/CD & Publishing (RFC-006)
 
 ---
 
