@@ -82,52 +82,53 @@ export class CubeModel {
     const turns = ((quarterTurns % 4) + 4) % 4; // Normalize to 0-3
     if (turns === 0) return;
 
-    const gridKey = axis === 'x' ? 'gridX' : axis === 'y' ? 'gridY' : 'gridZ';
-
     for (const cubie of this.cubies) {
-      if (cubie[gridKey] !== layerValue) continue;
+      // Usar lógica cíclica Right-Handed para que coincida con el quaternion visual
+      if (axis === 'x' && cubie.gridX !== layerValue) continue;
+      if (axis === 'y' && cubie.gridY !== layerValue) continue;
+      if (axis === 'z' && cubie.gridZ !== layerValue) continue;
 
-      // Get the two axes perpendicular to the rotation axis
       let a: number, b: number;
+      // Permutación cíclica estándar para Right-Handed (X: Y->Z, Y: Z->X, Z: X->Y)
       if (axis === 'x') { a = cubie.gridY; b = cubie.gridZ; }
-      else if (axis === 'y') { a = cubie.gridX; b = cubie.gridZ; }
+      else if (axis === 'y') { a = cubie.gridZ; b = cubie.gridX; }
       else { a = cubie.gridX; b = cubie.gridY; }
 
-      // Apply rotation permutation (right-hand rule around positive axis)
       let newA: number, newB: number;
       if (turns === 1) {
-        // +90° (CW looking from +axis): (a, b) → (-b, a)
+        // +90°: (a, b) → (-b, a)
         newA = -b; newB = a;
       } else if (turns === 3) {
-        // -90° (CCW / 270°): (a, b) → (b, -a)
+        // -90° (270°): (a, b) → (b, -a)
         newA = b; newB = -a;
       } else {
         // 180°: (a, b) → (-a, -b)
         newA = -a; newB = -b;
       }
 
-      // Write back to the correct axes
+      // Escribir los resultados
       if (axis === 'x') { cubie.gridY = newA; cubie.gridZ = newB; }
-      else if (axis === 'y') { cubie.gridX = newA; cubie.gridZ = newB; }
+      else if (axis === 'y') { cubie.gridZ = newA; cubie.gridX = newB; }
       else { cubie.gridX = newA; cubie.gridY = newB; }
     }
   }
 
   /**
-   * Snaps all cubie mesh positions to the nearest integer grid coordinates.
+   * Snaps all cubie mesh positions to the exact integer grid coordinates.
    *
-   * CRITICAL FIX: After Three.js's Object3D.attach() preserves world transforms,
-   * positions accumulate floating-point error (e.g. 0.99998 instead of 1.0).
-   * This method rounds them back to clean integers, preventing the drift that
-   * causes getCubiesByFace() to "lose" cubies after multiple rotations.
-   *
-   * This is the same technique used by Sebastian Lague in his Unity implementation.
+   * CRITICAL FIX: Instead of rounding the floating-point position (which can drift),
+   * we FORCE the position to match the logical grid state. This guarantees zero drift.
    */
   public snapCubiePositions(): void {
+    const spacing = 1.0;
     for (const cubie of this.cubies) {
-      cubie.mesh.position.x = Math.round(cubie.mesh.position.x);
-      cubie.mesh.position.y = Math.round(cubie.mesh.position.y);
-      cubie.mesh.position.z = Math.round(cubie.mesh.position.z);
+      cubie.mesh.position.set(
+        cubie.gridX * spacing,
+        cubie.gridY * spacing,
+        cubie.gridZ * spacing
+      );
+      // Normalizar el cuaternión local para prevenir degradación de escala
+      cubie.mesh.quaternion.normalize();
     }
   }
 

@@ -60,6 +60,22 @@ export class SyncBridge {
     await this.workerProxy.rotateLayer(mapping.axis, mapping.layerValue, angle, durationMs);
   }
 
+  /**
+   * Aplica instantáneamente una secuencia de movimientos para sincronizar 
+   * el estado visual inicial con el hardware (ej. al despertar el cubo)
+   * sin ejecutar la animación de los giros.
+   */
+  public async syncState(moves: CubeMoveEvent[]): Promise<void> {
+    for (const move of moves) {
+      const mapping = FACE_ROTATION_MAP[move.face as CubeFace];
+      if (!mapping) continue;
+      const angle = move.direction * mapping.angleSign * 90;
+      
+      // durationMs = 0 asegura un snapping inmediato en RotationEngine
+      await this.workerProxy.rotateLayer(mapping.axis, mapping.layerValue, angle, 0);
+    }
+  }
+
   public unbind(): void {
     this.subs.forEach(sub => sub.unsubscribe());
     this.subs = [];

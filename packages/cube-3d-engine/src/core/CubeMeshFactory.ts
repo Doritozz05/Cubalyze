@@ -141,6 +141,26 @@ export class CubeMeshFactory {
     return { ...this.style };
   }
 
+  /**
+   * Destaca una cara específica de un cubie individual (ej. para aristas pares).
+   * Clona el material compartido solo para esta malla, preservando el pooling global.
+   */
+  public highlightCubie(mesh: import('three').Mesh, face: CubeFace, emissiveColor: string, intensity: number): void {
+    const faceMapping: Record<CubeFace, number> = {
+      R: 0, L: 1, U: 2, D: 3, F: 4, B: 5
+    };
+    const faceIndex = faceMapping[face];
+    
+    if (Array.isArray(mesh.material)) {
+      const clonedMaterials = mesh.material.slice() as MeshStandardMaterial[];
+      const targetMat = clonedMaterials[faceIndex].clone();
+      targetMat.emissive.set(emissiveColor);
+      targetMat.emissiveIntensity = intensity;
+      clonedMaterials[faceIndex] = targetMat;
+      mesh.material = clonedMaterials;
+    }
+  }
+
   public dispose(): void {
     this.geometry.dispose();
     Object.values(this.materials).forEach(mat => mat.dispose());

@@ -60,50 +60,27 @@ export class RotationEngine {
   }
 
   private preparePivot(axis: RotationAxis, layerValue: number, angleInDegrees: number): void {
-    // ── FIX: Reset pivot to identity using quaternion directly ──
-    // Using .rotation.set(0,0,0) sets Euler angles which then get lazily
-    // converted to a quaternion. But if the quaternion was previously set
-    // directly (as we do during animation), Three.js's internal Euler↔Quaternion
-    // sync can be unreliable. Explicitly resetting the quaternion is bulletproof.
     this.pivot.quaternion.identity();
     this.pivot.updateMatrixWorld(true);
 
-    // Get cubies for this layer and attach them to the pivot.
-    // Object3D.attach() preserves world transform when reparenting.
     const targetCubies = this.model.getCubiesByFace(axis, layerValue);
     for (const cubie of targetCubies) {
-      this.pivot.attach(cubie);
+      // Como pivot y cubie comparten el mismo padre (root) y pivot está en identidad,
+      // podemos usar add() en lugar de attach() sin alterar su transform global.
+      this.pivot.add(cubie);
     }
 
-    // ── Set up quaternion interpolation targets ──
-    this.startQuat.copy(this.pivot.quaternion); // identity after reset
+    this.startQuat.copy(this.pivot.quaternion);
 
     this.rotationAxisVec.set(0, 0, 0);
     this.rotationAxisVec[axis] = 1;
 
     const angleRads = MathUtils.degToRad(angleInDegrees);
 
-    // ── FIX: Use pre-allocated rotationOffset (no `new` inside hot path) ──
     this.rotationOffset.setFromAxisAngle(this.rotationAxisVec, angleRads);
-
-    // ── FIX: Correct quaternion multiplication order ──
-    // For a rotation in WORLD space, the formula is:
-    //   Q_final = Q_rotation * Q_current
-    //
-    // Using Q_current * Q_rotation would apply the rotation in LOCAL space
-    // of the pivot — which would be wrong if the pivot ever had a non-identity
-    // starting orientation.
-    //
-    // Since we always reset pivot to identity, both orders produce the same
-    // result. But using the correct world-space order is mathematically
-    // correct and defensive against future changes.
     this.endQuat.copy(this.rotationOffset).multiply(this.startQuat);
   }
 
-  /**
-   * Called every frame from the render loop.
-   * Advances the active rotation animation based on elapsed time.
-   */
   public update(timeNowMs: number): void {
     if (!this.activeTask) return;
 
@@ -117,24 +94,14 @@ export class RotationEngine {
     if (t >= 1.0) {
       this.snapActiveTask();
     } else {
-      // Apply easing from the dedicated Easing module (TDD-0006 compliance)
       const easedT = easeInOutQuad(t);
       this.currentQuat.slerpQuaternions(this.startQuat, this.endQuat, easedT);
       this.pivot.quaternion.copy(this.currentQuat);
-      this.pivot.updateMatrixWorld(true);
     }
   }
 
   /**
    * Immediately completes the active rotation animation.
-   *
-   * This is the most critical method in the engine. The sequence is:
-   * 1. Snap the pivot to the exact final quaternion
-   * 2. Detach all cubies from the pivot back to the root (preserving world transform)
-   * 3. Snap all cubie positions to integer grid (prevent floating-point drift)
-   * 4. Update the logical state model (integer permutation — zero float risk)
-   * 5. Reset the pivot
-   * 6. Resolve the promise
    */
   private snapActiveTask(): void {
     if (!this.activeTask) return;
@@ -143,30 +110,28 @@ export class RotationEngine {
 
     // 1. Snap to the mathematically exact final orientation
     this.pivot.quaternion.copy(this.endQuat);
-    this.pivot.updateMatrixWorld(true);
 
-    // 2. Detach children back to the root group.
-    //    Object3D.attach() preserves world transform, which is what introduces
-    //    the floating-point error that this engine is designed to compensate for.
+    // 2. Aplicar rotación localmente a cada cubie y reparentarlos al root.
+    // Esto evita el uso costoso de attach() y elimina el drift de matriz global.
     while (this.pivot.children.length > 0) {
-      this.model.root.attach(this.pivot.children[0]);
+      const child = this.pivot.children[0];
+      
+      // Aplicar rotación del pivot a la posición y quaternion del hijo (espacio local)
+      child.position.applyQuaternion(this.pivot.quaternion);
+      child.quaternion.premultiply(this.pivot.quaternion);
+      
+      this.model.root.add(child);
     }
 
-    // 3. CRITICAL FIX: Snap mesh positions to nearest integer.
-    //    Without this, positions drift (e.g. 0.99998 instead of 1.0) and
-    //    getCubiesByFace() can no longer find cubies — causing the
-    //    "disappearing layer" bug.
-    this.model.snapCubiePositions();
-
-    // 4. Update the logical integer-based state model.
-    //    This is independent of the scene graph and cannot be corrupted by
-    //    floating-point errors. quarterTurns = angle / 90 (handles 90, -90, 180).
+    // 3. Update the logical integer-based state model.
     const quarterTurns = Math.round(angleInDegrees / 90);
     this.model.updateLogicalState(axis, layerValue, quarterTurns);
 
+    // 4. CRITICAL FIX: Snap mesh positions to logical grid.
+    this.model.snapCubiePositions();
+
     // 5. Reset pivot for next rotation
     this.pivot.quaternion.identity();
-    this.pivot.updateMatrixWorld(true);
 
     // 6. Clear active task and resolve promise
     this.activeTask = null;
