@@ -16,7 +16,7 @@
 | **DEC-06** | Repository Structure                   | Tooling  | ADR Created    | Gate 1        | High       | DEC-04, DEC-05         | Medium     | None                | Aprobado (RFC-003) | Creado (ADR-003) | Implementar estructura                         | Architecture Lead |
 | **DEC-07** | Frontend Framework (React+Vite SPA)    | Core App | ADR Created    | Gate 1        | High       | DEC-02, DEC-03         | High       | None                | Aprobado (RFC-008) | Creado (ADR-008) | Configurar proyecto base Vite                  | Architecture Lead |
 | **DEC-08** | State Management (Zustand)             | Core App | ADR Created    | Gate 1        | High       | DEC-07                 | High       | None                | Aprobado (RFC-009) | Creado (ADR-009) | Configurar stores de Zustand                   | Architecture Lead |
-| **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | Ready For ADR | Gate 1 | High | DEC-02 | High | None | Aprobado (RFC-013) | No creado | Generar ADR para SQLite WASM OPFS | Architecture Lead |
+| **DEC-09** | Offline Database (SQLite WASM/OPFS) | Data | ADR Created | Gate 1 | High | DEC-02 | High | None | Aprobado (RFC-013) | Creado (ADR-013) | Implementar base de datos | Architecture Lead |
 | **DEC-10** | Rendering Strategy (Pure Three.js) | Graphics | Ready For ADR | Gate 1 | High | DEC-01, DEC-08, DEC-11 | Medium | None | Aprobado (RFC-014) | No creado | Generar ADR para motor 3D propio | Architecture Lead |
 | **DEC-11** | Solver Engine & WASM (min2phase) | Core App | Ready For ADR | Gate 1 | High | DEC-07, DEC-09 | Medium | None | Aprobado (RFC-015) | No creado | Generar ADR para integración de min2phase WASM | Architecture Lead |
 | **DEC-12** | Perf. Strategies (Comlink/ArrayBuffer) | Core App | Ready For ADR | Gate 1 | High | DEC-10, DEC-11 | Medium | None | Aprobado (RFC-016) | No creado | Generar ADR para uso de Web Workers | Architecture Lead |
@@ -27,7 +27,7 @@
 | **DEC-17** | Security (Crypto signatures) | Security | Ready For ADR | Gate 1 | High | DEC-09 | Medium | None | Aprobado (RFC-018) | No creado | Generar ADR sobre firmas criptográficas | Architecture Lead |
 | **DEC-18** | Backend (Supabase/Append-only) | Cloud | Ready For ADR | Gate 1 | High | DEC-09, DEC-17 | High | None | Aprobado (RFC-019) | No creado | Generar ADR sobre Supabase y eventos Append-only | Product Lead |
 | **DEC-19** | Accessibility (WAI-ARIA Live Regions) | UI/UX | Ready For ADR | Gate 1 | High | DEC-07 | Low | None | Aprobado (RFC-020) | No creado | Generar ADR sobre WAI-ARIA Live Regions | Architecture Lead |
-| **DEC-20** | Documentation Stack | Tooling | Ready For ADR | Gate 1 | Very High | DEC-04, DEC-07 | Low | None | Aprobado (RFC-021) | No creado | Generar ADR para stack de documentación | Architecture Lead |
+| **DEC-20** | Documentation Stack | Tooling | ADR Created | Gate 1 | Very High | DEC-04, DEC-07 | Low | None | Aprobado (RFC-021) | Creado (ADR-021) | Inicializar TDDs | Architecture Lead |
 | **DEC-21** | Open Source Readiness | Ops | Ready For ADR | Gate 1 | Very High | DEC-20 | Low | None | Aprobado (RFC-022) | No creado | Generar ADR de gobernanza OSS | Architecture Lead |
 | **DEC-22** | Desktop & Mobile Wrappers (Tauri/RN) | Platform | Blocked | Gate 0 | Medium | DEC-03, DEC-07 | Medium | Prototype | No iniciado | No creado | Diferir decisión formal a Milestone 2+ | Architecture Lead |
 | **DEC-23** | Hosting Strategy (Vercel+Supabase) | Ops | ADR Created | Gate 1 | Very High | DEC-07 | Low | None | Aprobado (RFC-007) | Creado (ADR-007) | Configurar proyectos Vercel y Supabase | Architecture Lead |
@@ -49,7 +49,6 @@ El "Critical Path" identifica las decisiones que bloquean el desarrollo arquitec
 
 Las siguientes decisiones han sido formalizadas en RFCs aprobados o listos para ser convertidos en ADRs (Architecture Decision Records).
 
-* **DEC-09:** Offline Database (SQLite WASM/OPFS)
 * **DEC-10:** Rendering Strategy (Pure Three.js)
 * **DEC-11:** Solver Engine & WASM (min2phase)
 * **DEC-12:** Perf. Strategies (Comlink/ArrayBuffer)
@@ -57,7 +56,6 @@ Las siguientes decisiones han sido formalizadas en RFCs aprobados o listos para 
 * **DEC-17:** Security (Crypto signatures)
 * **DEC-18:** Backend (Supabase/Append-only)
 * **DEC-19:** Accessibility (WAI-ARIA Live Regions)
-* **DEC-20:** Documentation Stack
 * **DEC-21:** Open Source Readiness
 * **DEC-24:** Continuous Deployment (Vercel+Supabase)
 
@@ -103,7 +101,7 @@ Evaluación del estado actual de madurez del proceso técnico del proyecto:
   * *Justificación*: El PRD y el Roadmap maestro son sólidos, describiendo detalladamente la funcionalidad, el contexto de negocio y las expectativas de usuario final (Offline-first, modular).
 * **Research Maturity: 100% (Critical Path)**
   * *Justificación*: Se han analizado en profundidad las opciones de stack y los bloqueos críticos (GPLv3, soporte iOS PWA/Bluetooth, OPFS) ya tienen un camino trazado y validado.
-* **Decision Maturity (RFCs/ADRs): 60%**
-  * *Justificación*: No existe ningún RFC ni ADR formalmente redactado ni aprobado. Todo el conocimiento arquitectónico se encuentra aún en estado de recomendación o hipótesis.
-* **Architecture Maturity (General): 85%**
-  * *Justificación*: La plataforma posee una visión técnica clara y un camino definido, pero debido a la falta de validación de los riesgos del Critical Path y la inexistencia de decisiones técnicas formalizadas en ADRs, la arquitectura aún no es apta para la implementación en fase de producción.
+* **Decision Maturity (RFCs/ADRs): 85%**
+  * *Justificación*: Se han aprobado y redactado los ADRs fundacionales requeridos para la Fase 1 (Epic 1). Los RFCs restantes aguardan sus fases correspondientes.
+* **Architecture Maturity (General): 95%**
+  * *Justificación*: La plataforma posee una visión técnica clara y las decisiones del Critical Path inicial (Epic 1) están bloqueadas en ADRs formales. La arquitectura está lista para la implementación del TDD de la Fase 1.1.
