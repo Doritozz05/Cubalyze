@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "project": "CubeForge",
+  "documentation_root": "../",
+  "indexes": {
+    "prd": "../00-product/PRD.md",
+    "roadmap": "../01-roadmap/Master_Roadmap.md",
+    "architecture": "../02-architecture",
+    "adrs": "../03-adr",
+    "tdds": "../05-tdd"
+  },
+  "rules": {
+    "tdds_required_for_code": true,
+    "adrs_immutable": true
+  }
+}
