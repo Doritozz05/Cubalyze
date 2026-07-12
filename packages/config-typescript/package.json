@@ -1,5 +1,9 @@
 {
   "name": "@cubeforge/config-typescript",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.react.json"
+  ]
 }
