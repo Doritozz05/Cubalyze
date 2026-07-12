@@ -32,4 +32,4 @@ This repository is optimized for AI-assisted development. All AI agents must abi
 
 ## The Architecture Guide
 
-For a complete explanation of how to use this documentation ecosystem, the development pipeline, and governance rules, refer to the **Documentation Architecture Guide** (which has been generated and stored in your artifacts/brain folder, and will be linked here once integrated).
+For a complete explanation of how to use this documentation ecosystem, the development pipeline, and governance rules, refer to the **[Documentation Bootstrap Guide](./Documentation_Bootstrap_Guide.md)**.
