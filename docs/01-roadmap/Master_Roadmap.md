@@ -183,7 +183,7 @@ This epic establishes the foundational architecture, CI/CD pipelines, state mana
 **Goal**: Establish the repository structure, tooling, and continuous integration pipeline.
 **Motivation**: Prevents configuration drift and ensures all future phases are built on a standardized, automatically tested foundation.
 **Dependencies**: None.
-**References**: PRD Part 4.1 (Architecture Overview).
+**References**: [PRD Part 4.1](../00-product/PRD.md) (Architecture Overview).
 **Scope**: 
 - Create monorepo workspace.
 - Setup linting, formatting, and test runners.
@@ -198,7 +198,7 @@ This epic establishes the foundational architecture, CI/CD pipelines, state mana
 **Goal**: Define and implement the core state management and offline-first synchronization skeleton.
 **Motivation**: The app must work offline and sync seamlessly. The state management pattern must be robust before UI components are built.
 **Dependencies**: Phase 1.1.
-**References**: PRD Part 4.4, 4.6.
+**References**: [PRD Part 4.4](../00-product/PRD.md), 4.6.
 **Scope**:
 - Setup the core state store.
 - Implement the base interfaces for local persistence (e.g., IndexedDB adapters).
@@ -212,7 +212,7 @@ This epic establishes the foundational architecture, CI/CD pipelines, state mana
 **Goal**: Implement the entities, schemas, and relationships defined in the PRD.
 **Motivation**: A unified language for data is required before building the timer, algorithm DB, or stats engine.
 **Dependencies**: Phase 1.2.
-**References**: PRD Part 15.
+**References**: [PRD Part 15.](../00-product/PRD.md)
 **Scope**:
 - Define types/interfaces for Users, Solves, Sessions, Algorithms.
 - Implement data validation layers.
@@ -226,7 +226,7 @@ This epic establishes the foundational architecture, CI/CD pipelines, state mana
 **Goal**: Build a headless, high-precision manual timer.
 **Motivation**: The absolute core of a speedcubing app is the timer. It must be perfectly accurate and distinct from the UI.
 **Dependencies**: Phase 1.3.
-**References**: PRD Part 12.
+**References**: [PRD Part 12.](../00-product/PRD.md)
 **Scope**:
 - Start/stop logic, WCA inspection phases (15s, +2, DNF).
 - High-precision timestamping.
@@ -245,7 +245,7 @@ This epic handles the physical connection to external Bluetooth Smart Cubes.
 **Goal**: Establish a robust wrapper around the Web Bluetooth API for device discovery and connection.
 **Motivation**: Browser Bluetooth APIs are complex and fail frequently. A stable wrapper is necessary before implementing specific cube protocols.
 **Dependencies**: Phase 1.1.
-**References**: PRD Part 5.1.
+**References**: [PRD Part 5.1.](../00-product/PRD.md)
 **Scope**:
 - Request device, connect to GATT server, handle disconnections.
 - *Excludes*: Parsing specific cube data.
@@ -258,7 +258,7 @@ This epic handles the physical connection to external Bluetooth Smart Cubes.
 **Goal**: Define the standard Interface that all Smart Cubes must implement.
 **Motivation**: Prevents vendor lock-in. The app should interact with a 'Generic Smart Cube', not a 'GAN Cube'.
 **Dependencies**: Phase 2.1.
-**References**: PRD Part 5.1, 5.4.
+**References**: [PRD Part 5.1](../00-product/PRD.md), 5.4.
 **Scope**:
 - Define the standard event payload (face turns, gyroscope data, battery level).
 - *Excludes*: Implementing the interface for a specific cube.
@@ -271,7 +271,7 @@ This epic handles the physical connection to external Bluetooth Smart Cubes.
 **Goal**: Implement the HAL for GAN Smart Cubes.
 **Motivation**: GAN is the most documented and widely used smart cube. It serves as the ideal proof-of-concept for the HAL.
 **Dependencies**: Phase 2.2.
-**References**: PRD Part 5.3, 0.4.1.
+**References**: [PRD Part 5.3](../00-product/PRD.md), 0.4.1.
 **Scope**:
 - Decrypt/Parse GAN BLE payloads.
 - Map GAN moves to the standard HAL events.
@@ -285,7 +285,7 @@ This epic handles the physical connection to external Bluetooth Smart Cubes.
 **Goal**: Ensure physical cube timestamps perfectly align with local system time.
 **Motivation**: Bluetooth latency and hardware clock drift will ruin solve analysis if not aggressively corrected.
 **Dependencies**: Phase 2.3.
-**References**: PRD Part 5.2.
+**References**: [PRD Part 5.2.](../00-product/PRD.md)
 **Scope**:
 - Implement timestamp reconciliation algorithms.
 - Establish baseline latency metrics.
@@ -304,7 +304,7 @@ This epic builds the visual representation of the cube.
 **Goal**: Setup the WebGL/Three.js context and base camera/lighting.
 **Motivation**: The 3D engine must be performant and separate from standard DOM rendering.
 **Dependencies**: Phase 1.1.
-**References**: PRD Part 6.1.
+**References**: [PRD Part 6.1.](../00-product/PRD.md)
 **Scope**:
 - Setup rendering loop.
 - Load base cube meshes/materials.
@@ -318,7 +318,7 @@ This epic builds the visual representation of the cube.
 **Goal**: Implement the mathematical logic to rotate layers and faces visually.
 **Motivation**: The visual cube must respond to algebraic notation (e.g., R, U', F2).
 **Dependencies**: Phase 3.1.
-**References**: PRD Part 6.2.
+**References**: [PRD Part 6.2.](../00-product/PRD.md)
 **Scope**:
 - Map standard notation to quaternion/Euler rotations.
 - Implement tweening for smooth animations.
@@ -332,7 +332,7 @@ This epic builds the visual representation of the cube.
 **Goal**: Connect the HAL to the 3D Engine.
 **Motivation**: The user must see their physical moves mirrored perfectly in the 3D space in real-time.
 **Dependencies**: Phase 2.4, Phase 3.2.
-**References**: PRD Part 6.3.
+**References**: [PRD Part 6.3.](../00-product/PRD.md)
 **Scope**:
 - Create a data bridge between HAL events and the 3D rotation API.
 - Implement interpolation to hide Bluetooth jitter.
@@ -351,7 +351,7 @@ This epic implements the mathematical core required to understand cube states an
 **Goal**: Represent the cube algebraically and implement state transitions headless.
 **Motivation**: The system needs a way to understand what state the cube is in without relying on the 3D visualizer.
 **Dependencies**: Phase 1.1.
-**References**: PRD Part 7.1.
+**References**: [PRD Part 7.1.](../00-product/PRD.md)
 **Scope**:
 - Array/Bitboard representation of the 54 stickers or 20 pieces.
 - Transition matrices for all 18 standard moves.
@@ -365,7 +365,7 @@ This epic implements the mathematical core required to understand cube states an
 **Goal**: Generate officially valid WCA random state scrambles.
 **Motivation**: Users need random, fair scrambles to practice.
 **Dependencies**: Phase 4.1.
-**References**: PRD Part 0.3.3.
+**References**: [PRD Part 0.3.3.](../00-product/PRD.md)
 **Scope**:
 - Port or integrate TNoodle-like random state logic.
 - Ensure no scramble is shorter than 2 moves from solved.
@@ -379,7 +379,7 @@ This epic implements the mathematical core required to understand cube states an
 **Goal**: Implement Kociemba's algorithm (or similar) to find the shortest path to solved.
 **Motivation**: Needed for the "Analysis Engine" to know if a user made a mistake or took an inefficient path.
 **Dependencies**: Phase 4.1.
-**References**: PRD Part 7.3.
+**References**: [PRD Part 7.3.](../00-product/PRD.md)
 **Scope**:
 - Implement two-phase search algorithm.
 - Generate pruning tables.
@@ -393,7 +393,7 @@ This epic implements the mathematical core required to understand cube states an
 **Goal**: Build the framework to recognize specific CFOP or Roux steps.
 **Motivation**: Users don't solve optimally; they use human methods. The engine must understand human methods to provide relevant advice.
 **Dependencies**: Phase 4.3.
-**References**: PRD Part 7.2.
+**References**: [PRD Part 7.2.](../00-product/PRD.md)
 **Scope**:
 - Define state masks for CFOP (Cross, F2L pairs, OLL, PLL).
 - *Excludes*: Real-time tracking of these steps.
@@ -412,7 +412,7 @@ This epic uses the Math Core to provide live analysis of a user's solve as it ha
 **Goal**: Feed HAL events into the Math Core to track the exact cube state over time.
 **Motivation**: The app must know exactly what the cube looks like at any given millisecond.
 **Dependencies**: Phase 2.3 (HAL), Phase 4.1 (Math Core).
-**References**: PRD Part 8.1.
+**References**: [PRD Part 8.1.](../00-product/PRD.md)
 **Scope**:
 - Create an event loop that applies HAL moves to a Math Core instance.
 - Maintain an immutable history of states (Move -> State -> Timestamp).
@@ -426,7 +426,7 @@ This epic uses the Math Core to provide live analysis of a user's solve as it ha
 **Goal**: Apply the Multi-Method Support architecture to the live timeline.
 **Motivation**: The app needs to split the solve into standard human phases automatically.
 **Dependencies**: Phase 4.4, Phase 5.1.
-**References**: PRD Part 8.2.
+**References**: [PRD Part 8.2.](../00-product/PRD.md)
 **Scope**:
 - Run phase detection masks against every state in the timeline.
 - Split the timeline into discrete segments (e.g., "Cross took 2.1s").
@@ -440,7 +440,7 @@ This epic uses the Math Core to provide live analysis of a user's solve as it ha
 **Goal**: Calculate deep analytics for each detected phase.
 **Motivation**: Phase splits alone are not enough; users need to know *why* a phase was slow.
 **Dependencies**: Phase 5.2.
-**References**: PRD Part 11.2.
+**References**: [PRD Part 11.2.](../00-product/PRD.md)
 **Scope**:
 - Calculate Turns Per Second (TPS) per phase.
 - Detect pauses > 0.5s.
@@ -455,7 +455,7 @@ This epic uses the Math Core to provide live analysis of a user's solve as it ha
 **Goal**: Emit metrics in real-time while the user is solving.
 **Motivation**: The app should act as a coach, potentially giving audio feedback or live UI indicators.
 **Dependencies**: Phase 5.3.
-**References**: PRD Part 8.3.
+**References**: [PRD Part 8.3.](../00-product/PRD.md)
 **Scope**:
 - Stream metrics to an event bus.
 - Implement 'Training Mode' vs 'Free Solve' logic (where telemetry is hidden during Free Solve).
@@ -474,7 +474,7 @@ This epic provides the core value proposition for users wanting to learn new met
 **Goal**: Establish the definitive source of truth for all OLL, PLL, and F2L algorithms.
 **Motivation**: A unified database is required before any training module can be built.
 **Dependencies**: Phase 1.3.
-**References**: PRD Part 10.1, 10.2.
+**References**: [PRD Part 10.1](../00-product/PRD.md), 10.2.
 **Scope**:
 - Define the DB schema for Algorithms, Sets, and Subsets.
 - Populate the database with standard CFOP algs.
@@ -488,7 +488,7 @@ This epic provides the core value proposition for users wanting to learn new met
 **Goal**: Build the core loop for algorithm drill training.
 **Motivation**: Users need to practice specific cases repeatedly.
 **Dependencies**: Phase 4.2 (Scrambler), Phase 6.1 (Alg DB).
-**References**: PRD Part 9.1.
+**References**: [PRD Part 9.1.](../00-product/PRD.md)
 **Scope**:
 - Generate scrambles that result in a specific algorithm case.
 - Verify if the user successfully solved the specific case.
@@ -502,7 +502,7 @@ This epic provides the core value proposition for users wanting to learn new met
 **Goal**: Track the user's mastery of every single algorithm in the database.
 **Motivation**: The app must know what the user knows, and how fast they execute it.
 **Dependencies**: Phase 1.3, Phase 6.2.
-**References**: PRD Part 9.2.
+**References**: [PRD Part 9.2.](../00-product/PRD.md)
 **Scope**:
 - Store execution times, TPS, and failure rates per algorithm per user.
 - *Excludes*: Spaced repetition logic.
@@ -515,7 +515,7 @@ This epic provides the core value proposition for users wanting to learn new met
 **Goal**: Automatically schedule training modules based on decay curves.
 **Motivation**: Optimal learning requires reviewing algorithms just before they are forgotten.
 **Dependencies**: Phase 6.3.
-**References**: PRD Part 9.3.
+**References**: [PRD Part 9.3.](../00-product/PRD.md)
 **Scope**:
 - Implement an SRS algorithm (e.g., SM-2 or similar).
 - Generate daily "Recommended Training" playlists.
@@ -534,7 +534,7 @@ This epic handles the aggregation and visualization of data.
 **Goal**: Aggregate raw solves into daily, weekly, and monthly trends.
 **Motivation**: Users need to see their macro-progression (e.g., Global Ao100 over the last year).
 **Dependencies**: Phase 1.3, Phase 1.4.
-**References**: PRD Part 11.1.
+**References**: [PRD Part 11.1.](../00-product/PRD.md)
 **Scope**:
 - Implement rolling averages (Ao5, Ao12, Ao100).
 - Generate time-series datasets for charting.
@@ -548,7 +548,7 @@ This epic handles the aggregation and visualization of data.
 **Goal**: Compare the user's metrics against optimal baselines or peer groups.
 **Motivation**: Users need to know *where* they are losing time compared to better cubers.
 **Dependencies**: Phase 5.3, Phase 7.1.
-**References**: PRD Part 11.2.
+**References**: [PRD Part 11.2.](../00-product/PRD.md)
 **Scope**:
 - Calculate "Cross-to-F2L transition time" averages.
 - Compare user phase splits against target ratios (e.g., Cross should be 12% of total time).
@@ -562,7 +562,7 @@ This epic handles the aggregation and visualization of data.
 **Goal**: Allow users to own their data.
 **Motivation**: Speedcubers use multiple tools (csTimer); data portability is a core philosophical pillar.
 **Dependencies**: Phase 7.1.
-**References**: PRD Part 11.4.
+**References**: [PRD Part 11.4.](../00-product/PRD.md)
 **Scope**:
 - Export sessions to standard formats (CSV, JSON, csTimer format).
 - *Excludes*: Public REST APIs for third-party apps.
@@ -580,7 +580,7 @@ This epic introduces the intelligent layer of CubeForge.
 **Goal**: Establish the connection to the LLM backend (e.g., OpenAI/Anthropic/Local).
 **Motivation**: The app needs a secure, rate-limited way to ask an LLM questions about a user's data.
 **Dependencies**: Phase 1.1.
-**References**: PRD Part 13.1.
+**References**: [PRD Part 13.1.](../00-product/PRD.md)
 **Scope**:
 - Setup API clients, prompt management, and response parsing.
 - *Excludes*: Generating actual cubing advice.
@@ -593,7 +593,7 @@ This epic introduces the intelligent layer of CubeForge.
 **Goal**: Use the LLM to interpret the Differential Analysis data and provide human-readable advice.
 **Motivation**: Raw data is intimidating; users need actionable insights.
 **Dependencies**: Phase 7.2, Phase 8.1.
-**References**: PRD Part 13.2.
+**References**: [PRD Part 13.2.](../00-product/PRD.md)
 **Scope**:
 - Inject statistical data into a specialized prompt.
 - Generate weekly "Coach Reports".
@@ -607,7 +607,7 @@ This epic introduces the intelligent layer of CubeForge.
 **Goal**: Allow users to ask natural language questions about their solves or algorithms.
 **Motivation**: A chat interface provides the ultimate personalized coaching experience.
 **Dependencies**: Phase 8.2.
-**References**: PRD Part 13.2.
+**References**: [PRD Part 13.2.](../00-product/PRD.md)
 **Scope**:
 - RAG (Retrieval-Augmented Generation) pipeline linking the LLM to the Algorithm DB and the user's recent solves.
 - *Excludes*: Voice recognition.
@@ -625,7 +625,7 @@ This epic handles the final polish, cloud infrastructure, and public release pre
 **Goal**: Implement the visual design language, animations, and achievement systems.
 **Motivation**: The app must feel premium, responsive, and rewarding to use.
 **Dependencies**: All previous Epics.
-**References**: PRD Part 14.
+**References**: [PRD Part 14.](../00-product/PRD.md)
 **Scope**:
 - Implement the design system (Dark mode, glassmorphism).
 - Build the achievement unlocking logic.
@@ -639,10 +639,10 @@ This epic handles the final polish, cloud infrastructure, and public release pre
 **Goal**: Move the offline-first data to the cloud securely.
 **Motivation**: Users need their data backed up and synced across devices.
 **Dependencies**: Phase 1.2.
-**References**: PRD Part 4.6.
+**References**: [PRD Part 4.6.](../00-product/PRD.md)
 **Scope**:
-- Setup the backend database (e.g., PostgreSQL/Supabase).
-- Implement Conflict-Free Replicated Data Types (CRDTs) or timestamp-based conflict resolution.
+- Setup the backend database (e.g., Relational DB).
+- Implement Conflict-Free Replicated Data Types (Conflict-Free Datatypes) or timestamp-based conflict resolution.
 - *Excludes*: Social networking features.
 **Deliverables**: A seamless cloud synchronization service.
 **Exit Criteria**: A solve recorded on a mobile device appears on a desktop browser within 2 seconds.
@@ -653,7 +653,7 @@ This epic handles the final polish, cloud infrastructure, and public release pre
 **Goal**: Expose the Hardware Abstraction Layer and Math Core as public npm packages.
 **Motivation**: Establish CubeForge as an ecosystem platform, not just an app.
 **Dependencies**: Phase 2.2, Phase 4.1.
-**References**: PRD Part 5.4.
+**References**: [PRD Part 5.4.](../00-product/PRD.md)
 **Scope**:
 - Document the APIs.
 - Setup CI/CD for public npm publishing.

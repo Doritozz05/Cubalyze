@@ -40,19 +40,34 @@ To maintain the Single Source of Truth and architectural integrity, the followin
 - 🚫 **Do NOT ignore failing tests.** If you break a test, you must fix it or adjust it if the requirement legally changed per the TDD.
 - 🚫 **Do NOT remove existing docstrings or comments** unless they are factually incorrect based on your new code.
 
-## 5. Coding & Architecture Boundaries
+## 5. Authoritative vs. Exploratory Documents
+
+AI Agents must treat documents differently depending on their location in the lifecycle:
+- **Authoritative** (Treat as absolute truth. Update synchronously with code changes):
+  - `00-product/` (PRD)
+  - `01-roadmap/` (Master Roadmap)
+  - `02-architecture/overview/`
+  - `03-adr/`
+  - `05-tdd/`
+  - `06-api/` & `07-database/`
+- **Exploratory / Historical** (Read-only context. Do NOT treat as final decisions):
+  - `02-architecture/research/`
+  - `04-rfc/`
+  - `18-archive/`
+
+## 6. Coding & Architecture Boundaries
 
 - **Local-First Priority**: Do not introduce network dependencies unless building explicit cloud-sync modules.
 - **Modularity**: Respect the boundaries defined in the TDD. Do not mix UI rendering logic with Math Core logic.
 - **Hardware Abstraction**: All smart cube interactions must pass through the defined HAL (Hardware Abstraction Layer). Never interact directly with BLE adapters from UI components.
 
-## 6. TDD and ADR Workflow
+## 7. TDD and ADR Workflow
 
 If you are asked to design a system (acting as an Architect):
 - **For Technologies**: Create an `RFC` if research is needed. Create an `ADR` only if the decision is final and approved by the user.
 - **For Implementation**: Author a `TDD` explaining the specific files, schemas, and interfaces that will be created. Request user approval before writing the implementation code.
 
-## 7. Quality Gates
+## 8. Quality Gates
 
 Your work is subject to strict Quality Gates:
 - **Definition of Ready (DoR)**: A task is ready for AI coding ONLY when a complete TDD exists, all dependencies in the Master Roadmap are met, and relevant ADRs are approved.

@@ -38,6 +38,12 @@ The documentation is organized sequentially to match the software development li
 No document should ever be an orphan. Always refer to the specific Index or README of the folder you are in.
 Every folder explains its purpose. If you are lost, start here or in the [Architecture Index](02-architecture/Architecture_Index.md).
 
+### The Documentation Lifecycle Flow
+To guarantee maintainability, we strictly follow this sequence from idea to code:
+**[1. PRD](00-product/PRD.md)** -> **[2. Roadmap](01-roadmap/Master_Roadmap.md)** -> **[3. Research](02-architecture/research/Architecture_Research_Roadmap.md)** -> **[4. RFC](04-rfc/README.md)** -> **[5. ADR](03-adr/README.md)** -> **[6. Arch Overview](02-architecture/Architecture_Index.md)** -> **[7. TDD](05-tdd/README.md)** -> **Implementation**
+
+Never skip a step for major features.
+
 ## Standards and Governance
 
 This documentation is strictly governed. Refer to the [Architecture & Documentation Standards](08-standards/Architecture_and_Documentation_Standards.md) for rules on naming, metadata, document lifecycles, and formatting. **Never create a document from scratch without using a template from `_templates/`.**

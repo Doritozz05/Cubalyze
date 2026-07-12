@@ -7,6 +7,10 @@
 
 ---
 
+> [!IMPORTANT]
+> **Responsibility Notice**: This document serves as the initial product vision and structural baseline. It does **not** track ongoing architectural decisions. All immutable architecture state is maintained in the [`02-architecture/`](../02-architecture/Architecture_Index.md) and [`03-adr/`](../03-adr/README.md) ecosystems.
+> **Next Step**: For the execution and delivery plan, see the [Master Roadmap](../01-roadmap/Master_Roadmap.md).
+
 ## INDEX
 
 - **PART 0 — Research and Ecosystem**
@@ -83,12 +87,12 @@ A 2026 analysis article summarizes the state of the art in real-time analytics w
 The algorithmic heart of the sector converges on **Herbert Kociemba's two-phase algorithm**. There are multiple reference implementations that should be reused instead of re-implemented:
 
 - **`hkociemba/RubiksCube-TwophaseSolver`** (Python) — solves the Rubik's cube in less than 19 moves on average. It is the reference implementation by the algorithm's author himself.
-- **`cs0x7f/min2phase`** (Java, with JS port) — optimized implementation of Kociemba's two-phase algorithm, with documented performance metrics: after complete initialization, each solve takes around 2.3 ms on average, with guaranteed solutions of no more than 21 moves. This is the recommended option for use in the browser/Node.js server due to its speed/table size balance.
+- **`cs0x7f/min2phase`** (Java, with JS port) — optimized implementation of Kociemba's two-phase algorithm, with documented performance metrics: after complete initialization, each solve takes around 2.3 ms on average, with guaranteed solutions of no more than 21 moves. This is the recommended option for use in the browser/Backend Service server due to its speed/table size balance.
 - **`rokicki/twophase.js`** — JavaScript port of Kociemba's two-phase solver, derived from cube20.org, useful as an alternative or for cross-validation.
 - **`torjusti/cube-solver`** (JS) — not only solves the full cube, it also allows solving sub-steps like the cross, Roux's first block, or ZZ's EOLine, and generating scrambles filtered by case (for example, generating a specific ZBLL scramble), which is directly applicable to the sub-step training engine described in Part 9. The project itself acknowledges that its full solver is slower than compiled versions of min2phase, so its ideal role is as an auxiliary sub-step engine, not the main engine.
 - **`efrantar/rob-twophase`** — ultra-optimized C++ variant intended for physical resolution robots; interesting as a reference for performance limits, not as a direct dependency.
 
-**Recommended architecture decision**: use **min2phase (WASM/JS port)** as the main solver embedded in the client (allowing 100% offline and zero network latency analysis), with a server fallback (Node.js) for low-end devices or massive batch calculations (e.g., historical re-analysis of thousands of solves).
+**Recommended architecture decision**: use **min2phase (WASM/JS port)** as the main solver embedded in the client (allowing 100% offline and zero network latency analysis), with a server fallback (Backend Service) for low-end devices or massive batch calculations (e.g., historical re-analysis of thousands of solves).
 
 ### 0.3.3 Official scramble generation — TNoodle
 
@@ -190,14 +194,14 @@ CubeForge is intended as the reference software layer for serious speedcubing: t
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                         CLIENTS (Frontend)                           │
-│   Web App (PWA)  |  Mobile App (React Native / Flutter) |  Desktop   │
+│   Web App (PWA)  |  Mobile App (Native Multiplatform) |  Desktop   │
 │                                                                        │
 │   ┌────────────┐ ┌───────────────┐ ┌───────────────┐ ┌────────────┐  │
 │   │ Timer Core │ │ Cube3D Engine │ │ Analysis UI   │ │ Trainer UI │  │
 │   └────────────┘ └───────────────┘ └───────────────┘ └────────────┘  │
 │               │              │               │              │        │
 │   ┌───────────┴──────────────┴───────────────┴──────────────┴────┐   │
-│   │        Local State Layer (offline-first: IndexedDB/SQLite)   │   │
+│   │        Local State Layer (offline-first: Local Data Store)   │   │
 │   └───────────────┬─────────────────────────────────────────────┘    │
 └───────────────────┼──────────────────────────────────────────────────┘
                      │  Sync Engine (event-based, conflict resolution)
@@ -214,7 +218,7 @@ CubeForge is intended as the reference software layer for serious speedcubing: t
 │   └─────┬─────────────────────────────────────────────────────────┘   │
 │         │                                                             │
 │   ┌─────┴──────┐  ┌──────────────┐  ┌───────────────┐  ┌──────────┐   │
-│   │ PostgreSQL │  │ Time-series  │  │ Object Storage│  │  Cache   │   │
+│   │ Relational DB │  │ Time-series  │  │ Object Storage│  │  Cache   │   │
 │   │(relational)│  │ DB (events)  │  │(reconstruct.) │  │ (Redis)  │   │
 │   └────────────┘  └──────────────┘  └───────────────┘  └──────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
@@ -225,7 +229,7 @@ CubeForge is intended as the reference software layer for serious speedcubing: t
 The frontend is designed **local-first**: all timing logic, cube event decoding, and basic analysis runs on the client (browser or native app), without relying on network round-trips. This is indispensable because remote server latency is incompatible with the millisecond precision required for speedcubing timing.
 
 - **Web**: Component-based SPA, with Web Bluetooth as the hardware access layer (Chrome/Edge/Opera; Safari and iOS require native app fallback due to lack of Web Bluetooth support).
-- **Mobile**: Native app (React Native or Flutter) using native Bluetooth LE, essential for iOS.
+- **Mobile**: Native app (Native Multiplatform Framework) using native Bluetooth LE, essential for iOS.
 - **Desktop**: Packaged type Tauri/Electron reusing the same web core, with more stable native BLE access than in browser (pattern already validated by projects like `gan-cube-windows-app`, built in Tauri + Rust on the same GAN protocol library).
 - **Cube3D Engine**: 3D rendering engine (Part 6), isolated as an independent reusable module in web, desktop, and potentially video overlays.
 
@@ -265,7 +269,7 @@ Each plugin registers against a stable versioned interface contract (semver), so
 
 ## 4.6 Offline-first and synchronization
 
-- **Client**: IndexedDB (web) / SQLite (mobile/desktop) as local source of truth.
+- **Client**: Local Data Store as local source of truth.
 - **Sync Queue**: offline-generated events are queued and sent as soon as there is connectivity, with idempotent ID deduplication.
 - **Conflict resolution**: given the append-only model (4.4), real conflicts are minimal; for mutable entities (profile, training config), *last-write-wins* is applied with vector versioning and user notification in cases of genuine conflict (simultaneous editing on two devices).
 
@@ -362,8 +366,8 @@ The engine must run in an independent Web Worker from the main UI thread to prev
 
 ## 7.1 Mathematical core
 
-- **Main Solver**: WASM/JS port of **min2phase**, embedded in the client, with progressive table initialization (same as the documented behavior of min2phase itself: first solves are slower while tables are generated, then solves in a few milliseconds).
-- **Server fallback**: same engine executed in Node.js for low-end devices, massive batch re-analysis, and large-scale training scramble generation.
+- **Main Solver**: **Fast Two-Phase Solver Engine**, embedded in the client, with progressive table initialization (same as the documented behavior of min2phase itself: first solves are slower while tables are generated, then solves in a few milliseconds).
+- **Server fallback**: same engine executed in Backend Service for low-end devices, massive batch re-analysis, and large-scale training scramble generation.
 - **Scramble generation**: custom adapter inspired by `tnoodle-cli`, making it explicit in the UI that **they are not certified official scrambles**, only "competition-grade" for training.
 
 ## 7.2 Multi-method support
@@ -641,7 +645,7 @@ User (1) ───< Goal (N)
 ## 15.2 Scalability considerations
 
 - **MoveEvent** is by far the highest write volume table (each solve generates dozens of events). Storage in a time-series database or partitioning by user/date in the relational store is recommended, physically separated from low cardinality tables (Algorithm, AlgorithmSet).
-- **Solve** and **AnalysisResult** are kept in the main relational store (PostgreSQL), with indexes by user, date, and event for dashboard/stats queries.
+- **Solve** and **AnalysisResult** are kept in the main relational store (Relational DB), with indexes by user, date, and event for dashboard/stats queries.
 - **Full reconstructions** (entire move stream + metadata for 3D playback) can be stored in Object Storage in compressed format, referenced from `Solve`, avoiding bloating the relational DB with blobs.
 - **Cache** (Redis) for expensive frequently used aggregations (dashboard moving averages).
 

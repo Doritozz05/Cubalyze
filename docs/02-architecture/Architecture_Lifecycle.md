@@ -8,42 +8,42 @@ This document defines the complete flow of an architectural decision from incept
 **Owner**: Product Owner / Lead Architect
 **Purpose**: Define the *what* and *why*.
 - **Inputs**: Feature request, user feedback, or technical debt identified.
-- **Outputs**: PRD (Product Requirements Document) updated.
+- **Outputs**: PRD (Product Requirements Document) updated in `[00-product/](../00-product/README.md)`.
 - **Rules**: No technical implementation details are allowed here. Only what the user needs and the domain constraints.
 
 ## 2. Architecture Research
 **Owner**: Exploring Engineer / AI Agent
 **Purpose**: Systematically eliminate technical uncertainty. 
 - **Inputs**: PRD, Domain Knowledge.
-- **Outputs**: A Research Report, Prototype, or Benchmark located in `02-architecture/research/`.
+- **Outputs**: A Research Report, Prototype, or Benchmark located in `[02-architecture/research/](./research/Architecture_Research_Roadmap.md)`.
 - **Rules**: Research must answer specific questions outlined in the Architecture Research Roadmap. This phase is purely exploratory.
 
 ## 3. RFC (Request for Comments)
 **Owner**: Lead Architect / Proposing Engineer
 **Purpose**: Propose a specific technical solution based on the research.
 - **Inputs**: Completed Research Report, Benchmarks.
-- **Outputs**: An RFC document in `04-rfc/`.
+- **Outputs**: An RFC document in `[04-rfc/](../04-rfc/README.md)`.
 - **Rules**: The RFC must list alternatives considered, trade-offs, and an expected implementation plan. It is open for debate.
 
 ## 4. ADR (Architecture Decision Record)
 **Owner**: Lead Architect (Approver)
 **Purpose**: Formally record the final, immutable decision.
 - **Inputs**: Approved RFC.
-- **Outputs**: An ADR document in `03-adr/`.
+- **Outputs**: An ADR document in `[03-adr/](../03-adr/README.md)`.
 - **Rules**: Once an ADR is merged, the decision is locked. Any changes to this decision require a new RFC and a new ADR deprecating the old one.
 
 ## 5. Architecture Overview Update
 **Owner**: Lead Architect
 **Purpose**: Keep the "Current State of Truth" accurate.
 - **Inputs**: New ADR.
-- **Outputs**: Updated documents in `02-architecture/overview/` and `02-architecture/diagrams/`.
+- **Outputs**: Updated documents in `[02-architecture/overview/](./Architecture_Index.md)` and `[02-architecture/diagrams/](./Architecture_Index.md)`.
 - **Rules**: Overviews and diagrams must instantly reflect the new ADR. If they go out of sync, the documentation fails.
 
 ## 6. TDD (Technical Design Document)
 **Owner**: Implementing Engineer
 **Purpose**: Map out the exact module-level implementation plan.
 - **Inputs**: ADR, Architecture Overview.
-- **Outputs**: A TDD document in `05-tdd/`.
+- **Outputs**: A TDD document in `[05-tdd/](../05-tdd/README.md)`.
 - **Rules**: No architectural decisions are made here. Only software design (classes, interfaces, database schemas).
 
 ## 7. Implementation & Release

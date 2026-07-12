@@ -1,10 +1,10 @@
 # 07 Database
 
 ## Purpose
-[Explain the purpose of this directory]
+This directory serves as the authoritative location for 07 Database documentation within the CubeForge ecosystem.
 
 ## Contents
-- [List documents or refer to an index]
+This folder contains all artifacts related to 07 Database.
 
 ## Governance
-Please refer to `docs/08-standards/Architecture_and_Documentation_Standards.md` for rules regarding documents in this folder.
+Please refer to [Architecture & Documentation Standards](../08-standards/Architecture_and_Documentation_Standards.md) for rules regarding documents in this folder.
