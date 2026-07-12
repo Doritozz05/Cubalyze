@@ -1,4 +1,4 @@
-import { BoxGeometry, MeshStandardMaterial, Color, DoubleSide } from 'three';
+import { BoxGeometry, MeshStandardMaterial, Color } from 'three';
 import type { CubeFace } from '@cubeforge/types';
 
 export interface CubeStyleOptions {

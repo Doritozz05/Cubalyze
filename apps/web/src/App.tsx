@@ -4,8 +4,8 @@ import { GanCubeAdapter } from '@cubeforge/hardware-hal'
 import { SyncBridge } from '@cubeforge/cube-3d-engine'
 import type { EngineWorkerAPI } from '@cubeforge/cube-3d-engine'
 
-// Instantiate worker using native Vite handling
-import EngineWorker from '@cubeforge/cube-3d-engine/src/workers/EngineWorker?worker'
+// @ts-expect-error - Vite handles ?worker imports natively but TS might complain without vite/client
+import EngineWorker from '../../../packages/cube-3d-engine/src/workers/EngineWorker?worker'
 
 import './App.css'
 
@@ -27,7 +27,7 @@ function App() {
     
     // Setup Worker
     workerInstance.current = new EngineWorker();
-    workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current);
+    workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current!);
     syncBridge.current = new SyncBridge(workerProxy.current);
 
     // Setup OffscreenCanvas robustly for HMR

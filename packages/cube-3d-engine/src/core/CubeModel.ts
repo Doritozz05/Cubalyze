@@ -1,4 +1,4 @@
-import { Group, Mesh, Vector3 } from 'three';
+import { Group, Mesh } from 'three';
 import { CubeMeshFactory } from './CubeMeshFactory';
 
 /**

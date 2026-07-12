@@ -3,7 +3,21 @@
   "version": "1.0.0",
   "description": "Core 3D Engine for CubeForge using Three.js and Web Workers",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./worker": {
+      "import": "./dist/workers/EngineWorker.mjs",
+      "require": "./dist/workers/EngineWorker.js",
+      "types": "./dist/workers/EngineWorker.d.ts"
+    },
+    "./src/*": "./src/*"
+  },
   "scripts": {
     "build": "tsup src/index.ts src/workers/EngineWorker.ts --format esm,cjs --dts",
     "dev": "tsup src/index.ts src/workers/EngineWorker.ts --format esm,cjs --watch",

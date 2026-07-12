@@ -1,8 +1,8 @@
 import * as Comlink from 'comlink';
 import { SceneManager } from '../core/SceneManager';
-import { CubeMeshFactory, CubeStyleOptions } from '../core/CubeMeshFactory';
+import { CubeMeshFactory, type CubeStyleOptions } from '../core/CubeMeshFactory';
 import { CubeModel } from '../core/CubeModel';
-import { RotationEngine, RotationAxis } from '../animation/RotationEngine';
+import { RotationEngine, type RotationAxis } from '../animation/RotationEngine';
 import { GyroFusion } from '../hardware/GyroFusion';
 import type { CubeFace } from '@cubeforge/types';
 
