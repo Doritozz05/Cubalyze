@@ -5,7 +5,8 @@
   "indexes": {
     "prd": "../00-product/PRD.md",
     "roadmap": "../01-roadmap/Master_Roadmap.md",
-    "architecture": "../02-architecture",
+    "architecture": "../02-architecture/Architecture_Index.md",
+    "domain": "../00-product/domain/README.md",
     "adrs": "../03-adr",
     "tdds": "../05-tdd"
   },
