@@ -6,6 +6,7 @@ Welcome to the CubeForge Documentation repository. This `docs/` folder is the **
 
 The documentation is organized sequentially to match the software development lifecycle. Every document must have a single clear responsibility.
 
+- `_templates/` - Standardized templates for all document types.
 - `00-product/` - Product requirements and vision.
   - `domain/` - **Domain Knowledge**: The business rules and reality of speedcubing (WCA rules, notation, algorithms).
 - `01-roadmap/` - Strategic roadmap and execution planning.
@@ -20,7 +21,7 @@ The documentation is organized sequentially to match the software development li
 - `05-tdd/` - Technical Design Documents (Module-level implementation plans).
 - `06-api/` - API specifications and interfaces.
 - `07-database/` - Database schemas and migrations.
-- `08-standards/` - Coding and engineering standards.
+- `08-standards/` - Coding, engineering, and documentation standards.
 - `09-testing/` - Test strategies, frameworks, and plans.
 - `10-security/` - Threat models, audits, and privacy policies.
 - `11-devops/` - CI/CD, environments, and deployment guides.
@@ -35,11 +36,15 @@ The documentation is organized sequentially to match the software development li
 ## Navigation & Wayfinding
 
 No document should ever be an orphan. Always refer to the specific Index or README of the folder you are in.
-If you are lost, start here or in the [Architecture Index](02-architecture/Architecture_Index.md).
+Every folder explains its purpose. If you are lost, start here or in the [Architecture Index](02-architecture/Architecture_Index.md).
+
+## Standards and Governance
+
+This documentation is strictly governed. Refer to the [Architecture & Documentation Standards](08-standards/Architecture_and_Documentation_Standards.md) for rules on naming, metadata, document lifecycles, and formatting. **Never create a document from scratch without using a template from `_templates/`.**
 
 ## AI-First Development
 
-This repository is optimized for AI-assisted development. All AI agents must abide by the rules defined in [`14-ai/AGENTS.md`](./14-ai/AGENTS.md).
+This repository is optimized for AI-assisted development. All AI agents must abide by the rules defined in [`14-ai/AGENTS.md`](./14-ai/AGENTS.md). The documentation structure is designed for deterministic navigation, minimal context switching, and low hallucination risk.
 
 ## The Bootstrap Guide
 
