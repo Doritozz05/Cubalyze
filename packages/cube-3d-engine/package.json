@@ -10,6 +10,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@cubeforge/types": "workspace:*",
     "three": "^0.160.0",
     "comlink": "^4.4.1",
     "rxjs": "^7.8.1"

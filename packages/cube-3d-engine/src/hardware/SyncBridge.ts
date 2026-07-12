@@ -1,19 +1,18 @@
 import { Subscription } from 'rxjs';
+import type { Observable } from 'rxjs';
 import type * as Comlink from 'comlink';
 import type { EngineWorkerAPI } from '../workers/EngineWorker';
+import type { CubeMoveEvent, GyroEvent, CubeFace } from '@cubeforge/types';
+import { FACE_ROTATION_MAP } from '@cubeforge/types';
 
-export interface CubeMoveEvent {
-  face: string; // 'U', 'R', etc.
-  direction: number; // 1 (cw), -1 (ccw), 2 (double)
-}
-
-export interface GyroEvent {
-  x: number;
-  y: number;
-  z: number;
-  w: number;
-}
-
+/**
+ * Bridges hardware cube events (from the HAL layer) to the 3D rendering engine.
+ *
+ * Translates CubeMoveEvents (face + direction) into 3D rotation commands
+ * (axis + layerValue + angle) using the canonical FACE_ROTATION_MAP from
+ * @cubeforge/types — eliminating the duplicate switch statement that
+ * previously existed here.
+ */
 export class SyncBridge {
   private workerProxy: Comlink.Remote<EngineWorkerAPI>;
   private subs: Subscription[] = [];
@@ -22,7 +21,14 @@ export class SyncBridge {
     this.workerProxy = workerProxy;
   }
 
-  public bindCube(moves$: any, gyro$: any): void {
+  /**
+   * Subscribes to a smart cube's move and gyroscope streams.
+   * Automatically unbinds any previous subscriptions before binding new ones.
+   */
+  public bindCube(
+    moves$: Observable<CubeMoveEvent>,
+    gyro$?: Observable<GyroEvent>
+  ): void {
     this.unbind();
 
     this.subs.push(
@@ -41,22 +47,17 @@ export class SyncBridge {
   }
 
   private async applyMove(move: CubeMoveEvent): Promise<void> {
-    const durationMs = 150; // default animation time
-    let axis: 'x' | 'y' | 'z';
-    let layerValue: number;
-    let angle = move.direction * -90;
+    const durationMs = 150; // Default animation time per TDD-0006
 
-    switch (move.face) {
-      case 'U': axis = 'y'; layerValue = 1; angle = move.direction * -90; break;
-      case 'D': axis = 'y'; layerValue = -1; angle = move.direction * 90; break;
-      case 'R': axis = 'x'; layerValue = 1; angle = move.direction * -90; break;
-      case 'L': axis = 'x'; layerValue = -1; angle = move.direction * 90; break;
-      case 'F': axis = 'z'; layerValue = 1; angle = move.direction * -90; break;
-      case 'B': axis = 'z'; layerValue = -1; angle = move.direction * 90; break;
-      default: return; // ignore unknown
-    }
+    const mapping = FACE_ROTATION_MAP[move.face as CubeFace];
+    if (!mapping) return; // Ignore unknown faces
 
-    await this.workerProxy.rotateLayer(axis, layerValue, angle, durationMs);
+    // Calculate rotation angle:
+    // direction (1, -1, or 2) × angleSign from the mapping × 90°
+    // For half-turns (direction=2), angle = ±180°
+    const angle = move.direction * mapping.angleSign * 90;
+
+    await this.workerProxy.rotateLayer(mapping.axis, mapping.layerValue, angle, durationMs);
   }
 
   public unbind(): void {

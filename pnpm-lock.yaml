@@ -37,6 +37,9 @@ importers:
       '@cubeforge/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
+      '@cubeforge/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       comlink:
         specifier: ^4.4.2
         version: 4.4.2
@@ -120,6 +123,9 @@ importers:
 
   packages/cube-3d-engine:
     dependencies:
+      '@cubeforge/types':
+        specifier: workspace:*
+        version: link:../types
       comlink:
         specifier: ^4.4.1
         version: 4.4.2
@@ -198,6 +204,9 @@ importers:
       '@cubeforge/timer-engine':
         specifier: workspace:*
         version: link:../timer-engine
+      '@cubeforge/types':
+        specifier: workspace:*
+        version: link:../types
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
@@ -283,6 +292,18 @@ importers:
         version: 3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)
 
   packages/training: {}
+
+  packages/types:
+    devDependencies:
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      tsup:
+        specifier: ^8.3.6
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
 
   packages/ui:
     dependencies:

@@ -12,6 +12,7 @@
   "dependencies": {
     "@cubeforge/cube-3d-engine": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
+    "@cubeforge/types": "workspace:*",
     "comlink": "^4.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

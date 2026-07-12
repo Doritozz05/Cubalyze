@@ -1,4 +1,5 @@
 import { BoxGeometry, MeshStandardMaterial, Color, DoubleSide } from 'three';
+import type { CubeFace } from '@cubeforge/types';
 
 export interface CubeStyleOptions {
   borderless: boolean;
@@ -26,13 +27,21 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
   },
 };
 
+/**
+ * Manages geometry and material pooling for the 27 cubies.
+ *
+ * PRD Part 6.2 requires dynamic visual customization:
+ * - Change face colors at runtime (themes, color-blind mode)
+ * - Highlight specific cubies or edges (analysis overlays)
+ * - Update global style without recreating the scene graph
+ */
 export class CubeMeshFactory {
   private geometry: BoxGeometry;
   private materials: Record<string, MeshStandardMaterial> = {};
   private style: CubeStyleOptions;
 
   constructor(style: CubeStyleOptions = DEFAULT_STYLE) {
-    this.style = style;
+    this.style = { ...style };
     // Single shared geometry for all 27 cubies to pool memory
     const size = this.style.borderless ? 1.0 : 0.95;
     this.geometry = new BoxGeometry(size, size, size);
@@ -75,6 +84,61 @@ export class CubeMeshFactory {
       z === 1 ? this.materials['F'] : this.materials['Inner'],
       z === -1 ? this.materials['B'] : this.materials['Inner'],
     ];
+  }
+
+  // ─── Dynamic Visual API (PRD Part 6.2 Compliance) ───────────────────────
+
+  /**
+   * Changes the color of a specific face at runtime.
+   * Since materials are shared (pooled), this instantly affects all cubies
+   * that have this face exposed — no scene graph traversal needed.
+   *
+   * @example factory.setFaceColor('U', '#ff0000') // Turn the top face red
+   */
+  public setFaceColor(face: CubeFace | 'Inner', color: string): void {
+    const material = this.materials[face];
+    if (material) {
+      material.color.set(color);
+      material.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Applies a complete new style (all face colors and border mode).
+   * Does NOT recreate geometry — only updates material colors.
+   *
+   * @example factory.updateStyle({ ...DEFAULT_STYLE, colors: { ...DEFAULT_STYLE.colors, U: '#ff69b4' } })
+   */
+  public updateStyle(newStyle: Partial<CubeStyleOptions>): void {
+    if (newStyle.colors) {
+      for (const [face, color] of Object.entries(newStyle.colors)) {
+        this.setFaceColor(face as CubeFace | 'Inner', color);
+      }
+      this.style.colors = { ...this.style.colors, ...newStyle.colors };
+    }
+  }
+
+  /**
+   * Sets the emissive (glow) color and intensity on a specific face's material.
+   * Useful for highlighting specific edges or layers during analysis overlays.
+   *
+   * @example factory.setFaceEmissive('R', '#ff0000', 0.3) // Subtle red glow on right face
+   * @example factory.setFaceEmissive('R', '#000000', 0)   // Remove highlight
+   */
+  public setFaceEmissive(face: CubeFace | 'Inner', emissiveColor: string, intensity: number): void {
+    const material = this.materials[face];
+    if (material) {
+      material.emissive.set(emissiveColor);
+      material.emissiveIntensity = intensity;
+      material.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Returns the current style configuration (read-only snapshot).
+   */
+  public getStyle(): Readonly<CubeStyleOptions> {
+    return { ...this.style };
   }
 
   public dispose(): void {

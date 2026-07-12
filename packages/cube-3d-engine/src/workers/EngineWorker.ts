@@ -1,9 +1,10 @@
 import * as Comlink from 'comlink';
 import { SceneManager } from '../core/SceneManager';
-import { CubeMeshFactory } from '../core/CubeMeshFactory';
+import { CubeMeshFactory, CubeStyleOptions } from '../core/CubeMeshFactory';
 import { CubeModel } from '../core/CubeModel';
 import { RotationEngine, RotationAxis } from '../animation/RotationEngine';
 import { GyroFusion } from '../hardware/GyroFusion';
+import type { CubeFace } from '@cubeforge/types';
 
 export class EngineWorkerAPI {
   private sceneManager!: SceneManager;
@@ -42,6 +43,39 @@ export class EngineWorkerAPI {
   public updateGyro(x: number, y: number, z: number, w: number) {
     this.gyroFusion.enable();
     this.gyroFusion.updateTargetQuaternion(x, y, z, w);
+  }
+
+  /** Calibrates the gyroscope — sets the current orientation as the "zero" reference */
+  public calibrateGyro() {
+    this.gyroFusion.calibrate();
+  }
+
+  /** Resets gyroscope calibration to raw input */
+  public resetGyroCalibration() {
+    this.gyroFusion.resetCalibration();
+  }
+
+  // ─── Visual API pass-through ────────────────────────────────────────────
+
+  /** Changes a single face color at runtime */
+  public setFaceColor(face: string, color: string) {
+    if (this.factory) {
+      this.factory.setFaceColor(face as CubeFace | 'Inner', color);
+    }
+  }
+
+  /** Sets emissive highlight on a face (for analysis overlays) */
+  public setFaceEmissive(face: string, emissiveColor: string, intensity: number) {
+    if (this.factory) {
+      this.factory.setFaceEmissive(face as CubeFace | 'Inner', emissiveColor, intensity);
+    }
+  }
+
+  /** Updates the entire color scheme */
+  public updateStyle(newStyle: Partial<CubeStyleOptions>) {
+    if (this.factory) {
+      this.factory.updateStyle(newStyle);
+    }
   }
 
   private loop = (timeMs: number) => {

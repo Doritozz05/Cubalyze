@@ -1,7 +1,24 @@
-import { Observable, Subject } from 'rxjs';
-import { SmartCubeAdapter, CubeMoveEvent, GyroEvent } from '../interfaces/SmartCubeAdapter';
+import { Subject } from 'rxjs';
+import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
+import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { connectGanCube, GanCubeConnection } from '@cubeforge/gan-protocol';
 import { ClockDriftReconciler } from '../sync/ClockDrift';
+
+/**
+ * Parses a move string like "U", "U'", "U2" into face + direction.
+ * Returns null for unrecognised notation.
+ */
+function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
+  const match = move.match(/^([UDRLBF])([2']?)$/);
+  if (!match) return null;
+
+  const face = match[1] as CubeFace;
+  let direction: CubeMoveDirection = 1; // clockwise by default
+  if (match[2] === "'") direction = -1;
+  else if (match[2] === '2') direction = 2;
+
+  return { face, direction };
+}
 
 export class GanCubeAdapter implements SmartCubeAdapter {
   public readonly vendor = 'GAN';
@@ -49,8 +66,13 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         const cubeTs = evt.cubeTimestamp ?? hostNow;
         this.reconciler.addDataPoint(cubeTs, hostNow);
         
+        // Parse notation string (e.g. "U", "U'", "U2") into face + direction
+        const parsed = parseMoveNotation(evt.move);
+        if (!parsed) return; // Skip unrecognized moves
+        
         this.movesSubject.next({
-          face: evt.move,
+          face: parsed.face,
+          direction: parsed.direction,
           cubeTimestamp: cubeTs,
           hostTimestamp: this.reconciler.reconcile(cubeTs)
         });

@@ -1,17 +1,8 @@
 import { Observable } from 'rxjs';
+import type { CubeMoveEvent, GyroEvent } from '@cubeforge/types';
 
-export interface GyroEvent {
-  x: number;
-  y: number;
-  z: number;
-  w?: number; // Quaternion
-}
-
-export interface CubeMoveEvent {
-  face: string;           // "U", "R'", "F2"
-  cubeTimestamp: number;  // Internal time from cube (can have drift)
-  hostTimestamp: number;  // Browser's performance.now()
-}
+// Re-export from @cubeforge/types so consumers can import from either place
+export type { CubeMoveEvent, GyroEvent } from '@cubeforge/types';
 
 export interface SmartCubeAdapter {
   readonly vendor: string;

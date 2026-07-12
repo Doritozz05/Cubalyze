@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import * as Comlink from 'comlink'
 import { GanCubeAdapter } from '@cubeforge/hardware-hal'
-import { SyncBridge } from '../../../packages/cube-3d-engine/src/hardware/SyncBridge'
-import type { EngineWorkerAPI } from '@cubeforge/cube-3d-engine/src/workers/EngineWorker'
+import { SyncBridge } from '@cubeforge/cube-3d-engine'
+import type { EngineWorkerAPI } from '@cubeforge/cube-3d-engine'
 
 // Instantiate worker using native Vite handling
 import EngineWorker from '@cubeforge/cube-3d-engine/src/workers/EngineWorker?worker'
@@ -62,14 +62,15 @@ function App() {
       setStatus('Connected!');
       setShowMacInput(false);
       
-      // Bind moves
+      // Bind moves and gyroscope streams from the HAL to the 3D engine
       if (syncBridge.current && adapter.moves$) {
         syncBridge.current.bindCube(adapter.moves$, adapter.gyro$);
       }
     } catch (e: unknown) {
       console.error(e);
       const errMsg = e instanceof Error ? e.message : String(e);
-      // MAC_REQUIRED es lanzado por GanCubeAdapter, y errores sobre 'requestDevice' suelen significar que falta la API web bluetooth (por la flag).
+      // MAC_REQUIRED is thrown by GanCubeAdapter; errors about 'requestDevice' usually
+      // mean the Web Bluetooth API is blocked by the browser (missing experimental flag).
       const requiresExperimental = errMsg === 'MAC_REQUIRED' || errMsg.includes('requestDevice') || errMsg.includes('bluetooth') || !('bluetooth' in navigator);
       
       if (requiresExperimental) {
@@ -78,6 +79,12 @@ function App() {
       } else {
         setStatus('Failed to connect: ' + errMsg);
       }
+    }
+  }
+
+  const calibrateGyro = () => {
+    if (workerProxy.current) {
+      workerProxy.current.calibrateGyro();
     }
   }
 
@@ -90,9 +97,14 @@ function App() {
       <h1>CubeForge Engine Test</h1>
       
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-        <button onClick={connectCube} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-          Connect GAN Cube
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={connectCube} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
+            Connect GAN Cube
+          </button>
+          <button onClick={calibrateGyro} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
+            Calibrate Gyro
+          </button>
+        </div>
         <p style={{ fontWeight: 'bold' }}>Status: {status}</p>
 
         {showMacInput && (
