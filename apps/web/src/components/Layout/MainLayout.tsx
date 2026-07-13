@@ -123,7 +123,7 @@ export function MainLayout({
             </span>
             <span className="sm:hidden">Tap &amp; hold the timer to start</span>
           </div>
-          <span className="nums shrink-0 tracking-tight">cubit · v0.1</span>
+          <span className="nums shrink-0 tracking-tight">cubeforge · v0.1</span>
         </div>
       </footer>
     </div>

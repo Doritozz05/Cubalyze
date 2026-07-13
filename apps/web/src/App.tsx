@@ -131,7 +131,7 @@ export default function App() {
 
   // Best-effort keep the document title in sync with session size.
   useEffect(() => {
-    document.title = `cubit — ${solves.length} solves`;
+    document.title = `cubeforge — ${solves.length} solves`;
   }, [solves.length]);
 
   const validSolves = solves.filter(s => s.penalty !== "DNF");

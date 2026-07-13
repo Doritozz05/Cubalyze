@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import type { Solve as UISolve, Penalty } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { initDB, SessionsRepository, SolvesRepository } from "@cubeforge/database";
+import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -31,13 +31,14 @@ export interface UsePersistentSessionResult {
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   clearSession: () => Promise<void>;
+  newSession: (name?: string, puzzle?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
   renameSession: (id: string, name: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
 }
 
 // Convert DB solve to UI solve
-function toUISolve(dbSolve: any): UISolve {
+function toUISolve(dbSolve: DBSolve): UISolve {
   return {
     id: dbSolve.id,
     time: dbSolve.timeMs,
@@ -86,10 +87,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
           allSessions = await sessionsRepo.findAll();
         }
         
-        let lastActive = localStorage.getItem("cubit:activeSessionId");
+        let lastActive = localStorage.getItem("cubeforge:activeSessionId");
         if (!lastActive || !allSessions.find(s => s.id === lastActive)) {
           lastActive = allSessions[0].id;
-          localStorage.setItem("cubit:activeSessionId", lastActive);
+          localStorage.setItem("cubeforge:activeSessionId", lastActive);
         }
 
         if (!isMounted) return;
@@ -222,7 +223,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     
     setSessions(prev => [meta, ...prev]);
     setActiveSessionId(newSess.id);
-    localStorage.setItem("cubit:activeSessionId", newSess.id);
+    localStorage.setItem("cubeforge:activeSessionId", newSess.id);
     setSolves([]);
   }, []);
 
@@ -231,7 +232,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const { solves: solvesRepo } = reposRef.current;
     
     setActiveSessionId(id);
-    localStorage.setItem("cubit:activeSessionId", id);
+    localStorage.setItem("cubeforge:activeSessionId", id);
     
     setLoading(true);
     const activeSolves = await solvesRepo.findAll(id);

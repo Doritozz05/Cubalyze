@@ -119,7 +119,7 @@ export function Header({
             <Grid3x3 className="size-4" />
           </div>
           <span className="nums text-base font-semibold tracking-tight text-ink">
-            cubit
+            cubeforge
           </span>
           <span className="hidden h-3.5 w-px bg-line md:inline" aria-hidden />
           <span className="hidden text-[0.68rem] uppercase tracking-[0.2em] text-ink-3 md:inline">
@@ -265,14 +265,14 @@ export function Header({
           </Select>
 
           <Button
-            variant={cube3DActive ? "default" : "ghost"}
+            variant="ghost"
             size="icon"
             onClick={onToggleCube3D}
             className={cn(
               "size-8 rounded-md border",
               cube3DActive
                 ? "bg-ink text-surface hover:bg-ink/90 border-transparent"
-                : "border-line bg-surface text-ink hover:bg-surface-2",
+                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
             )}
             aria-label={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
             aria-pressed={cube3DActive}
