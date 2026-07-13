@@ -56,13 +56,13 @@ Before proposing a single screen or database table, a sweep of the existing spee
 
 The ecosystem is organized into five layers that are rarely unified in a single product — and that fragmentation is, in itself, the greatest finding of the research:
 
-| Layer                                | Function                                                      | Representatives                                             |
-| ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------- |
-| **Pure Timers**                      | Timing, averages, sessions                                    | csTimer, Twisty Timer, qqTimer, Stackmat                    |
-| **Smart Cube Analytics**             | BLE move capture, phase splits                                | Cubeast, CubeDesk, GAN Cube Station / GAN iStation, acubemy |
-| **Algorithm trainers**               | Spaced repetition of OLL/PLL/F2L                              | CubeSkills, JPerm.net, csTimer (partial)                    |
-| **Algorithm databases**              | Queryable case repositories                                   | AlgDB, SpeedCubeDB                                          |
-| **Engine infrastructure**            | Optimal solving, scramble generation, visualization           | Kociemba/min2phase, TNoodle, cubing.js/Twizzle              |
+| Layer                           | Function                                            | Representatives                                             |
+| ------------------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
+| **Pure Timers**           | Timing, averages, sessions                          | csTimer, Twisty Timer, qqTimer, Stackmat                    |
+| **Smart Cube Analytics**  | BLE move capture, phase splits                      | Cubeast, CubeDesk, GAN Cube Station / GAN iStation, acubemy |
+| **Algorithm trainers**    | Spaced repetition of OLL/PLL/F2L                    | CubeSkills, JPerm.net, csTimer (partial)                    |
+| **Algorithm databases**   | Queryable case repositories                         | AlgDB, SpeedCubeDB                                          |
+| **Engine infrastructure** | Optimal solving, scramble generation, visualization | Kociemba/min2phase, TNoodle, cubing.js/Twizzle              |
 
 No current platform coherently unifies the five layers with a modern, extensible, and AI-oriented architecture. That is the product opportunity.
 
@@ -134,16 +134,16 @@ The current official scrambles program is TNoodle-WCA, which generates high-qual
 
 # PART 1 — COMPETITIVE STUDY (BENCHMARK)
 
-| Product                               | Strengths                                                                                         | Weaknesses                                                                                   | Smart Cube                        | Analysis                | Training                    | Technical Scalability        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------- | --------------------------- | ---------------------------- |
-| **csTimer**                           | Most complete scrambles engine; huge community; free; offline PWA                                 | Outdated UI; monolithic code difficult to extend; no AI; limited phase analysis              | Yes (partial, multiple makers)    | Basic                   | Basic case trainer          | Low (legacy architecture)    |
-| **Twisty Timer**                      | Extreme simplicity; lightweight; full offline                                                     | No smart cube; no analysis; no structured training                                           | No                                | No                      | No                          | Low (closed app, no API)     |
-| **Cubeast**                           | Pioneer in hardware analytics; good phase splits UX                                               | Closed ecosystem; limited maker coverage; no modern AI engine                                | Yes                               | Medium-high             | Medium                      | Medium                       |
-| **CubeDesk**                          | Native cross-platform; polished UX; integrated algorithm trainer                                  | Smaller community; limited advanced analysis features                                        | Partial                           | Medium                  | Medium                      | Medium                       |
-| **GAN Cube Station / iStation**       | Seamless integration with proprietary hardware; real-time phase splits                            | Total vendor lock-in (GAN cubes only); closed ecosystem                                      | Yes (GAN only)                    | High (its hardware only)| Medium                      | Low (single-maker)           |
-| **acubemy**                           | Explicit focus on AI and personalized training plans; detection of "hidden flaws"                 | Young product, small community, limited event coverage                                       | Yes                               | High                    | High (AI-oriented)          | Unknown (new product)        |
-| **AlgDB / SpeedCubeDB**               | Comprehensive queryable algorithm databases                                                       | No timer, no tracking, no integration with real solves                                       | No                                | No                      | Passive query               | Medium                       |
-| **CubeSkills / JPerm**                | Extremely high-quality educational content (video, theory)                                        | Not a software platform; no automatic tracking                                               | No                                | No                      | Content, not interactive    | N/A                          |
+| Product                               | Strengths                                                                         | Weaknesses                                                                      | Smart Cube                     | Analysis                 | Training                 | Technical Scalability     |
+| ------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------ | ------------------------ | ------------------------ | ------------------------- |
+| **csTimer**                     | Most complete scrambles engine; huge community; free; offline PWA                 | Outdated UI; monolithic code difficult to extend; no AI; limited phase analysis | Yes (partial, multiple makers) | Basic                    | Basic case trainer       | Low (legacy architecture) |
+| **Twisty Timer**                | Extreme simplicity; lightweight; full offline                                     | No smart cube; no analysis; no structured training                              | No                             | No                       | No                       | Low (closed app, no API)  |
+| **Cubeast**                     | Pioneer in hardware analytics; good phase splits UX                               | Closed ecosystem; limited maker coverage; no modern AI engine                   | Yes                            | Medium-high              | Medium                   | Medium                    |
+| **CubeDesk**                    | Native cross-platform; polished UX; integrated algorithm trainer                  | Smaller community; limited advanced analysis features                           | Partial                        | Medium                   | Medium                   | Medium                    |
+| **GAN Cube Station / iStation** | Seamless integration with proprietary hardware; real-time phase splits            | Total vendor lock-in (GAN cubes only); closed ecosystem                         | Yes (GAN only)                 | High (its hardware only) | Medium                   | Low (single-maker)        |
+| **acubemy**                     | Explicit focus on AI and personalized training plans; detection of "hidden flaws" | Young product, small community, limited event coverage                          | Yes                            | High                     | High (AI-oriented)       | Unknown (new product)     |
+| **AlgDB / SpeedCubeDB**         | Comprehensive queryable algorithm databases                                       | No timer, no tracking, no integration with real solves                          | No                             | No                       | Passive query            | Medium                    |
+| **CubeSkills / JPerm**          | Extremely high-quality educational content (video, theory)                        | Not a software platform; no automatic tracking                                  | No                             | No                       | Content, not interactive | N/A                       |
 
 ### What CubeForge would do better than all of them
 
@@ -237,17 +237,17 @@ The frontend is designed **local-first**: all timing logic, cube event decoding,
 
 Lightweight microservices architecture (or "modular monolith" in early stages, with service boundaries already defined to facilitate future extraction):
 
-| Service                | Responsibility                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| **Auth & Profile**     | Identity, profiles, preferences, declared solving methods                               |
-| **Solve Ingest**       | Reception, validation, and storage of solves (timing + move stream)                     |
-| **Algorithm Database** | CRUD and querying of the algorithm library (Part 10)                                    |
-| **Training Engine**    | Spaced repetition logic, generation of training sessions                                |
-| **Analysis Engine**    | Efficiency metrics calculation, phase detection, comparison with optimal                |
-| **AI Service**         | Orchestration of AI models (Part 13), explanations, recommendations                     |
-| **Solver Service**     | Optimal/sub-optimal solving on demand (server fallback to client solver)                |
-| **Stats Service**      | Aggregations, moving averages, time series, export                                      |
-| **Community Service**  | Comparisons, challenges, optional public sharing                                        |
+| Service                      | Responsibility                                                           |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| **Auth & Profile**     | Identity, profiles, preferences, declared solving methods                |
+| **Solve Ingest**       | Reception, validation, and storage of solves (timing + move stream)      |
+| **Algorithm Database** | CRUD and querying of the algorithm library (Part 10)                     |
+| **Training Engine**    | Spaced repetition logic, generation of training sessions                 |
+| **Analysis Engine**    | Efficiency metrics calculation, phase detection, comparison with optimal |
+| **AI Service**         | Orchestration of AI models (Part 13), explanations, recommendations      |
+| **Solver Service**     | Optimal/sub-optimal solving on demand (server fallback to client solver) |
+| **Stats Service**      | Aggregations, moving averages, time series, export                       |
+| **Community Service**  | Comparisons, challenges, optional public sharing                         |
 
 ## 4.4 Event system and synchronization
 
@@ -279,6 +279,7 @@ Each plugin registers against a stable versioned interface contract (semver), so
 - Managed and reversible database migrations (never destructive changes without data migration).
 - Encryption in transit (TLS) and at rest for profile data; cube move events, not being sensitive personal data, can be stored with more flexible retention policies but always with total export/deletion option (GDPR-like compliance).
 - CI/CD with mandatory test suite on the Solver Service (mathematical verification: any generated scramble must be solvable in ≤ 20 HTM moves, known God's limit for the 3x3 cube).
+
 ---
 
 # PART 5 — SMART CUBES INTEGRATION
@@ -319,13 +320,13 @@ Every hardware adapter must pass its raw timestamps through the clock adjustment
 
 ## 5.3 Adapters Roadmap
 
-| Priority | Manufacturer             | Public documentation state                                                | Strategy                                         |
-| -------- | ------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------ |
-| P0       | GAN (Gen2/3/4, incl. i3) | Excellent (multiple open source implementations)                          | Adapt `gan-web-bluetooth`                        |
-| P1       | MoYu                     | Partial (mostly documented inside csTimer code)                            | Reverse engineering assisted by csTimer code     |
-| P1       | QiYi                     | Partial                                                                    | Reverse engineering assisted by csTimer code     |
-| P2       | Giiker                   | Old protocol, unencrypted, already documented by community years ago       | Direct adapter, low complexity                   |
-| P3       | Future manufacturers     | N/A                                                                        | Via public plugin SDK for the community          |
+| Priority | Manufacturer             | Public documentation state                                           | Strategy                                     |
+| -------- | ------------------------ | -------------------------------------------------------------------- | -------------------------------------------- |
+| P0       | GAN (Gen2/3/4, incl. i3) | Excellent (multiple open source implementations)                     | Adapt`gan-web-bluetooth`                   |
+| P1       | MoYu                     | Partial (mostly documented inside csTimer code)                      | Reverse engineering assisted by csTimer code |
+| P1       | QiYi                     | Partial                                                              | Reverse engineering assisted by csTimer code |
+| P2       | Giiker                   | Old protocol, unencrypted, already documented by community years ago | Direct adapter, low complexity               |
+| P3       | Future manufacturers     | N/A                                                                  | Via public plugin SDK for the community      |
 
 ## 5.4 Public adapters SDK
 
@@ -471,23 +472,23 @@ Given that the analysis engine will improve over time, each analysis result stor
 
 Each trainer is a plugin (Part 4.5) that consumes the Algorithm Database (Part 10) and the Solver Engine (Part 7) to generate directed practice sessions:
 
-| Module                          | Scope                                                                                |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| **Cross Trainer**               | Cross recognition and execution practice                                             |
-| **XCross Trainer**              | Extended cross (cross + first pair)                                                  |
-| **F2L Trainer**                 | The 41 standard F2L cases, filterable by pair/angle                                  |
-| **OLL Trainer**                 | 57 OLL cases                                                                         |
-| **PLL Trainer**                 | 21 PLL cases                                                                         |
-| **COLL**                        | Combined corner orientation + permutation (for advanced CFOP methods)                |
-| **WV (Winter Variation)**       | Combined last F2L pair + OLL cases                                                   |
-| **VLS (Valk Last Slot)**        | Extension of WV to more cases                                                        |
-| **ZBLL**                        | Last two layers oriented, full permutation                                           |
-| **LSLL**                        | Entire last layer after EO (used in ZZ)                                              |
-| **EO Trainer**                  | Edge Orientation (ZZ)                                                                |
-| **Roux Trainer**                | CMLL, LSE, blocks                                                                    |
-| **ZZ Trainer**                  | ZZ's EOLine, F2L, LL                                                                 |
-| **Petrus Trainer**              | 2x2x2/2x2x3 blocks, expansion                                                        |
-| **Custom Cases**                | The user can create their own practice sets (own algorithms, variants)               |
+| Module                          | Scope                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| **Cross Trainer**         | Cross recognition and execution practice                               |
+| **XCross Trainer**        | Extended cross (cross + first pair)                                    |
+| **F2L Trainer**           | The 41 standard F2L cases, filterable by pair/angle                    |
+| **OLL Trainer**           | 57 OLL cases                                                           |
+| **PLL Trainer**           | 21 PLL cases                                                           |
+| **COLL**                  | Combined corner orientation + permutation (for advanced CFOP methods)  |
+| **WV (Winter Variation)** | Combined last F2L pair + OLL cases                                     |
+| **VLS (Valk Last Slot)**  | Extension of WV to more cases                                          |
+| **ZBLL**                  | Last two layers oriented, full permutation                             |
+| **LSLL**                  | Entire last layer after EO (used in ZZ)                                |
+| **EO Trainer**            | Edge Orientation (ZZ)                                                  |
+| **Roux Trainer**          | CMLL, LSE, blocks                                                      |
+| **ZZ Trainer**            | ZZ's EOLine, F2L, LL                                                   |
+| **Petrus Trainer**        | 2x2x2/2x2x3 blocks, expansion                                          |
+| **Custom Cases**          | The user can create their own practice sets (own algorithms, variants) |
 
 ## 9.2 Algorithm progress model
 
@@ -533,6 +534,7 @@ The database is designed to be importable/exportable in formats compatible with 
 - Base catalog curated by the team (canonical, verified algorithms).
 - Extension by the community (alternative algorithms, variants) with a verification/voting system before entering the platform's "official" catalog.
 - Fully private user algorithms (custom sets) are never mixed with the public catalog unless explicitly published.
+
 ---
 
 # PART 11 — TRACKING AND STATISTICS SYSTEM
@@ -567,13 +569,13 @@ Full export in open formats (CSV, JSON compatible with csTimer where reasonable)
 
 # PART 12 — TIMERS SYSTEM
 
-| Type                          | Description                                                                     | Precision                                         | Offline |
-| ----------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------- | ------- |
-| **Manual**                    | Spacebar / double Ctrl / touch, like csTimer                                    | High (limited by human input)                     | Yes     |
-| **Smart Cube**                | Start/stop derived from the HAL's move stream (Part 5)                          | Very high (with clock drift correction, 5.2)      | Yes     |
-| **Generic Bluetooth**         | Dedicated BLE timers (e.g., GAN Smart Timer)                                    | Very high                                         | Yes     |
-| **Stackmat**                  | Standard competition physical timer, via audio interface/adapter                | Very high (competition standard)                  | Yes     |
-| **Future expansions**         | Any timing source that implements the HAL's `TimerSource` contract              | —                                                 | —       |
+| Type                        | Description                                                         | Precision                                    | Offline |
+| --------------------------- | ------------------------------------------------------------------- | -------------------------------------------- | ------- |
+| **Manual**            | Spacebar / double Ctrl / touch, like csTimer                        | High (limited by human input)                | Yes     |
+| **Smart Cube**        | Start/stop derived from the HAL's move stream (Part 5)              | Very high (with clock drift correction, 5.2) | Yes     |
+| **Generic Bluetooth** | Dedicated BLE timers (e.g., GAN Smart Timer)                        | Very high                                    | Yes     |
+| **Stackmat**          | Standard competition physical timer, via audio interface/adapter    | Very high (competition standard)             | Yes     |
+| **Future expansions** | Any timing source that implements the HAL's`TimerSource` contract | —                                           | —      |
 
 All timer types are normalized to a common `TimerSource` interface so that the rest of the system (analysis, tracking, training) is agnostic to the timing source used.
 
@@ -662,6 +664,7 @@ User (1) ───< Goal (N)
 The implementation roadmap has been extracted from this document to maintain single responsibility and now resides in its own master document.
 
 Please, refer to [Master_Roadmap.md](../01-roadmap/Master_Roadmap.md) to access:
+
 - Incremental delivery strategy
 - Dependency management
 - Breakdown into Atomic Phases
@@ -701,6 +704,7 @@ The `Master_Roadmap.md` document is the single source of truth for planning and 
 
 - cubing/cubing.js (Twizzle) — https://github.com/cubing/cubing.js/
 - Experiments and reference apps — https://experiments.cubing.net/cubing.js/
+- [github.com/SebLague/Rubiks-Cube](https://github.com/SebLague/Rubiks-Cube)
 
 **Smart cubes protocols**
 
