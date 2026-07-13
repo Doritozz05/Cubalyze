@@ -66,6 +66,13 @@ function App() {
       if (syncBridge.current && adapter.moves$) {
         syncBridge.current.bindCube(adapter.moves$, adapter.gyro$);
       }
+
+      // Request facelet state so SyncBridge can initialise the 3D scene
+      adapter.requestFacelets().catch(() => {});
+      adapter.onFacelets = (facelets) => {
+        console.log('[Sync] Initial facelets received:', facelets);
+        // TODO: Convert facelets to CubieMoveEvent[] and call syncBridge.syncState()
+      };
     } catch (e: unknown) {
       console.error(e);
       const errMsg = e instanceof Error ? e.message : String(e);

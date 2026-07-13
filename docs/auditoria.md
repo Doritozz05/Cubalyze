@@ -9,13 +9,16 @@
 
 ### B-1 🔴 Crítico — Race condition: primeros movimientos BLE perdidos tras conectar
 
-| Campo                   | Valor                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**        | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Archivos**      | `packages/gan-protocol/src/gan-cube-protocol.ts:199,213`                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **Solución**      | `events$` cambiado de `Subject` a `ReplaySubject<GanCubeEvent>(1)` en `GanCubeClassicConnection`. Esto bufferiza el último evento emitido y lo replica al suscriptor aunque la suscripción ocurra después de `startNotifications()`. Se eliminó import de `Subject` y se añadió `ReplaySubject` de RxJS.                                                                                                                                                                                          |
+| Campo                   | Valor                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Estado**        | ✅ Corregido (parcial)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Archivos**      | `packages/gan-protocol/src/gan-cube-protocol.ts:199,213`, `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:28`                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Solución**      | **Dos niveles de gap:**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|                         | 1. **Protocolo `events$`** → cambiado de `Subject` a `ReplaySubject<GanCubeEvent>(3)` (antes buffer=1, ahora buffer=3 para no perder FACELETS+MOVE+GYRO). Se eliminó import de `Subject` y se añadió `ReplaySubject` de RxJS.                                                                                                                                                                                                                                                                                                                                |
+|                         | 2. **Adapter `movesSubject`** → cambiado de `Subject` a `ReplaySubject<CubeMoveEvent>(1)`. Aunque `events$` replays el último evento al adapter, el adapter lo reenviaba a `movesSubject` (Subject plano) que perdía el evento si `SyncBridge.bindCube()` no se había suscrito aún. `App.tsx` subscribe `bindCube()` después de `connect()`, dejando una ventana donde el primer movimiento se perdía. Ahora ReplaySubject(1) bufferiza ese primer movimiento para el suscriptor tardío. |
 
-- [x] Corregido
+- [x] Corregido (nivel protocolo)
+- [x] Corregido (nivel adapter)
 
 ---
 
@@ -62,6 +65,19 @@
 | **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanTimerAdapter.ts:27-56`                                                                                                                                                                                                                                                                                                                                              |
 | **Solución** | `IDLE` separado del case `hardwareUp` y ahora emite `hardwareReset`. `RUNNING` no necesita case (el timeout del protocolo es informativo; TimerEngine deriva estado de eventos hardwareDown/hardwareUp). |
+
+- [x] Corregido
+
+---
+
+### B-6 🟠 Alto — Gen3/Gen4 ProtocolDriver: half-turns convertidos a CW quarter-turn
+
+| Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Archivos** | `packages/gan-protocol/src/gan-cube-protocol.ts:640-642`, `packages/gan-protocol/src/gan-cube-protocol.ts:929-931`                                                                                                                                                                                                                                                                                           |
+| **Problema** | `let move = "URFDLB".charAt(face) + " '".charAt(direction);` donde `direction` es 2 bits (0=CW, 1=CCW, 2=half-turn). `" '".charAt(2)` devuelve `""` (string vacío). Esto produce `"U"` en vez de `"U2"` para half-turns. El adapter `parseMoveNotation("U")` interpreta como CW. **El half-turn físico se convierte en quarter-turn virtual.** |
+| **Solución** | `" '".charAt(direction)` → `["", "'", "2"][direction]`. Ahora direction=2 produce `"U2"`, correctamente interpretado por `parseMoveNotation` como half-turn. `move.trim()` ya no es necesario.                                                                                                                                                                                                                |
 
 - [x] Corregido
 
@@ -187,11 +203,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                         |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                  |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                  |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:59-89`                                                                                                                                                               |
 | **Problema** | La suscripción a`connection.events$` se crea en `connect()` pero nunca se almacena el `Subscription` para hacer `unsubscribe()` en `disconnect()`. Si se llama `connect()` dos veces, se acumulan suscripciones. |
+| **Solución** | `eventsSub: Subscription | null` almacena la suscripción. Se hace `unsubscribe()` en `disconnect()` y antes de crear una nueva suscripción en `connect()`. También se `complete()`an los Subjects en `disconnect()`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -854,13 +871,15 @@
 
 ### E-8 — Sin soporte para REQUEST_FACELETS en GanCubeAdapter
 
-| Campo              | Valor                                                                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                    |
-| **Archivo**  | `GanCubeAdapter.ts`                                                                                                                                           |
-| **Problema** | No se llama`REQUEST_FACELETS` después de conectar. La inicialización del estado del cubo queda a expensas de que el cubo envíe un `FACELETS` periódico. |
+| Campo              | Valor                                                                                                                                                                                                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido (parcial)                                                                                                                                                                                                                                                                         |
+| **Archivo**  | `GanCubeAdapter.ts`                                                                                                                                                                                                                                                                          |
+| **Problema** | No se llama`REQUEST_FACELETS` después de conectar. La inicialización del estado del cubo queda a expensas de que el cubo envíe un `FACELETS` periódico.                                                                                                                                     |
+| **Solución** | Añadido método `requestFacelets()` y callback `onFacelets(facelets)`. `App.tsx` llama `requestFacelets()` tras `bindCube()`. Pendiente: convertir facelets a `CubeMoveEvent[]` para `syncState()` — requiere solver o diff engine. |
 
-- [ ] Corregido
+- [x] Corregido (request + callback)
+- [ ] Pendiente (conversión facelets → moves)
 
 ---
 

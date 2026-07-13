@@ -1,4 +1,5 @@
-import { Subject } from 'rxjs';
+import { Subject, ReplaySubject } from 'rxjs';
+import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { connectGanCube, GanCubeConnection } from '@cubeforge/gan-protocol';
@@ -24,14 +25,19 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   public readonly model = 'SmartCube'; 
 
   private connection: GanCubeConnection | null = null;
+  private eventsSub: Subscription | null = null;
 
-  private movesSubject = new Subject<CubeMoveEvent>();
+  private movesSubject = new ReplaySubject<CubeMoveEvent>(1);
   private batterySubject = new Subject<number>();
   private gyroSubject = new Subject<GyroEvent>();
 
   public moves$ = this.movesSubject.asObservable();
   public battery$ = this.batterySubject.asObservable();
   public gyro$ = this.gyroSubject.asObservable();
+
+  /** Callback invoked when a FACELETS event arrives from the cube.
+   *  Used by SyncBridge to snap the 3D scene to the physical cube state. */
+  public onFacelets: ((facelets: string) => void) | null = null;
 
   async connect(manualMac?: string): Promise<void> {
     try {
@@ -50,7 +56,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       throw error;
     }
     
-    this.connection.events$.subscribe((evt) => {
+    this.eventsSub?.unsubscribe();
+    this.eventsSub = this.connection.events$.subscribe((evt) => {
       if (evt.type === 'DISCONNECT') {
         this.disconnect();
       } else if (evt.type === 'BATTERY') {
@@ -69,6 +76,12 @@ export class GanCubeAdapter implements SmartCubeAdapter {
           cubeTimestamp: cubeTs,
           hostTimestamp: hostNow
         });
+      } else if (evt.type === 'FACELETS') {
+        // Emit FACELETS as a synthetic CubeMoveEvent batch so SyncBridge
+        // can snap the 3D scene to the cube's actual physical state.
+        if (this.onFacelets) {
+          this.onFacelets(evt.facelets);
+        }
       } else if (evt.type === 'GYRO') {
         if (evt.quaternion) {
           this.gyroSubject.next({
@@ -82,7 +95,20 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     });
   }
 
+  /** Request the cube to send its current facelet state.
+   *  The result will arrive as a FACELETS event and trigger onFacelets. */
+  public async requestFacelets(): Promise<void> {
+    if (this.connection) {
+      await this.connection.sendCubeCommand({ type: "REQUEST_FACELETS" });
+    }
+  }
+
   async disconnect(): Promise<void> {
+    this.eventsSub?.unsubscribe();
+    this.eventsSub = null;
+    this.movesSubject.complete();
+    this.batterySubject.complete();
+    this.gyroSubject.complete();
     if (this.connection) {
       await this.connection.disconnect();
       this.connection = null;

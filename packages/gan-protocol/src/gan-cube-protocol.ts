@@ -210,7 +210,7 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         this.stateCharacteristic = stateCharacteristic;
         this.encrypter = encrypter;
         this.driver = driver;
-        this.events$ = new ReplaySubject<GanCubeEvent>(1);
+        this.events$ = new ReplaySubject<GanCubeEvent>(3);
     }
 
     public static async create(
@@ -639,7 +639,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
                     let direction = msg.getBitWord(72, 2);
                     let face = [2, 32, 8, 1, 16, 4].indexOf(msg.getBitWord(74, 6));
-                    let move = "URFDLB".charAt(face) + " '".charAt(direction);
+                    let move = "URFDLB".charAt(face) + ["", "'", "2"][direction];
 
                     // put move event into FIFO buffer
                     if (face >= 0) {
@@ -651,7 +651,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
                             cubeTimestamp: cubeTimestamp,
                             face: face,
                             direction: direction,
-                            move: move.trim()
+                            move: move
                         });
                     }
 
@@ -928,7 +928,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
                 let direction = msg.getBitWord(64, 2);
                 let face = [2, 32, 8, 1, 16, 4].indexOf(msg.getBitWord(66, 6));
-                let move = "URFDLB".charAt(face) + " '".charAt(direction);
+                let move = "URFDLB".charAt(face) + ["", "'", "2"][direction];
 
                 // put move event into FIFO buffer
                 if (face >= 0) {
@@ -940,7 +940,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
                         cubeTimestamp: cubeTimestamp,
                         face: face,
                         direction: direction,
-                        move: move.trim()
+                        move: move
                     });
                 }
 
