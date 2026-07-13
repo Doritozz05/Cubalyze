@@ -36,7 +36,7 @@ describe('SolvesRepository', () => {
 
   it('findAll returns mapped solves', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null },
+      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null, moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solves = await repo.findAll();
@@ -64,7 +64,7 @@ describe('SolvesRepository', () => {
 
   it('findById returns mapped solve', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP' },
+      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP', moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solve = await repo.findById('s1');
@@ -77,7 +77,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none',
+      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none', moves: [],
     });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
@@ -87,7 +87,7 @@ describe('SolvesRepository', () => {
   it('update calls UPDATE SQL', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
-    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2' });
+    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2', moves: [] });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
     expect(call[0]).toContain('UPDATE solves SET');
@@ -111,7 +111,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP',
+      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP', moves: [],
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[6]).toBe('CFOP');
@@ -176,7 +176,7 @@ describe('AlgorithmsRepository', () => {
 
   it('findAll returns mapped algorithms', async () => {
     const db = mockDb([
-      { id: 'a1', name: 'T Perm', moves: 'R U R\' U\' R\' F R2 U\' R\' U\' R U R\' F\'', subset: 'PLL', puzzle_type: '3x3x3', created_at: '2026-01-01' },
+      { id: 'a1', name: 'T Perm', moves: '["R","U","R\'"]', alternatives: '[]', subset: 'PLL', puzzle_type: '3x3x3', created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new AlgorithmsRepository(db);
     const algs = await repo.findAll();
@@ -199,12 +199,12 @@ describe('AlgorithmsRepository', () => {
     const db = mockDb();
     repo = new AlgorithmsRepository(db);
 
-    await repo.insert({ id: 'a1', name: 'J Perm', moves: "R U R' F' R U R' U' R' F R2 U' R'", subset: 'PLL', puzzleType: '3x3x3' });
+    await repo.insert({ id: 'a1', name: 'J Perm', moves: ["R", "U"], alternatives: [], subset: 'PLL', puzzleType: '3x3x3' });
     expect(db.mock.calls[0][0]).toContain('INSERT INTO algorithms');
 
     db.mockReset();
     db.mockResolvedValue([]);
-    await repo.update({ id: 'a1', name: 'Jb Perm', moves: '', subset: 'PLL', puzzleType: '3x3x3' });
+    await repo.update({ id: 'a1', name: 'Jb Perm', moves: [], alternatives: [], subset: 'PLL', puzzleType: '3x3x3' });
     expect(db.mock.calls[0][0]).toContain('UPDATE algorithms');
 
     db.mockReset();
@@ -221,8 +221,8 @@ describe('AlgorithmsRepository', () => {
 
 describe('Database Client', () => {
   it('initializes db correctly', async () => {
-    globalThis.window = {} as any;
-    globalThis.Worker = vi.fn(() => ({ terminate: vi.fn() })) as any;
+    globalThis.window = {} as unknown as Window & typeof globalThis;
+    globalThis.Worker = vi.fn(() => ({ terminate: vi.fn() })) as unknown as typeof Worker;
 
     const { initDB, getDB, closeDB } = await import('../client.js');
     const db = await initDB();

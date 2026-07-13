@@ -5,6 +5,7 @@ export interface SessionRow {
   name: string;
   puzzle_type: string;
   created_at: string;
+  updated_at: string;
 }
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -15,6 +16,7 @@ function rowToSession(row: SessionRow): Session {
     name: row.name,
     puzzleType: row.puzzle_type,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -34,15 +36,15 @@ export class SessionsRepository {
 
   async insert(session: Session): Promise<void> {
     await this.db(
-      'INSERT INTO sessions (id, name, puzzle_type, created_at) VALUES (?, ?, ?, ?)',
-      [session.id, session.name, session.puzzleType, session.createdAt]
+      'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      [session.id, session.name, session.puzzleType, session.createdAt || new Date().toISOString(), session.updatedAt || new Date().toISOString()]
     );
   }
 
   async update(session: Session): Promise<void> {
     await this.db(
-      'UPDATE sessions SET name = ?, puzzle_type = ? WHERE id = ?',
-      [session.name, session.puzzleType, session.id]
+      'UPDATE sessions SET name = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
+      [session.name, session.puzzleType, new Date().toISOString(), session.id]
     );
   }
 

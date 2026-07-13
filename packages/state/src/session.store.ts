@@ -8,6 +8,8 @@ export interface SolveData {
   scramble: string;
   penalty: string;
   method?: string;
+  moves?: unknown[];
+  analysisEngineVersion?: string;
 }
 
 export interface SessionState {

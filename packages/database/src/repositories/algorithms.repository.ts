@@ -4,9 +4,11 @@ export interface AlgorithmRow {
   id: string;
   name: string;
   moves: string;
+  alternatives: string;
   subset: string;
   puzzle_type: string;
   created_at: string;
+  updated_at: string;
 }
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -15,9 +17,12 @@ function rowToAlgorithm(row: AlgorithmRow): Algorithm {
   return {
     id: row.id,
     name: row.name,
-    moves: row.moves,
+    moves: JSON.parse(row.moves),
+    alternatives: JSON.parse(row.alternatives),
     subset: row.subset,
     puzzleType: row.puzzle_type,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -45,15 +50,15 @@ export class AlgorithmsRepository {
 
   async insert(algorithm: Algorithm): Promise<void> {
     await this.db(
-      'INSERT INTO algorithms (id, name, moves, subset, puzzle_type) VALUES (?, ?, ?, ?, ?)',
-      [algorithm.id, algorithm.name, algorithm.moves, algorithm.subset, algorithm.puzzleType]
+      'INSERT INTO algorithms (id, name, moves, alternatives, subset, puzzle_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [algorithm.id, algorithm.name, JSON.stringify(algorithm.moves || []), JSON.stringify(algorithm.alternatives || []), algorithm.subset, algorithm.puzzleType, algorithm.createdAt || new Date().toISOString(), algorithm.updatedAt || new Date().toISOString()]
     );
   }
 
   async update(algorithm: Algorithm): Promise<void> {
     await this.db(
-      'UPDATE algorithms SET name = ?, moves = ?, subset = ?, puzzle_type = ? WHERE id = ?',
-      [algorithm.name, algorithm.moves, algorithm.subset, algorithm.puzzleType, algorithm.id]
+      'UPDATE algorithms SET name = ?, moves = ?, alternatives = ?, subset = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
+      [algorithm.name, JSON.stringify(algorithm.moves || []), JSON.stringify(algorithm.alternatives || []), algorithm.subset, algorithm.puzzleType, new Date().toISOString(), algorithm.id]
     );
   }
 

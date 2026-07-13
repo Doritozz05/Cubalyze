@@ -6,6 +6,10 @@ export interface Solve {
   scramble: string;
   penalty: string;
   method?: string;
+  moves?: any[];
+  analysisEngineVersion?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Session {
@@ -13,12 +17,16 @@ export interface Session {
   name: string;
   puzzleType: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Algorithm {
   id: string;
   name: string;
-  moves: string;
+  moves: string[];
+  alternatives?: string[][];
   subset: string;
   puzzleType: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
