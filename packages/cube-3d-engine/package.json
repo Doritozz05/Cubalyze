@@ -24,10 +24,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cubeforge/math-core": "workspace:*",
     "@cubeforge/types": "workspace:*",
-    "three": "^0.160.0",
     "comlink": "^4.4.1",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "@types/three": "^0.160.0",

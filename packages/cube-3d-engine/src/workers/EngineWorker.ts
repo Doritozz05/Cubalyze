@@ -12,7 +12,7 @@ export class EngineWorkerAPI {
   private model!: CubeModel;
   private rotationEngine!: RotationEngine;
   private gyroFusion!: GyroFusion;
-  
+
   private lastTime: number = 0;
   private isRunning: boolean = false;
 
@@ -38,6 +38,18 @@ export class EngineWorkerAPI {
 
   public async rotateLayer(axis: RotationAxis, layerValue: number, angle: number, durationMs: number) {
     await this.rotationEngine.rotateLayer(axis, layerValue, angle, durationMs);
+  }
+
+  public resetCube() {
+    if (this.model) {
+      this.model.resetCube();
+    }
+  }
+
+  public syncFacelets(facelets: string) {
+    if (this.model) {
+      this.model.applyFacelets(facelets);
+    }
   }
 
   public rotateCamera(dx: number, dy: number) {

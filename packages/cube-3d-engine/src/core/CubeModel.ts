@@ -1,5 +1,6 @@
 import { Group, Mesh } from 'three';
 import { CubeMeshFactory } from './CubeMeshFactory';
+import { parseFaceletsToCubies } from '@cubeforge/math-core';
 
 /**
  * Logical state of one cubie in the 3x3x3 grid.
@@ -11,6 +12,9 @@ export interface CubieLogicalState {
   gridX: number;
   gridY: number;
   gridZ: number;
+  initialGridX: number;
+  initialGridY: number;
+  initialGridZ: number;
   /** Reference to the Three.js Group for rendering */
   mesh: Group;
 }
@@ -35,11 +39,14 @@ export class CubeModel {
         for (let z = -1; z <= 1; z++) {
           const cubie = this.factory.createCubieGroup(x, y, z);
           cubie.position.set(x * spacing, y * spacing, z * spacing);
-          
+
           this.cubies.push({
             gridX: x,
             gridY: y,
             gridZ: z,
+            initialGridX: x,
+            initialGridY: y,
+            initialGridZ: z,
             mesh: cubie,
           });
 
@@ -132,6 +139,44 @@ export class CubeModel {
 
   public getAllCubies(): Group[] {
     return this.cubies.map((c) => c.mesh);
+  }
+
+  /**
+   * Resets the logical state and visual orientation of all cubies to the solved state.
+   */
+  public resetCube(): void {
+    for (const cubie of this.cubies) {
+      cubie.gridX = cubie.initialGridX;
+      cubie.gridY = cubie.initialGridY;
+      cubie.gridZ = cubie.initialGridZ;
+      cubie.mesh.quaternion.identity();
+    }
+    this.snapCubiePositions();
+  }
+
+  /**
+   * Snaps the 3D cube to a specific physical state using a 54-char facelet string.
+   */
+  public applyFacelets(facelets: string): void {
+    try {
+      const parsed = parseFaceletsToCubies(facelets);
+      for (const p of parsed) {
+        const cubie = this.cubies.find(c => 
+          c.initialGridX === p.initialX && 
+          c.initialGridY === p.initialY && 
+          c.initialGridZ === p.initialZ
+        );
+        if (cubie) {
+          cubie.gridX = p.currX;
+          cubie.gridY = p.currY;
+          cubie.gridZ = p.currZ;
+          cubie.mesh.quaternion.copy(p.quaternion as any);
+        }
+      }
+      this.snapCubiePositions();
+    } catch (e) {
+      console.error('Failed to apply facelets:', e);
+    }
   }
 
   public getLogicalState(): ReadonlyArray<Readonly<CubieLogicalState>> {

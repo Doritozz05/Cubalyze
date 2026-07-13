@@ -8,7 +8,7 @@ import EngineWorker from "@cubeforge/cube-3d-engine/worker?worker";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, RotateCcw } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 
 export interface Cube3DPanelProps {
@@ -57,6 +57,11 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
       syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
     }
+    
+    // Bind facelets callback
+    globalCubeAdapter.onFacelets = (facelets: string) => {
+      workerProxy.current?.syncFacelets(facelets).catch(console.error);
+    };
 
     // Resize Observer
     const resizeObserver = new ResizeObserver((entries) => {
@@ -81,6 +86,12 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const calibrateGyro = () => {
     if (workerProxy.current) {
       workerProxy.current.calibrateGyro();
+    }
+  };
+
+  const resetCube = () => {
+    if (workerProxy.current) {
+      workerProxy.current.resetCube();
     }
   };
 
@@ -117,8 +128,19 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
           <Button
             variant="ghost"
             size="sm"
+            onClick={resetCube}
+            className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+            title="Reset cube pieces to solved state"
+          >
+            <RotateCcw className="size-3" />
+            Reset
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={calibrateGyro}
             className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+            title="Calibrate gyroscope orientation"
           >
             <RefreshCw className="size-3" />
             Calibrate
