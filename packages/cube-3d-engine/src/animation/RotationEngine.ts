@@ -6,7 +6,7 @@ export type RotationAxis = 'x' | 'y' | 'z';
 
 export interface RotationTask {
   axis: RotationAxis;
-  layerValue: number;       // 1, 0, -1
+  layerValues: number[];    // array of layers, e.g. [1], or [-1, 1]
   angleInDegrees: number;   // e.g. 90, -90, 180
   durationMs: number;
   startTime?: number;
@@ -34,9 +34,9 @@ export class RotationEngine {
     this.model.root.add(this.pivot);
   }
 
-  public rotateLayer(
+  public rotateLayers(
     axis: RotationAxis,
-    layerValue: number,
+    layerValues: number[],
     angleInDegrees: number,
     durationMs: number
   ): Promise<void> {
@@ -49,25 +49,27 @@ export class RotationEngine {
 
       this.activeTask = {
         axis,
-        layerValue,
+        layerValues,
         angleInDegrees,
         durationMs,
         resolve,
       };
 
-      this.preparePivot(axis, layerValue, angleInDegrees);
+      this.preparePivot(axis, layerValues, angleInDegrees);
     });
   }
 
-  private preparePivot(axis: RotationAxis, layerValue: number, angleInDegrees: number): void {
+  private preparePivot(axis: RotationAxis, layerValues: number[], angleInDegrees: number): void {
     this.pivot.quaternion.identity();
     this.pivot.updateMatrixWorld(true);
 
-    const targetCubies = this.model.getCubiesByFace(axis, layerValue);
-    for (const cubie of targetCubies) {
-      // Como pivot y cubie comparten el mismo padre (root) y pivot está en identidad,
-      // podemos usar add() en lugar de attach() sin alterar su transform global.
-      this.pivot.add(cubie);
+    for (const layerValue of layerValues) {
+      const targetCubies = this.model.getCubiesByFace(axis, layerValue);
+      for (const cubie of targetCubies) {
+        // Como pivot y cubie comparten el mismo padre (root) y pivot está en identidad,
+        // podemos usar add() en lugar de attach() sin alterar su transform global.
+        this.pivot.add(cubie);
+      }
     }
 
     this.startQuat.copy(this.pivot.quaternion);
@@ -107,7 +109,7 @@ export class RotationEngine {
   private snapActiveTask(): void {
     if (!this.activeTask) return;
 
-    const { axis, layerValue, angleInDegrees, resolve } = this.activeTask;
+    const { axis, layerValues, angleInDegrees, resolve } = this.activeTask;
 
     // 1. Snap to the mathematically exact final orientation
     this.pivot.quaternion.copy(this.endQuat);
@@ -126,7 +128,9 @@ export class RotationEngine {
 
     // 3. Update the logical integer-based state model.
     const quarterTurns = Math.round(angleInDegrees / 90);
-    this.model.updateLogicalState(axis, layerValue, quarterTurns);
+    for (const layerValue of layerValues) {
+      this.model.updateLogicalState(axis, layerValue, quarterTurns);
+    }
 
     // 4. CRITICAL FIX: Snap mesh positions to logical grid.
     this.model.snapCubiePositions();
