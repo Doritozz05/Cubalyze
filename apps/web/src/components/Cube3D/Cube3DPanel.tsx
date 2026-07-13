@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as Comlink from "comlink";
-import { GanCubeAdapter } from "@cubeforge/hardware-hal";
 import { SyncBridge } from "@cubeforge/cube-3d-engine";
 import type { EngineWorkerAPI } from "@cubeforge/cube-3d-engine";
 import EngineWorker from "@cubeforge/cube-3d-engine/worker?worker";
@@ -17,6 +16,7 @@ export interface Cube3DPanelProps {
 }
 
 export function Cube3DPanel({ className }: Cube3DPanelProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const workerProxy = useRef<Comlink.Remote<EngineWorkerAPI> | null>(null);
@@ -55,8 +55,23 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
     }
 
+    // Resize Observer
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentBoxSize) {
+          const width = entry.contentRect.width;
+          const height = entry.contentRect.height;
+          workerProxy.current?.resize(width, height);
+        }
+      }
+    });
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     return () => {
-      // In strict mode dev, React unmounts and remounts.
+      resizeObserver.disconnect();
     };
   }, []);
 
@@ -67,7 +82,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   };
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col", className)}>
+    <div className={cn("flex flex-1 h-full min-h-0 flex-col", className)}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
         <div className="flex items-baseline gap-2">
@@ -90,7 +105,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       </div>
 
       {/* Canvas Wrapper */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">
         <canvas
           ref={canvasRef}
           className="absolute inset-0 h-full w-full outline-none"

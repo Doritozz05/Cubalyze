@@ -138,7 +138,7 @@ export function Header({
                   aria-label="Switch session"
                 >
                   <History className="size-3.5 text-ink-3" />
-                  <span className="nums max-w-[7rem] truncate">
+                  <span className="nums max-w-28 truncate">
                     {active?.name ?? "Session"}
                   </span>
                   <span className="text-ink-3">·</span>
@@ -198,7 +198,7 @@ export function Header({
                             {s.solveCount}
                           </span>
                         </button>
-                        <div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity group-hover/sess:opacity-100 data-[open]:opacity-100">
+                        <div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity group-hover/sess:opacity-100 data-open:opacity-100">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -249,7 +249,7 @@ export function Header({
 
           <Select value={puzzle} onValueChange={(v) => setPuzzle(v as PuzzleCategory)}>
             <SelectTrigger
-              className="h-8 w-[7.5rem] gap-2 rounded-md border-line bg-surface text-xs text-ink-2"
+              className="h-8 w-30 gap-2 rounded-md border-line bg-surface text-xs text-ink-2"
               aria-label="Puzzle category"
             >
               <SelectValue />
