@@ -4,27 +4,26 @@ import type * as Comlink from 'comlink';
 import type { EngineWorkerAPI } from '../workers/EngineWorker';
 import type { CubeMoveEvent, GyroEvent, CubeFace } from '@cubeforge/types';
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
+import type { RotationAxis } from '../animation/RotationEngine';
 
-/**
- * Bridges hardware cube events (from the HAL layer) to the 3D rendering engine.
- *
- * Translates CubeMoveEvents (face + direction) into 3D rotation commands
- * (axis + layerValue + angle) using the canonical FACE_ROTATION_MAP from
- * @cubeforge/types — eliminating the duplicate switch statement that
- * previously existed here.
- */
+interface QueuedRotation {
+  axis: RotationAxis;
+  layerValue: number;
+  angle: number;
+  durationMs: number;
+}
+
 export class SyncBridge {
   private workerProxy: Comlink.Remote<EngineWorkerAPI>;
   private subs: Subscription[] = [];
+
+  private moveBuffer: QueuedRotation[] = [];
+  private isProcessing = false;
 
   constructor(workerProxy: Comlink.Remote<EngineWorkerAPI>) {
     this.workerProxy = workerProxy;
   }
 
-  /**
-   * Subscribes to a smart cube's move and gyroscope streams.
-   * Automatically unbinds any previous subscriptions before binding new ones.
-   */
   public bindCube(
     moves$: Observable<CubeMoveEvent>,
     gyro$?: Observable<GyroEvent>
@@ -33,7 +32,7 @@ export class SyncBridge {
 
     this.subs.push(
       moves$.subscribe((move: CubeMoveEvent) => {
-        this.applyMove(move);
+        this.enqueueMove(move);
       })
     );
 
@@ -46,32 +45,44 @@ export class SyncBridge {
     }
   }
 
-  private async applyMove(move: CubeMoveEvent): Promise<void> {
-    const durationMs = 150; // Default animation time per TDD-0006
-
+  private enqueueMove(move: CubeMoveEvent): void {
+    const durationMs = 150;
     const mapping = FACE_ROTATION_MAP[move.face as CubeFace];
-    if (!mapping) return; // Ignore unknown faces
+    if (!mapping) return;
 
-    // Calculate rotation angle:
-    // direction (1, -1, or 2) × angleSign from the mapping × 90°
-    // For half-turns (direction=2), angle = ±180°
     const angle = move.direction * mapping.angleSign * 90;
 
-    await this.workerProxy.rotateLayer(mapping.axis, mapping.layerValue, angle, durationMs);
+    this.moveBuffer.push({
+      axis: mapping.axis,
+      layerValue: mapping.layerValue,
+      angle,
+      durationMs,
+    });
+
+    this.processQueue();
   }
 
-  /**
-   * Aplica instantáneamente una secuencia de movimientos para sincronizar 
-   * el estado visual inicial con el hardware (ej. al despertar el cubo)
-   * sin ejecutar la animación de los giros.
-   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
+
+    while (this.moveBuffer.length > 0) {
+      const task = this.moveBuffer.shift()!;
+      await this.workerProxy.rotateLayer(task.axis, task.layerValue, task.angle, task.durationMs);
+    }
+
+    this.isProcessing = false;
+  }
+
+  public get pendingMoves(): number {
+    return this.moveBuffer.length;
+  }
+
   public async syncState(moves: CubeMoveEvent[]): Promise<void> {
     for (const move of moves) {
       const mapping = FACE_ROTATION_MAP[move.face as CubeFace];
       if (!mapping) continue;
       const angle = move.direction * mapping.angleSign * 90;
-      
-      // durationMs = 0 asegura un snapping inmediato en RotationEngine
       await this.workerProxy.rotateLayer(mapping.axis, mapping.layerValue, angle, 0);
     }
   }

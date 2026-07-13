@@ -2,7 +2,7 @@ import { Subject, ReplaySubject } from 'rxjs';
 import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { connectGanCube, GanCubeConnection } from '@cubeforge/gan-protocol';
+import { connectGanCube, type GanCubeConnection } from '@cubeforge/gan-protocol';
 
 function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
   const match = move.match(/^([UDRLBF])([2']?)$/);
@@ -16,9 +16,14 @@ function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveD
   return { face, direction };
 }
 
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_BASE_DELAY_MS = 1000;
+
 export class GanCubeAdapter implements SmartCubeAdapter {
   public readonly vendor = 'GAN';
-  public readonly model = 'SmartCube';
+  public model = 'SmartCube';
+
+  public onConnectionChange: ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void) | null = null;
 
   private connection: GanCubeConnection | null = null;
   private eventsSub: Subscription | null = null;
@@ -35,67 +40,35 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   public onFacelets: ((facelets: string) => void) | null = null;
 
+  // ── BLE reconnection state ──────────────────────────────────────────────────
+  private device: BluetoothDevice | null = null;
+  private reconnectAttempts = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private isUserDisconnect = false;
+  private manualMac: string | undefined;
+
   async connect(manualMac?: string): Promise<void> {
+    this.manualMac = manualMac;
+    this.isUserDisconnect = false;
+
     try {
       this.connection = await connectGanCube(async (device, isFallback) => {
+        this.device = device;
         if (manualMac) return manualMac;
-
         if (isFallback) {
-          throw new Error('MAC_REQUIRED');
+          throw new Error('Bluetooth address selection failed — manual MAC required');
         }
         return null;
       });
     } catch (error) {
-      console.error('Failed to connect GAN Cube:', error);
+      this.device = null;
+      this.onConnectionChange?.('disconnected');
       throw error;
     }
 
-    this.eventsSub?.unsubscribe();
-    this.eventsSub = this.connection.events$.subscribe((evt) => {
-      if (evt.type === 'DISCONNECT') {
-        this.disconnect();
-      } else if (evt.type === 'BATTERY') {
-        this.batterySubject.next(evt.batteryLevel);
-      } else if (evt.type === 'MOVE') {
-        const hostNow = performance.now();
-        const cubeTs = evt.cubeTimestamp ?? hostNow;
-
-        const parsed = parseMoveNotation(evt.move);
-        if (!parsed) {
-          console.warn('[GanCubeAdapter] Unrecognized move:', evt.move);
-          this.invalidMovesSubject.next(evt.move);
-          return;
-        }
-
-        this.movesSubject.next({
-          face: parsed.face,
-          direction: parsed.direction,
-          cubeTimestamp: cubeTs,
-          hostTimestamp: hostNow
-        });
-      } else if (evt.type === 'FACELETS') {
-        if (this.onFacelets) {
-          this.onFacelets(evt.facelets);
-        }
-      } else if (evt.type === 'GYRO') {
-        if (evt.quaternion) {
-          const gyroEvent: GyroEvent = {
-            x: evt.quaternion.x,
-            y: evt.quaternion.y,
-            z: evt.quaternion.z,
-            w: evt.quaternion.w,
-          };
-          if (evt.velocity) {
-            gyroEvent.velocity = {
-              x: evt.velocity.x,
-              y: evt.velocity.y,
-              z: evt.velocity.z,
-            };
-          }
-          this.gyroSubject.next(gyroEvent);
-        }
-      }
-    });
+    this.reconnectAttempts = 0;
+    this.setupEventsSubscription();
+    this.onConnectionChange?.('connected');
   }
 
   public async requestFacelets(): Promise<void> {
@@ -105,8 +78,9 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   }
 
   async disconnect(): Promise<void> {
-    this.eventsSub?.unsubscribe();
-    this.eventsSub = null;
+    this.isUserDisconnect = true;
+    this.cancelReconnect();
+    this.teardownEventsSubscription();
     this.movesSubject.complete();
     this.batterySubject.complete();
     this.gyroSubject.complete();
@@ -115,5 +89,141 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       await this.connection.disconnect();
       this.connection = null;
     }
+    this.device = null;
+    this.onConnectionChange?.('disconnected');
+  }
+
+  // ── Private: events subscription ────────────────────────────────────────────
+
+  private setupEventsSubscription(): void {
+    this.eventsSub?.unsubscribe();
+    this.eventsSub = this.connection!.events$.subscribe((evt) => {
+      if (evt.type === 'DISCONNECT') {
+        this.handleDisconnect();
+      } else if (evt.type === 'BATTERY') {
+        this.batterySubject.next(evt.batteryLevel);
+      } else if (evt.type === 'MOVE') {
+        this.handleMove(evt);
+      } else if (evt.type === 'FACELETS') {
+        if (this.onFacelets) {
+          this.onFacelets(evt.facelets);
+        }
+      } else if (evt.type === 'GYRO') {
+        this.handleGyro(evt);
+      } else if (evt.type === 'HARDWARE') {
+        if (evt.hardwareName) {
+          this.model = evt.hardwareName;
+        }
+      }
+    });
+  }
+
+  private teardownEventsSubscription(): void {
+    this.eventsSub?.unsubscribe();
+    this.eventsSub = null;
+  }
+
+  // ── Private: event handlers ─────────────────────────────────────────────────
+
+  private handleMove(evt: { move: string; cubeTimestamp: number | null }): void {
+    const hostNow = performance.now();
+    const cubeTs = evt.cubeTimestamp ?? hostNow;
+
+    const parsed = parseMoveNotation(evt.move);
+    if (!parsed) {
+      console.warn('[GanCubeAdapter] Unrecognized move:', evt.move);
+      this.invalidMovesSubject.next(evt.move);
+      return;
+    }
+
+    this.movesSubject.next({
+      face: parsed.face,
+      direction: parsed.direction,
+      cubeTimestamp: cubeTs,
+      hostTimestamp: hostNow,
+    });
+  }
+
+  private handleGyro(evt: { quaternion?: { x: number; y: number; z: number; w: number }; velocity?: { x: number; y: number; z: number } }): void {
+    if (evt.quaternion) {
+      const gyroEvent: GyroEvent = {
+        x: evt.quaternion.x,
+        y: evt.quaternion.y,
+        z: evt.quaternion.z,
+        w: evt.quaternion.w,
+      };
+      if (evt.velocity) {
+        gyroEvent.velocity = {
+          x: evt.velocity.x,
+          y: evt.velocity.y,
+          z: evt.velocity.z,
+        };
+      }
+      this.gyroSubject.next(gyroEvent);
+    }
+  }
+
+  private handleDisconnect(): void {
+    this.teardownEventsSubscription();
+    this.movesSubject.complete();
+    this.batterySubject.complete();
+    this.gyroSubject.complete();
+    this.invalidMovesSubject.complete();
+
+    this.movesSubject = new ReplaySubject<CubeMoveEvent>(1);
+    this.batterySubject = new Subject<number>();
+    this.gyroSubject = new Subject<GyroEvent>();
+    this.invalidMovesSubject = new Subject<string>();
+    this.moves$ = this.movesSubject.asObservable();
+    this.battery$ = this.batterySubject.asObservable();
+    this.gyro$ = this.gyroSubject.asObservable();
+    this.invalidMoves$ = this.invalidMovesSubject.asObservable();
+
+    if (!this.isUserDisconnect && this.device) {
+      this.attemptReconnect();
+    } else {
+      this.onConnectionChange?.('disconnected');
+    }
+  }
+
+  // ── Private: reconnection logic ─────────────────────────────────────────────
+
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      this.reconnectAttempts = 0;
+      this.device = null;
+      this.onConnectionChange?.('disconnected');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    const delay = RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1);
+    this.onConnectionChange?.('reconnecting');
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      try {
+        if (!this.device) throw new Error('No device reference for reconnection');
+        const gatt = await this.device.gatt!.connect();
+        this.connection = await connectGanCube(async (device, isFallback) => {
+          if (this.manualMac) return this.manualMac;
+          if (isFallback) return null;
+          return null;
+        });
+        this.reconnectAttempts = 0;
+        this.setupEventsSubscription();
+        this.onConnectionChange?.('connected');
+      } catch {
+        this.attemptReconnect();
+      }
+    }, delay);
+  }
+
+  private cancelReconnect(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempts = 0;
   }
 }

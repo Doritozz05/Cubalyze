@@ -97,6 +97,7 @@ export class RotationEngine {
       const easedT = easeInOutQuad(t);
       this.currentQuat.slerpQuaternions(this.startQuat, this.endQuat, easedT);
       this.pivot.quaternion.copy(this.currentQuat);
+      this.pivot.updateMatrixWorld(true);
     }
   }
 

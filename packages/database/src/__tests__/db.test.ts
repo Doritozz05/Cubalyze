@@ -1,40 +1,237 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { SolvesRepository } from '../repositories/solves.repository.js';
+import { SessionsRepository } from '../repositories/sessions.repository.js';
+import { AlgorithmsRepository } from '../repositories/algorithms.repository.js';
 
-// We mock the worker and comlink because OPFS and Web Workers aren't available in standard Node.js
 vi.mock('comlink', () => ({
   wrap: vi.fn(() => ({
     init: vi.fn().mockResolvedValue(true),
-    execute: vi.fn().mockResolvedValue([{ key: 'theme', value: 'dark' }]),
+    execute: vi.fn().mockImplementation((sql: string) => {
+      if (sql.includes('SELECT')) return [{ key: 'theme', value: 'dark' }];
+      return [];
+    }),
     close: vi.fn().mockResolvedValue(undefined),
     [Symbol.for('comlink.releaseProxy')]: vi.fn(),
   })),
   releaseProxy: Symbol.for('comlink.releaseProxy'),
 }));
 
-vi.mock('../worker.js', () => ({
-  DBWorker: {},
-}));
+vi.mock('../worker.js', () => ({ DBWorker: {} }));
+
+function mockDb(rows: Record<string, unknown>[] = []) {
+  return vi.fn<(...args: unknown[]) => Promise<Record<string, unknown>[]>>().mockResolvedValue(rows);
+}
+
+describe('SolvesRepository', () => {
+  let repo: SolvesRepository;
+
+  beforeEach(() => {
+    repo = new SolvesRepository(mockDb());
+  });
+
+  it('findAll returns empty array when no solves', async () => {
+    const solves = await repo.findAll();
+    expect(solves).toEqual([]);
+  });
+
+  it('findAll returns mapped solves', async () => {
+    const db = mockDb([
+      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null },
+    ]);
+    repo = new SolvesRepository(db);
+    const solves = await repo.findAll();
+    expect(solves).toHaveLength(1);
+    expect(solves[0].id).toBe('s1');
+    expect(solves[0].sessionId).toBe('ses1');
+    expect(solves[0].timeMs).toBe(12345);
+    expect(solves[0].penalty).toBe('none');
+  });
+
+  it('findAll with sessionId filters by session', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    await repo.findAll('ses1');
+    expect(db).toHaveBeenCalledWith(
+      'SELECT * FROM solves WHERE session_id = ? ORDER BY date ASC',
+      ['ses1']
+    );
+  });
+
+  it('findById returns null for missing solve', async () => {
+    const solve = await repo.findById('nonexistent');
+    expect(solve).toBeNull();
+  });
+
+  it('findById returns mapped solve', async () => {
+    const db = mockDb([
+      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP' },
+    ]);
+    repo = new SolvesRepository(db);
+    const solve = await repo.findById('s1');
+    expect(solve).not.toBeNull();
+    expect(solve!.method).toBe('CFOP');
+    expect(solve!.penalty).toBe('+2');
+  });
+
+  it('insert calls INSERT SQL', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    await repo.insert({
+      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none',
+    });
+    expect(db).toHaveBeenCalledOnce();
+    const call = db.mock.calls[0];
+    expect(call[0]).toContain('INSERT INTO solves');
+  });
+
+  it('update calls UPDATE SQL', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2' });
+    expect(db).toHaveBeenCalledOnce();
+    const call = db.mock.calls[0];
+    expect(call[0]).toContain('UPDATE solves SET');
+  });
+
+  it('delete calls DELETE SQL', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    await repo.delete('s1');
+    expect(db).toHaveBeenCalledWith('DELETE FROM solves WHERE id = ?', ['s1']);
+  });
+
+  it('count returns number', async () => {
+    const db = mockDb([{ cnt: 5 }]);
+    repo = new SolvesRepository(db);
+    const cnt = await repo.count();
+    expect(cnt).toBe(5);
+  });
+
+  it('insert with method includes method field', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    await repo.insert({
+      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP',
+    });
+    const bind = db.mock.calls[0][1] as unknown[];
+    expect(bind[6]).toBe('CFOP');
+  });
+});
+
+describe('SessionsRepository', () => {
+  let repo: SessionsRepository;
+
+  beforeEach(() => {
+    repo = new SessionsRepository(mockDb());
+  });
+
+  it('findAll returns mapped sessions', async () => {
+    const db = mockDb([
+      { id: 'ses1', name: 'Practice', puzzle_type: '3x3x3', created_at: '2026-01-01' },
+    ]);
+    repo = new SessionsRepository(db);
+    const sessions = await repo.findAll();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].puzzleType).toBe('3x3x3');
+  });
+
+  it('findById returns null for missing session', async () => {
+    const session = await repo.findById('nonexistent');
+    expect(session).toBeNull();
+  });
+
+  it('insert and update call correct SQL', async () => {
+    const db = mockDb();
+    repo = new SessionsRepository(db);
+    await repo.insert({ id: 'ses1', name: 'Test', puzzleType: '3x3x3', createdAt: '2026-01-01' });
+    expect(db.mock.calls[0][0]).toContain('INSERT INTO sessions');
+
+    db.mockReset();
+    db.mockResolvedValue([]);
+    await repo.update({ id: 'ses1', name: 'Updated', puzzleType: '4x4x4', createdAt: '2026-01-01' });
+    expect(db.mock.calls[0][0]).toContain('UPDATE sessions');
+  });
+
+  it('delete calls DELETE SQL', async () => {
+    const db = mockDb();
+    repo = new SessionsRepository(db);
+    await repo.delete('ses1');
+    expect(db).toHaveBeenCalledWith('DELETE FROM sessions WHERE id = ?', ['ses1']);
+  });
+
+  it('count returns number', async () => {
+    const db = mockDb([{ cnt: 3 }]);
+    repo = new SessionsRepository(db);
+    const cnt = await repo.count();
+    expect(cnt).toBe(3);
+  });
+});
+
+describe('AlgorithmsRepository', () => {
+  let repo: AlgorithmsRepository;
+
+  beforeEach(() => {
+    repo = new AlgorithmsRepository(mockDb());
+  });
+
+  it('findAll returns mapped algorithms', async () => {
+    const db = mockDb([
+      { id: 'a1', name: 'T Perm', moves: 'R U R\' U\' R\' F R2 U\' R\' U\' R U R\' F\'', subset: 'PLL', puzzle_type: '3x3x3', created_at: '2026-01-01' },
+    ]);
+    repo = new AlgorithmsRepository(db);
+    const algs = await repo.findAll();
+    expect(algs).toHaveLength(1);
+    expect(algs[0].name).toBe('T Perm');
+    expect(algs[0].subset).toBe('PLL');
+  });
+
+  it('findAll with subset filters', async () => {
+    const db = mockDb();
+    repo = new AlgorithmsRepository(db);
+    await repo.findAll('OLL');
+    expect(db).toHaveBeenCalledWith(
+      'SELECT * FROM algorithms WHERE subset = ? ORDER BY name ASC',
+      ['OLL']
+    );
+  });
+
+  it('CRUD operations call correct SQL', async () => {
+    const db = mockDb();
+    repo = new AlgorithmsRepository(db);
+
+    await repo.insert({ id: 'a1', name: 'J Perm', moves: "R U R' F' R U R' U' R' F R2 U' R'", subset: 'PLL', puzzleType: '3x3x3' });
+    expect(db.mock.calls[0][0]).toContain('INSERT INTO algorithms');
+
+    db.mockReset();
+    db.mockResolvedValue([]);
+    await repo.update({ id: 'a1', name: 'Jb Perm', moves: '', subset: 'PLL', puzzleType: '3x3x3' });
+    expect(db.mock.calls[0][0]).toContain('UPDATE algorithms');
+
+    db.mockReset();
+    db.mockResolvedValue([]);
+    await repo.delete('a1');
+    expect(db).toHaveBeenCalledWith('DELETE FROM algorithms WHERE id = ?', ['a1']);
+
+    db.mockReset();
+    db.mockResolvedValue([{ cnt: 10 }]);
+    const cnt = await repo.count();
+    expect(cnt).toBe(10);
+  });
+});
 
 describe('Database Client', () => {
   it('initializes db correctly', async () => {
-    // In a real environment, initDB creates the worker
-    // Here we just verify the structure is exportable and mockable
+    globalThis.window = {} as any;
+    globalThis.Worker = vi.fn(() => ({ terminate: vi.fn() })) as any;
+
     const { initDB, getDB, closeDB } = await import('../client.js');
-    
-    // Polyfill window for the test to pass the environment check
-    global.window = {} as any;
-    global.Worker = vi.fn(() => ({
-      terminate: vi.fn(),
-    })) as any;
-    
     const db = await initDB();
     expect(db).toBeDefined();
     expect(getDB()).toBe(db);
-    
+
     const results = await db.execute('SELECT * FROM kv_store;');
     expect(results).toEqual([{ key: 'theme', value: 'dark' }]);
-    
+
     await closeDB();
   });
 });

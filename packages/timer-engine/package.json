@@ -7,6 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup",
+    "clean": "rm -rf dist",
     "test": "vitest run",
     "lint": "eslint src/"
   },
@@ -20,3 +21,4 @@
     "@cubeforge/config-typescript": "workspace:*"
   }
 }
+

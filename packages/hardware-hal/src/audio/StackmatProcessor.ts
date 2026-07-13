@@ -1,8 +1,8 @@
 export class StackmatProcessor extends AudioWorkletProcessor {
-  // RS-232 1200 baud bit-banging decoder
   private sampleRate: number;
   private samplesPerBit: number;
-  
+  private minStartSamples: number;
+
   private lastSample: number = 0;
   private isDecoding: boolean = false;
   private bitTimer: number = 0;
@@ -10,42 +10,68 @@ export class StackmatProcessor extends AudioWorkletProcessor {
   private currentByte: number = 0;
   private byteBuffer: number[] = [];
 
+  // Start bit validation counters
+  private startEdgePositiveCount: number = 0;
+  private isValidatingStart: boolean = false;
+
   constructor(options: AudioWorkletNodeOptions) {
     super();
     this.sampleRate = options.processorOptions?.sampleRate || 44100;
-    this.samplesPerBit = this.sampleRate / 1200; // ~36.75 samples per bit
+    const baudRate = options.processorOptions?.baudRate || 1200;
+    this.samplesPerBit = this.sampleRate / baudRate;
+
+    // Require at least 75% of a bit period of sustained positive signal
+    // to declare a valid start bit (~27 samples at 44100Hz/1200baud)
+    this.minStartSamples = Math.round(this.samplesPerBit * 0.75);
   }
 
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+  process(
+    inputs: Float32Array[][],
+    _outputs: Float32Array[][],
+    _parameters: Record<string, Float32Array>
+  ): boolean {
     const input = inputs[0];
     if (input && input.length > 0) {
       const channelData = input[0];
-      
+
       for (let i = 0; i < channelData.length; i++) {
         const sample = channelData[i];
-        
-        // Zero-crossing edge detection
-        // Idle state in RS-232 audio is typically negative (mark). 
-        // Start bit is positive (space).
-        const isStartEdge = this.lastSample <= 0 && sample > 0;
-        
-        if (!this.isDecoding && isStartEdge) {
-          this.isDecoding = true;
-          // Set timer to sample in the middle of the first data bit (1.5 bit periods from the start edge)
-          this.bitTimer = 1.5 * this.samplesPerBit;
-          this.bitIndex = 0;
-          this.currentByte = 0;
+        const isPositive = sample > 0;
+
+        if (!this.isDecoding) {
+          if (!this.isValidatingStart) {
+            // Wait for zero-crossing positive edge
+            if (this.lastSample <= 0 && isPositive) {
+              this.isValidatingStart = true;
+              this.startEdgePositiveCount = 1;
+            }
+          } else {
+            // Validate sustained positive signal
+            if (isPositive) {
+              this.startEdgePositiveCount++;
+              if (this.startEdgePositiveCount >= this.minStartSamples) {
+                // Valid start bit confirmed — begin decoding
+                this.isDecoding = true;
+                this.isValidatingStart = false;
+                this.bitTimer = 1.5 * this.samplesPerBit;
+                this.bitIndex = 0;
+                this.currentByte = 0;
+              }
+            } else {
+              // Signal dropped before minimum duration — false positive
+              this.isValidatingStart = false;
+              this.startEdgePositiveCount = 0;
+            }
+          }
         }
-        
+
         if (this.isDecoding) {
           this.bitTimer--;
-          
+
           if (this.bitTimer <= 0) {
-            // Time to sample a bit. RS-232: Space (+V) = logic 0, Mark (-V) = logic 1
-            const logicBit = sample > 0 ? 0 : 1;
-            
+            const logicBit = isPositive ? 0 : 1;
+
             if (this.bitIndex < 8) {
-              // Data bits 0-7 (LSB first)
               if (logicBit === 1) {
                 this.currentByte |= (1 << this.bitIndex);
               }
@@ -54,26 +80,25 @@ export class StackmatProcessor extends AudioWorkletProcessor {
             } else {
               // Stop bit
               this.byteBuffer.push(this.currentByte);
-              
-              // Stackmat messages usually end with CR (13) and LF (10)
+
               if (this.currentByte === 10 || this.currentByte === 13) {
-                if (this.byteBuffer.length >= 9) { // At least 9 bytes for a valid Gen3/Gen4 packet
+                if (this.byteBuffer.length >= 9) {
                   this.port.postMessage({ type: 'stackmatData', data: [...this.byteBuffer] });
                 }
                 if (this.currentByte === 10) {
                   this.byteBuffer = [];
                 }
               }
-              
+
               this.isDecoding = false;
             }
           }
         }
-        
+
         this.lastSample = sample;
       }
     }
-    return true; // Keep processor alive
+    return true;
   }
 }
 

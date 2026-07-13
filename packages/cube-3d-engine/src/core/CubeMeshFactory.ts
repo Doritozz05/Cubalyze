@@ -142,22 +142,16 @@ export class CubeMeshFactory {
   }
 
   /**
-   * Destaca una cara específica de un cubie individual (ej. para aristas pares).
-   * Clona el material compartido solo para esta malla, preservando el pooling global.
+   * Sets emissive color on the shared face-level material.
+   * This highlights ALL cubies exposing the given face, preserving material pooling.
+   * For per-cubie highlighting, use a dedicated overlay mesh on top.
    */
-  public highlightCubie(mesh: import('three').Mesh, face: CubeFace, emissiveColor: string, intensity: number): void {
-    const faceMapping: Record<CubeFace, number> = {
-      R: 0, L: 1, U: 2, D: 3, F: 4, B: 5
-    };
-    const faceIndex = faceMapping[face];
-    
-    if (Array.isArray(mesh.material)) {
-      const clonedMaterials = mesh.material.slice() as MeshStandardMaterial[];
-      const targetMat = clonedMaterials[faceIndex].clone();
-      targetMat.emissive.set(emissiveColor);
-      targetMat.emissiveIntensity = intensity;
-      clonedMaterials[faceIndex] = targetMat;
-      mesh.material = clonedMaterials;
+  public highlightCubie(_mesh: import('three').Mesh, face: CubeFace, emissiveColor: string, intensity: number): void {
+    const material = this.materials[face];
+    if (material) {
+      material.emissive.set(emissiveColor);
+      material.emissiveIntensity = intensity;
+      material.needsUpdate = true;
     }
   }
 

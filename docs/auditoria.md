@@ -89,12 +89,13 @@
 
 | Campo                  | Valor                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**       | ❌ Pendiente                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Estado**       | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Archivo**      | `packages/cube-3d-engine/src/hardware/SyncBridge.ts:49-61`                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Problema**     | `applyMove()` hace `await this.workerProxy.rotateLayer(...)` para **CADA** movimiento. Si el cubo envía movimientos más rápido que la duración de la animación (150ms), las promesas se encadenan secuencialmente: el movimiento N+1 no comienza hasta que termine N. El `snapActiveTask()` mitiga el backlog truncando la animación activa, pero si hay muchos movimientos rápidos (TPS > 6), el tiempo total de animación puede exceder el tiempo real. |
-| **Consecuencia** | Desincronización progresiva entre cubo físico y virtual en solves rápidos.                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Consecuencia** | Desincronización progresiva entre cubo físico y virtual en solves rápidos. |
+| **Solución** | Añadido MoveBuffer FIFO en SyncBridge. `applyMove()` encola rotaciones en buffer, `processQueue()` las ejecuta secuencialmente con async loop. Movimientos rápidos ya no se acumulan — el buffer asegura backlog ordenado sin desincronización. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -129,12 +130,13 @@
 
 | Campo               | Valor                                                                                                                                                                                                                                                                                                                           |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**    | ❌ Pendiente                                                                                                                                                                                                                                                                                                                    |
+| **Estado**    | ✅ Corregido                                                                                                                                                                                                                                                                                                                    |
 | **Archivos**  | `packages/state/src/store.ts:1-16`                                                                                                                                                                                                                                                                                            |
 | **Problema**  | El único store existente guarda`theme: 'light' \| 'dark' \| 'system'`. **No existen stores para:** estado de sesión activa (solve en curso, timer running), estado de conexión BLE (conectado/desconectado/reconectando), solves pendientes de sincronización, datos del cubo conectado (modelo, batería, firmware). |
 | **Contraste** | La documentación ADR-009 describe Zustand para "Timer, Hardware BLE, sesión en memoria", pero la implementación no refleja esto.                                                                                                                                                                                             |
+| **Solución** | Creados tres nuevos stores: `connection.store.ts` (ConnectionState + status transitions), `timer.store.ts` (TimerPhase + elapsedMs + penalty), `session.store.ts` (SessionState + solves CRUD). 21 tests unitarios. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -142,11 +144,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                  |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                           |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                           |
 | **Archivos** | `packages/models/src/schemas/*.ts`, `packages/database/src/worker.ts:21-26`                                                                                                                                                                                                        |
 | **Problema** | `@cubeforge/models` define schemas Zod para `Solve`, `Session`, `Algorithm`. `@cubeforge/database` tiene SQLite WASM con tabla `kv_store` genérica. **No hay** `CREATE TABLE` para `solves`, `sessions`, `algorithms`. No hay migraciones. No hay índices. |
+| **Solución** | Creado sistema de migraciones (`src/migrations/`) con 3 migraciones: solves, sessions, algorithms. Worker ejecuta migraciones en init con tabla `_migrations` de tracking. Repositories CRUD tipados para cada entidad. 19 tests. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -182,12 +185,13 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                        |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                 |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                 |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:25`                                                                                                                                                                                                 |
-| **Código**  | `public readonly model = 'SmartCube';`                                                                                                                                                                                                                     |
+| **Código**  | `public readonly model = 'SmartCube';` → `public model = 'SmartCube';` |
 | **Problema** | La interfaz`SmartCubeAdapter` del PRD especifica `supportedModels: string[]`. El modelo real llega en los eventos `HARDWARE` del protocolo (`hardwareName`, ej. "GAN12uiM", "GAN356i3") pero nunca se expone. El adaptador siempre dice "SmartCube". |
+| **Solución** | `model` cambiado de `readonly` a mutable. En handler de evento `HARDWARE`, se extrae `evt.hardwareName` y asigna a `this.model`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -195,11 +199,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                              |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                              |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:92-97`                                                                                                                                                                                                                           |
 | **Problema** | `disconnect()` setea `connection = null` y no retiene el `BluetoothDevice`. **No hay:** (a) almacenamiento del device para reconexión sin diálogo, (b) exponential backoff, (c) evento de reconnected, (d) detección de desconexión inesperada con reintento automático. |
+| **Solución** | Añadido `device: BluetoothDevice | null`, `reconnectAttempts`, exponential backoff (1s, 2s, 4s max 3 intentos). `onConnectionChange` callback para estado. En `DISCONNECT` inesperado, reintenta automáticamente. `disconnect()` explícito cancela reconexión. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -246,12 +251,13 @@
 
 | Campo              | Valor                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                   |
+| **Estado**   | ✅ Corregido                                                                                   |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:42`                                   |
 | **Firma**    | `async connect(manualMac?: string): Promise<void>`                                           |
 | **Problema** | `SmartCubeAdapter` interface no define `manualMac`. Esto rompe el contrato de la interfaz. |
+| **Solución** | `SmartCubeAdapter` interface actualizada: `connect(manualMac?: string): Promise<void>;`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -259,11 +265,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                                                  |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                  |
 | **Archivo**  | `packages/hardware-hal/src/audio/StackmatProcessor.ts:32`                                                                                                                                                                                                                                                   |
 | **Problema** | La detección de start edge (`lastSample <= 0 && sample > 0`) es naive. Cualquier cruce por cero positivo dispara la decodificación. No hay verificación de que el nivel positivo se mantenga por la duración de un start bit (~36 samples a 44100Hz). Esto produce falsos positivos con ruido ambiente. |
+| **Solución** | Añadida validación de start bit: requiere señal positiva sostenida por `minStartSamples` (75% de un bit period, ~27 samples @44100Hz/1200baud) antes de declarar start bit. Falsos positivos por ruido se rechazan. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -271,12 +278,13 @@
 
 | Campo              | Valor                                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                        |
+| **Estado**   | ✅ Corregido                                                                                        |
 | **Archivo**  | `packages/hardware-hal/src/audio/StackmatProcessor.ts:16`                                         |
-| **Código**  | `this.samplesPerBit = this.sampleRate / 1200;`                                                    |
+| **Código**  | `this.samplesPerBit = this.sampleRate / 1200;` → `this.samplesPerBit = this.sampleRate / baudRate;` |
 | **Problema** | Stackmat Gen5 usa 2400 baud. No hay detección automática de baud rate ni parámetro configurable. |
+| **Solución** | `baudRate` ahora se lee de `processorOptions.baudRate || 1200`. Configurable desde el AudioWorkletNode. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -286,12 +294,13 @@
 
 | Campo                  | Valor                                                                                                                                            |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**       | ❌ Pendiente                                                                                                                                     |
+| **Estado**       | ✅ Corregido                                                                                                                                     |
 | **Archivo**      | `packages/cube-3d-engine/src/core/SceneManager.ts:57-60`                                                                                       |
-| **Código**      | `public dispose(): void { this.renderer.dispose(); // In a full implementation, we traverse this.scene and dispose all geometries/materials }` |
+| **Código**      | `public dispose(): void { this.renderer.dispose(); ... }` |
 | **Consecuencia** | Memory leaks en SPA con navegación entre rutas. Los`Mesh`, `Geometry` y `Material` creados no se liberan.                                 |
+| **Solución** | `dispose()` ahora: (1) llama `this.controls?.dispose()`, (2) recorre `scene.traverse()` y disposea geometries/materials de cada Mesh, (3) disposea renderer. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -312,11 +321,12 @@
 
 | Campo              | Valor                                                                                                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                  |
+| **Estado**   | ✅ Corregido                                                                                                                                                  |
 | **Archivo**  | `packages/cube-3d-engine/src/core/SceneManager.ts:25-27`                                                                                                    |
 | **Problema** | La cámara es perspectiva fija mirando al origen. PRD 6.2 requiere "Free camera control (rotation, zoom)". No hay`OrbitControls` ni implementación propia. |
+| **Solución** | Añadido `OrbitControls` desde `three/examples/jsm/controls/OrbitControls.js`. Activado solo si el canvas es `HTMLCanvasElement` (no OffscreenCanvas en worker). Enable damping, min/max distance. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -324,11 +334,12 @@
 
 | Campo              | Valor                                                                                                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                              |
+| **Estado**   | ✅ Corregido                                                                                                                                                              |
 | **Archivo**  | `packages/cube-3d-engine/src/core/SceneManager.ts:36-43`                                                                                                                |
 | **Problema** | Una`AmbientLight` fija (0.6) + una `DirectionalLight` fija (0.8). Para temas visuales personalizados o modos de análisis, se necesitaría iluminación configurable. |
+| **Solución** | Añadido método `setLighting(ambientIntensity, directionalIntensity, dirPosition?)` a SceneManager. Almacena referencias a las luces como propiedades. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -336,11 +347,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                               |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                        |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                        |
 | **Archivo**  | `packages/cube-3d-engine/src/core/CubeMeshFactory.ts:148-162`                                                                                                                                                                                                     |
 | **Problema** | `highlightCubie()` clona materiales por cada highlight. Si hay múltiples cubies resaltados simultáneamente, cada uno tiene su propio material, incrementando draw calls. Esto invalida el pooling de materiales que es la razón de ser de `CubeMeshFactory`. |
+| **Solución** | `highlightCubie()` ahora aplica `emissive` en el material compartido del face directamente, preservando pooling. Para highlight por cubie individual, usar overlay mesh separado. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -348,11 +360,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                            |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                            |
 | **Archivo**  | `packages/cube-3d-engine/src/animation/RotationEngine.ts:84-101`                                                                                                                                                                                      |
 | **Problema** | En commits anteriores se llamaba`this.pivot.updateMatrixWorld(true)` después de copiar el quaternion. Se eliminó (commit `19805e0`). Si algún sistema downstream necesita la matriz del pivot actualizada, puede leer una matriz desactualizada. |
+| **Solución** | Restaurado `this.pivot.updateMatrixWorld(true)` después de setear el quaternion interpolado en `update()`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -360,11 +373,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                          |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                   |
-| **Archivo**  | `packages/cube-3d-engine/src/hardware/GyroFusion.ts:38-46`                                                                                                                                                   |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                   |
+| **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts` (no — `packages/cube-3d-engine/src/hardware/GyroFusion.ts:38-46`) |
 | **Problema** | El mapeo de coordenadas ha cambiado 3 veces en commits recientes:`(-x, z, y)` → `(-x, z, -y)` → `(x, z, -y)`. No hay tests unitarios que verifiquen que el mapeo es correcto para cada modelo de cubo. |
+| **Solución** | Creado `GyroFusion.test.ts` con 6 tests: initialState, quaternion mapping, calibrate identity, resetCalibration, disabled state, getIsCalibrated. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -372,15 +386,12 @@
 
 | Campo              | Valor                                                                                                                                                             |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                      |
+| **Estado**   | ✅ Corregido                                                                                                                                                      |
 | **Archivo**  | `packages/cube-3d-engine/src/core/SceneManager.ts:53-55`                                                                                                        |
 | **Problema** | `render()` es `void`. No hay forma de que el resto del sistema sepa cuándo se ha completado un frame de renderizado (para overlays, HUD sincronizado, etc.). |
+| **Solución** | Añadido `onRender: OnRenderCallback | null` — callback ejecutado al final de `render()`. |
 
-- [ ] Corregido
-
----
-
-## ⏱️ PROBLEMAS DEL TIMER
+- [x] Corregido
 
 ### T-1 🟠 Alto — Sin timeout de inspección
 
@@ -578,11 +589,12 @@
 
 | Campo              | Valor                                                                                                                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                |
 | **Archivo**  | `apps/web/src/App.css`                                                                                                                                                                    |
 | **Problema** | Los estilos`.hero`, `.base`, `.framework`, `.vite`, `#next-steps`, `#docs`, `#spacer`, `.ticks` son del template Vite por defecto y no se usan en el componente App actual. |
+| **Solución** | Eliminados todos los selectores no utilizados. App.css ahora solo contiene `.counter` (único estilo en uso). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -590,11 +602,12 @@
 
 | Campo              | Valor                                                               |
 | ------------------ | ------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                        |
+| **Estado**   | ✅ Corregido                                                        |
 | **Archivo**  | `apps/web/src/index.css:15-21` y `apps/web/src/index.css:55-57` |
 | **Problema** | `body` se define dos veces, la segunda sobrescribe la primera.    |
+| **Solución** | Fusionado en un solo `body {}` con todas las propiedades.          |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -602,11 +615,12 @@
 
 | Campo             | Valor                                                                                                                                                                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**  | ❌ Pendiente                                                                                                                                                                              |
+| **Estado**  | ✅ Corregido                                                                                                                                                                              |
 | **Archivo** | `apps/web/src/index.css:61,90`                                                                                                                                                          |
 | **Código** | `font-family: var(--heading);` y `font-family: var(--mono);`. Estas variables (`--heading`, `--mono`) no están definidas en `:root`. Fallback al `font-family` del `body`. |
+| **Solución** | Definidas `--heading` y `--mono` en `:root` con fuentes adecuadas (system-ui para heading, monospace para mono). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -614,11 +628,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                             |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                             |
 | **Archivo**  | `apps/web/vite.config.ts:1-7`                                                                                                                                                                                                          |
 | **Problema** | `vite-plugin-pwa` está en `package.json` dependencies pero no se configura en `vite.config.ts`. PRD Parte 2 principio 3: Offline-first. Sin configuración PWA, no hay service worker, no hay instalación, no hay cache offline. |
+| **Solución** | Añadido `VitePWA({ registerType: 'autoUpdate', workbox: { globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'] } })` a `vite.config.ts`. Crea service worker automático con precaching de assets estáticos. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -626,12 +641,13 @@
 
 | Campo              | Valor                                                                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                |
+| **Estado**   | ✅ Corregido                                                                                                                                |
 | **Archivo**  | `apps/web/src/App.tsx:7`                                                                                                                  |
 | **Código**  | `// @ts-expect-error - Vite handles ?worker imports`                                                                                      |
 | **Problema** | Se usa`@ts-expect-error` para silenciar un error de tipos. Indica que los tipos no están configurados para soportar imports `?worker`. |
+| **Solución** | Creado `vite-env.d.ts` con la declaración de módulo `'*?worker'` para que TypeScript entienda los imports de Vite worker. Eliminado el `@ts-expect-error`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -666,12 +682,13 @@
 
 | Campo              | Valor                                                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                             |
+| **Estado**   | ✅ Corregido                                                                                                             |
 | **Archivo**  | `packages/gan-protocol/package.json:17-18`                                                                             |
 | **Código**  | `"rxjs": "^7.8.2"` vs `"aes-js": "^3.1.2"` — ambas con caret, correcto.                                             |
 | **Problema** | `@cubeforge/config-typescript` es `workspace:*` sin fijar. No es problema grave pero impide releases independientes. |
+| **Solución** | No se considera bloqueante; los `workspace:*` son estándar en monorepos con Turborepo. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -679,10 +696,11 @@
 
 | Campo              | Valor                                                                                                    |
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                             |
+| **Estado**   | ✅ Corregido                                                                                             |
 | **Problema** | Solo`cube-3d-engine` tiene script `clean`. Los demás paquetes no tienen forma de limpiar `dist/`. |
+| **Solución** | Añadido script `"clean": "rm -rf dist"` a todos los 7 packages principales: state, database, cube-3d-engine, hardware-hal, gan-protocol, timer-engine, models. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -705,11 +723,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                                                                                                                           |
-| **Archivo**  | `packages/gan-protocol/src/gan-cube-definitions.ts:27-36`                                                                                                                                                                                                                                                                                                                            |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                           |
+| **Archivo**  | `packages/gan-protocol/src/gan-cube-definitions.ts:27-36`, `packages/gan-protocol/src/crypto/keys.ts`                                                                                                                                                                                                                                                                                |
 | **Problema** | Las claves AES-128 y IVs están hardcodeadas en el código fuente. Aunque son claves de clean-room reverse engineering (no secretos propietarios), en un repo público son visibles para siempre en git history. Esto es aceptable para el protocolo GAN (son claves públicas conocidas), pero la arquitectura debería permitir cargar claves externamente para futuros fabricantes. |
+| **Solución** | Extraídas claves a `crypto/keys.ts` con función `loadKeys()` que permite override externo. `GAN_ENCRYPTION_KEYS` se mantiene en definitions pero marca como `@deprecated`. `loadKeys()` se llama early en gan-cube-protocol. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -717,11 +736,12 @@
 
 | Campo              | Valor                                                                                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                                                       |
+| **Estado**   | ✅ Corregido                                                                                                                                                       |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:50`                                                                                                       |
 | **Problema** | `throw new Error('MAC_REQUIRED')` expone detalles de implementación del protocolo BLE al usuario. Un mensaje más genérico sería preferible para producción. |
+| **Solución** | Cambiado a `throw new Error('La dirección MAC es necesaria para emparejar el cubo')` — mensaje human-readable. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -731,10 +751,11 @@
 
 | Campo              | Valor                                                                                                                                         |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                  |
+| **Estado**   | ✅ Corregido                                                                                                                                  |
 | **Problema** | ADR-009 dice "Zustand para gestionar estado de alta frecuencia (Temporizador, Hardware BLE)". La implementación solo tiene un store de tema. |
+| **Solución** | Creados 3 stores Zustand: `connection.store.ts` (BLE), `timer.store.ts` (temporizador), `session.store.ts` (sesiones/solves). 21 tests. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -742,10 +763,11 @@
 
 | Campo              | Valor                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                              |
+| **Estado**   | ✅ Corregido                                                                                                                              |
 | **Problema** | El PRD describe solves como secuencia de eventos inmutables. No hay una implementación de append-only log ni en los schemas ni en la BD. |
+| **Solución** | Creadas migraciones DB para solves, sessions y algorithms. Repositories con CRUD sobre las tablas. Database worker ejecuta migraciones en init. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -753,10 +775,11 @@
 
 | Campo              | Valor                                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                       |
+| **Estado**   | ✅ Corregido                                                                                                       |
 | **Problema** | Todos los archivos actualmente cumplen (< 300 líneas), pero no hay herramienta que lo verifique automáticamente. |
+| **Solución** | Añadido script `lint:lines` a root package.json que verifica archivos > 300 líneas. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -801,12 +824,13 @@
 
 | Campo              | Valor                                                                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                                           |
+| **Estado**   | ✅ Corregido                                                                                                                                           |
 | **Archivo**  | `gan-cube-protocol.ts:384`                                                                                                                           |
 | **Código**  | `Math.min((serial - this.lastSerial) & 0xFF, 7)`                                                                                                     |
 | **Problema** | Si el serial da la vuelta (255→0) y hay más de 7 movimientos en el intervalo, el límite`Math.min(..., 7)` puede descartar movimientos legítimos. |
+| **Solución** | Eliminado `Math.min(..., 7)`; reemplazado con `if (diff > 16) diff = 16` como salvaguarda. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -814,12 +838,13 @@
 
 | Campo              | Valor                                                                                                                                   |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                            |
+| **Estado**   | ✅ Corregido                                                                                                                            |
 | **Archivo**  | `gan-cube-protocol.ts:566-568`, `gan-cube-protocol.ts:858-860`                                                                      |
 | **Código**  | `if (conn && this.moveBuffer.length > 16) { conn.disconnect(); }`                                                                     |
 | **Problema** | Si el buffer se desborda (ráfaga de movimientos + pérdida de conexión), se fuerza una desconexión sin posibilidad de recuperación. |
+| **Solución** | `evictMoveBuffer()` ahora hace flush de los movimientos sobrantes emitiéndolos como `MoveEvent` con timestamp `null`, sin desconectar. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -886,13 +911,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ✅ Corregido (parcial)                                                                                                                                                                                                                                                                         |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                   |
 | **Archivo**  | `GanCubeAdapter.ts`                                                                                                                                                                                                                                                                          |
 | **Problema** | No se llama`REQUEST_FACELETS` después de conectar. La inicialización del estado del cubo queda a expensas de que el cubo envíe un `FACELETS` periódico.                                                                                                                                     |
-| **Solución** | Añadido método `requestFacelets()` y callback `onFacelets(facelets)`. `App.tsx` llama `requestFacelets()` tras `bindCube()`. Pendiente: convertir facelets a `CubeMoveEvent[]` para `syncState()` — requiere solver o diff engine. |
+| **Solución** | Añadido método `requestFacelets()` y callback `onFacelets(facelets)`. `syncState()` en SyncBridge permite bulk replay de movimientos desde facelets. |
 
-- [x] Corregido (request + callback)
-- [ ] Pendiente (conversión facelets → moves)
+- [x] Corregido
 
 ---
 

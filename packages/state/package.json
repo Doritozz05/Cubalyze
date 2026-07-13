@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "lint": "eslint .",
+    "clean": "rm -rf dist",
     "test": "vitest run"
   },
   "dependencies": {
@@ -19,3 +20,4 @@
     "vitest": "^3.0.5"
   }
 }
+

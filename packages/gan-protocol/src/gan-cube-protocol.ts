@@ -381,7 +381,9 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
             if (this.lastSerial != -1) { // Accept move events only after first facelets state event received
 
                 let serial = msg.getBitWord(4, 8);
-                let diff = Math.min((serial - this.lastSerial) & 0xFF, 7);
+                let diff = (serial - this.lastSerial) & 0xFF;
+                // Cap at 16 moves per event to prevent buffer overload from corrupt data
+                if (diff > 16) diff = 16;
                 this.lastSerial = serial;
 
                 if (diff > 0) {
@@ -562,9 +564,14 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
                 this.lastSerial = bufferHead.serial;
             }
         }
-        // Probably something went wrong and buffer is no longer evicted, so forcibly disconnect the cube
+        // Buffer overflow — flush as recovered events (null timestamps) instead of disconnecting
         if (conn && this.moveBuffer.length > 16) {
-            conn.disconnect();
+            while (this.moveBuffer.length > 0) {
+                let recovered = this.moveBuffer.shift()! as GanCubeMoveEvent & { timestamp: number };
+                recovered.localTimestamp = null;
+                recovered.cubeTimestamp = null;
+                evictedEvents.push(recovered);
+            }
         }
         return evictedEvents;
     }
@@ -854,9 +861,14 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
                 this.lastSerial = bufferHead.serial;
             }
         }
-        // Probably something went wrong and buffer is no longer evicted, so forcibly disconnect the cube
+        // Buffer overflow — flush as recovered events (null timestamps) instead of disconnecting
         if (conn && this.moveBuffer.length > 16) {
-            conn.disconnect();
+            while (this.moveBuffer.length > 0) {
+                let recovered = this.moveBuffer.shift()! as GanCubeMoveEvent & { timestamp: number };
+                recovered.localTimestamp = null;
+                recovered.cubeTimestamp = null;
+                evictedEvents.push(recovered);
+            }
         }
         return evictedEvents;
     }

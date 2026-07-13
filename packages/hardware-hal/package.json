@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src/ --ext .ts",
@@ -28,3 +29,4 @@
     "vitest": "^3.0.4"
   }
 }
+
