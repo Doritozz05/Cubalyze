@@ -23,10 +23,22 @@ export const globalCubeAdapter = new GanCubeAdapter();
 
 export function CubeConnector({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">(
+    globalCubeAdapter.isConnected ? "connected" : "disconnected"
+  );
   const [errorMsg, setErrorMsg] = useState("");
   const [showMacInput, setShowMacInput] = useState(false);
   const [manualMac, setManualMac] = useState("");
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      setStatus(globalCubeAdapter.isConnected ? "connected" : "disconnected");
+      setErrorMsg("");
+      setShowMacInput(false);
+      setManualMac("");
+    }
+  };
 
   const connectCube = async () => {
     try {
@@ -69,7 +81,7 @@ export function CubeConnector({ className }: { className?: string }) {
     : "chrome://flags/#enable-experimental-web-platform-features";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"

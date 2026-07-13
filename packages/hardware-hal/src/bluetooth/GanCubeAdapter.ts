@@ -25,6 +25,10 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   public onConnectionChange: ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void) | null = null;
 
+  public get isConnected(): boolean {
+    return this.connection !== null;
+  }
+
   private connection: GanCubeConnection | null = null;
   private eventsSub: Subscription | null = null;
 

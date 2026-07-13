@@ -236,7 +236,7 @@ export function Header({
           <CubeConnector />
 
           {pb != null && Number.isFinite(pb) ? (
-            <div className="hidden items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 sm:flex">
+            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
               <Timer className="size-3.5 text-ink-3" />
               <span className="text-[0.62rem] uppercase tracking-[0.16em] text-ink-3">
                 PB
@@ -249,7 +249,8 @@ export function Header({
 
           <Select value={puzzle} onValueChange={(v) => setPuzzle(v as PuzzleCategory)}>
             <SelectTrigger
-              className="h-8 w-30 gap-2 rounded-md border-line bg-surface text-xs text-ink-2"
+              size="sm"
+              className="w-30 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink"
               aria-label="Puzzle category"
             >
               <SelectValue />
@@ -268,10 +269,10 @@ export function Header({
             size="icon"
             onClick={onToggleCube3D}
             className={cn(
-              "size-8",
+              "size-8 rounded-md border",
               cube3DActive
-                ? "bg-ink text-surface hover:bg-ink/90"
-                : "text-ink-2 hover:text-ink",
+                ? "bg-ink text-surface hover:bg-ink/90 border-transparent"
+                : "border-line bg-surface text-ink hover:bg-surface-2",
             )}
             aria-label={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
             aria-pressed={cube3DActive}

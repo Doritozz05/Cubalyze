@@ -134,11 +134,16 @@ export default function App() {
     document.title = `cubit — ${solves.length} solves`;
   }, [solves.length]);
 
+  const validSolves = solves.filter(s => s.penalty !== "DNF");
+  const currentPB = validSolves.length > 0
+    ? Math.min(...validSolves.map(s => s.time + (s.penalty === "+2" ? 2000 : 0)))
+    : null;
+
   return (
     <div className="antialiased bg-background text-foreground min-h-screen">
       <ThemeProvider>
         <MainLayout
-          pb={MOCK_PB}
+          pb={currentPB}
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={session?.id ?? null}
@@ -204,7 +209,7 @@ export default function App() {
                 value="stats"
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
               >
-                <StatsPanel solves={solves} pb={MOCK_PB} />
+                <StatsPanel solves={solves} pb={currentPB ?? MOCK_PB} />
               </TabsContent>
             </Tabs>
           }

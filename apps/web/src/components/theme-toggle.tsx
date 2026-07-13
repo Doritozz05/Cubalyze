@@ -15,7 +15,6 @@ export function ThemeToggle() {
 
   // next-themes reads localStorage in an effect; we need a paint after mount
   // to know the resolved theme. This is the canonical pattern.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const isDark = resolvedTheme === "dark";
@@ -24,7 +23,7 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="size-8 text-ink-2 hover:text-ink"
+      className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
