@@ -121,7 +121,16 @@ export function parseFaceletsToCubies(facelets: string): ParsedCubie[] {
         } else if (originalAxes.length >= 2) {
           const q1 = new Quaternion().setFromUnitVectors(originalAxes[0], currentAxes[0]);
           const alignedSecondOrig = originalAxes[1].clone().applyQuaternion(q1);
-          const q2 = new Quaternion().setFromUnitVectors(alignedSecondOrig, currentAxes[1]);
+          
+          // To rotate alignedSecondOrig to currentAxes[1] while PRESERVING currentAxes[0],
+          // we must rotate strictly around currentAxes[0].
+          const axis = currentAxes[0];
+          const cross = alignedSecondOrig.clone().cross(currentAxes[1]);
+          const sin = cross.dot(axis);
+          const cos = alignedSecondOrig.dot(currentAxes[1]);
+          const angle = Math.atan2(sin, cos);
+          
+          const q2 = new Quaternion().setFromAxisAngle(axis, angle);
           q.multiplyQuaternions(q2, q1);
         }
 
