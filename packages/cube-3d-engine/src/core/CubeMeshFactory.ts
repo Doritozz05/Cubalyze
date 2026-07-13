@@ -18,7 +18,7 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
   coreColor: '#000000', // Pure black core for better contrast
   coreOpacity: 1.0,
   stickerColors: {
-    U: '#e0e0e0', // White
+    U: '#ffffff', // White
     D: '#fff607', // Yellow
     F: '#08bc05', // Green
     B: '#0469ff', // Blue
