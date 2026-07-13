@@ -62,7 +62,7 @@ export function MainLayout({
   return (
     <div
       className={cn(
-        "flex min-h-dvh flex-col bg-canvas text-ink",
+        "flex min-h-dvh flex-col bg-canvas text-ink lg:h-dvh lg:overflow-hidden",
         className,
       )}
     >
@@ -80,7 +80,7 @@ export function MainLayout({
       />
 
       <main className={cn(
-        "mx-auto flex w-full max-w-[1400px] flex-1 flex-col lg:grid",
+        "mx-auto flex w-full flex-1 flex-col lg:grid",
         cube3DActive 
           ? "lg:grid-cols-2" 
           : "lg:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,380px)]"
@@ -102,7 +102,7 @@ export function MainLayout({
       </main>
 
       <footer className="mt-auto border-t border-line bg-surface">
-        <div className="mx-auto flex h-11 max-w-[1400px] items-center justify-between gap-4 px-4 text-xs text-ink-3 sm:px-6">
+        <div className="mx-auto flex h-11 w-full items-center justify-between gap-4 px-4 text-xs text-ink-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
             <span className="hidden items-center gap-1.5 lg:flex">
               <Kbd>Space</Kbd>

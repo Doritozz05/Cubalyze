@@ -113,7 +113,7 @@ export function Header({
         className,
       )}
     >
-      <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           <div className="grid size-7 place-items-center rounded-md bg-ink text-surface">
             <Grid3x3 className="size-4" />
