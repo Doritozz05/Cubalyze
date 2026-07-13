@@ -3,19 +3,29 @@ import type { DBWorker } from './worker.js';
 
 let worker: Worker | null = null;
 let db: Comlink.Remote<typeof DBWorker> | null = null;
+let initPromise: Promise<Comlink.Remote<typeof DBWorker>> | null = null;
 
 export const initDB = async () => {
-  if (db) return db;
+  if (initPromise) return initPromise;
   
-  if (typeof window === 'undefined') {
-    throw new Error('Web Workers are only available in the browser');
-  }
+  initPromise = (async () => {
+    if (typeof window === 'undefined') {
+      throw new Error('Web Workers are only available in the browser');
+    }
 
-  worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-  db = Comlink.wrap<typeof DBWorker>(worker);
-  
-  await db.init();
-  return db;
+    worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+    db = Comlink.wrap<typeof DBWorker>(worker);
+    
+    const success = await db.init();
+    if (!success) {
+      db = null;
+      initPromise = null;
+      throw new Error('Database worker failed to initialize SQLite (see console for details)');
+    }
+    return db;
+  })();
+
+  return initPromise;
 };
 
 export const getDB = () => {
@@ -33,4 +43,5 @@ export const closeDB = async () => {
     worker.terminate();
     worker = null;
   }
+  initPromise = null;
 };
