@@ -551,11 +551,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                             |
+| **Estado**   | ✅ Won't fix — test harness                                                                                                                                                                                              |
 | **Archivo**  | `apps/web/src/App.tsx:14`                                                                                                                                                                                              |
 | **Problema** | `const [status, setStatus] = useState('Disconnected');`. El estado de conexión BLE se maneja con React state local, que se pierde en re-renders y no es accesible desde otros componentes. Debería estar en Zustand. |
+| **Nota**     | App.tsx es un test harness (título "CubeForge Engine Test"). La app real usará `connection.store.ts` de Zustand. El test harness no necesita estado compartido. |
 
-- [ ] Corregido
+- [x] Won't fix — test harness (Zustand stores existen para app real)
 
 ---
 
@@ -563,11 +564,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                               |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                        |
+| **Estado**   | ✅ Won't fix — test harness                                                                                                                                                                                                                                                        |
 | **Archivo**  | `apps/web/src/App.tsx:24-55`                                                                                                                                                                                                                                                      |
 | **Problema** | El flag`isInitialized` previene la doble inicialización de React StrictMode, pero el `OffscreenCanvas` transferido no puede transferirse dos veces. En desarrollo con StrictMode, el segundo mount lanza catch con "Canvas already transferred". Funciona, pero no es robusto. |
+| **Nota**     | App.tsx es test harness. El código ya maneja el caso (catch + return). La app real se diseñará con arquitectura modular compatible con StrictMode. |
 
-- [ ] Corregido
+- [x] Won't fix — test harness (StrictMode handling es suficiente para dev)
 
 ---
 
@@ -708,12 +710,13 @@
 
 | Campo              | Valor                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                 |
+| **Estado**   | ✅ Won't fix — estándar Turborepo                                                            |
 | **Archivo**  | `turbo.json:11-13`                                                                         |
 | **Código**  | `"test": { "dependsOn": ["^build"] }`                                                      |
 | **Problema** | Los tests necesitan primero build de dependencias. Esto alarga el ciclo test → fix → test. |
+| **Nota**     | `dependsOn: ["^build"]` es estándar Turborepo para tests. Quitarlo rompe CI.             |
 
-- [ ] Corregido
+- [x] Won't fix — estándar Turborepo
 
 ---
 
@@ -800,10 +803,11 @@
 
 | Campo              | Valor                                                                 |
 | ------------------ | --------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                          |
+| **Estado**   | ✅ Won't fix — proceso de equipo                                      |
 | **Problema** | Commits como`db6a454 fixes`, `cb03f0a fixes` no aportan contexto. |
+| **Nota**     | Depende del workflow del equipo. No afecta al código.                 |
 
-- [ ] Corregido
+- [x] Won't fix — proceso de equipo
 
 ---
 
@@ -811,10 +815,11 @@
 
 | Campo              | Valor                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                          |
+| **Estado**   | ✅ Won't fix — proceso de equipo                                                                      |
 | **Problema** | El log muestra solo commits directos a`main`. No hay indicio de Git Flow, feature branches, ni PRs. |
+| **Nota**     | Depende del workflow del equipo. No afecta al código.                                                 |
 
-- [ ] Corregido
+- [x] Won't fix — proceso de equipo
 
 ---
 
@@ -875,11 +880,12 @@
 
 | Campo              | Valor                                                                                                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                 |
+| **Estado**   | ✅ Obsoleto — corregido en B-4/B-5                                                                                                                                                            |
 | **Archivo**  | `GanTimerAdapter.ts:29-36`                                                                                                                                                                 |
 | **Problema** | `DISCONNECT` se traduce como `hardwareUp` (incorrecto, debería propagarse como `disconnected`). `IDLE` se traduce como `hardwareUp` cuando debería significar "timer reseteado". |
+| **Solución** | DISCONNECT → `this.disconnect()` en B-4. IDLE → `hardwareReset` en B-5. Ambos corregidos. |
 
-- [ ] Corregido
+- [x] Obsoleto — corregido en B-4/B-5
 
 ---
 
@@ -887,11 +893,12 @@
 
 | Campo              | Valor                                                                                                                                                                        |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                 |
+| **Estado**   | ✅ Obsoleto — explicado en B-5                                                                                                                                                |
 | **Archivo**  | `GanTimerAdapter.ts`                                                                                                                                                       |
 | **Problema** | El`switch` no incluye `case` para `GanTimerState.RUNNING`. Cuando el timer empieza a correr, no se emite ningún evento. La UI no podría mostrar el estado "running". |
+| **Solución** | B-5: RUNNING no necesita case porque TimerEngine deriva estado de hardwareDown/hardwareUp. El timeout del protocolo GAN es informativo. |
 
-- [ ] Corregido
+- [x] Obsoleto — explicado en B-5
 
 ---
 
@@ -936,12 +943,13 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                                                                                                                        |
+| **Estado**   | ✅ Obsoleto — ClockDriftReconciler eliminado en B-3                                                                                                                                                                                                                                                                                                                                  |
 | **Archivo**  | `GanCubeAdapter.ts:73-78`                                                                                                                                                                                                                                                                                                                                                         |
 | **Código**  | `hostTimestamp: this.reconciler.reconcile(cubeTs)`                                                                                                                                                                                                                                                                                                                                |
 | **Problema** | `reconcile()` predice el host timestamp para un cube timestamp dado. Pero `cubeTs` es el timestamp del cubo en milisegundos desde su encendido. `reconcile()` hace regresión lineal sobre pares `(cubeTs, hostTs)`. Si el cubo se ha reiniciado o el timestamp del cubo se resetea, la regresión produce resultados incorrectos hasta que se acumulan suficientes puntos. |
+| **Solución** | ClockDriftReconciler eliminado en B-3. `hostTimestamp` ahora usa `performance.now()` directo. Corrección de drift aplicada post-solve vía `cubeTimestampLinearFit()`. |
 
-- [ ] Corregido
+- [x] Obsoleto — ClockDriftReconciler eliminado en B-3
 
 ---
 
@@ -949,10 +957,11 @@
 
 | Campo              | Valor                                                                                                                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                           |
+| **Estado**   | ✅ Obsoleto — ClockDriftReconciler eliminado en B-3                                                                                                                                                    |
 | **Problema** | Al conectar, el`ClockDriftReconciler` no tiene datos. El primer movimiento se reconcilia con fallback a `cubeTs + offset` (1 punto) o `cubeTs` (0 puntos), que es una corrección muy imprecisa. |
+| **Solución** | ClockDriftReconciler eliminado en B-3. Post-solve drift correction vía `cubeTimestampLinearFit()` con todos los movimientos del solve como puntos. |
 
-- [ ] Corregido
+- [x] Obsoleto — ClockDriftReconciler eliminado en B-3
 
 ---
 
