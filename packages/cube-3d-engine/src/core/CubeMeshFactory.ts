@@ -41,8 +41,8 @@ export class CubeMeshFactory {
   constructor(style: CubeStyleOptions = DEFAULT_STYLE) {
     this.style = { ...style };
     
-    // Core is slightly smaller than 1.0 to leave gaps
-    this.coreGeometry = new BoxGeometry(0.96, 0.96, 0.96);
+    // Core size 1.0 creates a completely flush cube with zero gaps
+    this.coreGeometry = new BoxGeometry(1.0, 1.0, 1.0);
     
     // Stickers are thin boxes for some relief
     this.stickerGeometry = new BoxGeometry(0.86, 0.86, 0.04);
@@ -55,7 +55,7 @@ export class CubeMeshFactory {
     
     this.coreMaterial = new MeshStandardMaterial({ 
       color: new Color(this.style.coreColor), 
-      roughness: 0.7,
+      roughness: 1.0,
       transparent: isTransparent,
       opacity: this.style.coreOpacity
     });
@@ -63,8 +63,8 @@ export class CubeMeshFactory {
     for (const face of ['U', 'D', 'F', 'B', 'R', 'L'] as const) {
       this.stickerMaterials[face] = new MeshStandardMaterial({ 
         color: new Color(this.style.stickerColors[face]), 
-        roughness: 0.1, // Shiny stickers
-        metalness: 0.1
+        roughness: 1.0, // Fully matte (no shiny reflections)
+        metalness: 0.0
       });
     }
   }
@@ -80,7 +80,8 @@ export class CubeMeshFactory {
     group.add(coreMesh);
 
     // 2. Add stickers based on exposed faces (with slight relief)
-    const offset = 0.49; // Slightly out from the core's edge (0.48)
+    // Core is 1.0 (radius 0.5). We place stickers just outside at 0.505.
+    const offset = 0.505;
 
     if (x === 1) {
       const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['R']);
