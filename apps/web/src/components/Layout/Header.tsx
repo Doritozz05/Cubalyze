@@ -165,18 +165,18 @@ export function Header({
                             if (e.key === "Enter") commitRename();
                             if (e.key === "Escape") setRenamingId(null);
                           }}
-                          className="nums h-7 min-w-0 flex-1 rounded border border-line bg-surface px-1.5 text-xs text-ink outline-none focus:border-ink-3"
+                          className="nums h-7 min-w-0 flex-1 rounded-sm border border-line bg-surface px-1.5 text-xs text-ink outline-none focus:border-ink-2"
                         />
                         <button
                           onClick={commitRename}
-                          className="grid size-6 place-items-center rounded text-ready hover:bg-ready-soft"
+                          className="grid size-6 place-items-center rounded text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                           aria-label="Confirm rename"
                         >
                           <Check className="size-3.5" />
                         </button>
                         <button
                           onClick={() => setRenamingId(null)}
-                          className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2"
+                          className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
                           aria-label="Cancel rename"
                         >
                           <X className="size-3.5" />
@@ -198,13 +198,13 @@ export function Header({
                             {s.solveCount}
                           </span>
                         </button>
-                        <div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity group-hover/sess:opacity-100 data-open:opacity-100">
+                        <div className="flex shrink-0 items-center gap-0.5 pr-1 text-ink-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               startRename(s);
                             }}
-                            className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink"
+                            className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-ink transition-colors"
                             aria-label={`Rename ${s.name}`}
                           >
                             <Pencil className="size-3" />
@@ -214,7 +214,7 @@ export function Header({
                               e.stopPropagation();
                               setDeleteTarget(s);
                             }}
-                            className="grid size-6 place-items-center rounded text-ink-3 hover:bg-dnf-soft hover:text-dnf"
+                            className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-dnf transition-colors"
                             aria-label={`Delete ${s.name}`}
                           >
                             <Trash2 className="size-3" />

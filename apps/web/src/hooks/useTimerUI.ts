@@ -146,18 +146,29 @@ export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
         if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
       }
       e.preventDefault();
+      e.stopPropagation();
+
       if (!e.repeat) handlePress();
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== "Space") return;
+      
+      // Ignore when focus is in an input/textarea/contenteditable.
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+
       e.preventDefault();
+      e.stopPropagation();
       handleRelease();
     };
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    window.addEventListener("keyup", onKeyUp, { capture: true });
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+      window.removeEventListener("keyup", onKeyUp, { capture: true });
     };
   }, [handlePress, handleRelease]);
 

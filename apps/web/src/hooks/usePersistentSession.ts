@@ -49,6 +49,8 @@ function toUISolve(dbSolve: DBSolve): UISolve {
   };
 }
 
+let seedPromise: Promise<void> | null = null;
+
 export function usePersistentSession(): UsePersistentSessionResult {
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [solves, setSolves] = useState<UISolve[]>([]);
@@ -74,18 +76,23 @@ export function usePersistentSession(): UsePersistentSessionResult {
         const solvesRepo = new SolvesRepository(dbExecutor);
         reposRef.current = { sessions: sessionsRepo, solves: solvesRepo };
 
-        let allSessions = await sessionsRepo.findAll();
-        
-        if (allSessions.length === 0) {
-          const defaultSession = {
-            id: uuidv4(),
-            name: "Main Session",
-            puzzleType: "3x3",
-            createdAt: new Date().toISOString(),
-          };
-          await sessionsRepo.insert(defaultSession);
-          allSessions = await sessionsRepo.findAll();
+        if (!seedPromise) {
+          seedPromise = (async () => {
+            const initialSessions = await sessionsRepo.findAll();
+            if (initialSessions.length === 0) {
+              const defaultSession = {
+                id: uuidv4(),
+                name: "Main Session",
+                puzzleType: "3x3",
+                createdAt: new Date().toISOString(),
+              };
+              await sessionsRepo.insert(defaultSession);
+            }
+          })();
         }
+        await seedPromise;
+
+        let allSessions = await sessionsRepo.findAll();
         
         let lastActive = localStorage.getItem("cubeforge:activeSessionId");
         if (!lastActive || !allSessions.find(s => s.id === lastActive)) {
@@ -266,18 +273,17 @@ export function usePersistentSession(): UsePersistentSessionResult {
     
     await sessionsRepo.delete(id);
     
-    setSessions(prev => {
-      const remaining = prev.filter(s => s.id !== id);
-      if (id === activeSessionId) {
-        if (remaining.length > 0) {
-          switchSession(remaining[0].id);
-        } else {
-          newSession(); // Will trigger a switch inside
-        }
+    setSessions(prev => prev.filter(s => s.id !== id));
+
+    if (id === activeSessionId) {
+      const remaining = sessions.filter(s => s.id !== id);
+      if (remaining.length > 0) {
+        await switchSession(remaining[0].id);
+      } else {
+        await newSession();
       }
-      return remaining;
-    });
-  }, [activeSessionId, switchSession, newSession]);
+    }
+  }, [sessions, activeSessionId, switchSession, newSession]);
 
   return {
     session,
