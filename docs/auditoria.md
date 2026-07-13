@@ -40,9 +40,9 @@
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Estado**    | ✅ Corregido                                                                                                                                                                                                                                                                                                                 |
 | **Archivos**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts`, `packages/hardware-hal/src/sync/ClockDrift.ts` (eliminado)                                                                                                                                                                                                      |
-| **Solución**  | Eliminado `ClockDriftReconciler` de `GanCubeAdapter`. `hostTimestamp` ahora usa `performance.now()` sin corrección dual. La corrección real se aplica post-solve vía `cubeTimestampLinearFit()` en `utils.ts` (más robusta). Archivo `ClockDrift.ts` y su test eliminados. |
+| **Solución**  | **REVERTIDO**: Se reincorporó `ClockDriftReconciler` a `GanCubeAdapter` para cumplir con la Fase 2.5 del Roadmap, la cual exige un middleware en tiempo real para soportar la telemetría viva de la Épica 5. El archivo `ClockDrift.ts` y sus tests han sido restaurados. |
 
-- [x] Corregido
+- [x] Revertido para cumplir Fase 2.5
 
 ---
 
@@ -947,9 +947,9 @@
 | **Archivo**  | `GanCubeAdapter.ts:73-78`                                                                                                                                                                                                                                                                                                                                                         |
 | **Código**  | `hostTimestamp: this.reconciler.reconcile(cubeTs)`                                                                                                                                                                                                                                                                                                                                |
 | **Problema** | `reconcile()` predice el host timestamp para un cube timestamp dado. Pero `cubeTs` es el timestamp del cubo en milisegundos desde su encendido. `reconcile()` hace regresión lineal sobre pares `(cubeTs, hostTs)`. Si el cubo se ha reiniciado o el timestamp del cubo se resetea, la regresión produce resultados incorrectos hasta que se acumulan suficientes puntos. |
-| **Solución** | ClockDriftReconciler eliminado en B-3. `hostTimestamp` ahora usa `performance.now()` directo. Corrección de drift aplicada post-solve vía `cubeTimestampLinearFit()`. |
+| **Solución** | **REVERTIDO**: ClockDriftReconciler ha sido restaurado para cumplir el Roadmap. La regresión lineal se realiza de nuevo en tiempo real usando un sliding window de 20 puntos. |
 
-- [x] Obsoleto — ClockDriftReconciler eliminado en B-3
+- [x] Revertido para cumplir Fase 2.5
 
 ---
 
@@ -959,9 +959,9 @@
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Estado**   | ✅ Obsoleto — ClockDriftReconciler eliminado en B-3                                                                                                                                                    |
 | **Problema** | Al conectar, el`ClockDriftReconciler` no tiene datos. El primer movimiento se reconcilia con fallback a `cubeTs + offset` (1 punto) o `cubeTs` (0 puntos), que es una corrección muy imprecisa. |
-| **Solución** | ClockDriftReconciler eliminado en B-3. Post-solve drift correction vía `cubeTimestampLinearFit()` con todos los movimientos del solve como puntos. |
+| **Solución** | **REVERTIDO**: ClockDriftReconciler ha sido restaurado. Aunque la calibración inicial (1 punto) sigue siendo un fallback simple a offset, pronto se estabiliza con los siguientes movimientos dentro del solve. |
 
-- [x] Obsoleto — ClockDriftReconciler eliminado en B-3
+- [x] Revertido para cumplir Fase 2.5
 
 ---
 
