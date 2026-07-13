@@ -11,8 +11,8 @@ export interface CubieLogicalState {
   gridX: number;
   gridY: number;
   gridZ: number;
-  /** Reference to the Three.js Mesh for rendering */
-  mesh: Mesh;
+  /** Reference to the Three.js Group for rendering */
+  mesh: Group;
 }
 
 export class CubeModel {
@@ -27,15 +27,13 @@ export class CubeModel {
   }
 
   private buildCubies(): void {
-    const geometry = this.factory.getGeometry();
     const spacing = 1.0; // Distance between cubie centers
 
     // Iterate x, y, z from -1 to 1 to build a 3x3x3 grid
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          const materials = this.factory.getMaterialsForCubie(x, y, z);
-          const cubie = new Mesh(geometry, materials);
+          const cubie = this.factory.createCubieGroup(x, y, z);
           cubie.position.set(x * spacing, y * spacing, z * spacing);
           
           this.cubies.push({
@@ -58,7 +56,7 @@ export class CubeModel {
    * of floating-point mesh positions. This is immune to floating-point drift
    * caused by repeated attach/detach reparenting during rotations.
    */
-  public getCubiesByFace(axis: 'x' | 'y' | 'z', targetValue: number): Mesh[] {
+  public getCubiesByFace(axis: 'x' | 'y' | 'z', targetValue: number): Group[] {
     const gridKey = axis === 'x' ? 'gridX' : axis === 'y' ? 'gridY' : 'gridZ';
     return this.cubies
       .filter((c) => c[gridKey] === targetValue)
@@ -132,7 +130,7 @@ export class CubeModel {
     }
   }
 
-  public getAllCubies(): Mesh[] {
+  public getAllCubies(): Group[] {
     return this.cubies.map((c) => c.mesh);
   }
 
@@ -140,3 +138,4 @@ export class CubeModel {
     return this.cubies;
   }
 }
+

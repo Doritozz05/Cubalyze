@@ -46,7 +46,10 @@ export class SyncBridge {
   }
 
   private enqueueMove(move: CubeMoveEvent): void {
-    const durationMs = 150;
+    // Dynamic rotation speed to catch up if moves pile up
+    const baseDuration = 90;
+    const durationMs = Math.max(20, baseDuration - (this.moveBuffer.length * 15));
+    
     const mapping = FACE_ROTATION_MAP[move.face as CubeFace];
     if (!mapping) return;
 
@@ -93,3 +96,4 @@ export class SyncBridge {
     this.workerProxy.disableGyro();
   }
 }
+
