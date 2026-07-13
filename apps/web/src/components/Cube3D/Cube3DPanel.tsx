@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Comlink from "comlink";
 import { SyncBridge } from "@cubeforge/cube-3d-engine";
 import type { EngineWorkerAPI } from "@cubeforge/cube-3d-engine";
@@ -23,6 +23,9 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const syncBridge = useRef<SyncBridge | null>(null);
   const workerInstance = useRef<Worker | null>(null);
   const isInitialized = useRef(false);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!canvasRef.current || isInitialized.current) return;
@@ -81,6 +84,25 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     }
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !workerProxy.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    workerProxy.current.rotateCamera(dx, dy).catch(console.error);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDragging(false);
+    (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+  };
+
   return (
     <div className={cn("flex flex-1 h-full min-h-0 flex-col", className)}>
       {/* Header */}
@@ -108,7 +130,14 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 h-full w-full outline-none"
+          className={cn(
+            "absolute inset-0 h-full w-full outline-none",
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          )}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         />
       </div>
     </div>

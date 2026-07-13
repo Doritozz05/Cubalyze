@@ -40,6 +40,12 @@ export class EngineWorkerAPI {
     await this.rotationEngine.rotateLayer(axis, layerValue, angle, durationMs);
   }
 
+  public rotateCamera(dx: number, dy: number) {
+    if (this.sceneManager) {
+      this.sceneManager.rotateCamera(dx, dy);
+    }
+  }
+
   public updateGyro(x: number, y: number, z: number, w: number) {
     this.gyroFusion.enable();
     this.gyroFusion.updateTargetQuaternion(x, y, z, w);

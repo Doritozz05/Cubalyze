@@ -7,8 +7,8 @@ import {
   Mesh,
   Color,
   Vector3,
+  Group
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 export type OnRenderCallback = () => void;
 
@@ -16,7 +16,7 @@ export class SceneManager {
   public scene: Scene;
   public camera: PerspectiveCamera;
   public renderer: WebGLRenderer;
-  public controls: OrbitControls | null = null;
+  public cameraGroup: Group;
 
   private width: number;
   private height: number;
@@ -36,19 +36,15 @@ export class SceneManager {
     this.camera.position.set(0, 0, 7);
     this.camera.lookAt(0, 0, 0);
 
+    this.cameraGroup = new Group();
+    this.scene.add(this.cameraGroup);
+    this.cameraGroup.add(this.camera);
+
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(pixelRatio, 2));
     this.renderer.setSize(width, height, false);
 
     [this.ambientLight, this.directionalLight] = this.setupLighting();
-
-    if (typeof HTMLCanvasElement !== 'undefined' && canvas instanceof HTMLCanvasElement) {
-      this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.1;
-      this.controls.minDistance = 3;
-      this.controls.maxDistance = 15;
-    }
   }
 
   private setupLighting(): [AmbientLight, DirectionalLight] {
@@ -78,16 +74,22 @@ export class SceneManager {
     this.renderer.setSize(width, height, false);
   }
 
+  public rotateCamera(dx: number, dy: number): void {
+    const ROTATION_SPEED = 0.005;
+    this.cameraGroup.rotation.y -= dx * ROTATION_SPEED;
+    this.cameraGroup.rotation.x -= dy * ROTATION_SPEED;
+
+    // Clamp X rotation to avoid flipping upside down
+    const maxPitch = Math.PI / 2 - 0.1;
+    this.cameraGroup.rotation.x = Math.max(-maxPitch, Math.min(maxPitch, this.cameraGroup.rotation.x));
+  }
+
   public render(): void {
-    if (this.controls) {
-      this.controls.update();
-    }
     this.renderer.render(this.scene, this.camera);
     this.onRender?.();
   }
 
   public dispose(): void {
-    this.controls?.dispose();
 
     this.scene.traverse((obj) => {
       if (obj instanceof Mesh) {
