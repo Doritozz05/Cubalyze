@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { TimerState } from "@/types";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
+import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 
 export interface UseTimerUIResult {
   state: TimerState;
@@ -91,6 +92,20 @@ export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
       sub3.unsubscribe();
       engine.reset();
     };
+  }, [engine]);
+
+  // ── Hardware: Smart Cube ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!globalCubeAdapter.moves$) return;
+    const sub = globalCubeAdapter.moves$.subscribe(() => {
+      const current = engine.getState();
+      if (current === EngineState.IDLE) {
+        // Start the timer immediately on first move
+        engine.handleDown();
+        setTimeout(() => engine.handleUp(), 10);
+      }
+    });
+    return () => sub.unsubscribe();
   }, [engine]);
 
   // Update inspection flag dynamically if needed

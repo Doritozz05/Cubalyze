@@ -44,7 +44,7 @@ export function TrendChart({
 
   const { data, bestAo, worstAo } = useMemo(() => {
     const chrono = [...solves].reverse();
-    const pts: Point[] = chrono.map((s, idx) => {
+    const pts: Point[] = chrono.map((_, idx) => {
       if (idx + 1 < window) {
         return { i: idx, label: String(idx + 1), ao: null };
       }
@@ -96,7 +96,7 @@ export function TrendChart({
         </div>
         {hasData ? (
           <span className="nums text-[0.65rem] text-ink-3">
-            {formatTime(bestAo)} – {formatTime(worstAo)}
+            {formatTime(bestAo as number)} – {formatTime(worstAo as number)}
           </span>
         ) : null}
       </div>
@@ -136,7 +136,7 @@ export function TrendChart({
                   boxShadow: "none",
                 }}
                 labelFormatter={(l) => `Solve ${l}`}
-                formatter={(v: number) => [formatTime(v), `Ao${window}`]}
+                formatter={(v: any) => [formatTime(v as number), `Ao${window}`]}
               />
               <Line
                 type="monotone"

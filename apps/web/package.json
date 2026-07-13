@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cubeforge/cube-3d-engine": "workspace:*",
+    "@cubeforge/database": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
     "@cubeforge/types": "workspace:*",

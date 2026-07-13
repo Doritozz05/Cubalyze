@@ -21,7 +21,10 @@ function rowToSession(row: SessionRow): Session {
 }
 
 export class SessionsRepository {
-  constructor(private db: DBExecutor) {}
+  private db: DBExecutor;
+  constructor(db: DBExecutor) {
+    this.db = db;
+  }
 
   async findAll(): Promise<Session[]> {
     const rows = await this.db('SELECT * FROM sessions ORDER BY created_at ASC');

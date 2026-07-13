@@ -49,7 +49,10 @@ function solveToRow(solve: Solve): SolveRow {
 }
 
 export class SolvesRepository {
-  constructor(private db: DBExecutor) {}
+  private db: DBExecutor;
+  constructor(db: DBExecutor) {
+    this.db = db;
+  }
 
   async findAll(sessionId?: string): Promise<Solve[]> {
     let sql = 'SELECT * FROM solves';

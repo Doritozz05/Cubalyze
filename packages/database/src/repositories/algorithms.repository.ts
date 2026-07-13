@@ -27,7 +27,10 @@ function rowToAlgorithm(row: AlgorithmRow): Algorithm {
 }
 
 export class AlgorithmsRepository {
-  constructor(private db: DBExecutor) {}
+  private db: DBExecutor;
+  constructor(db: DBExecutor) {
+    this.db = db;
+  }
 
   async findAll(subset?: string): Promise<Algorithm[]> {
     let sql = 'SELECT * FROM algorithms';

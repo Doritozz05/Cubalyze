@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { Solve, Penalty } from "@/types";
+import { useCallback, useEffect, useState, useRef } from "react";
+import type { Solve as UISolve, Penalty } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import { initDB, SessionsRepository, SolvesRepository } from "@cubeforge/database";
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -17,175 +18,225 @@ export interface SessionMeta {
 export interface UsePersistentSessionResult {
   session: SessionMeta | null;
   sessions: SessionMeta[];
-  solves: Solve[];
+  solves: UISolve[];
   loading: boolean;
-  /** Add a solve; optimistically updates the list + persists. */
   addSolve: (input: {
     time: number;
     penalty?: Penalty;
     scramble: string;
   }) => Promise<void>;
-  /** Update a solve's penalty/note. */
   updateSolve: (
     id: string,
     updates: { penalty?: Penalty; note?: string | null },
   ) => Promise<void>;
-  /** Delete a single solve. */
   deleteSolve: (id: string) => Promise<void>;
-  /** Clear all solves in the current session. */
   clearSession: () => Promise<void>;
-  /** Create a new session and switch to it. */
   newSession: (name?: string, puzzle?: string) => Promise<void>;
-  /** Switch to an existing session by id. */
   switchSession: (id: string) => Promise<void>;
 }
 
-const STORAGE_KEY = "cubit:data";
-
-interface StorageData {
-  sessions: SessionMeta[];
-  solves: Record<string, Solve[]>; // sessionId -> solves
-  activeSessionId: string | null;
+// Convert DB solve to UI solve
+function toUISolve(dbSolve: any): UISolve {
+  return {
+    id: dbSolve.id,
+    time: dbSolve.timeMs,
+    penalty: (dbSolve.penalty || "none") as Penalty,
+    scramble: dbSolve.scramble,
+    timestamp: new Date(dbSolve.date).getTime(),
+    note: dbSolve.method, // Using method to store notes temporarily if needed
+  };
 }
 
-function loadData(): StorageData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    //
-  }
-  return { sessions: [], solves: {}, activeSessionId: null };
-}
-
-function saveData(data: StorageData) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    //
-  }
-}
-
-/**
- * Persistence layer: hydrates solves + sessions from localStorage and keeps them
- * in sync. 
- */
 export function usePersistentSession(): UsePersistentSessionResult {
-  const [data, setData] = useState<StorageData>({ sessions: [], solves: {}, activeSessionId: null });
+  const [sessions, setSessions] = useState<SessionMeta[]>([]);
+  const [solves, setSolves] = useState<UISolve[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const reposRef = useRef<{
+    sessions: SessionsRepository;
+    solves: SolvesRepository;
+  } | null>(null);
 
+  // Initialize DB and load data
   useEffect(() => {
-    const loaded = loadData();
-    if (loaded.sessions.length === 0) {
-      const defaultSession = {
-        id: uuidv4(),
-        name: "Main Session",
-        puzzle: "3x3",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        solveCount: 0,
-      };
-      loaded.sessions.push(defaultSession);
-      loaded.solves[defaultSession.id] = [];
-      loaded.activeSessionId = defaultSession.id;
-      saveData(loaded);
-    } else if (!loaded.activeSessionId || !loaded.sessions.find(s => s.id === loaded.activeSessionId)) {
-        loaded.activeSessionId = loaded.sessions[0].id;
+    let isMounted = true;
+    
+    async function load() {
+      try {
+        const dbClient = await initDB();
+        const dbExecutor = async (sql: string, bind?: unknown[]) => {
+          return await dbClient.execute(sql, bind);
+        };
+        const sessionsRepo = new SessionsRepository(dbExecutor);
+        const solvesRepo = new SolvesRepository(dbExecutor);
+        reposRef.current = { sessions: sessionsRepo, solves: solvesRepo };
+
+        let allSessions = await sessionsRepo.findAll();
+        
+        if (allSessions.length === 0) {
+          const defaultSession = {
+            id: uuidv4(),
+            name: "Main Session",
+            puzzleType: "3x3",
+            createdAt: new Date().toISOString(),
+          };
+          await sessionsRepo.insert(defaultSession);
+          allSessions = await sessionsRepo.findAll();
+        }
+        
+        let lastActive = localStorage.getItem("cubit:activeSessionId");
+        if (!lastActive || !allSessions.find(s => s.id === lastActive)) {
+          lastActive = allSessions[0].id;
+          localStorage.setItem("cubit:activeSessionId", lastActive);
+        }
+
+        if (!isMounted) return;
+
+        // Fetch counts and map to SessionMeta
+        const metaSessions: SessionMeta[] = [];
+        for (const s of allSessions) {
+          const sessionSolves = await solvesRepo.findAll(s.id);
+          metaSessions.push({
+            id: s.id,
+            name: s.name,
+            puzzle: s.puzzleType,
+            createdAt: new Date(s.createdAt).getTime(),
+            updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : new Date(s.createdAt).getTime(),
+            solveCount: sessionSolves.length,
+          });
+        }
+        
+        setSessions(metaSessions);
+        setActiveSessionId(lastActive);
+        
+        // Load solves for active
+        const activeSolves = await solvesRepo.findAll(lastActive);
+        setSolves(activeSolves.map(toUISolve).reverse());
+      } catch (err) {
+        console.error("Failed to init DB:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     }
-    setData(loaded);
-    setLoading(false);
+    
+    load();
+    return () => { isMounted = false; };
   }, []);
 
-  const session = data.sessions.find(s => s.id === data.activeSessionId) || null;
-  const sessions = data.sessions;
-  const solves = session ? (data.solves[session.id] || []) : [];
-
-  const updateData = useCallback((updater: (prev: StorageData) => StorageData) => {
-    setData((prev) => {
-      const next = updater(prev);
-      saveData(next);
-      return next;
-    });
-  }, []);
+  const session = sessions.find(s => s.id === activeSessionId) || null;
 
   const addSolve = useCallback(async (input: { time: number; penalty?: Penalty; scramble: string }) => {
-    if (!session) return;
-    const newSolve: Solve = {
+    if (!session || !reposRef.current) return;
+    const { solves: solvesRepo } = reposRef.current;
+    
+    const dbSolve = {
       id: uuidv4(),
-      time: input.time,
-      penalty: input.penalty ?? "none",
+      sessionId: session.id,
+      timeMs: input.time,
+      date: new Date().toISOString(),
       scramble: input.scramble,
-      timestamp: Date.now(),
+      penalty: input.penalty || "none",
     };
-    updateData((prev) => {
-      const activeId = prev.activeSessionId;
-      if (!activeId) return prev;
-      const s = [...(prev.solves[activeId] || [])];
-      s.unshift(newSolve);
-      
-      const sess = prev.sessions.map(x => x.id === activeId ? { ...x, solveCount: s.length, updatedAt: Date.now() } : x);
-      return { ...prev, sessions: sess, solves: { ...prev.solves, [activeId]: s } };
-    });
-  }, [session, updateData]);
+    
+    await solvesRepo.insert(dbSolve);
+    
+    const uiSolve = toUISolve(dbSolve);
+    setSolves(prev => [uiSolve, ...prev]);
+    setSessions(prev => prev.map(s => 
+      s.id === session.id ? { ...s, solveCount: s.solveCount + 1, updatedAt: Date.now() } : s
+    ));
+  }, [session]);
 
   const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null }) => {
-    if (!session) return;
-    updateData((prev) => {
-      const activeId = prev.activeSessionId;
-      if (!activeId) return prev;
-      const s = (prev.solves[activeId] || []).map(solve => {
-        if (solve.id === id) {
-           return { ...solve, ...updates, note: updates.note === null ? undefined : (updates.note ?? solve.note) };
-        }
-        return solve;
-      });
-      return { ...prev, solves: { ...prev.solves, [activeId]: s } };
-    });
-  }, [session, updateData]);
+    if (!session || !reposRef.current) return;
+    const { solves: solvesRepo } = reposRef.current;
+    
+    const existing = await solvesRepo.findById(id);
+    if (!existing) return;
+    
+    existing.penalty = updates.penalty ?? existing.penalty;
+    if (updates.note !== undefined) {
+       existing.method = updates.note === null ? undefined : updates.note;
+    }
+    
+    await solvesRepo.update(existing);
+    
+    setSolves(prev => prev.map(s => {
+      if (s.id === id) {
+         return { ...s, penalty: updates.penalty ?? s.penalty, note: updates.note === null ? undefined : (updates.note ?? s.note) };
+      }
+      return s;
+    }));
+  }, [session]);
 
   const deleteSolve = useCallback(async (id: string) => {
-    if (!session) return;
-    updateData((prev) => {
-      const activeId = prev.activeSessionId;
-      if (!activeId) return prev;
-      const s = (prev.solves[activeId] || []).filter(solve => solve.id !== id);
-      const sess = prev.sessions.map(x => x.id === activeId ? { ...x, solveCount: s.length, updatedAt: Date.now() } : x);
-      return { ...prev, sessions: sess, solves: { ...prev.solves, [activeId]: s } };
-    });
-  }, [session, updateData]);
+    if (!session || !reposRef.current) return;
+    const { solves: solvesRepo } = reposRef.current;
+    
+    await solvesRepo.delete(id);
+    
+    setSolves(prev => prev.filter(s => s.id !== id));
+    setSessions(prev => prev.map(s => 
+      s.id === session.id ? { ...s, solveCount: Math.max(0, s.solveCount - 1), updatedAt: Date.now() } : s
+    ));
+  }, [session]);
 
   const clearSession = useCallback(async () => {
-    if (!session) return;
-    updateData((prev) => {
-      const activeId = prev.activeSessionId;
-      if (!activeId) return prev;
-      const sess = prev.sessions.map(x => x.id === activeId ? { ...x, solveCount: 0, updatedAt: Date.now() } : x);
-      return { ...prev, sessions: sess, solves: { ...prev.solves, [activeId]: [] } };
-    });
-  }, [session, updateData]);
+    if (!session || !reposRef.current) return;
+    const { solves: solvesRepo } = reposRef.current;
+    
+    const allSolves = await solvesRepo.findAll(session.id);
+    for (const s of allSolves) {
+      await solvesRepo.delete(s.id);
+    }
+    
+    setSolves([]);
+    setSessions(prev => prev.map(s => 
+      s.id === session.id ? { ...s, solveCount: 0, updatedAt: Date.now() } : s
+    ));
+  }, [session]);
 
   const newSession = useCallback(async (name?: string, puzzle?: string) => {
-    updateData((prev) => {
-      const newSess = {
-        id: uuidv4(),
-        name: name ?? "Session",
-        puzzle: puzzle ?? "3x3",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        solveCount: 0,
-      };
-      return {
-        ...prev,
-        activeSessionId: newSess.id,
-        sessions: [newSess, ...prev.sessions],
-        solves: { ...prev.solves, [newSess.id]: [] }
-      };
-    });
-  }, [updateData]);
+    if (!reposRef.current) return;
+    const { sessions: sessionsRepo } = reposRef.current;
+    
+    const newSess = {
+      id: uuidv4(),
+      name: name ?? "Session",
+      puzzleType: puzzle ?? "3x3",
+      createdAt: new Date().toISOString(),
+    };
+    
+    await sessionsRepo.insert(newSess);
+    
+    const meta: SessionMeta = {
+      id: newSess.id,
+      name: newSess.name,
+      puzzle: newSess.puzzleType,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      solveCount: 0,
+    };
+    
+    setSessions(prev => [meta, ...prev]);
+    setActiveSessionId(newSess.id);
+    localStorage.setItem("cubit:activeSessionId", newSess.id);
+    setSolves([]);
+  }, []);
 
   const switchSession = useCallback(async (id: string) => {
-    updateData((prev) => ({ ...prev, activeSessionId: id }));
-  }, [updateData]);
+    if (!reposRef.current) return;
+    const { solves: solvesRepo } = reposRef.current;
+    
+    setActiveSessionId(id);
+    localStorage.setItem("cubit:activeSessionId", id);
+    
+    setLoading(true);
+    const activeSolves = await solvesRepo.findAll(id);
+    setSolves(activeSolves.map(toUISolve).reverse());
+    setLoading(false);
+  }, []);
 
   return {
     session,

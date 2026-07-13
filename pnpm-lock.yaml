@@ -34,6 +34,9 @@ importers:
       '@cubeforge/cube-3d-engine':
         specifier: workspace:*
         version: link:../../packages/cube-3d-engine
+      '@cubeforge/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@cubeforge/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
