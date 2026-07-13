@@ -63,6 +63,10 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       workerProxy.current?.syncFacelets(facelets).catch(console.error);
     };
 
+    if (globalCubeAdapter.isConnected) {
+      globalCubeAdapter.requestFacelets().catch(console.error);
+    }
+
     // Resize Observer
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {

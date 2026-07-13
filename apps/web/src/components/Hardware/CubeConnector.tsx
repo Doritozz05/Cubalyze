@@ -76,6 +76,18 @@ export function CubeConnector({ className }: { className?: string }) {
     }
   };
 
+  const disconnectCube = async () => {
+    try {
+      await globalCubeAdapter.disconnect();
+      setStatus("disconnected");
+      toast.success("Cube disconnected");
+      setOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to disconnect");
+    }
+  };
+
   const instructions = /Edg\//i.test(navigator.userAgent) 
     ? "edge://flags/#enable-experimental-web-platform-features"
     : "chrome://flags/#enable-experimental-web-platform-features";
@@ -129,7 +141,7 @@ export function CubeConnector({ className }: { className?: string }) {
             </Alert>
           )}
 
-          {showMacInput && (
+          {showMacInput && status !== "connected" && (
             <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2 p-3 text-sm">
               <p className="text-ink-2">
                 Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:
@@ -149,13 +161,23 @@ export function CubeConnector({ className }: { className?: string }) {
             </div>
           )}
 
-          <Button 
-            onClick={connectCube} 
-            disabled={status === "connecting" || (showMacInput && !manualMac)}
-            className="w-full mt-2"
-          >
-            {status === "connecting" ? "Connecting..." : "Connect Cube"}
-          </Button>
+          {status === "connected" ? (
+            <Button 
+              onClick={disconnectCube} 
+              variant="destructive"
+              className="w-full mt-2"
+            >
+              Disconnect Cube
+            </Button>
+          ) : (
+            <Button 
+              onClick={connectCube} 
+              disabled={status === "connecting" || (showMacInput && !manualMac)}
+              className="w-full mt-2"
+            >
+              {status === "connecting" ? "Connecting..." : "Connect Cube"}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
