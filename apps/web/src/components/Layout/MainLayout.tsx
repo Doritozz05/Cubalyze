@@ -9,6 +9,10 @@ export interface MainLayoutProps {
   main: React.ReactNode;
   /** Sidebar content: solve log + stats tabs. */
   sidebar: React.ReactNode;
+  /** 3D cube view (rendered in place of the sidebar when cube3DActive). */
+  cube3D?: React.ReactNode;
+  /** Whether the 3D cube view is active (hides sidebar, shows cube). */
+  cube3DActive?: boolean;
   /** Personal best shown in the header (ms). */
   pb?: number | null;
   /** Current session solve count, shown as a chip in the header. */
@@ -21,6 +25,12 @@ export interface MainLayoutProps {
   onSwitchSession?: (id: string) => void;
   /** Create + switch to a new session. */
   onNewSession?: () => void;
+  /** Rename a session. */
+  onRenameSession?: (id: string, name: string) => void;
+  /** Delete a session entirely. */
+  onDeleteSession?: (id: string) => void;
+  /** Toggle the 3D cube view. */
+  onToggleCube3D?: () => void;
   className?: string;
 }
 
@@ -28,16 +38,25 @@ export interface MainLayoutProps {
  * Top-level shell: sticky header, a two-column body (timer stage + sidebar)
  * that collapses to a single column on small screens, and a sticky footer
  * with the keyboard hint. Footer is pinned to the bottom via mt-auto.
+ *
+ * When `cube3DActive`, the sidebar is replaced by the 3D cube canvas — a
+ * "focused mode" that keeps the timer + scramble front-and-center while the
+ * physical cube's live state renders beside it.
  */
 export function MainLayout({
   main,
   sidebar,
+  cube3D,
+  cube3DActive,
   pb,
   sessionCount,
   sessions,
   activeSessionId,
   onSwitchSession,
   onNewSession,
+  onRenameSession,
+  onDeleteSession,
+  onToggleCube3D,
   className,
 }: MainLayoutProps) {
   return (
@@ -54,15 +73,31 @@ export function MainLayout({
         activeSessionId={activeSessionId}
         onSwitchSession={onSwitchSession}
         onNewSession={onNewSession}
+        onRenameSession={onRenameSession}
+        onDeleteSession={onDeleteSession}
+        cube3DActive={cube3DActive}
+        onToggleCube3D={onToggleCube3D}
       />
 
-      <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,380px)]">
+      <main className={cn(
+        "mx-auto flex w-full max-w-[1400px] flex-1 flex-col lg:grid",
+        cube3DActive 
+          ? "lg:grid-cols-2" 
+          : "lg:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,380px)]"
+      )}>
         <section className="flex flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {main}
         </section>
 
-        <aside className="flex flex-col border-t border-line bg-surface px-4 py-6 sm:px-6 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem-2.75rem)] lg:overflow-hidden lg:border-l lg:border-t-0 lg:py-8">
-          {sidebar}
+        <aside
+          className={cn(
+            "flex flex-col bg-surface px-4 py-6 sm:px-6 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem-2.75rem)] lg:overflow-hidden lg:py-8",
+            cube3DActive
+              ? "min-h-[50vh] border-t border-line lg:min-h-0 lg:border-l lg:border-t-0"
+              : "border-t border-line lg:border-l lg:border-t-0",
+          )}
+        >
+          {cube3DActive ? cube3D : sidebar}
         </aside>
       </main>
 

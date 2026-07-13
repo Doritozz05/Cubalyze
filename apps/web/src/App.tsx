@@ -5,6 +5,7 @@ import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import { TimesList } from "@/components/Stats/TimesList";
 import { StatsPanel } from "@/components/Stats/StatsPanel";
+import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import {
   Tabs,
   TabsContent,
@@ -30,9 +31,12 @@ export default function App() {
     clearSession,
     newSession,
     switchSession,
+    renameSession,
+    deleteSession,
   } = usePersistentSession();
 
   const [scrambleIndex, setScrambleIndex] = useState(0);
+  const [cube3DActive, setCube3DActive] = useState(false);
   const currentScramble =
     MOCK_SCRAMBLES[scrambleIndex % MOCK_SCRAMBLES.length];
 
@@ -140,6 +144,11 @@ export default function App() {
           activeSessionId={session?.id ?? null}
           onSwitchSession={handleSwitchSession}
           onNewSession={handleNewSession}
+          onRenameSession={renameSession}
+          onDeleteSession={deleteSession}
+          cube3DActive={cube3DActive}
+          onToggleCube3D={() => setCube3DActive(a => !a)}
+          cube3D={<Cube3DPanel />}
           main={
             <>
               <ScrambleDisplay

@@ -31,8 +31,9 @@ export interface UsePersistentSessionResult {
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   clearSession: () => Promise<void>;
-  newSession: (name?: string, puzzle?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
+  renameSession: (id: string, name: string) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
 }
 
 // Convert DB solve to UI solve
@@ -238,6 +239,45 @@ export function usePersistentSession(): UsePersistentSessionResult {
     setLoading(false);
   }, []);
 
+  const renameSession = useCallback(async (id: string, name: string) => {
+    if (!reposRef.current) return;
+    const { sessions: sessionsRepo } = reposRef.current;
+    
+    const existing = await sessionsRepo.findById(id);
+    if (!existing) return;
+    
+    existing.name = name;
+    await sessionsRepo.update(existing);
+    
+    setSessions(prev => prev.map(s => 
+      s.id === id ? { ...s, name, updatedAt: Date.now() } : s
+    ));
+  }, []);
+
+  const deleteSession = useCallback(async (id: string) => {
+    if (!reposRef.current) return;
+    const { sessions: sessionsRepo, solves: solvesRepo } = reposRef.current;
+    
+    const allSolves = await solvesRepo.findAll(id);
+    for (const s of allSolves) {
+      await solvesRepo.delete(s.id);
+    }
+    
+    await sessionsRepo.delete(id);
+    
+    setSessions(prev => {
+      const remaining = prev.filter(s => s.id !== id);
+      if (id === activeSessionId) {
+        if (remaining.length > 0) {
+          switchSession(remaining[0].id);
+        } else {
+          newSession(); // Will trigger a switch inside
+        }
+      }
+      return remaining;
+    });
+  }, [activeSessionId, switchSession, newSession]);
+
   return {
     session,
     sessions,
@@ -249,5 +289,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     clearSession,
     newSession,
     switchSession,
+    renameSession,
+    deleteSession,
   };
 }

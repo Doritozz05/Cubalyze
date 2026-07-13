@@ -37,7 +37,7 @@ export class SceneManager {
     this.camera.position.set(0, 0, 7);
     this.camera.lookAt(0, 0, 0);
 
-    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
+    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(pixelRatio, 2));
     this.renderer.setSize(width, height, false);
 
