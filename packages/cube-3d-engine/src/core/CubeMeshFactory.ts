@@ -18,12 +18,12 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
   coreColor: '#000000', // Pure black core for better contrast
   coreOpacity: 1.0,
   stickerColors: {
-    U: '#e0e0e0', // Slightly off-white
-    D: '#fff607', // SebLague Yellow
-    F: '#08bc05', // SebLague Green
-    B: '#0469ff', // SebLague Blue
-    R: '#f80a0a', // SebLague Red
-    L: '#ff7802', // SebLague Orange
+    U: '#e0e0e0', // White
+    D: '#fff607', // Yellow
+    F: '#08bc05', // Green
+    B: '#0469ff', // Blue
+    R: '#f80a0a', // Red
+    L: '#ff7802', // Orange
   },
 };
 
