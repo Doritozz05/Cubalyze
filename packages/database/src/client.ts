@@ -11,7 +11,7 @@ export const initDB = async () => {
     throw new Error('Web Workers are only available in the browser');
   }
 
-  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
   db = Comlink.wrap<typeof DBWorker>(worker);
   
   await db.init();

@@ -1,3 +1,6 @@
+// Constants
+export * from './constants/faceRotation';
+
 // Core
 export * from './core/SceneManager';
 export * from './core/CubeMeshFactory';

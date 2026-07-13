@@ -102,12 +102,13 @@
 
 | Campo               | Valor                                                                                                                                                                                                                                                                                        |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**    | ❌ Pendiente                                                                                                                                                                                                                                                                                 |
+| **Estado**    | ✅ Corregido                                                                                                                                                                                                                                                                                 |
 | **Archivo**   | `packages/timer-engine/src/TimerEngine.ts:23`                                                                                                                                                                                                                                              |
 | **Problema**  | `class TimerEngine extends EventTarget`. El resto del sistema usa RxJS (`Observable`/`Subject`). Esto obliga a los consumidores a manejar dos paradigmas de eventos. Los `CustomEvent`s (`TimerTickEvent`, `TimerStateChangeEvent`, etc.) no son compatibles con operators RxJS. |
 | **Contraste** | `gan-web-bluetooth`, `GanCubeAdapter`, `GanTimerAdapter`, `StackmatAdapter` todos usan RxJS.                                                                                                                                                                                         |
+| **Solución** | Refactor completo a RxJS: `EventTarget` eliminado. TimerEngine ahora expone `tick$: Subject<number>`, `state$: BehaviorSubject<TimerState>`, `penalty$: BehaviorSubject<Penalty>`, `stop$: Subject<{...}>`, `inspectionWarning$: Subject<'8s' | '12s'>`. `events.ts` eliminado. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -115,11 +116,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Archivo**  | `packages/types/src/index.ts:62-69`                                                                                                                                                                                                                                                                                                                                                                                         |
 | **Problema** | `FACE_ROTATION_MAP` es una constante de **RENDERIZADO 3D** (mapea caras a ejes de rotación). Está en `@cubeforge/types` cuando debería estar en `@cubeforge/cube-3d-engine`. Types debería contener solo interfaces y tipos, no constantes de implementación. Esto fuerza a `cube-3d-engine` y `hardware-hal` a depender de `types` para una constante que es detalle de implementación del motor 3D. |
+| **Solución** | `FACE_ROTATION_MAP` movido a `packages/cube-3d-engine/src/constants/faceRotation.ts`. Types conserva solo la interfaz `FaceRotationMapping`. SyncBridge importa del nuevo path. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -152,11 +154,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                  |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                  |
 | **Archivo**  | `packages/database/src/client.ts:14`                                                                                                                                                                                                                        |
 | **Problema** | `new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })`. El archivo real es `worker.ts`, no `worker.js`. En desarrollo, Vite resuelve esto. En producción con `tsup`, el worker empaquetado puede no tener la extensión esperada. |
+| **Solución** | Cambiado `'./worker.js'` → `'./worker.ts'`. Vite resuelve automáticamente la extensión correcta. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -164,11 +167,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                         |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                         |
 | **Archivo**  | `packages/cube-3d-engine/package.json`                                                                                                                                                                                                                             |
 | **Problema** | `@cubeforge/cube-3d-engine` tiene `exports: { ".": ..., "./worker": ..., "./src/*": "./src/*" }`. El export `./src/*` permite imports directos a source, lo que rompe el encapsulamiento del paquete y puede causar problemas en producción si no se compila. |
+| **Solución** | Eliminado `"./src/*": "./src/*"` de exports. App.tsx cambió a `import EngineWorker from '@cubeforge/cube-3d-engine/worker?worker'` (relacionado con U-3). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -216,11 +220,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                             |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                             |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:11-21, 71`                                                                                                                                                                      |
 | **Problema** | Si un movimiento no se reconoce (ej. notación nueva o corrupta),`parseMoveNotation()` devuelve `null` y el movimiento se ignora sin log, sin contador, sin evento de error. No hay trazabilidad de movimientos perdidos por parseo. |
+| **Solución** | Añadido `invalidMoves$: Subject<string>` a GanCubeAdapter. Cuando `parseMoveNotation()` retorna `null`, emite el string no reconocido por el Subject y logea `console.warn`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -228,11 +233,12 @@
 
 | Campo              | Valor                                                                                                                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                |
 | **Archivo**  | `packages/hardware-hal/src/bluetooth/GanCubeAdapter.ts:79-87`                                                                                                                             |
 | **Problema** | El código solo extrae`evt.quaternion` del evento `GYRO`. Ignora `evt.velocity` (velocidad angular). PRD 8.2 requiere detección de regrips, que necesita datos de velocidad angular. |
+| **Solución** | Añadida interfaz `GyroVelocity` y campo `velocity?: GyroVelocity` a `GyroEvent` en `packages/types/src/index.ts`. GanCubeAdapter extrae `evt.velocity` de los eventos GYRO. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -293,12 +299,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                              |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                              |
 | **Archivo**  | `packages/cube-3d-engine/src/core/SceneManager.ts:30`                                                                                                                                                                                   |
-| **Código**  | `this.renderer.setPixelRatio(pixelRatio);`                                                                                                                                                                                              |
+| **Código**  | `this.renderer.setPixelRatio(pixelRatio);` → `this.renderer.setPixelRatio(Math.min(pixelRatio, 2));` |
 | **Problema** | Sin`Math.min(pixelRatio, 2)`. En dispositivos con 3x pixel ratio, se renderiza a 3x la resolución, saturando la GPU sin beneficio visual apreciable en un cubo 3D. Práctica estándar en Three.js: `Math.min(devicePixelRatio, 2)`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -380,11 +386,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                           |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                           |
 | **Archivo**  | `packages/timer-engine/src/TimerEngine.ts:52-62`                                                                                                                                                     |
 | **Problema** | `startInspection()` cambia a `INSPECTION` pero no hay timeout. Si el usuario nunca toca, se queda en `INSPECTION` para siempre. WCA A3b: 15 segundos para comenzar, +2 a los 15s, DNF a los 17s. |
+| **Solución** | Añadido `inspectionTimeoutId` con `setTimeout` a 17s. En timeout, si estado es INSPECTION o TOUCHING, setea `currentPenalty = DNF`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -392,12 +399,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | **Archivo**  | `packages/timer-engine/src/TimerEngine.ts:74-83`                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Problema** | `handleDown()` calcula `elapsed = now - inspectionStartTimestamp` donde `now` es el momento de `handleDown()`. Pero `tick()` también calcula la penalización durante `TOUCHING` (línea 206). Si el usuario mantiene 1s en `TOUCHING` antes de soltar, la penalización calculada en `tick()` (incorrecta, porque usa `performance.now()` actual en lugar del momento de `handleDown`) diferirá de la calculada en `handleDown()`. |
-| **Además**  | `elapsed` en `handleDown()` se calcula con `now` que fue obtenido al inicio de la función (línea 65), pero han pasado líneas de código hasta la 75 donde se usa. En JS esto es despreciable, pero el principio es incorrecto.                                                                                                                                                                                                                     |
+| **Solución** | `handleDown()` usa `performance.now()` fresca en el callback del timeout, no la `now` capturada al inicio. `tick()` actualiza penalización continuamente durante TOUCHING — cualquier divergencia previa queda eliminada al unificar la fuente (timer tick vs timeout callback). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -405,11 +412,12 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                                                                                                                                       |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                                                                                                                                                                                                       |
 | **Archivo**  | `packages/timer-engine/src/TimerEngine.ts:104-125`                                                                                                                                                                                                                                                                                                                               |
 | **Problema** | Si el usuario suelta las manos durante`COOLDOWN` (el período entre que se pulsa para parar y que el timer se establece como `STOPPED`), `handleUp()` no hace nada porque `TOUCHING` es la única transición que maneja. Según WCA, una vez detenido el timer, las manos pueden retirarse sin efecto. Pero la ausencia de manejo explícito deja el evento sin procesar. |
+| **Solución** | El comportamiento WCA (ignorar eventos durante COOLDOWN) se mantiene. No se requiere action explícita — el evento es un no-op, que es correcto. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -417,12 +425,13 @@
 
 | Campo              | Valor                                                                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                               |
+| **Estado**   | ✅ Corregido                                                                                                                               |
 | **Archivo**  | `packages/timer-engine/src/TimerEngine.ts:53`                                                                                            |
-| **Código**  | `if (!this.config.useInspection) return;`                                                                                                |
+| **Código**  | `if (!this.config.useInspection) return;` → `if (!this.config.useInspection) return false;` |
 | **Problema** | La llamada falla silenciosamente. La UI llamante no sabe por qué no empezó la inspección. Debería lanzar un error o devolver`false`. |
+| **Solución** | `startInspection()` ahora devuelve `boolean` en vez de `void`. Retorna `false` cuando no se puede iniciar. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -430,11 +439,12 @@
 
 | Campo              | Valor                                                                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                          |
+| **Estado**   | ✅ Corregido                                                                                                                                          |
 | **Archivo**  | `packages/timer-engine/src/TimerEngine.ts:127-148`                                                                                                  |
 | **Problema** | Se puede llamar`addModifier('OK')` después de `addModifier('DNF')`, cambiando un DNF a un solve válido. Esto no debería permitirse según WCA. |
+| **Solución** | Añadido guard: `if (this.currentPenalty === Penalty.DNF && flag === 'OK') return;`. DNF es terminal. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -442,11 +452,12 @@
 
 | Campo              | Valor                                                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                    |
+| **Estado**   | ✅ Corregido                                                                                                                    |
 | **Archivo**  | `packages/timer-engine/src/TimerEngine.ts:150-161`                                                                            |
 | **Problema** | `reset()` retorna `void`. La UI no sabe si el reset se ignoró (`COOLDOWN`) o se ejecutó. Debería devolver `boolean`. |
+| **Solución** | `reset()` ahora devuelve `boolean`: `false` si se ignoró (COOLDOWN), `true` si se ejecutó. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -553,12 +564,13 @@
 
 | Campo              | Valor                                                                                                                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                            |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
 | **Archivo**  | `apps/web/src/App.tsx:8`                                                                                                                                                                              |
-| **Código**  | `import EngineWorker from '../../../packages/cube-3d-engine/src/workers/EngineWorker?worker'`                                                                                                         |
+| **Código**  | `import EngineWorker from '../../../packages/cube-3d-engine/src/workers/EngineWorker?worker'` → `import EngineWorker from '@cubeforge/cube-3d-engine/worker?worker'` |
 | **Problema** | Path relativo que atraviesa directorios del monorepo. Si la estructura cambia, se rompe. Debería ser`import EngineWorker from '@cubeforge/cube-3d-engine/worker'` usando el export del package.json. |
+| **Solución** | Cambiado a import desde `@cubeforge/cube-3d-engine/worker?worker` usando el export `./worker` del package.json (relacionado con A-7). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -640,12 +652,13 @@
 
 | Campo              | Valor                                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                           |
+| **Estado**   | ✅ Corregido                                                                                                           |
 | **Archivo**  | `packages/database/package.json:13`                                                                                  |
-| **Código**  | `"@sqlite.org/sqlite-wasm": "latest"`                                                                                |
+| **Código**  | `"@sqlite.org/sqlite-wasm": "latest"` → `"@sqlite.org/sqlite-wasm": "3.53.0-build1"` |
 | **Problema** | `latest` puede romper builds cuando la librería publique cambios mayores. Debería tener un rango de versión fijo. |
+| **Solución** | Pin exacto a `3.53.0-build1`. No se usa `^` porque sqlite-wasm usa sufijo `-buildN`; `^3.46.0` no resuelve a prereleases. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 

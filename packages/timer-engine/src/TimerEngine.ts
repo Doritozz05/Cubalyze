@@ -1,12 +1,6 @@
+import { Subject, BehaviorSubject } from 'rxjs';
 import { TimerState } from './TimerState';
 import { Penalty, getInspectionPenalty, calculateFinalTime } from './WcaRules';
-import {
-  TimerTickEvent,
-  TimerStateChangeEvent,
-  TimerPenaltyEvent,
-  TimerStopEvent,
-  TimerInspectionWarningEvent
-} from './events';
 
 export interface TimerConfig {
   useInspection: boolean;
@@ -20,7 +14,19 @@ const DEFAULT_CONFIG: TimerConfig = {
   cooldownDelay: 500
 };
 
-export class TimerEngine extends EventTarget {
+export interface TimerStopEventDetail {
+  timeMs: number;
+  penalty: Penalty;
+  finalTimeMs: number;
+}
+
+export class TimerEngine {
+  readonly tick$ = new Subject<number>();
+  readonly state$ = new BehaviorSubject<TimerState>(TimerState.IDLE);
+  readonly penalty$ = new BehaviorSubject<Penalty>(Penalty.NONE);
+  readonly stop$ = new Subject<TimerStopEventDetail>();
+  readonly inspectionWarning$ = new Subject<'8s' | '12s'>();
+
   private config: TimerConfig;
   private currentState: TimerState = TimerState.IDLE;
   private startTimestamp: number = 0;
@@ -30,6 +36,7 @@ export class TimerEngine extends EventTarget {
 
   private touchTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private cooldownTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private inspectionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private warned8s: boolean = false;
   private warned12s: boolean = false;
@@ -37,7 +44,6 @@ export class TimerEngine extends EventTarget {
   private solveTimeMs: number = 0;
 
   constructor(config?: Partial<TimerConfig>) {
-    super();
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
@@ -49,33 +55,41 @@ export class TimerEngine extends EventTarget {
     return this.currentPenalty;
   }
 
-  public startInspection(): void {
-    if (!this.config.useInspection) return;
-    if (this.currentState !== TimerState.IDLE && this.currentState !== TimerState.STOPPED) return;
-    
+  public startInspection(): boolean {
+    if (!this.config.useInspection) return false;
+    if (this.currentState !== TimerState.IDLE && this.currentState !== TimerState.STOPPED) return false;
+
     this.setState(TimerState.INSPECTION);
     this.currentPenalty = Penalty.NONE;
     this.warned8s = false;
     this.warned12s = false;
     this.inspectionStartTimestamp = performance.now();
     this.startTickLoop();
+
+    this.inspectionTimeoutId = setTimeout(() => {
+      if (this.currentState === TimerState.INSPECTION || this.currentState === TimerState.TOUCHING) {
+        this.currentPenalty = Penalty.DNF;
+        this.penalty$.next(this.currentPenalty);
+      }
+    }, 17000);
+
+    return true;
   }
 
   public handleDown(): void {
     const now = performance.now();
 
     if (this.currentState === TimerState.IDLE || this.currentState === TimerState.INSPECTION) {
-      // Begin touching
       const previousWasInspection = this.currentState === TimerState.INSPECTION;
       this.setState(TimerState.TOUCHING);
-      
+
       this.touchTimeoutId = setTimeout(() => {
         this.setState(TimerState.READY);
         if (previousWasInspection) {
-          const elapsed = now - this.inspectionStartTimestamp;
+          const elapsed = performance.now() - this.inspectionStartTimestamp;
           this.currentPenalty = getInspectionPenalty(elapsed);
           if (this.currentPenalty !== Penalty.NONE) {
-            this.dispatchEvent(new TimerPenaltyEvent({ penalty: this.currentPenalty }));
+            this.penalty$.next(this.currentPenalty);
           }
         } else {
           this.currentPenalty = Penalty.NONE;
@@ -83,17 +97,16 @@ export class TimerEngine extends EventTarget {
       }, this.config.holdToStartDelay);
 
     } else if (this.currentState === TimerState.RUNNING) {
-      // Stop the timer
       this.stopTickLoop();
       this.solveTimeMs = now - this.startTimestamp;
       const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
-      
+
       this.setState(TimerState.COOLDOWN);
-      this.dispatchEvent(new TimerStopEvent({
+      this.stop$.next({
         timeMs: this.solveTimeMs,
         penalty: this.currentPenalty,
         finalTimeMs
-      }));
+      });
 
       this.cooldownTimeoutId = setTimeout(() => {
         this.setState(TimerState.STOPPED);
@@ -103,22 +116,18 @@ export class TimerEngine extends EventTarget {
 
   public handleUp(): void {
     if (this.currentState === TimerState.TOUCHING) {
-      // Let go too early
       if (this.touchTimeoutId) {
         clearTimeout(this.touchTimeoutId);
         this.touchTimeoutId = null;
       }
-      // Revert state
       if (this.config.useInspection && this.inspectionStartTimestamp > 0) {
         this.setState(TimerState.INSPECTION);
       } else {
         this.setState(TimerState.IDLE);
       }
     } else if (this.currentState === TimerState.READY) {
-      // Start the solve
       this.setState(TimerState.RUNNING);
       this.startTimestamp = performance.now();
-      // Reset inspection data so it doesn't leak
       this.inspectionStartTimestamp = 0;
       this.startTickLoop();
     }
@@ -128,7 +137,11 @@ export class TimerEngine extends EventTarget {
     if (this.currentState !== TimerState.STOPPED && this.currentState !== TimerState.COOLDOWN) {
       return;
     }
-    
+
+    if (this.currentPenalty === Penalty.DNF && flag === 'OK') {
+      return;
+    }
+
     if (flag === 'OK') {
       this.currentPenalty = Penalty.NONE;
     } else if (flag === '+2') {
@@ -138,33 +151,37 @@ export class TimerEngine extends EventTarget {
     }
 
     const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
-    
-    this.dispatchEvent(new TimerStopEvent({
+
+    this.stop$.next({
       timeMs: this.solveTimeMs,
       penalty: this.currentPenalty,
       finalTimeMs
-    }));
-    this.dispatchEvent(new TimerPenaltyEvent({ penalty: this.currentPenalty }));
+    });
+    this.penalty$.next(this.currentPenalty);
   }
 
-  public reset(): void {
-    if (this.currentState === TimerState.COOLDOWN) return; // Ignore reset during cooldown
+  public reset(): boolean {
+    if (this.currentState === TimerState.COOLDOWN) return false;
 
+    if (this.inspectionTimeoutId) {
+      clearTimeout(this.inspectionTimeoutId);
+      this.inspectionTimeoutId = null;
+    }
     this.stopTickLoop();
     if (this.touchTimeoutId) clearTimeout(this.touchTimeoutId);
     if (this.cooldownTimeoutId) clearTimeout(this.cooldownTimeoutId);
-    
+
     this.currentPenalty = Penalty.NONE;
     this.inspectionStartTimestamp = 0;
     this.solveTimeMs = 0;
     this.setState(TimerState.IDLE);
+    return true;
   }
 
   private setState(newState: TimerState): void {
     if (this.currentState === newState) return;
-    const previousState = this.currentState;
     this.currentState = newState;
-    this.dispatchEvent(new TimerStateChangeEvent({ previousState, newState }));
+    this.state$.next(newState);
   }
 
   private startTickLoop(): void {
@@ -189,24 +206,22 @@ export class TimerEngine extends EventTarget {
 
     if (this.currentState === TimerState.INSPECTION || this.currentState === TimerState.TOUCHING) {
       if (!this.config.useInspection || this.inspectionStartTimestamp === 0) return;
-      
+
       timeMs = now - this.inspectionStartTimestamp;
-      
-      // Emit warnings
+
       if (timeMs >= 8000 && !this.warned8s) {
         this.warned8s = true;
-        this.dispatchEvent(new TimerInspectionWarningEvent({ type: '8s' }));
+        this.inspectionWarning$.next('8s');
       }
       if (timeMs >= 12000 && !this.warned12s) {
         this.warned12s = true;
-        this.dispatchEvent(new TimerInspectionWarningEvent({ type: '12s' }));
+        this.inspectionWarning$.next('12s');
       }
 
-      // Auto-update penalty if we cross thresholds while inspecting/touching
       const newPenalty = getInspectionPenalty(timeMs);
       if (newPenalty !== this.currentPenalty) {
         this.currentPenalty = newPenalty;
-        this.dispatchEvent(new TimerPenaltyEvent({ penalty: this.currentPenalty }));
+        this.penalty$.next(this.currentPenalty);
       }
     } else if (this.currentState === TimerState.RUNNING) {
       timeMs = now - this.startTimestamp;
@@ -214,6 +229,6 @@ export class TimerEngine extends EventTarget {
       return;
     }
 
-    this.dispatchEvent(new TimerTickEvent({ timeMs, state: this.currentState }));
+    this.tick$.next(timeMs);
   }
 }

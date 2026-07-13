@@ -149,7 +149,7 @@ importers:
   packages/database:
     dependencies:
       '@sqlite.org/sqlite-wasm':
-        specifier: latest
+        specifier: 3.53.0-build1
         version: 3.53.0-build1
       comlink:
         specifier: ^4.4.1
@@ -277,6 +277,10 @@ importers:
   packages/sync-engine: {}
 
   packages/timer-engine:
+    dependencies:
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
     devDependencies:
       '@cubeforge/config-typescript':
         specifier: workspace:*

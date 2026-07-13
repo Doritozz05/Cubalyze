@@ -32,6 +32,16 @@ export type CubeMoveDirection = 1 | -1 | 2;
 // ─── Gyroscope / IMU Events ──────────────────────────────────────────────────
 
 /**
+ * Angular velocity vector (rad/s) from the cube's gyroscope.
+ * Used for regrip detection (PRD 8.2).
+ */
+export interface GyroVelocity {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
  * A quaternion orientation event from the cube's built-in gyroscope/IMU.
  * All fields are components of a unit quaternion (x, y, z, w).
  */
@@ -40,6 +50,8 @@ export interface GyroEvent {
   y: number;
   z: number;
   w: number;
+  /** Angular velocity in rad/s, present on supported hardware */
+  velocity?: GyroVelocity;
 }
 
 // ─── Cube Visual State ───────────────────────────────────────────────────────
@@ -58,12 +70,4 @@ export interface FaceRotationMapping {
   angleSign: 1 | -1;   // Sign convention for the rotation direction
 }
 
-/** Standard face-to-axis mappings for a 3x3 Rubik's Cube */
-export const FACE_ROTATION_MAP: Record<CubeFace, FaceRotationMapping> = {
-  U: { axis: 'y', layerValue:  1, angleSign: -1 },
-  D: { axis: 'y', layerValue: -1, angleSign:  1 },
-  R: { axis: 'x', layerValue:  1, angleSign: -1 },
-  L: { axis: 'x', layerValue: -1, angleSign:  1 },
-  F: { axis: 'z', layerValue:  1, angleSign: -1 },
-  B: { axis: 'z', layerValue: -1, angleSign:  1 },
-};
+

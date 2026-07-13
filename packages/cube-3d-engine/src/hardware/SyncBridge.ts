@@ -3,7 +3,7 @@ import type { Observable } from 'rxjs';
 import type * as Comlink from 'comlink';
 import type { EngineWorkerAPI } from '../workers/EngineWorker';
 import type { CubeMoveEvent, GyroEvent, CubeFace } from '@cubeforge/types';
-import { FACE_ROTATION_MAP } from '@cubeforge/types';
+import { FACE_ROTATION_MAP } from '../constants/faceRotation';
 
 /**
  * Bridges hardware cube events (from the HAL layer) to the 3D rendering engine.

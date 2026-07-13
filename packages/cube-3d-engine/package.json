@@ -15,8 +15,7 @@
       "import": "./dist/workers/EngineWorker.mjs",
       "require": "./dist/workers/EngineWorker.js",
       "types": "./dist/workers/EngineWorker.d.ts"
-    },
-    "./src/*": "./src/*"
+    }
   },
   "scripts": {
     "build": "tsup src/index.ts src/workers/EngineWorker.ts --format esm,cjs --dts",

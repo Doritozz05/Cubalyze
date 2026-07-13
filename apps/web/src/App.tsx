@@ -4,8 +4,8 @@ import { GanCubeAdapter } from '@cubeforge/hardware-hal'
 import { SyncBridge } from '@cubeforge/cube-3d-engine'
 import type { EngineWorkerAPI } from '@cubeforge/cube-3d-engine'
 
-// @ts-expect-error - Vite handles ?worker imports natively but TS might complain without vite/client
-import EngineWorker from '../../../packages/cube-3d-engine/src/workers/EngineWorker?worker'
+// @ts-expect-error - Vite handles ?worker imports natively
+import EngineWorker from '@cubeforge/cube-3d-engine/worker?worker'
 
 import './App.css'
 
