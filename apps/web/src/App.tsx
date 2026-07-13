@@ -1,145 +1,207 @@
-import { useState, useRef, useEffect } from 'react'
-import * as Comlink from 'comlink'
-import { GanCubeAdapter } from '@cubeforge/hardware-hal'
-import { SyncBridge } from '@cubeforge/cube-3d-engine'
-import type { EngineWorkerAPI } from '@cubeforge/cube-3d-engine'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MainLayout } from "@/components/Layout/MainLayout";
+import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
+import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { SessionStats } from "@/components/Stats/SessionStats";
+import { TimesList } from "@/components/Stats/TimesList";
+import { StatsPanel } from "@/components/Stats/StatsPanel";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { toast, Toaster } from "sonner";
+import { useShortcuts } from "@/hooks/useShortcuts";
+import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { MOCK_SCRAMBLES, MOCK_PB } from "@/utils/mockData";
+import { ThemeProvider } from "@/components/theme-provider";
+import "@/index.css";
 
-import EngineWorker from '@cubeforge/cube-3d-engine/worker?worker'
+export default function App() {
+  const {
+    session,
+    sessions,
+    solves,
+    loading,
+    addSolve,
+    updateSolve,
+    deleteSolve,
+    clearSession,
+    newSession,
+    switchSession,
+  } = usePersistentSession();
 
-import './App.css'
+  const [scrambleIndex, setScrambleIndex] = useState(0);
+  const currentScramble =
+    MOCK_SCRAMBLES[scrambleIndex % MOCK_SCRAMBLES.length];
 
-function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [status, setStatus] = useState('Disconnected');
-  const [showMacInput, setShowMacInput] = useState(false);
-  const [manualMac, setManualMac] = useState('');
-  
-  const workerProxy = useRef<Comlink.Remote<EngineWorkerAPI>>(null);
-  const syncBridge = useRef<SyncBridge>(null);
-  const workerInstance = useRef<Worker>(null);
+  // Refs so global shortcuts can read/act on the timer without re-rendering.
+  const timerStateRef = useRef("idle");
+  const cancelRef = useRef<(() => void) | null>(null);
 
-  const isInitialized = useRef(false);
+  const handleComplete = useCallback(
+    (time: number) => {
+      addSolve({ time, scramble: currentScramble, penalty: "none" })
+        .then(() => setScrambleIndex((i) => i + 1))
+        .catch(() => toast.error("Couldn’t save solve"));
+    },
+    [addSolve, currentScramble],
+  );
 
-  useEffect(() => {
-    if (!canvasRef.current || isInitialized.current) return;
-    isInitialized.current = true;
-    
-    // Setup Worker
-    workerInstance.current = new EngineWorker();
-    workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current!);
-    syncBridge.current = new SyncBridge(workerProxy.current);
+  const handleUpdate = useCallback(
+    (id: string, updates: { penalty?: "none" | "+2" | "DNF"; note?: string | null }) => {
+      updateSolve(id, updates).catch(() => toast.error("Update failed"));
+    },
+    [updateSolve],
+  );
 
-    // Setup OffscreenCanvas robustly for HMR
-    let offscreen: OffscreenCanvas;
-    try {
-      offscreen = canvasRef.current.transferControlToOffscreen();
-    } catch {
-      console.warn('Canvas already transferred by previous render');
-      return; // Abort second initialization
-    }
-    
-    // Init Engine
-    workerProxy.current.init(
-      Comlink.transfer(offscreen, [offscreen]), 
-      canvasRef.current.clientWidth, 
-      canvasRef.current.clientHeight, 
-      window.devicePixelRatio
-    );
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteSolve(id).catch(() => toast.error("Delete failed"));
+    },
+    [deleteSolve],
+  );
 
-    return () => {
-      // In strict mode dev, React unmounts and remounts.
-      // But we can't un-transfer a canvas. So we only clean up if the component truly dies.
-      // For a robust dev environment, it's better to just keep it alive or recreate the canvas.
-    }
+  const handleClear = useCallback(() => {
+    clearSession().catch(() => toast.error("Couldn’t clear session"));
+  }, [clearSession]);
+
+  const handleRegenerate = useCallback(() => {
+    setScrambleIndex((i) => i + 1);
+    toast.success("New scramble");
   }, []);
 
-  const connectCube = async () => {
+  const handleCopy = useCallback(async () => {
+    const fail = () => toast.error("Couldn’t copy scramble");
     try {
-      setStatus('Connecting...');
-      const adapter = new GanCubeAdapter();
-      await adapter.connect(showMacInput ? manualMac : undefined);
-      setStatus('Connected!');
-      setShowMacInput(false);
-      
-      // Bind moves and gyroscope streams from the HAL to the 3D engine
-      if (syncBridge.current && adapter.moves$) {
-        syncBridge.current.bindCube(adapter.moves$, adapter.gyro$);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(currentScramble);
+        toast.success("Scramble copied");
+        return;
       }
-
-      // Request facelet state so SyncBridge can initialise the 3D scene
-      adapter.requestFacelets().catch(() => {});
-      adapter.onFacelets = (facelets) => {
-        console.log('[Sync] Initial facelets received:', facelets);
-        // TODO: Convert facelets to CubieMoveEvent[] and call syncBridge.syncState()
-      };
-    } catch (e: unknown) {
-      console.error(e);
-      const errMsg = e instanceof Error ? e.message : String(e);
-      // MAC_REQUIRED is thrown by GanCubeAdapter; errors about 'requestDevice' usually
-      // mean the Web Bluetooth API is blocked by the browser (missing experimental flag).
-      const requiresExperimental = errMsg === 'MAC_REQUIRED' || errMsg.includes('requestDevice') || errMsg.includes('bluetooth') || !('bluetooth' in navigator);
-      
-      if (requiresExperimental) {
-        setStatus('Automatic MAC reading or Web Bluetooth is blocked by the browser.');
-        setShowMacInput(true);
-      } else {
-        setStatus('Failed to connect: ' + errMsg);
-      }
+    } catch {
+      /* fall through */
     }
-  }
-
-  const calibrateGyro = () => {
-    if (workerProxy.current) {
-      workerProxy.current.calibrateGyro();
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = currentScramble;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (ok) toast.success("Scramble copied");
+      else fail();
+    } catch {
+      fail();
     }
-  }
+  }, [currentScramble]);
 
-  const instructions = /Edg\//i.test(navigator.userAgent) 
-    ? 'edge://flags/#enable-experimental-web-platform-features'
-    : 'chrome://flags/#enable-experimental-web-platform-features';
+  const handleCancel = useCallback(() => {
+    cancelRef.current?.();
+  }, []);
+
+  const handleNewSession = useCallback(() => {
+    newSession().then(() => {
+      setScrambleIndex(0);
+      toast.success("New session started");
+    }).catch(() => toast.error("Couldn’t create session"));
+  }, [newSession]);
+
+  const handleSwitchSession = useCallback(
+    (id: string) => {
+      switchSession(id).catch(() => toast.error("Couldn’t switch session"));
+    },
+    [switchSession],
+  );
+
+  useShortcuts({
+    onNewScramble: handleRegenerate,
+    onCopyScramble: handleCopy,
+    onCancel: handleCancel,
+    timerStateRef,
+  });
+
+  // Best-effort keep the document title in sync with session size.
+  useEffect(() => {
+    document.title = `cubit — ${solves.length} solves`;
+  }, [solves.length]);
 
   return (
-    <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>CubeForge Engine Test</h1>
-      
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={connectCube} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-            Connect GAN Cube
-          </button>
-          <button onClick={calibrateGyro} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-            Calibrate Gyro
-          </button>
-        </div>
-        <p style={{ fontWeight: 'bold' }}>Status: {status}</p>
+    <div className="antialiased bg-background text-foreground min-h-screen">
+      <ThemeProvider>
+        <MainLayout
+          pb={MOCK_PB}
+          sessionCount={solves.length}
+          sessions={sessions}
+          activeSessionId={session?.id ?? null}
+          onSwitchSession={handleSwitchSession}
+          onNewSession={handleNewSession}
+          main={
+            <>
+              <ScrambleDisplay
+                scramble={currentScramble}
+                onRegenerate={handleRegenerate}
+                onCopy={handleCopy}
+                indexLabel={`#${scrambleIndex + 1}`}
+              />
 
-        {showMacInput && (
-          <div style={{ background: '#333', padding: '15px', borderRadius: '8px', color: '#fff', maxWidth: '400px', textAlign: 'center' }}>
-            <p style={{ marginBottom: '10px' }}>Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:</p>
-            <code style={{ background: '#111', padding: '5px', display: 'block', marginBottom: '15px' }}>{instructions}</code>
-            <p style={{ marginBottom: '10px' }}>Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
-            <input 
-              type="text" 
-              value={manualMac} 
-              onChange={e => setManualMac(e.target.value)} 
-              placeholder="MAC Address"
-              style={{ padding: '8px', width: '200px' }}
-            />
-          </div>
-        )}
-      </div>
+              <TimerContainer
+                onComplete={handleComplete}
+                stateRef={timerStateRef}
+                cancelRef={cancelRef}
+                className="mt-1 flex-1"
+              />
 
-      <canvas 
-        ref={canvasRef} 
-        style={{ width: '400px', height: '400px', backgroundColor: '#1e1e1e', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }} 
-        width="400" 
-        height="400"
-      />
-      <p style={{ maxWidth: '600px', textAlign: 'center', color: '#666', lineHeight: 1.5 }}>
-        Perform moves on your physical cube. The hardware HAL will decode them and send them to the Web Worker via RxJS and Comlink, bypassing the React main thread for pure 60FPS tweening.
-      </p>
-    </main>
-  )
+              <SessionStats solves={solves} />
+            </>
+          }
+          sidebar={
+            <Tabs
+              defaultValue="times"
+              className="flex h-full min-h-0 flex-col gap-4"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="times" className="text-xs">
+                  Times
+                  {loading ? null : (
+                    <span className="nums ml-1.5 text-[0.6rem] text-ink-3">
+                      {solves.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="stats" className="text-xs">
+                  Stats
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent
+                value="times"
+                className="min-h-0 flex-1 flex flex-col"
+              >
+                <TimesList
+                  solves={solves}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  onClear={handleClear}
+                  className="h-[55vh] lg:h-full"
+                />
+              </TabsContent>
+
+              <TabsContent
+                value="stats"
+                className="min-h-0 flex-1 overflow-y-auto pr-1"
+              >
+                <StatsPanel solves={solves} pb={MOCK_PB} />
+              </TabsContent>
+            </Tabs>
+          }
+        />
+        <Toaster position="bottom-center" richColors={false} />
+      </ThemeProvider>
+    </div>
+  );
 }
-
-export default App
