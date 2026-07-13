@@ -478,11 +478,11 @@
 
 | Campo              | Valor                                                                                                                                                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                          |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `packages/models/src/schemas/solve.schema.ts:3-11`                                                                                                                                                                  |
 | **Problema** | Un solve necesita almacenar la secuencia de movimientos para playback en 3D y re-análisis (PRD 4.4). El schema solo tiene`timeMs`, `scramble`, `penalty`, `method`. No hay campo `moves: CubeMoveEvent[]`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -490,12 +490,12 @@
 
 | Campo              | Valor                                                                                                                                                                                             |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                      |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `packages/models/src/schemas/session.schema.ts:9`                                                                                                                                               |
 | **Código**  | `solves: z.array(SolveSchema).default([])`                                                                                                                                                      |
 | **Problema** | Los solves están embebidos dentro de la sesión. Para un usuario con 100,000 solves, cargar la sesión requeriría cargar todos los solves. Debería ser una relación separada con paginación. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -503,12 +503,12 @@
 
 | Campo              | Valor                                                                                                                                             |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                      |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `packages/models/src/schemas/algorithm.schema.ts:6`                                                                                             |
 | **Código**  | `moves: z.string()`                                                                                                                             |
 | **Problema** | Un algoritmo debería almacenarse como array de strings o notación estructurada, no como string plano. Dificulta el análisis y la comparación. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -516,10 +516,10 @@
 
 | Campo              | Valor                                                                                                                   |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                            |
+| **Estado**   | ✅ Corregido |
 | **Problema** | Los schemas no tienen`createdAt`, `updatedAt`. Dificulta la sincronización offline y la resolución de conflictos. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -527,10 +527,10 @@
 
 | Campo              | Valor                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                    |
+| **Estado**   | ✅ Corregido |
 | **Problema** | PRD 10.1 especifica "Notation of the algorithm(s): primary and alternatives". El schema solo tiene un`moves`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -538,10 +538,10 @@
 
 | Campo              | Valor                                                                                                            |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                     |
+| **Estado**   | ✅ Corregido |
 | **Problema** | PRD 8.4 especifica versionado del analysis engine para re-análisis retroactivo. No hay campo en ningún schema. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -659,10 +659,10 @@
 
 | Campo              | Valor                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                   |
+| **Estado**   | ✅ Corregido |
 | **Problema** | No hay configuración de coverage en ningún paquete. No se puede medir la cobertura de tests. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -790,10 +790,10 @@
 
 | Campo              | Valor                                                                                                                                                                                                      |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                               |
+| **Estado**   | ✅ Corregido |
 | **Problema** | DEC-10 (Rendering Strategy) está aprobado (RFC-014) pero el ADR no está creado. El ADR-014 existe y está marcado como "Accepted". El registro (`Architecture_Decision_Register.md`) no se actualizó. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -857,11 +857,11 @@
 
 | Campo              | Valor                                                                                                                                                                      |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                               |
+| **Estado**   | ✅ Won't fix — falso positivo (AiCube es MonsterGo, no MoYu) |
 | **Archivo**  | `gan-cube-definitions.ts:32-35`                                                                                                                                          |
 | **Problema** | Las claves de MoYu AI 2023 están definidas pero no hay adapter ni driver para MoYu.`gan-smart-cube.ts:145` solo usa la segunda clave si el nombre empieza con 'AiCube'. |
 
-- [ ] Corregido
+- [x] Won't fix — falso positivo
 
 ---
 
@@ -869,10 +869,10 @@
 
 | Campo              | Valor                                                                                                                                                               |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                        |
+| **Estado**   | ✅ Corregido |
 | **Problema** | La interfaz`GanTimerConnection` tiene `getRecordedTimes()` pero `GanTimerAdapter` nunca lo expone. No se puede acceder a los tiempos almacenados en el timer. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -906,11 +906,11 @@
 
 | Campo              | Valor                                                                                                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                  |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `GanTimerAdapter.ts:48-55`                                                                                                                                  |
 | **Problema** | `HANDS_OFF` (manos retiradas antes del grace delay) se emite como `hardwareDown` con ambas manos. Si se retiraron las manos, debería ser `hardwareUp`. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -931,11 +931,11 @@
 
 | Campo             | Valor                                                                                                                                            |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**  | ❌ Pendiente                                                                                                                                     |
+| **Estado**   | ✅ Corregido |
 | **Archivo** | `GanCubeAdapter.ts:12`                                                                                                                         |
 | **Código** | El regex`/^([UDRLBF])([2']?)$/` no captura `"R2'"` (double prime, usado por algunos cubos). Si algún firmware envía esta notación, falla. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -969,11 +969,11 @@
 
 | Campo              | Valor                                                                                                                                                                                                            |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                     |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `SyncBridge.ts:34-46`                                                                                                                                                                                          |
 | **Problema** | Si se llama`bindCube()` dos veces, se subscribe al nuevo `gyro$` pero el anterior `GyroFusion.updateGyro()` sigue recibiendo datos a través del Worker. No hay forma de "desconectar" el gyro del Worker. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -981,12 +981,12 @@
 
 | Campo              | Valor                                                                                                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                    |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `StackmatAdapter.ts:24`                                                                                                                                                       |
 | **Código**  | `await this.audioContext.audioWorklet.addModule('/stackmat-processor.js')`                                                                                                    |
 | **Problema** | La ruta es relativa al servidor. Si el archivo no existe (no se incluyó en el build), falla silenciosamente (el error se captura en el catch, pero la app sigue sin Stackmat). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -994,10 +994,10 @@
 
 | Campo              | Valor                                                                                                                                                                             |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                      |
+| **Estado**   | ✅ Corregido |
 | **Problema** | Conflicto de versiones:`packages/ui/package.json` usa `"react": "^18.3.1"`, `apps/web/package.json` usa `"react": "^19.2.7"`. Posibles incompatibilidades en producción. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -1005,10 +1005,10 @@
 
 | Campo              | Valor                                                                                                                                                                                  |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                           |
+| **Estado**   | ✅ Corregido |
 | **Problema** | No hay tests que verifiquen la integración entre`gan-protocol` → `hardware-hal` → `cube-3d-engine` → `apps/web`. Cada paquete se testea de forma aislada (o no se testea). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -1016,10 +1016,10 @@
 
 | Campo              | Valor                                                                                                                                                                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                                                                                                    |
+| **Estado**   | ✅ Corregido |
 | **Problema** | El`FACELETS` event del protocolo contiene el estado completo del cubo (CP, CO, EP, EO). `GanCubeAdapter` lo recibe pero nunca lo expone. No hay verificación de que el estado del cubo sea consistente (suma de permutaciones correcta, paridad correcta). |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -1027,12 +1027,12 @@
 
 | Campo              | Valor                                                                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Estado**   | ❌ Pendiente                                                                                                                               |
+| **Estado**   | ✅ Corregido |
 | **Archivo**  | `TimerEngine.ts:120`                                                                                                                     |
 | **Código**  | `this.startTimestamp = performance.now();`                                                                                               |
 | **Problema** | Si el sistema ajusta el clock (NTP, suspend/resume),`performance.now()` puede retroceder. El solve time podría ser negativo o anómalo. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
@@ -1040,10 +1040,10 @@
 
 | Campo              | Valor                                                                                                                                                                        |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estado**   | ❌ Pendiente                                                                                                                                                                 |
+| **Estado**   | ✅ Corregido |
 | **Problema** | Stackmat Gen3 y Gen4 tienen formatos de paquete diferentes. El procesador trata todos los paquetes como iguales (solo mira comando, no formato). Posibles errores de parseo. |
 
-- [ ] Corregido
+- [x] Corregido
 
 ---
 
