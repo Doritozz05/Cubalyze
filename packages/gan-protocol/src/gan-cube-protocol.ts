@@ -1,7 +1,7 @@
 
 import { now, toKociembaFacelets } from './utils';
 import { GanCubeEncrypter } from './gan-cube-encrypter';
-import { Observable, Subject } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 
 /** Command for requesting information about GAN Smart Cube hardware  */
 type GanCubeReqHardwareCommand = {
@@ -196,7 +196,7 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
     encrypter: GanCubeEncrypter;
     driver: GanProtocolDriver;
 
-    events$: Subject<GanCubeEvent>;
+    events$: ReplaySubject<GanCubeEvent>;
 
     private constructor(
         device: BluetoothDeviceWithMAC,
@@ -210,7 +210,7 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         this.stateCharacteristic = stateCharacteristic;
         this.encrypter = encrypter;
         this.driver = driver;
-        this.events$ = new Subject<GanCubeEvent>();
+        this.events$ = new ReplaySubject<GanCubeEvent>(1);
     }
 
     public static async create(

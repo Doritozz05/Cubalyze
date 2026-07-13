@@ -20,14 +20,13 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
     }
     
     this.connection.events$.subscribe((evt) => {
-      if (evt.state === GanTimerState.DISCONNECT) {
-        this.disconnect();
-      }
-
       switch (evt.state) {
         case GanTimerState.DISCONNECT:
+          this.disconnect();
+          return;
+        case GanTimerState.GET_SET:
         case GanTimerState.STOPPED:
-        case GanTimerState.IDLE:
+        case GanTimerState.FINISHED:
           this.eventsSubject.next({
             type: 'hardwareUp',
             leftHand: false,
@@ -35,9 +34,15 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
             timestamp: performance.now()
           });
           break;
-        case GanTimerState.GET_SET:
+        case GanTimerState.IDLE:
+          this.eventsSubject.next({
+            type: 'hardwareReset',
+            leftHand: false,
+            rightHand: false,
+            timestamp: performance.now()
+          });
+          break;
         case GanTimerState.HANDS_ON:
-        case GanTimerState.FINISHED:
           this.eventsSubject.next({
             type: 'hardwareDown',
             leftHand: true,

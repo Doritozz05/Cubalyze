@@ -2,7 +2,6 @@ import { Subject } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { connectGanCube, GanCubeConnection } from '@cubeforge/gan-protocol';
-import { ClockDriftReconciler } from '../sync/ClockDrift';
 
 /**
  * Parses a move string like "U", "U'", "U2" into face + direction.
@@ -25,7 +24,6 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   public readonly model = 'SmartCube'; 
 
   private connection: GanCubeConnection | null = null;
-  private reconciler: ClockDriftReconciler;
 
   private movesSubject = new Subject<CubeMoveEvent>();
   private batterySubject = new Subject<number>();
@@ -34,10 +32,6 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   public moves$ = this.movesSubject.asObservable();
   public battery$ = this.batterySubject.asObservable();
   public gyro$ = this.gyroSubject.asObservable();
-
-  constructor() {
-    this.reconciler = new ClockDriftReconciler();
-  }
 
   async connect(manualMac?: string): Promise<void> {
     try {
@@ -64,7 +58,6 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       } else if (evt.type === 'MOVE') {
         const hostNow = performance.now();
         const cubeTs = evt.cubeTimestamp ?? hostNow;
-        this.reconciler.addDataPoint(cubeTs, hostNow);
         
         // Parse notation string (e.g. "U", "U'", "U2") into face + direction
         const parsed = parseMoveNotation(evt.move);
@@ -74,7 +67,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
           face: parsed.face,
           direction: parsed.direction,
           cubeTimestamp: cubeTs,
-          hostTimestamp: this.reconciler.reconcile(cubeTs)
+          hostTimestamp: hostNow
         });
       } else if (evt.type === 'GYRO') {
         if (evt.quaternion) {

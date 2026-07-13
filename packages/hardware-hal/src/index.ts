@@ -6,4 +6,4 @@ export * from './bluetooth/GanTimerAdapter';
 
 export * from './audio/StackmatAdapter';
 
-export * from './sync/ClockDrift';
+
