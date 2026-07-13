@@ -21,7 +21,11 @@ export class StackmatAdapter implements HardwareTimerAdapter {
       
       // Register worklet
       // Note: In production, the URL must point to a built JS file of StackmatProcessor
-      await this.audioContext.audioWorklet.addModule('/stackmat-processor.js');
+      try {
+        await this.audioContext.audioWorklet.addModule('/stackmat-processor.js');
+      } catch (err) {
+        throw new Error('StackmatProcessor no encontrado en el servidor (/stackmat-processor.js). Verifica el build.');
+      }
       
       const source = this.audioContext.createMediaStreamSource(this.stream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'stackmat-processor', {
@@ -29,8 +33,14 @@ export class StackmatAdapter implements HardwareTimerAdapter {
       });
       
       this.workletNode.port.onmessage = (event) => {
-        const command = event.data.command; // 'I', 'A', 'S', 'L', 'R', 'C', ' '
+        if (event.data.type !== 'stackmatData') return;
         
+        const bytes: number[] = event.data.data;
+        // Gen3 sends 9 bytes, Gen4 sends 10 bytes. The first byte is the command.
+        if (bytes.length < 9) return;
+
+        const command = String.fromCharCode(bytes[0]); // 'I', 'A', 'S', 'L', 'R', 'C', ' '
+
         switch (command) {
           case 'C':
           case 'A':

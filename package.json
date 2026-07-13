@@ -17,6 +17,7 @@
     "lint": "turbo run lint",
     "lint:lines": "echo \"TDD-0006: verify files <300 lines. Run manually: find packages apps -name '*.ts' -o -name '*.tsx' | xargs wc -l | sort -rn | head -20\"",
     "test": "turbo run test",
+    "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "release": "pnpm build && changeset publish"
   },

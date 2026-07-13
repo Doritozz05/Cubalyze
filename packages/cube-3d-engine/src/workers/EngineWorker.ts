@@ -45,6 +45,10 @@ export class EngineWorkerAPI {
     this.gyroFusion.updateTargetQuaternion(x, y, z, w);
   }
 
+  public disableGyro() {
+    this.gyroFusion.disable();
+  }
+
   /** Calibrates the gyroscope — sets the current orientation as the "zero" reference */
   public calibrateGyro() {
     this.gyroFusion.calibrate();

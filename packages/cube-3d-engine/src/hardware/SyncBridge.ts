@@ -90,5 +90,6 @@ export class SyncBridge {
   public unbind(): void {
     this.subs.forEach(sub => sub.unsubscribe());
     this.subs = [];
+    this.workerProxy.disableGyro();
   }
 }

@@ -5,12 +5,12 @@ import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cub
 import { connectGanCube, type GanCubeConnection } from '@cubeforge/gan-protocol';
 
 function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
-  const match = move.match(/^([UDRLBF])([2']?)$/);
+  const match = move.match(/^([UDRLBF])(2|'|2')?$/);
   if (!match) return null;
 
   const face = match[1] as CubeFace;
   let direction: CubeMoveDirection = 1;
-  if (match[2] === "'") direction = -1;
+  if (match[2] === "'" || match[2] === "2'") direction = -1;
   else if (match[2] === '2') direction = 2;
 
   return { face, direction };
@@ -106,7 +106,12 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.handleMove(evt);
       } else if (evt.type === 'FACELETS') {
         if (this.onFacelets) {
-          this.onFacelets(evt.facelets);
+          // Simple validation: a standard 3x3 facelet string is 54 characters
+          if (typeof evt.facelets === 'string' && evt.facelets.length === 54) {
+            this.onFacelets(evt.facelets);
+          } else {
+            console.warn('[GanCubeAdapter] Invalid FACELETS state received:', evt.facelets);
+          }
         }
       } else if (evt.type === 'GYRO') {
         this.handleGyro(evt);

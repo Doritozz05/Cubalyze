@@ -11,6 +11,22 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
 
   constructor() {}
 
+  public async getRecordedTimes(): Promise<number[]> {
+    if (!this.connection) return [];
+    try {
+      const times = await this.connection.getRecordedTimes();
+      return [
+        times.displayTime.asTimestamp,
+        times.previousTimes[0].asTimestamp,
+        times.previousTimes[1].asTimestamp,
+        times.previousTimes[2].asTimestamp
+      ];
+    } catch (err) {
+      console.warn('Could not read GAN timer recorded times:', err);
+      return [];
+    }
+  }
+
   async connect(): Promise<void> {
     try {
       this.connection = await connectGanTimer();
@@ -52,9 +68,9 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
           break;
         case GanTimerState.HANDS_OFF:
           this.eventsSubject.next({
-            type: 'hardwareDown',
-            leftHand: true,
-            rightHand: true,
+            type: 'hardwareUp',
+            leftHand: false,
+            rightHand: false,
             timestamp: performance.now()
           });
           break;

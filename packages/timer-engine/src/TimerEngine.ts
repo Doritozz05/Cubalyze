@@ -98,7 +98,7 @@ export class TimerEngine {
 
     } else if (this.currentState === TimerState.RUNNING) {
       this.stopTickLoop();
-      this.solveTimeMs = now - this.startTimestamp;
+      this.solveTimeMs = Math.max(0, now - this.startTimestamp);
       const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
 
       this.setState(TimerState.COOLDOWN);
@@ -225,6 +225,10 @@ export class TimerEngine {
       }
     } else if (this.currentState === TimerState.RUNNING) {
       timeMs = now - this.startTimestamp;
+      if (timeMs < 0) {
+        this.startTimestamp = now;
+        timeMs = 0;
+      }
     } else {
       return;
     }
