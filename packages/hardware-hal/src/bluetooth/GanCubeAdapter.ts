@@ -1,6 +1,7 @@
 import { Subject, ReplaySubject } from 'rxjs';
 import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
+import { ClockDriftReconciler } from '../sync/ClockDrift';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { connectGanCube, type GanCubeConnection } from '@cubeforge/gan-protocol';
 
@@ -43,6 +44,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   public invalidMoves$ = this.invalidMovesSubject.asObservable();
 
   public onFacelets: ((facelets: string) => void) | null = null;
+  private clockReconciler = new ClockDriftReconciler();
 
   // ── BLE reconnection state ──────────────────────────────────────────────────
   private device: BluetoothDevice | null = null;
@@ -138,6 +140,11 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     const hostNow = performance.now();
     const cubeTs = evt.cubeTimestamp ?? hostNow;
 
+    if (evt.cubeTimestamp != null) {
+      this.clockReconciler.addDataPoint(evt.cubeTimestamp, hostNow);
+    }
+    const correctedHostTs = evt.cubeTimestamp != null ? this.clockReconciler.reconcile(evt.cubeTimestamp) : hostNow;
+
     const parsed = parseMoveNotation(evt.move);
     if (!parsed) {
       console.warn('[GanCubeAdapter] Unrecognized move:', evt.move);
@@ -149,7 +156,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       face: parsed.face,
       direction: parsed.direction,
       cubeTimestamp: cubeTs,
-      hostTimestamp: hostNow,
+      hostTimestamp: correctedHostTs,
     });
   }
 
