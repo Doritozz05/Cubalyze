@@ -31,7 +31,6 @@ export class SceneManager {
     this.height = height;
 
     this.scene = new Scene();
-    this.scene.background = new Color('#1e1e1e');
 
     this.camera = new PerspectiveCamera(45, this.width / this.height, 0.1, 100);
     this.camera.position.set(0, 0, 7);

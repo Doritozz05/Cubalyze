@@ -9,7 +9,8 @@ import EngineWorker from "@cubeforge/cube-3d-engine/worker?worker";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Bluetooth, RefreshCw, AlertCircle } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -17,9 +18,6 @@ export interface Cube3DPanelProps {
 
 export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [status, setStatus] = useState("Disconnected");
-  const [showMacInput, setShowMacInput] = useState(false);
-  const [manualMac, setManualMac] = useState("");
 
   const workerProxy = useRef<Comlink.Remote<EngineWorkerAPI> | null>(null);
   const syncBridge = useRef<SyncBridge | null>(null);
@@ -52,40 +50,15 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       window.devicePixelRatio
     );
 
+    // Bind to the global adapter streams
+    if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
+      syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
+    }
+
     return () => {
       // In strict mode dev, React unmounts and remounts.
     };
   }, []);
-
-  const connectCube = async () => {
-    try {
-      setStatus("Connecting...");
-      const adapter = new GanCubeAdapter();
-      await adapter.connect(showMacInput ? manualMac : undefined);
-      setStatus("Connected!");
-      setShowMacInput(false);
-      
-      if (syncBridge.current && adapter.moves$) {
-        syncBridge.current.bindCube(adapter.moves$, adapter.gyro$);
-      }
-
-      adapter.requestFacelets().catch(() => {});
-      adapter.onFacelets = (facelets) => {
-        console.log("[Sync] Initial facelets received:", facelets);
-      };
-    } catch (e: unknown) {
-      console.error(e);
-      const errMsg = e instanceof Error ? e.message : String(e);
-      const requiresExperimental = errMsg === "MAC_REQUIRED" || errMsg.includes("requestDevice") || errMsg.includes("bluetooth") || !("bluetooth" in navigator);
-      
-      if (requiresExperimental) {
-        setStatus("Auto MAC reading blocked.");
-        setShowMacInput(true);
-      } else {
-        setStatus("Failed: " + errMsg);
-      }
-    }
-  };
 
   const calibrateGyro = () => {
     if (workerProxy.current) {
@@ -113,46 +86,8 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
             <RefreshCw className="size-3" />
             Calibrate
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={connectCube}
-            className={cn(
-              "h-7 gap-1.5 px-2 text-xs",
-              status === "Connected!"
-                ? "text-green-500 hover:text-green-400"
-                : "text-blue-500 hover:text-blue-400"
-            )}
-          >
-            <Bluetooth className="size-3" />
-            {status === "Connected!" ? "Connected" : "Connect"}
-          </Button>
         </div>
       </div>
-
-      {showMacInput && (
-        <div className="m-2 rounded bg-surface-2 p-3 text-xs text-ink-2">
-          <div className="flex items-center gap-2 font-medium text-ink">
-            <AlertCircle className="size-4 text-amber-500" />
-            Manual MAC Required
-          </div>
-          <p className="mt-1">
-            Browser blocks automatic reading. Enter MAC manually:
-          </p>
-          <div className="mt-2 flex gap-2">
-            <input
-              type="text"
-              value={manualMac}
-              onChange={(e) => setManualMac(e.target.value)}
-              placeholder="AA:BB:CC:DD:EE:FF"
-              className="flex-1 rounded border border-line bg-surface px-2 py-1 outline-none focus:border-ink-3"
-            />
-            <Button size="sm" onClick={connectCube} className="h-7 px-3">
-              Retry
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Canvas Wrapper */}
       <div className="relative min-h-0 flex-1 overflow-hidden">

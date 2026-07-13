@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 
@@ -231,6 +232,8 @@ export function Header({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
+
+          <CubeConnector />
 
           {pb != null && Number.isFinite(pb) ? (
             <div className="hidden items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 sm:flex">
