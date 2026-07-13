@@ -1044,3 +1044,77 @@
 | **Problema** | Stackmat Gen3 y Gen4 tienen formatos de paquete diferentes. El procesador trata todos los paquetes como iguales (solo mira comando, no formato). Posibles errores de parseo. |
 
 - [ ] Corregido
+
+---
+
+## 💾 PROBLEMAS DEL MODELO DE DATOS
+
+### D-1 🟠 Alto — SolveSchema: falta arreglo de movimientos detallados
+
+| Campo              | Valor                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
+| **Problema** | El schema de Zod de Solve no contiene la lista de movimientos con timestamps (CubeMoveEvent) realizados durante el solve. |
+| **Solución** | Se añadió `moves: z.array(CubeMoveEventSchema).default([])` a SolveSchema y la respectiva serialización en SolvesRepository. |
+
+- [x] Corregido
+
+---
+
+### D-2 🟠 Alto — SessionSchema: solves embebidos causan sobrecarga
+
+| Campo              | Valor                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
+| **Problema** | SessionSchema contenía `solves: z.array(SolveSchema)`. Cargar una sesión requeriría cargar en memoria todos los solves asociados, ineficiente para sesiones largas. |
+| **Solución** | Se eliminó `solves` del SessionSchema; ahora los solves se relacionan por `sessionId` como entidades separadas. |
+
+- [x] Corregido
+
+---
+
+### D-3 🟠 Alto — AlgorithmSchema: moves como string plano impide validación
+
+| Campo              | Valor                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
+| **Problema** | El algoritmo se almacenaba como un único string, lo cual impide validaciones por movimiento y estructuración basada en el PRD. |
+| **Solución** | Cambiado `moves` a `z.array(z.string())` y adaptado el AlgorithmsRepository para usar JSON arrays. |
+
+- [x] Corregido
+
+---
+
+### D-4 🟡 Medio — Faltan campos de auditoría (createdAt, updatedAt)
+
+| Campo              | Valor                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
+| **Problema** | Los modelos no traqueaban la fecha de última modificación, solo creación. |
+| **Solución** | Se agregaron `createdAt` y `updatedAt` como strings validados con `.datetime()` a todos los esquemas (Solve, Session, Algorithm). |
+
+- [x] Corregido
+
+---
+
+### D-5 🟡 Medio — AlgorithmSchema: falta soporte para alternativas
+
+| Campo              | Valor                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
+| **Problema** | Un algoritmo puede tener múltiples formas alternativas de ejecutarse (PRD 10.1). El schema no las soportaba. |
+| **Solución** | Añadido `alternatives: z.array(z.array(z.string())).default([])` a AlgorithmSchema. |
+
+- [x] Corregido
+
+---
+
+### D-6 🟡 Medio — SolveSchema: falta versión del motor de análisis
+
+| Campo              | Valor                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estado**   | ✅ Corregido                                                                                                                                                                                            |
+| **Problema** | No se registraba qué versión del Analysis Engine procesó el solve, imposibilitando re-análisis posteriores ante actualizaciones del motor. |
+| **Solución** | Se agregó el campo opcional `analysisEngineVersion` a SolveSchema y su correspondiente columna a la base de datos. |
+
+- [x] Corregido
