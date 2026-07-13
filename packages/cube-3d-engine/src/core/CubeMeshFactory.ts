@@ -15,15 +15,15 @@ export interface CubeStyleOptions {
 }
 
 export const DEFAULT_STYLE: CubeStyleOptions = {
-  coreColor: '#070707', // Almost black plastic
+  coreColor: '#000000', // Pure black core for better contrast
   coreOpacity: 1.0,
   stickerColors: {
-    U: '#ffffff', // White
-    D: '#ffdf00', // Vibrant Yellow
-    F: '#00c355', // Vibrant Green
-    B: '#0058b7', // Deep Blue
-    R: '#e41224', // Bright Red
-    L: '#ff7000', // Vibrant Orange
+    U: '#e0e0e0', // Slightly off-white
+    D: '#fff607', // SebLague Yellow
+    F: '#08bc05', // SebLague Green
+    B: '#0469ff', // SebLague Blue
+    R: '#f80a0a', // SebLague Red
+    L: '#ff7802', // SebLague Orange
   },
 };
 
@@ -44,8 +44,8 @@ export class CubeMeshFactory {
     // Core size 1.0 creates a completely flush cube with zero gaps
     this.coreGeometry = new BoxGeometry(1.0, 1.0, 1.0);
     
-    // Stickers are thin boxes for some relief
-    this.stickerGeometry = new BoxGeometry(0.86, 0.86, 0.04);
+    // Stickers are thinner (0.02) and wider (0.88) for a thinner border
+    this.stickerGeometry = new BoxGeometry(0.88, 0.88, 0.02);
     
     this.initMaterials();
   }
@@ -80,8 +80,9 @@ export class CubeMeshFactory {
     group.add(coreMesh);
 
     // 2. Add stickers based on exposed faces (with slight relief)
-    // Core is 1.0 (radius 0.5). We place stickers just outside at 0.505.
-    const offset = 0.505;
+    // Core is 1.0 (radius 0.5). Sticker thickness is 0.02.
+    // Placing sticker exactly on the surface means offset = 0.5 + 0.02/2 = 0.51
+    const offset = 0.51;
 
     if (x === 1) {
       const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['R']);
