@@ -4,142 +4,170 @@ import { easeInOutQuad } from './Easing';
 
 export type RotationAxis = 'x' | 'y' | 'z';
 
-export interface RotationTask {
+export interface RotationTaskConfig {
   axis: RotationAxis;
-  layerValues: number[];    // array of layers, e.g. [1], or [-1, 1]
-  angleInDegrees: number;   // e.g. 90, -90, 180
+  layerValues: number[];
+  angleInDegrees: number;
   durationMs: number;
-  startTime?: number;
+  elapsedMs?: number;
   resolve?: () => void;
+}
+
+class PivotTask {
+  public inUse = false;
+  public pivot = new Group();
+  
+  public startQuat = new Quaternion();
+  public endQuat = new Quaternion();
+  public currentQuat = new Quaternion();
+  public rotationAxisVec = new Vector3();
+  public rotationOffset = new Quaternion();
+  
+  public config!: RotationTaskConfig;
+  public startTime = 0;
 }
 
 export class RotationEngine {
   private model: CubeModel;
-  private pivot: Group;
-  private activeTask: RotationTask | null = null;
-
-  // ── Pre-allocated math objects (GC mitigation per TDD-0006 / ADR-014) ──
-  // These are mutated in-place during the animation loop. No allocations inside
-  // update() or preparePivot() to avoid triggering garbage collection during
-  // 60fps rendering.
-  private startQuat = new Quaternion();
-  private endQuat = new Quaternion();
-  private currentQuat = new Quaternion();
-  private rotationAxisVec = new Vector3();
-  private rotationOffset = new Quaternion(); // FIX: pre-allocate instead of `new` inside preparePivot
+  private pool: PivotTask[] = [];
 
   constructor(model: CubeModel) {
     this.model = model;
-    this.pivot = new Group();
-    this.model.root.add(this.pivot);
+    // Allocate 6 pivot tasks (one for each possible outer face to rotate simultaneously)
+    for (let i = 0; i < 6; i++) {
+      const task = new PivotTask();
+      this.model.root.add(task.pivot);
+      this.pool.push(task);
+    }
+  }
+
+  private getTargetCubies(axis: RotationAxis, layerValues: number[]): Group[] {
+    const cubies: Group[] = [];
+    for (const val of layerValues) {
+      cubies.push(...this.model.getCubiesByFace(axis, val));
+    }
+    return cubies;
   }
 
   public rotateLayers(
     axis: RotationAxis,
     layerValues: number[],
     angleInDegrees: number,
-    durationMs: number
+    durationMs: number,
+    elapsedMs?: number
   ): Promise<void> {
     return new Promise((resolve) => {
-      // If there's an active animation, instantly snap it to end so we don't drop moves.
-      // This matches the TDD-0006 spec: "zero input-lag perception" for fast hardware events.
-      if (this.activeTask) {
-        this.snapActiveTask();
+      const targetCubies = this.getTargetCubies(axis, layerValues);
+
+      // 1. Collision detection: if any target piece is already rotating, force it to finish
+      for (const runningTask of this.pool) {
+        if (!runningTask.inUse) continue;
+        
+        const runningCubies = this.getTargetCubies(runningTask.config.axis, runningTask.config.layerValues);
+        const intersects = targetCubies.some(c => runningCubies.includes(c));
+        
+        if (intersects) {
+          this.snapTask(runningTask);
+        }
       }
 
-      this.activeTask = {
-        axis,
-        layerValues,
-        angleInDegrees,
-        durationMs,
-        resolve,
-      };
+      // 2. Find a free slot in the pool
+      let task = this.pool.find(t => !t.inUse);
+      if (!task) {
+        // Fallback extremely rare: if pool is full, snap the oldest
+        const oldest = this.pool.reduce((prev, curr) => (prev.startTime < curr.startTime ? prev : curr));
+        this.snapTask(oldest);
+        task = oldest;
+      }
 
-      this.preparePivot(axis, layerValues, angleInDegrees);
+      // 3. Configure the task
+      task.inUse = true;
+      task.config = { axis, layerValues, angleInDegrees, durationMs, elapsedMs, resolve };
+      task.startTime = 0; // will be calculated in next update()
+
+      this.preparePivot(task, targetCubies);
     });
   }
 
-  private preparePivot(axis: RotationAxis, layerValues: number[], angleInDegrees: number): void {
-    this.pivot.quaternion.identity();
-    this.pivot.updateMatrixWorld(true);
+  private preparePivot(task: PivotTask, targetCubies: Group[]): void {
+    task.pivot.quaternion.identity();
+    task.pivot.updateMatrixWorld(true);
 
-    for (const layerValue of layerValues) {
-      const targetCubies = this.model.getCubiesByFace(axis, layerValue);
-      for (const cubie of targetCubies) {
-        // Como pivot y cubie comparten el mismo padre (root) y pivot está en identidad,
-        // podemos usar add() en lugar de attach() sin alterar su transform global.
-        this.pivot.add(cubie);
-      }
+    for (const cubie of targetCubies) {
+      task.pivot.add(cubie);
     }
 
-    this.startQuat.copy(this.pivot.quaternion);
+    task.startQuat.copy(task.pivot.quaternion);
 
-    this.rotationAxisVec.set(0, 0, 0);
-    this.rotationAxisVec[axis] = 1;
+    task.rotationAxisVec.set(0, 0, 0);
+    task.rotationAxisVec[task.config.axis] = 1;
 
-    const angleRads = MathUtils.degToRad(angleInDegrees);
-
-    this.rotationOffset.setFromAxisAngle(this.rotationAxisVec, angleRads);
-    this.endQuat.copy(this.rotationOffset).multiply(this.startQuat);
+    const angleRads = MathUtils.degToRad(task.config.angleInDegrees);
+    task.rotationOffset.setFromAxisAngle(task.rotationAxisVec, angleRads);
+    task.endQuat.copy(task.rotationOffset).multiply(task.startQuat);
   }
 
   public update(timeNowMs: number): void {
-    if (!this.activeTask) return;
+    for (const task of this.pool) {
+      if (!task.inUse) continue;
 
-    if (!this.activeTask.startTime) {
-      this.activeTask.startTime = timeNowMs;
-    }
+      if (!task.startTime) {
+        // Time-Warp (Dead Reckoning): 
+        // If the event happened in the past (elapsedMs > 0), we offset the startTime
+        // so the interpolation skips the frames "lost" to network latency.
+        const offset = task.config.elapsedMs ?? 0;
+        // Limit offset to durationMs so we don't overshoot 100% instantly on heavy lag
+        const safeOffset = Math.min(offset, task.config.durationMs);
+        task.startTime = timeNowMs - safeOffset;
+      }
 
-    const elapsed = timeNowMs - this.activeTask.startTime;
-    let t = elapsed / this.activeTask.durationMs;
+      const elapsed = timeNowMs - task.startTime;
+      let t = elapsed / task.config.durationMs;
 
-    if (t >= 1.0) {
-      this.snapActiveTask();
-    } else {
-      const easedT = easeInOutQuad(t);
-      this.currentQuat.slerpQuaternions(this.startQuat, this.endQuat, easedT);
-      this.pivot.quaternion.copy(this.currentQuat);
-      this.pivot.updateMatrixWorld(true);
+      // Mathematical protection
+      if (task.config.durationMs <= 0) t = 1.0;
+
+      if (t >= 1.0) {
+        this.snapTask(task);
+      } else {
+        const easedT = easeInOutQuad(t);
+        task.currentQuat.slerpQuaternions(task.startQuat, task.endQuat, easedT);
+        task.pivot.quaternion.copy(task.currentQuat);
+        task.pivot.updateMatrixWorld(true);
+      }
     }
   }
 
-  /**
-   * Immediately completes the active rotation animation.
-   */
-  private snapActiveTask(): void {
-    if (!this.activeTask) return;
+  private snapTask(task: PivotTask): void {
+    if (!task.inUse) return;
 
-    const { axis, layerValues, angleInDegrees, resolve } = this.activeTask;
+    const { axis, layerValues, angleInDegrees, resolve } = task.config;
+    const children = [...task.pivot.children] as Group[]; // Shallow copy of children
 
     // 1. Snap to the mathematically exact final orientation
-    this.pivot.quaternion.copy(this.endQuat);
+    task.pivot.quaternion.copy(task.endQuat);
 
-    // 2. Aplicar rotación localmente a cada cubie y reparentarlos al root.
-    // Esto evita el uso costoso de attach() y elimina el drift de matriz global.
-    while (this.pivot.children.length > 0) {
-      const child = this.pivot.children[0];
-      
-      // Aplicar rotación del pivot a la posición y quaternion del hijo (espacio local)
-      child.position.applyQuaternion(this.pivot.quaternion);
-      child.quaternion.premultiply(this.pivot.quaternion);
-      
+    // 2. Apply local rotation to each cubie and reparent to root
+    for (const child of children) {
+      child.position.applyQuaternion(task.pivot.quaternion);
+      child.quaternion.premultiply(task.pivot.quaternion);
       this.model.root.add(child);
     }
 
-    // 3. Update the logical integer-based state model.
+    // 3. Update logical integer-based state model
     const quarterTurns = Math.round(angleInDegrees / 90);
     for (const layerValue of layerValues) {
       this.model.updateLogicalState(axis, layerValue, quarterTurns);
     }
 
-    // 4. CRITICAL FIX: Snap mesh positions to logical grid.
-    this.model.snapCubiePositions();
+    // 4. Snap positions to logical grid (only for affected pieces!)
+    this.model.snapCubiePositions(children);
 
-    // 5. Reset pivot for next rotation
-    this.pivot.quaternion.identity();
+    // 5. Reset pivot
+    task.pivot.quaternion.identity();
+    task.inUse = false;
 
-    // 6. Clear active task and resolve promise
-    this.activeTask = null;
+    // 6. Resolve promise
     if (resolve) {
       resolve();
     }

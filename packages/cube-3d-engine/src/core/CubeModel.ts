@@ -124,9 +124,13 @@ export class CubeModel {
    * CRITICAL FIX: Instead of rounding the floating-point position (which can drift),
    * we FORCE the position to match the logical grid state. This guarantees zero drift.
    */
-  public snapCubiePositions(): void {
+  public snapCubiePositions(specificMeshes?: Group[]): void {
     const spacing = 1.0;
-    for (const cubie of this.cubies) {
+    const targets = specificMeshes 
+      ? this.cubies.filter(c => specificMeshes.includes(c.mesh)) 
+      : this.cubies;
+      
+    for (const cubie of targets) {
       cubie.mesh.position.set(
         cubie.gridX * spacing,
         cubie.gridY * spacing,

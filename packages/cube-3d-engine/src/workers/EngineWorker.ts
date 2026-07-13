@@ -36,8 +36,8 @@ export class EngineWorkerAPI {
     }
   }
 
-  public async rotateLayers(axis: RotationAxis, layerValues: number[], angle: number, durationMs: number) {
-    await this.rotationEngine.rotateLayers(axis, layerValues, angle, durationMs);
+  public async rotateLayers(axis: RotationAxis, layerValues: number[], angle: number, durationMs: number, elapsedMs?: number) {
+    await this.rotationEngine.rotateLayers(axis, layerValues, angle, durationMs, elapsedMs);
   }
 
   public resetCube() {

@@ -11,6 +11,7 @@ interface QueuedRotation {
   layerValues: number[];
   angle: number;
   durationMs: number;
+  hostTimestamp: number;
 }
 
 export class SyncBridge {
@@ -86,6 +87,7 @@ export class SyncBridge {
             layerValues: [map1.layerValue, map2.layerValue],
             angle: angle1,
             durationMs,
+            hostTimestamp: Math.max(m1.hostTimestamp, m2.hostTimestamp),
           });
 
           this.coalesceBuffer.splice(0, 2);
@@ -108,6 +110,7 @@ export class SyncBridge {
         layerValues: [mapping.layerValue],
         angle,
         durationMs,
+        hostTimestamp: move.hostTimestamp,
       });
     }
 
@@ -120,7 +123,9 @@ export class SyncBridge {
 
     while (this.moveBuffer.length > 0) {
       const task = this.moveBuffer.shift()!;
-      await this.workerProxy.rotateLayers(task.axis, task.layerValues, task.angle, task.durationMs);
+      const elapsedMs = Math.max(0, performance.now() - task.hostTimestamp);
+      // Fire and forget: RotationEngine handles its own internal concurrency/snapping
+      this.workerProxy.rotateLayers(task.axis, task.layerValues, task.angle, task.durationMs, elapsedMs).catch(console.error);
     }
 
     this.isProcessing = false;
