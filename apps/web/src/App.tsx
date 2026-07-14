@@ -15,7 +15,9 @@ import {
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
-import { MOCK_SCRAMBLES, MOCK_PB } from "@/utils/mockData";
+import { MOCK_PB } from "@/utils/mockData";
+import { RandomStateGenerator } from "@cubeforge/math-core";
+import { MockSolver } from "@/utils/MockSolver";
 import { ThemeProvider } from "@/components/theme-provider";
 import "@/index.css";
 
@@ -37,8 +39,9 @@ export default function App() {
 
   const [scrambleIndex, setScrambleIndex] = useState(0);
   const [cube3DActive, setCube3DActive] = useState(false);
-  const currentScramble =
-    MOCK_SCRAMBLES[scrambleIndex % MOCK_SCRAMBLES.length];
+  const [currentScramble, setCurrentScramble] = useState(() => 
+    RandomStateGenerator.generateScramble(new MockSolver())
+  );
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
   const timerStateRef = useRef("idle");
@@ -47,7 +50,10 @@ export default function App() {
   const handleComplete = useCallback(
     (time: number) => {
       addSolve({ time, scramble: currentScramble, penalty: "none" })
-        .then(() => setScrambleIndex((i) => i + 1))
+        .then(() => {
+          setCurrentScramble(RandomStateGenerator.generateScramble(new MockSolver()));
+          setScrambleIndex((i) => i + 1);
+        })
         .catch(() => toast.error("Couldn’t save solve"));
     },
     [addSolve, currentScramble],
@@ -72,6 +78,7 @@ export default function App() {
   }, [clearSession]);
 
   const handleRegenerate = useCallback(() => {
+    setCurrentScramble(RandomStateGenerator.generateScramble(new MockSolver()));
     setScrambleIndex((i) => i + 1);
     toast.success("New scramble");
   }, []);
@@ -110,6 +117,7 @@ export default function App() {
 
   const handleNewSession = useCallback(() => {
     newSession().then(() => {
+      setCurrentScramble(RandomStateGenerator.generateScramble(new MockSolver()));
       setScrambleIndex(0);
       toast.success("New session started");
     }).catch(() => toast.error("Couldn’t create session"));
