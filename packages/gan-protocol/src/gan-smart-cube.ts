@@ -19,7 +19,7 @@ function getManufacturerDataBytes(manufacturerData: BluetoothManufacturerData | 
     if (manufacturerData instanceof DataView) {
         return new DataView(manufacturerData.buffer.slice(2, 11));
     }
-    for (var id of def.GAN_CIC_LIST) {
+    for (const id of def.GAN_CIC_LIST) {
         if (manufacturerData.has(id)) {
             return new DataView(manufacturerData.get(id)!.buffer.slice(0, 9));
         }
@@ -29,8 +29,8 @@ function getManufacturerDataBytes(manufacturerData: BluetoothManufacturerData | 
 
 /** Extract MAC from last 6 bytes of Manufacturer Specific Data */
 function extractMAC(manufacturerData: BluetoothManufacturerData): string {
-    var mac: Array<string> = [];
-    var dataView = getManufacturerDataBytes(manufacturerData);
+    const mac: Array<string> = [];
+    const dataView = getManufacturerDataBytes(manufacturerData);
     if (dataView && dataView.byteLength >= 6) {
         for (let i = 1; i <= 6; i++) {
             mac.push(dataView.getUint8(dataView.byteLength - i).toString(16).toUpperCase().padStart(2, "0"));
@@ -45,14 +45,14 @@ async function autoRetrieveMacAddress(device: BluetoothDevice): Promise<string |
         if (typeof device.watchAdvertisements != 'function') {
             resolve(null);
         }
-        var abortController = new AbortController();
-        var onAdvEvent = (evt: Event) => {
+        const abortController = new AbortController();
+        const onAdvEvent = (evt: Event) => {
             device.removeEventListener("advertisementreceived", onAdvEvent);
             abortController.abort();
-            var mac = extractMAC((evt as BluetoothAdvertisingEvent).manufacturerData);
+            const mac = extractMAC((evt as BluetoothAdvertisingEvent).manufacturerData);
             resolve(mac || null);
         };
-        var onAbort = () => {
+        const onAbort = () => {
             device.removeEventListener("advertisementreceived", onAdvEvent);
             abortController.abort();
             resolve(null);
@@ -80,7 +80,7 @@ type MacAddressProvider = (device: BluetoothDevice, isFallbackCall?: boolean) =>
 async function connectGanCube(customMacAddressProvider?: MacAddressProvider): Promise<GanCubeConnection> {
 
     // Request user for the bluetooth device (popup selection dialog)
-    var device: BluetoothDeviceWithMAC = await navigator.bluetooth.requestDevice(
+    const device: BluetoothDeviceWithMAC = await navigator.bluetooth.requestDevice(
         {
             filters: [
                 { namePrefix: "GAN" },
@@ -93,20 +93,20 @@ async function connectGanCube(customMacAddressProvider?: MacAddressProvider): Pr
     );
 
     // Retrieve cube MAC address via advertisements first (before GATT connection, because GATT connection stops advertisements)
-    var mac = (customMacAddressProvider && await customMacAddressProvider(device, false))
+    let mac = (customMacAddressProvider && await customMacAddressProvider(device, false))
         || await autoRetrieveMacAddress(device);
 
     // Connect to GATT
-    var gatt = await device.gatt!.connect();
+    const gatt = await device.gatt!.connect();
 
     if (!mac) {
         // Fallback: Try reading MAC from System ID via GATT
         try {
-            var infoService = await gatt.getPrimaryService('device_information');
-            var sysIdChar = await infoService.getCharacteristic('system_id');
-            var sysId = new Uint8Array((await sysIdChar.readValue()).buffer);
+            const infoService = await gatt.getPrimaryService('device_information');
+            const sysIdChar = await infoService.getCharacteristic('system_id');
+            const sysId = new Uint8Array((await sysIdChar.readValue()).buffer);
             if (sysId.length >= 6) {
-                var macBytes: Array<string> = [];
+                const macBytes: Array<string> = [];
                 for (let i = 0; i < 6; i++) {
                     macBytes.push(sysId[sysId.length - 1 - i].toString(16).toUpperCase().padStart(2, "0"));
                 }
@@ -129,38 +129,38 @@ async function connectGanCube(customMacAddressProvider?: MacAddressProvider): Pr
     device.mac = mac;
 
     // Create encryption salt from MAC address bytes placed in reverse order
-    var salt = new Uint8Array(device.mac.split(/[:-\s]+/).map((c) => parseInt(c, 16)).reverse());
+    const salt = new Uint8Array(device.mac.split(/[:-\s]+/).map((c) => parseInt(c, 16)).reverse());
 
     // Get device primary services for protocol driver setup
-    var services = await gatt.getPrimaryServices();
+    const services = await gatt.getPrimaryServices();
 
-    var conn: GanCubeConnection | null = null;
+    let conn: GanCubeConnection | null = null;
 
     // Resolve type of connected cube device and setup appropriate encryption / protocol driver
-    for (let service of services) {
-        let serviceUUID = service.uuid.toLowerCase();
+    for (const service of services) {
+        const serviceUUID = service.uuid.toLowerCase();
         if (serviceUUID == def.GAN_GEN2_SERVICE) {
-            let commandCharacteristic = await service.getCharacteristic(def.GAN_GEN2_COMMAND_CHARACTERISTIC);
-            let stateCharacteristic = await service.getCharacteristic(def.GAN_GEN2_STATE_CHARACTERISTIC);
-            let key = device.name?.startsWith('AiCube') ? def.GAN_ENCRYPTION_KEYS[1] : def.GAN_ENCRYPTION_KEYS[0];
-            let encrypter = new GanGen2CubeEncrypter(new Uint8Array(key.key), new Uint8Array(key.iv), salt);
-            let driver = new GanGen2ProtocolDriver();
+            const commandCharacteristic = await service.getCharacteristic(def.GAN_GEN2_COMMAND_CHARACTERISTIC);
+            const stateCharacteristic = await service.getCharacteristic(def.GAN_GEN2_STATE_CHARACTERISTIC);
+            const key = device.name?.startsWith('AiCube') ? def.GAN_ENCRYPTION_KEYS[1] : def.GAN_ENCRYPTION_KEYS[0];
+            const encrypter = new GanGen2CubeEncrypter(new Uint8Array(key.key), new Uint8Array(key.iv), salt);
+            const driver = new GanGen2ProtocolDriver();
             conn = await GanCubeClassicConnection.create(device, commandCharacteristic, stateCharacteristic, encrypter, driver);
             break;
         } else if (serviceUUID == def.GAN_GEN3_SERVICE) {
-            let commandCharacteristic = await service.getCharacteristic(def.GAN_GEN3_COMMAND_CHARACTERISTIC);
-            let stateCharacteristic = await service.getCharacteristic(def.GAN_GEN3_STATE_CHARACTERISTIC);
-            let key = def.GAN_ENCRYPTION_KEYS[0];
-            let encrypter = new GanGen3CubeEncrypter(new Uint8Array(key.key), new Uint8Array(key.iv), salt);
-            let driver = new GanGen3ProtocolDriver();
+            const commandCharacteristic = await service.getCharacteristic(def.GAN_GEN3_COMMAND_CHARACTERISTIC);
+            const stateCharacteristic = await service.getCharacteristic(def.GAN_GEN3_STATE_CHARACTERISTIC);
+            const key = def.GAN_ENCRYPTION_KEYS[0];
+            const encrypter = new GanGen3CubeEncrypter(new Uint8Array(key.key), new Uint8Array(key.iv), salt);
+            const driver = new GanGen3ProtocolDriver();
             conn = await GanCubeClassicConnection.create(device, commandCharacteristic, stateCharacteristic, encrypter, driver);
             break;
         } else if (serviceUUID == def.GAN_GEN4_SERVICE) {
-            let commandCharacteristic = await service.getCharacteristic(def.GAN_GEN4_COMMAND_CHARACTERISTIC);
-            let stateCharacteristic = await service.getCharacteristic(def.GAN_GEN4_STATE_CHARACTERISTIC);
-            let key = def.GAN_ENCRYPTION_KEYS[0];
-            let encrypter = new GanGen4CubeEncrypter(new Uint8Array(key.key), new Uint8Array(key.iv), salt);
-            let driver = new GanGen4ProtocolDriver();
+            const commandCharacteristic = await service.getCharacteristic(def.GAN_GEN4_COMMAND_CHARACTERISTIC);
+            const stateCharacteristic = await service.getCharacteristic(def.GAN_GEN4_STATE_CHARACTERISTIC);
+            const key = def.GAN_ENCRYPTION_KEYS[0];
+            const encrypter = new GanGen4CubeEncrypter(new Uint8Array(key.key), new Uint8Array(key.iv), salt);
+            const driver = new GanGen4ProtocolDriver();
             conn = await GanCubeClassicConnection.create(device, commandCharacteristic, stateCharacteristic, encrypter, driver);
             break;
         }

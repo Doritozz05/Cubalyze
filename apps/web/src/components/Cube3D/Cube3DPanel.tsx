@@ -13,6 +13,7 @@ import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import type { CubeMoveEvent } from "@cubeforge/types";
 import { OrientationState } from "@cubeforge/math-core";
 import type { RotationEvent } from "@cubeforge/types";
+import type { Subscription } from "rxjs";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -63,8 +64,9 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
     }
     
+    let subMoves: Subscription | undefined;
     if (globalCubeAdapter.moves$) {
-      const subMoves = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
+      subMoves = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
         const displayFace = orientationState.current.mapFaceForDisplay(ev.face);
         const notation = displayFace + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
         setRecentMoves(prev => {
@@ -72,22 +74,17 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
           return next.slice(-15);
         });
       });
-      // Need a way to unsubscribe in cleanup
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (workerProxy.current as any)._subMoves = subMoves;
     }
 
-    // Subscribe to whole-cube rotation events from gyroscope
+    let subRotations: Subscription | undefined;
     if (syncBridge.current) {
-      const subRotations = syncBridge.current.rotation$.subscribe((rot: RotationEvent) => {
+      subRotations = syncBridge.current.rotation$.subscribe((rot: RotationEvent) => {
         const notation = rot.axis + (rot.direction === -1 ? "'" : rot.direction === 2 ? "2" : "");
         setRecentMoves(prev => {
           const next = [...prev, notation];
           return next.slice(-15);
         });
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (workerProxy.current as any)._subRotations = subRotations;
     }
     
     // Bind facelets callback
@@ -117,15 +114,11 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
     return () => {
       resizeObserver.disconnect();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (workerProxy.current && (workerProxy.current as any)._subMoves) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (workerProxy.current as any)._subMoves.unsubscribe();
+      if (subMoves) {
+        subMoves.unsubscribe();
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (workerProxy.current && (workerProxy.current as any)._subRotations) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (workerProxy.current as any)._subRotations.unsubscribe();
+      if (subRotations) {
+        subRotations.unsubscribe();
       }
     };
   }, []);
