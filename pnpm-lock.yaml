@@ -190,9 +190,6 @@ importers:
       recharts:
         specifier: ^3.9.2
         version: 3.9.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@16.13.1)(react@19.2.7)(redux@5.0.1)
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -348,9 +345,6 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
-      '@cubeforge/config-eslint':
-        specifier: workspace:*
-        version: link:../config-eslint
       '@cubeforge/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
@@ -479,9 +473,6 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
     devDependencies:
-      '@cubeforge/config-eslint':
-        specifier: workspace:*
-        version: link:../config-eslint
       '@cubeforge/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript

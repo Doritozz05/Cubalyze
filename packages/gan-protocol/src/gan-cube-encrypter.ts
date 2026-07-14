@@ -37,22 +37,22 @@ class GanGen2CubeEncrypter implements GanCubeEncrypter {
 
     /** Encrypt 16-byte buffer chunk starting at offset using AES-128-CBC */
     private encryptChunk(buffer: Uint8Array, offset: number): void {
-        const cipher = new ModeOfOperation.cbc(this._key, this._iv);
-        const chunk = cipher.encrypt(buffer.subarray(offset, offset + 16));
+        var cipher = new ModeOfOperation.cbc(this._key, this._iv);
+        var chunk = cipher.encrypt(buffer.subarray(offset, offset + 16));
         buffer.set(chunk, offset);
     }
 
     /** Decrypt 16-byte buffer chunk starting at offset using AES-128-CBC */
     private decryptChunk(buffer: Uint8Array, offset: number): void {
-        const cipher = new ModeOfOperation.cbc(this._key, this._iv);
-        const chunk = cipher.decrypt(buffer.subarray(offset, offset + 16));
+        var cipher = new ModeOfOperation.cbc(this._key, this._iv);
+        var chunk = cipher.decrypt(buffer.subarray(offset, offset + 16));
         buffer.set(chunk, offset);
     }
 
     encrypt(data: Uint8Array): Uint8Array {
         if (data.length < 16)
             throw Error('Data must be at least 16 bytes long');
-        const res = new Uint8Array(data);
+        var res = new Uint8Array(data);
         // encrypt 16-byte chunk aligned to message start
         this.encryptChunk(res, 0);
         // encrypt 16-byte chunk aligned to message end
@@ -65,7 +65,7 @@ class GanGen2CubeEncrypter implements GanCubeEncrypter {
     decrypt(data: Uint8Array): Uint8Array {
         if (data.length < 16)
             throw Error('Data must be at least 16 bytes long');
-        const res = new Uint8Array(data);
+        var res = new Uint8Array(data);
         // decrypt 16-byte chunk aligned to message end
         if (res.length > 16) {
             this.decryptChunk(res, res.length - 16);

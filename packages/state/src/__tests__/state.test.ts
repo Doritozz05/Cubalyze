@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { preferencesStore } from '../store.js';
 import { connectionStore, createConnectionStore } from '../connection.store.js';
-import { timerStore } from '../timer.store.js';
-import { sessionStore } from '../session.store.js';
+import { timerStore, createTimerStore } from '../timer.store.js';
+import { sessionStore, createSessionStore } from '../session.store.js';
 import type { SolveData } from '../session.store.js';
 
 describe('PreferencesStore', () => {

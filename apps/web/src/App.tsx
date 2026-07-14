@@ -222,7 +222,7 @@ export default function App() {
                 value="stats"
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
               >
-                <StatsPanel solves={solves} pb={currentPB ?? undefined} />
+                <StatsPanel solves={solves} pb={currentPB} />
               </TabsContent>
             </Tabs>
           }
