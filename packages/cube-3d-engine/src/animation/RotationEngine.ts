@@ -57,19 +57,30 @@ export class RotationEngine {
     elapsedMs?: number
   ): Promise<void> {
     return new Promise((resolve) => {
-      const targetCubies = this.getTargetCubies(axis, layerValues);
-
       // 1. Collision detection: if any target piece is already rotating, force it to finish
-      for (const runningTask of this.pool) {
-        if (!runningTask.inUse) continue;
+      // We must loop until NO intersection is found because snapping a task changes the logical state,
+      // which might change what the currentTargetCubies are.
+      let collision = true;
+      while (collision) {
+        collision = false;
+        const currentTargetCubies = this.getTargetCubies(axis, layerValues);
         
-        const runningCubies = this.getTargetCubies(runningTask.config.axis, runningTask.config.layerValues);
-        const intersects = targetCubies.some(c => runningCubies.includes(c));
-        
-        if (intersects) {
-          this.snapTask(runningTask);
+        for (const runningTask of this.pool) {
+          if (!runningTask.inUse) continue;
+          
+          const runningCubies = this.getTargetCubies(runningTask.config.axis, runningTask.config.layerValues);
+          const intersects = currentTargetCubies.some(c => runningCubies.includes(c));
+          
+          if (intersects) {
+            this.snapTask(runningTask);
+            collision = true;
+            break; // Break the for-loop to re-evaluate targetCubies with the newly updated logical state
+          }
         }
       }
+
+      // Now that all collisions are resolved, we can safely get the definitive target cubies
+      const targetCubies = this.getTargetCubies(axis, layerValues);
 
       // 2. Find a free slot in the pool
       let task = this.pool.find(t => !t.inUse);

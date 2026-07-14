@@ -81,8 +81,9 @@ export class CubeMeshFactory {
 
     // 2. Add stickers based on exposed faces (with slight relief)
     // Core is 1.0 (radius 0.5). Sticker thickness is 0.02.
-    // Placing sticker exactly on the surface means offset = 0.5 + 0.02/2 = 0.51
-    const offset = 0.51;
+    // Placing sticker at 0.51 caused Z-fighting because 0.51 - (0.02/2) = 0.50 exactly.
+    // Changing offset to 0.511 gives a 0.001 mathematical clearance, preventing Z-fighting completely.
+    const offset = 0.511;
 
     if (x === 1) {
       const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['R']);
