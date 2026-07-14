@@ -49,8 +49,8 @@ export default function App() {
   const cancelRef = useRef<(() => void) | null>(null);
 
   const handleComplete = useCallback(
-    (time: number) => {
-      addSolve({ time, scramble: currentScramble, penalty: "none" })
+    (time: number, penalty: "none" | "+2" | "DNF" = "none") => {
+      addSolve({ time, scramble: currentScramble, penalty })
         .then(() => {
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);

@@ -7,7 +7,7 @@ import { TimerDisplay } from "./TimerDisplay";
 
 export interface TimerContainerProps {
   /** Called with the raw solve time (ms) the instant the timer stops. */
-  onComplete: (time: number) => void;
+  onComplete: (time: number, penalty: "none" | "+2" | "DNF") => void;
   /** Ref populated with the timer's current state (for shortcut gating). */
   stateRef?: React.MutableRefObject<string>;
   /** Ref populated with a cancel function (used by the Esc shortcut). */

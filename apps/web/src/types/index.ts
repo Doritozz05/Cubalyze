@@ -73,6 +73,7 @@ export interface SessionStats {
  */
 export type TimerState =
   | "idle"
+  | "inspection"
   | "holding"
   | "ready"
   | "running"

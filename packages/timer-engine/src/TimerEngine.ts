@@ -70,6 +70,28 @@ export class TimerEngine {
       if (this.currentState === TimerState.INSPECTION || this.currentState === TimerState.TOUCHING) {
         this.currentPenalty = Penalty.DNF;
         this.penalty$.next(this.currentPenalty);
+        
+        // Auto-end solve as DNF
+        this.stopTickLoop();
+        this.solveTimeMs = 0;
+        
+        if (this.touchTimeoutId) {
+          clearTimeout(this.touchTimeoutId);
+          this.touchTimeoutId = null;
+        }
+
+        const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
+
+        this.setState(TimerState.COOLDOWN);
+        this.stop$.next({
+          timeMs: this.solveTimeMs,
+          penalty: this.currentPenalty,
+          finalTimeMs
+        });
+
+        this.cooldownTimeoutId = setTimeout(() => {
+          this.setState(TimerState.STOPPED);
+        }, this.config.cooldownDelay);
       }
     }, 17000);
 
@@ -78,6 +100,10 @@ export class TimerEngine {
 
   public handleDown(): void {
     const now = performance.now();
+
+    if (this.currentState === TimerState.STOPPED) {
+      this.reset();
+    }
 
     if (this.currentState === TimerState.IDLE || this.currentState === TimerState.INSPECTION) {
       const previousWasInspection = this.currentState === TimerState.INSPECTION;

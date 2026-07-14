@@ -14,6 +14,7 @@ export interface TimerDisplayProps {
 
 const STATE_COLOR: Record<TimerState, string> = {
   idle: "text-ink",
+  inspection: "text-red-500",
   holding: "text-hold",
   ready: "text-ready",
   running: "text-ink",
@@ -22,6 +23,7 @@ const STATE_COLOR: Record<TimerState, string> = {
 
 const STATE_SCALE: Record<TimerState, string> = {
   idle: "scale-100",
+  inspection: "scale-100",
   holding: "scale-[0.985]",
   ready: "scale-100",
   running: "scale-100",
@@ -30,6 +32,8 @@ const STATE_SCALE: Record<TimerState, string> = {
 
 function hintFor(state: TimerState, hasLast: boolean): string {
   switch (state) {
+    case "inspection":
+      return "inspecting";
     case "holding":
       return "keep holding";
     case "ready":
@@ -46,6 +50,8 @@ function hintFor(state: TimerState, hasLast: boolean): string {
 
 function dotColor(state: TimerState): string {
   switch (state) {
+    case "inspection":
+      return "bg-red-500";
     case "holding":
       return "bg-hold";
     case "ready":
@@ -67,6 +73,21 @@ function dotColor(state: TimerState): string {
 export function TimerDisplay({ state, displayTime, hasLast }: TimerDisplayProps) {
   const hint = hintFor(state, hasLast);
 
+  let formattedTime = "";
+  if (state === "inspection") {
+    const elapsedSecs = Math.floor(displayTime / 1000);
+    const remaining = 15 - elapsedSecs;
+    if (remaining > 0) {
+      formattedTime = String(remaining);
+    } else if (remaining > -2) {
+      formattedTime = "+2";
+    } else {
+      formattedTime = "DNF";
+    }
+  } else {
+    formattedTime = formatTime(displayTime);
+  }
+
   return (
     <div className="flex select-none flex-col items-center justify-center gap-7">
       <div
@@ -79,7 +100,7 @@ export function TimerDisplay({ state, displayTime, hasLast }: TimerDisplayProps)
         aria-live="polite"
         aria-atomic="true"
       >
-        {formatTime(displayTime)}
+        {formattedTime}
       </div>
 
       <div className="flex items-center gap-2.5 text-ink-3">

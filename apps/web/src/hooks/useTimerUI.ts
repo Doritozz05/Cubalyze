@@ -43,8 +43,9 @@ export interface UseTimerUIResult {
 const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
   switch (engineState) {
     case EngineState.IDLE:
-    case EngineState.INSPECTION:
       return "idle";
+    case EngineState.INSPECTION:
+      return "inspection";
     case EngineState.TOUCHING:
       return "holding";
     case EngineState.READY:
@@ -59,7 +60,7 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
   }
 };
 
-export function useTimerUI(onSolve?: (time: number) => void, isScrambled: boolean = false): UseTimerUIResult {
+export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DNF") => void, isScrambled: boolean = false): UseTimerUIResult {
   const [inspectionEnabled, setInspectionEnabled] = useState(true);
   const engine = useMemo(() => new TimerEngine({ useInspection: inspectionEnabled }), [inspectionEnabled]);
   
@@ -83,7 +84,8 @@ export function useTimerUI(onSolve?: (time: number) => void, isScrambled: boolea
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
       if (onSolveRef.current) {
-        onSolveRef.current(ev.timeMs);
+        const uiPenalty = ev.penalty === 'NONE' ? 'none' : ev.penalty as ("+2" | "DNF");
+        onSolveRef.current(ev.timeMs, uiPenalty);
       }
     });
 
@@ -145,8 +147,15 @@ export function useTimerUI(onSolve?: (time: number) => void, isScrambled: boolea
   }, [inspectionEnabled]);
 
   const handlePress = useCallback(() => {
-    engine.handleDown();
-  }, [engine]);
+    if ((state === "idle" || state === "stopped") && inspectionEnabled) {
+      if (state === "stopped") {
+        engine.reset(); // Reset first to clear previous solve data
+      }
+      engine.startInspection();
+    } else {
+      engine.handleDown();
+    }
+  }, [engine, state, inspectionEnabled]);
 
   const handleRelease = useCallback(() => {
     engine.handleUp();
@@ -179,11 +188,7 @@ export function useTimerUI(onSolve?: (time: number) => void, isScrambled: boolea
       e.stopPropagation();
 
       if (!e.repeat) {
-        if (state === "idle" && inspectionEnabled) {
-          engine.startInspection();
-        } else {
-          handlePress();
-        }
+        handlePress();
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
