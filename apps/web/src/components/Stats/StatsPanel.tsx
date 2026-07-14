@@ -8,7 +8,7 @@ import { TrendChart } from "./TrendChart";
 
 export interface StatsPanelProps {
   solves: Solve[];
-  /** Personal best across all sessions (mock). */
+  /** Personal best across all sessions. */
   pb?: number;
   className?: string;
 }

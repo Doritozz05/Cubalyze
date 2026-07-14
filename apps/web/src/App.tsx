@@ -15,9 +15,7 @@ import {
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
-import { MOCK_PB } from "@/utils/mockData";
-import { RandomStateGenerator } from "@cubeforge/math-core";
-import { MockSolver } from "@/utils/MockSolver";
+import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/math-core";
 import { ThemeProvider } from "@/components/theme-provider";
 import "@/index.css";
 
@@ -40,7 +38,7 @@ export default function App() {
   const [scrambleIndex, setScrambleIndex] = useState(0);
   const [cube3DActive, setCube3DActive] = useState(false);
   const [currentScramble, setCurrentScramble] = useState(() => 
-    RandomStateGenerator.generateScramble(new MockSolver())
+    RandomStateGenerator.generateScramble(new Min2PhaseSolver())
   );
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
@@ -51,7 +49,7 @@ export default function App() {
     (time: number) => {
       addSolve({ time, scramble: currentScramble, penalty: "none" })
         .then(() => {
-          setCurrentScramble(RandomStateGenerator.generateScramble(new MockSolver()));
+          setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
         })
         .catch(() => toast.error("Couldn’t save solve"));
@@ -78,7 +76,7 @@ export default function App() {
   }, [clearSession]);
 
   const handleRegenerate = useCallback(() => {
-    setCurrentScramble(RandomStateGenerator.generateScramble(new MockSolver()));
+    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
     setScrambleIndex((i) => i + 1);
     toast.success("New scramble");
   }, []);
@@ -117,7 +115,7 @@ export default function App() {
 
   const handleNewSession = useCallback(() => {
     newSession().then(() => {
-      setCurrentScramble(RandomStateGenerator.generateScramble(new MockSolver()));
+      setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
       setScrambleIndex(0);
       toast.success("New session started");
     }).catch(() => toast.error("Couldn’t create session"));
@@ -217,7 +215,7 @@ export default function App() {
                 value="stats"
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
               >
-                <StatsPanel solves={solves} pb={currentPB ?? MOCK_PB} />
+                <StatsPanel solves={solves} pb={currentPB} />
               </TabsContent>
             </Tabs>
           }

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@cubeforge/types": "workspace:*",
+    "min2phase.js": "^0.0.4",
     "three": "^0.185.1"
   },
   "devDependencies": {
