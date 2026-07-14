@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
 import type { CubeMoveEvent } from '@cubeforge/types';
+import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
 
 export type ScrambleMoveState = 'pending' | 'correct' | 'incorrect';
 
@@ -15,29 +16,13 @@ function parseScramble(scramble: string): string[] {
   return scramble.trim().split(/\s+/).filter(Boolean);
 }
 
-function getInverseMove(move: string): string {
-  if (move.endsWith("'")) return move.slice(0, -1);
-  if (move.endsWith("2")) return move;
-  return move + "'";
-}
-
-// Parse a move string into face and rotation (1, -1, 2)
-const parseExpectedMove = (move: string) => {
-  const face = move[0];
-  let targetRot = 1;
-  if (move.endsWith("'")) targetRot = -1;
-  else if (move.endsWith("2")) targetRot = 2;
-  return { face, targetRot };
-};
-
 export function useScrambleValidator(scramble: string): ScrambleValidationResult {
-  // Use a ref for synchronous state tracking to prevent rapid-fire event bugs
   const stateRef = useRef({
     moves: [] as string[],
-    states: [] as ScrambleMoveState[],
+    expectedFacelets: [] as string[],
+    currentState: new CubeState(),
     currentIndex: 0,
-    currentRot: 0,
-    errorStack: [] as string[],
+    isError: false,
   });
 
   const [uiState, setUiState] = useState<ScrambleValidationResult>({
@@ -48,28 +33,46 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
   });
 
   const updateUI = () => {
-    const isScrambled =
-      stateRef.current.moves.length > 0 &&
-      stateRef.current.currentIndex === stateRef.current.moves.length &&
-      stateRef.current.errorStack.length === 0;
+    const s = stateRef.current;
+    const states = s.moves.map((_, i) => {
+      if (i < s.currentIndex) return 'correct' as ScrambleMoveState;
+      if (i === s.currentIndex && s.isError) return 'incorrect' as ScrambleMoveState;
+      return 'pending' as ScrambleMoveState;
+    });
+
+    const isScrambled = s.currentIndex === s.moves.length && !s.isError;
 
     setUiState({
-      moves: stateRef.current.moves,
-      states: [...stateRef.current.states],
-      currentIndex: stateRef.current.currentIndex,
+      moves: s.moves,
+      states,
       isScrambled,
+      currentIndex: s.currentIndex,
     });
   };
 
-  // Reset when scramble changes
   useEffect(() => {
-    const parsed = parseScramble(scramble);
+    const moves = parseScramble(scramble);
+    const expectedFacelets: string[] = [];
+    const tempState = new CubeState();
+    
+    // Add solved state as index 0
+    expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
+
+    for (const m of moves) {
+      try {
+        tempState.applySequence(m);
+        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
+      } catch (e) {
+        console.warn("Invalid move in scramble:", m);
+      }
+    }
+
     stateRef.current = {
-      moves: parsed,
-      states: parsed.map(() => 'pending'),
+      moves,
+      expectedFacelets,
+      currentState: new CubeState(),
       currentIndex: 0,
-      currentRot: 0,
-      errorStack: [],
+      isError: false,
     };
     updateUI();
   }, [scramble]);
@@ -77,79 +80,48 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
   useEffect(() => {
     if (!globalCubeAdapter.moves$) return;
 
-    // We decorate onFacelets to detect if the cube is solved, to allow restarting the scramble
     const originalOnFacelets = globalCubeAdapter.onFacelets;
     globalCubeAdapter.onFacelets = (f) => {
       if (originalOnFacelets) originalOnFacelets(f);
 
+      // Simple regex for solved cube
       const isSolved = f.match(/^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/);
       
-      const s = stateRef.current;
-      const isCurrentlyScrambled = s.moves.length > 0 && s.currentIndex === s.moves.length && s.errorStack.length === 0;
+      if (isSolved) {
+        const s = stateRef.current;
+        const isCurrentlyScrambled = s.moves.length > 0 && s.currentIndex === s.moves.length && !s.isError;
 
-      // If cube is back to solved, and we were in the middle of a scramble (with errors or not), reset!
-      if (isSolved && !isCurrentlyScrambled && (s.currentIndex > 0 || s.errorStack.length > 0)) {
-        s.currentIndex = 0;
-        s.currentRot = 0;
-        s.errorStack = [];
-        s.states.fill('pending');
-        updateUI();
+        if (!isCurrentlyScrambled && (s.currentIndex > 0 || s.isError)) {
+          s.currentState = new CubeState();
+          s.currentIndex = 0;
+          s.isError = false;
+          updateUI();
+        }
       }
     };
 
     const sub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
       const s = stateRef.current;
-      
-      const moveRot = ev.direction === -1 ? -1 : ev.direction === 2 ? 2 : 1;
+      if (s.moves.length === 0) return;
+
       const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
 
-      // 1. Recovering from an error
-      if (s.errorStack.length > 0) {
-        const lastError = s.errorStack[s.errorStack.length - 1];
-        const expectedRecovery = getInverseMove(lastError);
-
-        if (notation === expectedRecovery) {
-          // Fixed the top error
-          s.errorStack.pop();
-          if (s.errorStack.length === 0 && s.currentIndex < s.moves.length) {
-            s.states[s.currentIndex] = 'pending';
-          }
-        } else {
-          // Made another mistake
-          s.errorStack.push(notation);
-        }
-        updateUI();
-        return;
+      try {
+        s.currentState.applySequence(notation);
+      } catch (e) {
+        return; // Ignore malformed moves
       }
 
-      // 2. Normal progression
-      if (s.currentIndex >= s.moves.length) {
-        return; // Already done
-      }
+      const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
+      
+      // Find where we are in the exact mathematical scramble path
+      const matchedIndex = s.expectedFacelets.lastIndexOf(currentFacelets);
 
-      const expected = parseExpectedMove(s.moves[s.currentIndex]);
-
-      if (ev.face === expected.face) {
-        const newRot = (s.currentRot + moveRot) % 4;
-        let normalizedRot = newRot;
-        if (normalizedRot === 3) normalizedRot = -1;
-        if (normalizedRot === -3) normalizedRot = 1;
-        if (normalizedRot === -2) normalizedRot = 2;
-
-        if (normalizedRot === expected.targetRot) {
-          // Move completed!
-          s.states[s.currentIndex] = 'correct';
-          s.currentIndex += 1;
-          s.currentRot = 0;
-        } else {
-          // Partially completed or overshot
-          s.states[s.currentIndex] = 'pending';
-          s.currentRot = normalizedRot;
-        }
+      if (matchedIndex !== -1) {
+        s.currentIndex = matchedIndex;
+        s.isError = false;
       } else {
-        // Wrong face! Mistake!
-        s.states[s.currentIndex] = 'incorrect';
-        s.errorStack.push(notation);
+        s.isError = true;
       }
 
       updateUI();
@@ -159,7 +131,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
       sub.unsubscribe();
       globalCubeAdapter.onFacelets = originalOnFacelets;
     };
-  }, [scramble]); // Only resubscribe if the scramble prop changes entirely
+  }, [scramble]);
 
   return uiState;
 }
