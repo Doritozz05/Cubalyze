@@ -133,6 +133,47 @@ export class TimerEngine {
     }
   }
 
+  public handleSmartCubeStart(): void {
+    if (this.currentState === TimerState.INSPECTION || this.currentState === TimerState.IDLE) {
+      if (this.touchTimeoutId) {
+        clearTimeout(this.touchTimeoutId);
+        this.touchTimeoutId = null;
+      }
+      if (this.currentState === TimerState.INSPECTION) {
+        const elapsed = performance.now() - this.inspectionStartTimestamp;
+        this.currentPenalty = getInspectionPenalty(elapsed);
+        if (this.currentPenalty !== Penalty.NONE) {
+          this.penalty$.next(this.currentPenalty);
+        }
+      } else {
+        this.currentPenalty = Penalty.NONE;
+      }
+      this.setState(TimerState.RUNNING);
+      this.startTimestamp = performance.now();
+      this.inspectionStartTimestamp = 0;
+      this.startTickLoop();
+    }
+  }
+
+  public handleSmartCubeStop(): void {
+    if (this.currentState === TimerState.RUNNING) {
+      this.stopTickLoop();
+      this.solveTimeMs = Math.max(0, performance.now() - this.startTimestamp);
+      const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
+
+      this.setState(TimerState.COOLDOWN);
+      this.stop$.next({
+        timeMs: this.solveTimeMs,
+        penalty: this.currentPenalty,
+        finalTimeMs
+      });
+
+      this.cooldownTimeoutId = setTimeout(() => {
+        this.setState(TimerState.STOPPED);
+      }, this.config.cooldownDelay);
+    }
+  }
+
   public addModifier(flag: 'OK' | '+2' | 'DNF'): void {
     if (this.currentState !== TimerState.STOPPED && this.currentState !== TimerState.COOLDOWN) {
       return;

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
+import type { CubeMoveEvent } from "@cubeforge/types";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -26,6 +27,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
+  const [recentMoves, setRecentMoves] = useState<string[]>([]);
 
   useEffect(() => {
     if (!canvasRef.current || isInitialized.current) return;
@@ -58,6 +60,19 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
     }
     
+    if (globalCubeAdapter.moves$) {
+      const subMoves = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
+        const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
+        setRecentMoves(prev => {
+          const next = [...prev, notation];
+          return next.slice(-15);
+        });
+      });
+      // Need a way to unsubscribe in cleanup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (workerProxy.current as any)._subMoves = subMoves;
+    }
+    
     // Bind facelets callback
     globalCubeAdapter.onFacelets = (facelets: string) => {
       workerProxy.current?.syncFacelets(facelets).catch(console.error);
@@ -84,6 +99,11 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
     return () => {
       resizeObserver.disconnect();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (workerProxy.current && (workerProxy.current as any)._subMoves) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (workerProxy.current as any)._subMoves.unsubscribe();
+      }
     };
   }, []);
 
@@ -166,6 +186,19 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
           onPointerCancel={handlePointerUp}
         />
       </div>
+
+      {/* Recent Moves History */}
+      {recentMoves.length > 0 && (
+        <div className="flex h-8 items-center justify-end overflow-hidden border-t border-line/50 px-2">
+          <div className="flex gap-1.5 font-mono text-[0.65rem] font-medium text-ink-3">
+            {recentMoves.map((m, i) => (
+              <span key={i} className="animate-in fade-in slide-in-from-right-2">
+                {m}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,8 @@ export interface TimerContainerProps {
   stateRef?: React.MutableRefObject<string>;
   /** Ref populated with a cancel function (used by the Esc shortcut). */
   cancelRef?: React.MutableRefObject<(() => void) | null>;
+  /** Whether the cube is correctly scrambled and ready for solving. */
+  isScrambled?: boolean;
   className?: string;
 }
 
@@ -25,9 +27,10 @@ export function TimerContainer({
   onComplete,
   stateRef,
   cancelRef,
+  isScrambled,
   className,
 }: TimerContainerProps) {
-  const { state, time, lastTime, press, release, cancel } = useTimerUI(onComplete);
+  const { state, time, lastTime, press, release, cancel } = useTimerUI(onComplete, isScrambled);
 
   // Expose the timer state + cancel to the parent (for shortcut gating) via
   // refs so the parent doesn't re-render on every animation frame.

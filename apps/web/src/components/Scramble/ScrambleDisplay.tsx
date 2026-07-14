@@ -13,6 +13,8 @@ export interface ScrambleDisplayProps {
   onCopy?: () => void;
   /** Optional index label, e.g. "#7". */
   indexLabel?: string;
+  /** Validation states for each move */
+  states?: ('pending' | 'correct' | 'incorrect')[];
 }
 
 /**
@@ -24,6 +26,7 @@ export function ScrambleDisplay({
   onRegenerate,
   onCopy,
   indexLabel,
+  states,
 }: ScrambleDisplayProps) {
   const [copied, setCopied] = useState(false);
 
@@ -81,11 +84,22 @@ export function ScrambleDisplay({
           "nums flex flex-wrap gap-x-2.5 gap-y-1 text-lg leading-relaxed text-ink sm:text-xl",
         )}
       >
-        {tokens.map((tok, i) => (
-          <span key={`${tok}-${i}`} className="whitespace-nowrap">
-            {tok}
-          </span>
-        ))}
+        {tokens.map((tok, i) => {
+          const state = states?.[i] || 'pending';
+          return (
+            <span 
+              key={`${tok}-${i}`} 
+              className={cn(
+                "whitespace-nowrap transition-colors duration-200",
+                state === 'correct' && "text-ready",
+                state === 'incorrect' && "text-destructive",
+                state === 'pending' && "text-ink"
+              )}
+            >
+              {tok}
+            </span>
+          );
+        })}
       </p>
     </div>
   );

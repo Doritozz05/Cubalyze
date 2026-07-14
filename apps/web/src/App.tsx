@@ -15,6 +15,7 @@ import {
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { useScrambleValidator } from "@/hooks/useScrambleValidator";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/math-core";
 import { ThemeProvider } from "@/components/theme-provider";
 import "@/index.css";
@@ -41,6 +42,7 @@ export default function App() {
   const [currentScramble, setCurrentScramble] = useState(() => 
     RandomStateGenerator.generateScramble(new Min2PhaseSolver())
   );
+  const { states: scrambleStates, isScrambled } = useScrambleValidator(currentScramble);
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
   const timerStateRef = useRef("idle");
@@ -167,6 +169,7 @@ export default function App() {
             <>
               <ScrambleDisplay
                 scramble={currentScramble}
+                states={scrambleStates}
                 onRegenerate={handleRegenerate}
                 onCopy={handleCopy}
                 indexLabel={`#${scrambleIndex + 1}`}
@@ -176,6 +179,7 @@ export default function App() {
                 onComplete={handleComplete}
                 stateRef={timerStateRef}
                 cancelRef={cancelRef}
+                isScrambled={isScrambled}
                 className="mt-1 flex-1"
               />
 

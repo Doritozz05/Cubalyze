@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { TimerState } from "@/types";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
+import { globalAudioSystem } from "@/utils/audioSystem";
 
 export interface UseTimerUIResult {
   state: TimerState;
@@ -58,13 +59,13 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
   }
 };
 
-export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
-  const engine = useMemo(() => new TimerEngine({ useInspection: false }), []);
+export function useTimerUI(onSolve?: (time: number) => void, isScrambled: boolean = false): UseTimerUIResult {
+  const [inspectionEnabled, setInspectionEnabled] = useState(true);
+  const engine = useMemo(() => new TimerEngine({ useInspection: inspectionEnabled }), [inspectionEnabled]);
   
   const [state, setState] = useState<TimerState>("idle");
   const [time, setTime] = useState(0);
   const [lastTime, setLastTime] = useState<number | null>(null);
-  const [inspectionEnabled, setInspectionEnabled] = useState(false);
 
   const onSolveRef = useRef(onSolve);
   useEffect(() => {
@@ -86,10 +87,16 @@ export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
       }
     });
 
+    const sub4 = engine.inspectionWarning$.subscribe((warning) => {
+      if (warning === '8s') globalAudioSystem.play8s();
+      if (warning === '12s') globalAudioSystem.play12s();
+    });
+
     return () => {
       sub1.unsubscribe();
       sub2.unsubscribe();
       sub3.unsubscribe();
+      sub4.unsubscribe();
       engine.reset();
     };
   }, [engine]);
@@ -99,19 +106,42 @@ export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
     if (!globalCubeAdapter.moves$) return;
     const sub = globalCubeAdapter.moves$.subscribe(() => {
       const current = engine.getState();
-      if (current === EngineState.IDLE) {
-        // Start the timer immediately on first move
-        engine.handleDown();
-        setTimeout(() => engine.handleUp(), 10);
+      
+      // If idle and correctly scrambled, do nothing automatically. 
+      // The user must trigger inspection via spacebar, OR we could auto-start inspection.
+      // Standard WCA logic requires manual start of inspection.
+      if (current === EngineState.INSPECTION && isScrambled) {
+        // First move starts the timer
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (engine as any).handleSmartCubeStart();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if (current === EngineState.IDLE && !(engine as any)["config"].useInspection && isScrambled) {
+        // If inspection is off, we can start immediately
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (engine as any).handleSmartCubeStart();
       }
     });
-    return () => sub.unsubscribe();
-  }, [engine]);
+    
+    const subFacelets = globalCubeAdapter.onFacelets;
+    globalCubeAdapter.onFacelets = (f) => {
+      if (subFacelets) subFacelets(f);
+      // Check if solved. A fully solved cube usually has 54 characters of same facelets in 9-blocks.
+      // 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
+      const isSolved = f.match(/^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/);
+      if (isSolved && engine.getState() === EngineState.RUNNING) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (engine as any).handleSmartCubeStop();
+      }
+    };
 
-  // Update inspection flag dynamically if needed
+    return () => {
+      sub.unsubscribe();
+    };
+  }, [engine, isScrambled]);
+
+  // Update inspection flag dynamically
   useEffect(() => {
-    // Current TimerEngine config isn't mutable dynamically, but we can reset if we wanted to change it.
-    // For now we just pass through.
+    // Already handled by useMemo dependency recreating TimerEngine
   }, [inspectionEnabled]);
 
   const handlePress = useCallback(() => {
@@ -148,7 +178,13 @@ export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
       e.preventDefault();
       e.stopPropagation();
 
-      if (!e.repeat) handlePress();
+      if (!e.repeat) {
+        if (state === "idle" && inspectionEnabled) {
+          engine.startInspection();
+        } else {
+          handlePress();
+        }
+      }
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== "Space") return;
@@ -170,7 +206,7 @@ export function useTimerUI(onSolve?: (time: number) => void): UseTimerUIResult {
       window.removeEventListener("keydown", onKeyDown, { capture: true });
       window.removeEventListener("keyup", onKeyUp, { capture: true });
     };
-  }, [handlePress, handleRelease]);
+  }, [handlePress, handleRelease, engine, inspectionEnabled, state]);
 
   return {
     state,
