@@ -30,8 +30,10 @@ export const DBWorker = {
       const sqlite3 = await sqlite3InitModule();
 
       if ((sqlite3 as any).opfs) {
+        console.log('[DB Worker] OPFS is available. Using OpfsDb.');
         db = new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
       } else {
+        // Fallback to memory
         db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
       }
 

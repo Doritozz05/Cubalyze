@@ -4,17 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp'
-    }
-  },
-  preview: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp'
-    }
+  optimizeDeps: {
+    exclude: ['@sqlite.org/sqlite-wasm']
   },
   resolve: {
     alias: {
@@ -23,6 +14,17 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    {
+      name: 'configure-response-headers',
+      enforce: 'pre',
+      configureServer: (server) => {
+        server.middlewares.use((_req, res, next) => {
+          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+          next();
+        });
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
