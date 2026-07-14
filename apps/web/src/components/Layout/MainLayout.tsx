@@ -31,6 +31,10 @@ export interface MainLayoutProps {
   onDeleteSession?: (id: string) => void;
   /** Toggle the 3D cube view. */
   onToggleCube3D?: () => void;
+  /** Whether the sidebar is active. */
+  sidebarActive?: boolean;
+  /** Toggle the sidebar view. */
+  onToggleSidebar?: () => void;
   className?: string;
 }
 
@@ -57,6 +61,8 @@ export function MainLayout({
   onRenameSession,
   onDeleteSession,
   onToggleCube3D,
+  sidebarActive,
+  onToggleSidebar,
   className,
 }: MainLayoutProps) {
   return (
@@ -77,28 +83,34 @@ export function MainLayout({
         onDeleteSession={onDeleteSession}
         cube3DActive={cube3DActive}
         onToggleCube3D={onToggleCube3D}
+        sidebarActive={sidebarActive}
+        onToggleSidebar={onToggleSidebar}
       />
 
       <main className={cn(
         "mx-auto flex w-full flex-1 flex-col lg:grid",
-        cube3DActive 
-          ? "lg:grid-cols-2" 
-          : "lg:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,380px)]"
+        cube3DActive || sidebarActive
+          ? cube3DActive 
+            ? "lg:grid-cols-2" 
+            : "lg:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,380px)]"
+          : "lg:grid-cols-1"
       )}>
         <section className="flex flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {main}
         </section>
 
-        <aside
-          className={cn(
-            "flex flex-col bg-surface px-4 py-6 sm:px-6 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem-2.75rem)] lg:overflow-hidden lg:py-8",
-            cube3DActive
-              ? "min-h-[50vh] border-t border-line lg:min-h-0 lg:border-l lg:border-t-0"
-              : "border-t border-line lg:border-l lg:border-t-0",
-          )}
-        >
-          {cube3DActive ? cube3D : sidebar}
-        </aside>
+        {(cube3DActive || sidebarActive) && (
+          <aside
+            className={cn(
+              "flex flex-col bg-surface px-4 py-6 sm:px-6 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem-2.75rem)] lg:overflow-hidden lg:py-8",
+              cube3DActive
+                ? "min-h-[50vh] border-t border-line lg:min-h-0 lg:border-l lg:border-t-0"
+                : "border-t border-line lg:border-l lg:border-t-0",
+            )}
+          >
+            {cube3DActive ? cube3D : sidebar}
+          </aside>
+        )}
       </main>
 
       <footer className="mt-auto border-t border-line bg-surface">

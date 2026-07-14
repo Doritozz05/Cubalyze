@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Grid3x3, Timer, Plus, History, Pencil, Trash2, Check, X, Box } from "lucide-react";
+import { Grid3x3, Timer, Plus, History, Pencil, Trash2, Check, X, Box, PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -67,6 +67,10 @@ export interface HeaderProps {
   cube3DActive?: boolean;
   /** Toggle the 3D cube view. */
   onToggleCube3D?: () => void;
+  /** Whether the sidebar is active. */
+  sidebarActive?: boolean;
+  /** Toggle the sidebar view. */
+  onToggleSidebar?: () => void;
   className?: string;
 }
 
@@ -85,6 +89,8 @@ export function Header({
   onDeleteSession,
   cube3DActive,
   onToggleCube3D,
+  sidebarActive,
+  onToggleSidebar,
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -279,6 +285,23 @@ export function Header({
             title={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
           >
             <Box className="size-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            className={cn(
+              "size-8 rounded-md border",
+              sidebarActive
+                ? "bg-ink text-surface hover:bg-ink/90 border-transparent"
+                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
+            )}
+            aria-label={sidebarActive ? "Hide sidebar" : "Show sidebar"}
+            aria-pressed={sidebarActive}
+            title={sidebarActive ? "Hide sidebar" : "Show sidebar"}
+          >
+            <PanelRight className="size-4" />
           </Button>
 
           <ThemeToggle />
