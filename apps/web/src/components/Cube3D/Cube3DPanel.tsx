@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import type { CubeMoveEvent } from "@cubeforge/types";
+import { OrientationState } from "@cubeforge/math-core";
+import type { RotationEvent } from "@cubeforge/types";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -24,6 +26,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const syncBridge = useRef<SyncBridge | null>(null);
   const workerInstance = useRef<Worker | null>(null);
   const isInitialized = useRef(false);
+  const orientationState = useRef(new OrientationState());
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -62,7 +65,8 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     
     if (globalCubeAdapter.moves$) {
       const subMoves = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
-        const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
+        const displayFace = orientationState.current.mapFaceForDisplay(ev.face);
+        const notation = displayFace + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
         setRecentMoves(prev => {
           const next = [...prev, notation];
           return next.slice(-15);
@@ -72,9 +76,23 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (workerProxy.current as any)._subMoves = subMoves;
     }
+
+    // Subscribe to whole-cube rotation events from gyroscope
+    if (syncBridge.current) {
+      const subRotations = syncBridge.current.rotation$.subscribe((rot: RotationEvent) => {
+        const notation = rot.axis + (rot.direction === -1 ? "'" : rot.direction === 2 ? "2" : "");
+        setRecentMoves(prev => {
+          const next = [...prev, notation];
+          return next.slice(-15);
+        });
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (workerProxy.current as any)._subRotations = subRotations;
+    }
     
     // Bind facelets callback
     globalCubeAdapter.onFacelets = (facelets: string) => {
+      orientationState.current.calibrateFromFacelets(facelets);
       workerProxy.current?.syncFacelets(facelets).catch(console.error);
     };
 
@@ -103,6 +121,11 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       if (workerProxy.current && (workerProxy.current as any)._subMoves) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (workerProxy.current as any)._subMoves.unsubscribe();
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (workerProxy.current && (workerProxy.current as any)._subRotations) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (workerProxy.current as any)._subRotations.unsubscribe();
       }
     };
   }, []);

@@ -1,10 +1,12 @@
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import type { Observable } from 'rxjs';
+import { Quaternion } from 'three';
 import type * as Comlink from 'comlink';
 import type { EngineWorkerAPI } from '../workers/EngineWorker';
-import type { CubeMoveEvent, GyroEvent, CubeFace } from '@cubeforge/types';
+import type { CubeMoveEvent, GyroEvent, RotationEvent, CubeFace } from '@cubeforge/types';
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
 import type { RotationAxis } from '../animation/RotationEngine';
+import { RotationDetector } from './RotationDetector';
 
 interface QueuedRotation {
   axis: RotationAxis;
@@ -24,6 +26,13 @@ export class SyncBridge {
   private coalesceBuffer: CubeMoveEvent[] = [];
   private coalesceTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  private rotationSubject = new Subject<RotationEvent>();
+  private rotationDetector = new RotationDetector();
+  private gyroReferenceSet = false;
+
+  /** Observable of whole-cube rotation events detected from gyroscope */
+  public rotation$: Observable<RotationEvent> = this.rotationSubject.asObservable();
+
   constructor(workerProxy: Comlink.Remote<EngineWorkerAPI>) {
     this.workerProxy = workerProxy;
   }
@@ -33,6 +42,8 @@ export class SyncBridge {
     gyro$?: Observable<GyroEvent>
   ): void {
     this.unbind();
+    this.gyroReferenceSet = false;
+    this.rotationDetector.reset();
 
     this.subs.push(
       moves$.subscribe((move: CubeMoveEvent) => {
@@ -44,6 +55,18 @@ export class SyncBridge {
       this.subs.push(
         gyro$.subscribe((gyro: GyroEvent) => {
           this.workerProxy.updateGyro(gyro.x, gyro.y, gyro.z, gyro.w);
+
+          const rawQuat = new Quaternion(gyro.x, gyro.y, gyro.z, gyro.w);
+          if (!this.gyroReferenceSet) {
+            this.rotationDetector.setReference(rawQuat);
+            this.gyroReferenceSet = true;
+            return;
+          }
+
+          const rotation = this.rotationDetector.detectRotation(rawQuat, performance.now());
+          if (rotation) {
+            this.rotationSubject.next(rotation);
+          }
         })
       );
     }
@@ -148,6 +171,8 @@ export class SyncBridge {
     this.subs.forEach(sub => sub.unsubscribe());
     this.subs = [];
     this.workerProxy.disableGyro();
+    this.gyroReferenceSet = false;
+    this.rotationDetector.reset();
   }
 }
 

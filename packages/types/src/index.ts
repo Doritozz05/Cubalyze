@@ -21,6 +21,10 @@ export interface CubeMoveEvent {
   cubeTimestamp: number;
   /** Browser's performance.now() at the moment the event was received */
   hostTimestamp: number;
+  /** Whole-cube rotation detected from gyroscope (optional). When set, face is meaningless. */
+  wholeCubeRotation?: RotationAxis | null;
+  /** Direction of the whole-cube rotation (optional) */
+  wholeCubeDirection?: CubeMoveDirection;
 }
 
 /** The six faces of a standard cube in Singmaster notation */
@@ -28,6 +32,19 @@ export type CubeFace = 'U' | 'D' | 'R' | 'L' | 'F' | 'B';
 
 /** Direction of a cube face rotation */
 export type CubeMoveDirection = 1 | -1 | 2;
+
+/**
+ * A whole-cube rotation event detected from gyroscope data.
+ * Separate from CubeMoveEvent because it comes from a different detection pipeline.
+ */
+export interface RotationEvent {
+  /** Rotation axis: 'x', 'y', or 'z' */
+  axis: RotationAxis;
+  /** Direction: 1 = CW, -1 = CCW, 2 = 180° */
+  direction: CubeMoveDirection;
+  /** Timestamp when the rotation was detected */
+  timestamp: number;
+}
 
 // ─── Gyroscope / IMU Events ──────────────────────────────────────────────────
 
