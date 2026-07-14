@@ -188,17 +188,24 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       </div>
 
       {/* Recent Moves History */}
-      {recentMoves.length > 0 && (
-        <div className="flex h-8 items-center justify-end overflow-hidden border-t border-line/50 px-2">
-          <div className="flex gap-1.5 font-mono text-[0.65rem] font-medium text-ink-3">
-            {recentMoves.map((m, i) => (
-              <span key={i} className="animate-in fade-in slide-in-from-right-2">
-                {m}
-              </span>
-            ))}
-          </div>
+      <div className="relative flex min-h-10 items-center border-t border-line/50 px-3 py-1.5 shrink-0 overflow-hidden bg-background">
+        <span className="absolute left-3 text-[0.65rem] uppercase tracking-[0.15em] font-bold text-ink">
+          Moves
+        </span>
+        <div className="flex-1 flex justify-center items-center gap-1.5 overflow-hidden ml-16">
+          {recentMoves.length === 0 ? (
+            <span className="text-[0.7rem] text-ink-3 italic">Waiting for cube...</span>
+          ) : (
+            <div className="flex gap-2 font-mono text-[0.8rem] font-semibold text-ink flex-wrap justify-center">
+              {recentMoves.map((m, i) => (
+                <span key={i} className="animate-in fade-in slide-in-from-right-2">
+                  {m}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
