@@ -147,6 +147,9 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
   }, [inspectionEnabled]);
 
   const handlePress = useCallback(() => {
+    if (globalCubeAdapter.isConnected && !isScrambled) {
+      return;
+    }
     if ((state === "idle" || state === "stopped") && inspectionEnabled) {
       if (state === "stopped") {
         engine.reset(); // Reset first to clear previous solve data
@@ -155,7 +158,7 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
     } else {
       engine.handleDown();
     }
-  }, [engine, state, inspectionEnabled]);
+  }, [engine, state, inspectionEnabled, isScrambled]);
 
   const handleRelease = useCallback(() => {
     engine.handleUp();

@@ -23,6 +23,8 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
     currentState: new CubeState(),
     currentIndex: 0,
     isError: false,
+    startedFromSolved: true,
+    requestFaceletsTimeout: undefined as any,
   });
 
   const [uiState, setUiState] = useState<ScrambleValidationResult>({
@@ -40,7 +42,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
       return 'pending' as ScrambleMoveState;
     });
 
-    const isScrambled = s.currentIndex === s.moves.length && !s.isError;
+    const isScrambled = s.startedFromSolved && s.currentIndex === s.moves.length && !s.isError;
 
     setUiState({
       moves: s.moves,
@@ -73,6 +75,8 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
       currentState: new CubeState(),
       currentIndex: 0,
       isError: false,
+      startedFromSolved: true,
+      requestFaceletsTimeout: undefined as any,
     };
     updateUI();
   }, [scramble]);
@@ -86,9 +90,11 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
 
       // Simple regex for solved cube
       const isSolved = f.match(/^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/);
+      const s = stateRef.current;
       
       if (isSolved) {
-        const s = stateRef.current;
+        s.startedFromSolved = true;
+        
         const isCurrentlyScrambled = s.moves.length > 0 && s.currentIndex === s.moves.length && !s.isError;
 
         if (!isCurrentlyScrambled && (s.currentIndex > 0 || s.isError)) {
@@ -97,12 +103,33 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
           s.isError = false;
           updateUI();
         }
+      } else {
+        if (s.currentIndex === 0) {
+          s.startedFromSolved = false;
+        }
       }
     };
 
     const sub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
       const s = stateRef.current;
+      
+      if (!s.startedFromSolved) {
+        clearTimeout(s.requestFaceletsTimeout);
+        s.requestFaceletsTimeout = setTimeout(() => {
+          if (globalCubeAdapter.isConnected) {
+            globalCubeAdapter.requestFacelets().catch(() => {});
+          }
+        }, 300) as any;
+      }
+
       if (s.moves.length === 0) return;
+
+      if (s.currentIndex === 0 && !s.startedFromSolved) {
+         // Force error if they start from an unsolved state
+         s.isError = true;
+         updateUI();
+         return;
+      }
 
       const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
 
@@ -130,6 +157,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
     return () => {
       sub.unsubscribe();
       globalCubeAdapter.onFacelets = originalOnFacelets;
+      clearTimeout(stateRef.current.requestFaceletsTimeout);
     };
   }, [scramble]);
 
