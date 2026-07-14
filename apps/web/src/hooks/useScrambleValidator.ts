@@ -63,7 +63,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
         tempState.applySequence(m);
         expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
       } catch (e) {
-        console.warn("Invalid move in scramble:", m);
+        console.warn("Invalid move in scramble:", m, e);
       }
     }
 
@@ -108,7 +108,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
 
       try {
         s.currentState.applySequence(notation);
-      } catch (e) {
+      } catch {
         return; // Ignore malformed moves
       }
 
