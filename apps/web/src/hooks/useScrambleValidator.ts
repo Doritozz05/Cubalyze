@@ -42,23 +42,31 @@ function computeExpected(scramble: string): {
   const expectedFacelets: string[] = [];
   const faceletToTokenMap: number[] = [];
   const tempState = new CubeState();
+  const faces = ["U", "R", "F", "D", "L", "B"];
 
   for (let ti = 0; ti < moves.length; ti++) {
     const m = moves[ti];
     try {
-      if (m.includes('2')) {
-        const half = m.replace('2', '');
-        if (half) {
-          tempState.applySequence(half);
-          expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
-          faceletToTokenMap.push(ti);
-          // Undo half-move so full move is applied from correct state
-          tempState.applySequence(half + "'");
-        }
+      if (m.includes('2') && faces.includes(m[0])) {
+        const face = m[0];
+        tempState.applySequence(face);
+        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
+        faceletToTokenMap.push(ti);
+        tempState.applySequence(face + "'");
+
+        tempState.applySequence(face + "'");
+        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
+        faceletToTokenMap.push(ti);
+        tempState.applySequence(face);
+
+        tempState.applySequence(m);
+        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
+        faceletToTokenMap.push(ti);
+      } else {
+        tempState.applySequence(m);
+        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
+        faceletToTokenMap.push(ti);
       }
-      tempState.applySequence(m);
-      expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
-      faceletToTokenMap.push(ti);
     } catch (e) {
       console.warn("Invalid move in scramble:", m, e);
     }
@@ -267,7 +275,9 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
       }
 
       const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
-      const matchedIndex = s.expectedFacelets.lastIndexOf(currentFacelets);
+      const matchedIndex = s.expectedFacelets.findIndex(
+        (f, i) => i >= s.currentIndex && f === currentFacelets
+      );
 
       if (matchedIndex !== -1) {
         // CORRECT: currentIndex = matchedIndex + 1 (1-based count)
