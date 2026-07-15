@@ -37,6 +37,7 @@ export class EngineWorkerAPI {
   }
 
   public async rotateLayers(axis: RotationAxis, layerValues: number[], angle: number, durationMs: number, elapsedMs?: number) {
+    if (!this.rotationEngine) return;
     await this.rotationEngine.rotateLayers(axis, layerValues, angle, durationMs, elapsedMs);
   }
 
@@ -59,21 +60,25 @@ export class EngineWorkerAPI {
   }
 
   public updateGyro(x: number, y: number, z: number, w: number) {
+    if (!this.gyroFusion) return;
     this.gyroFusion.enable();
     this.gyroFusion.updateTargetQuaternion(x, y, z, w);
   }
 
   public disableGyro() {
+    if (!this.gyroFusion) return;
     this.gyroFusion.disable();
   }
 
   /** Calibrates the gyroscope — sets the current orientation as the "zero" reference */
   public calibrateGyro() {
+    if (!this.gyroFusion) return;
     this.gyroFusion.calibrate();
   }
 
   /** Resets gyroscope calibration to raw input */
   public resetGyroCalibration() {
+    if (!this.gyroFusion) return;
     this.gyroFusion.resetCalibration();
   }
 

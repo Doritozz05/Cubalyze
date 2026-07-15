@@ -11,6 +11,7 @@ export interface SmartCubeAdapter {
   disconnect(): Promise<void>;
 
   moves$: Observable<CubeMoveEvent>;
+  facelets$: Observable<string>;
   battery$: Observable<number>;
   gyro$?: Observable<GyroEvent>;
 }

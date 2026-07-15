@@ -42,7 +42,19 @@ export default function App() {
   const [currentScramble, setCurrentScramble] = useState(() => 
     RandomStateGenerator.generateScramble(new Min2PhaseSolver())
   );
-  const { states: scrambleStates, isScrambled } = useScrambleValidator(currentScramble);
+  const handleRegenerate = useCallback(() => {
+    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+    setScrambleIndex((i) => i + 1);
+    toast.success("New scramble");
+  }, []);
+  const {
+    states: scrambleStates,
+    isScrambled,
+    currentIndex,
+    errorMoves,
+    pendingHalfDouble,
+    needsReset,
+  } = useScrambleValidator(currentScramble, handleRegenerate);
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
   const timerStateRef = useRef("idle");
@@ -77,12 +89,6 @@ export default function App() {
   const handleClear = useCallback(() => {
     clearSession().catch(() => toast.error("Couldn’t clear session"));
   }, [clearSession]);
-
-  const handleRegenerate = useCallback(() => {
-    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
-    setScrambleIndex((i) => i + 1);
-    toast.success("New scramble");
-  }, []);
 
   const handleCopy = useCallback(async () => {
     const fail = () => toast.error("Couldn’t copy scramble");
@@ -170,6 +176,11 @@ export default function App() {
               <ScrambleDisplay
                 scramble={currentScramble}
                 states={scrambleStates}
+                currentIndex={currentIndex}
+                errorMoves={errorMoves}
+                pendingHalfDouble={pendingHalfDouble}
+                isScrambled={isScrambled}
+                needsReset={needsReset}
                 onRegenerate={handleRegenerate}
                 onCopy={handleCopy}
                 indexLabel={`#${scrambleIndex + 1}`}

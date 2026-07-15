@@ -33,12 +33,16 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   private connection: GanCubeConnection | null = null;
   private eventsSub: Subscription | null = null;
 
+  // Stable subjects — NEVER recreated. Survives disconnect/reconnect.
+  // Existing subscribers keep receiving events after reconnection.
   private movesSubject = new ReplaySubject<CubeMoveEvent>(1);
+  private faceletsSubject = new ReplaySubject<string>(1);
   private batterySubject = new Subject<number>();
   private gyroSubject = new Subject<GyroEvent>();
   private invalidMovesSubject = new Subject<string>();
 
   public moves$ = this.movesSubject.asObservable();
+  public facelets$ = this.faceletsSubject.asObservable();
   public battery$ = this.batterySubject.asObservable();
   public gyro$ = this.gyroSubject.asObservable();
   public invalidMoves$ = this.invalidMovesSubject.asObservable();
@@ -87,10 +91,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.isUserDisconnect = true;
     this.cancelReconnect();
     this.teardownEventsSubscription();
-    this.movesSubject.complete();
-    this.batterySubject.complete();
-    this.gyroSubject.complete();
-    this.invalidMovesSubject.complete();
+    // Subjects are NEVER completed — they stay alive for potential reconnection.
+    // Existing subscribers keep working after reconnect.
     if (this.connection) {
       await this.connection.disconnect();
       this.connection = null;
@@ -103,6 +105,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   private setupEventsSubscription(): void {
     this.eventsSub?.unsubscribe();
+    // Reset clock drift reconciler on (re)connect — cube clock may have reset
+    this.clockReconciler = new ClockDriftReconciler();
     this.eventsSub = this.connection!.events$.subscribe((evt) => {
       if (evt.type === 'DISCONNECT') {
         this.handleDisconnect();
@@ -111,13 +115,12 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       } else if (evt.type === 'MOVE') {
         this.handleMove(evt);
       } else if (evt.type === 'FACELETS') {
-        if (this.onFacelets) {
-          // Simple validation: a standard 3x3 facelet string is 54 characters
-          if (typeof evt.facelets === 'string' && evt.facelets.length === 54) {
-            this.onFacelets(evt.facelets);
-          } else {
-            console.warn('[GanCubeAdapter] Invalid FACELETS state received:', evt.facelets);
-          }
+        // Simple validation: a standard 3x3 facelet string is 54 characters
+        if (typeof evt.facelets === 'string' && evt.facelets.length === 54) {
+          this.faceletsSubject.next(evt.facelets);
+          this.onFacelets?.(evt.facelets); // backward compat
+        } else {
+          console.warn('[GanCubeAdapter] Invalid FACELETS state received:', evt.facelets);
         }
       } else if (evt.type === 'GYRO') {
         this.handleGyro(evt);
@@ -181,19 +184,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   private handleDisconnect(): void {
     this.teardownEventsSubscription();
-    this.movesSubject.complete();
-    this.batterySubject.complete();
-    this.gyroSubject.complete();
-    this.invalidMovesSubject.complete();
-
-    this.movesSubject = new ReplaySubject<CubeMoveEvent>(1);
-    this.batterySubject = new Subject<number>();
-    this.gyroSubject = new Subject<GyroEvent>();
-    this.invalidMovesSubject = new Subject<string>();
-    this.moves$ = this.movesSubject.asObservable();
-    this.battery$ = this.batterySubject.asObservable();
-    this.gyro$ = this.gyroSubject.asObservable();
-    this.invalidMoves$ = this.invalidMovesSubject.asObservable();
+    // Subjects are NEVER replaced — existing subscribers continue to work.
+    // New events from reconnection flow through the same subjects.
 
     if (!this.isUserDisconnect && this.device) {
       this.attemptReconnect();

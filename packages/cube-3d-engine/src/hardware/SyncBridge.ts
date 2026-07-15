@@ -124,11 +124,16 @@ export class SyncBridge {
     while (this.moveBuffer.length > 0) {
       const task = this.moveBuffer.shift()!;
       const elapsedMs = Math.max(0, performance.now() - task.hostTimestamp);
-      // Fire and forget: RotationEngine handles its own internal concurrency/snapping
-      this.workerProxy.rotateLayers(task.axis, task.layerValues, task.angle, task.durationMs, elapsedMs).catch(console.error);
+      await this.workerProxy.rotateLayers(task.axis, task.layerValues, task.angle, task.durationMs, elapsedMs)
+        .catch(console.error);
     }
 
     this.isProcessing = false;
+
+    // If more moves were queued while processing, pick them up
+    if (this.moveBuffer.length > 0) {
+      this.processQueue();
+    }
   }
 
   public get pendingMoves(): number {
@@ -147,6 +152,13 @@ export class SyncBridge {
   public unbind(): void {
     this.subs.forEach(sub => sub.unsubscribe());
     this.subs = [];
+    if (this.coalesceTimeout) {
+      clearTimeout(this.coalesceTimeout);
+      this.coalesceTimeout = null;
+    }
+    this.coalesceBuffer = [];
+    this.moveBuffer = [];
+    this.isProcessing = false;
     this.workerProxy.disableGyro();
   }
 }

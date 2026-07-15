@@ -21,6 +21,8 @@ import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine"
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
 
+const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
+
 export interface UseTimerUIResult {
   state: TimerState;
   /** Live elapsed time in ms (0 when idle). */
@@ -105,39 +107,34 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
 
   // ── Hardware: Smart Cube ────────────────────────────────────────────────
   useEffect(() => {
-    if (!globalCubeAdapter.moves$) return;
-    const sub = globalCubeAdapter.moves$.subscribe(() => {
+    const adapter = globalCubeAdapter;
+    if (!adapter.moves$) return;
+
+    // Subscribe to moves for auto-start
+    const moveSub = adapter.moves$.subscribe(() => {
       const current = engine.getState();
-      
-      // If idle and correctly scrambled, do nothing automatically. 
-      // The user must trigger inspection via spacebar, OR we could auto-start inspection.
-      // Standard WCA logic requires manual start of inspection.
+
       if (current === EngineState.INSPECTION && isScrambled) {
-        // First move starts the timer
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (engine as any).handleSmartCubeStart();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } else if (current === EngineState.IDLE && !(engine as any)["config"].useInspection && isScrambled) {
-        // If inspection is off, we can start immediately
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (engine as any).handleSmartCubeStart();
+        engine.handleSmartCubeStart();
+      } else if (current === EngineState.IDLE && !(engine as any)["config"]?.useInspection && isScrambled) {
+        engine.handleSmartCubeStart();
       }
     });
-    
-    const subFacelets = globalCubeAdapter.onFacelets;
-    globalCubeAdapter.onFacelets = (f) => {
-      if (subFacelets) subFacelets(f);
-      // Check if solved. A fully solved cube usually has 54 characters of same facelets in 9-blocks.
-      // 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
-      const isSolved = f.match(/^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/);
-      if (isSolved && engine.getState() === EngineState.RUNNING) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (engine as any).handleSmartCubeStop();
-      }
-    };
+
+    // Subscribe to facelets for auto-stop (no callback-chain fragility)
+    let faceletSub: import('rxjs').Subscription | undefined;
+    if ('facelets$' in adapter && (adapter as any).facelets$) {
+      faceletSub = (adapter as any).facelets$.subscribe((f: string) => {
+        const isSolved = SOLVED_FACELETS.test(f);
+        if (isSolved && engine.getState() === EngineState.RUNNING) {
+          engine.handleSmartCubeStop();
+        }
+      });
+    }
 
     return () => {
-      sub.unsubscribe();
+      moveSub.unsubscribe();
+      faceletSub?.unsubscribe();
     };
   }, [engine, isScrambled]);
 
@@ -147,9 +144,6 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
   }, [inspectionEnabled]);
 
   const handlePress = useCallback(() => {
-    if (globalCubeAdapter.isConnected && !isScrambled) {
-      return;
-    }
     if ((state === "idle" || state === "stopped") && inspectionEnabled) {
       if (state === "stopped") {
         engine.reset(); // Reset first to clear previous solve data
@@ -158,7 +152,7 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
     } else {
       engine.handleDown();
     }
-  }, [engine, state, inspectionEnabled, isScrambled]);
+  }, [engine, state, inspectionEnabled]);
 
   const handleRelease = useCallback(() => {
     engine.handleUp();

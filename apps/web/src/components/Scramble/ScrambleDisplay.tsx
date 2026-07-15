@@ -7,26 +7,28 @@ import { Button } from "@/components/ui/button";
 
 export interface ScrambleDisplayProps {
   scramble: string;
-  /** Called when the user requests a new scramble. */
   onRegenerate?: () => void;
-  /** Called when the user copies the scramble (lifted, for the C shortcut). */
   onCopy?: () => void;
-  /** Optional index label, e.g. "#7". */
   indexLabel?: string;
-  /** Validation states for each move */
   states?: ('pending' | 'correct' | 'incorrect')[];
+  currentIndex?: number;
+  errorMoves?: string[];
+  pendingHalfDouble?: boolean;
+  isScrambled?: boolean;
+  needsReset?: boolean;
 }
 
-/**
- * Renders WCA scramble notation in a readable, monospaced, wrapping block.
- * Tokens are split so future coloring by move family is trivial.
- */
 export function ScrambleDisplay({
   scramble,
   onRegenerate,
   onCopy,
   indexLabel,
   states,
+  currentIndex = 0,
+  errorMoves = [],
+  pendingHalfDouble = false,
+  isScrambled = false,
+  needsReset = false,
 }: ScrambleDisplayProps) {
   const [copied, setCopied] = useState(false);
 
@@ -47,6 +49,11 @@ export function ScrambleDisplay({
           </span>
           {indexLabel ? (
             <span className="nums text-[0.7rem] text-ink-3">{indexLabel}</span>
+          ) : null}
+          {isScrambled ? (
+            <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
+              <Check className="size-3" /> Ready
+            </span>
           ) : null}
         </div>
         <div className="flex items-center gap-1">
@@ -79,28 +86,53 @@ export function ScrambleDisplay({
         </div>
       </div>
 
-      <p
-        className={cn(
-          "nums flex flex-wrap gap-x-2.5 gap-y-1 text-lg leading-relaxed text-ink sm:text-xl",
-        )}
-      >
-        {tokens.map((tok, i) => {
-          const state = states?.[i] || 'pending';
-          return (
-            <span 
-              key={`${tok}-${i}`} 
-              className={cn(
-                "whitespace-nowrap transition-colors duration-200",
-                state === 'correct' && "text-ready",
-                state === 'incorrect' && "text-destructive",
-                state === 'pending' && "text-ink"
-              )}
+      {needsReset ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-4">
+          <p className="text-sm text-amber-400">
+            Too many mistakes — solve the cube to continue
+          </p>
+        </div>
+      ) : errorMoves.length > 0 ? (
+        <div
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
+          translate="no"
+        >
+          {errorMoves.map((m, i) => (
+            <span
+              key={`err-${i}`}
+              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-red-400 scale-100"
             >
-              {tok}
+              {m}
             </span>
-          );
-        })}
-      </p>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
+          translate="no"
+        >
+          {tokens.map((tok, i) => {
+            const state = states?.[i] || 'pending';
+            const isCompleted = state === 'correct';
+            const isActive = i === currentIndex;
+
+            return (
+              <span
+                key={`${tok}-${i}`}
+                className={cn(
+                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300",
+                  isCompleted && "text-ink-3 scale-110",
+                  isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
+                  isActive && !isCompleted && !pendingHalfDouble && "text-ink scale-100",
+                  !isCompleted && !isActive && "text-ink/40 scale-95",
+                )}
+              >
+                {tok}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

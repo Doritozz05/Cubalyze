@@ -17,6 +17,15 @@ export interface Cube3DPanelProps {
   className?: string;
 }
 
+interface WorkerSingleton {
+  worker: Worker;
+  proxy: Comlink.Remote<EngineWorkerAPI>;
+  syncBridge: SyncBridge;
+}
+
+/** Survives Strict Mode unmount/remount so OffscreenCanvas isn't re-transferred */
+let workerSingleton: WorkerSingleton | null = null;
+
 export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -24,44 +33,18 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const workerProxy = useRef<Comlink.Remote<EngineWorkerAPI> | null>(null);
   const syncBridge = useRef<SyncBridge | null>(null);
   const workerInstance = useRef<Worker | null>(null);
-  const isInitialized = useRef(false);
   const moveSub = useRef<Subscription | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const [recentMoves, setRecentMoves] = useState<string[]>([]);
+  const [is3DReady, setIs3DReady] = useState(false);
 
   useEffect(() => {
-    if (!canvasRef.current || isInitialized.current) return;
-    isInitialized.current = true;
-    
-    // Setup Worker
-    workerInstance.current = new EngineWorker();
-    workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current!);
-    syncBridge.current = new SyncBridge(workerProxy.current);
+    if (!canvasRef.current) return;
 
-    // Setup OffscreenCanvas robustly for HMR
-    let offscreen: OffscreenCanvas;
-    try {
-      offscreen = canvasRef.current.transferControlToOffscreen();
-    } catch {
-      console.warn("Canvas already transferred by previous render");
-      return; 
-    }
-    
-    // Init Engine
-    workerProxy.current.init(
-      Comlink.transfer(offscreen, [offscreen]), 
-      canvasRef.current.clientWidth, 
-      canvasRef.current.clientHeight, 
-      window.devicePixelRatio
-    );
-
-    // Bind to the global adapter streams
-    if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
-      syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
-    }
-    
+    // Subscribe to move history — always (survives canvas-transfer failure)
+    moveSub.current?.unsubscribe();
     if (globalCubeAdapter.moves$) {
       moveSub.current = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
         const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
@@ -71,11 +54,54 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
         });
       });
     }
-    
-    // Bind facelets callback
-    globalCubeAdapter.onFacelets = (facelets: string) => {
-      workerProxy.current?.syncFacelets(facelets).catch(console.error);
-    };
+
+    const faceletSub = globalCubeAdapter.facelets$
+      ? globalCubeAdapter.facelets$.subscribe((facelets: string) => {
+          if (syncBridge.current && syncBridge.current.pendingMoves === 0) {
+            workerProxy.current?.syncFacelets(facelets).catch(console.error);
+          }
+        })
+      : undefined;
+
+    if (workerSingleton) {
+      // Re-mount: reuse existing worker (OffscreenCanvas stays alive)
+      workerInstance.current = workerSingleton.worker;
+      workerProxy.current = workerSingleton.proxy;
+      syncBridge.current = workerSingleton.syncBridge;
+      setIs3DReady(true);
+
+      if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
+        syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
+      }
+    } else {
+      // First mount: create worker, transfer canvas, init
+      workerInstance.current = new EngineWorker();
+      workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current!);
+      syncBridge.current = new SyncBridge(workerProxy.current);
+
+      try {
+        const offscreen = canvasRef.current.transferControlToOffscreen();
+        workerProxy.current.init(
+          Comlink.transfer(offscreen, [offscreen]),
+          canvasRef.current.clientWidth,
+          canvasRef.current.clientHeight,
+          window.devicePixelRatio
+        );
+
+        if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
+          syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
+        }
+
+        workerSingleton = {
+          worker: workerInstance.current,
+          proxy: workerProxy.current,
+          syncBridge: syncBridge.current,
+        };
+        setIs3DReady(true);
+      } catch {
+        console.warn("Canvas already transferred — 3D rendering unavailable");
+      }
+    }
 
     if (globalCubeAdapter.isConnected) {
       globalCubeAdapter.requestFacelets().catch(console.error);
@@ -91,7 +117,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
         }
       }
     });
-    
+
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
@@ -99,6 +125,10 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     return () => {
       resizeObserver.disconnect();
       moveSub.current?.unsubscribe();
+      faceletSub?.unsubscribe();
+      syncBridge.current?.unbind();
+      // DON'T terminate worker — singleton survives for next mount
+      // DON'T null out workerSingleton
     };
   }, []);
 
@@ -146,6 +176,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
             variant="ghost"
             size="sm"
             onClick={resetCube}
+            disabled={!is3DReady}
             className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
             title="Reset cube pieces to solved state"
           >
@@ -156,6 +187,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
             variant="ghost"
             size="sm"
             onClick={calibrateGyro}
+            disabled={!is3DReady}
             className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
             title="Calibrate gyroscope orientation"
           >

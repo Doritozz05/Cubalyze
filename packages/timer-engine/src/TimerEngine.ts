@@ -160,6 +160,10 @@ export class TimerEngine {
   }
 
   public handleSmartCubeStart(): void {
+    // Allow starting from STOPPED by auto-resetting (avoids silent no-op)
+    if (this.currentState === TimerState.STOPPED) {
+      this.reset();
+    }
     if (this.currentState === TimerState.INSPECTION || this.currentState === TimerState.IDLE) {
       if (this.touchTimeoutId) {
         clearTimeout(this.touchTimeoutId);
