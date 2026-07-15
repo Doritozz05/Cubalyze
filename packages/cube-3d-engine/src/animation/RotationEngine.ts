@@ -1,6 +1,6 @@
 import { Group, Quaternion, Vector3, MathUtils } from 'three';
 import { CubeModel } from '../core/CubeModel';
-import { easeInOutQuad } from './Easing';
+import { easeOutBack } from './Easing';
 
 export type RotationAxis = 'x' | 'y' | 'z';
 
@@ -141,7 +141,7 @@ export class RotationEngine {
       if (t >= 1.0) {
         this.snapTask(task);
       } else {
-        const easedT = easeInOutQuad(t);
+        const easedT = easeOutBack(t);
         task.currentQuat.slerpQuaternions(task.startQuat, task.endQuat, easedT);
         task.pivot.quaternion.copy(task.currentQuat);
         task.pivot.updateMatrixWorld(true);

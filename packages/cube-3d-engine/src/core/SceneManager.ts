@@ -4,10 +4,9 @@ import {
   WebGLRenderer,
   AmbientLight,
   DirectionalLight,
-  Color,
   Vector3,
   Group,
-  Mesh
+  Mesh,
 } from 'three';
 
 export type OnRenderCallback = () => void;
@@ -48,16 +47,14 @@ export class SceneManager {
   }
 
   private setupLighting(): [AmbientLight, DirectionalLight] {
-    // Arcade style lighting: High ambient light for flat, bright, pastel-friendly look
-    const ambientLight = new AmbientLight(0xffffff, 1.2);
+    const ambientLight = new AmbientLight(0xffffff, 0.8);
     this.scene.add(ambientLight);
 
-    // Very subtle directional light just to give slight volume, without harsh shadows
-    const dirLight = new DirectionalLight(0xffffff, 0.2);
-    dirLight.position.set(10, 20, 10);
-    this.scene.add(dirLight);
+    const keyLight = new DirectionalLight(0xffffff, 0.5);
+    keyLight.position.set(5, 10, 7);
+    this.scene.add(keyLight);
 
-    return [ambientLight, dirLight];
+    return [ambientLight, keyLight];
   }
 
   public setLighting(ambientIntensity: number, directionalIntensity: number, dirPosition?: Vector3): void {

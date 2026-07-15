@@ -79,7 +79,7 @@ export class SyncBridge {
 
         if (angle1 === angle2) {
           // They match! It's a slice move (or simultaneous outer layers)
-          const baseDuration = 90;
+          const baseDuration = 120;
           const durationMs = Math.max(20, baseDuration - (this.moveBuffer.length * 15));
           
           this.moveBuffer.push({

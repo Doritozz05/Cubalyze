@@ -1,4 +1,5 @@
-import { BoxGeometry, MeshStandardMaterial, Color, Group, Mesh } from 'three';
+import { BoxGeometry, MeshStandardMaterial, Color, Group, Mesh, Shape, ExtrudeGeometry } from 'three';
+import { RoundedBoxGeometry } from 'three-stdlib';
 import type { CubeFace } from '@cubeforge/types';
 
 export interface CubeStyleOptions {
@@ -15,15 +16,15 @@ export interface CubeStyleOptions {
 }
 
 export const DEFAULT_STYLE: CubeStyleOptions = {
-  coreColor: '#000000', // Pure black core for better contrast
+  coreColor: '#1a1a1a',
   coreOpacity: 1.0,
   stickerColors: {
-    U: '#ffffff', // White
-    D: '#fff607', // Yellow
-    F: '#08bc05', // Green
-    B: '#0469ff', // Blue
-    R: '#f80a0a', // Red
-    L: '#ff7802', // Orange
+    U: '#ece8e2',
+    D: '#ffe62a',
+    F: '#1abe57',
+    B: '#3d7ce0',
+    R: '#eb4242',
+    L: '#ff801f',
   },
 };
 
@@ -41,13 +42,40 @@ export class CubeMeshFactory {
   constructor(style: CubeStyleOptions = DEFAULT_STYLE) {
     this.style = { ...style };
     
-    // Core size 1.0 creates a completely flush cube with zero gaps
-    this.coreGeometry = new BoxGeometry(1.0, 1.0, 1.0);
+    // Core 1.0 = no gap between cubies (spacing is 1.0), subtle rounding
+    this.coreGeometry = new RoundedBoxGeometry(1.0, 1.0, 1.0, 6, 0.05) as unknown as BoxGeometry;
     
-    // Stickers are thinner (0.02) and wider (0.88) for a thinner border
-    this.stickerGeometry = new BoxGeometry(0.88, 0.88, 0.02);
+    // Stickers: custom rounded-rect extrusion (RoundedBoxGeometry clamps radius to thickness/2)
+    this.stickerGeometry = this.createRoundedStickerGeometry(0.84, 0.84, 0.002, 0.06);
     
     this.initMaterials();
+  }
+
+  private createRoundedStickerGeometry(w: number, h: number, depth: number, r: number): BoxGeometry {
+    const shape = new Shape();
+    const hw = w / 2;
+    const hh = h / 2;
+    const cr = Math.min(r, hw, hh);
+    
+    shape.moveTo(-hw + cr, -hh);
+    shape.lineTo(hw - cr, -hh);
+    shape.quadraticCurveTo(hw, -hh, hw, -hh + cr);
+    shape.lineTo(hw, hh - cr);
+    shape.quadraticCurveTo(hw, hh, hw - cr, hh);
+    shape.lineTo(-hw + cr, hh);
+    shape.quadraticCurveTo(-hw, hh, -hw, hh - cr);
+    shape.lineTo(-hw, -hh + cr);
+    shape.quadraticCurveTo(-hw, -hh, -hw + cr, -hh);
+    
+    const geo = new ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: true,
+      bevelThickness: 0.015,
+      bevelSize: 0.008,
+      bevelSegments: 6,
+    });
+    geo.translate(0, 0, -depth / 2);
+    return geo as unknown as BoxGeometry;
   }
 
   private initMaterials(): void {
@@ -56,6 +84,7 @@ export class CubeMeshFactory {
     this.coreMaterial = new MeshStandardMaterial({ 
       color: new Color(this.style.coreColor), 
       roughness: 1.0,
+      metalness: 0.0,
       transparent: isTransparent,
       opacity: this.style.coreOpacity
     });
@@ -63,8 +92,8 @@ export class CubeMeshFactory {
     for (const face of ['U', 'D', 'F', 'B', 'R', 'L'] as const) {
       this.stickerMaterials[face] = new MeshStandardMaterial({ 
         color: new Color(this.style.stickerColors[face]), 
-        roughness: 1.0, // Fully matte (no shiny reflections)
-        metalness: 0.0
+        roughness: 1.0,
+        metalness: 0.0,
       });
     }
   }
@@ -79,11 +108,10 @@ export class CubeMeshFactory {
     const coreMesh = new Mesh(this.coreGeometry, this.coreMaterial);
     group.add(coreMesh);
 
-    // 2. Add stickers based on exposed faces (with slight relief)
-    // Core is 1.0 (radius 0.5). Sticker thickness is 0.02.
-    // Placing sticker at 0.51 caused Z-fighting because 0.51 - (0.02/2) = 0.50 exactly.
-    // Changing offset to 0.511 gives a 0.001 mathematical clearance, preventing Z-fighting completely.
-    const offset = 0.511;
+    // 2. Add stickers based on exposed faces
+    // Core is 1.0 (radius 0.5). Sticker extends ±0.001 from center.
+    // Offset 0.5015 puts sticker surface at 0.5025 = 0.0025 past core.
+    const offset = 0.5015;
 
     if (x === 1) {
       const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['R']);

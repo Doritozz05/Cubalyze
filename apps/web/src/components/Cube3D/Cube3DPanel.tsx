@@ -5,6 +5,7 @@ import * as Comlink from "comlink";
 import { SyncBridge } from "@cubeforge/cube-3d-engine";
 import type { EngineWorkerAPI } from "@cubeforge/cube-3d-engine";
 import EngineWorker from "@cubeforge/cube-3d-engine/worker?worker";
+import type { Subscription } from "rxjs";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const syncBridge = useRef<SyncBridge | null>(null);
   const workerInstance = useRef<Worker | null>(null);
   const isInitialized = useRef(false);
+  const moveSub = useRef<Subscription | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -61,16 +63,13 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     }
     
     if (globalCubeAdapter.moves$) {
-      const subMoves = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
+      moveSub.current = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
         const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
         setRecentMoves(prev => {
           const next = [...prev, notation];
           return next.slice(-15);
         });
       });
-      // Need a way to unsubscribe in cleanup
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (workerProxy.current as any)._subMoves = subMoves;
     }
     
     // Bind facelets callback
@@ -99,11 +98,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
     return () => {
       resizeObserver.disconnect();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (workerProxy.current && (workerProxy.current as any)._subMoves) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (workerProxy.current as any)._subMoves.unsubscribe();
-      }
+      moveSub.current?.unsubscribe();
     };
   }, []);
 
