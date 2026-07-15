@@ -55,7 +55,7 @@ export default function App() {
     pendingHalfDouble,
     needsReset,
     awaitingSolve,
-  } = useScrambleValidator(currentScramble, handleRegenerate);
+  } = useScrambleValidator(currentScramble);
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
   const timerStateRef = useRef("idle");

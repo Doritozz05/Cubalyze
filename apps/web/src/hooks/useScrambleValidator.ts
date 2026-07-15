@@ -123,10 +123,8 @@ function resetRef(s: ValidatorState): void {
   s.pendingHalfTokenIndex = -1;
 }
 
-export function useScrambleValidator(scramble: string, onReset?: () => void): ScrambleValidationResult {
+export function useScrambleValidator(scramble: string): ScrambleValidationResult {
   const stateRef = useRef<ValidatorState>(freshValidatorState());
-  const onResetRef = useRef(onReset);
-  onResetRef.current = onReset;
 
   const [uiState, setUiState] = useState<ScrambleValidationResult>({
     moves: [],
@@ -231,7 +229,6 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
         s.startedFromSolved = true;
         if (s.needsReset) {
           resetRef(s);
-          onResetRef.current?.();
           updateUI();
           return;
         }
@@ -256,7 +253,6 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
         scheduleFacelets(s);
         if (s.errorState.isSolved()) {
           resetRef(s);
-          onResetRef.current?.();
         }
         updateUI();
         return;
@@ -349,15 +345,29 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
         return;
       }
 
-      const matchedIndex = s.expectedFacelets.findIndex(
+      const matchedForward = s.expectedFacelets.findIndex(
         (f, i) => i >= s.currentIndex && f === currentFacelets
       );
+      const matchedBackward = s.isError
+        ? s.expectedFacelets.findIndex(
+            (f, i) => i < s.currentIndex && f === currentFacelets
+          )
+        : -1;
 
-      if (matchedIndex !== -1) {
-        s.currentIndex = matchedIndex + 1;
+      if (matchedForward !== -1) {
+        s.currentIndex = matchedForward + 1;
         s.isError = false;
         s.consecutiveErrors = 0;
         s.errorStartIndex = -1;
+        s.pendingHalfFace = null;
+        s.pendingHalfTokenIndex = -1;
+      } else if (matchedBackward !== -1) {
+        s.currentIndex = matchedBackward + 1;
+        s.isError = false;
+        s.consecutiveErrors = 0;
+        s.errorStartIndex = -1;
+        s.pendingHalfFace = null;
+        s.pendingHalfTokenIndex = -1;
       } else {
         s.isError = true;
         s.consecutiveErrors++;
