@@ -1,4 +1,4 @@
-import { BoxGeometry, MeshStandardMaterial, Color, Group, Mesh, Shape, ExtrudeGeometry } from 'three';
+import { BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, Color, Group, Mesh, Shape, ExtrudeGeometry } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
 import type { CubeFace } from '@cubeforge/types';
 
@@ -36,7 +36,7 @@ export class CubeMeshFactory {
   private coreGeometry: BoxGeometry;
   private stickerGeometry: BoxGeometry;
   private coreMaterial!: MeshStandardMaterial;
-  private stickerMaterials: Record<string, MeshStandardMaterial> = {};
+  private stickerMaterials: Record<string, MeshBasicMaterial> = {};
   private style: CubeStyleOptions;
 
   constructor(style: CubeStyleOptions = DEFAULT_STYLE) {
@@ -90,10 +90,8 @@ export class CubeMeshFactory {
     });
 
     for (const face of ['U', 'D', 'F', 'B', 'R', 'L'] as const) {
-      this.stickerMaterials[face] = new MeshStandardMaterial({ 
+      this.stickerMaterials[face] = new MeshBasicMaterial({ 
         color: new Color(this.style.stickerColors[face]), 
-        roughness: 1.0,
-        metalness: 0.0,
       });
     }
   }
@@ -187,11 +185,10 @@ export class CubeMeshFactory {
   }
 
   public setFaceEmissive(face: CubeFace | 'Inner', emissiveColor: string, intensity: number): void {
-    const material = face === 'Inner' ? this.coreMaterial : this.stickerMaterials[face];
-    if (material) {
-      material.emissive.set(emissiveColor);
-      material.emissiveIntensity = intensity;
-      material.needsUpdate = true;
+    if (face === 'Inner') {
+      this.coreMaterial.emissive.set(emissiveColor);
+      this.coreMaterial.emissiveIntensity = intensity;
+      this.coreMaterial.needsUpdate = true;
     }
   }
 
