@@ -183,18 +183,13 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
         />
-      </div>
 
-      {/* Recent Moves History */}
-      <div className="relative flex min-h-10 items-center border-t border-line/50 px-3 py-1.5 shrink-0 overflow-hidden bg-background">
-        <span className="absolute left-3 text-[0.65rem] uppercase tracking-[0.15em] font-bold text-ink">
-          Moves
-        </span>
-        <div className="flex-1 flex justify-center items-center gap-1.5 overflow-hidden ml-16">
+        {/* Moves overlay at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2">
           {recentMoves.length === 0 ? (
-            <span className="text-[0.7rem] text-ink-3 italic">Waiting for cube...</span>
+            <p className="text-center text-[0.7rem] text-ink-3 italic">Waiting for cube...</p>
           ) : (
-            <div className="flex gap-2 font-mono text-[0.8rem] font-semibold text-ink flex-wrap justify-center">
+            <div className="flex justify-center gap-2 font-mono text-[0.8rem] font-semibold text-ink">
               {recentMoves.map((m, i) => (
                 <span key={i} className="animate-in fade-in slide-in-from-right-2">
                   {m}
