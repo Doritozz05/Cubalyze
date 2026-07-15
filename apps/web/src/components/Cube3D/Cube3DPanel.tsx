@@ -144,9 +144,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
         <div className="flex items-baseline gap-2">
           <h3 className="text-sm font-medium text-ink">Cube</h3>
-          <span className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
-            live
-          </span>
+
         </div>
         <div className="flex gap-2">
           <Button
