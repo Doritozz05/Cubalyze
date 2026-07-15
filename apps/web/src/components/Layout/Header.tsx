@@ -277,8 +277,8 @@ export function Header({
             className={cn(
               "size-8 rounded-md border",
               cube3DActive
-                ? "bg-ink text-surface hover:bg-ink/90 border-transparent"
-                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
+              ? "bg-ink text-surface border-transparent"
+              : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
             )}
             aria-label={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
             aria-pressed={cube3DActive}
@@ -294,8 +294,8 @@ export function Header({
             className={cn(
               "size-8 rounded-md border",
               sidebarActive
-                ? "bg-ink text-surface hover:bg-ink/90 border-transparent"
-                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
+              ? "bg-ink text-surface border-transparent"
+              : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
             )}
             aria-label={sidebarActive ? "Hide sidebar" : "Show sidebar"}
             aria-pressed={sidebarActive}
