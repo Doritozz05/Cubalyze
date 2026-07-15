@@ -13,6 +13,7 @@ export interface ScrambleValidationResult {
   errorMoves: string[];
   pendingHalfDouble: boolean;
   needsReset: boolean;
+  awaitingSolve: boolean;
 }
 
 function parseScramble(scramble: string): string[] {
@@ -22,81 +23,67 @@ function parseScramble(scramble: string): string[] {
 const MAX_CONSECUTIVE_ERRORS = 3;
 const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
 
-// ── Expected-facelet pre-computation ─────────────────────────────────────
-// Each token may produce 1 or 2 facelet entries (half-turn produces both).
-//   moves[]             – token list, e.g. ["R", "U2"]
-//   expectedFacelets[]  – facelet string at each step
-//   faceletToTokenMap[] – maps each expectedFacelets entry → token index
-//
-// Example: "R U2"
-//   expectedFacelets: [after R, after R+U (half of U2), after R+U2]
-//   faceletToTokenMap: [0(R), 1(U half), 1(U2 full)]
-//   currentIndex tracks consumed entries (1-based count):
-//     0 = none, 1 = after R done, 2 = after R+U done, 3 = all done
+function isDoubleMove(token: string): boolean {
+  return (
+    (token.length === 2 && token[1] === '2') ||
+    (token.length === 3 && token.endsWith("2'"))
+  );
+}
+
+function baseFaceOfDouble(token: string): string | null {
+  if (!isDoubleMove(token)) return null;
+  return token[0];
+}
+
+function baseFaceOfMove(token: string): string | null {
+  if (token.length < 1) return null;
+  const c = token[0];
+  return 'URFDLB'.includes(c) ? c : null;
+}
+
 function computeExpected(scramble: string): {
   moves: string[];
   expectedFacelets: string[];
-  faceletToTokenMap: number[];
 } {
   const moves = parseScramble(scramble);
   const expectedFacelets: string[] = [];
-  const faceletToTokenMap: number[] = [];
   const tempState = new CubeState();
-  const faces = ["U", "R", "F", "D", "L", "B"];
 
-  for (let ti = 0; ti < moves.length; ti++) {
-    const m = moves[ti];
+  for (const m of moves) {
     try {
-      if (m.includes('2') && faces.includes(m[0])) {
-        const face = m[0];
-        tempState.applySequence(face);
-        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
-        faceletToTokenMap.push(ti);
-        tempState.applySequence(face + "'");
-
-        tempState.applySequence(face + "'");
-        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
-        faceletToTokenMap.push(ti);
-        tempState.applySequence(face);
-
-        tempState.applySequence(m);
-        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
-        faceletToTokenMap.push(ti);
-      } else {
-        tempState.applySequence(m);
-        expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
-        faceletToTokenMap.push(ti);
-      }
+      tempState.applySequence(m);
+      expectedFacelets.push(FaceletStringConverter.toFaceletString(tempState));
     } catch (e) {
-      console.warn("Invalid move in scramble:", m, e);
+      console.warn('Invalid move in scramble:', m, e);
     }
   }
 
-  return { moves, expectedFacelets, faceletToTokenMap };
+  return { moves, expectedFacelets };
 }
 
-// ── Mutable ref state (never triggers re-render) ─────────────────────────
 interface ValidatorState {
   moves: string[];
   expectedFacelets: string[];
-  faceletToTokenMap: number[];
   currentState: CubeState;
-  currentIndex: number;      // 1-based count of consumed facelet entries
+  currentIndex: number;
   isError: boolean;
   startedFromSolved: boolean;
   actualMoves: string[];
   consecutiveErrors: number;
   errorStartIndex: number;
   needsReset: boolean;
+  awaitingSolve: boolean;
+  initialCheckDone: boolean;
   errorState: CubeState;
   requestFaceletsTimeout: ReturnType<typeof setTimeout> | undefined;
+  pendingHalfFace: string | null;
+  pendingHalfTokenIndex: number;
 }
 
 function freshValidatorState(): ValidatorState {
   return {
     moves: [],
     expectedFacelets: [],
-    faceletToTokenMap: [],
     currentState: new CubeState(),
     currentIndex: 0,
     isError: false,
@@ -105,8 +92,12 @@ function freshValidatorState(): ValidatorState {
     consecutiveErrors: 0,
     errorStartIndex: -1,
     needsReset: false,
+    awaitingSolve: false,
+    initialCheckDone: false,
     errorState: new CubeState(),
     requestFaceletsTimeout: undefined,
+    pendingHalfFace: null,
+    pendingHalfTokenIndex: -1,
   };
 }
 
@@ -128,7 +119,8 @@ function resetRef(s: ValidatorState): void {
   s.errorStartIndex = -1;
   s.needsReset = false;
   s.errorState = new CubeState();
-  clearTimeout(s.requestFaceletsTimeout);
+  s.pendingHalfFace = null;
+  s.pendingHalfTokenIndex = -1;
 }
 
 export function useScrambleValidator(scramble: string, onReset?: () => void): ScrambleValidationResult {
@@ -144,32 +136,27 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
     errorMoves: [],
     pendingHalfDouble: false,
     needsReset: false,
+    awaitingSolve: false,
   });
 
-  // Stable update function — reads from ref, writes to React state
   const updateUI = useCallback(() => {
     const s = stateRef.current;
 
-    // Token states: correct when every expected-facelet for that token is consumed
     const tokenStates: ScrambleMoveState[] = s.moves.map((_, i) => {
-      const lastFaceletIdx = s.faceletToTokenMap.lastIndexOf(i);
-      if (lastFaceletIdx >= 0 && lastFaceletIdx < s.currentIndex) return 'correct';
-      if (lastFaceletIdx === s.currentIndex && s.isError) return 'incorrect';
+      if (i < s.currentIndex) return 'correct';
+      if (i === s.currentIndex && s.isError) return 'incorrect';
       return 'pending';
     });
 
-    // isScrambled: all expected-facelet entries consumed
-    const isScrambled = s.startedFromSolved && s.currentIndex >= s.expectedFacelets.length && !s.isError && !s.needsReset;
+    const isScrambled =
+      s.startedFromSolved &&
+      s.currentIndex >= s.expectedFacelets.length &&
+      !s.isError &&
+      !s.needsReset &&
+      !s.awaitingSolve;
 
-    // pendingHalfDouble: current facelet shares its token with previous facelet
-    // → user completed a half-move and needs to press again for the same token
-    const tokenAtCur = s.faceletToTokenMap[s.currentIndex];
-    const tokenAtPrev = s.faceletToTokenMap[s.currentIndex - 1];
-    const pendingHalfDouble = s.currentIndex > 0 && s.currentIndex < s.expectedFacelets.length && tokenAtCur >= 0 && tokenAtPrev >= 0 && tokenAtCur === tokenAtPrev;
-
-    const errorMoves = s.errorStartIndex >= 0
-      ? s.actualMoves.slice(s.errorStartIndex)
-      : [];
+    const errorMoves =
+      s.errorStartIndex >= 0 ? s.actualMoves.slice(s.errorStartIndex) : [];
 
     setUiState({
       moves: s.moves,
@@ -177,38 +164,35 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
       isScrambled,
       currentIndex: s.currentIndex,
       errorMoves,
-      pendingHalfDouble,
+      pendingHalfDouble: s.pendingHalfFace !== null,
       needsReset: s.needsReset,
+      awaitingSolve: s.awaitingSolve,
     });
   }, []);
 
-  // ── Effect 1: reset tracking when scramble changes ─────────────────────
   useEffect(() => {
-    const { moves, expectedFacelets, faceletToTokenMap } = computeExpected(scramble);
+    const { moves, expectedFacelets } = computeExpected(scramble);
     const ref = freshValidatorState();
     ref.moves = moves;
     ref.expectedFacelets = expectedFacelets;
-    ref.faceletToTokenMap = faceletToTokenMap;
     stateRef.current = ref;
     updateUI();
+    scheduleFacelets(ref);
   }, [scramble, updateUI]);
 
-  // ── Effect 2: lifetime subscriptions (mount once, never re-subscribe) ──
   useEffect(() => {
     const adapter = globalCubeAdapter;
     if (!adapter.moves$) return;
 
-    // ── facelet stream ────────────────────────────────────────────────────
-    // Subscribe to facelets$ (observable, not mutable callback chain).
-    // Falls back to onFacelets for adapters without facelets$.
     let faceletCleanup: (() => void) | undefined;
 
-    if ('facelets$' in adapter && (adapter as typeof adapter & { facelets$: unknown }).facelets$) {
-      const faceletSub = (adapter as typeof adapter & { facelets$: import('rxjs').Observable<string> }).facelets$.subscribe((f: string) => {
+    if ('facelets$' in adapter && (adapter as unknown as { facelets$?: { subscribe: (cb: (f: string) => void) => { unsubscribe: () => void } } }).facelets$) {
+      const obs = (adapter as unknown as { facelets$: { subscribe: (cb: (f: string) => void) => { unsubscribe: () => void } } }).facelets$;
+      const faceletSub = obs.subscribe((f: string) => {
         handleFacelets(f);
       });
       faceletCleanup = () => faceletSub.unsubscribe();
-    } else {
+    } else if (adapter.onFacelets) {
       const originalOnFacelets = adapter.onFacelets;
       adapter.onFacelets = (f: string) => {
         if (originalOnFacelets) originalOnFacelets(f);
@@ -218,8 +202,30 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
     }
 
     function handleFacelets(f: string): void {
-      const isSolved = SOLVED_FACELETS.test(f);
       const s = stateRef.current;
+      const isSolved = SOLVED_FACELETS.test(f);
+
+      if (!s.initialCheckDone) {
+        s.initialCheckDone = true;
+        if (isSolved) {
+          s.startedFromSolved = true;
+          s.awaitingSolve = false;
+        } else {
+          s.startedFromSolved = false;
+          s.awaitingSolve = true;
+        }
+        updateUI();
+        return;
+      }
+
+      if (s.awaitingSolve) {
+        if (isSolved) {
+          s.startedFromSolved = true;
+          s.awaitingSolve = false;
+          updateUI();
+        }
+        return;
+      }
 
       if (isSolved) {
         s.startedFromSolved = true;
@@ -233,18 +239,17 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
           resetRef(s);
           updateUI();
         }
-      } else if (s.currentIndex === 0 && s.startedFromSolved) {
+      } else if (s.currentIndex === 0 && s.startedFromSolved && s.initialCheckDone) {
         s.startedFromSolved = false;
       }
     }
 
-    // ── move stream ──────────────────────────────────────────────────────
     const moveSub = adapter.moves$.subscribe((ev: CubeMoveEvent) => {
       const s = stateRef.current;
 
-      const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
+      const notation =
+        ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
 
-      // ── needsReset: accumulating moves to detect solve ─────────────────
       if (s.needsReset) {
         s.actualMoves.push(notation);
         try { s.errorState.applySequence(notation); } catch { /* skip */ }
@@ -259,15 +264,61 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
 
       if (s.moves.length === 0) return;
 
-      // ── skip if already all correct (should not happen, but safe) ──────
       if (s.currentIndex >= s.expectedFacelets.length && !s.isError) return;
 
-      // ── track the move ─────────────────────────────────────────────────
-      s.actualMoves.push(notation);
-      try { s.currentState.applySequence(notation); } catch { return; }
+      if (s.awaitingSolve) {
+        scheduleFacelets(s);
+        return;
+      }
 
-      // ── check if move corrected an error back to solved ────────────────
-      // This handles: error (U') → correction (U) = back to solved
+      const expectedToken = s.moves[s.currentIndex];
+
+      if (s.pendingHalfFace !== null) {
+        const tokenIdx = s.pendingHalfTokenIndex;
+        const inputFace = baseFaceOfMove(notation);
+
+        if (inputFace !== s.pendingHalfFace) {
+          s.actualMoves.push(notation);
+          try { s.currentState.applySequence(notation); } catch { /* skip */ }
+          s.isError = true;
+          s.consecutiveErrors++;
+          if (s.errorStartIndex === -1) s.errorStartIndex = s.actualMoves.length - 1;
+          s.pendingHalfFace = null;
+          s.pendingHalfTokenIndex = -1;
+          if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
+          scheduleFacelets(s);
+          updateUI();
+          return;
+        }
+
+        try { s.currentState.applySequence(notation); } catch { return; }
+        s.actualMoves.push(notation);
+
+        const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
+        const expected = s.expectedFacelets[tokenIdx];
+
+        if (currentFacelets === expected) {
+          s.currentIndex = tokenIdx + 1;
+          s.isError = false;
+          s.consecutiveErrors = 0;
+          s.errorStartIndex = -1;
+          s.pendingHalfFace = null;
+          s.pendingHalfTokenIndex = -1;
+        } else {
+          s.isError = true;
+          s.consecutiveErrors++;
+          s.pendingHalfFace = null;
+          s.pendingHalfTokenIndex = -1;
+          if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
+          scheduleFacelets(s);
+        }
+        updateUI();
+        return;
+      }
+
+      try { s.currentState.applySequence(notation); } catch { return; }
+      s.actualMoves.push(notation);
+
       if (s.isError && s.currentState.isSolved()) {
         resetRef(s);
         updateUI();
@@ -275,12 +326,34 @@ export function useScrambleValidator(scramble: string, onReset?: () => void): Sc
       }
 
       const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
+
+      if (expectedToken && isDoubleMove(expectedToken)) {
+        const baseFace = baseFaceOfDouble(expectedToken);
+        const inputFace = baseFaceOfMove(notation);
+        if (baseFace !== inputFace) {
+          s.isError = true;
+          s.consecutiveErrors++;
+          if (s.errorStartIndex === -1) s.errorStartIndex = s.actualMoves.length - 1;
+          if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
+          scheduleFacelets(s);
+          updateUI();
+          return;
+        }
+
+        s.pendingHalfFace = baseFace;
+        s.pendingHalfTokenIndex = s.currentIndex;
+        s.isError = false;
+        s.consecutiveErrors = 0;
+        s.errorStartIndex = -1;
+        updateUI();
+        return;
+      }
+
       const matchedIndex = s.expectedFacelets.findIndex(
         (f, i) => i >= s.currentIndex && f === currentFacelets
       );
 
       if (matchedIndex !== -1) {
-        // CORRECT: currentIndex = matchedIndex + 1 (1-based count)
         s.currentIndex = matchedIndex + 1;
         s.isError = false;
         s.consecutiveErrors = 0;

@@ -16,6 +16,7 @@ export interface ScrambleDisplayProps {
   pendingHalfDouble?: boolean;
   isScrambled?: boolean;
   needsReset?: boolean;
+  awaitingSolve?: boolean;
 }
 
 export function ScrambleDisplay({
@@ -29,6 +30,7 @@ export function ScrambleDisplay({
   pendingHalfDouble = false,
   isScrambled = false,
   needsReset = false,
+  awaitingSolve = false,
 }: ScrambleDisplayProps) {
   const [copied, setCopied] = useState(false);
 
@@ -86,7 +88,13 @@ export function ScrambleDisplay({
         </div>
       </div>
 
-      {needsReset ? (
+      {awaitingSolve ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-4">
+          <p className="text-sm text-amber-400">
+            Solve the cube to apply this scramble
+          </p>
+        </div>
+      ) : needsReset ? (
         <div className="flex flex-col items-center justify-center gap-2 py-4">
           <p className="text-sm text-amber-400">
             Too many mistakes — solve the cube to continue

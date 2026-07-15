@@ -54,6 +54,7 @@ export default function App() {
     errorMoves,
     pendingHalfDouble,
     needsReset,
+    awaitingSolve,
   } = useScrambleValidator(currentScramble, handleRegenerate);
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
@@ -181,6 +182,7 @@ export default function App() {
                 pendingHalfDouble={pendingHalfDouble}
                 isScrambled={isScrambled}
                 needsReset={needsReset}
+                awaitingSolve={awaitingSolve}
                 onRegenerate={handleRegenerate}
                 onCopy={handleCopy}
                 indexLabel={`#${scrambleIndex + 1}`}
