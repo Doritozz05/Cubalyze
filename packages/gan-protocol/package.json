@@ -4,9 +4,16 @@
   "private": true,
   "type": "module",
   "description": "GAN Smart Cube and Smart Timer Protocol Parser and Decrypter",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
