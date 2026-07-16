@@ -10,13 +10,25 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
 
 /**
  * Width the right panel occupies once expanded.
- * Mirrors (approximately) `clamp(320px, 26vw, 380px)` for the stats panel and
- * gives the 3D cube a bit more room to breathe.
+ *
+ * The 3D cube scales with the viewport (≈ half of the available width, minus
+ * the left nav) so it visually matches the previous `lg:grid-cols-2` "focus
+ * mode" layout. The stats sidebar keeps a compact fixed width. Both are
+ * clamped so the panel stays readable on very small or very wide screens.
+ *
+ * Side effects of matching the old sizing: the main column also returns to
+ * ~50% viewport width, so the SessionStats row beneath the timer regains
+ * its original proportions.
  */
-const RIGHT_PANEL_WIDTH = {
-  stats: 380,
-  cube: 520,
-} as const;
+const LEFT_NAV_WIDTH = 56; // matches md:pl-14 on the row
+const CUBE_MIN_WIDTH = 460;
+const CUBE_MAX_WIDTH = 720;
+const STATS_WIDTH = 380;
+
+/** Padding applied around the cube canvas / stats sidebar contents. Lives on
+ *  the inner wrappers (NOT on the animated <motion.aside>) so the container
+ *  can collapse to width=0 / height=0 cleanly when closed. */
+const INNER_PADDING = "px-4 py-6 sm:px-6 lg:py-8";
 
 export interface MainLayoutProps {
   /** Primary content area: scramble, timer, quick stats. */
@@ -96,6 +108,36 @@ export function MainLayout({
   const rawIsMobile = useIsMobile();
   const isMobile = mounted ? rawIsMobile : false;
 
+  // Track viewport width so the cube panel can derive a responsive
+  // (~half-screen) width on desktop. framer-motion then animates between 0
+  // (hidden) and this numeric value smoothly.
+  //
+  // Initialised synchronously via lazy initializer so the very first render
+  // already has a correct value (otherwise the cube would briefly show at the
+  // clamped minimum width if toggled on before the post-mount effect fires).
+  //
+  // Coalesced via requestAnimationFrame — `resize` can fire dozens of times
+  // per second during a window drag, and we only care about the latest value
+  // once per paint.
+  const [vw, setVw] = useState(() =>
+    typeof window === "undefined" ? 0 : window.innerWidth,
+  );
+  useEffect(() => {
+    let rafId: number | null = null;
+    const update = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        setVw(window.innerWidth);
+      });
+    };
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   const cubeShown = !!cube3DActive;
   const statsShown = !cubeShown && !!sidebarActive;
   const rightVisible = cubeShown || statsShown;
@@ -104,9 +146,12 @@ export function MainLayout({
   const rightMounted = rightVisible || !!cube3DReady;
 
   const asideWidth = cubeShown
-    ? RIGHT_PANEL_WIDTH.cube
+    ? Math.max(
+        CUBE_MIN_WIDTH,
+        Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
+      )
     : statsShown
-      ? RIGHT_PANEL_WIDTH.stats
+      ? STATS_WIDTH
       : 0;
 
   return (
@@ -165,9 +210,14 @@ export function MainLayout({
               )}
               aria-hidden={!rightVisible}
             >
+              {/* Padding lives on the inner wrappers (NOT on the animated
+                  <motion.aside>). With box-sizing: border-box, padding on the
+                  container would prevent it from collapsing to width=0 /
+                  height=0 when closed, leaving a residual strip in the DOM. */}
               <div
                 className={cn(
                   "h-full min-h-0 w-full",
+                  INNER_PADDING,
                   cubeShown ? "block" : "hidden",
                 )}
               >
@@ -176,6 +226,7 @@ export function MainLayout({
               <div
                 className={cn(
                   "h-full min-h-0 w-full",
+                  INNER_PADDING,
                   cubeShown ? "hidden" : "block",
                 )}
               >
