@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
+  server: {
+    host: true
+  },
   optimizeDeps: {
     exclude: ['@sqlite.org/sqlite-wasm']
   },
@@ -13,18 +17,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    basicSsl(),
     react(),
-    {
-      name: 'configure-response-headers',
-      enforce: 'pre',
-      configureServer: (server) => {
-        server.middlewares.use((_req, res, next) => {
-          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-          next();
-        });
-      },
-    },
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {

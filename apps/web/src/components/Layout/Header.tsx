@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Grid3x3, Timer, Plus, History, Pencil, Trash2, Check, X, Box, PanelRight } from "lucide-react";
+import { Timer, Plus, History, Pencil, Trash2, Check, X, Box, PanelRight, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -71,6 +71,8 @@ export interface HeaderProps {
   sidebarActive?: boolean;
   /** Toggle the sidebar view. */
   onToggleSidebar?: () => void;
+  /** Toggle the mobile nav sheet. */
+  onToggleMobileNav?: () => void;
   className?: string;
 }
 
@@ -91,6 +93,7 @@ export function Header({
   onToggleCube3D,
   sidebarActive,
   onToggleSidebar,
+  onToggleMobileNav,
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -121,16 +124,18 @@ export function Header({
     >
       <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <div className="grid size-7 place-items-center rounded-md bg-ink text-surface">
-            <Grid3x3 className="size-4" />
-          </div>
-          <span className="nums text-base font-semibold tracking-tight text-ink">
-            cubeforge
-          </span>
-          <span className="hidden h-3.5 w-px bg-line md:inline" aria-hidden />
-          <span className="hidden text-[0.68rem] uppercase tracking-[0.2em] text-ink-3 md:inline">
-            speedcubing timer
-          </span>
+          {/* Mobile nav trigger */}
+          {onToggleMobileNav && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleMobileNav}
+              className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink md:hidden"
+              aria-label="Open navigation"
+            >
+              <Menu className="size-4" />
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

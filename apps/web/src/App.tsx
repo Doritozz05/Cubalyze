@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MainLayout } from "@/components/Layout/MainLayout";
+import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
@@ -40,6 +41,7 @@ export default function App() {
   const [cube3DActive, setCube3DActive] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [currentScramble, setCurrentScramble] = useState(() => 
     RandomStateGenerator.generateScramble(new Min2PhaseSolver())
   );
@@ -156,6 +158,12 @@ export default function App() {
     ? Math.min(...validSolves.map(s => s.time + (s.penalty === "+2" ? 2000 : 0)))
     : null;
 
+  const timerRunning = timerStateRef.current === "running" || timerStateRef.current === "ready";
+
+  const scrollToTimer = useCallback(() => {
+    document.getElementById("timer-section")?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   return (
     <div className="antialiased bg-background text-foreground min-h-screen">
       <ThemeProvider>
@@ -179,6 +187,15 @@ export default function App() {
           sidebarActive={sidebarActive}
           onToggleSidebar={() => setSidebarActive(a => !a)}
           cube3D={<Cube3DPanel />}
+          leftSidebar={
+            <LeftSidebar
+              timerActive={timerRunning}
+              onNavigateTimer={scrollToTimer}
+              mobileOpen={mobileNavOpen}
+              onMobileOpenChange={setMobileNavOpen}
+            />
+          }
+          onToggleMobileNav={() => setMobileNavOpen(a => !a)}
           main={
             <>
               <ScrambleDisplay

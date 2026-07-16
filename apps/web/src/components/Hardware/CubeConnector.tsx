@@ -61,14 +61,20 @@ export function CubeConnector({ className }: { className?: string }) {
       
       setStatus("disconnected");
       
-      const requiresExperimental = 
-        errMsg === "MAC_REQUIRED" || 
-        errMsg.includes("requestDevice") || 
-        errMsg.includes("bluetooth") || 
-        !("bluetooth" in navigator);
+      const notSecure = !window.isSecureContext;
+      const bluetoothMissing = !("bluetooth" in navigator);
       
-      if (requiresExperimental) {
-        setErrorMsg("Browser blocks automatic MAC reading or Web Bluetooth is disabled.");
+      if (notSecure) {
+        setErrorMsg("Web Bluetooth requires HTTPS. Open via http://localhost:5173 instead of the LAN IP.");
+        setShowMacInput(false);
+      } else if (bluetoothMissing || errMsg.includes("globally disabled")) {
+        setErrorMsg("Web Bluetooth is globally disabled in your browser. Open chrome://flags/#enable-web-bluetooth, set to Enabled, and restart your browser.");
+        setShowMacInput(false);
+      } else if (
+        errMsg === "MAC_REQUIRED" || 
+        errMsg.includes("requestDevice")
+      ) {
+        setErrorMsg("Browser blocks automatic MAC reading.");
         setShowMacInput(true);
       } else {
         setErrorMsg("Failed to connect: " + errMsg);
@@ -146,9 +152,18 @@ export function CubeConnector({ className }: { className?: string }) {
               <p className="text-ink-2">
                 Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:
               </p>
-              <code className="rounded bg-ink/5 p-1.5 font-mono text-xs text-ink break-all">
-                {instructions}
-              </code>
+              <div className="relative group">
+                <code className="rounded bg-ink/5 p-1.5 pr-8 font-mono text-xs text-ink break-all cursor-text select-all">
+                  {instructions}
+                </code>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
+                  className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Copy"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
               <div className="space-y-1.5 mt-2">
                 <p className="text-ink-2 text-xs">Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
                 <Input
