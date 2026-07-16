@@ -30,6 +30,16 @@ export class EngineWorkerAPI {
     this.loop(performance.now());
   }
 
+  /** Re-attach rendering to a new OffscreenCanvas (e.g. after component remount) */
+  public reconnect(canvas: OffscreenCanvas, width: number, height: number, pixelRatio: number) {
+    if (this.sceneManager) {
+      this.sceneManager.dispose();
+    }
+
+    this.sceneManager = new SceneManager(canvas, width, height, pixelRatio);
+    this.sceneManager.scene.add(this.model.root);
+  }
+
   public resize(width: number, height: number) {
     if (this.sceneManager) {
       this.sceneManager.resize(width, height);

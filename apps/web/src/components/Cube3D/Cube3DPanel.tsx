@@ -64,15 +64,28 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       : undefined;
 
     if (workerSingleton) {
-      // Re-mount: reuse existing worker (OffscreenCanvas stays alive)
+      // Re-mount: reuse existing worker, transfer new canvas
       workerInstance.current = workerSingleton.worker;
       workerProxy.current = workerSingleton.proxy;
       syncBridge.current = workerSingleton.syncBridge;
-      setIs3DReady(true);
+
+      try {
+        const offscreen = canvasRef.current.transferControlToOffscreen();
+        workerProxy.current.reconnect(
+          Comlink.transfer(offscreen, [offscreen]),
+          canvasRef.current.clientWidth,
+          canvasRef.current.clientHeight,
+          window.devicePixelRatio
+        );
+      } catch {
+        console.warn("Canvas already transferred on reconnect");
+      }
 
       if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
         syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
       }
+
+      setIs3DReady(true);
     } else {
       // First mount: create worker, transfer canvas, init
       workerInstance.current = new EngineWorker();
