@@ -38,6 +38,7 @@ export default function App() {
 
   const [scrambleIndex, setScrambleIndex] = useState(0);
   const [cube3DActive, setCube3DActive] = useState(false);
+  const [cube3DReady, setCube3DReady] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(true);
   const [currentScramble, setCurrentScramble] = useState(() => 
     RandomStateGenerator.generateScramble(new Min2PhaseSolver())
@@ -168,7 +169,13 @@ export default function App() {
           onRenameSession={renameSession}
           onDeleteSession={deleteSession}
           cube3DActive={cube3DActive}
-          onToggleCube3D={() => setCube3DActive(a => !a)}
+          cube3DReady={cube3DReady}
+          onToggleCube3D={() => {
+            setCube3DActive(prev => {
+              if (!prev) setCube3DReady(true);
+              return !prev;
+            });
+          }}
           sidebarActive={sidebarActive}
           onToggleSidebar={() => setSidebarActive(a => !a)}
           cube3D={<Cube3DPanel />}

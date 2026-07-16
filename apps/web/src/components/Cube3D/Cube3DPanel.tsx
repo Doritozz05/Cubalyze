@@ -64,21 +64,15 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       : undefined;
 
     if (workerSingleton) {
-      // Re-mount: reuse existing worker, transfer new canvas
+      // Re-mount: canvas still in DOM, OffscreenCanvas still linked.
+      // Just resize — no new WebGL context.
       workerInstance.current = workerSingleton.worker;
       workerProxy.current = workerSingleton.proxy;
       syncBridge.current = workerSingleton.syncBridge;
 
-      try {
-        const offscreen = canvasRef.current.transferControlToOffscreen();
-        workerProxy.current.reconnect(
-          Comlink.transfer(offscreen, [offscreen]),
-          canvasRef.current.clientWidth,
-          canvasRef.current.clientHeight,
-          window.devicePixelRatio
-        );
-      } catch {
-        console.warn("Canvas already transferred on reconnect");
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        workerProxy.current.resize(rect.width, rect.height);
       }
 
       if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {

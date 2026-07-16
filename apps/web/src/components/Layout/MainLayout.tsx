@@ -13,6 +13,8 @@ export interface MainLayoutProps {
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (hides sidebar, shows cube). */
   cube3DActive?: boolean;
+  /** Whether the 3D cube has been activated at least once (keeps it mounted). */
+  cube3DReady?: boolean;
   /** Personal best shown in the header (ms). */
   pb?: number | null;
   /** Current session solve count, shown as a chip in the header. */
@@ -51,6 +53,7 @@ export function MainLayout({
   sidebar,
   cube3D,
   cube3DActive,
+  cube3DReady,
   pb,
   sessionCount,
   sessions,
@@ -98,16 +101,22 @@ export function MainLayout({
           {main}
         </section>
 
-        {(cube3DActive || sidebarActive) && (
+        {(cube3DActive || sidebarActive || cube3DReady) && (
           <aside
             className={cn(
               "flex flex-col bg-surface px-4 py-6 sm:px-6 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:overflow-hidden lg:py-8",
               cube3DActive
                 ? "min-h-[50vh] border-t border-line lg:min-h-0 lg:border-l lg:border-t-0"
                 : "border-t border-line lg:border-l lg:border-t-0",
+              !cube3DActive && !sidebarActive && "hidden"
             )}
           >
-            {cube3DActive ? cube3D : sidebar}
+            <div className={cube3DActive ? "contents" : "hidden"}>
+              {cube3DReady && cube3D}
+            </div>
+            <div className={!cube3DActive && sidebarActive ? "contents" : "hidden"}>
+              {sidebar}
+            </div>
           </aside>
         )}
       </main>
