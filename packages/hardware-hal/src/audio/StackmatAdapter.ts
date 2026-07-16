@@ -1,4 +1,4 @@
-import { Observable, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { HardwareTimerAdapter, HardwareTimerEvent } from '../interfaces/HardwareTimerAdapter';
 
 export class StackmatAdapter implements HardwareTimerAdapter {
@@ -23,7 +23,7 @@ export class StackmatAdapter implements HardwareTimerAdapter {
       // Note: In production, the URL must point to a built JS file of StackmatProcessor
       try {
         await this.audioContext.audioWorklet.addModule('/stackmat-processor.js');
-      } catch (err) {
+      } catch {
         throw new Error('StackmatProcessor no encontrado en el servidor (/stackmat-processor.js). Verifica el build.');
       }
       

@@ -54,10 +54,12 @@ describe('Advanced WCA TimerEngine', () => {
     expect(timer.getState()).toBe(TimerState.INSPECTION);
 
     mockTime = 9100;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (timer as any).tick();
     expect(warnings).toContain('8s');
 
     mockTime = 13200;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (timer as any).tick();
     expect(warnings).toContain('12s');
 
@@ -65,6 +67,7 @@ describe('Advanced WCA TimerEngine', () => {
   });
 
   it('should stop and calculate final time correctly', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let stopEventDetail: any = null;
     const sub = timer.stop$.subscribe(detail => { stopEventDetail = detail; });
 

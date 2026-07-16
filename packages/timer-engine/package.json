@@ -2,6 +2,7 @@
   "name": "@cubeforge/timer-engine",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -9,16 +10,18 @@
     "build": "tsup",
     "clean": "rm -rf dist",
     "test": "vitest run",
-    "lint": "eslint src/"
+    "lint": "eslint ."
   },
   "dependencies": {
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@cubeforge/config-eslint": "workspace:*",
+    "@cubeforge/config-typescript": "workspace:*",
+    "eslint": "^10.7.0",
     "typescript": "^5.0.0",
     "tsup": "^8.0.0",
-    "vitest": "^3.0.5",
-    "@cubeforge/config-typescript": "workspace:*"
+    "vitest": "^3.0.5"
   }
 }
 

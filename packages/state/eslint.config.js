@@ -1,5 +1,8 @@
 import { baseConfig } from "@cubeforge/config-eslint";
 
 export default [
-  ...baseConfig
+  ...baseConfig,
+  {
+    ignores: ["dist/**"]
+  }
 ];

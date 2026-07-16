@@ -116,15 +116,15 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
 
       if (current === EngineState.INSPECTION && isScrambled) {
         engine.handleSmartCubeStart();
-      } else if (current === EngineState.IDLE && !(engine as any)["config"]?.useInspection && isScrambled) {
+      } else if (current === EngineState.IDLE && !inspectionEnabled && isScrambled) {
         engine.handleSmartCubeStart();
       }
     });
 
     // Subscribe to facelets for auto-stop (no callback-chain fragility)
     let faceletSub: import('rxjs').Subscription | undefined;
-    if ('facelets$' in adapter && (adapter as any).facelets$) {
-      faceletSub = (adapter as any).facelets$.subscribe((f: string) => {
+    if ('facelets$' in adapter && adapter.facelets$) {
+      faceletSub = adapter.facelets$.subscribe((f: string) => {
         const isSolved = SOLVED_FACELETS.test(f);
         if (isSolved && engine.getState() === EngineState.RUNNING) {
           engine.handleSmartCubeStop();
@@ -136,12 +136,7 @@ export function useTimerUI(onSolve?: (time: number, penalty: "none" | "+2" | "DN
       moveSub.unsubscribe();
       faceletSub?.unsubscribe();
     };
-  }, [engine, isScrambled]);
-
-  // Update inspection flag dynamically
-  useEffect(() => {
-    // Already handled by useMemo dependency recreating TimerEngine
-  }, [inspectionEnabled]);
+  }, [engine, isScrambled, inspectionEnabled]);
 
   const handlePress = useCallback(() => {
     if ((state === "idle" || state === "stopped") && inspectionEnabled) {

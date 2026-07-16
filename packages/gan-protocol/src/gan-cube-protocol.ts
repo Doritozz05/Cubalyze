@@ -220,7 +220,7 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         encrypter: GanCubeEncrypter,
         driver: GanProtocolDriver
     ): Promise<GanCubeConnection> {
-        var conn = new GanCubeClassicConnection(device, commandCharacteristic, stateCharacteristic, encrypter, driver);
+        const conn = new GanCubeClassicConnection(device, commandCharacteristic, stateCharacteristic, encrypter, driver);
         conn.device.addEventListener('gattserverdisconnected', conn.onDisconnect);
         conn.stateCharacteristic.addEventListener('characteristicvaluechanged', conn.onStateUpdate);
         await conn.stateCharacteristic.startNotifications();
@@ -236,30 +236,30 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
     }
 
     async sendCommandMessage(message: Uint8Array): Promise<void> {
-        var encryptedMessage = this.encrypter.encrypt(message);
+        const encryptedMessage = this.encrypter.encrypt(message);
         return this.commandCharacteristic.writeValue(encryptedMessage as BufferSource);
     }
 
     onStateUpdate = async (evt: Event) => {
-        var characteristic = evt.target as BluetoothRemoteGATTCharacteristic;
-        var eventMessage = characteristic.value;
+        const characteristic = evt.target as BluetoothRemoteGATTCharacteristic;
+        const eventMessage = characteristic.value;
         if (eventMessage && eventMessage.byteLength >= 16) {
-            var decryptedMessage = this.encrypter.decrypt(new Uint8Array(eventMessage.buffer));
-            var cubeEvents = await this.driver.handleStateEvent(this, decryptedMessage);
+            const decryptedMessage = this.encrypter.decrypt(new Uint8Array(eventMessage.buffer));
+            const cubeEvents = await this.driver.handleStateEvent(this, decryptedMessage);
             cubeEvents.forEach(e => this.events$.next(e));
         }
     }
 
-    onDisconnect = async (): Promise<any> => {
+    onDisconnect = async (): Promise<void> => {
         this.device.removeEventListener('gattserverdisconnected', this.onDisconnect);
         this.stateCharacteristic.removeEventListener('characteristicvaluechanged', this.onStateUpdate);
         this.events$.next({ timestamp: now(), type: "DISCONNECT" });
         this.events$.unsubscribe();
-        return this.stateCharacteristic.stopNotifications().catch(() => { });
+        this.stateCharacteristic.stopNotifications().catch(() => { });
     }
 
     async sendCubeCommand(command: GanCubeCommand): Promise<void> {
-        var commandMessage = this.driver.createCommandMessage(command);
+        const commandMessage = this.driver.createCommandMessage(command);
         if (commandMessage) {
             return this.sendCommandMessage(commandMessage);
         }
@@ -289,11 +289,11 @@ class GanProtocolMessageView {
         if (bitLength <= 8) {
             return parseInt(this.bits.slice(startBit, startBit + bitLength), 2);
         } else if (bitLength == 16 || bitLength == 32) {
-            let buf = new Uint8Array(bitLength / 8);
+            const buf = new Uint8Array(bitLength / 8);
             for (let i = 0; i < buf.length; i++) {
                 buf[i] = parseInt(this.bits.slice(8 * i + startBit, 8 * i + startBit + 8), 2);
             }
-            let dv = new DataView(buf.buffer);
+            const dv = new DataView(buf.buffer);
             return bitLength == 16 ? dv.getUint16(0, littleEndian) : dv.getUint32(0, littleEndian);
         } else {
             throw new Error('Unsupproted bit word length');
@@ -319,7 +319,7 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
     private cubeTimestamp: number = 0;
 
     createCommandMessage(command: GanCubeCommand): Uint8Array | undefined {
-        var msg: Uint8Array | undefined = new Uint8Array(20).fill(0);
+        let msg: Uint8Array | undefined = new Uint8Array(20).fill(0);
         switch (command.type) {
             case 'REQUEST_FACELETS':
                 msg[0] = 0x04;
@@ -341,24 +341,24 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
     async handleStateEvent(conn: GanCubeRawConnection, eventMessage: Uint8Array): Promise<GanCubeEvent[]> {
 
-        var timestamp = now();
+        const timestamp = now();
 
-        var cubeEvents: GanCubeEvent[] = [];
-        var msg = new GanProtocolMessageView(eventMessage);
-        var eventType = msg.getBitWord(0, 4);
+        const cubeEvents: GanCubeEvent[] = [];
+        const msg = new GanProtocolMessageView(eventMessage);
+        const eventType = msg.getBitWord(0, 4);
 
         if (eventType == 0x01) { // GYRO
 
             // Orientation Quaternion
-            let qw = msg.getBitWord(4, 16);
-            let qx = msg.getBitWord(20, 16);
-            let qy = msg.getBitWord(36, 16);
-            let qz = msg.getBitWord(52, 16);
+            const qw = msg.getBitWord(4, 16);
+            const qx = msg.getBitWord(20, 16);
+            const qy = msg.getBitWord(36, 16);
+            const qz = msg.getBitWord(52, 16);
 
             // Angular Velocity
-            let vx = msg.getBitWord(68, 4);
-            let vy = msg.getBitWord(72, 4);
-            let vz = msg.getBitWord(76, 4);
+            const vx = msg.getBitWord(68, 4);
+            const vy = msg.getBitWord(72, 4);
+            const vz = msg.getBitWord(76, 4);
 
             cubeEvents.push({
                 type: "GYRO",
@@ -380,7 +380,7 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
             if (this.lastSerial != -1) { // Accept move events only after first facelets state event received
 
-                let serial = msg.getBitWord(4, 8);
+                const serial = msg.getBitWord(4, 8);
                 let diff = (serial - this.lastSerial) & 0xFF;
                 // Cap at 16 moves per event to prevent buffer overload from corrupt data
                 if (diff > 16) diff = 16;
@@ -388,9 +388,9 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
                 if (diff > 0) {
                     for (let i = diff - 1; i >= 0; i--) {
-                        let face = msg.getBitWord(12 + 5 * i, 4);
-                        let direction = msg.getBitWord(16 + 5 * i, 1);
-                        let move = "URFDLB".charAt(face) + " '".charAt(direction);
+                        const face = msg.getBitWord(12 + 5 * i, 4);
+                        const direction = msg.getBitWord(16 + 5 * i, 1);
+                        const move = "URFDLB".charAt(face) + " '".charAt(direction);
                         let elapsed = msg.getBitWord(47 + 16 * i, 16);
                         if (elapsed == 0) { // In case of 16-bit cube timestamp register overflow
                             elapsed = timestamp - this.lastMoveTimestamp;
@@ -413,16 +413,16 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
         } else if (eventType == 0x04) { // FACELETS
 
-            let serial = msg.getBitWord(4, 8);
+            const serial = msg.getBitWord(4, 8);
 
             if (this.lastSerial == -1)
                 this.lastSerial = serial;
 
             // Corner/Edge Permutation/Orientation
-            let cp: Array<number> = [];
-            let co: Array<number> = [];
-            let ep: Array<number> = [];
-            let eo: Array<number> = [];
+            const cp: Array<number> = [];
+            const co: Array<number> = [];
+            const ep: Array<number> = [];
+            const eo: Array<number> = [];
 
             // Corners
             for (let i = 0; i < 7; i++) {
@@ -455,14 +455,14 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
         } else if (eventType == 0x05) { // HARDWARE
 
-            let hwMajor = msg.getBitWord(8, 8);
-            let hwMinor = msg.getBitWord(16, 8);
-            let swMajor = msg.getBitWord(24, 8);
-            let swMinor = msg.getBitWord(32, 8);
-            let gyroSupported = msg.getBitWord(104, 1);
+            const hwMajor = msg.getBitWord(8, 8);
+            const hwMinor = msg.getBitWord(16, 8);
+            const swMajor = msg.getBitWord(24, 8);
+            const swMinor = msg.getBitWord(32, 8);
+            const gyroSupported = msg.getBitWord(104, 1);
 
             let hardwareName = '';
-            for (var i = 0; i < 8; i++) {
+            for (let i = 0; i < 8; i++) {
                 hardwareName += String.fromCharCode(msg.getBitWord(i * 8 + 40, 8));
             }
 
@@ -477,7 +477,7 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
         } else if (eventType == 0x09) { // BATTERY
 
-            let batteryLevel = msg.getBitWord(8, 8);
+            const batteryLevel = msg.getBitWord(8, 8);
 
             cubeEvents.push({
                 type: "BATTERY",
@@ -507,7 +507,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
     private moveBuffer: GanCubeEvent[] = [];
 
     createCommandMessage(command: GanCubeCommand): Uint8Array | undefined {
-        var msg: Uint8Array | undefined = new Uint8Array(16).fill(0);
+        let msg: Uint8Array | undefined = new Uint8Array(16).fill(0);
         switch (command.type) {
             case 'REQUEST_FACELETS':
                 msg.set([0x68, 0x01]);
@@ -529,7 +529,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
     /** Private cube command for requesting move history */
     private async requestMoveHistory(conn: GanCubeRawConnection, serial: number, count: number): Promise<void> {
-        var msg = new Uint8Array(16).fill(0);
+        const msg = new Uint8Array(16).fill(0);
         // Move history response data is byte-aligned, and moves always starting with near-ceil odd serial number, regardless of requested.
         // Adjust serial and count to get odd serial aligned history window with even number of moves inside.
         if (serial % 2 == 0)
@@ -550,10 +550,10 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
      * In case of missing move, and if connection is provided, submit request for move history to fill gap in buffer
      */
     private async evictMoveBuffer(conn?: GanCubeRawConnection): Promise<Array<GanCubeEvent>> {
-        var evictedEvents: GanCubeEvent[] = [];
+        const evictedEvents: GanCubeEvent[] = [];
         while (this.moveBuffer.length > 0) {
-            let bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
-            let diff = this.lastSerial == -1 ? 1 : (bufferHead.serial - this.lastSerial) & 0xFF;
+            const bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
+            const diff = this.lastSerial == -1 ? 1 : (bufferHead.serial - this.lastSerial) & 0xFF;
             if (diff > 1) {
                 if (conn) {
                     await this.requestMoveHistory(conn, bufferHead.serial, diff);
@@ -567,7 +567,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
         // Buffer overflow — flush as recovered events (null timestamps) instead of disconnecting
         if (conn && this.moveBuffer.length > 16) {
             while (this.moveBuffer.length > 0) {
-                let recovered = this.moveBuffer.shift()! as GanCubeMoveEvent & { timestamp: number };
+                const recovered = this.moveBuffer.shift()! as GanCubeMoveEvent & { timestamp: number };
                 recovered.localTimestamp = null;
                 recovered.cubeTimestamp = null;
                 evictedEvents.push(recovered);
@@ -590,7 +590,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
     private injectMissedMoveToBuffer(move: GanCubeEvent) {
         if (move.type == "MOVE") {
             if (this.moveBuffer.length > 0) {
-                var bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
+                const bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
                 // Skip if move event with the same serial already in the buffer
                 if (this.moveBuffer.some(e => e.type == "MOVE" && e.serial == move.serial))
                     return;
@@ -613,11 +613,11 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
     /** Used in response to periodic facelets event to check if any moves missed */
     private async checkIfMoveMissed(conn: GanCubeRawConnection) {
-        let diff = (this.serial - this.lastSerial) & 0xFF;
+        const diff = (this.serial - this.lastSerial) & 0xFF;
         if (diff > 0) {
             if (this.serial != 0) { // Constraint to avoid iCarry2 firmware bug with facelets state event at 255 move counter
-                let bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
-                let startSerial = bufferHead ? bufferHead.serial : (this.serial + 1) & 0xFF;
+                const bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
+                const startSerial = bufferHead ? bufferHead.serial : (this.serial + 1) & 0xFF;
                 await this.requestMoveHistory(conn, startSerial, diff + 1);
             }
         }
@@ -625,14 +625,14 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
     async handleStateEvent(conn: GanCubeRawConnection, eventMessage: Uint8Array): Promise<GanCubeEvent[]> {
 
-        var timestamp = now();
+        const timestamp = now();
 
-        var cubeEvents: GanCubeEvent[] = [];
-        var msg = new GanProtocolMessageView(eventMessage);
+        let cubeEvents: GanCubeEvent[] = [];
+        const msg = new GanProtocolMessageView(eventMessage);
 
-        var magic = msg.getBitWord(0, 8);
-        var eventType = msg.getBitWord(8, 8);
-        var dataLength = msg.getBitWord(16, 8);
+        const magic = msg.getBitWord(0, 8);
+        const eventType = msg.getBitWord(8, 8);
+        const dataLength = msg.getBitWord(16, 8);
 
         if (magic == 0x55 && dataLength > 0) {
 
@@ -641,12 +641,12 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
                 if (this.lastSerial != -1) { // Accept move events only after first facelets state event received
 
                     this.lastLocalTimestamp = timestamp;
-                    let cubeTimestamp = msg.getBitWord(24, 32, true);
-                    let serial = this.serial = msg.getBitWord(56, 16, true);
+                    const cubeTimestamp = msg.getBitWord(24, 32, true);
+                    const serial = this.serial = msg.getBitWord(56, 16, true);
 
-                    let direction = msg.getBitWord(72, 2);
-                    let face = [2, 32, 8, 1, 16, 4].indexOf(msg.getBitWord(74, 6));
-                    let move = "URFDLB".charAt(face) + ["", "'", "2"][direction];
+                    const direction = msg.getBitWord(72, 2);
+                    const face = [2, 32, 8, 1, 16, 4].indexOf(msg.getBitWord(74, 6));
+                    const move = "URFDLB".charAt(face) + ["", "'", "2"][direction];
 
                     // put move event into FIFO buffer
                     if (face >= 0) {
@@ -669,15 +669,15 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
             } else if (eventType == 0x06) { // MOVE_HISTORY
 
-                let startSerial = msg.getBitWord(24, 8);
-                let count = (dataLength - 1) * 2;
+                const startSerial = msg.getBitWord(24, 8);
+                const count = (dataLength - 1) * 2;
 
                 // inject missed moves into FIFO buffer
                 for (let i = 0; i < count; i++) {
-                    let face = [1, 5, 3, 0, 4, 2].indexOf(msg.getBitWord(32 + 4 * i, 3));
-                    let direction = msg.getBitWord(35 + 4 * i, 1);
+                    const face = [1, 5, 3, 0, 4, 2].indexOf(msg.getBitWord(32 + 4 * i, 3));
+                    const direction = msg.getBitWord(35 + 4 * i, 1);
                     if (face >= 0) {
-                        let move = "URFDLB".charAt(face) + " '".charAt(direction);
+                        const move = "URFDLB".charAt(face) + " '".charAt(direction);
                         this.injectMissedMoveToBuffer({
                             type: "MOVE",
                             serial: (startSerial - i) & 0xFF,
@@ -696,7 +696,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
             } else if (eventType == 0x02) { // FACELETS
 
-                let serial = this.serial = msg.getBitWord(24, 16, true);
+                const serial = this.serial = msg.getBitWord(24, 16, true);
 
                 // Also check and recovery missed moves using periodic facelets event sent by cube
                 if (this.lastSerial != -1) {
@@ -710,10 +710,10 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
                     this.lastSerial = serial;
 
                 // Corner/Edge Permutation/Orientation
-                let cp: Array<number> = [];
-                let co: Array<number> = [];
-                let ep: Array<number> = [];
-                let eo: Array<number> = [];
+                const cp: Array<number> = [];
+                const co: Array<number> = [];
+                const ep: Array<number> = [];
+                const eo: Array<number> = [];
 
                 // Corners
                 for (let i = 0; i < 7; i++) {
@@ -746,13 +746,13 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
             } else if (eventType == 0x07) { // HARDWARE
 
-                let swMajor = msg.getBitWord(72, 4);
-                let swMinor = msg.getBitWord(76, 4);
-                let hwMajor = msg.getBitWord(80, 4);
-                let hwMinor = msg.getBitWord(84, 4);
+                const swMajor = msg.getBitWord(72, 4);
+                const swMinor = msg.getBitWord(76, 4);
+                const hwMajor = msg.getBitWord(80, 4);
+                const hwMinor = msg.getBitWord(84, 4);
 
                 let hardwareName = '';
-                for (var i = 0; i < 5; i++) {
+                for (let i = 0; i < 5; i++) {
                     hardwareName += String.fromCharCode(msg.getBitWord(i * 8 + 32, 8));
                 }
 
@@ -767,7 +767,7 @@ class GanGen3ProtocolDriver implements GanProtocolDriver {
 
             } else if (eventType == 0x10) { // BATTERY
 
-                let batteryLevel = msg.getBitWord(24, 8);
+                const batteryLevel = msg.getBitWord(24, 8);
 
                 cubeEvents.push({
                     type: "BATTERY",
@@ -803,7 +803,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
     private hwInfo: { [key: number]: string } = {};
 
     createCommandMessage(command: GanCubeCommand): Uint8Array | undefined {
-        var msg: Uint8Array | undefined = new Uint8Array(20).fill(0);
+        let msg: Uint8Array | undefined = new Uint8Array(20).fill(0);
         switch (command.type) {
             case 'REQUEST_FACELETS':
                 msg.set([0xDD, 0x04, 0x00, 0xED, 0x00, 0x00]);
@@ -826,7 +826,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
     /** Private cube command for requesting move history */
     private async requestMoveHistory(conn: GanCubeRawConnection, serial: number, count: number): Promise<void> {
-        var msg = new Uint8Array(20).fill(0);
+        const msg = new Uint8Array(20).fill(0);
         // Move history response data is byte-aligned, and moves always starting with near-ceil odd serial number, regardless of requested.
         // Adjust serial and count to get odd serial aligned history window with even number of moves inside.
         if (serial % 2 == 0)
@@ -847,10 +847,10 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
      * In case of missing move, and if connection is provided, submit request for move history to fill gap in buffer
      */
     private async evictMoveBuffer(conn?: GanCubeRawConnection): Promise<Array<GanCubeEvent>> {
-        var evictedEvents: GanCubeEvent[] = [];
+        const evictedEvents: GanCubeEvent[] = [];
         while (this.moveBuffer.length > 0) {
-            let bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
-            let diff = this.lastSerial == -1 ? 1 : (bufferHead.serial - this.lastSerial) & 0xFF;
+            const bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
+            const diff = this.lastSerial == -1 ? 1 : (bufferHead.serial - this.lastSerial) & 0xFF;
             if (diff > 1) {
                 if (conn) {
                     await this.requestMoveHistory(conn, bufferHead.serial, diff);
@@ -864,7 +864,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
         // Buffer overflow — flush as recovered events (null timestamps) instead of disconnecting
         if (conn && this.moveBuffer.length > 16) {
             while (this.moveBuffer.length > 0) {
-                let recovered = this.moveBuffer.shift()! as GanCubeMoveEvent & { timestamp: number };
+                const recovered = this.moveBuffer.shift()! as GanCubeMoveEvent & { timestamp: number };
                 recovered.localTimestamp = null;
                 recovered.cubeTimestamp = null;
                 evictedEvents.push(recovered);
@@ -887,7 +887,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
     private injectMissedMoveToBuffer(move: GanCubeEvent) {
         if (move.type == "MOVE") {
             if (this.moveBuffer.length > 0) {
-                var bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
+                const bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
                 // Skip if move event with the same serial already in the buffer
                 if (this.moveBuffer.some(e => e.type == "MOVE" && e.serial == move.serial))
                     return;
@@ -910,11 +910,11 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
     /** Used in response to periodic facelets event to check if any moves missed */
     private async checkIfMoveMissed(conn: GanCubeRawConnection) {
-        let diff = (this.serial - this.lastSerial) & 0xFF;
+        const diff = (this.serial - this.lastSerial) & 0xFF;
         if (diff > 0) {
             if (this.serial != 0) { // Constraint to avoid firmware bug with facelets state event at 255 move counter
-                let bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
-                let startSerial = bufferHead ? bufferHead.serial : (this.serial + 1) & 0xFF;
+                const bufferHead = this.moveBuffer[0] as GanCubeMoveEvent;
+                const startSerial = bufferHead ? bufferHead.serial : (this.serial + 1) & 0xFF;
                 await this.requestMoveHistory(conn, startSerial, diff + 1);
             }
         }
@@ -922,25 +922,25 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
     async handleStateEvent(conn: GanCubeRawConnection, eventMessage: Uint8Array): Promise<GanCubeEvent[]> {
 
-        var timestamp = now();
+        const timestamp = now();
 
-        var cubeEvents: GanCubeEvent[] = [];
-        var msg = new GanProtocolMessageView(eventMessage);
+        let cubeEvents: GanCubeEvent[] = [];
+        const msg = new GanProtocolMessageView(eventMessage);
 
-        var eventType = msg.getBitWord(0, 8);
-        var dataLength = msg.getBitWord(8, 8);
+        const eventType = msg.getBitWord(0, 8);
+        const dataLength = msg.getBitWord(8, 8);
 
         if (eventType == 0x01) { // MOVE
 
             if (this.lastSerial != -1) { // Accept move events only after first facelets state event received
 
                 this.lastLocalTimestamp = timestamp;
-                let cubeTimestamp = msg.getBitWord(16, 32, true);
-                let serial = this.serial = msg.getBitWord(48, 16, true);
+                const cubeTimestamp = msg.getBitWord(16, 32, true);
+                const serial = this.serial = msg.getBitWord(48, 16, true);
 
-                let direction = msg.getBitWord(64, 2);
-                let face = [2, 32, 8, 1, 16, 4].indexOf(msg.getBitWord(66, 6));
-                let move = "URFDLB".charAt(face) + ["", "'", "2"][direction];
+                const direction = msg.getBitWord(64, 2);
+                const face = [2, 32, 8, 1, 16, 4].indexOf(msg.getBitWord(66, 6));
+                const move = "URFDLB".charAt(face) + ["", "'", "2"][direction];
 
                 // put move event into FIFO buffer
                 if (face >= 0) {
@@ -963,15 +963,15 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
         } else if (eventType == 0xD1) { // MOVE_HISTORY
 
-            let startSerial = msg.getBitWord(16, 8);
-            let count = (dataLength - 1) * 2;
+            const startSerial = msg.getBitWord(16, 8);
+            const count = (dataLength - 1) * 2;
 
             // inject missed moves into FIFO buffer
             for (let i = 0; i < count; i++) {
-                let face = [1, 5, 3, 0, 4, 2].indexOf(msg.getBitWord(24 + 4 * i, 3));
-                let direction = msg.getBitWord(27 + 4 * i, 1);
+                const face = [1, 5, 3, 0, 4, 2].indexOf(msg.getBitWord(24 + 4 * i, 3));
+                const direction = msg.getBitWord(27 + 4 * i, 1);
                 if (face >= 0) {
-                    let move = "URFDLB".charAt(face) + " '".charAt(direction);
+                    const move = "URFDLB".charAt(face) + " '".charAt(direction);
                     this.injectMissedMoveToBuffer({
                         type: "MOVE",
                         serial: (startSerial - i) & 0xFF,
@@ -990,7 +990,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
         } else if (eventType == 0xED) { // FACELETS
 
-            let serial = this.serial = msg.getBitWord(16, 16, true);
+            const serial = this.serial = msg.getBitWord(16, 16, true);
 
             // Also check and recovery missed moves using periodic facelets event sent by cube
             if (this.lastSerial != -1) {
@@ -1004,10 +1004,10 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
                 this.lastSerial = serial;
 
             // Corner/Edge Permutation/Orientation
-            let cp: Array<number> = [];
-            let co: Array<number> = [];
-            let ep: Array<number> = [];
-            let eo: Array<number> = [];
+            const cp: Array<number> = [];
+            const co: Array<number> = [];
+            const ep: Array<number> = [];
+            const eo: Array<number> = [];
 
             // Corners
             for (let i = 0; i < 7; i++) {
@@ -1041,28 +1041,31 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
         } else if (eventType >= 0xFA && eventType <= 0xFE) { // HARDWARE
 
             switch (eventType) {
-                case 0xFA: // Product Date
-                    let year = msg.getBitWord(24, 16, true);
-                    let month = msg.getBitWord(40, 8);
-                    let day = msg.getBitWord(48, 8);
+                case 0xFA: { // Product Date
+                    const year = msg.getBitWord(24, 16, true);
+                    const month = msg.getBitWord(40, 8);
+                    const day = msg.getBitWord(48, 8);
                     this.hwInfo[eventType] = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
                     break;
+                }
                 case 0xFC: // Hardware Name
                     this.hwInfo[eventType] = '';
-                    for (var i = 0; i < dataLength - 1; i++) {
+                    for (let i = 0; i < dataLength - 1; i++) {
                         this.hwInfo[eventType] += String.fromCharCode(msg.getBitWord(i * 8 + 24, 8));
                     }
                     break;
-                case 0xFD: // Software Version
-                    let swMajor = msg.getBitWord(24, 4);
-                    let swMinor = msg.getBitWord(28, 4);
+                case 0xFD: { // Software Version
+                    const swMajor = msg.getBitWord(24, 4);
+                    const swMinor = msg.getBitWord(28, 4);
                     this.hwInfo[eventType] = `${swMajor}.${swMinor}`;
                     break;
-                case 0xFE: // Hardware Version
-                    let hwMajor = msg.getBitWord(24, 4);
-                    let hwMinor = msg.getBitWord(28, 4);
+                }
+                case 0xFE: { // Hardware Version
+                    const hwMajor = msg.getBitWord(24, 4);
+                    const hwMinor = msg.getBitWord(28, 4);
                     this.hwInfo[eventType] = `${hwMajor}.${hwMinor}`;
                     break;
+                }
             }
 
             if (Object.keys(this.hwInfo).length == 4) { // All fields are populated
@@ -1080,15 +1083,15 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
         } else if (eventType == 0xEC) { // GYRO
 
             // Orientation Quaternion
-            let qw = msg.getBitWord(16, 16);
-            let qx = msg.getBitWord(32, 16);
-            let qy = msg.getBitWord(48, 16);
-            let qz = msg.getBitWord(64, 16);
+            const qw = msg.getBitWord(16, 16);
+            const qx = msg.getBitWord(32, 16);
+            const qy = msg.getBitWord(48, 16);
+            const qz = msg.getBitWord(64, 16);
 
             // Angular Velocity
-            let vx = msg.getBitWord(80, 4);
-            let vy = msg.getBitWord(84, 4);
-            let vz = msg.getBitWord(88, 4);
+            const vx = msg.getBitWord(80, 4);
+            const vy = msg.getBitWord(84, 4);
+            const vz = msg.getBitWord(88, 4);
 
             cubeEvents.push({
                 type: "GYRO",
@@ -1108,7 +1111,7 @@ class GanGen4ProtocolDriver implements GanProtocolDriver {
 
         } else if (eventType == 0xEF) { // BATTERY
 
-            let batteryLevel = msg.getBitWord(8 + dataLength * 8, 8);
+            const batteryLevel = msg.getBitWord(8 + dataLength * 8, 8);
 
             cubeEvents.push({
                 type: "BATTERY",

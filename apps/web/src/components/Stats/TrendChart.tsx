@@ -136,7 +136,7 @@ export function TrendChart({
                   boxShadow: "none",
                 }}
                 labelFormatter={(l) => `Solve ${l}`}
-                formatter={(v: any) => [formatTime(v as number), `Ao${window}`]}
+                formatter={(v) => [formatTime(Number(v)), `Ao${window}`]}
               />
               <Line
                 type="monotone"

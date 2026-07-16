@@ -1,4 +1,4 @@
-import { Observable, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { HardwareTimerAdapter, HardwareTimerEvent } from '../interfaces/HardwareTimerAdapter';
 import { connectGanTimer, GanTimerConnection, GanTimerState } from '@cubeforge/gan-protocol';
 export class GanTimerAdapter implements HardwareTimerAdapter {

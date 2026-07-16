@@ -212,7 +212,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       this.reconnectTimer = null;
       try {
         if (!this.device) throw new Error('No device reference for reconnection');
-        const gatt = await this.device.gatt!.connect();
+        await this.device.gatt!.connect();
         this.connection = await connectGanCube(async (device, isFallback) => {
           if (this.manualMac) return this.manualMac;
           if (isFallback) return null;

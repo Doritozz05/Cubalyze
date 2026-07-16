@@ -92,7 +92,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
         }
         await seedPromise;
 
-        let allSessions = await sessionsRepo.findAll();
+        const allSessions = await sessionsRepo.findAll();
         
         let lastActive = localStorage.getItem("cubeforge:activeSessionId");
         if (!lastActive || !allSessions.find(s => s.id === lastActive)) {

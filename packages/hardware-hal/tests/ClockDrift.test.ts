@@ -32,7 +32,9 @@ describe('ClockDriftReconciler', () => {
     r.addDataPoint(1000, 2000); 
     // The history should be [20:110, 30:120, 1000:2000]
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((r as any).history.length).toBe(3);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((r as any).history[0].cubeTs).toBe(20);
   });
 });

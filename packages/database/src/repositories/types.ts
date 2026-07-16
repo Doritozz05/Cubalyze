@@ -6,7 +6,7 @@ export interface Solve {
   scramble: string;
   penalty: string;
   method?: string;
-  moves?: any[];
+  moves?: unknown[];
   analysisEngineVersion?: string;
   createdAt?: string;
   updatedAt?: string;
