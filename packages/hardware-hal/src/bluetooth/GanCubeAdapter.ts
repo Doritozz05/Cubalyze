@@ -23,6 +23,8 @@ const RECONNECT_BASE_DELAY_MS = 1000;
 export class GanCubeAdapter implements SmartCubeAdapter {
   public readonly vendor = 'GAN';
   public model = 'SmartCube';
+  /** Whether the connected cube has gyro/IMU support. Set from HARDWARE event. */
+  public gyroSupported = false;
 
   public onConnectionChange: ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void) | null = null;
 
@@ -127,6 +129,9 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       } else if (evt.type === 'HARDWARE') {
         if (evt.hardwareName) {
           this.model = evt.hardwareName;
+        }
+        if (typeof evt.gyroSupported === 'boolean') {
+          this.gyroSupported = evt.gyroSupported;
         }
       }
     });
