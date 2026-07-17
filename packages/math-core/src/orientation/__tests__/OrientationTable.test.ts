@@ -152,6 +152,45 @@ describe('OrientationTable', () => {
       expect(result.confidence).toBeGreaterThan(0.95);
     });
 
+    it('composed orientation: x then y has a correct quaternion (not just face map)', () => {
+      // Compose x then y manually: q = q_y * q_x
+      const qx = rotQuat('x', -90);
+      const qy = rotQuat('y', -90);
+      const qxy = qy.clone().multiply(qx);
+      // Find the table entry for compose(x, y) by face map
+      const xEntry = OrientationTable.fromFaceMap({
+        U: 'F', D: 'B', F: 'D', B: 'U', L: 'L', R: 'R',
+      });
+      const yEntry = OrientationTable.fromFaceMap({
+        U: 'U', D: 'D', F: 'R', B: 'L', L: 'F', R: 'B',
+      });
+      const xyEntry = OrientationTable.compose(xEntry, yEntry);
+      // The stored quaternion should match the manual composition
+      const stored = xyEntry.quaternion;
+      const dot = Math.abs(stored.x * qxy.x + stored.y * qxy.y + stored.z * qxy.z + stored.w * qxy.w);
+      expect(dot).toBeGreaterThan(0.999);
+    });
+
+    it('composed orientation: y then x has a different quaternion than x then y', () => {
+      const xEntry = OrientationTable.fromFaceMap({
+        U: 'F', D: 'B', F: 'D', B: 'U', L: 'L', R: 'R',
+      });
+      const yEntry = OrientationTable.fromFaceMap({
+        U: 'U', D: 'D', F: 'R', B: 'L', L: 'F', R: 'B',
+      });
+      const xy = OrientationTable.compose(xEntry, yEntry);
+      const yx = OrientationTable.compose(yEntry, xEntry);
+      // Different orientations → different quaternions (not just negated)
+      const dot = Math.abs(
+        xy.quaternion.x * yx.quaternion.x +
+        xy.quaternion.y * yx.quaternion.y +
+        xy.quaternion.z * yx.quaternion.z +
+        xy.quaternion.w * yx.quaternion.w,
+      );
+      // If they were the same rotation, |dot| would be ~1. Since they're different, |dot| < 1.
+      expect(dot).toBeLessThan(0.999);
+    });
+
     it('returns low confidence for mid-rotation (45° about y)', () => {
       const q = rotQuat('y', -45);
       const result = OrientationTable.snap({ x: q.x, y: q.y, z: q.z, w: q.w });
