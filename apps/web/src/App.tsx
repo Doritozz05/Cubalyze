@@ -169,7 +169,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="antialiased bg-background text-foreground min-h-screen">
+    <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
       <ThemeProvider>
         <MainLayout
           pb={currentPB}
