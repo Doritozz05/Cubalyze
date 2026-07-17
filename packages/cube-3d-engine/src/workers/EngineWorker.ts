@@ -4,6 +4,9 @@ import { CubeMeshFactory, type CubeStyleOptions } from '../core/CubeMeshFactory'
 import { CubeModel } from '../core/CubeModel';
 import { RotationEngine, type RotationAxis } from '../animation/RotationEngine';
 import { GyroFusion } from '../hardware/GyroFusion';
+import { OrientationTracker } from '../hardware/OrientationTracker';
+import { OrientationTable } from '@cubeforge/math-core';
+import type { CubeOrientation } from '@cubeforge/types';
 import type { CubeFace } from '@cubeforge/types';
 
 export class EngineWorkerAPI {
@@ -12,6 +15,10 @@ export class EngineWorkerAPI {
   private model!: CubeModel;
   private rotationEngine!: RotationEngine;
   private gyroFusion!: GyroFusion;
+  private orientationTracker!: OrientationTracker;
+
+  // Callback registered by the main thread to receive orientation updates
+  private onOrientationChangeCb?: (o: CubeOrientation) => void;
 
   private lastTime: number = 0;
   private isRunning: boolean = false;
@@ -25,6 +32,15 @@ export class EngineWorkerAPI {
 
     this.rotationEngine = new RotationEngine(this.model);
     this.gyroFusion = new GyroFusion(this.model.root);
+
+    // OrientationTracker starts without gyro support; updated when hardware info arrives
+    this.orientationTracker = new OrientationTracker({ gyroSupported: false });
+    // Wire GyroFusion calibration → OrientationTracker calibration
+    this.gyroFusion.onCalibrate = (q) => this.orientationTracker.setCalibration(q);
+    // Forward orientation changes to the main thread callback
+    this.orientationTracker.orientation$.subscribe((o) => {
+      this.onOrientationChangeCb?.(o);
+    });
 
     this.isRunning = true;
     this.loop(performance.now());
@@ -73,6 +89,11 @@ export class EngineWorkerAPI {
     if (!this.gyroFusion) return;
     this.gyroFusion.enable();
     this.gyroFusion.updateTargetQuaternion(x, y, z, w);
+    // Feed the OrientationTracker with the SAME remapped quaternion that
+    // GyroFusion uses internally (x, z, -y, w) — this ensures the tracker's
+    // calibration reference and update data are in the same coordinate system
+    // (Three.js right-handed, Y-up), matching the OrientationTable entries.
+    this.orientationTracker.update({ x, y: z, z: -y, w });
   }
 
   public disableGyro() {
@@ -84,6 +105,41 @@ export class EngineWorkerAPI {
   public calibrateGyro() {
     if (!this.gyroFusion) return;
     this.gyroFusion.calibrate();
+  }
+
+  /** Sets whether the connected cube has gyro/IMU support */
+  public setGyroSupported(supported: boolean) {
+    if (!this.orientationTracker) return;
+    // Recreate tracker with the correct capability
+    this.orientationTracker.dispose();
+    this.orientationTracker = new OrientationTracker({ gyroSupported: supported });
+    this.gyroFusion.onCalibrate = (q) => this.orientationTracker.setCalibration(q);
+    this.orientationTracker.orientation$.subscribe((o) => {
+      this.onOrientationChangeCb?.(o);
+    });
+  }
+
+  /** Registers a callback (via Comlink.proxy) to receive orientation updates */
+  public onOrientationChange(cb: (o: CubeOrientation) => void) {
+    this.onOrientationChangeCb = cb;
+  }
+
+  /** Returns the current orientation */
+  public getOrientation(): CubeOrientation {
+    if (!this.orientationTracker) {
+      const id = OrientationTable.IDENTITY;
+      return {
+        quaternion: { x: 0, y: 0, z: 0, w: 1 },
+        faceMap: id.faceMap,
+        label: id.label,
+      };
+    }
+    const c = this.orientationTracker.current;
+    return {
+      quaternion: { x: c.quaternion.x, y: c.quaternion.y, z: c.quaternion.z, w: c.quaternion.w },
+      faceMap: c.faceMap,
+      label: c.label,
+    };
   }
 
   /** Resets gyroscope calibration to raw input */

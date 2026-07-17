@@ -19,6 +19,9 @@ export class GyroFusion {
 
   private isCalibrated = false;
 
+  /** Optional callback fired when calibration occurs (for OrientationTracker). */
+  public onCalibrate?: (q: { x: number; y: number; z: number; w: number }) => void;
+
   constructor(targetObject: Object3D) {
     this.target = targetObject;
   }
@@ -65,6 +68,13 @@ export class GyroFusion {
     // Store the inverse of the current raw quaternion
     this.offsetQuatInverse.copy(this.rawTargetQuat).conjugate();
     this.isCalibrated = true;
+    // Notify the OrientationTracker with the current raw quaternion
+    this.onCalibrate?.({
+      x: this.rawTargetQuat.x,
+      y: this.rawTargetQuat.y,
+      z: this.rawTargetQuat.z,
+      w: this.rawTargetQuat.w,
+    });
   }
 
   /**

@@ -13,6 +13,7 @@ export * from './animation/Easing';
 // Hardware Bridge
 export * from './hardware/GyroFusion';
 export * from './hardware/SyncBridge';
+export * from './hardware/OrientationTracker';
 
 // Worker API (type-only export for consumers to use with Comlink.wrap<T>())
 export type { EngineWorkerAPI } from './workers/EngineWorker';
