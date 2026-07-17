@@ -6,7 +6,7 @@ import { RotationEngine, type RotationAxis } from '../animation/RotationEngine';
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable } from '@cubeforge/math-core';
-import type { CubeOrientation } from '@cubeforge/types';
+import type { CubeOrientation, RotationEvent } from '@cubeforge/types';
 import type { CubeFace } from '@cubeforge/types';
 import type { Subscription } from 'rxjs';
 
@@ -20,7 +20,10 @@ export class EngineWorkerAPI {
 
   // Callback registered by the main thread to receive orientation updates
   private onOrientationChangeCb?: (o: CubeOrientation) => void;
+  // Callback registered by the main thread to receive rotation events (x/y/z)
+  private onRotationEventCb?: (e: RotationEvent) => void;
   private orientationSub?: Subscription;
+  private rotationEventSub?: Subscription;
 
   private lastTime: number = 0;
   private isRunning: boolean = false;
@@ -42,6 +45,10 @@ export class EngineWorkerAPI {
     // Forward orientation changes to the main thread callback
     this.orientationSub = this.orientationTracker.orientation$.subscribe((o) => {
       this.onOrientationChangeCb?.(o);
+    });
+    // Forward rotation events (x/y/z) to the main thread callback
+    this.rotationEventSub = this.orientationTracker.rotationEvents$.subscribe((e) => {
+      this.onRotationEventCb?.(e);
     });
 
     this.isRunning = true;
@@ -91,6 +98,15 @@ export class EngineWorkerAPI {
     if (!this.gyroFusion) return;
     this.gyroFusion.enable();
     this.gyroFusion.updateTargetQuaternion(x, y, z, w);
+
+    // Auto-enable gyro tracking on first gyro data arrival.
+    // This handles the race condition where the HARDWARE event arrives
+    // AFTER the Cube3DPanel mount — the tracker starts with gyroSupported=false
+    // but self-enables as soon as real gyro data flows.
+    if (!this.orientationTracker.capabilitiesInfo.gyroSupported) {
+      this.orientationTracker.enableGyroSupport();
+    }
+
     // Feed the OrientationTracker with the SAME remapped quaternion that
     // GyroFusion uses internally (x, z, -y, w) — this ensures the tracker's
     // calibration reference and update data are in the same coordinate system
@@ -112,24 +128,44 @@ export class EngineWorkerAPI {
   /** Sets whether the connected cube has gyro/IMU support */
   public setGyroSupported(supported: boolean) {
     if (!this.orientationTracker) return;
-    // Clean up old tracker and subscription
-    this.orientationSub?.unsubscribe();
-    this.orientationTracker.dispose();
-    // Reset GyroFusion calibration so both systems start in sync — the new
-    // tracker is uncalibrated, so GyroFusion must be too. The user will
-    // re-calibrate after the new hardware is detected.
-    this.gyroFusion.resetCalibration();
-    // Recreate tracker with the correct capability
-    this.orientationTracker = new OrientationTracker({ gyroSupported: supported });
-    this.gyroFusion.onCalibrate = (q) => this.orientationTracker.setCalibration(q);
-    this.orientationSub = this.orientationTracker.orientation$.subscribe((o) => {
-      this.onOrientationChangeCb?.(o);
-    });
+
+    const currentlyEnabled = this.orientationTracker.capabilitiesInfo.gyroSupported;
+
+    if (supported && !currentlyEnabled) {
+      // Enabling: lightweight — just flip the capability flag.
+      // Preserves calibration and existing subscriptions.
+      this.orientationTracker.enableGyroSupport();
+      return;
+    }
+
+    if (!supported && currentlyEnabled) {
+      // Disabling: full reset to stop processing gyro events.
+      this.orientationSub?.unsubscribe();
+      this.rotationEventSub?.unsubscribe();
+      this.orientationTracker.dispose();
+      this.gyroFusion.resetCalibration();
+      this.orientationTracker = new OrientationTracker({ gyroSupported: false });
+      this.gyroFusion.onCalibrate = (q) => this.orientationTracker.setCalibration(q);
+      this.orientationSub = this.orientationTracker.orientation$.subscribe((o) => {
+        this.onOrientationChangeCb?.(o);
+      });
+      this.rotationEventSub = this.orientationTracker.rotationEvents$.subscribe((e) => {
+        this.onRotationEventCb?.(e);
+      });
+      return;
+    }
+
+    // Already in the desired state — no-op.
   }
 
   /** Registers a callback (via Comlink.proxy) to receive orientation updates */
   public onOrientationChange(cb: (o: CubeOrientation) => void) {
     this.onOrientationChangeCb = cb;
+  }
+
+  /** Registers a callback (via Comlink.proxy) to receive rotation events (x/y/z) */
+  public onRotationEvent(cb: (e: RotationEvent) => void) {
+    this.onRotationEventCb = cb;
   }
 
   /** Returns the current orientation */
@@ -195,6 +231,7 @@ export class EngineWorkerAPI {
   public dispose() {
     this.isRunning = false;
     this.orientationSub?.unsubscribe();
+    this.rotationEventSub?.unsubscribe();
     if (this.orientationTracker) this.orientationTracker.dispose();
     if (this.sceneManager) this.sceneManager.dispose();
     if (this.factory) this.factory.dispose();

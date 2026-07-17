@@ -13,7 +13,7 @@ import { RefreshCw, RotateCcw } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore } from "@cubeforge/state";
 import { MoveTransformer } from "@cubeforge/math-core";
-import type { CubeMoveEvent, CubeOrientation } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeOrientation, RotationEvent } from "@cubeforge/types";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -41,6 +41,9 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   const lastPos = useRef({ x: 0, y: 0 });
   const [recentMoves, setRecentMoves] = useState<string[]>([]);
   const [is3DReady, setIs3DReady] = useState(false);
+  // Tracks whether orientation+rotation callbacks have been registered on the singleton worker.
+  // Prevents duplicate registrations across Strict Mode remounts.
+  const callbacksRegistered = useRef(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -83,12 +86,34 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
         // Wire orientation tracker: worker → orientation store
         workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
-        workerProxy.current.onOrientationChange(
-          Comlink.proxy((o: CubeOrientation) => {
-            orientationStore.getState().setOrientation(o);
-          }),
-        );
-        // Also update capabilities in the store
+
+        // Register callbacks once (worker is a singleton, survives Strict Mode remounts)
+        if (!callbacksRegistered.current) {
+          callbacksRegistered.current = true;
+          workerProxy.current.onOrientationChange(
+            Comlink.proxy((o: CubeOrientation) => {
+              orientationStore.getState().setOrientation(o);
+              // When orientation updates flow, gyro is confirmed working
+              const caps = orientationStore.getState().capabilities;
+              if (!caps.gyroSupported) {
+                orientationStore.getState().setCapabilities({
+                  hasIMU: true,
+                  gyroSupported: true,
+                });
+              }
+            }),
+          );
+          workerProxy.current.onRotationEvent(
+            Comlink.proxy((e: RotationEvent) => {
+              const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
+              setRecentMoves(prev => {
+                const next = [...prev, notation];
+                return next.slice(-15);
+              });
+            }),
+          );
+        }
+        // Set initial capabilities from current adapter state
         orientationStore.getState().setCapabilities({
           hasIMU: globalCubeAdapter.gyroSupported,
           gyroSupported: globalCubeAdapter.gyroSupported,
@@ -116,11 +141,34 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
         // Wire orientation tracker: worker → orientation store
         workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
-        workerProxy.current.onOrientationChange(
-          Comlink.proxy((o: CubeOrientation) => {
-            orientationStore.getState().setOrientation(o);
-          }),
-        );
+
+        // Register callbacks once (worker is a singleton, survives Strict Mode remounts)
+        if (!callbacksRegistered.current) {
+          callbacksRegistered.current = true;
+          workerProxy.current.onOrientationChange(
+            Comlink.proxy((o: CubeOrientation) => {
+              orientationStore.getState().setOrientation(o);
+              // When orientation updates flow, gyro is confirmed working
+              const caps = orientationStore.getState().capabilities;
+              if (!caps.gyroSupported) {
+                orientationStore.getState().setCapabilities({
+                  hasIMU: true,
+                  gyroSupported: true,
+                });
+              }
+            }),
+          );
+          workerProxy.current.onRotationEvent(
+            Comlink.proxy((e: RotationEvent) => {
+              const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
+              setRecentMoves(prev => {
+                const next = [...prev, notation];
+                return next.slice(-15);
+              });
+            }),
+          );
+        }
+        // Set initial capabilities from current adapter state
         orientationStore.getState().setCapabilities({
           hasIMU: globalCubeAdapter.gyroSupported,
           gyroSupported: globalCubeAdapter.gyroSupported,

@@ -146,6 +146,44 @@ describe('MoveTransformer', () => {
     });
   });
 
+  describe('rotationToNotation', () => {
+    it('produces x', () => {
+      expect(MoveTransformer.rotationToNotation('x', 1)).toBe('x');
+    });
+
+    it("produces x'", () => {
+      expect(MoveTransformer.rotationToNotation('x', -1)).toBe("x'");
+    });
+
+    it('produces x2', () => {
+      expect(MoveTransformer.rotationToNotation('x', 2)).toBe('x2');
+    });
+
+    it('produces y', () => {
+      expect(MoveTransformer.rotationToNotation('y', 1)).toBe('y');
+    });
+
+    it("produces y'", () => {
+      expect(MoveTransformer.rotationToNotation('y', -1)).toBe("y'");
+    });
+
+    it('produces y2', () => {
+      expect(MoveTransformer.rotationToNotation('y', 2)).toBe('y2');
+    });
+
+    it('produces z', () => {
+      expect(MoveTransformer.rotationToNotation('z', 1)).toBe('z');
+    });
+
+    it("produces z'", () => {
+      expect(MoveTransformer.rotationToNotation('z', -1)).toBe("z'");
+    });
+
+    it('produces z2', () => {
+      expect(MoveTransformer.rotationToNotation('z', 2)).toBe('z2');
+    });
+  });
+
   describe('toDisplayNotation', () => {
     it('produces correct notation string for identity', () => {
       expect(MoveTransformer.toDisplayNotation(rawMove('R', -1), IDENTITY)).toBe("R'");

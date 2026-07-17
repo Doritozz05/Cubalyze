@@ -100,6 +100,14 @@ export class MoveTransformer {
   }
 
   /**
+   * Convert a rotation axis+direction to its notation string (e.g. "y", "x'", "z2").
+   * Used for whole-cube rotation events from the OrientationTracker.
+   */
+  static rotationToNotation(axis: 'x' | 'y' | 'z', direction: CubeMoveDirection): string {
+    return axis + (direction === -1 ? "'" : direction === 2 ? '2' : '');
+  }
+
+  /**
    * Convert a raw CubeMoveEvent to a display notation string.
    */
   static toDisplayNotation(

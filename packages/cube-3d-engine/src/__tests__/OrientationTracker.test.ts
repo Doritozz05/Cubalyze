@@ -287,6 +287,72 @@ describe('OrientationTracker', () => {
     });
   });
 
+  describe('enableGyroSupport (late hardware detection)', () => {
+    it('allows processing gyro events after being enabled post-construction', () => {
+      const t = new OrientationTracker({ gyroSupported: false });
+      t.setCalibration(IDENTITY);
+
+      // Should ignore gyro events before enable
+      t.update(gyroEvent(rotQuat('y', -90)));
+      expect(t.current.id).toBe(0); // still identity
+
+      // Enable gyro support
+      t.enableGyroSupport();
+      expect(t.capabilitiesInfo.gyroSupported).toBe(true);
+      expect(t.capabilitiesInfo.hasIMU).toBe(true);
+
+      // Now should process gyro events
+      t.update(gyroEvent(rotQuat('y', -90)));
+      expect(t.current.faceMap).toEqual({
+        U: 'U', D: 'D', F: 'R', B: 'L', L: 'F', R: 'B',
+      });
+    });
+
+    it('preserves calibration state when enabling gyro', () => {
+      const t = new OrientationTracker({ gyroSupported: false });
+      t.setCalibration(rotQuat('y', -90));
+      expect(t.calibrated).toBe(true);
+
+      // Enable gyro
+      t.enableGyroSupport();
+
+      // Calibration should still be valid
+      expect(t.calibrated).toBe(true);
+
+      // Send the calibration quaternion → should snap to identity
+      t.update(gyroEvent(rotQuat('y', -90)));
+      expect(t.current.id).toBe(0);
+    });
+
+    it('is idempotent (safe to call multiple times)', () => {
+      const t = new OrientationTracker({ gyroSupported: false });
+      t.enableGyroSupport();
+      t.enableGyroSupport(); // second call
+      expect(t.capabilitiesInfo.gyroSupported).toBe(true);
+    });
+
+    it('emits orientation and rotation events after late enable', () => {
+      const t = new OrientationTracker({ gyroSupported: false });
+      t.setCalibration(IDENTITY);
+
+      const orientations: CubeOrientation[] = [];
+      const rotations: RotationEvent[] = [];
+      t.orientation$.subscribe((o) => orientations.push(o));
+      t.rotationEvents$.subscribe((r) => rotations.push(r));
+
+      // Enable late
+      t.enableGyroSupport();
+
+      // Now rotate
+      t.update(gyroEvent(rotQuat('x', -90)));
+
+      expect(orientations).toHaveLength(1);
+      expect(rotations).toHaveLength(1);
+      expect(rotations[0].axis).toBe('x');
+      expect(rotations[0].direction).toBe(1);
+    });
+  });
+
   describe('rapid orientation changes', () => {
     it('handles multiple rapid changes', () => {
       tracker.setCalibration(IDENTITY);

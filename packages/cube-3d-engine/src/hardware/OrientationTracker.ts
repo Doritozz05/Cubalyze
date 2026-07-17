@@ -26,7 +26,8 @@ import { OrientationTable, type OrientationEntry } from '@cubeforge/math-core';
 export class OrientationTracker {
   // ── Configuration ──
   private readonly confidenceThreshold: number;
-  private readonly capabilities: OrientationCapabilities;
+  // Not readonly because enableGyroSupport() mutates properties at runtime
+  private capabilities: OrientationCapabilities;
 
   // ── State ──
   private _current: OrientationEntry;
@@ -147,6 +148,20 @@ export class OrientationTracker {
       this._current = OrientationTable.IDENTITY;
       this.emitOrientationChange(prev, this._current);
     }
+  }
+
+  /**
+   * Enable gyro support after construction.
+   *
+   * Allows the tracker to start processing gyro events when the hardware
+   * capability is discovered late (e.g. after the HARDWARE event arrives
+   * post-connection). Safe to call multiple times — idempotent.
+   *
+   * The tracker's calibration state is preserved; no reset occurs.
+   */
+  public enableGyroSupport(): void {
+    this.capabilities.gyroSupported = true;
+    this.capabilities.hasIMU = true;
   }
 
   dispose(): void {

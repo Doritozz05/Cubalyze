@@ -15,6 +15,7 @@
     "@cubeforge/database": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
     "@cubeforge/math-core": "workspace:*",
+    "@cubeforge/state": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
     "@cubeforge/types": "workspace:*",
     "@hookform/resolvers": "^5.4.0",

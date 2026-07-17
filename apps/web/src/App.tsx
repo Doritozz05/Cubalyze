@@ -55,7 +55,6 @@ export default function App() {
     states: scrambleStates,
     isScrambled,
     currentIndex,
-    errorMoves,
     displayErrorMoves,
     pendingHalfDouble,
     needsReset,
