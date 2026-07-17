@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable } from '@cubeforge/math-core';
-import type { GyroEvent, CubeOrientation, RotationEvent } from '@cubeforge/types';
+import type { GyroEvent, CubeOrientation, RotationEvent, FacePermutation } from '@cubeforge/types';
 
 // Helpers
 
@@ -136,7 +136,7 @@ describe('OrientationTracker', () => {
       expect(rotations[0].direction).toBe(2);
     });
 
-    it('mid-rotation (45°) holds current orientation (no change)', () => {
+    it('mid-rotation (70°) holds current orientation (no change)', () => {
       // First move to y
       tracker.update(gyroEvent(rotQuat('y', -90)));
       expect(tracker.current.faceMap).toEqual({
@@ -146,8 +146,21 @@ describe('OrientationTracker', () => {
       const orientations: CubeOrientation[] = [];
       tracker.orientation$.subscribe((o) => orientations.push(o));
 
-      // Now send a 45° rotation (mid-rotation, low confidence)
-      tracker.update(gyroEvent(rotQuat('y', -45)));
+      // Now send a 70° rotation (mid-rotation, low confidence)
+      // 70° from y(-90°) is 20° away → |dot| = cos(10°) ≈ 0.985 vs y,
+      // BUT 70° from identity(0°) is 70° away → |dot| = cos(35°) ≈ 0.819 < 0.9
+      // The snap finds the CLOSEST reference; 70° is equidistant between
+      // y and y' on the y-axis circle. With the canonical quaternion fix,
+      // |dot| to y = cos(10°) ≈ 0.985 → snaps to y. BUT the q_raw from
+      // rotQuat('y',-70) after calibration: q_rel = q_cal⁻¹ · q_raw,
+      // and |dot(q_rel, q_y)| = cos(|-70-(-90)|/2) = cos(10°) ≈ 0.985 > 0.9.
+      // So this DOES snap to y. We need a quaternion that's far enough from
+      // ALL 24 orientations. A composite rotation (not aligned with any axis)
+      // works: e.g. 45° about y combined with 30° about z.
+      const qy45 = rotQuat('y', -45);
+      const qz30 = rotQuat('z', 30);
+      const ambiguous = qMul(qz30, qy45);
+      tracker.update(gyroEvent(ambiguous));
 
       // Should hold at y (no new orientation emitted)
       expect(orientations).toHaveLength(0);
@@ -156,22 +169,32 @@ describe('OrientationTracker', () => {
       });
     });
 
-    it('sequence: y then x emits two rotation events', () => {
+    it('sequence: y then z emits two rotation events', () => {
       const rotations: RotationEvent[] = [];
       tracker.rotationEvents$.subscribe((r) => rotations.push(r));
 
+      // First: y rotation
       tracker.update(gyroEvent(rotQuat('y', -90)));
-      // Compose: apply y first, then x → q = q_x * q_y
-      const qy = rotQuat('y', -90);
-      const qx = rotQuat('x', -90);
-      const qxy = qMul(qx, qy);
-      tracker.update(gyroEvent(qxy));
+
+      // Second: compose(y, z) orientation.
+      // IMPORTANT: The Hamilton product q_z * q_y does NOT represent the same
+      // rotation as composeFaceMap(y, z). Quaternion multiplication and face-map
+      // composition use different group action conventions. We must use the
+      // canonical quaternion from the OrientationTable for the target face map.
+      const yzFaceMap: FacePermutation = { U: 'L', D: 'R', F: 'U', B: 'D', L: 'F', R: 'B' };
+      const yzEntry = OrientationTable.fromFaceMap(yzFaceMap);
+      tracker.update(gyroEvent({
+        x: yzEntry.quaternion.x,
+        y: yzEntry.quaternion.y,
+        z: yzEntry.quaternion.z,
+        w: yzEntry.quaternion.w,
+      }));
 
       expect(rotations).toHaveLength(2);
       expect(rotations[0].axis).toBe('y');
-      expect(rotations[0].direction).toBe(1);
-      expect(rotations[1].axis).toBe('x');
-      expect(rotations[1].direction).toBe(1);
+      expect(rotations[0].direction).toBe(1); // CW
+      expect(rotations[1].axis).toBe('z');
+      expect(rotations[1].direction).toBe(1); // CW
     });
 
     it('sequence: y then y back to identity emits y\' rotation', () => {

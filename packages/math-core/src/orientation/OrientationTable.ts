@@ -91,53 +91,140 @@ function faceMapKey(map: FacePermutation): string {
   return ALL_FACES.map((f) => map[f]).join('');
 }
 
+// ─── Canonical quaternion from face map ──────────────────────────────────────
+//
+// The BFS builds quaternions by composing base rotation quaternions. Due to
+// quaternion commutativity for certain rotation pairs (e.g. q_x*q_y = q_x'*q_y
+// for 90° rotations about orthogonal axes), different BFS paths can produce
+// the same quaternion for DIFFERENT face maps. This causes snap() to match the
+// wrong orientation entry.
+//
+// Fix: after BFS, recompute each quaternion directly from its face map using
+// the rotation matrix method. This guarantees a 1:1 mapping from face map to
+// quaternion, independent of BFS path.
+
+const FACE_NORMALS: Record<CubeFace, [number, number, number]> = {
+  U: [0, 1, 0],
+  D: [0, -1, 0],
+  F: [0, 0, 1],
+  B: [0, 0, -1],
+  L: [-1, 0, 0],
+  R: [1, 0, 0],
+};
+
+/**
+ * Compute the canonical quaternion for a face permutation by deriving the
+ * rotation matrix from how the face normals transform, then converting to
+ * a quaternion using Shepperd's method.
+ *
+ * Face map: position → original face. So faceMap['F'] = 'R' means the original
+ * R face is now at position F, i.e. the R normal (1,0,0) has been rotated to
+ * the F normal direction (0,0,1). Thus the rotation matrix column for F is
+ * FACE_NORMALS['R'].
+ */
+function canonicalQuaternion(map: FacePermutation): { x: number; y: number; z: number; w: number } {
+  // Build rotation matrix columns from the face normal mapping.
+  // R = [col_right | col_up | col_front] where each column is the original
+  // face normal that now occupies that position.
+  const r = FACE_NORMALS[map.R]; // column 0 (right axis)
+  const u = FACE_NORMALS[map.U]; // column 1 (up axis)
+  const f = FACE_NORMALS[map.F]; // column 2 (front axis)
+
+  // The rotation matrix R satisfies: R * FACE_NORMALS[map[pos]] = FACE_NORMALS[pos]
+  // Let A = [r | u | f] (columns). Then R * A = I, so R = A^T.
+  // Therefore the rows of R are r, u, f:
+  const m00 = r[0], m01 = r[1], m02 = r[2];
+  const m10 = u[0], m11 = u[1], m12 = u[2];
+  const m20 = f[0], m21 = f[1], m22 = f[2];
+
+  const trace = m00 + m11 + m22;
+  let qx: number, qy: number, qz: number, qw: number;
+
+  if (trace > 0) {
+    const s = 0.5 / Math.sqrt(trace + 1.0);
+    qw = 0.25 / s;
+    qx = (m21 - m12) * s;
+    qy = (m02 - m20) * s;
+    qz = (m10 - m01) * s;
+  } else if (m00 > m11 && m00 > m22) {
+    const s = 2.0 * Math.sqrt(1.0 + m00 - m11 - m22);
+    qw = (m21 - m12) / s;
+    qx = 0.25 * s;
+    qy = (m01 + m10) / s;
+    qz = (m02 + m20) / s;
+  } else if (m11 > m22) {
+    const s = 2.0 * Math.sqrt(1.0 + m11 - m00 - m22);
+    qw = (m02 - m20) / s;
+    qx = (m01 + m10) / s;
+    qy = 0.25 * s;
+    qz = (m12 + m21) / s;
+  } else {
+    const s = 2.0 * Math.sqrt(1.0 + m22 - m00 - m11);
+    qw = (m10 - m01) / s;
+    qx = (m02 + m20) / s;
+    qy = (m12 + m21) / s;
+    qz = 0.25 * s;
+  }
+
+  // Normalize
+  const len = Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+  qx /= len;
+  qy /= len;
+  qz /= len;
+  qw /= len;
+
+  // Canonical sign: ensure w > 0, or if w == 0, ensure first non-zero
+  // component is positive. This ensures q and -q map to the same entry.
+  if (qw < 0 || (qw === 0 && (qx < 0 || (qx === 0 && (qy < 0 || (qy === 0 && qz < 0)))))) {
+    qx = -qx;
+    qy = -qy;
+    qz = -qz;
+    qw = -qw;
+  }
+
+  return { x: qx, y: qy, z: qz, w: qw };
+}
+
 function buildTable(): OrientationEntry[] {
-  const identity: OrientationEntry = {
-    id: 0,
-    quaternion: new Quaternion(0, 0, 0, 1),
-    faceMap: IDENTITY_MAP,
-    label: faceMapLabel(IDENTITY_MAP),
-  };
+  // Phase 1: BFS to discover all 24 unique face maps.
+  // We only track face maps here (not quaternions) because different BFS paths
+  // can produce the same face map with different quaternions due to quaternion
+  // commutativity for certain rotation pairs.
+  const faceMaps: FacePermutation[] = [IDENTITY_MAP];
+  const seen = new Set<string>();
+  seen.add(faceMapKey(IDENTITY_MAP));
 
-  const entries: OrientationEntry[] = [identity];
-  const seen = new Map<string, number>();
-  seen.set(faceMapKey(IDENTITY_MAP), 0);
-
-  const queue: OrientationEntry[] = [identity];
+  const queue: FacePermutation[] = [IDENTITY_MAP];
 
   while (queue.length > 0) {
     const current = queue.shift()!;
 
     for (const rot of BASE_ROTATIONS) {
-      const newMap = composeFaceMap(current.faceMap, rot.faceMap);
+      const newMap = composeFaceMap(current, rot.faceMap);
       const key = faceMapKey(newMap);
 
       if (!seen.has(key)) {
-        // Compose quaternions: apply current first, then rot.
-        // In Three.js, q.multiply(q2) sets q = q * q2, meaning q is applied
-        // first, then q2. We want: apply current first, then rot.
-        // So q_new = q_rot * q_current, which is q_rot.multiply(q_current).
-        const axisVec = new Vector3(
-          rot.axis === 'x' ? 1 : 0,
-          rot.axis === 'y' ? 1 : 0,
-          rot.axis === 'z' ? 1 : 0,
-        );
-        const q = new Quaternion().setFromAxisAngle(axisVec, rot.angle);
-        q.multiply(current.quaternion);
-
-        const entry: OrientationEntry = {
-          id: entries.length,
-          quaternion: q,
-          faceMap: newMap,
-          label: faceMapLabel(newMap),
-        };
-
-        entries.push(entry);
-        seen.set(key, entries.length - 1);
-        queue.push(entry);
+        seen.add(key);
+        faceMaps.push(newMap);
+        queue.push(newMap);
       }
     }
   }
+
+  // Phase 2: Compute canonical quaternions directly from face maps.
+  // This guarantees each orientation has the uniquely correct quaternion,
+  // independent of which BFS path discovered it first.
+  const entries: OrientationEntry[] = faceMaps.map((map, i) => ({
+    id: i,
+    quaternion: new Quaternion(
+      canonicalQuaternion(map).x,
+      canonicalQuaternion(map).y,
+      canonicalQuaternion(map).z,
+      canonicalQuaternion(map).w,
+    ),
+    faceMap: map,
+    label: faceMapLabel(map),
+  }));
 
   return entries;
 }

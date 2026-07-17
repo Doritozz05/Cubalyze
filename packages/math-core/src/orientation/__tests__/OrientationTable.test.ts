@@ -153,10 +153,13 @@ describe('OrientationTable', () => {
     });
 
     it('composed orientation: x then y has a correct quaternion (not just face map)', () => {
-      // Compose x then y manually: q = q_y * q_x
+      // composeFaceMap(a, b) = b[a[pos]] represents "b first, then a" in physical
+      // terms (due to the permutation composition convention: σ_b ∘ σ_a).
+      // In Hamilton quaternion convention, q_a * q_b also means "b first, then a".
+      // So composeFaceMap(x, y) corresponds to qx * qy.
       const qx = rotQuat('x', -90);
       const qy = rotQuat('y', -90);
-      const qxy = qy.clone().multiply(qx);
+      const qxy = qx.clone().multiply(qy); // "y first, then x" = composeFaceMap(x, y)
       // Find the table entry for compose(x, y) by face map
       const xEntry = OrientationTable.fromFaceMap({
         U: 'F', D: 'B', F: 'D', B: 'U', L: 'L', R: 'R',
