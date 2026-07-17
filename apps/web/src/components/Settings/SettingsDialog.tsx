@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -17,24 +18,55 @@ export interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const sectionVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 16 : -16,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 16 : -16,
+    opacity: 0,
+  }),
+};
+
 /**
- * Main Settings dialog with sidebar navigation and modular section content.
+ * Main Settings dialog.
  *
- * Architecture:
- * - Left sidebar: section list with icons and labels
- * - Right content: selected section's content
- * - Sections are lazily matched — adding a new section only requires
- *   adding it to SETTINGS_SECTIONS and a content component here.
+ * Features:
+ * - Wide, tall panel for a premium desktop feel
+ * - Section transitions animated with framer-motion
+ * - Clean header area with title + description
+ * - Modular: each section is a separate component
  */
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [activeSection, setActiveSection] = useState('appearance');
+  const prevSection = useRef('appearance');
+  // Keep a ref to avoid recreating callbacks on every section change
+  const activeSectionRef = useRef(activeSection);
+  activeSectionRef.current = activeSection;
 
-  // Reset to appearance when opening
+  // Reset to first content section on open
   useEffect(() => {
     if (open) {
       setActiveSection('appearance');
+      prevSection.current = 'appearance';
     }
   }, [open]);
+
+  const activeIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === activeSection);
+  const prevIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === prevSection.current);
+  const direction = activeIndex >= prevIndex ? 1 : -1;
+
+  const handleSelectSection = useCallback((id: string) => {
+    prevSection.current = activeSectionRef.current;
+    setActiveSection(id);
+  }, []);
+
+  const activeMeta = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
@@ -53,7 +85,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${SETTINGS_DIALOG_WIDTH} h-[520px] overflow-hidden p-0`}
+        className={`${SETTINGS_DIALOG_WIDTH} max-h-[85vh] h-[580px] overflow-hidden p-0`}
+        showCloseButton={false}
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Settings</DialogTitle>
@@ -62,11 +95,37 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <div className="flex h-full">
           <SettingsSidebar
             activeSection={activeSection}
-            onSelectSection={setActiveSection}
+            onSelectSection={handleSelectSection}
           />
 
-          <div className="min-w-0 flex-1 overflow-y-auto p-6">
-            {renderContent()}
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* Section header */}
+            <div className="shrink-0 border-b border-line px-8 py-6">
+              <h2 className="text-[0.95rem] font-semibold text-ink">
+                {activeMeta?.label ?? 'Settings'}
+              </h2>
+              <p className="mt-1 text-[0.78rem] text-ink-3">
+                {activeMeta?.description ?? ''}
+              </p>
+            </div>
+
+            {/* Section content with animated transitions */}
+            <div className="relative min-h-0 flex-1 overflow-y-auto px-8 py-6">
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.div
+                  key={activeSection}
+                  custom={direction}
+                  variants={sectionVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                  className="h-full"
+                >
+                  {renderContent()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </DialogContent>

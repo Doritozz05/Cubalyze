@@ -61,5 +61,5 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   },
 ];
 
-export const SETTINGS_DIALOG_WIDTH = 'max-w-2xl';
-export const SIDEBAR_WIDTH = 200;
+export const SETTINGS_DIALOG_WIDTH = 'sm:max-w-[960px]';
+export const SIDEBAR_WIDTH = 220;

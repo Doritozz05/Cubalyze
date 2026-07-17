@@ -1,5 +1,6 @@
 'use client';
 
+import { motion, LayoutGroup } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { SETTINGS_SECTIONS, type SettingsSection, SIDEBAR_WIDTH } from './settings.constants';
 
@@ -11,8 +12,8 @@ export interface SettingsSidebarProps {
 /**
  * Sidebar navigation for the Settings dialog.
  *
- * Shows all available setting sections with their icons and labels.
- * The active section is highlighted with an accent background and indicator.
+ * Features a shared layout animation for the active background pill
+ * and subtle hover transitions. Uses ink palette — no green.
  */
 export function SettingsSidebar({
   activeSection,
@@ -20,17 +21,23 @@ export function SettingsSidebar({
 }: SettingsSidebarProps) {
   return (
     <nav
-      className="flex shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas py-2"
+      className="flex shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas px-2 py-3"
       style={{ width: SIDEBAR_WIDTH }}
     >
-      {SETTINGS_SECTIONS.map((section) => (
-        <SettingsSidebarItem
-          key={section.id}
-          section={section}
-          isActive={activeSection === section.id}
-          onSelect={() => onSelectSection(section.id)}
-        />
-      ))}
+      <p className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 select-none">
+        Preferences
+      </p>
+
+      <LayoutGroup>
+        {SETTINGS_SECTIONS.map((section) => (
+          <SettingsSidebarItem
+            key={section.id}
+            section={section}
+            isActive={activeSection === section.id}
+            onSelect={() => onSelectSection(section.id)}
+          />
+        ))}
+      </LayoutGroup>
     </nav>
   );
 }
@@ -50,17 +57,28 @@ function SettingsSidebarItem({
     <button
       onClick={onSelect}
       className={cn(
-        'relative flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors',
+        'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[0.82rem] transition-colors duration-150',
         isActive
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+          ? 'text-ink'
+          : 'text-ink-3 hover:bg-surface hover:text-ink-2',
       )}
     >
       {isActive && (
-        <div className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-ready" />
+        <motion.div
+          layoutId="settings-active-bg"
+          className="absolute inset-0 rounded-lg bg-surface"
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+        />
       )}
-      <Icon className="size-4 shrink-0" />
-      <span className="truncate">{section.label}</span>
+
+      <Icon
+        className={cn(
+          'relative z-10 size-[1.1rem] shrink-0 transition-colors duration-150',
+          isActive ? 'text-ink' : 'text-ink-3 group-hover:text-ink-2',
+        )}
+      />
+
+      <span className="relative z-10 truncate">{section.label}</span>
     </button>
   );
 }

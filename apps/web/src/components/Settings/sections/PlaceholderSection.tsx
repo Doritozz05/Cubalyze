@@ -9,10 +9,10 @@ export interface PlaceholderSectionProps {
 }
 
 /**
- * Placeholder for settings sections that are not yet implemented.
+ * Placeholder for settings sections not yet implemented.
  *
- * Shows the section icon, label, and a friendly message indicating
- * the section is ready for future configuration options.
+ * Shows a polished empty state with the section icon and a friendly
+ * message. The section label is already displayed in the dialog header.
  */
 export function PlaceholderSection({
   section,
@@ -21,21 +21,17 @@ export function PlaceholderSection({
   const Icon = section.icon;
 
   return (
-    <div className={cn('flex flex-col', className)}>
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-md bg-sidebar-accent text-ink-3">
-          <Icon className="size-4" />
+    <div className={cn('flex h-full flex-col', className)}>
+      <div className="flex flex-1 flex-col items-center justify-center gap-5">
+        <div className="flex size-16 items-center justify-center rounded-2xl border border-line bg-surface shadow-sm">
+          <Icon className="size-6 text-ink-3" />
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-ink">{section.label}</h3>
-          <p className="text-[0.75rem] text-ink-3">{section.description}</p>
-        </div>
-      </div>
 
-      <div className="flex flex-1 items-center justify-center rounded-lg border border-line bg-surface py-16">
-        <p className="text-sm text-ink-3">
-          Settings coming soon
-        </p>
+        <div className="text-center">
+          <p className="mx-auto max-w-xs text-[0.82rem] leading-relaxed text-ink-3">
+            This section is ready for configuration. Check back soon for new options.
+          </p>
+        </div>
       </div>
     </div>
   );
