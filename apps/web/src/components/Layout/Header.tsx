@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Timer, Plus, History, Pencil, Trash2, Check, X, Box, PanelRight, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Select,
   SelectContent,
@@ -308,8 +307,6 @@ export function Header({
           >
             <PanelRight className="size-4" />
           </Button>
-
-          <ThemeToggle />
         </div>
       </div>
 
