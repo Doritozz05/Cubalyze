@@ -8,6 +8,7 @@ export * from './Min2PhaseSolver';
 // Cube orientation system (dynamic notation)
 export * from './orientation/OrientationTable';
 export * from './orientation/MoveTransformer';
+export * from './orientation/MoveNotationCompactor';
 
 // Method definitions and phase detectors
 export * from './methods/IMethodDefinition';

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore } from "@cubeforge/state";
-import { MoveTransformer } from "@cubeforge/math-core";
+import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
 import type { CubeMoveEvent, CubeOrientation, RotationEvent } from "@cubeforge/types";
 
 export interface Cube3DPanelProps {
@@ -56,7 +56,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
         const orientation = orientationStore.getState().orientation;
         const notation = MoveTransformer.toDisplayNotation(ev, orientation);
         setRecentMoves(prev => {
-          const next = [...prev, notation];
+          const next = compactMoveNotation([...prev, notation]);
           return next.slice(-15);
         });
       });
@@ -107,7 +107,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
             Comlink.proxy((e: RotationEvent) => {
               const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
               setRecentMoves(prev => {
-                const next = [...prev, notation];
+                const next = compactMoveNotation([...prev, notation]);
                 return next.slice(-15);
               });
             }),
@@ -162,7 +162,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
             Comlink.proxy((e: RotationEvent) => {
               const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
               setRecentMoves(prev => {
-                const next = [...prev, notation];
+                const next = compactMoveNotation([...prev, notation]);
                 return next.slice(-15);
               });
             }),

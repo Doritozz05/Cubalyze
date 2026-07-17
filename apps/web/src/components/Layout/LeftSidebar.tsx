@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
-import { Timer, Grid3x3, Sun, Moon } from "lucide-react";
+import { Timer, Grid3x3, Sun, Moon, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -19,6 +19,7 @@ import {
   UNHOVER_DELAY,
   SIDEBAR_MOTION,
 } from "./sidebar.constants";
+import { SettingsDialog } from "@/components/Settings/SettingsDialog";
 
 export interface LeftSidebarProps {
   timerActive?: boolean;
@@ -37,6 +38,7 @@ export function LeftSidebar({
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => setMounted(true), []);
@@ -98,6 +100,12 @@ export function LeftSidebar({
       {/* Footer */}
       <div className="border-t border-sidebar-border p-2 space-y-1">
         <SidebarFooterItem
+          icon={Settings}
+          label="Settings"
+          isHovered={isHovered}
+          onClick={() => setSettingsOpen(true)}
+        />
+        <SidebarFooterItem
           icon={mounted && isDark ? Sun : Moon}
           label={mounted && isDark ? "Light mode" : "Dark mode"}
           isHovered={isHovered}
@@ -110,30 +118,37 @@ export function LeftSidebar({
   // Mobile: render as Sheet (trigger rendered in header)
   if (isMobile) {
     return (
-      <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="left" className="w-56 p-0">
-          <SheetHeader className="sr-only">
-            <SheetTitle>Navigation</SheetTitle>
-          </SheetHeader>
-          <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-            {sidebarContent}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <>
+        <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
+          <SheetContent side="left" className="w-56 p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Navigation</SheetTitle>
+            </SheetHeader>
+            <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+              {sidebarContent}
+            </div>
+          </SheetContent>
+        </Sheet>
+        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      </>
     );
   }
 
   // Desktop: fixed, hover-to-expand
   return (
-    <motion.aside
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH }}
-      transition={SIDEBAR_MOTION.container}
-      className="fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
-    >
-      {sidebarContent}
-    </motion.aside>
+    <>
+      <motion.aside
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH }}
+        transition={SIDEBAR_MOTION.container}
+        className="fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
+      >
+        {sidebarContent}
+      </motion.aside>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </>
   );
 }
 

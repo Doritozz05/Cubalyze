@@ -15,7 +15,7 @@
 
 import { useCallback } from 'react';
 import { useStore } from 'zustand';
-import { orientationStore } from '@cubeforge/state';
+import { orientationStore, preferencesStore } from '@cubeforge/state';
 import { MoveTransformer } from '@cubeforge/math-core';
 import type {
   CubeMoveEvent,
@@ -54,10 +54,14 @@ export function useOrientation(): UseOrientationResult {
     [orientation],
   );
 
+  const scrambleFollowsCube = useStore(preferencesStore, (s) => s.scrambleFollowsCube);
+
   const remapScramble = useCallback(
     (scramble: string): string =>
-      MoveTransformer.remapScrambleString(scramble, orientation),
-    [orientation],
+      scrambleFollowsCube
+        ? MoveTransformer.remapScrambleString(scramble, orientation)
+        : scramble,
+    [orientation, scrambleFollowsCube],
   );
 
   return {
