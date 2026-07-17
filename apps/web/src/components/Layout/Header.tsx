@@ -117,7 +117,7 @@ export function Header({
   return (
     <header
       className={cn(
-        "sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur",
+        "fixed inset-x-0 md:left-14 top-0 z-20 border-b border-line bg-surface",
         className,
       )}
     >

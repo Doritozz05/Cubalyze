@@ -163,7 +163,7 @@ export function MainLayout({
     >
       {leftSidebar}
 
-      <div className="flex flex-1 flex-col md:pl-14">
+      <div className="flex flex-1 flex-col pt-14 md:pl-14">
         <Header
           pb={pb}
           sessionCount={sessionCount}
