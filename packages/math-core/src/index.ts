@@ -5,6 +5,10 @@ export * from './RandomStateGenerator';
 export * from './FaceletStringConverter';
 export * from './Min2PhaseSolver';
 
+// Cube orientation system (dynamic notation)
+export * from './orientation/OrientationTable';
+export * from './orientation/MoveTransformer';
+
 // Method definitions and phase detectors
 export * from './methods/IMethodDefinition';
 export * from './methods/StateMatcher';

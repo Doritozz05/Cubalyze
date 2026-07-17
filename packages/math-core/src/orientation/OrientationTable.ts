@@ -1,0 +1,247 @@
+import { Quaternion, Vector3 } from 'three';
+import type { CubeFace, FacePermutation } from '@cubeforge/types';
+
+/**
+ * A single entry in the 24-orientation table.
+ *
+ * The rotation group of the cube (octahedral group O ≅ S₄) has exactly 24
+ * elements. Each element corresponds to a permutation of the body axes that
+ * preserves orientation (determinant +1).
+ *
+ * See: docs/02-architecture/Dynamic_Notation_Orientation_System.md
+ */
+export interface OrientationEntry {
+  /** Numeric ID (0–23). ID 0 is always the identity. */
+  id: number;
+  /** Unit quaternion in Three.js convention (Y-up, right-handed). */
+  quaternion: Quaternion;
+  /** Position → original face permutation. Used for move remapping. */
+  faceMap: FacePermutation;
+  /** Human-readable label for debugging. */
+  label: string;
+}
+
+// ─── Face utilities ──────────────────────────────────────────────────────────
+
+const ALL_FACES: CubeFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
+
+function invertFaceMap(map: FacePermutation): FacePermutation {
+  const inv: Partial<Record<CubeFace, CubeFace>> = {};
+  for (const pos of ALL_FACES) {
+    inv[pos] = 'U'; // placeholder
+  }
+  // map[position] = original → inv[original] = position
+  for (const pos of ALL_FACES) {
+    inv[map[pos]] = pos;
+  }
+  return inv as FacePermutation;
+}
+
+function composeFaceMap(a: FacePermutation, b: FacePermutation): FacePermutation {
+  // Apply a first, then b: result(pos) = b(a(pos))
+  const result: Partial<Record<CubeFace, CubeFace>> = {};
+  for (const pos of ALL_FACES) {
+    result[pos] = b[a[pos]];
+  }
+  return result as FacePermutation;
+}
+
+function faceMapLabel(map: FacePermutation): string {
+  return `F:${map.F} U:${map.U} R:${map.R}`;
+}
+
+// ─── Base rotation definitions ───────────────────────────────────────────────
+//
+// These face maps are VERIFIED against the project's own CubeState.ts edge
+// permutations (baseU.ep, baseR.ep, baseF.ep). They answer:
+//   "After rotation X, which original face now occupies each position?"
+//
+// x = same as R:   F→U, U→B, B→D, D→F  (cycle F→U→B→D→F)
+// y = same as U:   B→R, R→F, F→L, L→B  (cycle B→R→F→L→B)
+// z = same as F:   L→U, U→R, R→D, D→L  (cycle L→U→R→D→L)
+
+const IDENTITY_MAP: FacePermutation = { U: 'U', D: 'D', F: 'F', B: 'B', L: 'L', R: 'R' };
+
+const BASE_ROTATIONS: { name: string; faceMap: FacePermutation; axis: 'x' | 'y' | 'z'; angle: number }[] = [
+  // x = same direction as R (clockwise looking from +X)
+  // F→U, U→B, B→D, D→F. Position→original: U:F, D:B, F:D, B:U, L:L, R:R
+  { name: 'x',  faceMap: { U: 'F', D: 'B', F: 'D', B: 'U', L: 'L', R: 'R' }, axis: 'x', angle: -Math.PI / 2 },
+  { name: "x'", faceMap: { U: 'B', D: 'F', F: 'U', B: 'D', L: 'L', R: 'R' }, axis: 'x', angle:  Math.PI / 2 },
+  { name: 'x2', faceMap: { U: 'D', D: 'U', F: 'B', B: 'F', L: 'L', R: 'R' }, axis: 'x', angle:  Math.PI },
+  // y = same direction as U (clockwise looking from +Y / above)
+  // B→R, R→F, F→L, L→B. Position→original: U:U, D:D, F:R, B:L, L:F, R:B
+  { name: 'y',  faceMap: { U: 'U', D: 'D', F: 'R', B: 'L', L: 'F', R: 'B' }, axis: 'y', angle: -Math.PI / 2 },
+  { name: "y'", faceMap: { U: 'U', D: 'D', F: 'L', B: 'R', L: 'B', R: 'F' }, axis: 'y', angle:  Math.PI / 2 },
+  { name: 'y2', faceMap: { U: 'U', D: 'D', F: 'B', B: 'F', L: 'R', R: 'L' }, axis: 'y', angle:  Math.PI },
+  // z = same direction as F (clockwise looking from +Z / front)
+  // L→U, U→R, R→D, D→L. Position→original: U:L, D:R, F:F, B:B, L:D, R:U
+  { name: 'z',  faceMap: { U: 'L', D: 'R', F: 'F', B: 'B', L: 'D', R: 'U' }, axis: 'z', angle: -Math.PI / 2 },
+  { name: "z'", faceMap: { U: 'R', D: 'L', F: 'F', B: 'B', L: 'U', R: 'D' }, axis: 'z', angle:  Math.PI / 2 },
+  { name: 'z2', faceMap: { U: 'D', D: 'U', F: 'F', B: 'B', L: 'R', R: 'L' }, axis: 'z', angle:  Math.PI },
+];
+
+// ─── Build the 24-orientation table ──────────────────────────────────────────
+//
+// We BFS from identity, applying each of the 9 base rotations. Since the
+// group has only 24 elements, this terminates quickly. We deduplicate by
+// face-map equality (which is equivalent to quaternion equivalence up to
+// the q ≡ -q double cover).
+
+function faceMapKey(map: FacePermutation): string {
+  return ALL_FACES.map((f) => map[f]).join('');
+}
+
+function buildTable(): OrientationEntry[] {
+  const identity: OrientationEntry = {
+    id: 0,
+    quaternion: new Quaternion(0, 0, 0, 1),
+    faceMap: IDENTITY_MAP,
+    label: faceMapLabel(IDENTITY_MAP),
+  };
+
+  const entries: OrientationEntry[] = [identity];
+  const seen = new Map<string, number>();
+  seen.set(faceMapKey(IDENTITY_MAP), 0);
+
+  const queue: OrientationEntry[] = [identity];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+
+    for (const rot of BASE_ROTATIONS) {
+      const newMap = composeFaceMap(current.faceMap, rot.faceMap);
+      const key = faceMapKey(newMap);
+
+      if (!seen.has(key)) {
+        // Compose quaternions: apply current first, then rot.
+        // q_new = q_rot * q_current (quaternion multiplication, rot after current)
+        const axisVec = new Vector3(
+          rot.axis === 'x' ? 1 : 0,
+          rot.axis === 'y' ? 1 : 0,
+          rot.axis === 'z' ? 1 : 0,
+        );
+        const q = new Quaternion().setFromAxisAngle(axisVec, rot.angle);
+        q.premultiply(current.quaternion);
+
+        const entry: OrientationEntry = {
+          id: entries.length,
+          quaternion: q,
+          faceMap: newMap,
+          label: faceMapLabel(newMap),
+        };
+
+        entries.push(entry);
+        seen.set(key, entries.length - 1);
+        queue.push(entry);
+      }
+    }
+  }
+
+  return entries;
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+export class OrientationTable {
+  /** All 24 cube orientations, pre-computed at module load. */
+  static readonly ENTRIES: OrientationEntry[] = buildTable();
+
+  /** The identity orientation (no rotation). */
+  static readonly IDENTITY: OrientationEntry = OrientationTable.ENTRIES[0];
+
+  /**
+   * Snap an observed quaternion to the nearest of the 24 cube orientations.
+   *
+   * Uses the absolute dot product (because q and -q represent the same
+   * rotation in 3D space). Returns the best match and a confidence value
+   * (0–1, where 1.0 means an exact match).
+   *
+   * @param q The observed quaternion (must be in the same convention as the
+   *          table entries: Three.js right-handed, Y-up, calibrated).
+   * @returns The nearest orientation entry and the |dot product| confidence.
+   */
+  static snap(q: { x: number; y: number; z: number; w: number }): {
+    entry: OrientationEntry;
+    confidence: number;
+  } {
+    const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+    const qLen = Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+    // Guard against zero / non-normalized input
+    const nx = qLen > 0 ? qx / qLen : 0;
+    const ny = qLen > 0 ? qy / qLen : 0;
+    const nz = qLen > 0 ? qz / qLen : 0;
+    const nw = qLen > 0 ? qw / qLen : 1;
+
+    let bestEntry = OrientationTable.IDENTITY;
+    let bestDot = -1;
+
+    for (const entry of OrientationTable.ENTRIES) {
+      const e = entry.quaternion;
+      const dot = Math.abs(nx * e.x + ny * e.y + nz * e.z + nw * e.w);
+      if (dot > bestDot) {
+        bestDot = dot;
+        bestEntry = entry;
+      }
+    }
+
+    return { entry: bestEntry, confidence: bestDot };
+  }
+
+  /**
+   * Find an orientation entry by its face map.
+   * Returns the identity if no match is found (should not happen for valid maps).
+   */
+  static fromFaceMap(map: FacePermutation): OrientationEntry {
+    const key = faceMapKey(map);
+    for (const entry of OrientationTable.ENTRIES) {
+      if (faceMapKey(entry.faceMap) === key) {
+        return entry;
+      }
+    }
+    return OrientationTable.IDENTITY;
+  }
+
+  /**
+   * Compose two orientations: apply `a` first, then `b`.
+   * The resulting face map is `b(a(pos))` and the quaternion is `q_b * q_a`.
+   */
+  static compose(a: OrientationEntry, b: OrientationEntry): OrientationEntry {
+    const newMap = composeFaceMap(a.faceMap, b.faceMap);
+    return OrientationTable.fromFaceMap(newMap);
+  }
+
+  /**
+   * Get the inverse of an orientation (the orientation that, when composed,
+   * returns to identity).
+   */
+  static inverse(entry: OrientationEntry): OrientationEntry {
+    return OrientationTable.fromFaceMap(invertFaceMap(entry.faceMap));
+  }
+
+  /**
+   * Find the base rotation (one of x, x', x2, y, y', y2, z, z', z2) that
+   * transforms `from` into `to`. Returns null if no single base rotation
+   * connects them (they differ by more than one step).
+   *
+   * Used to emit RotationEvent metadata.
+   */
+  static findRotationBetween(
+    from: OrientationEntry,
+    to: OrientationEntry
+  ): { axis: 'x' | 'y' | 'z'; direction: 1 | -1 | 2 } | null {
+    for (const rot of BASE_ROTATIONS) {
+      const candidate = OrientationTable.compose(from, {
+        id: -1,
+        quaternion: new Quaternion(),
+        faceMap: rot.faceMap,
+        label: rot.name,
+      });
+      if (faceMapKey(candidate.faceMap) === faceMapKey(to.faceMap)) {
+        const direction: 1 | -1 | 2 =
+          rot.name.endsWith("'") ? -1 : rot.name.endsWith('2') ? 2 : 1;
+        return { axis: rot.axis, direction };
+      }
+    }
+    return null;
+  }
+}

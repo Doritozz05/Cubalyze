@@ -70,4 +70,8 @@ export interface FaceRotationMapping {
   angleSign: 1 | -1;   // Sign convention for the rotation direction
 }
 
+// ─── Cube Orientation System ────────────────────────────────────────────────
+// Dynamic notation system: adapts move display to the cube's physical orientation.
+// See: docs/02-architecture/Dynamic_Notation_Orientation_System.md
+export * from './orientation';
 
