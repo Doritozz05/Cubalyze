@@ -214,17 +214,15 @@ function buildTable(): OrientationEntry[] {
   // Phase 2: Compute canonical quaternions directly from face maps.
   // This guarantees each orientation has the uniquely correct quaternion,
   // independent of which BFS path discovered it first.
-  const entries: OrientationEntry[] = faceMaps.map((map, i) => ({
-    id: i,
-    quaternion: new Quaternion(
-      canonicalQuaternion(map).x,
-      canonicalQuaternion(map).y,
-      canonicalQuaternion(map).z,
-      canonicalQuaternion(map).w,
-    ),
-    faceMap: map,
-    label: faceMapLabel(map),
-  }));
+  const entries: OrientationEntry[] = faceMaps.map((map, i) => {
+    const q = canonicalQuaternion(map);
+    return {
+      id: i,
+      quaternion: new Quaternion(q.x, q.y, q.z, q.w),
+      faceMap: map,
+      label: faceMapLabel(map),
+    };
+  });
 
   return entries;
 }
