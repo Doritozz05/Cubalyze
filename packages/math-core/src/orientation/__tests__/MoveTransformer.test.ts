@@ -246,5 +246,30 @@ describe('MoveTransformer', () => {
         }
       }
     });
+
+    it('composition homomorphism: toDisplay(toDisplay(m, B), A) === toDisplay(m, compose(A, B)) for all A, B, m', () => {
+      // Note: composeFaceMap(A, B) = σ_B ∘ σ_A, so compose(A,B) represents
+      // "A first, then B". The homomorphism requires applying B then A to match.
+      const directions: (1 | -1 | 2)[] = [1, -1, 2];
+      const faces = ['U', 'D', 'R', 'L', 'F', 'B'] as const;
+
+      for (const entryA of OrientationTable.ENTRIES) {
+        for (const entryB of OrientationTable.ENTRIES) {
+          const composed = OrientationTable.compose(entryA, entryB);
+          for (const face of faces) {
+            for (const dir of directions) {
+              const r = rawMove(face, dir);
+              // Apply B then A
+              const step1 = MoveTransformer.toDisplay(r, entryB);
+              const step2 = MoveTransformer.toDisplay(step1, entryA);
+              // Apply compose(A, B) directly
+              const direct = MoveTransformer.toDisplay(r, composed);
+              expect(step2.face).toBe(direct.face);
+              expect(step2.direction).toBe(direct.direction);
+            }
+          }
+        }
+      }
+    });
   });
 });
