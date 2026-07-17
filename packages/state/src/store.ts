@@ -1,20 +1,70 @@
 import { createStore } from 'zustand/vanilla';
+import { persist } from 'zustand/middleware';
 
+/**
+ * User-controlled preferences for the timer flow.
+ *
+ * - `inspection`            : WCA-style 15s inspection timer before the solve (default ON).
+ * - `scrambleVerification`  : when a Smart Cube is connected, require that the
+ *                             recorded scramble sequence be applied before the
+ *                             solve can start. (default ON).
+ * - `theme`                 : theme preference.
+ * - `scrambleFollowsCube`   : visual preference for the orientation tracking.
+ *
+ * Persisted in localStorage under `cubeforge-prefs` via zustand/middleware so
+ * the state is rehydrated synchronously on cold load. No backend migration
+ * is required.
+ */
 export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+
   /** Whether the scramble display rotates to match cube orientation. */
   scrambleFollowsCube: boolean;
   setScrambleFollowsCube: (value: boolean) => void;
+
+  /** WCA-style 15s inspection timer before the solve. */
+  inspection: boolean;
+  setInspection: (value: boolean) => void;
+
+  /** Require the scramble to be physically applied before solving. */
+  scrambleVerification: boolean;
+  setScrambleVerification: (value: boolean) => void;
 }
 
+// zustand/middleware/persist falls back to a JSON storage backed by the
+// global `localStorage` automatically. We do not pass `storage` so that
+// persist works equally in browser, vitest (jsdom) and any future SSR
+// env that shims storage.
+
 export const createPreferencesStore = () => {
-  return createStore<PreferencesState>((set) => ({
-    theme: 'system',
-    setTheme: (theme) => set({ theme }),
-    scrambleFollowsCube: true,
-    setScrambleFollowsCube: (value) => set({ scrambleFollowsCube: value }),
-  }));
+  return createStore<PreferencesState>()(
+    persist(
+      (set) => ({
+        theme: 'system',
+        setTheme: (theme) => set({ theme }),
+
+        scrambleFollowsCube: true,
+        setScrambleFollowsCube: (value) => set({ scrambleFollowsCube: value }),
+
+        inspection: true,
+        setInspection: (value) => set({ inspection: value }),
+
+        scrambleVerification: true,
+        setScrambleVerification: (value) => set({ scrambleVerification: value }),
+      }),
+      {
+        name: 'cubeforge-prefs',
+        partialize: (state) => ({
+          theme: state.theme,
+          scrambleFollowsCube: state.scrambleFollowsCube,
+          inspection: state.inspection,
+          scrambleVerification: state.scrambleVerification,
+        }),
+        version: 1,
+      },
+    ),
+  );
 };
 
 // Export a default instance for simplicity in headless environments

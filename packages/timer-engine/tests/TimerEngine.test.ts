@@ -200,4 +200,89 @@ describe('Advanced WCA TimerEngine', () => {
     vi.advanceTimersByTime(17000);
     expect(timer.getPenalty()).toBe(Penalty.DNF);
   });
+
+  // ──────────────────────────────────────────────────────────────────────
+  //  ARMED state — gates Smart Cube auto-start from IDLE.
+  // ──────────────────────────────────────────────────────────────────────
+
+  it('arm() transitions IDLE → ARMED, and only from IDLE', () => {
+    expect(timer.arm()).toBe(true);
+    expect(timer.getState()).toBe(TimerState.ARMED);
+
+    // second call from ARMED must be rejected
+    expect(timer.arm()).toBe(false);
+  });
+
+  it('arm() is rejected from any non-IDLE state', () => {
+    // RUNNING
+    timer.handleDown();
+    vi.advanceTimersByTime(300);
+    timer.handleUp();
+    expect(timer.getState()).toBe(TimerState.RUNNING);
+    expect(timer.arm()).toBe(false);
+
+    // INSPECTION
+    timer.reset();
+    timer.startInspection();
+    expect(timer.getState()).toBe(TimerState.INSPECTION);
+    expect(timer.arm()).toBe(false);
+  });
+
+  it('Smart Cube start fires from ARMED and INSPECTION but NOT from IDLE', () => {
+    // From IDLE: should be a no-op (was previously starting the timer; now disallowed)
+    timer.handleSmartCubeStart();
+    expect(timer.getState()).toBe(TimerState.IDLE);
+
+    // From ARMED
+    timer.arm();
+    expect(timer.getState()).toBe(TimerState.ARMED);
+    timer.handleSmartCubeStart();
+    expect(timer.getState()).toBe(TimerState.RUNNING);
+
+    // From INSPECTION (new engine)
+    timer.reset();
+    timer.startInspection();
+    expect(timer.getState()).toBe(TimerState.INSPECTION);
+    timer.handleSmartCubeStart();
+    expect(timer.getState()).toBe(TimerState.RUNNING);
+  });
+
+  it('manual override on ARMED enters TOUCHING and returns to ARMED on early release', () => {
+    timer.arm();
+    expect(timer.getState()).toBe(TimerState.ARMED);
+
+    timer.handleDown();
+    expect(timer.getState()).toBe(TimerState.TOUCHING);
+
+    // Release before hold-delay expires → must return to ARMED, not IDLE.
+    vi.advanceTimersByTime(100);
+    timer.handleUp();
+    expect(timer.getState()).toBe(TimerState.ARMED);
+
+    // Full hold path from ARMED → READY → release → RUNNING
+    timer.handleDown();
+    vi.advanceTimersByTime(300);
+    expect(timer.getState()).toBe(TimerState.READY);
+    timer.handleUp();
+    expect(timer.getState()).toBe(TimerState.RUNNING);
+  });
+
+  it('reset() from ARMED returns to IDLE', () => {
+    timer.arm();
+    expect(timer.getState()).toBe(TimerState.ARMED);
+    expect(timer.reset()).toBe(true);
+    expect(timer.getState()).toBe(TimerState.IDLE);
+  });
+
+  it('ARMED does not emit tick events (no running clock)', () => {
+    const ticks: number[] = [];
+    const sub = timer.tick$.subscribe(t => ticks.push(t));
+
+    timer.arm();
+    vi.advanceTimersByTime(2000);
+    timer.reset();
+
+    expect(ticks.length).toBe(0);
+    sub.unsubscribe();
+  });
 });

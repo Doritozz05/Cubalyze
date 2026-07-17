@@ -11,6 +11,7 @@ import {
 import { SettingsSidebar } from './SettingsSidebar';
 import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
 import { AppearanceSection } from './sections/AppearanceSection';
+import { TimerSection } from './sections/TimerSection';
 import { PlaceholderSection } from './sections/PlaceholderSection';
 
 export interface SettingsDialogProps {
@@ -72,6 +73,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     switch (activeSection) {
       case 'appearance':
         return <AppearanceSection />;
+      case 'timer':
+        return <TimerSection />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {

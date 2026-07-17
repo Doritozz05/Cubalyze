@@ -1,72 +1,88 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useTimerUI } from "@/hooks/useTimerUI";
 import { TimerDisplay } from "./TimerDisplay";
+import type { TimerState } from "@/types";
+import type { HintContext } from "./hintFor";
 
 export interface TimerContainerProps {
-  /** Called with the raw solve time (ms) the instant the timer stops. */
-  onComplete: (time: number, penalty: "none" | "+2" | "DNF") => void;
+  /** Current phase from the engine. */
+  phase: TimerState;
+  /** Live elapsed time in ms (0 when idle). */
+  time: number;
+  /** Last finalized time. null until first solve. */
+  lastTime: number | null;
+  /** Hint context required by `TimerDisplay`. */
+  hintCtx: HintContext;
+  /** Trigger the smart press logic. */
+  onPress: () => void;
+  /** Trigger the smart release logic. */
+  onRelease: () => void;
   /** Ref populated with the timer's current state (for shortcut gating). */
-  stateRef?: React.MutableRefObject<string>;
+  stateRef?: React.MutableRefObject<TimerState>;
   /** Ref populated with a cancel function (used by the Esc shortcut). */
   cancelRef?: React.MutableRefObject<(() => void) | null>;
-  /** Whether the cube is correctly scrambled and ready for solving. */
-  isScrambled?: boolean;
+  /** Optional explicit cancel handler. */
+  onCancel?: () => void;
   className?: string;
 }
 
 /**
- * Interaction surface for the timer. Wires the `useTimerUI` state machine
- * to both keyboard (Space, handled in the hook) and pointer/touch events.
- * Also exposes its `cancel` + live `state` via refs so a parent can gate
- * global shortcuts (e.g. don't fire "new scramble" while the timer runs).
+ * Interaction surface for the timer. Presentational — all state comes
+ * from `useSolveSession`. Wires pointer/touch events and keyboard
+ * fallback via the parent-provided press/release.
  */
 export function TimerContainer({
-  onComplete,
+  phase,
+  time,
+  lastTime,
+  hintCtx,
+  onPress,
+  onRelease,
   stateRef,
   cancelRef,
-  isScrambled,
+  onCancel,
   className,
 }: TimerContainerProps) {
-  const { state, time, lastTime, press, release, cancel } = useTimerUI(onComplete, isScrambled);
-
-  // Expose the timer state + cancel to the parent (for shortcut gating) via
+  // Expose the timer phase + cancel to the parent (for shortcut gating) via
   // refs so the parent doesn't re-render on every animation frame.
   useEffect(() => {
-    if (stateRef) stateRef.current = state;
-  }, [state, stateRef]);
+    if (stateRef) stateRef.current = phase;
+  }, [phase, stateRef]);
   useEffect(() => {
-    if (cancelRef) cancelRef.current = cancel;
+    if (!cancelRef) return;
+    cancelRef.current = () => {
+      onCancel?.();
+    };
     return () => {
       if (cancelRef) cancelRef.current = null;
     };
-  }, [cancel, cancelRef]);
+  }, [onCancel, cancelRef]);
 
-  const displayTime =
-    state === "idle"
-      ? lastTime ?? 0
-      : state === "holding" || state === "ready"
-        ? 0
-        : time;
+  const displayTime = useMemo(() => {
+    if (phase === "idle") return lastTime ?? 0;
+    if (phase === "holding" || phase === "ready" || phase === "armed") {
+      return 0;
+    }
+    return time;
+  }, [phase, time, lastTime]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      // Only react to primary button / touch.
       if (e.button !== 0 && e.pointerType === "mouse") return;
       e.preventDefault();
-      press();
+      onPress();
     },
-    [press],
+    [onPress],
   );
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      release();
+      onRelease();
     },
-    [release],
+    [onRelease],
   );
 
   return (
@@ -77,9 +93,8 @@ export function TimerContainer({
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerLeave={(e) => {
-        // If the pointer leaves while holding, treat as release.
         if (e.buttons === 0) return;
-        release();
+        onRelease();
       }}
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
@@ -93,14 +108,16 @@ export function TimerContainer({
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-0 rounded-lg transition-colors duration-200",
-          state === "ready" && "bg-ready-soft/60",
-          state === "holding" && "bg-hold-soft/40",
+          phase === "ready" && "bg-ready-soft/60",
+          phase === "holding" && "bg-hold-soft/40",
+          phase === "armed" && "bg-blue-500/10",
         )}
       />
       <TimerDisplay
-        state={state}
+        state={phase}
         displayTime={displayTime}
         hasLast={lastTime !== null}
+        hintCtx={hintCtx}
       />
     </div>
   );

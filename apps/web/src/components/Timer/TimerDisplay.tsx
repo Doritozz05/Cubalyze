@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import type { TimerState } from "@/types";
+import { hintFor, type HintContext } from "./hintFor";
 
 export interface TimerDisplayProps {
   state: TimerState;
@@ -10,11 +11,14 @@ export interface TimerDisplayProps {
   displayTime: number;
   /** Whether a previous solve exists (affects idle hint copy). */
   hasLast: boolean;
+  /** Context required to compute the hint. */
+  hintCtx: HintContext;
 }
 
 const STATE_COLOR: Record<TimerState, string> = {
   idle: "text-ink",
   inspection: "text-red-500",
+  armed: "text-blue-500",
   holding: "text-hold",
   ready: "text-ready",
   running: "text-ink",
@@ -24,34 +28,19 @@ const STATE_COLOR: Record<TimerState, string> = {
 const STATE_SCALE: Record<TimerState, string> = {
   idle: "scale-100",
   inspection: "scale-100",
+  armed: "scale-100",
   holding: "scale-[0.985]",
   ready: "scale-100",
   running: "scale-100",
   stopped: "scale-100",
 };
 
-function hintFor(state: TimerState, hasLast: boolean): string {
-  switch (state) {
-    case "inspection":
-      return "inspecting";
-    case "holding":
-      return "keep holding";
-    case "ready":
-      return "release to start";
-    case "running":
-      return "press to stop";
-    case "stopped":
-      return "solve saved";
-    case "idle":
-    default:
-      return hasLast ? "hold to start next" : "press & hold to start";
-  }
-}
-
 function dotColor(state: TimerState): string {
   switch (state) {
     case "inspection":
       return "bg-red-500";
+    case "armed":
+      return "bg-blue-500";
     case "holding":
       return "bg-hold";
     case "ready":
@@ -67,11 +56,16 @@ function dotColor(state: TimerState): string {
 }
 
 /**
- * Pure visual timer. Renders the monospaced time + a compact state hint.
+ * Pure visual timer. Renders the monospaced time + a context-aware hint.
  * No interaction logic lives here — see TimerContainer.
  */
-export function TimerDisplay({ state, displayTime, hasLast }: TimerDisplayProps) {
-  const hint = hintFor(state, hasLast);
+export function TimerDisplay({
+  state,
+  displayTime,
+  hasLast,
+  hintCtx,
+}: TimerDisplayProps) {
+  const hint = hintFor(state, hasLast, hintCtx);
 
   let formattedTime = "";
   if (state === "inspection") {

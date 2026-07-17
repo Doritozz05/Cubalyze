@@ -16,10 +16,11 @@ import {
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
-import { useScrambleValidator } from "@/hooks/useScrambleValidator";
+import { useSolveSession } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/math-core";
 import { ThemeProvider } from "@/components/theme-provider";
+import type { Penalty } from "@/types";
 import "@/index.css";
 
 export default function App() {
@@ -43,33 +44,18 @@ export default function App() {
   const [cube3DReady, setCube3DReady] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [currentScramble, setCurrentScramble] = useState(() => 
-    RandomStateGenerator.generateScramble(new Min2PhaseSolver())
+  const [currentScramble, setCurrentScramble] = useState(() =>
+    RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
   );
+
   const handleRegenerate = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
     setScrambleIndex((i) => i + 1);
     toast.success("New scramble");
   }, []);
-  const {
-    states: scrambleStates,
-    isScrambled,
-    currentIndex,
-    displayErrorMoves,
-    pendingHalfDouble,
-    needsReset,
-    awaitingSolve,
-  } = useScrambleValidator(currentScramble);
-
-  const { remapScramble } = useOrientation();
-  const displayScramble = remapScramble(currentScramble);
-
-  // Refs so global shortcuts can read/act on the timer without re-rendering.
-  const timerStateRef = useRef("idle");
-  const cancelRef = useRef<(() => void) | null>(null);
 
   const handleComplete = useCallback(
-    (time: number, penalty: "none" | "+2" | "DNF" = "none") => {
+    (time: number, penalty: Penalty) => {
       addSolve({ time, scramble: currentScramble, penalty })
         .then(() => {
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
@@ -80,23 +66,31 @@ export default function App() {
     [addSolve, currentScramble],
   );
 
-  const handleUpdate = useCallback(
-    (id: string, updates: { penalty?: "none" | "+2" | "DNF"; note?: string | null }) => {
-      updateSolve(id, updates).catch(() => toast.error("Update failed"));
-    },
-    [updateSolve],
-  );
+  // ── Centralised orchestration ───────────────────────────────────────────
+  const session$ = useSolveSession(currentScramble, { onSolve: handleComplete });
+  const {
+    phase: timerPhase,
+    time: timerTime,
+    lastTime: timerLastTime,
+    press: timerPress,
+    release: timerRelease,
+    cancel: timerCancel,
+    validation,
+    smartCubeConnected,
+    inspection,
+    scrambleVerification,
+  } = session$;
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      deleteSolve(id).catch(() => toast.error("Delete failed"));
-    },
-    [deleteSolve],
-  );
+  const { remapScramble } = useOrientation();
+  const displayScramble = remapScramble(currentScramble);
 
-  const handleClear = useCallback(() => {
-    clearSession().catch(() => toast.error("Couldn’t clear session"));
-  }, [clearSession]);
+  // Refs so global shortcuts can read/act on the timer without re-rendering.
+  const timerStateRef = useRef(timerPhase);
+  const cancelRef = useRef<(() => void) | null>(null);
+
+  const handleTimerCancel = useCallback(() => {
+    timerCancel();
+  }, [timerCancel]);
 
   const handleCopy = useCallback(async () => {
     const fail = () => toast.error("Couldn’t copy scramble");
@@ -126,16 +120,36 @@ export default function App() {
     }
   }, [currentScramble]);
 
-  const handleCancel = useCallback(() => {
-    cancelRef.current?.();
-  }, []);
+  const handleCancelShortcut = useCallback(() => {
+    timerCancel();
+  }, [timerCancel]);
+
+  const handleUpdate = useCallback(
+    (id: string, updates: { penalty?: Penalty; note?: string | null }) => {
+      updateSolve(id, updates).catch(() => toast.error("Update failed"));
+    },
+    [updateSolve],
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteSolve(id).catch(() => toast.error("Delete failed"));
+    },
+    [deleteSolve],
+  );
+
+  const handleClear = useCallback(() => {
+    clearSession().catch(() => toast.error("Couldn’t clear session"));
+  }, [clearSession]);
 
   const handleNewSession = useCallback(() => {
-    newSession().then(() => {
-      setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
-      setScrambleIndex(0);
-      toast.success("New session started");
-    }).catch(() => toast.error("Couldn’t create session"));
+    newSession()
+      .then(() => {
+        setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+        setScrambleIndex(0);
+        toast.success("New session started");
+      })
+      .catch(() => toast.error("Couldn’t create session"));
   }, [newSession]);
 
   const handleSwitchSession = useCallback(
@@ -148,24 +162,32 @@ export default function App() {
   useShortcuts({
     onNewScramble: handleRegenerate,
     onCopyScramble: handleCopy,
-    onCancel: handleCancel,
+    onCancel: handleCancelShortcut,
     timerStateRef,
   });
 
-  // Best-effort keep the document title in sync with session size.
   useEffect(() => {
     document.title = `cubeforge — ${solves.length} solves`;
   }, [solves.length]);
 
-  const validSolves = solves.filter(s => s.penalty !== "DNF");
-  const currentPB = validSolves.length > 0
-    ? Math.min(...validSolves.map(s => s.time + (s.penalty === "+2" ? 2000 : 0)))
-    : null;
+  const validSolves = solves.filter((s) => s.penalty !== "DNF");
+  const currentPB =
+    validSolves.length > 0
+      ? Math.min(
+          ...validSolves.map((s) =>
+            s.time + (s.penalty === "+2" ? 2000 : 0),
+          ),
+        )
+      : null;
 
-  const timerRunning = timerStateRef.current === "running" || timerStateRef.current === "ready";
+  const timerStateRefValue = timerStateRef.current;
+  const timerRunning =
+    timerStateRefValue === "running" || timerStateRefValue === "ready";
 
   const scrollToTimer = useCallback(() => {
-    document.getElementById("timer-section")?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("timer-section")?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, []);
 
   return (
@@ -183,13 +205,13 @@ export default function App() {
           cube3DActive={cube3DActive}
           cube3DReady={cube3DReady}
           onToggleCube3D={() => {
-            setCube3DActive(prev => {
+            setCube3DActive((prev) => {
               if (!prev) setCube3DReady(true);
               return !prev;
             });
           }}
           sidebarActive={sidebarActive}
-          onToggleSidebar={() => setSidebarActive(a => !a)}
+          onToggleSidebar={() => setSidebarActive((a) => !a)}
           cube3D={<Cube3DPanel />}
           leftSidebar={
             <LeftSidebar
@@ -199,29 +221,38 @@ export default function App() {
               onMobileOpenChange={setMobileNavOpen}
             />
           }
-          onToggleMobileNav={() => setMobileNavOpen(a => !a)}
+          onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
           main={
             <>
               <ScrambleDisplay
                 scramble={currentScramble}
                 displayScramble={displayScramble}
-                states={scrambleStates}
-                currentIndex={currentIndex}
-                errorMoves={displayErrorMoves}
-                pendingHalfDouble={pendingHalfDouble}
-                isScrambled={isScrambled}
-                needsReset={needsReset}
-                awaitingSolve={awaitingSolve}
+                states={validation.states}
+                currentIndex={validation.currentIndex}
+                errorMoves={validation.displayErrorMoves}
+                pendingHalfDouble={validation.pendingHalfDouble}
+                isScrambled={validation.isScrambled}
+                needsReset={validation.needsReset}
+                awaitingSolve={validation.awaitingSolve}
                 onRegenerate={handleRegenerate}
                 onCopy={handleCopy}
                 indexLabel={`#${scrambleIndex + 1}`}
               />
 
               <TimerContainer
-                onComplete={handleComplete}
+                phase={timerPhase}
+                time={timerTime}
+                lastTime={timerLastTime}
+                hintCtx={{
+                  smartCube: smartCubeConnected,
+                  scrambleVerif: scrambleVerification,
+                  inspection,
+                }}
+                onPress={timerPress}
+                onRelease={timerRelease}
+                onCancel={handleTimerCancel}
                 stateRef={timerStateRef}
                 cancelRef={cancelRef}
-                isScrambled={isScrambled}
                 className="mt-1 flex-1"
               />
 

@@ -3,6 +3,7 @@ import {
   Settings,
   Palette,
   Cpu,
+  Clock,
   BarChart3,
   GraduationCap,
   Bell,
@@ -34,6 +35,12 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Smart Cube',
     icon: Cpu,
     description: 'Bluetooth, gyroscope, and hardware settings.',
+  },
+  {
+    id: 'timer',
+    label: 'Timer',
+    icon: Clock,
+    description: 'Solve start rules: inspection and scramble verification.',
   },
   {
     id: 'analysis',

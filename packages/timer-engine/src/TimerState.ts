@@ -1,6 +1,7 @@
 export enum TimerState {
   IDLE = 'IDLE',
   INSPECTION = 'INSPECTION',
+  ARMED = 'ARMED',
   TOUCHING = 'TOUCHING',
   READY = 'READY',
   RUNNING = 'RUNNING',
