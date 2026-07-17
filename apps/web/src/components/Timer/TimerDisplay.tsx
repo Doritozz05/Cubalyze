@@ -18,7 +18,7 @@ export interface TimerDisplayProps {
 const STATE_COLOR: Record<TimerState, string> = {
   idle: "text-ink",
   inspection: "text-red-500",
-  armed: "text-blue-500",
+  ready_for_move: "text-blue-500",
   holding: "text-hold",
   ready: "text-ready",
   running: "text-ink",
@@ -28,7 +28,7 @@ const STATE_COLOR: Record<TimerState, string> = {
 const STATE_SCALE: Record<TimerState, string> = {
   idle: "scale-100",
   inspection: "scale-100",
-  armed: "scale-100",
+  ready_for_move: "scale-100",
   holding: "scale-[0.985]",
   ready: "scale-100",
   running: "scale-100",
@@ -39,7 +39,7 @@ function dotColor(state: TimerState): string {
   switch (state) {
     case "inspection":
       return "bg-red-500";
-    case "armed":
+    case "ready_for_move":
       return "bg-blue-500";
     case "holding":
       return "bg-hold";

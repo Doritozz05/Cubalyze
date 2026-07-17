@@ -20,7 +20,7 @@ export interface TimerStopEventDetail {
   finalTimeMs: number;
 }
 
-type _PreviousEntryState = 'idle' | 'inspection' | 'armed';
+type _PreviousEntryState = 'idle' | 'inspection' | 'ready_for_move';
 
 export class TimerEngine {
   readonly tick$ = new Subject<number>();
@@ -46,7 +46,7 @@ export class TimerEngine {
   private solveTimeMs: number = 0;
   /**
    * Captured entry state when entering TOUCHING, so handleUp can route the
-   * caller back to the correct pre-hold state (ARMED vs IDLE vs INSPECTION).
+   * caller back to the correct pre-hold state (READY_FOR_MOVE vs IDLE vs INSPECTION).
    * Set to null whenever TOUCHING is not the active state.
    */
   private touchingEntry: _PreviousEntryState | null = null;
@@ -108,15 +108,15 @@ export class TimerEngine {
   }
 
   /**
-   * Manually transition IDLE -> ARMED. Used as an explicit gate when
-   * Scramble Verification is OFF and the Smart Cube is connected: a single
-   * Space / tap arms the next solve and the first physical move starts it.
-   * Returns true if the transition was applied.
+   * Manually transition IDLE -> READY_FOR_MOVE. Used as an explicit gate
+   * when the Smart Cube is connected and the user wants to start a solve
+   * by pressing Space: the first physical move starts the timer. Returns
+   * true if the transition was applied.
    */
   public arm(): boolean {
     if (this.currentState !== TimerState.IDLE) return false;
     this.currentPenalty = Penalty.NONE;
-    this.setState(TimerState.ARMED);
+    this.setState(TimerState.READY_FOR_MOVE);
     return true;
   }
 
@@ -130,12 +130,12 @@ export class TimerEngine {
     if (
       this.currentState === TimerState.IDLE ||
       this.currentState === TimerState.INSPECTION ||
-      this.currentState === TimerState.ARMED
+      this.currentState === TimerState.READY_FOR_MOVE
     ) {
       const previousWasInspection = this.currentState === TimerState.INSPECTION;
       const entryState: _PreviousEntryState =
         previousWasInspection ? 'inspection' :
-        this.currentState === TimerState.ARMED ? 'armed' : 'idle';
+        this.currentState === TimerState.READY_FOR_MOVE ? 'ready_for_move' : 'idle';
 
       this.setState(TimerState.TOUCHING);
       this.touchingEntry = entryState;
@@ -180,15 +180,17 @@ export class TimerEngine {
         this.touchTimeoutId = null;
       }
       // Route the caller back to the state they were in before pressing.
-      // Priority: inspection (so the timeout still works), then armed, then idle.
+      // Priority: inspection (so the timeout still works), then
+      // ready_for_move, then idle.
       if (this.touchingEntry === 'inspection' && this.config.useInspection) {
         this.touchingEntry = null;
         this.setState(TimerState.INSPECTION);
-      } else if (this.touchingEntry === 'armed') {
-        // User started manual hold-and-release from ARMED; keep ARMED so
-        // releasing early does not silently drop the gate they raised.
+      } else if (this.touchingEntry === 'ready_for_move') {
+        // User started manual hold-and-release from READY_FOR_MOVE; keep
+        // READY_FOR_MOVE so releasing early does not silently drop the
+        // gate they raised.
         this.touchingEntry = null;
-        this.setState(TimerState.ARMED);
+        this.setState(TimerState.READY_FOR_MOVE);
       } else {
         this.touchingEntry = null;
         this.setState(TimerState.IDLE);
@@ -206,14 +208,14 @@ export class TimerEngine {
    * Smart Cube move triggered.
    *
    * Only fires from INSPECTION (cube move starts the solve after inspection)
-   * or ARMED (cube move starts the solve after explicit arming). It is no
-   * longer allowed to start the solve directly from IDLE — the orchestration
-   * hook is responsible for calling `arm()` first when needed.
+   * or READY_FOR_MOVE (cube move starts the solve after explicit arming).
+   * It is no longer allowed to start the solve directly from IDLE — the
+   * orchestration hook is responsible for calling `arm()` first when needed.
    */
   public handleSmartCubeStart(): void {
     if (
       this.currentState !== TimerState.INSPECTION &&
-      this.currentState !== TimerState.ARMED
+      this.currentState !== TimerState.READY_FOR_MOVE
     ) {
       return;
     }

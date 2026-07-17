@@ -39,8 +39,8 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
       return "idle";
     case EngineState.INSPECTION:
       return "inspection";
-    case EngineState.ARMED:
-      return "armed";
+    case EngineState.READY_FOR_MOVE:
+      return "ready_for_move";
     case EngineState.TOUCHING:
       return "holding";
     case EngineState.READY:
@@ -61,9 +61,9 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
  * Combination matrix supported (Scramble Verification × Inspection):
  *
  *   M1  ON + ON    ─ Space → INSPECTION → cube move → RUNNING
- *   M2  ON + OFF   ─ scramble completes → ARMED → cube move → RUNNING
+ *   M2  ON + OFF   ─ scramble completes → READY_FOR_MOVE → cube move → RUNNING
  *   M3  OFF + ON   ─ Space → INSPECTION → cube move → RUNNING
- *   M4  OFF + OFF  ─ Space → ARMED → cube move → RUNNING
+ *   M4  OFF + OFF  ─ Space → READY_FOR_MOVE → cube move → RUNNING
  *
  * The auto-arm transition is restricted to Mode 2 by `shouldAutoArm` —
  * any other combination requires an explicit user gesture. A
@@ -86,7 +86,11 @@ export function useSolveSession(
     [inspectionPref],
   );
 
-  const validation = useScrambleValidator(scramble);
+  // When Scramble Verification is OFF (Modes 3 & 4) the validator is
+  // completely short-circuited — no moves$/facelets$ subscription, no CPU
+  // work. `validation.isScrambled` stays false, which is harmless because
+  // `shouldAutoArm` already requires scrambleVerif=true.
+  const validation = useScrambleValidator(scramble, scrambleVerificationPref);
 
   const [phase, setPhase] = useState<TimerState>("idle");
   const [time, setTime] = useState(0);
@@ -177,8 +181,8 @@ export function useSolveSession(
     engine,
   ]);
 
-  // Smart Cube move wiring: auto-start from INSPECTION / ARMED only, and
-  // auto-stop when the cube is solved while running.
+  // Smart Cube move wiring: auto-start from INSPECTION / READY_FOR_MOVE
+  // only, and auto-stop when the cube is solved while running.
   useEffect(() => {
     const adapter = globalCubeAdapter;
     if (!adapter.moves$) return;
@@ -189,7 +193,7 @@ export function useSolveSession(
       // Defense-in-depth against the scramble-completer race.
       if (
         swallowNextCubeMoveRef.current &&
-        current === EngineState.ARMED
+        current === EngineState.READY_FOR_MOVE
       ) {
         swallowNextCubeMoveRef.current = false;
         return;
@@ -197,7 +201,7 @@ export function useSolveSession(
 
       if (
         current === EngineState.INSPECTION ||
-        current === EngineState.ARMED
+        current === EngineState.READY_FOR_MOVE
       ) {
         engine.handleSmartCubeStart();
       }
@@ -251,7 +255,7 @@ export function useSolveSession(
       return;
     }
 
-    if (current === EngineState.ARMED) {
+    if (current === EngineState.READY_FOR_MOVE) {
       engine.handleDown();
       return;
     }

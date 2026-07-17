@@ -62,7 +62,7 @@ export function TimerContainer({
 
   const displayTime = useMemo(() => {
     if (phase === "idle") return lastTime ?? 0;
-    if (phase === "holding" || phase === "ready" || phase === "armed") {
+    if (phase === "holding" || phase === "ready" || phase === "ready_for_move") {
       return 0;
     }
     return time;
@@ -110,7 +110,7 @@ export function TimerContainer({
           "pointer-events-none absolute inset-0 rounded-lg transition-colors duration-200",
           phase === "ready" && "bg-ready-soft/60",
           phase === "holding" && "bg-hold-soft/40",
-          phase === "armed" && "bg-blue-500/10",
+          phase === "ready_for_move" && "bg-blue-500/10",
         )}
       />
       <TimerDisplay

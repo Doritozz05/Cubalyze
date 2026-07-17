@@ -224,20 +224,22 @@ export default function App() {
           onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
           main={
             <>
-              <ScrambleDisplay
-                scramble={currentScramble}
-                displayScramble={displayScramble}
-                states={validation.states}
-                currentIndex={validation.currentIndex}
-                errorMoves={validation.displayErrorMoves}
-                pendingHalfDouble={validation.pendingHalfDouble}
-                isScrambled={validation.isScrambled}
-                needsReset={validation.needsReset}
-                awaitingSolve={validation.awaitingSolve}
-                onRegenerate={handleRegenerate}
-                onCopy={handleCopy}
-                indexLabel={`#${scrambleIndex + 1}`}
-              />
+              {scrambleVerification && (
+                <ScrambleDisplay
+                  scramble={currentScramble}
+                  displayScramble={displayScramble}
+                  states={validation.states}
+                  currentIndex={validation.currentIndex}
+                  errorMoves={validation.displayErrorMoves}
+                  pendingHalfDouble={validation.pendingHalfDouble}
+                  isScrambled={validation.isScrambled}
+                  needsReset={validation.needsReset}
+                  awaitingSolve={validation.awaitingSolve}
+                  onRegenerate={handleRegenerate}
+                  onCopy={handleCopy}
+                  indexLabel={`#${scrambleIndex + 1}`}
+                />
+              )}
 
               <TimerContainer
                 phase={timerPhase}

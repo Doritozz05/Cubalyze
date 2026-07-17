@@ -65,19 +65,19 @@ export interface SessionStats {
 
 /**
  * Finite state machine for the timer.
- *  idle      -> waiting to start, shows last/zero time
- *  inspection-> 15s WCA inspection countdown (when enabled)
- *  armed     -> Smart Cube is connected and the next physical move
- *               will start the solve (e.g. M2 auto-arm, M4 explicit arm)
- *  holding   -> pointer/space held but not yet "armed"
- *  ready     -> held long enough, release to launch
- *  running   -> counting up
- *  stopped   -> just finished (brief), then back to idle
+ *  idle           -> waiting to start, shows last/zero time
+ *  inspection     -> 15s WCA inspection countdown (when enabled)
+ *  ready_for_move -> Smart Cube is connected and the next physical move
+ *                    will start the solve (M2 auto-arm, M4 explicit arm)
+ *  holding        -> pointer/space held but not yet past the hold delay
+ *  ready          -> held long enough, release to launch
+ *  running        -> counting up
+ *  stopped        -> just finished (brief), then back to idle
  */
 export type TimerState =
   | "idle"
   | "inspection"
-  | "armed"
+  | "ready_for_move"
   | "holding"
   | "ready"
   | "running"

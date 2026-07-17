@@ -6,7 +6,7 @@ describe('hintFor', () => {
   const allPhases: TimerState[] = [
     'idle',
     'inspection',
-    'armed',
+    'ready_for_move',
     'holding',
     'ready',
     'running',
@@ -44,10 +44,10 @@ describe('hintFor', () => {
     }
   });
 
-  it('armed phase always reports "make a move to start"', () => {
+  it('ready_for_move phase always reports "make a move to start"', () => {
     for (const ctx of ctxs) {
-      expect(hintFor('armed', false, ctx)).toBe('make a move to start');
-      expect(hintFor('armed', true, ctx)).toBe('make a move to start');
+      expect(hintFor('ready_for_move', false, ctx)).toBe('make a move to start');
+      expect(hintFor('ready_for_move', true, ctx)).toBe('make a move to start');
     }
   });
 
@@ -106,18 +106,24 @@ describe('hintFor', () => {
       expect(hintFor('idle', false, ctx)).toBe('press space to start inspection');
     });
 
-    it('smart cube + scrambleVerif OFF + inspection OFF (Mode 4) shows "tap or press space to arm"', () => {
+    it('smart cube + scrambleVerif OFF + inspection OFF (Mode 4) shows "tap or press space to start"', () => {
       const ctx: HintContext = { smartCube: true, scrambleVerif: false, inspection: false };
-      expect(hintFor('idle', false, ctx)).toBe('tap or press space to arm');
-      expect(hintFor('idle', true, ctx)).toBe('tap or press space to arm');
+      expect(hintFor('idle', false, ctx)).toBe('tap or press space to start');
+      expect(hintFor('idle', true, ctx)).toBe('tap or press space to start');
     });
   });
 
   it('does not leak "press & hold to start" into smart-cube phases', () => {
     for (const ctx of ctxs.filter((c) => c.smartCube)) {
       const idleText = hintFor('idle', false, ctx);
-      // The smart-cube idle copy is intentional, not the generic manual one.
       expect(idleText).not.toBe('press & hold to start');
     }
+  });
+
+  it('does not leak "release to start" (which belongs to READY) into ready_for_move', () => {
+    // Confirms the rename did not collapse the two states together.
+    const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: false };
+    expect(hintFor('ready_for_move', false, ctx)).toBe('make a move to start');
+    expect(hintFor('ready', false, ctx)).toBe('release to start');
   });
 });

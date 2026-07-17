@@ -126,22 +126,55 @@ function resetRef(s: ValidatorState): void {
   s.pendingHalfTokenIndex = -1;
 }
 
-export function useScrambleValidator(scramble: string): ScrambleValidationResult {
+const EMPTY_VALIDATION: ScrambleValidationResult = {
+  moves: [],
+  states: [],
+  isScrambled: false,
+  currentIndex: 0,
+  errorMoves: [],
+  displayErrorMoves: [],
+  pendingHalfDouble: false,
+  needsReset: false,
+  awaitingSolve: false,
+};
+
+/**
+ * Subscribes to the Smart Cube (when paired) and tracks progression through
+ * the provided `scramble`. Used to gate the timer start when Scramble
+ * Verification is enabled.
+ *
+ * Pass `enabled = false` to short-circuit completely: the hook returns the
+ * empty validation state, no moves$ subscription, no facelets request. This
+ * matches Modes 3 & 4 (Scramble Verification OFF) where the user does not
+ * want any scramble-related UI or work.
+ *
+ * @param scramble  The scramble notation. Still generated and persisted even
+ *                  when `enabled` is false (so solves keep a record) but is
+ *                  not consumed by this hook.
+ * @param enabled   Defaults to `true`. When `false`, no work is performed.
+ */
+export function useScrambleValidator(
+  scramble: string,
+  enabled: boolean = true,
+): ScrambleValidationResult {
   const stateRef = useRef<ValidatorState>(freshValidatorState());
 
-  const [uiState, setUiState] = useState<ScrambleValidationResult>({
-    moves: [],
-    states: [],
-    isScrambled: false,
-    currentIndex: 0,
-    errorMoves: [],
-    displayErrorMoves: [],
-    pendingHalfDouble: false,
-    needsReset: false,
-    awaitingSolve: false,
-  });
+  const [uiState, setUiState] = useState<ScrambleValidationResult>(
+    enabled ? {
+      moves: [],
+      states: [],
+      isScrambled: false,
+      currentIndex: 0,
+      errorMoves: [],
+      displayErrorMoves: [],
+      pendingHalfDouble: false,
+      needsReset: false,
+      awaitingSolve: false,
+    } : EMPTY_VALIDATION,
+  );
 
   const updateUI = useCallback(() => {
+    if (!enabled) return;
     const s = stateRef.current;
 
     const tokenStates: ScrambleMoveState[] = s.moves.map((_, i) => {
@@ -181,9 +214,14 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
       needsReset: s.needsReset,
       awaitingSolve: s.awaitingSolve,
     });
-  }, []);
+  }, [enabled]);
 
+  // Recompute expected state whenever the scramble text changes.
   useEffect(() => {
+    if (!enabled) {
+      setUiState(EMPTY_VALIDATION);
+      return;
+    }
     const { moves, expectedFacelets } = computeExpected(scramble);
     const ref = freshValidatorState();
     ref.moves = moves;
@@ -191,9 +229,11 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
     stateRef.current = ref;
     updateUI();
     scheduleFacelets(ref);
-  }, [scramble, updateUI]);
+  }, [scramble, updateUI, enabled]);
 
+  // Subscribe to the Smart Cube while validation is enabled.
   useEffect(() => {
+    if (!enabled) return;
     const adapter = globalCubeAdapter;
     if (!adapter.moves$) return;
 
@@ -399,7 +439,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
       faceletCleanup?.();
       clearTimeout(stateRef.current.requestFaceletsTimeout);
     };
-  }, [updateUI]);
+  }, [updateUI, enabled]);
 
   return uiState;
 }

@@ -202,14 +202,14 @@ describe('Advanced WCA TimerEngine', () => {
   });
 
   // ──────────────────────────────────────────────────────────────────────
-  //  ARMED state — gates Smart Cube auto-start from IDLE.
+  //  READY_FOR_MOVE state — gates Smart Cube auto-start from IDLE.
   // ──────────────────────────────────────────────────────────────────────
 
-  it('arm() transitions IDLE → ARMED, and only from IDLE', () => {
+  it('arm() transitions IDLE → READY_FOR_MOVE, and only from IDLE', () => {
     expect(timer.arm()).toBe(true);
-    expect(timer.getState()).toBe(TimerState.ARMED);
+    expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
 
-    // second call from ARMED must be rejected
+    // second call from READY_FOR_MOVE must be rejected
     expect(timer.arm()).toBe(false);
   });
 
@@ -228,14 +228,14 @@ describe('Advanced WCA TimerEngine', () => {
     expect(timer.arm()).toBe(false);
   });
 
-  it('Smart Cube start fires from ARMED and INSPECTION but NOT from IDLE', () => {
+  it('Smart Cube start fires from READY_FOR_MOVE and INSPECTION but NOT from IDLE', () => {
     // From IDLE: should be a no-op (was previously starting the timer; now disallowed)
     timer.handleSmartCubeStart();
     expect(timer.getState()).toBe(TimerState.IDLE);
 
-    // From ARMED
+    // From READY_FOR_MOVE
     timer.arm();
-    expect(timer.getState()).toBe(TimerState.ARMED);
+    expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
     timer.handleSmartCubeStart();
     expect(timer.getState()).toBe(TimerState.RUNNING);
 
@@ -247,19 +247,19 @@ describe('Advanced WCA TimerEngine', () => {
     expect(timer.getState()).toBe(TimerState.RUNNING);
   });
 
-  it('manual override on ARMED enters TOUCHING and returns to ARMED on early release', () => {
+  it('manual override on READY_FOR_MOVE enters TOUCHING and returns to READY_FOR_MOVE on early release', () => {
     timer.arm();
-    expect(timer.getState()).toBe(TimerState.ARMED);
+    expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
 
     timer.handleDown();
     expect(timer.getState()).toBe(TimerState.TOUCHING);
 
-    // Release before hold-delay expires → must return to ARMED, not IDLE.
+    // Release before hold-delay expires → must return to READY_FOR_MOVE, not IDLE.
     vi.advanceTimersByTime(100);
     timer.handleUp();
-    expect(timer.getState()).toBe(TimerState.ARMED);
+    expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
 
-    // Full hold path from ARMED → READY → release → RUNNING
+    // Full hold path from READY_FOR_MOVE → READY → release → RUNNING
     timer.handleDown();
     vi.advanceTimersByTime(300);
     expect(timer.getState()).toBe(TimerState.READY);
@@ -267,14 +267,14 @@ describe('Advanced WCA TimerEngine', () => {
     expect(timer.getState()).toBe(TimerState.RUNNING);
   });
 
-  it('reset() from ARMED returns to IDLE', () => {
+  it('reset() from READY_FOR_MOVE returns to IDLE', () => {
     timer.arm();
-    expect(timer.getState()).toBe(TimerState.ARMED);
+    expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
     expect(timer.reset()).toBe(true);
     expect(timer.getState()).toBe(TimerState.IDLE);
   });
 
-  it('ARMED does not emit tick events (no running clock)', () => {
+  it('READY_FOR_MOVE does not emit tick events (no running clock)', () => {
     const ticks: number[] = [];
     const sub = timer.tick$.subscribe(t => ticks.push(t));
 
