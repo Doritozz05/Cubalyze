@@ -1,23 +1,106 @@
-import { describe, it, expect, vi } from 'vitest';
-import { TimerEngine } from '@cubeforge/timer-engine';
-import { HardwareTimerEvent } from '@cubeforge/hardware-hal';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TimerEngine, TimerState } from '@cubeforge/timer-engine';
 import { Subject } from 'rxjs';
 
-describe('Timer Integration', () => {
-  it('should process events from a mocked hardware adapter', () => {
-    const eventsSubject = new Subject<HardwareTimerEvent>();
-    const mockAdapter = {
-      name: 'Mock Adapter',
-      events$: eventsSubject.asObservable(),
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    };
+// Simulate the HardwareTimerEvent type from @cubeforge/hardware-hal
+// (avoids a build dependency on hardware-hal for this test)
+interface HardwareTimerEvent {
+  type: 'hardwareDown' | 'hardwareUp' | 'hardwareReset';
+  leftHand?: boolean;
+  rightHand?: boolean;
+  timestamp?: number;
+}
 
-    const engine = new TimerEngine(mockAdapter);
-    
+describe('Timer Integration', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance', 'Date'] });
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 16));
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('should process hardware events through the engine', () => {
+    const eventsSubject = new Subject<HardwareTimerEvent>();
+    const engine = new TimerEngine({ holdToStartDelay: 300, cooldownDelay: 500, useInspection: false });
+
+    // Wire adapter events to engine methods (simulates the app integration layer)
+    eventsSubject.subscribe((event) => {
+      if (event.type === 'hardwareDown') engine.handleDown();
+      if (event.type === 'hardwareUp') engine.handleUp();
+    });
+
+    expect(engine.getState()).toBe(TimerState.IDLE);
+
     // Simulate hands on
     eventsSubject.next({ type: 'hardwareDown', leftHand: true, rightHand: true, timestamp: 100 });
-    
-    expect(engine.getState().mode).toBe('READY'); // or whatever the engine sets it to, this is a placeholder test
+    expect(engine.getState()).toBe(TimerState.TOUCHING);
+
+    // Advance past hold-to-start delay
+    vi.advanceTimersByTime(300);
+    expect(engine.getState()).toBe(TimerState.READY);
+
+    // Simulate hands off → starts running
+    eventsSubject.next({ type: 'hardwareUp', leftHand: false, rightHand: false, timestamp: 400 });
+    expect(engine.getState()).toBe(TimerState.RUNNING);
+
+    eventsSubject.unsubscribe();
+  });
+
+  it('should revert to IDLE if hardware releases too early', () => {
+    const eventsSubject = new Subject<HardwareTimerEvent>();
+    const engine = new TimerEngine({ holdToStartDelay: 300, cooldownDelay: 500, useInspection: false });
+
+    eventsSubject.subscribe((event) => {
+      if (event.type === 'hardwareDown') engine.handleDown();
+      if (event.type === 'hardwareUp') engine.handleUp();
+    });
+
+    eventsSubject.next({ type: 'hardwareDown' });
+    expect(engine.getState()).toBe(TimerState.TOUCHING);
+
+    // Release before hold delay
+    vi.advanceTimersByTime(100);
+    eventsSubject.next({ type: 'hardwareUp' });
+    expect(engine.getState()).toBe(TimerState.IDLE);
+
+    eventsSubject.unsubscribe();
+  });
+
+  it('should stop and report time when hands return during solve', () => {
+    const eventsSubject = new Subject<HardwareTimerEvent>();
+    const engine = new TimerEngine({ holdToStartDelay: 300, cooldownDelay: 500, useInspection: false });
+
+    let stopDetail: { timeMs: number } | null = null;
+    const stopSub = engine.stop$.subscribe((detail) => { stopDetail = detail; });
+
+    eventsSubject.subscribe((event) => {
+      if (event.type === 'hardwareDown') engine.handleDown();
+      if (event.type === 'hardwareUp') engine.handleUp();
+    });
+
+    // Start solve
+    eventsSubject.next({ type: 'hardwareDown' });
+    vi.advanceTimersByTime(300);
+    eventsSubject.next({ type: 'hardwareUp' });
+    expect(engine.getState()).toBe(TimerState.RUNNING);
+
+    // Advance 5 seconds
+    vi.advanceTimersByTime(5000);
+
+    // Stop solve
+    eventsSubject.next({ type: 'hardwareDown' });
+    expect(engine.getState()).toBe(TimerState.COOLDOWN);
+    expect(stopDetail).not.toBeNull();
+    expect(stopDetail!.timeMs).toBe(5000);
+
+    vi.advanceTimersByTime(500);
+    expect(engine.getState()).toBe(TimerState.STOPPED);
+
+    eventsSubject.unsubscribe();
+    stopSub.unsubscribe();
   });
 });
