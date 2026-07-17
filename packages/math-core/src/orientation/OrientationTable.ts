@@ -114,14 +114,16 @@ function buildTable(): OrientationEntry[] {
 
       if (!seen.has(key)) {
         // Compose quaternions: apply current first, then rot.
-        // q_new = q_rot * q_current (quaternion multiplication, rot after current)
+        // In Three.js, q.multiply(q2) sets q = q * q2, meaning q is applied
+        // first, then q2. We want: apply current first, then rot.
+        // So q_new = q_rot * q_current, which is q_rot.multiply(q_current).
         const axisVec = new Vector3(
           rot.axis === 'x' ? 1 : 0,
           rot.axis === 'y' ? 1 : 0,
           rot.axis === 'z' ? 1 : 0,
         );
         const q = new Quaternion().setFromAxisAngle(axisVec, rot.angle);
-        q.premultiply(current.quaternion);
+        q.multiply(current.quaternion);
 
         const entry: OrientationEntry = {
           id: entries.length,
