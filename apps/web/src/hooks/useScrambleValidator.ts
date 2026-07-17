@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
-import type { CubeMoveEvent } from '@cubeforge/types';
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
+import { CubeState, FaceletStringConverter, MoveTransformer } from '@cubeforge/math-core';
+import { orientationStore } from '@cubeforge/state';
 
 export type ScrambleMoveState = 'pending' | 'correct' | 'incorrect';
 
@@ -11,6 +12,8 @@ export interface ScrambleValidationResult {
   isScrambled: boolean;
   currentIndex: number;
   errorMoves: string[];
+  /** Error moves in display notation (orientation-adapted). */
+  displayErrorMoves: string[];
   pendingHalfDouble: boolean;
   needsReset: boolean;
   awaitingSolve: boolean;
@@ -132,6 +135,7 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
     isScrambled: false,
     currentIndex: 0,
     errorMoves: [],
+    displayErrorMoves: [],
     pendingHalfDouble: false,
     needsReset: false,
     awaitingSolve: false,
@@ -156,12 +160,23 @@ export function useScrambleValidator(scramble: string): ScrambleValidationResult
     const errorMoves =
       s.errorStartIndex >= 0 ? s.actualMoves.slice(s.errorStartIndex) : [];
 
+    // Compute display-notation error moves using current orientation
+    const orientation = orientationStore.getState().orientation;
+    const displayErrorMoves = errorMoves.map((notation) => {
+      const face = notation[0] as CubeFace;
+      const dir: CubeMoveDirection =
+        notation.endsWith("'") ? -1 : notation.endsWith('2') ? 2 : 1;
+      const raw: CubeMoveEvent = { face, direction: dir, cubeTimestamp: 0, hostTimestamp: 0 };
+      return MoveTransformer.toDisplayNotation(raw, orientation);
+    });
+
     setUiState({
       moves: s.moves,
       states: tokenStates,
       isScrambled,
       currentIndex: s.currentIndex,
       errorMoves,
+      displayErrorMoves,
       pendingHalfDouble: s.pendingHalfFace !== null,
       needsReset: s.needsReset,
       awaitingSolve: s.awaitingSolve,

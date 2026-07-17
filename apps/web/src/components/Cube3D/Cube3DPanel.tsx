@@ -11,7 +11,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
-import type { CubeMoveEvent } from "@cubeforge/types";
+import { orientationStore } from "@cubeforge/state";
+import { MoveTransformer } from "@cubeforge/math-core";
+import type { CubeMoveEvent, CubeOrientation } from "@cubeforge/types";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -47,7 +49,9 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     moveSub.current?.unsubscribe();
     if (globalCubeAdapter.moves$) {
       moveSub.current = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
-        const notation = ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
+        // Use display notation (remapped by current orientation)
+        const orientation = orientationStore.getState().orientation;
+        const notation = MoveTransformer.toDisplayNotation(ev, orientation);
         setRecentMoves(prev => {
           const next = [...prev, notation];
           return next.slice(-15);
@@ -73,16 +77,27 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect) {
         workerProxy.current.resize(rect.width, rect.height);
-      }
+      }        if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
+          syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
+        }
 
-      if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
-        syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
-      }
+        // Wire orientation tracker: worker → orientation store
+        workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
+        workerProxy.current.onOrientationChange(
+          Comlink.proxy((o: CubeOrientation) => {
+            orientationStore.getState().setOrientation(o);
+          }),
+        );
+        // Also update capabilities in the store
+        orientationStore.getState().setCapabilities({
+          hasIMU: globalCubeAdapter.gyroSupported,
+          gyroSupported: globalCubeAdapter.gyroSupported,
+        });
 
-      setIs3DReady(true);
-    } else {
-      // First mount: create worker, transfer canvas, init
-      workerInstance.current = new EngineWorker();
+        setIs3DReady(true);
+      } else {
+        // First mount: create worker, transfer canvas, init
+        workerInstance.current = new EngineWorker();
       workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current!);
       syncBridge.current = new SyncBridge(workerProxy.current);
 
@@ -98,6 +113,18 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
         if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
           syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
         }
+
+        // Wire orientation tracker: worker → orientation store
+        workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
+        workerProxy.current.onOrientationChange(
+          Comlink.proxy((o: CubeOrientation) => {
+            orientationStore.getState().setOrientation(o);
+          }),
+        );
+        orientationStore.getState().setCapabilities({
+          hasIMU: globalCubeAdapter.gyroSupported,
+          gyroSupported: globalCubeAdapter.gyroSupported,
+        });
 
         workerSingleton = {
           worker: workerInstance.current,

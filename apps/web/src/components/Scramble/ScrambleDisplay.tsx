@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 
 export interface ScrambleDisplayProps {
   scramble: string;
+  /** Orientation-adapted scramble for display (raw scramble used for validation). */
+  displayScramble?: string;
   onRegenerate?: () => void;
   onCopy?: () => void;
   indexLabel?: string;
@@ -21,6 +23,7 @@ export interface ScrambleDisplayProps {
 
 export function ScrambleDisplay({
   scramble,
+  displayScramble,
   onRegenerate,
   onCopy,
   indexLabel,
@@ -34,7 +37,10 @@ export function ScrambleDisplay({
 }: ScrambleDisplayProps) {
   const [copied, setCopied] = useState(false);
 
-  const tokens = scramble.trim().split(/\s+/).filter(Boolean);
+  // Use displayScramble for rendering tokens when available (orientation-adapted),
+  // fall back to raw scramble. Validation states still index into raw scramble.
+  const displayText = displayScramble ?? scramble;
+  const tokens = displayText.trim().split(/\s+/).filter(Boolean);
 
   const copy = () => {
     onCopy?.();

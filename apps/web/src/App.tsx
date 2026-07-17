@@ -17,6 +17,7 @@ import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useScrambleValidator } from "@/hooks/useScrambleValidator";
+import { useOrientation } from "@/hooks/useOrientation";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/math-core";
 import { ThemeProvider } from "@/components/theme-provider";
 import "@/index.css";
@@ -55,10 +56,14 @@ export default function App() {
     isScrambled,
     currentIndex,
     errorMoves,
+    displayErrorMoves,
     pendingHalfDouble,
     needsReset,
     awaitingSolve,
   } = useScrambleValidator(currentScramble);
+
+  const { remapScramble } = useOrientation();
+  const displayScramble = remapScramble(currentScramble);
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
   const timerStateRef = useRef("idle");
@@ -200,9 +205,10 @@ export default function App() {
             <>
               <ScrambleDisplay
                 scramble={currentScramble}
+                displayScramble={displayScramble}
                 states={scrambleStates}
                 currentIndex={currentIndex}
-                errorMoves={errorMoves}
+                errorMoves={displayErrorMoves}
                 pendingHalfDouble={pendingHalfDouble}
                 isScrambled={isScrambled}
                 needsReset={needsReset}
