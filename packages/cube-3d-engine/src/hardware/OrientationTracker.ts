@@ -79,13 +79,18 @@ export class OrientationTracker {
    * q_relative = identity → snaps to identity orientation.
    */
   setCalibration(q: { x: number; y: number; z: number; w: number }): void {
+    // Normalize defensively in case a non-unit quaternion reaches this method
+    // via a future code path (GyroFusion already normalizes, but we guard here).
+    const len = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+    if (len < 0.0001) return; // invalid quaternion, ignore
+    const nq = { x: q.x / len, y: q.y / len, z: q.z / len, w: q.w / len };
     // Store the inverse of the calibration quaternion.
     // For a unit quaternion, the inverse is the conjugate: (-x, -y, -z, w).
     this.calibrationQuatInverse = {
-      x: -q.x,
-      y: -q.y,
-      z: -q.z,
-      w: q.w,
+      x: -nq.x,
+      y: -nq.y,
+      z: -nq.z,
+      w: nq.w,
     };
     this.isCalibrated = true;
     // Reset to identity orientation (calibration means "we're at zero")
@@ -105,9 +110,9 @@ export class OrientationTracker {
     if (this.disposed || !this.capabilities.gyroSupported || !this.isCalibrated) return;
 
     // Compute the relative quaternion: q_rel = q_cal⁻¹ · q_raw
-    const qRel = this.calibrationQuatInverse
-      ? OrientationTracker.quaternionMultiply(this.calibrationQuatInverse, gyro)
-      : gyro;
+    // (calibrationQuatInverse is always set when isCalibrated is true — both
+    // are set/cleared together in setCalibration/reset — so no null check needed.)
+    const qRel = OrientationTracker.quaternionMultiply(this.calibrationQuatInverse!, gyro);
 
     // Normalize as a safety measure against noisy BLE data
     const len = Math.sqrt(qRel.x * qRel.x + qRel.y * qRel.y + qRel.z * qRel.z + qRel.w * qRel.w);

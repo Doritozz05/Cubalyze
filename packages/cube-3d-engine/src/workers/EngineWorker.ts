@@ -8,6 +8,7 @@ import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable } from '@cubeforge/math-core';
 import type { CubeOrientation } from '@cubeforge/types';
 import type { CubeFace } from '@cubeforge/types';
+import type { Subscription } from 'rxjs';
 
 export class EngineWorkerAPI {
   private sceneManager!: SceneManager;
@@ -19,6 +20,7 @@ export class EngineWorkerAPI {
 
   // Callback registered by the main thread to receive orientation updates
   private onOrientationChangeCb?: (o: CubeOrientation) => void;
+  private orientationSub?: Subscription;
 
   private lastTime: number = 0;
   private isRunning: boolean = false;
@@ -38,7 +40,7 @@ export class EngineWorkerAPI {
     // Wire GyroFusion calibration → OrientationTracker calibration
     this.gyroFusion.onCalibrate = (q) => this.orientationTracker.setCalibration(q);
     // Forward orientation changes to the main thread callback
-    this.orientationTracker.orientation$.subscribe((o) => {
+    this.orientationSub = this.orientationTracker.orientation$.subscribe((o) => {
       this.onOrientationChangeCb?.(o);
     });
 
@@ -110,11 +112,17 @@ export class EngineWorkerAPI {
   /** Sets whether the connected cube has gyro/IMU support */
   public setGyroSupported(supported: boolean) {
     if (!this.orientationTracker) return;
-    // Recreate tracker with the correct capability
+    // Clean up old tracker and subscription
+    this.orientationSub?.unsubscribe();
     this.orientationTracker.dispose();
+    // Reset GyroFusion calibration so both systems start in sync — the new
+    // tracker is uncalibrated, so GyroFusion must be too. The user will
+    // re-calibrate after the new hardware is detected.
+    this.gyroFusion.resetCalibration();
+    // Recreate tracker with the correct capability
     this.orientationTracker = new OrientationTracker({ gyroSupported: supported });
     this.gyroFusion.onCalibrate = (q) => this.orientationTracker.setCalibration(q);
-    this.orientationTracker.orientation$.subscribe((o) => {
+    this.orientationSub = this.orientationTracker.orientation$.subscribe((o) => {
       this.onOrientationChangeCb?.(o);
     });
   }
@@ -186,6 +194,8 @@ export class EngineWorkerAPI {
 
   public dispose() {
     this.isRunning = false;
+    this.orientationSub?.unsubscribe();
+    if (this.orientationTracker) this.orientationTracker.dispose();
     if (this.sceneManager) this.sceneManager.dispose();
     if (this.factory) this.factory.dispose();
   }
