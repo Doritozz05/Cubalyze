@@ -178,7 +178,7 @@
   }
   html,
   body {
-    @apply bg-background text-foreground;
+    @apply overflow-x-hidden bg-background text-foreground;
     /* Stable, slightly tighter rendering for the utilitarian look. */
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
