@@ -196,6 +196,7 @@ export interface SolveMetrics {
   // ─── Advanced Metrics ───
   efficiency?: EfficiencyMetrics;
   rotation?: RotationMetrics;
+  redundancy?: RedundancyResult;
 
   // ─── Phase-specific ───
   cfop?: CFOPMetrics;
@@ -401,4 +402,22 @@ export interface ZZMetrics {
   zzF2LEfficiency: number;
   zzLLTimeMs: number;
   zzLLTPS: number;
+}
+
+// ─── Redundancy Metrics ─────────────────────────────────────────────────────
+
+export interface RedundancyResult {
+  totalRedundancies: number;
+  cancellations: number;
+  repetitions: number;
+  halfTurns: number;
+  redundancyRate: number;
+  patterns: RedundancyPattern[];
+}
+
+export interface RedundancyPattern {
+  startIndex: number;
+  endIndex: number;
+  type: 'cancellation' | 'repetition' | 'half-turn';
+  description: string;
 }

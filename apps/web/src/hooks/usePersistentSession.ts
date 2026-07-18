@@ -28,10 +28,10 @@ export interface UsePersistentSessionResult {
     method?: string;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
-  }) => Promise<void>;
+  }) => Promise<string | null>;
   updateSolve: (
     id: string,
-    updates: { penalty?: Penalty; note?: string | null },
+    updates: { penalty?: Penalty; note?: string | null; analysis?: SolveMetrics },
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   clearSession: () => Promise<void>;
@@ -43,13 +43,24 @@ export interface UsePersistentSessionResult {
 
 // Convert DB solve to UI solve
 function toUISolve(dbSolve: DBSolve): UISolve {
+  let analysis: SolveMetrics | undefined;
+  if (dbSolve.analysis) {
+    try {
+      analysis = JSON.parse(dbSolve.analysis) as SolveMetrics;
+    } catch {
+      // corrupt analysis data, ignore
+    }
+  }
   return {
     id: dbSolve.id,
     time: dbSolve.timeMs,
     penalty: (dbSolve.penalty || "none") as Penalty,
     scramble: dbSolve.scramble,
     timestamp: new Date(dbSolve.date).getTime(),
-    note: dbSolve.method, // Using method to store notes temporarily if needed
+    note: dbSolve.method,
+    method: dbSolve.method as UISolve['method'],
+    moves: dbSolve.moves as UISolve['moves'],
+    analysis,
   };
 }
 
@@ -146,12 +157,13 @@ export function usePersistentSession(): UsePersistentSessionResult {
     method?: string;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
-  }) => {
-    if (!session || !reposRef.current) return;
+  }): Promise<string | null> => {
+    if (!session || !reposRef.current) return null;
     const { solves: solvesRepo } = reposRef.current;
     
+    const solveId = uuidv4();
     const dbSolve: DBSolve = {
-      id: uuidv4(),
+      id: solveId,
       sessionId: session.id,
       timeMs: input.time,
       date: new Date().toISOString(),
@@ -160,6 +172,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       method: input.method,
       moves: input.moves || [],
       analysisEngineVersion: '0.1.0',
+      analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
     };
     
     await solvesRepo.insert(dbSolve);
@@ -174,9 +187,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
     setSessions(prev => prev.map(s => 
       s.id === session.id ? { ...s, solveCount: s.solveCount + 1, updatedAt: Date.now() } : s
     ));
+    return solveId;
   }, [session]);
 
-  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null }) => {
+  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; analysis?: SolveMetrics }) => {
     if (!session || !reposRef.current) return;
     const { solves: solvesRepo } = reposRef.current;
     
@@ -187,12 +201,20 @@ export function usePersistentSession(): UsePersistentSessionResult {
     if (updates.note !== undefined) {
        existing.method = updates.note === null ? undefined : updates.note;
     }
+    if (updates.analysis !== undefined) {
+       existing.analysis = JSON.stringify(updates.analysis);
+    }
     
     await solvesRepo.update(existing);
     
     setSolves(prev => prev.map(s => {
       if (s.id === id) {
-         return { ...s, penalty: updates.penalty ?? s.penalty, note: updates.note === null ? undefined : (updates.note ?? s.note) };
+         return {
+           ...s,
+           penalty: updates.penalty ?? s.penalty,
+           note: updates.note === null ? undefined : (updates.note ?? s.note),
+           analysis: updates.analysis ?? s.analysis,
+         };
       }
       return s;
     }));

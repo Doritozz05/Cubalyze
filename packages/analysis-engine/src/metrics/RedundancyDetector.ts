@@ -1,41 +1,4 @@
-import type { SolveTimeline } from '@cubeforge/types';
-
-/**
- * Result of redundancy analysis on a solve timeline.
- */
-export interface RedundancyResult {
-  /** Total number of redundant move pairs found. */
-  totalRedundancies: number;
-
-  /** Number of move pairs that cancel each other (R R'). */
-  cancellations: number;
-
-  /** Number of same-direction repetitions (U U → could be U2). */
-  repetitions: number;
-
-  /** Number of 180° moves (potential overturn/overshoot). */
-  halfTurns: number;
-
-  /** Percentage of moves that are redundant. */
-  redundancyRate: number;
-
-  /** Detailed list of each redundant pattern found. */
-  patterns: RedundancyPattern[];
-}
-
-export interface RedundancyPattern {
-  /** Index of the first move in the pattern. */
-  startIndex: number;
-
-  /** Index of the last move in the pattern. */
-  endIndex: number;
-
-  /** Type of redundancy. */
-  type: 'cancellation' | 'repetition' | 'half-turn';
-
-  /** Human-readable description. */
-  description: string;
-}
+import type { SolveTimeline, RedundancyResult, RedundancyPattern } from '@cubeforge/types';
 
 /**
  * Detects redundant and inefficient move patterns in a solve timeline.

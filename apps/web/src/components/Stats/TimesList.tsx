@@ -23,6 +23,7 @@ export interface TimesListProps {
   onUpdate: (id: string, updates: Partial<Solve>) => void;
   onDelete: (id: string) => void;
   onClear?: () => void;
+  onSelect?: (solve: Solve) => void;
   className?: string;
 }
 
@@ -53,6 +54,7 @@ export function TimesList({
   onUpdate,
   onDelete,
   onClear,
+  onSelect,
   className,
 }: TimesListProps) {
   const stats = useMemo(() => computeStats(solves), [solves]);
@@ -96,6 +98,7 @@ export function TimesList({
                 <li
                   key={solve.id}
                   className="group flex items-center gap-2.5 border-b border-line/70 px-1 py-[9px] transition-colors hover:bg-surface-2 last:border-0"
+                  onClick={() => onSelect?.(solve)}
                 >
                   {/* Index + best marker */}
                   <span className="flex w-8 shrink-0 items-center justify-end gap-1">

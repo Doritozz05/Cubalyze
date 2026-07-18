@@ -15,10 +15,12 @@ export class EfficiencyCalculator {
    * Find an optimal solution for the scrambled state.
    *
    * NOTE: This calls the Min2PhaseSolver which takes ~50-100ms.
-   * Call sparingly — once per solve, not once per move.
+   * Yields control via setTimeout(0) to avoid blocking the main thread.
    */
-  static solveOptimal(scramble: string): string {
+  static async solveOptimal(scramble: string): Promise<string> {
     try {
+      // Yield control before the expensive solver computation
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       const state = new CubeState();
       CubeState.initTables();
       state.applySequence(scramble);
@@ -36,10 +38,10 @@ export class EfficiencyCalculator {
    * @param scramble - The original scramble string (e.g. "R U R' U'").
    * @returns EfficiencyMetrics.
    */
-  static compute(
+  static async compute(
     timeline: SolveTimeline,
     scramble: string,
-  ): EfficiencyMetrics {
+  ): Promise<EfficiencyMetrics> {
     const { entries } = timeline;
 
     if (entries.length === 0) {
@@ -54,7 +56,7 @@ export class EfficiencyCalculator {
     }
 
     // ─── Optimal solution ───────────────────────────────────────────────
-    const optimalSolution = EfficiencyCalculator.solveOptimal(scramble);
+    const optimalSolution = await EfficiencyCalculator.solveOptimal(scramble);
     const optimalMoveCount = optimalSolution
       ? optimalSolution.trim().split(/\s+/).filter(Boolean).length
       : 0;

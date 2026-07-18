@@ -18,6 +18,7 @@ export const SolveSchema = z.object({
   method: z.string().optional(),
   moves: z.array(CubeMoveEventSchema).default([]),
   analysisEngineVersion: z.string().optional(),
+  analysis: z.string().optional(),
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),
 });

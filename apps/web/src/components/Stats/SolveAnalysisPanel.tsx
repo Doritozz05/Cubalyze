@@ -217,6 +217,21 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
                 label="Drift"
                 value={`${(m.efficiency.forwardDrift * 100).toFixed(0)}%`}
               />
+              {m.redundancy && (
+                <>
+                  <MetricTile
+                    label="Redundancies"
+                    value={`${m.redundancy.totalRedundancies}`}
+                    sub={`${(m.redundancy.redundancyRate * 100).toFixed(0)}% rate`}
+                    accent={m.redundancy.totalRedundancies > 0}
+                  />
+                  <MetricTile
+                    label="Cancellations"
+                    value={`${m.redundancy.cancellations}`}
+                    sub={`${m.redundancy.repetitions} reps`}
+                  />
+                </>
+              )}
             </div>
           </AccordionContent>
         </AccordionItem>

@@ -8,6 +8,7 @@ export interface Solve {
   method?: string;
   moves?: unknown[];
   analysisEngineVersion?: string;
+  analysis?: string;
   createdAt?: string;
   updatedAt?: string;
 }

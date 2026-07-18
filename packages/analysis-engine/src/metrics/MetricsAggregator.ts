@@ -6,6 +6,7 @@ import type {
   FluidityMetrics,
   EfficiencyMetrics,
   RotationMetrics,
+  RedundancyResult,
   CFOPMetrics,
   RouxMetrics,
   PhaseMetrics,
@@ -15,6 +16,7 @@ import { PauseDetector } from './PauseDetector';
 import { FluidityCalculator } from './FluidityCalculator';
 import { RotationCounter } from './RotationCounter';
 import { EfficiencyCalculator } from './EfficiencyCalculator';
+import { RedundancyDetector } from './RedundancyDetector';
 import { CFOPMetricsCalculator } from './CFOPMetricsCalculator';
 import { RouxMetricsCalculator } from './RouxMetricsCalculator';
 
@@ -34,10 +36,10 @@ export class MetricsAggregator {
    * @param scramble - The original scramble string.
    * @returns SolveMetrics with all computed metrics.
    */
-  static computeAll(
+  static async computeAll(
     timeline: SolveTimeline,
     scramble: string,
-  ): SolveMetrics {
+  ): Promise<SolveMetrics> {
     const { entries, phases, startTimestamp, endTimestamp } = timeline;
 
     const totalTimeMs = Math.max(0, endTimestamp - startTimestamp);
@@ -64,10 +66,11 @@ export class MetricsAggregator {
     const rotation: RotationMetrics = RotationCounter.compute(timeline);
 
     // ─── Advanced Metrics ───────────────────────────────────────────────
-    const efficiency: EfficiencyMetrics = EfficiencyCalculator.compute(
+    const efficiency: EfficiencyMetrics = await EfficiencyCalculator.compute(
       timeline,
       scramble,
     );
+    const redundancy: RedundancyResult = RedundancyDetector.analyze(timeline);
 
     // ─── Update phase-level pause counts ────────────────────────────────
     for (const p of pauses.pauses) {
@@ -99,6 +102,7 @@ export class MetricsAggregator {
       fluidity,
       efficiency,
       rotation,
+      redundancy,
       cfop,
       roux,
     };

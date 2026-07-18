@@ -60,6 +60,10 @@ export default function App() {
     analysis: SolveMetrics | null;
   }>({ solve: null, analysis: null });
   const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
+  // Track the DB solve ID for the current solve so we can persist analysis later
+  const pendingSolveIdRef = useRef<string | null>(null);
+  // Selected solve for historical analysis viewing
+  const [selectedSolve, setSelectedSolve] = useState<import("@/types").Solve | null>(null);
 
   const handleRegenerate = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
@@ -79,7 +83,8 @@ export default function App() {
         penalty,
         method: capturedMethod,
       })
-        .then((_result) => {
+        .then((solveId) => {
+          pendingSolveIdRef.current = solveId;
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
         })
@@ -104,28 +109,50 @@ export default function App() {
     method,
     collectedMoves,
     lastSolveMoves,
+    lastSolveOrientations,
   } = session$;
 
   // ── Run analysis on solve complete ─────────────────────────────────────
   const prevLastTimeRef = useRef<number | null>(null);
+  // Capture scramble & method at solve stop time to avoid stale closure race
+  const scrambleAtSolveRef = useRef<string>("");
+  const methodAtSolveRef = useRef<SolveMethod>("CFOP");
+
   useEffect(() => {
+    // Capture scramble & method when solve stops (before handleComplete regenerates)
+    if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
+      scrambleAtSolveRef.current = currentScramble;
+      methodAtSolveRef.current = method;
+    }
+
     // Detect new solve completion (lastTime changed from something to a new value)
     if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
       prevLastTimeRef.current = timerLastTime;
+      setSelectedSolve(null); // Show new solve analysis instead of historical
 
       // Use the stable snapshot captured at stop time (avoids race with IDLE clearing)
       const moves = lastSolveMoves;
-      const scr = currentScramble;
-      const m = method;
+      const scr = scrambleAtSolveRef.current;
+      const m = methodAtSolveRef.current;
 
       if (moves.length > 0) {
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
-          const analysis = runAnalysis(moves, scr, m);
-          if (analysis) {
-            lastSolveRef.current = { solve: null, analysis };
-            setLastAnalysis(analysis);
-          }
+          runAnalysis(moves, scr, m, lastSolveOrientations).then((analysis) => {
+            if (analysis) {
+              lastSolveRef.current = { solve: null, analysis };
+              setLastAnalysis(analysis);
+
+              // Persist analysis to DB
+              const solveId = pendingSolveIdRef.current;
+              if (solveId) {
+                updateSolve(solveId, { analysis }).catch(() =>
+                  console.warn("Failed to persist analysis"),
+                );
+                pendingSolveIdRef.current = null;
+              }
+            }
+          });
         }, 0);
       }
     }
@@ -134,7 +161,7 @@ export default function App() {
     if (timerPhase === "idle") {
       prevLastTimeRef.current = null;
     }
-  }, [timerLastTime, timerPhase, lastSolveMoves, currentScramble, method]);
+  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, currentScramble, method]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);
@@ -245,16 +272,20 @@ export default function App() {
     });
   }, []);
 
-  // Create a fake solve object for the analysis panel
-  const lastSolveForPanel = lastAnalysis ? {
-    id: "latest",
-    time: timerLastTime ?? 0,
-    penalty: "none" as Penalty,
-    scramble: currentScramble,
-    timestamp: Date.now(),
-    method: methodPref,
-    analysis: lastAnalysis,
-  } satisfies import("@/types").Solve : undefined;
+  // Create a solve object for the analysis panel — prefer selected, then last
+  const solveForPanel = selectedSolve
+    ? selectedSolve
+    : lastAnalysis
+      ? {
+          id: "latest",
+          time: timerLastTime ?? 0,
+          penalty: "none" as Penalty,
+          scramble: scrambleAtSolveRef.current || currentScramble,
+          timestamp: Date.now(),
+          method: methodAtSolveRef.current || methodPref,
+          analysis: lastAnalysis,
+        } satisfies import("@/types").Solve
+      : undefined;
 
   return (
     <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
@@ -359,6 +390,7 @@ export default function App() {
                   onUpdate={handleUpdate}
                   onDelete={handleDelete}
                   onClear={handleClear}
+                  onSelect={setSelectedSolve}
                   className="h-[55vh] lg:h-full"
                 />
               </TabsContent>
@@ -374,8 +406,8 @@ export default function App() {
                 value="analysis"
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
               >
-                {lastSolveForPanel ? (
-                  <SolveAnalysisPanel solve={lastSolveForPanel} />
+                {solveForPanel ? (
+                  <SolveAnalysisPanel solve={solveForPanel} />
                 ) : (
                   <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
                     <p className="text-sm text-ink-2">No analysis yet</p>

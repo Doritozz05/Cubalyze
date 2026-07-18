@@ -94,4 +94,11 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_algorithms_subset ON algorithms(subset);
     `,
   },
+  {
+    id: '005_add_analysis_column',
+    description: 'Add analysis JSON column to solves table',
+    sql: `
+      ALTER TABLE solves ADD COLUMN analysis TEXT;
+    `,
+  },
 ];

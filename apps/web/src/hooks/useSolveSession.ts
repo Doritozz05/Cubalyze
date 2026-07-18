@@ -6,13 +6,13 @@ import type { TimerState, Penalty, SolveMethod } from "@/types";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore, orientationStore } from "@cubeforge/state";
 import {
   useScrambleValidator,
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
 import { shouldAutoArm } from "@/hooks/shouldAutoArm";
-import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeOrientation, SolveMetrics } from "@cubeforge/types";
 import {
   TimelineBuilder,
   PhaseSplitter,
@@ -58,6 +58,8 @@ export interface UseSolveSessionResult {
   collectedMoves: CubeMoveEvent[];
   /** Moves captured at solve stop (stable snapshot for analysis). */
   lastSolveMoves: CubeMoveEvent[];
+  /** Orientations captured at solve stop (one per move, for RotationCounter). */
+  lastSolveOrientations: (CubeOrientation | undefined)[];
 }
 
 const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
@@ -88,21 +90,19 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
  * This is intentionally async (via setTimeout 0) to avoid blocking
  * the main thread during the solve completion flow.
  */
-function runAnalysis(
+async function runAnalysis(
   moves: CubeMoveEvent[],
   scramble: string,
   method: SolveMethod,
-): SolveMetrics | null {
+  orientations?: (CubeOrientation | undefined)[],
+): Promise<SolveMetrics | null> {
   if (moves.length === 0) return null;
 
   try {
     const methodDef = METHOD_DEFS[method];
-    // Build the solve timeline from raw moves
-    const timeline = TimelineBuilder.build(moves, method);
-    // Run phase recognition
+    const timeline = TimelineBuilder.build(moves, method, orientations);
     PhaseSplitter.splitAndAnnotate(timeline, methodDef);
-    // Compute all metrics
-    return MetricsAggregator.computeAll(timeline, scramble);
+    return await MetricsAggregator.computeAll(timeline, scramble);
   } catch (err) {
     console.error("[Analysis] Pipeline failed:", err);
     return null;
@@ -148,6 +148,12 @@ export function useSolveSession(
   const lastSolveMovesRef = useRef<CubeMoveEvent[]>([]);
   const [lastSolveMoves, setLastSolveMoves] = useState<CubeMoveEvent[]>([]);
 
+  // ── Orientation collection (one per move, for RotationCounter) ─────────
+  const collectedOrientationsRef = useRef<(CubeOrientation | undefined)[]>([]);
+  const lastSolveOrientationsRef = useRef<(CubeOrientation | undefined)[]>([]);
+  const [lastSolveOrientations, setLastSolveOrientations] = useState<(CubeOrientation | undefined)[]>([]);
+  const currentOrientationRef = useRef<CubeOrientation | undefined>(undefined);
+
   const onSolveRef = useRef(options.onSolve);
   useEffect(() => {
     onSolveRef.current = options.onSolve;
@@ -157,8 +163,8 @@ export function useSolveSession(
     const sub1 = engine.state$.subscribe((engineState) => {
       if (engineState === EngineState.IDLE) {
         swallowNextCubeMoveRef.current = false;
-        // Clear move buffer when returning to IDLE
         collectedMovesRef.current = [];
+        collectedOrientationsRef.current = [];
         setCollectedMoves([]);
       }
       setPhase(mapEngineStateToUIState(engineState));
@@ -167,9 +173,10 @@ export function useSolveSession(
     const sub3 = engine.stop$.subscribe((ev) => {
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
-      // Capture moves synchronously here — before IDLE transition clears them
       lastSolveMovesRef.current = [...collectedMovesRef.current];
+      lastSolveOrientationsRef.current = [...collectedOrientationsRef.current];
       setLastSolveMoves(lastSolveMovesRef.current);
+      setLastSolveOrientations(lastSolveOrientationsRef.current);
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
@@ -237,6 +244,7 @@ export function useSolveSession(
       // Collect moves while running
       if (current === EngineState.RUNNING) {
         collectedMovesRef.current.push(move);
+        collectedOrientationsRef.current.push(currentOrientationRef.current);
         setCollectedMoves([...collectedMovesRef.current]);
       }
 
@@ -273,6 +281,14 @@ export function useSolveSession(
       faceletSub?.unsubscribe();
     };
   }, [engine]);
+
+  // Track current orientation from the orientation store (for RotationCounter)
+  useEffect(() => {
+    const unsub = orientationStore.subscribe((state) => {
+      currentOrientationRef.current = state.orientation;
+    });
+    return unsub;
+  }, []);
 
   const press = useCallback(() => {
     const current = engine.getState();
@@ -388,6 +404,7 @@ export function useSolveSession(
     method: methodPref,
     collectedMoves,
     lastSolveMoves,
+    lastSolveOrientations,
   };
 }
 
