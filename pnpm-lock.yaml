@@ -268,7 +268,27 @@ importers:
 
   packages/ai-core: {}
 
-  packages/analysis-engine: {}
+  packages/analysis-engine:
+    dependencies:
+      '@cubeforge/math-core':
+        specifier: workspace:*
+        version: link:../math-core
+      '@cubeforge/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      tsup:
+        specifier: ^8.0.1
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.2.2
+        version: 1.6.1(@types/node@24.13.3)(lightningcss@1.32.0)(terser@5.49.0)
 
   packages/bluetooth: {}
 

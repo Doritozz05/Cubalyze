@@ -15,3 +15,6 @@ export * from './methods/IMethodDefinition';
 export * from './methods/StateMatcher';
 export * from './methods/cfop/cfopMasks';
 export * from './methods/roux/rouxMasks';
+export * from './methods/roux/rouxComplete';
+export * from './methods/zz/zzMasks';
+export * from './methods/petrus/petrusMasks';

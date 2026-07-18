@@ -75,3 +75,7 @@ export interface FaceRotationMapping {
 // See: docs/02-architecture/Dynamic_Notation_Orientation_System.md
 export * from './orientation';
 
+// ─── Analysis Pipeline Types ─────────────────────────────────────────────────
+// SolveTimeline, metrics, and phase segmentation types.
+export * from './analysis';
+
