@@ -185,8 +185,20 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       }
     }
 
+    const connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
+      if (status === 'connected') {
+        globalCubeAdapter.requestFacelets().catch(console.error);
+        if (workerProxy.current) {
+          workerProxy.current.calibrateGyro();
+        }
+      }
+    });
+
     if (globalCubeAdapter.isConnected) {
       globalCubeAdapter.requestFacelets().catch(console.error);
+      if (workerProxy.current) {
+        workerProxy.current.calibrateGyro();
+      }
     }
 
     // Resize Observer
@@ -208,6 +220,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       resizeObserver.disconnect();
       moveSub.current?.unsubscribe();
       faceletSub?.unsubscribe();
+      connSub?.unsubscribe();
       syncBridge.current?.unbind();
       // DON'T terminate worker — singleton survives for next mount
       // DON'T null out workerSingleton

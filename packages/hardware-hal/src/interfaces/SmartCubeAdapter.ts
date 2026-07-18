@@ -14,4 +14,5 @@ export interface SmartCubeAdapter {
   facelets$: Observable<string>;
   battery$: Observable<number>;
   gyro$?: Observable<GyroEvent>;
+  connectionStatus$?: Observable<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>;
 }

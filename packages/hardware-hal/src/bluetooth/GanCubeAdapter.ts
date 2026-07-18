@@ -1,4 +1,4 @@
-import { Subject, ReplaySubject } from 'rxjs';
+import { Subject, ReplaySubject, BehaviorSubject } from 'rxjs';
 import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
 import { ClockDriftReconciler } from '../sync/ClockDrift';
@@ -42,12 +42,14 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   private batterySubject = new Subject<number>();
   private gyroSubject = new Subject<GyroEvent>();
   private invalidMovesSubject = new Subject<string>();
+  private connectionStatusSubject = new BehaviorSubject<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('disconnected');
 
   public moves$ = this.movesSubject.asObservable();
   public facelets$ = this.faceletsSubject.asObservable();
   public battery$ = this.batterySubject.asObservable();
   public gyro$ = this.gyroSubject.asObservable();
   public invalidMoves$ = this.invalidMovesSubject.asObservable();
+  public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
   public onFacelets: ((facelets: string) => void) | null = null;
   private clockReconciler = new ClockDriftReconciler();
@@ -75,12 +77,14 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     } catch (error) {
       this.device = null;
       this.onConnectionChange?.('disconnected');
+      this.connectionStatusSubject.next('disconnected');
       throw error;
     }
 
     this.reconnectAttempts = 0;
     this.setupEventsSubscription();
     this.onConnectionChange?.('connected');
+    this.connectionStatusSubject.next('connected');
   }
 
   public async requestFacelets(): Promise<void> {
@@ -101,6 +105,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     }
     this.device = null;
     this.onConnectionChange?.('disconnected');
+    this.connectionStatusSubject.next('disconnected');
   }
 
   // ── Private: events subscription ────────────────────────────────────────────
@@ -196,6 +201,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       this.attemptReconnect();
     } else {
       this.onConnectionChange?.('disconnected');
+      this.connectionStatusSubject.next('disconnected');
     }
   }
 
@@ -211,12 +217,14 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       this.reconnectAttempts = 0;
       this.device = null;
       this.onConnectionChange?.('disconnected');
+      this.connectionStatusSubject.next('disconnected');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1);
     this.onConnectionChange?.('reconnecting');
+    this.connectionStatusSubject.next('reconnecting');
 
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
@@ -227,6 +235,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.reconnectAttempts = 0;
         this.setupEventsSubscription();
         this.onConnectionChange?.('connected');
+        this.connectionStatusSubject.next('connected');
       } catch {
         this.attemptReconnect();
       }

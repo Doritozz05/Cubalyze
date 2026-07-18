@@ -122,6 +122,9 @@ export class EngineWorkerAPI {
   /** Calibrates the gyroscope — sets the current orientation as the "zero" reference */
   public calibrateGyro() {
     if (!this.gyroFusion) return;
+    if (this.sceneManager) {
+      this.sceneManager.resetCamera();
+    }
     this.gyroFusion.calibrate();
   }
 

@@ -83,6 +83,10 @@ export class SceneManager {
     this.cameraGroup.rotation.x = Math.max(-maxPitch, Math.min(maxPitch, this.cameraGroup.rotation.x));
   }
 
+  public resetCamera(): void {
+    this.cameraGroup.rotation.set(0, 0, 0);
+  }
+
   public render(): void {
     this.renderer.render(this.scene, this.camera);
     this.onRender?.();
