@@ -460,6 +460,9 @@ importers:
         specifier: ^0.185.1
         version: 0.185.1
     devDependencies:
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
       tsup:
         specifier: ^8.0.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)

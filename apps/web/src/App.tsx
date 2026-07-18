@@ -107,7 +107,6 @@ export default function App() {
     inspection,
     scrambleVerification,
     method,
-    collectedMoves,
     lastSolveMoves,
     lastSolveOrientations,
   } = session$;

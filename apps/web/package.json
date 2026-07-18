@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:clean": "vite --force",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty",
     "lint": "eslint .",
     "preview": "vite preview"
   },

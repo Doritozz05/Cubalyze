@@ -10,6 +10,7 @@ import {
   OLLMask,
   PLLMask,
   Edge,
+  COLOR_NEUTRAL_CFOP_MASKS,
 } from '@cubeforge/math-core';
 import { makeSolveFromScramble, inverseScramble } from './test-helpers';
 
@@ -392,5 +393,74 @@ describe('DIAGNOSTIC — Phase Recognition Bug', () => {
     console.log('works correctly WHEN the user follows the white-on-D convention.');
 
     expect(firstCross).toBe(0); // Cross satisfied at move 0
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SCENARIO 8 (COLOR-NEUTRAL): Verify COLOR_NEUTRAL_CFOP_MASKS works.
+  // All 24 masks (6 faces × 4 phases) must match on a solved cube.
+  // ─────────────────────────────────────────────────────────────────────
+  it('SCENARIO 8: color-neutral — all 6×4 masks match solved cube', () => {
+    const state = new CubeState();
+
+    console.log('\n═══════════════════════════════════════════════════════════════');
+    console.log('SCENARIO 8: Color-Neutral — 6×4 masks on solved cube');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log(`COLOR_NEUTRAL_CFOP_MASKS has ${COLOR_NEUTRAL_CFOP_MASKS.length} entries`);
+
+    for (const faceMasks of COLOR_NEUTRAL_CFOP_MASKS) {
+      for (let p = 0; p < 4; p++) {
+        const match = StateMatcher.matchesMask(state, faceMasks.masks[p]);
+        expect(match).toBe(true);
+      }
+    }
+
+    console.log('All 6×4=24 masks match on solved cube. ✓');
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SCENARIO 9 (COLOR-NEUTRAL): PhaseSplitter with { colorNeutral: true }
+  // detects a U-cross (white cross) while standard fails.
+  // ─────────────────────────────────────────────────────────────────────
+  it('SCENARIO 9: color-neutral PhaseSplitter detects U-cross', () => {
+    // Scramble + solve using only moves that swap D-layer with U-layer
+    // F2 R2 L2 B2 puts D-cross pieces on U (a "white cross on U" state)
+    const scramble = 'F2 R2 L2 B2';
+    const { solveMoves } = makeSolveFromScramble(scramble);
+    const timeline = TimelineBuilder.build(solveMoves, 'CFOP', undefined, scramble);
+
+    // Standard (D-cross only)
+    const stdPhases = PhaseSplitter.split(timeline, CFOPDefinition);
+
+    // Color-neutral
+    const cnPhases = PhaseSplitter.split(timeline, CFOPDefinition, {
+      colorNeutral: true,
+    });
+
+    console.log('\n═══════════════════════════════════════════════════════════════');
+    console.log('SCENARIO 9: Color-Neutral PhaseSplitter vs Standard');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log(`Scramble: ${scramble}`);
+    console.log('');
+    console.log('Standard (D-cross only):');
+    for (const p of stdPhases) {
+      console.log(`  ${p.phaseName}: ${p.moveCount}m`);
+    }
+    console.log('Color-Neutral:');
+    for (const p of cnPhases) {
+      console.log(`  ${p.phaseName}: ${p.moveCount}m`);
+    }
+
+    // Standard: cross on U → D-cross mask never matches until full solve
+    expect(stdPhases.length).toBe(1);
+    expect(stdPhases[0].phaseName).toBe('Cross');
+
+    // Color-neutral: should detect Cross and F2L at minimum.
+    // OLL/PLL may not be detected separately in a 4-move solve
+    // because PhaseSplitter needs one entry per phase, and if
+    // F2L is detected at the last entry, there's no room left.
+    const cnNames = cnPhases.map((p) => p.phaseName);
+    expect(cnNames).toContain('Cross');
+    expect(cnNames).toContain('F2L');
+    expect(cnPhases.length).toBeGreaterThanOrEqual(2);
   });
 });

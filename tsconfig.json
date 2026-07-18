@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Cubeforge root — cross-package scan (CLI + repo-root TS workspace)",
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+
+    "jsx": "react-jsx",
+
+    "baseUrl": ".",
+    "paths": {
+      "@cubeforge/types": ["./packages/types/src/index.ts"],
+      "@cubeforge/math-core": ["./packages/math-core/src/index.ts"],
+      "@cubeforge/cube-3d-engine": ["./packages/cube-3d-engine/src/index.ts"],
+      "@cubeforge/analysis-engine": ["./packages/analysis-engine/src/index.ts"],
+      "@cubeforge/database": ["./packages/database/src/index.ts"],
+      "@cubeforge/hardware-hal": ["./packages/hardware-hal/src/index.ts"],
+      "@cubeforge/state": ["./packages/state/src/index.ts"],
+      "@cubeforge/timer-engine": ["./packages/timer-engine/src/index.ts"],
+      "@cubeforge/gan-protocol": ["./packages/gan-protocol/src/index.ts"],
+      "@cubeforge/models": ["./packages/models/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*"],
+  "exclude": ["**/node_modules", "**/dist", "**/.turbo", "**/build", "**/coverage"]
+}

@@ -1,16 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import type { Solve } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { RotationMetrics, EfficiencyMetrics } from "@cubeforge/types";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+
+/** Zeroed fallback used when the analysis pipeline omits rotation metrics. */
+const EMPTY_ROTATION: RotationMetrics = {
+  totalCount: 0,
+  byAxis: { x: 0, y: 0, z: 0 },
+  estimatedRotationTimeMs: 0,
+  consecutiveCount: 0,
+  byPhase: {},
+  rotationToMoveRatio: 0,
+  redundantRotations: 0,
+};
+
+/** Zeroed fallback used when the analysis pipeline omits efficiency metrics. */
+const EMPTY_EFFICIENCY: EfficiencyMetrics = {
+  moveEfficiencyRatio: 0,
+  optimalMoveCount: 0,
+  redundancies: 0,
+  cancellations: 0,
+  overturns: 0,
+  forwardDrift: 0,
+};
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -101,6 +121,8 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
   }
 
   const m = metrics;
+  const rotation = m.rotation ?? EMPTY_ROTATION;
+  const efficiency = m.efficiency ?? EMPTY_EFFICIENCY;
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
@@ -202,20 +224,20 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
             <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
               <MetricTile
                 label="Rotations"
-                value={`${m.rotation.totalCount}`}
-                sub={`x:${m.rotation.byAxis.x} y:${m.rotation.byAxis.y} z:${m.rotation.byAxis.z}`}
+                value={`${rotation.totalCount}`}
+                sub={`x:${rotation.byAxis.x} y:${rotation.byAxis.y} z:${rotation.byAxis.z}`}
               />
               <MetricTile
                 label="Rot Time"
-                value={formatTime(m.rotation.estimatedRotationTimeMs)}
+                value={formatTime(rotation.estimatedRotationTimeMs)}
               />
               <MetricTile
                 label="Efficiency"
-                value={m.efficiency.moveEfficiencyRatio.toFixed(2)} sub={`opt=${m.efficiency.optimalMoveCount}m`}
+                value={efficiency.moveEfficiencyRatio.toFixed(2)} sub={`opt=${efficiency.optimalMoveCount}m`}
               />
               <MetricTile
                 label="Drift"
-                value={`${(m.efficiency.forwardDrift * 100).toFixed(0)}%`}
+                value={`${(efficiency.forwardDrift * 100).toFixed(0)}%`}
               />
               {m.redundancy && (
                 <>

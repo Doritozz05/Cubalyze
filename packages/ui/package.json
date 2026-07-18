@@ -6,6 +6,9 @@
     "./components/*": "./src/components/*",
     "./lib/*": "./src/lib/*"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",
