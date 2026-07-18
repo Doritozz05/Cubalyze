@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useStore } from "zustand";
-import type { TimerState, Penalty } from "@/types";
+import type { TimerState, Penalty, SolveMethod } from "@/types";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
@@ -12,8 +12,29 @@ import {
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
 import { shouldAutoArm } from "@/hooks/shouldAutoArm";
+import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
+import {
+  TimelineBuilder,
+  PhaseSplitter,
+  MetricsAggregator,
+} from "@cubeforge/analysis-engine";
+import {
+  CFOPDefinition,
+  RouxFullDefinition,
+  ZZDefinition,
+  PetrusDefinition,
+  type MethodDefinition,
+} from "@cubeforge/math-core";
 
 const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
+
+/** Map method name to its MethodDefinition. */
+const METHOD_DEFS: Record<SolveMethod, MethodDefinition> = {
+  CFOP: CFOPDefinition,
+  Roux: RouxFullDefinition,
+  ZZ: ZZDefinition,
+  Petrus: PetrusDefinition,
+};
 
 export interface UseSolveSessionOptions {
   onSolve?: (time: number, penalty: Penalty) => void;
@@ -31,6 +52,12 @@ export interface UseSolveSessionResult {
   smartCubeConnected: boolean;
   inspection: boolean;
   scrambleVerification: boolean;
+  /** The solving method from preferences. */
+  method: SolveMethod;
+  /** Collected moves from the current solve (cleared on reset). */
+  collectedMoves: CubeMoveEvent[];
+  /** Moves captured at solve stop (stable snapshot for analysis). */
+  lastSolveMoves: CubeMoveEvent[];
 }
 
 const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
@@ -56,20 +83,38 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
 };
 
 /**
+ * Runs the analysis pipeline on collected moves after a solve.
+ *
+ * This is intentionally async (via setTimeout 0) to avoid blocking
+ * the main thread during the solve completion flow.
+ */
+function runAnalysis(
+  moves: CubeMoveEvent[],
+  scramble: string,
+  method: SolveMethod,
+): SolveMetrics | null {
+  if (moves.length === 0) return null;
+
+  try {
+    const methodDef = METHOD_DEFS[method];
+    // Build the solve timeline from raw moves
+    const timeline = TimelineBuilder.build(moves, method);
+    // Run phase recognition
+    PhaseSplitter.splitAndAnnotate(timeline, methodDef);
+    // Compute all metrics
+    return MetricsAggregator.computeAll(timeline, scramble);
+  } catch (err) {
+    console.error("[Analysis] Pipeline failed:", err);
+    return null;
+  }
+}
+
+/**
  * The single source of truth for the solve start-of-flow orchestration.
  *
- * Combination matrix supported (Scramble Verification × Inspection):
- *
- *   M1  ON + ON    ─ Space → INSPECTION → cube move → RUNNING
- *   M2  ON + OFF   ─ scramble completes → READY_FOR_MOVE → cube move → RUNNING
- *   M3  OFF + ON   ─ Space → INSPECTION → cube move → RUNNING
- *   M4  OFF + OFF  ─ Space → READY_FOR_MOVE → cube move → RUNNING
- *
- * The auto-arm transition is restricted to Mode 2 by `shouldAutoArm` —
- * any other combination requires an explicit user gesture. A
- * swallow-once guard prevents the scramble-completer move from also
- * being treated as the first solve-start move in the rare React-batching
- * edge case.
+ * New in EPIC 5: collects moves during Smart Cube solves and exposes
+ * them for post-solve analysis. The analysis pipeline runs asynchronously
+ * so it never blocks the timer UI.
  */
 export function useSolveSession(
   scramble: string,
@@ -80,16 +125,13 @@ export function useSolveSession(
     preferencesStore,
     (s) => s.scrambleVerification,
   );
+  const methodPref = useStore(preferencesStore, (s) => s.method);
 
   const engine = useMemo(
     () => new TimerEngine({ useInspection: inspectionPref }),
     [inspectionPref],
   );
 
-  // When Scramble Verification is OFF (Modes 3 & 4) the validator is
-  // completely short-circuited — no moves$/facelets$ subscription, no CPU
-  // work. `validation.isScrambled` stays false, which is harmless because
-  // `shouldAutoArm` already requires scrambleVerif=true.
   const validation = useScrambleValidator(scramble, scrambleVerificationPref);
 
   const [phase, setPhase] = useState<TimerState>("idle");
@@ -99,6 +141,13 @@ export function useSolveSession(
     () => !!globalCubeAdapter.isConnected,
   );
 
+  // ── Move collection buffer ────────────────────────────────────────────
+  const collectedMovesRef = useRef<CubeMoveEvent[]>([]);
+  const [collectedMoves, setCollectedMoves] = useState<CubeMoveEvent[]>([]);
+  // Stable snapshot captured at solve stop — avoids race with IDLE clearing
+  const lastSolveMovesRef = useRef<CubeMoveEvent[]>([]);
+  const [lastSolveMoves, setLastSolveMoves] = useState<CubeMoveEvent[]>([]);
+
   const onSolveRef = useRef(options.onSolve);
   useEffect(() => {
     onSolveRef.current = options.onSolve;
@@ -106,10 +155,11 @@ export function useSolveSession(
 
   useEffect(() => {
     const sub1 = engine.state$.subscribe((engineState) => {
-      // Reset the swallow-once guard whenever the engine returns to IDLE —
-      // otherwise it could leak across solves or user-initiated manual arms.
       if (engineState === EngineState.IDLE) {
         swallowNextCubeMoveRef.current = false;
+        // Clear move buffer when returning to IDLE
+        collectedMovesRef.current = [];
+        setCollectedMoves([]);
       }
       setPhase(mapEngineStateToUIState(engineState));
     });
@@ -117,6 +167,9 @@ export function useSolveSession(
     const sub3 = engine.stop$.subscribe((ev) => {
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
+      // Capture moves synchronously here — before IDLE transition clears them
+      lastSolveMovesRef.current = [...collectedMovesRef.current];
+      setLastSolveMoves(lastSolveMovesRef.current);
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
@@ -137,9 +190,7 @@ export function useSolveSession(
     };
   }, [engine]);
 
-  // Smart Cube presence is tracked by polling because the adapter does not
-  // expose a status observable. Interval is generous by design — connection
-  // changes are user-initiated, not high-frequency.
+  // Smart Cube presence polling
   useEffect(() => {
     const update = () => setSmartCubeConnected(!!globalCubeAdapter.isConnected);
     update();
@@ -147,13 +198,7 @@ export function useSolveSession(
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-Arming of Mode 2: scramble completes AND scrambleVerif ON AND
-  // inspection OFF AND smart cube paired.
-  //
-  // IMPORTANT: When inspection is enabled (Mode 1) this effect does NOT
-  // fire — the user must press Space explicitly to start inspection.
-  // The swallowNextCubeMoveRef guard prevents the scramble-completer
-  // movement from also being interpreted as the first solve-start move.
+  // Auto-arm logic
   const wasScrambledRef = useRef(false);
   const swallowNextCubeMoveRef = useRef(false);
   useEffect(() => {
@@ -181,16 +226,20 @@ export function useSolveSession(
     engine,
   ]);
 
-  // Smart Cube move wiring: auto-start from INSPECTION / READY_FOR_MOVE
-  // only, and auto-stop when the cube is solved while running.
+  // Smart Cube move wiring + move collection
   useEffect(() => {
     const adapter = globalCubeAdapter;
     if (!adapter.moves$) return;
 
-    const moveSub = adapter.moves$.subscribe(() => {
+    const moveSub = adapter.moves$.subscribe((move: CubeMoveEvent) => {
       const current = engine.getState();
 
-      // Defense-in-depth against the scramble-completer race.
+      // Collect moves while running
+      if (current === EngineState.RUNNING) {
+        collectedMovesRef.current.push(move);
+        setCollectedMoves([...collectedMovesRef.current]);
+      }
+
       if (
         swallowNextCubeMoveRef.current &&
         current === EngineState.READY_FOR_MOVE
@@ -225,8 +274,6 @@ export function useSolveSession(
     };
   }, [engine]);
 
-  // Centralised press routing. Every gesture ends here so we cannot leak
-  // a scenario where a key/tap/click transitions the engine unexpectedly.
   const press = useCallback(() => {
     const current = engine.getState();
 
@@ -260,18 +307,12 @@ export function useSolveSession(
       return;
     }
 
-    // IDLE
     if (inspectionPref) {
       engine.startInspection();
     } else if (smartCubeConnected) {
-      // M2: auto-arm effects already fired; explicit Space is still a
-      // valid way to ARM the next solve. M4: explicit arm is REQUIRED.
-      // Always clear the swallow guard here — it must not bleed across
-      // modes or persist from a previous auto-arm that was never consumed.
       swallowNextCubeMoveRef.current = false;
       engine.arm();
     } else {
-      // Manual M2 / M4: standard hold & release.
       engine.handleDown();
     }
   }, [engine, inspectionPref, smartCubeConnected]);
@@ -344,5 +385,11 @@ export function useSolveSession(
     smartCubeConnected,
     inspection: inspectionPref,
     scrambleVerification: scrambleVerificationPref,
+    method: methodPref,
+    collectedMoves,
+    lastSolveMoves,
   };
 }
+
+/** Re-export for consumers that need the analysis pipeline. */
+export { runAnalysis };

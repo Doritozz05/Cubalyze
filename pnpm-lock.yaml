@@ -31,6 +31,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@cubeforge/analysis-engine':
+        specifier: workspace:*
+        version: link:../../packages/analysis-engine
       '@cubeforge/cube-3d-engine':
         specifier: workspace:*
         version: link:../../packages/cube-3d-engine

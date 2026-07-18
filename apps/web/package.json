@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cubeforge/analysis-engine": "workspace:*",
     "@cubeforge/cube-3d-engine": "workspace:*",
     "@cubeforge/database": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",

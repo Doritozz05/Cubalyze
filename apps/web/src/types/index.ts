@@ -7,6 +7,9 @@
 /** Penalty applied to a solve. */
 export type Penalty = "none" | "+2" | "DNF";
 
+/** Solving method identifier. */
+export type SolveMethod = 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
+
 /** A single recorded solve. */
 export interface Solve {
   /** Stable unique id (used as React key + for mutations). */
@@ -21,6 +24,12 @@ export interface Solve {
   timestamp: number;
   /** Optional free-form note. */
   note?: string;
+  /** Solving method used for this solve. */
+  method?: SolveMethod;
+  /** Raw moves captured from Smart Cube during the solve. */
+  moves?: import('@cubeforge/types').CubeMoveEvent[];
+  /** Post-solve analysis metrics (computed after solve completes). */
+  analysis?: import('@cubeforge/types').SolveMetrics;
 }
 
 /**

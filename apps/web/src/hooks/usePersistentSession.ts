@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import type { Solve as UISolve, Penalty } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
+import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -24,6 +25,9 @@ export interface UsePersistentSessionResult {
     time: number;
     penalty?: Penalty;
     scramble: string;
+    method?: string;
+    moves?: CubeMoveEvent[];
+    analysis?: SolveMetrics;
   }) => Promise<void>;
   updateSolve: (
     id: string,
@@ -135,22 +139,37 @@ export function usePersistentSession(): UsePersistentSessionResult {
 
   const session = sessions.find(s => s.id === activeSessionId) || null;
 
-  const addSolve = useCallback(async (input: { time: number; penalty?: Penalty; scramble: string }) => {
+  const addSolve = useCallback(async (input: {
+    time: number;
+    penalty?: Penalty;
+    scramble: string;
+    method?: string;
+    moves?: CubeMoveEvent[];
+    analysis?: SolveMetrics;
+  }) => {
     if (!session || !reposRef.current) return;
     const { solves: solvesRepo } = reposRef.current;
     
-    const dbSolve = {
+    const dbSolve: DBSolve = {
       id: uuidv4(),
       sessionId: session.id,
       timeMs: input.time,
       date: new Date().toISOString(),
       scramble: input.scramble,
       penalty: input.penalty || "none",
+      method: input.method,
+      moves: input.moves || [],
+      analysisEngineVersion: '0.1.0',
     };
     
     await solvesRepo.insert(dbSolve);
     
-    const uiSolve = toUISolve(dbSolve);
+    const uiSolve: UISolve = {
+      ...toUISolve(dbSolve),
+      method: (input.method as UISolve['method']) || undefined,
+      moves: input.moves,
+      analysis: input.analysis,
+    };
     setSolves(prev => [uiSolve, ...prev]);
     setSessions(prev => prev.map(s => 
       s.id === session.id ? { ...s, solveCount: s.solveCount + 1, updatedAt: Date.now() } : s

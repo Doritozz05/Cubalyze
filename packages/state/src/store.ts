@@ -30,6 +30,10 @@ export interface PreferencesState {
   /** Require the scramble to be physically applied before solving. */
   scrambleVerification: boolean;
   setScrambleVerification: (value: boolean) => void;
+
+  /** Solving method for phase detection and metrics. */
+  method: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
+  setMethod: (value: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus') => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -52,6 +56,9 @@ export const createPreferencesStore = () => {
 
         scrambleVerification: true,
         setScrambleVerification: (value) => set({ scrambleVerification: value }),
+
+        method: 'CFOP',
+        setMethod: (value) => set({ method: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -60,6 +67,7 @@ export const createPreferencesStore = () => {
           scrambleFollowsCube: state.scrambleFollowsCube,
           inspection: state.inspection,
           scrambleVerification: state.scrambleVerification,
+          method: state.method,
         }),
         version: 1,
       },

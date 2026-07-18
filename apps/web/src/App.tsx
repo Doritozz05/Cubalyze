@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
@@ -6,6 +7,7 @@ import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import { TimesList } from "@/components/Stats/TimesList";
 import { StatsPanel } from "@/components/Stats/StatsPanel";
+import { SolveAnalysisPanel } from "@/components/Stats/SolveAnalysisPanel";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import {
   Tabs,
@@ -16,11 +18,13 @@ import {
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
-import { useSolveSession } from "@/hooks/useSolveSession";
+import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
+import { preferencesStore } from "@cubeforge/state";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/math-core";
 import { ThemeProvider } from "@/components/theme-provider";
-import type { Penalty } from "@/types";
+import type { Penalty, SolveMethod } from "@/types";
+import type { SolveMetrics } from "@cubeforge/types";
 import "@/index.css";
 
 export default function App() {
@@ -39,6 +43,8 @@ export default function App() {
     deleteSession,
   } = usePersistentSession();
 
+  const methodPref = useStore(preferencesStore, (s) => s.method);
+
   const [scrambleIndex, setScrambleIndex] = useState(0);
   const [cube3DActive, setCube3DActive] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
@@ -48,6 +54,13 @@ export default function App() {
     RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
   );
 
+  // ── Last solve analysis (displayed in sidebar "Analysis" tab) ─────────
+  const lastSolveRef = useRef<{
+    solve: ReturnType<typeof usePersistentSession>['solves'][number] | null;
+    analysis: SolveMetrics | null;
+  }>({ solve: null, analysis: null });
+  const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
+
   const handleRegenerate = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
     setScrambleIndex((i) => i + 1);
@@ -56,14 +69,23 @@ export default function App() {
 
   const handleComplete = useCallback(
     (time: number, penalty: Penalty) => {
-      addSolve({ time, scramble: currentScramble, penalty })
-        .then(() => {
+      // Capture the current scramble before it changes
+      const capturedScramble = currentScramble;
+      const capturedMethod = methodPref;
+
+      addSolve({
+        time,
+        scramble: capturedScramble,
+        penalty,
+        method: capturedMethod,
+      })
+        .then((_result) => {
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
         })
-        .catch(() => toast.error("Couldn’t save solve"));
+        .catch(() => toast.error("Couldn't save solve"));
     },
-    [addSolve, currentScramble],
+    [addSolve, currentScramble, methodPref],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
@@ -79,7 +101,40 @@ export default function App() {
     smartCubeConnected,
     inspection,
     scrambleVerification,
+    method,
+    collectedMoves,
+    lastSolveMoves,
   } = session$;
+
+  // ── Run analysis on solve complete ─────────────────────────────────────
+  const prevLastTimeRef = useRef<number | null>(null);
+  useEffect(() => {
+    // Detect new solve completion (lastTime changed from something to a new value)
+    if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
+      prevLastTimeRef.current = timerLastTime;
+
+      // Use the stable snapshot captured at stop time (avoids race with IDLE clearing)
+      const moves = lastSolveMoves;
+      const scr = currentScramble;
+      const m = method;
+
+      if (moves.length > 0) {
+        // Defer to next tick to avoid blocking the UI
+        setTimeout(() => {
+          const analysis = runAnalysis(moves, scr, m);
+          if (analysis) {
+            lastSolveRef.current = { solve: null, analysis };
+            setLastAnalysis(analysis);
+          }
+        }, 0);
+      }
+    }
+
+    // Reset when going back to idle
+    if (timerPhase === "idle") {
+      prevLastTimeRef.current = null;
+    }
+  }, [timerLastTime, timerPhase, lastSolveMoves, currentScramble, method]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);
@@ -93,7 +148,7 @@ export default function App() {
   }, [timerCancel]);
 
   const handleCopy = useCallback(async () => {
-    const fail = () => toast.error("Couldn’t copy scramble");
+    const fail = () => toast.error("Couldn't copy scramble");
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(currentScramble);
@@ -139,7 +194,7 @@ export default function App() {
   );
 
   const handleClear = useCallback(() => {
-    clearSession().catch(() => toast.error("Couldn’t clear session"));
+    clearSession().catch(() => toast.error("Couldn't clear session"));
   }, [clearSession]);
 
   const handleNewSession = useCallback(() => {
@@ -149,12 +204,12 @@ export default function App() {
         setScrambleIndex(0);
         toast.success("New session started");
       })
-      .catch(() => toast.error("Couldn’t create session"));
+      .catch(() => toast.error("Couldn't create session"));
   }, [newSession]);
 
   const handleSwitchSession = useCallback(
     (id: string) => {
-      switchSession(id).catch(() => toast.error("Couldn’t switch session"));
+      switchSession(id).catch(() => toast.error("Couldn't switch session"));
     },
     [switchSession],
   );
@@ -189,6 +244,17 @@ export default function App() {
       behavior: "smooth",
     });
   }, []);
+
+  // Create a fake solve object for the analysis panel
+  const lastSolveForPanel = lastAnalysis ? {
+    id: "latest",
+    time: timerLastTime ?? 0,
+    penalty: "none" as Penalty,
+    scramble: currentScramble,
+    timestamp: Date.now(),
+    method: methodPref,
+    analysis: lastAnalysis,
+  } satisfies import("@/types").Solve : undefined;
 
   return (
     <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
@@ -266,7 +332,7 @@ export default function App() {
               defaultValue="times"
               className="flex h-full min-h-0 flex-col gap-4"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="times" className="text-xs">
                   Times
                   {loading ? null : (
@@ -277,6 +343,9 @@ export default function App() {
                 </TabsTrigger>
                 <TabsTrigger value="stats" className="text-xs">
                   Stats
+                </TabsTrigger>
+                <TabsTrigger value="analysis" className="text-xs">
+                  Analysis
                 </TabsTrigger>
               </TabsList>
 
@@ -298,6 +367,22 @@ export default function App() {
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
               >
                 <StatsPanel solves={solves} pb={currentPB ?? undefined} />
+              </TabsContent>
+
+              <TabsContent
+                value="analysis"
+                className="min-h-0 flex-1 overflow-y-auto pr-1"
+              >
+                {lastSolveForPanel ? (
+                  <SolveAnalysisPanel solve={lastSolveForPanel} />
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
+                    <p className="text-sm text-ink-2">No analysis yet</p>
+                    <p className="text-xs text-ink-3">
+                      Complete a solve with a Smart Cube to see your analysis.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           }
