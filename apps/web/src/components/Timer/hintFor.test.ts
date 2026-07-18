@@ -16,13 +16,15 @@ describe('hintFor', () => {
   const cubes = [false, true];
   const scrPref = [false, true];
   const inspPref = [false, true];
+  const scrambled = [false, true];
 
   const ctxs: HintContext[] = cubes.flatMap((c) =>
-    scrPref.flatMap((s) => inspPref.map((i) => ({
+    scrPref.flatMap((s) => inspPref.flatMap((i) => scrambled.map((sc) => ({
       smartCube: c,
       scrambleVerif: s,
       inspection: i,
-    }))),
+      isScrambled: sc,
+    })))),
   );
 
   it('never returns an undefined / empty string for any combination', () => {
@@ -76,38 +78,48 @@ describe('hintFor', () => {
     }
   });
 
-  describe('idle phase copy branches on the (smartCube, scrambleVerif, inspection) tuple', () => {
+  describe('idle phase copy branches on the (smartCube, scrambleVerif, inspection, isScrambled) tuple', () => {
     it('manual mode defaults to "press & hold to start" / "hold to start next"', () => {
-      const ctx: HintContext = { smartCube: false, scrambleVerif: false, inspection: false };
+      const ctx: HintContext = { smartCube: false, scrambleVerif: false, inspection: false, isScrambled: false };
       expect(hintFor('idle', false, ctx)).toBe('press & hold to start');
       expect(hintFor('idle', true, ctx)).toBe('hold to start next');
     });
 
     it('manual mode + scrambleVerif still shows the manual copy (no auto)', () => {
-      const ctx: HintContext = { smartCube: false, scrambleVerif: true, inspection: false };
+      const ctx: HintContext = { smartCube: false, scrambleVerif: true, inspection: false, isScrambled: false };
       expect(hintFor('idle', false, ctx)).toBe('press & hold to start');
     });
 
     it('manual mode + inspection still shows the manual copy (no auto)', () => {
-      const ctx: HintContext = { smartCube: false, scrambleVerif: false, inspection: true };
+      const ctx: HintContext = { smartCube: false, scrambleVerif: false, inspection: true, isScrambled: false };
       expect(hintFor('idle', false, ctx)).toBe('press & hold to start');
     });
 
-    it('smart cube + scrambleVerif ON shows "complete the scramble"', () => {
-      const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: false };
+    it('smart cube + scrambleVerif ON + not scrambled shows "complete the scramble"', () => {
+      const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: false, isScrambled: false };
       expect(hintFor('idle', false, ctx)).toBe('complete the scramble');
 
-      const ctx2: HintContext = { smartCube: true, scrambleVerif: true, inspection: true };
+      const ctx2: HintContext = { smartCube: true, scrambleVerif: true, inspection: true, isScrambled: false };
       expect(hintFor('idle', true, ctx2)).toBe('complete the scramble');
     });
 
+    it('smart cube + scrambleVerif ON + scrambled + inspection OFF shows "make a move to start"', () => {
+      const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: false, isScrambled: true };
+      expect(hintFor('idle', false, ctx)).toBe('make a move to start');
+    });
+
+    it('smart cube + scrambleVerif ON + scrambled + inspection ON shows "press space to start inspection"', () => {
+      const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: true, isScrambled: true };
+      expect(hintFor('idle', false, ctx)).toBe('press space to start inspection');
+    });
+
     it('smart cube + scrambleVerif OFF + inspection ON shows "press space to start inspection"', () => {
-      const ctx: HintContext = { smartCube: true, scrambleVerif: false, inspection: true };
+      const ctx: HintContext = { smartCube: true, scrambleVerif: false, inspection: true, isScrambled: false };
       expect(hintFor('idle', false, ctx)).toBe('press space to start inspection');
     });
 
     it('smart cube + scrambleVerif OFF + inspection OFF (Mode 4) shows "tap or press space to start"', () => {
-      const ctx: HintContext = { smartCube: true, scrambleVerif: false, inspection: false };
+      const ctx: HintContext = { smartCube: true, scrambleVerif: false, inspection: false, isScrambled: false };
       expect(hintFor('idle', false, ctx)).toBe('tap or press space to start');
       expect(hintFor('idle', true, ctx)).toBe('tap or press space to start');
     });
@@ -121,8 +133,7 @@ describe('hintFor', () => {
   });
 
   it('does not leak "release to start" (which belongs to READY) into ready_for_move', () => {
-    // Confirms the rename did not collapse the two states together.
-    const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: false };
+    const ctx: HintContext = { smartCube: true, scrambleVerif: true, inspection: false, isScrambled: false };
     expect(hintFor('ready_for_move', false, ctx)).toBe('make a move to start');
     expect(hintFor('ready', false, ctx)).toBe('release to start');
   });

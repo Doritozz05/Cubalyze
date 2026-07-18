@@ -15,6 +15,8 @@ export interface HintContext {
   scrambleVerif: boolean;
   /** Inspection preference is ON. */
   inspection: boolean;
+  /** The scramble has been physically applied on the Smart Cube. */
+  isScrambled: boolean;
 }
 
 /**
@@ -53,7 +55,10 @@ export function hintFor(
     case "idle":
     default:
       if (ctx.smartCube) {
-        if (ctx.scrambleVerif) return "complete the scramble";
+        if (ctx.scrambleVerif && !ctx.isScrambled) return "complete the scramble";
+        if (ctx.scrambleVerif && ctx.isScrambled) {
+          return ctx.inspection ? "press space to start inspection" : "make a move to start";
+        }
         if (ctx.inspection) return "press space to start inspection";
         return "tap or press space to start";
       }

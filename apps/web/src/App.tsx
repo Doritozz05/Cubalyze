@@ -315,6 +315,7 @@ export default function App() {
                   smartCube: smartCubeConnected,
                   scrambleVerif: scrambleVerification,
                   inspection,
+                  isScrambled: validation.isScrambled,
                 }}
                 onPress={timerPress}
                 onRelease={timerRelease}
