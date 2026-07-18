@@ -64,11 +64,12 @@ export class SyncBridge {
   private flushCoalesceBuffer(): void {
     if (this.coalesceBuffer.length === 0) return;
 
-    // Check for M move coalesce (L' and R or R' and L)
-    // For simplicity, we just look at the first two moves. If they form an M slice move, we merge them.
-    if (this.coalesceBuffer.length >= 2) {
-      const m1 = this.coalesceBuffer[0];
-      const m2 = this.coalesceBuffer[1];
+    // Check for M move coalesce (L' and R or R' and L).
+    // B9 FIX: Iterate ALL adjacent pairs, not just the first two.
+    // Multiple pairs may need coalescing within the 45ms window.
+    for (let i = 0; i < this.coalesceBuffer.length - 1; i++) {
+      const m1 = this.coalesceBuffer[i];
+      const m2 = this.coalesceBuffer[i + 1];
       
       const map1 = FACE_ROTATION_MAP[m1.face as CubeFace];
       const map2 = FACE_ROTATION_MAP[m2.face as CubeFace];
@@ -90,7 +91,8 @@ export class SyncBridge {
             hostTimestamp: Math.max(m1.hostTimestamp, m2.hostTimestamp),
           });
 
-          this.coalesceBuffer.splice(0, 2);
+          this.coalesceBuffer.splice(i, 2);
+          i--; // Re-check the new pair at this position after removal
         }
       }
     }

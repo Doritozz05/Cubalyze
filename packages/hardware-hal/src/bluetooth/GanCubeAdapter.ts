@@ -87,10 +87,21 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.connectionStatusSubject.next('connected');
   }
 
+  // B2 FIX: Track whether a REQUEST_FACELETS is already in-flight to
+  // deduplicate concurrent calls. Multiple subscribers (validator,
+  // connect flow, Cube3DPanel) may trigger requestFacelets simultaneously
+  // — only the first call issues the GATT command; subsequent calls wait
+  // for the same promise. The GATT queue in GanCubeClassicConnection
+  // serialises the actual writeValue calls.
+  private faceletsRequestPromise: Promise<void> | null = null;
+
   public async requestFacelets(): Promise<void> {
-    if (this.connection) {
-      await this.connection.sendCubeCommand({ type: "REQUEST_FACELETS" });
-    }
+    if (!this.connection) return;
+    // Dedup: reuse the in-flight promise instead of issuing a new command
+    if (this.faceletsRequestPromise) return this.faceletsRequestPromise;
+    this.faceletsRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_FACELETS" })
+      .finally(() => { this.faceletsRequestPromise = null; });
+    return this.faceletsRequestPromise;
   }
 
   async disconnect(): Promise<void> {

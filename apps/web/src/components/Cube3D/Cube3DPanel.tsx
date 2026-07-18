@@ -44,11 +44,18 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   // Tracks whether orientation+rotation callbacks have been registered on the singleton worker.
   // Prevents duplicate registrations across Strict Mode remounts.
   const callbacksRegistered = useRef(false);
+  // B5 FIX: Force the first facelet sync after mount/remount to happen
+  // regardless of pendingMoves. When the panel is hidden, the SyncBridge
+  // is unbound (losing track of cube moves); on remount, the model may be
+  // desynchronized. This flag ensures the first facelet event corrects it.
+  const needsInitialSyncRef = useRef(true);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Subscribe to move history — always (survives canvas-transfer failure)
+    // B5: Reset the initial-sync flag so the first facelet event after
+    // mount/remount corrects any desync from the panel being hidden.
+    needsInitialSyncRef.current = true;
     moveSub.current?.unsubscribe();
     if (globalCubeAdapter.moves$) {
       moveSub.current = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
@@ -64,7 +71,15 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
 
     const faceletSub = globalCubeAdapter.facelets$
       ? globalCubeAdapter.facelets$.subscribe((facelets: string) => {
-          if (syncBridge.current && syncBridge.current.pendingMoves === 0) {
+          if (!syncBridge.current) return;
+          // B5 FIX: On mount/remount, force-sync the 3D model from the
+          // real cube state regardless of pending moves. The model may
+          // be desynchronized from being hidden (SyncBridge unbound).
+          // After the first sync, resume the normal guard.
+          if (needsInitialSyncRef.current) {
+            needsInitialSyncRef.current = false;
+            workerProxy.current?.syncFacelets(facelets).catch(console.error);
+          } else if (syncBridge.current.pendingMoves === 0) {
             workerProxy.current?.syncFacelets(facelets).catch(console.error);
           }
         })

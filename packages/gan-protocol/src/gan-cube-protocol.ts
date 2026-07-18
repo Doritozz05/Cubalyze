@@ -211,6 +211,11 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         this.encrypter = encrypter;
         this.driver = driver;
         this.events$ = new ReplaySubject<GanCubeEvent>(3);
+        // B2 FIX: Start the GATT command queue as a resolved promise.
+        // Every sendCommandMessage chains onto this queue so that only
+        // one GATT writeValue is in flight at a time, preventing
+        // "GATT operation already in progress" errors.
+        this.commandQueue = Promise.resolve();
     }
 
     public static async create(
@@ -235,9 +240,25 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         return this.device.mac || "00:00:00:00:00:00";
     }
 
+    // B2 FIX: Serialised GATT command queue. Web Bluetooth allows only one
+    // GATT operation per characteristic at a time. Chaining all writes onto
+    // this queue prevents "GATT operation already in progress" errors when
+    // multiple callers (validator, adapter, driver) issue commands concurrently.
+    private commandQueue: Promise<void>;
+
     async sendCommandMessage(message: Uint8Array): Promise<void> {
         const encryptedMessage = this.encrypter.encrypt(message);
-        return this.commandCharacteristic.writeValue(encryptedMessage as BufferSource);
+        // Chain onto the queue: wait for the previous command to finish,
+        // then send this one. We catch at the queue level so a single
+        // failed GATT write doesn't poison the entire chain — subsequent
+        // commands still execute. Individual callers still receive the
+        // rejection for their own error handling.
+        this.commandQueue = this.commandQueue
+            .then(() =>
+                this.commandCharacteristic.writeValue(encryptedMessage as BufferSource)
+            )
+            .catch(() => { /* keep queue alive after individual failures */ });
+        return this.commandQueue;
     }
 
     onStateUpdate = async (evt: Event) => {

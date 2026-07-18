@@ -109,7 +109,7 @@ export default function App() {
     method,
     lastSolveMoves,
     lastSolveOrientations,
-    lastSolveStartFacelets,
+    lastSolveStartState,
   } = session$;
 
   // ── Run analysis on solve complete ─────────────────────────────────────
@@ -138,7 +138,7 @@ export default function App() {
       if (moves.length > 0) {
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
-          runAnalysis(moves, scr, m, lastSolveOrientations, lastSolveStartFacelets).then((analysis) => {
+          runAnalysis(moves, scr, m, lastSolveOrientations, lastSolveStartState ?? undefined).then((analysis) => {
             if (analysis) {
               lastSolveRef.current = { solve: null, analysis };
               setLastAnalysis(analysis);
@@ -161,7 +161,7 @@ export default function App() {
     if (timerPhase === "idle") {
       prevLastTimeRef.current = null;
     }
-  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveStartFacelets, currentScramble, method]);
+  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveStartState, currentScramble, method]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);

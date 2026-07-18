@@ -20,6 +20,8 @@ import {
 } from "@cubeforge/analysis-engine";
 import {
   CFOPDefinition,
+  CubeState,
+  FaceletStringConverter,
   RouxFullDefinition,
   ZZDefinition,
   PetrusDefinition,
@@ -60,8 +62,8 @@ export interface UseSolveSessionResult {
   lastSolveMoves: CubeMoveEvent[];
   /** Orientations captured at solve stop (one per move, for RotationCounter). */
   lastSolveOrientations: (CubeOrientation | undefined)[];
-  /** Real cube facelets at solve start (ground truth for phase detection). */
-  lastSolveStartFacelets: string;
+  /** Real cube CubeState at solve start (move-tracked ground truth for phase detection). */
+  lastSolveStartState: CubeState | null;
 }
 
 const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
@@ -97,25 +99,24 @@ async function runAnalysis(
   scramble: string,
   method: SolveMethod,
   orientations?: (CubeOrientation | undefined)[],
-  initialFacelets?: string,
+  initialState?: CubeState,
 ): Promise<SolveMetrics | null> {
   if (moves.length === 0) return null;
 
   try {
     const methodDef = METHOD_DEFS[method];
-    // B6: Pass the real cube facelets captured at solve start as ground
-    // truth for the initial state. This makes phase detection deterministic
-    // even when scramble verification is disabled (Modes 3 & 4) — the
-    // timeline starts from what the cube actually was, not what the
-    // displayed scramble says. TimelineBuilder falls back to `scramble`
-    // when `initialFacelets` is absent or stale (solved).
+    // B6+: Pass the move-tracked CubeState as the ground truth for the
+    // initial state. This is more reliable than facelets (works on Gen2
+    // cubes and in all modes). TimelineBuilder uses initialState first,
+    // then falls back to initialFacelets, then scramble.
     // Enable color-neutral detection so any cross face is recognized.
     const timeline = TimelineBuilder.build(
       moves,
       method,
       orientations,
       scramble,
-      initialFacelets,
+      undefined, // initialFacelets (deprecated in favour of initialState)
+      initialState,
     );
     PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
     return await MetricsAggregator.computeAll(timeline, scramble);
@@ -170,13 +171,22 @@ export function useSolveSession(
   const [lastSolveOrientations, setLastSolveOrientations] = useState<(CubeOrientation | undefined)[]>([]);
   const currentOrientationRef = useRef<CubeOrientation | undefined>(undefined);
 
-  // ── Facelets tracking (B6: ground-truth initial state for analysis) ─────
-  // lastFaceletsRef: the most recent facelets event from the real cube.
-  // solveStartFaceletsRef: captured when the timer enters RUNNING — this is
-  //   the scrambled state the solver sees, used to seed the analysis timeline.
-  const lastFaceletsRef = useRef<string>('');
-  const solveStartFaceletsRef = useRef<string>('');
-  const [lastSolveStartFacelets, setLastSolveStartFacelets] = useState<string>('');
+  // ── Move-based CubeState tracker (B6+: deterministic, works on all GAN gens) ──
+  // Tracks the real cube state from ALL MOVE events (scramble + solve),
+  // regardless of timer state. More reliable than facelets because MOVE
+  // events are immediate and universal across all cube generations.
+  // Initialised from the first FACELETS event (absolute state at connect),
+  // then kept in sync move-by-move.
+  const realCubeStateRef = useRef(new CubeState());
+  const realCubeStateSeededRef = useRef(false);
+  // Snapshot of realCubeStateRef at solve start (cloned when RUNNING fires).
+  const solveStartStateRef = useRef<CubeState | null>(null);
+  const [lastSolveStartState, setLastSolveStartState] = useState<CubeState | null>(null);
+
+  // ── B8: Pending first solve move (arrives in IDLE during the ~16ms race
+  //   between isScrambled=true and the auto-arm effect). Buffered here and
+  //   replayed when the engine enters RUNNING (via the state$ subscription).
+  const pendingFirstMoveRef = useRef<CubeMoveEvent | null>(null);
 
   const onSolveRef = useRef(options.onSolve);
   useEffect(() => {
@@ -189,16 +199,24 @@ export function useSolveSession(
         collectedMovesRef.current = [];
         collectedOrientationsRef.current = [];
         setCollectedMoves([]);
-        // B6: clear facelets tracking so stale data doesn't leak into the
+        // B6+: clear solve-start state so stale data doesn't leak into the
         // next solve.
-        solveStartFaceletsRef.current = '';
+        solveStartStateRef.current = null;
       }
-      // B6: capture the real cube state at the moment the timer starts
-      // running. lastFaceletsRef holds the most recent FACELETS event from
-      // the cube, which (since no moves happen during IDLE/INSPECTION) is
-      // the scrambled state the solver is about to solve.
+      // B6+: capture the real cube state at the moment the timer starts
+      // running. realCubeStateRef tracks all moves from connect, so this
+      // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
-        solveStartFaceletsRef.current = lastFaceletsRef.current;
+        solveStartStateRef.current = realCubeStateRef.current.clone();
+        // B8: replay the pending first move that arrived during the IDLE
+        // race window (if any). This move is part of the solve but arrived
+        // before the auto-arm effect armed the engine.
+        if (pendingFirstMoveRef.current) {
+          collectedMovesRef.current.push(pendingFirstMoveRef.current);
+          collectedOrientationsRef.current.push(currentOrientationRef.current);
+          setCollectedMoves([...collectedMovesRef.current]);
+          pendingFirstMoveRef.current = null;
+        }
       }
       setPhase(mapEngineStateToUIState(engineState));
     });
@@ -210,8 +228,8 @@ export function useSolveSession(
       lastSolveOrientationsRef.current = [...collectedOrientationsRef.current];
       setLastSolveMoves(lastSolveMovesRef.current);
       setLastSolveOrientations(lastSolveOrientationsRef.current);
-      // B6: snapshot the facelets captured at solve start for analysis.
-      setLastSolveStartFacelets(solveStartFaceletsRef.current);
+      // B6+: snapshot the move-tracked CubeState for analysis.
+      setLastSolveStartState(solveStartStateRef.current);
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
@@ -246,32 +264,30 @@ export function useSolveSession(
     const justScrambled = validation.isScrambled && !wasScrambledRef.current;
     wasScrambledRef.current = validation.isScrambled;
 
-    if (
-      justScrambled &&
-      shouldAutoArm({
-        smartCube: smartCubeConnected,
-        scrambleVerif: scrambleVerificationPref,
-        inspection: inspectionPref,
-        stateIsIdle: engine.getState() === EngineState.IDLE,
-      })
-    ) {
-      // arm() transitions to READY_FOR_MOVE. The NEXT cube move — which is
-      // necessarily the user's FIRST solve move (the scramble validator has
-      // already consumed every scramble move to set isScrambled=true) — is
-      // captured by the READY_FOR_MOVE branch of the move wiring below, which
-      // also starts the timer via handleSmartCubeStart(). We must NOT swallow
-      // it: dropping the first solve move offsets the reconstructed cube
-      // state by one move, so no CFOP phase mask ever matches and the phase
-      // breakdown collapses to "all 0.00" or a single spurious late Cross.
-      // (Regression: see diagnostic-cfop-zero-phases.test.ts, H2.)
-      //
-      // Known residual race (not worsened by this fix, low practical impact):
-      // a move arriving between isScrambled=true and this effect running
-      // arrives in IDLE (arm() hasn't fired yet) and is neither captured nor
-      // swallowed — so it is lost. React re-renders in <16ms while users
-      // take >100ms to start solving, so this is rare. If the H2 symptom
-      // recurs for very fast solvers, this race is the next place to look.
-      engine.arm();
+    if (justScrambled) {
+      // B4 FIX: If the engine is STOPPED (post-solve), reset to IDLE
+      // BEFORE checking shouldAutoArm so the user doesn't have to press
+      // Space manually. The shouldAutoArm guard (stateIsIdle) requires
+      // IDLE, so reset must happen first. COOLDOWN blocks reset(), but
+      // by the time the scramble completes the 500ms cooldown has expired.
+      if (engine.getState() === EngineState.STOPPED) {
+        engine.reset();
+      }
+
+      if (
+        shouldAutoArm({
+          smartCube: smartCubeConnected,
+          scrambleVerif: scrambleVerificationPref,
+          inspection: inspectionPref,
+          stateIsIdle: engine.getState() === EngineState.IDLE,
+        })
+      ) {
+        // arm() transitions to READY_FOR_MOVE. The NEXT cube move — which
+        // is necessarily the user's FIRST solve move (the scramble validator
+        // has already consumed every scramble move to set isScrambled=true) —
+        // is captured by the READY_FOR_MOVE branch of the move wiring below.
+        engine.arm();
+      }
     }
   }, [
     validation.isScrambled,
@@ -288,6 +304,20 @@ export function useSolveSession(
 
     const moveSub = adapter.moves$.subscribe((move: CubeMoveEvent) => {
       const current = engine.getState();
+
+      // B6+: Track the real cube state from ALL moves, regardless of timer
+      // state. This is the ground truth for timeline seeding — more reliable
+      // than facelets because MOVE events are immediate (not periodic).
+      const notation = move.face + (move.direction === -1 ? "'" : move.direction === 2 ? "2" : "");
+      realCubeStateRef.current.applySequence(notation);
+
+      // B8: If a move arrives in IDLE (before auto-arm has fired), buffer
+      // it as the pending first solve move. It will be replayed when the
+      // engine enters RUNNING via the state$ subscription.
+      if (current === EngineState.IDLE) {
+        pendingFirstMoveRef.current = move;
+        return;
+      }
 
       // Collect moves while running
       if (current === EngineState.RUNNING) {
@@ -317,8 +347,19 @@ export function useSolveSession(
     if ("facelets$" in adapter && adapter.facelets$) {
       faceletSub = (adapter.facelets$ as import("rxjs").Observable<string>).subscribe(
         (f: string) => {
-          // B6: track the most recent real-cube facelets for analysis seeding.
-          lastFaceletsRef.current = f;
+          // B6+: Seed the move-based CubeState tracker from the first
+          // FACELETS event (absolute state at connect). Subsequent MOVE
+          // events keep it in sync.
+          if (!realCubeStateSeededRef.current) {
+            try {
+              const realState = FaceletStringConverter.fromFaceletString(f);
+              realCubeStateRef.current = realState;
+              realCubeStateSeededRef.current = true;
+            } catch {
+              // Facelets string may be invalid — ignore and keep tracking
+              // from moves only (starting from solved assumption).
+            }
+          }
           const isSolved = SOLVED_FACELETS.test(f);
           if (isSolved && engine.getState() === EngineState.RUNNING) {
             engine.handleSmartCubeStop();
@@ -455,7 +496,7 @@ export function useSolveSession(
     collectedMoves,
     lastSolveMoves,
     lastSolveOrientations,
-    lastSolveStartFacelets,
+    lastSolveStartState,
   };
 }
 
