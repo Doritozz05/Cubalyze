@@ -1,6 +1,14 @@
 import { Corner, Edge, Move, StringToMove } from './Constants';
+import {
+  createCornerPermAdapter,
+  createCornerOrientAdapter,
+  createEdgePermAdapter,
+  createEdgeOrientAdapter,
+  type CubeStateInternal,
+  type CubeAdapter,
+} from './adapters/CubeStateAdapters';
 
-// Base moves defined manually (Kociemba standard)
+// Base moves defined manually (Kociemba standard) — kept as arrays for initTables()
 const baseU = {
   cp: [Corner.UBR, Corner.URF, Corner.UFL, Corner.ULB, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
   co: [0, 0, 0, 0, 0, 0, 0, 0],
@@ -38,17 +46,68 @@ const baseB = {
   eo: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1]
 };
 
-export class CubeState {
-  public cp: Int8Array = new Int8Array([0, 1, 2, 3, 4, 5, 6, 7]);
-  public co: Int8Array = new Int8Array([0, 0, 0, 0, 0, 0, 0, 0]);
-  public ep: Int8Array = new Int8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-  public eo: Int8Array = new Int8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+// ── Bit-level constants ────────────────────────────────────────────────────
+
+const BITS = 5n;
+const FULL = 0b11111n;
+
+/** Build solved edges bigint: OEEEE × 12, all oriented, piece IDs 0-11 */
+function buildSolvedEdges(): bigint {
+  let r = 0n;
+  for (let i = 0; i < 12; i++) {
+    r |= BigInt(i) << (BigInt(i) * BITS);
+  }
+  return r;
+}
+
+/** Build solved corners bigint: OOCCC × 8, all oriented, piece IDs 0-7 */
+function buildSolvedCorners(): bigint {
+  let r = 0n;
+  for (let i = 0; i < 8; i++) {
+    r |= BigInt(i) << (BigInt(i) * BITS);
+  }
+  return r;
+}
+
+const SOLVED_EDGES = buildSolvedEdges();
+const SOLVED_CORNERS = buildSolvedCorners();
+
+// ── CubeState ─────────────────────────────────────────────────────────────
+
+export class CubeState implements CubeStateInternal {
+  /** Internal binary state — PUBLIC so adapters can access. Do NOT mutate directly. */
+  public _edges: bigint;
+  public _corners: bigint;
+
+  /** Public array-like adapters (backward-compatible with Int8Array access) */
+  public readonly cp: CubeAdapter;
+  public readonly co: CubeAdapter;
+  public readonly ep: CubeAdapter;
+  public readonly eo: CubeAdapter;
 
   // Static pre-computed table for all 18 moves
   private static moveTable: CubeState[] = [];
   private static isInitialized = false;
 
-  constructor(cp?: number[] | Int8Array, co?: number[] | Int8Array, ep?: number[] | Int8Array, eo?: number[] | Int8Array) {
+  constructor();
+  constructor(cp: ArrayLike<number> | null, co: ArrayLike<number> | null, ep: ArrayLike<number> | null, eo: ArrayLike<number> | null);
+  constructor(
+    cp?: ArrayLike<number> | null,
+    co?: ArrayLike<number> | null,
+    ep?: ArrayLike<number> | null,
+    eo?: ArrayLike<number> | null,
+  ) {
+    // Initialize to solved
+    this._edges = SOLVED_EDGES;
+    this._corners = SOLVED_CORNERS;
+
+    // Create adapter proxies (cached — single Proxy per field per instance)
+    this.cp = createCornerPermAdapter(this);
+    this.co = createCornerOrientAdapter(this);
+    this.ep = createEdgePermAdapter(this);
+    this.eo = createEdgeOrientAdapter(this);
+
+    // Apply constructor args if provided
     if (cp) this.cp.set(cp);
     if (co) this.co.set(co);
     if (ep) this.ep.set(ep);
@@ -56,40 +115,62 @@ export class CubeState {
   }
 
   public clone(): CubeState {
-    return new CubeState(this.cp, this.co, this.ep, this.eo);
+    const c = new CubeState();
+    c._edges = this._edges;
+    c._corners = this._corners;
+    return c;
   }
 
   public isSolved(): boolean {
-    for (let i = 0; i < 8; i++) {
-      if (this.cp[i] !== i || this.co[i] !== 0) return false;
-    }
-    for (let i = 0; i < 12; i++) {
-      if (this.ep[i] !== i || this.eo[i] !== 0) return false;
-    }
-    return true;
+    return this._edges === SOLVED_EDGES && this._corners === SOLVED_CORNERS;
   }
 
-  // Multiply this state with another state 'b' -> this = this * b
+  /**
+   * Multiply this state with another state 'b' → this = this * b
+   *
+   * Operates DIRECTLY on internal bigints. NEVER touches the Proxy adapters.
+   * This is the hot path — called from applyMove() and initTables().
+   */
   public multiply(b: CubeState): void {
-    const nextCp = new Int8Array(8);
-    const nextCo = new Int8Array(8);
-    const nextEp = new Int8Array(12);
-    const nextEo = new Int8Array(12);
+    let newEdges = 0n;
+    let newCorners = 0n;
 
+    // ── Corners ──────────────────────────────────────────────────────
     for (let i = 0; i < 8; i++) {
-      nextCp[i] = this.cp[b.cp[i]];
-      nextCo[i] = (this.co[b.cp[i]] + b.co[i]) % 3;
+      const bShift = BigInt(i) * BITS;
+      const bEntry = (b._corners >> bShift) & FULL;
+      const bPieceId = Number(bEntry & 0b111n);
+      const bOrient = Number((bEntry >> 3n) & 0b11n);
+
+      const thisShift = BigInt(bPieceId) * BITS;
+      const thisEntry = (this._corners >> thisShift) & FULL;
+      const thisNewPieceId = Number(thisEntry & 0b111n);
+      const thisOrient = Number((thisEntry >> 3n) & 0b11n);
+
+      const newOrient = (thisOrient + bOrient) % 3;
+      const newEntry = (BigInt(newOrient) << 3n) | BigInt(thisNewPieceId);
+      newCorners |= newEntry << (BigInt(i) * BITS);
     }
 
+    // ── Edges ────────────────────────────────────────────────────────
     for (let i = 0; i < 12; i++) {
-      nextEp[i] = this.ep[b.ep[i]];
-      nextEo[i] = (this.eo[b.ep[i]] + b.eo[i]) % 2;
+      const bShift = BigInt(i) * BITS;
+      const bEntry = (b._edges >> bShift) & FULL;
+      const bPieceId = Number(bEntry & 0b1111n);
+      const bOrient = Number((bEntry >> 4n) & 0b1n);
+
+      const thisShift = BigInt(bPieceId) * BITS;
+      const thisEntry = (this._edges >> thisShift) & FULL;
+      const thisNewPieceId = Number(thisEntry & 0b1111n);
+      const thisOrient = Number((thisEntry >> 4n) & 0b1n);
+
+      const newOrient = thisOrient ^ bOrient;
+      const newEntry = (BigInt(newOrient) << 4n) | BigInt(thisNewPieceId);
+      newEdges |= newEntry << (BigInt(i) * BITS);
     }
 
-    this.cp.set(nextCp);
-    this.co.set(nextCo);
-    this.ep.set(nextEp);
-    this.eo.set(nextEo);
+    this._edges = newEdges;
+    this._corners = newCorners;
   }
 
   public applyMove(move: Move): void {
@@ -112,7 +193,7 @@ export class CubeState {
 
   public static initTables(): void {
     if (CubeState.isInitialized) return;
-    
+
     // Create base states
     const U = new CubeState(baseU.cp, baseU.co, baseU.ep, baseU.eo);
     const R = new CubeState(baseR.cp, baseR.co, baseR.ep, baseR.eo);

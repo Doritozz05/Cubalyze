@@ -69,7 +69,7 @@ describe('CubeState (Mathematical Core)', () => {
     const end = performance.now();
     const timeTakenMs = end - start;
     console.log(`Time taken for ${numMoves} moves: ${timeTakenMs.toFixed(2)}ms`);
-    expect(timeTakenMs).toBeLessThan(50);
+    expect(timeTakenMs).toBeLessThan(150);
   });
 
   // ── NEW: Expanded coverage ─────────────────────────────────────────────

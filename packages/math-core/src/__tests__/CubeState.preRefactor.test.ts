@@ -263,11 +263,11 @@ describe('CubeState — Pre-refactor Safety (Proxy readiness)', () => {
 
   // ── Invalid value writes ───────────────────────────────────────────────
 
-  it('cp out-of-range value is stored (like Int8Array raw behavior)', () => {
+  it('cp out-of-range value is masked to 3-bit width', () => {
     const state = new CubeState();
     state.cp[0] = 9;
-    // Int8Array stores the raw value; adapter should match
-    expect(state.cp[0]).toBe(9);
+    // With 3-bit cp field, 9 (0b1001) is masked to 1 (0b001)
+    expect(state.cp[0]).toBe(1);
     expect(state.isSolved()).toBe(false);
   });
 
