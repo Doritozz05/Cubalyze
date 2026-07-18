@@ -211,6 +211,66 @@ describe('CubeState — Pre-refactor Safety (Proxy readiness)', () => {
     expect(result).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 
+  // ── Out-of-bounds indices ──────────────────────────────────────────────
+
+  it('state.cp[-1] returns undefined (out of bounds)', () => {
+    const state = new CubeState();
+    expect(state.cp[-1]).toBeUndefined();
+  });
+
+  it('state.cp[8] returns undefined (out of bounds)', () => {
+    const state = new CubeState();
+    expect(state.cp[8]).toBeUndefined();
+  });
+
+  it('state.ep[12] returns undefined (out of bounds)', () => {
+    const state = new CubeState();
+    expect(state.ep[12]).toBeUndefined();
+  });
+
+  // ── String index access (should work same as numeric) ─────────────────
+
+  it("state.cp['3'] works same as state.cp[3]", () => {
+    const state = new CubeState();
+    expect(state.cp['3']).toBe(3);
+    state.cp['3'] = 5;
+    expect(state.cp[3]).toBe(5);
+  });
+
+  // ── Write isolation: writing one index doesn't corrupt others ──────────
+
+  it('write to cp[3] does not corrupt cp[0] or co[3]', () => {
+    const state = new CubeState();
+    state.cp[3] = 7;
+    expect(state.cp[0]).toBe(0);
+    expect(state.co[3]).toBe(0);
+  });
+
+  it('write to eo[5] does not corrupt ep[5] or other eo values', () => {
+    const state = new CubeState();
+    state.eo[5] = 1;
+    expect(state.ep[5]).toBe(5);
+    expect(state.eo[0]).toBe(0);
+  });
+
+  // ── Object.keys() compatibility ───────────────────────────────────────
+
+  it('Object.keys(state.cp) returns string indices', () => {
+    const state = new CubeState();
+    const keys = Object.keys(state.cp);
+    expect(keys).toEqual(['0', '1', '2', '3', '4', '5', '6', '7']);
+  });
+
+  // ── Invalid value writes ───────────────────────────────────────────────
+
+  it('cp out-of-range value is stored (like Int8Array raw behavior)', () => {
+    const state = new CubeState();
+    state.cp[0] = 9;
+    // Int8Array stores the raw value; adapter should match
+    expect(state.cp[0]).toBe(9);
+    expect(state.isSolved()).toBe(false);
+  });
+
   // ── Mutation after clone must be independent ────────────────────────────
 
   it('clone + direct mutation: original is unaffected', () => {
