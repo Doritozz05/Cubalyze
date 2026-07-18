@@ -1,6 +1,9 @@
 import {
   StateMatcher,
   type MethodDefinition,
+  type PhaseMask,
+  COLOR_NEUTRAL_CFOP_MASKS,
+  type FaceCFOPMasks,
 } from '@cubeforge/math-core';
 import type { PhaseSegment, SolveTimeline } from '@cubeforge/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
@@ -21,9 +24,14 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
  * cube (no scramble). The state at each entry reflects the actual cube
  * state at that point in the solve.
  *
+ * Color-Neutral Support:
+ *   When `colorNeutral: true` is passed, the splitter tries all 6 cross
+ *   face masks for the first phase. Once the cross face is detected, all
+ *   subsequent phases (F2L, OLL, PLL) use masks specific to that face.
+ *
  * Design:
  * - Generic: works with any MethodDefinition (CFOP, Roux, ZZ, Petrus...)
- * - Method-agnostic: only depends on PhaseMask.check()
+ * - Method-agnostic: only depends on StateMatcher.matchesMask()
  * - Offline-friendly: runs on a stored timeline, no hardware needed
  *
  * Example (CFOP, 4 phases):
@@ -36,28 +44,27 @@ export class PhaseSplitter {
   /**
    * Split a timeline into phases according to the given method definition.
    *
-   * Algorithm:
-   * 1. For each timeline entry:
-   *    a. Restore the cube state from the entry's saved snapshot.
-   *       (This snapshot already reflects the scramble if one was applied.)
-   *    b. Check if the current phase mask is now satisfied.
-   *    c. If satisfied, record a PhaseSegment and advance to the next phase.
-   *    d. If all phases complete, extend the last phase to cover any
-   *       remaining moves and exit.
-   *
    * @param timeline - The solve timeline with entries (phases not yet set).
    * @param method - The method definition with ordered phase masks.
+   * @param options.colorNeutral - If true, auto-detect the cross face
+   *   and use face-specific masks for all phases (CFOP only).
    * @returns Array of PhaseSegments in detection order.
    */
   static split(
     timeline: SolveTimeline,
     method: MethodDefinition,
+    options?: { colorNeutral?: boolean },
   ): PhaseSegment[] {
     const { entries } = timeline;
 
     if (entries.length === 0 || method.phases.length === 0) {
       return [];
     }
+
+    // ── Color-neutral setup ─────────────────────────────────────────────
+    const useColorNeutral =
+      options?.colorNeutral === true && method.name === 'CFOP';
+    let faceMasks: FaceCFOPMasks | null = null;
 
     const phases: PhaseSegment[] = [];
     let currentPhaseIdx = 0;
@@ -67,15 +74,39 @@ export class PhaseSplitter {
       const entry = entries[i];
 
       // Restore the cube state from the entry's saved snapshot.
-      // This reflects the actual cube state after this move was applied,
-      // including any scramble that was applied during timeline construction.
       const state = TimelineBuilder.fromSnapshot(entry.state);
 
       // Check if the current phase is now complete
       const currentMask = method.phases[currentPhaseIdx];
       if (!currentMask) break; // safety: all phases done
 
-      if (StateMatcher.matchesMask(state, currentMask)) {
+      let phaseMatched = false;
+
+      if (useColorNeutral) {
+        if (currentPhaseIdx === 0) {
+          // ── Cross phase: try all 6 faces ──────────────────────────
+          const result = PhaseSplitter.detectCrossFace(state);
+          if (result) {
+            faceMasks = result;
+            phaseMatched = true;
+          }
+        } else if (faceMasks) {
+          // ── F2L/OLL/PLL: use the detected face's masks ────────────
+          const faceMask = faceMasks.masks[currentPhaseIdx];
+          if (faceMask) {
+            phaseMatched = StateMatcher.matchesMask(state, faceMask);
+          }
+        }
+        // If faceMasks is null and we're past phase 0, fall through
+        // to standard check (shouldn't happen in practice)
+      }
+
+      if (!phaseMatched) {
+        // Standard check (non-color-neutral or fallback)
+        phaseMatched = StateMatcher.matchesMask(state, currentMask);
+      }
+
+      if (phaseMatched) {
         // Phase transition detected
         const startTs = entries[phaseStartIndex].hostTimestamp;
         const endTs = entry.hostTimestamp;
@@ -99,7 +130,6 @@ export class PhaseSplitter {
         // If we've completed all phases, extend the last phase to cover
         // any remaining moves and exit
         if (currentPhaseIdx >= method.phases.length) {
-          // Only extend if there are remaining entries
           if (phaseStartIndex < entries.length) {
             const lastPhase = phases[phases.length - 1];
             const lastEntry = entries[entries.length - 1];
@@ -120,6 +150,23 @@ export class PhaseSplitter {
   }
 
   /**
+   * Try to detect which face the cross is on by checking all 6 cross masks.
+   *
+   * @returns The matching FaceCFOPMasks and its index, or null if no cross found.
+   */
+  private static detectCrossFace(
+    state: ReturnType<typeof TimelineBuilder.fromSnapshot>,
+  ): FaceCFOPMasks | null {
+    for (let i = 0; i < COLOR_NEUTRAL_CFOP_MASKS.length; i++) {
+      const faceMasks = COLOR_NEUTRAL_CFOP_MASKS[i];
+      if (StateMatcher.matchesMask(state, faceMasks.masks[0])) {
+        return faceMasks;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Split and annotate a timeline in one step.
    *
    * Modifies the timeline in place:
@@ -127,13 +174,15 @@ export class PhaseSplitter {
    * 2. Assigns phaseId/phaseName to each entry
    * 3. Sets timeline.phases
    *
+   * @param options.colorNeutral - Enable color-neutral cross detection.
    * @returns The annotated timeline (same object, mutated in place).
    */
   static splitAndAnnotate(
     timeline: SolveTimeline,
     method: MethodDefinition,
+    options?: { colorNeutral?: boolean },
   ): SolveTimeline {
-    const phases = PhaseSplitter.split(timeline, method);
+    const phases = PhaseSplitter.split(timeline, method, options);
     return TimelineBuilder.annotatePhases(timeline, phases);
   }
 
@@ -172,22 +221,41 @@ export class PhaseSplitter {
   static validate(
     timeline: SolveTimeline,
     method: MethodDefinition,
+    options?: { colorNeutral?: boolean },
   ): boolean {
-    const phases = PhaseSplitter.split(timeline, method);
+    const phases = PhaseSplitter.split(timeline, method, options);
 
     if (phases.length === 0) return false;
 
+    const useColorNeutral =
+      options?.colorNeutral === true && method.name === 'CFOP';
+    let faceMasks: FaceCFOPMasks | null = null;
     let phaseIdx = 0;
 
     for (let i = 0; i < timeline.entries.length; i++) {
       const entry = timeline.entries[i];
 
-      // Use the saved snapshot instead of re-applying moves
       const state = TimelineBuilder.fromSnapshot(entry.state);
 
       // Check if we're at a phase boundary
       if (phaseIdx < phases.length && i === phases[phaseIdx].endIndex) {
-        const mask = method.phases[phaseIdx];
+        let mask: PhaseMask;
+
+        if (useColorNeutral && faceMasks) {
+          mask = faceMasks.masks[phaseIdx];
+        } else if (useColorNeutral && phaseIdx === 0) {
+          // Try to detect cross face
+          const result = PhaseSplitter.detectCrossFace(state);
+          if (result) {
+            faceMasks = result;
+            mask = faceMasks.masks[phaseIdx];
+          } else {
+            mask = method.phases[phaseIdx];
+          }
+        } else {
+          mask = method.phases[phaseIdx];
+        }
+
         if (!StateMatcher.matchesMask(state, mask)) {
           return false;
         }

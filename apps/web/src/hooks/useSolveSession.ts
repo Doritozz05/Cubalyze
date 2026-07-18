@@ -102,8 +102,10 @@ async function runAnalysis(
     const methodDef = METHOD_DEFS[method];
     // Pass the scramble so timeline starts from the scrambled state,
     // which is required for correct phase detection (Cross, F2L, OLL, PLL).
+    // Enable color-neutral detection so any cross face (white, yellow,
+    // green, blue, red, orange) is correctly recognized.
     const timeline = TimelineBuilder.build(moves, method, orientations, scramble);
-    PhaseSplitter.splitAndAnnotate(timeline, methodDef);
+    PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
     return await MetricsAggregator.computeAll(timeline, scramble);
   } catch (err) {
     console.error("[Analysis] Pipeline failed:", err);

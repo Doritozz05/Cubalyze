@@ -116,10 +116,10 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
         </div>
         <div className="mt-2 flex items-baseline gap-3">
           <p className="nums text-2xl text-ink">
-            {formatTime(m.totalTimeMs)}
+            {formatTime(solve.time)}
           </p>
           <span className="nums text-[0.7rem] text-ink-3">
-            {m.totalMoves} moves · {formatTime(solve.time)} timer
+            {m.totalMoves} moves
           </span>
         </div>
       </div>
