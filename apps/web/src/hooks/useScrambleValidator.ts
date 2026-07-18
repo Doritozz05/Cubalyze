@@ -409,15 +409,26 @@ export function useScrambleValidator(
           )
         : -1;
 
-      if (matchedForward !== -1) {
-        s.currentIndex = matchedForward + 1;
-        s.isError = false;
-        s.consecutiveErrors = 0;
-        s.errorStartIndex = -1;
-        s.pendingHalfFace = null;
-        s.pendingHalfTokenIndex = -1;
-      } else if (matchedBackward !== -1) {
-        s.currentIndex = matchedBackward + 1;
+      // B3 FIX: When in an error state, prioritize BACKWARD recovery over
+      // FORWARD jumps. Without this, a rectifying move (e.g. R' after a
+      // wrong R at currentIndex > 0) that happens to match a later expected
+      // state would jump forward via matchedForward instead of recovering
+      // backward — the user gets stuck in the error.
+      //
+      // The F→F' case worked because F' returns the cube to SOLVED, which
+      // triggers the isError && isSolved() → resetRef() branch above. But
+      // R→R' at currentIndex > 0 returns to the pre-error state (NOT solved),
+      // so it falls through to this logic. With the old code, matchedForward
+      // took priority and a false-positive forward match prevented recovery.
+      const recoverTo =
+        s.isError && matchedBackward !== -1
+          ? matchedBackward
+          : matchedForward !== -1
+            ? matchedForward
+            : matchedBackward;
+
+      if (recoverTo !== -1) {
+        s.currentIndex = recoverTo + 1;
         s.isError = false;
         s.consecutiveErrors = 0;
         s.errorStartIndex = -1;

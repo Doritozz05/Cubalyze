@@ -1,5 +1,6 @@
 import {
   CubeState,
+  FaceletStringConverter,
   MoveTransformer,
 } from '@cubeforge/math-core';
 import type {
@@ -11,6 +12,9 @@ import type {
   SolveTimeline,
   TimelineEntry,
 } from '@cubeforge/types';
+
+/** Matches the solved facelet string (9 of each of 6 colors, in order). */
+const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
 
 /**
  * Builds a SolveTimeline from a sequence of raw CubeMoveEvents.
@@ -36,6 +40,12 @@ export class TimelineBuilder {
    * @param scramble - Optional scramble to apply to the initial state.
    *                   When provided, the timeline starts from the scrambled
    *                   state, which is required for correct phase detection.
+   * @param initialFacelets - Optional 54-char facelet string from the real
+   *                          Smart Cube state at solve start. When provided
+   *                          (and not a stale "solved" state), this is used
+   *                          as ground truth INSTEAD of the scramble — making
+   *                          phase detection deterministic even when scramble
+   *                          verification is disabled.
    * @returns A fully reconstructed SolveTimeline ready for phase recognition.
    */
   static build(
@@ -43,6 +53,7 @@ export class TimelineBuilder {
     methodName = 'CFOP',
     orientations?: (CubeOrientation | undefined)[],
     scramble?: string,
+    initialFacelets?: string,
   ): SolveTimeline {
     if (moves.length === 0) {
       return {
@@ -58,10 +69,34 @@ export class TimelineBuilder {
     const state = new CubeState();
     CubeState.initTables();
 
-    // Apply scramble first so the initial cube state matches what the
-    // solver actually sees. Without this, phase detection starts from
-    // a solved cube and cannot detect when phases are completed.
-    if (scramble) {
+    // B6: Prefer the real cube state (ground truth from the Smart Cube's
+    // FACELETS event) when available — it makes phase detection deterministic
+    // even without scramble verification (Modes 3 & 4).
+    //
+    // Guards:
+    //  - Empty/short strings: lastFaceletsRef starts as '' and may not have
+    //    been populated yet (e.g. non-smart-cube solves, or a cube that
+    //    hasn't sent its first FACELETS event). Skip to the scramble path.
+    //  - Solved + scramble provided: the facelets event is likely stale
+    //    (from before the scramble was applied — Gen2 cubes don't send
+    //    periodic facelets in Mode 3/4). Fall back to the scramble.
+    const hasValidFacelets =
+      !!initialFacelets && initialFacelets.length === 54;
+    const faceletsAreSolved =
+      hasValidFacelets && SOLVED_FACELETS.test(initialFacelets!);
+    const useRealFacelets =
+      hasValidFacelets && !(faceletsAreSolved && scramble);
+
+    if (useRealFacelets) {
+      const realState = FaceletStringConverter.fromFaceletString(initialFacelets!);
+      state.cp.set(realState.cp);
+      state.co.set(realState.co);
+      state.ep.set(realState.ep);
+      state.eo.set(realState.eo);
+    } else if (scramble) {
+      // Apply scramble so the initial cube state matches what the
+      // solver actually sees. Without this, phase detection starts from
+      // a solved cube and cannot detect when phases are completed.
       state.applySequence(scramble);
     }
 
@@ -152,6 +187,9 @@ export class TimelineBuilder {
     methodName = 'CFOP',
     scramble?: string,
   ): SolveTimeline {
+    // Stored solves don't have initialFacelets (only the scramble was
+    // persisted), so we pass only the scramble. This preserves backward
+    // compatibility for historical solve analysis.
     const timeline = TimelineBuilder.build(moves, methodName, undefined, scramble);
     timeline.solveId = solveId;
     return timeline;

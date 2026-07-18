@@ -60,6 +60,8 @@ export interface UseSolveSessionResult {
   lastSolveMoves: CubeMoveEvent[];
   /** Orientations captured at solve stop (one per move, for RotationCounter). */
   lastSolveOrientations: (CubeOrientation | undefined)[];
+  /** Real cube facelets at solve start (ground truth for phase detection). */
+  lastSolveStartFacelets: string;
 }
 
 const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
@@ -95,16 +97,26 @@ async function runAnalysis(
   scramble: string,
   method: SolveMethod,
   orientations?: (CubeOrientation | undefined)[],
+  initialFacelets?: string,
 ): Promise<SolveMetrics | null> {
   if (moves.length === 0) return null;
 
   try {
     const methodDef = METHOD_DEFS[method];
-    // Pass the scramble so timeline starts from the scrambled state,
-    // which is required for correct phase detection (Cross, F2L, OLL, PLL).
-    // Enable color-neutral detection so any cross face (white, yellow,
-    // green, blue, red, orange) is correctly recognized.
-    const timeline = TimelineBuilder.build(moves, method, orientations, scramble);
+    // B6: Pass the real cube facelets captured at solve start as ground
+    // truth for the initial state. This makes phase detection deterministic
+    // even when scramble verification is disabled (Modes 3 & 4) — the
+    // timeline starts from what the cube actually was, not what the
+    // displayed scramble says. TimelineBuilder falls back to `scramble`
+    // when `initialFacelets` is absent or stale (solved).
+    // Enable color-neutral detection so any cross face is recognized.
+    const timeline = TimelineBuilder.build(
+      moves,
+      method,
+      orientations,
+      scramble,
+      initialFacelets,
+    );
     PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
     return await MetricsAggregator.computeAll(timeline, scramble);
   } catch (err) {
@@ -158,6 +170,14 @@ export function useSolveSession(
   const [lastSolveOrientations, setLastSolveOrientations] = useState<(CubeOrientation | undefined)[]>([]);
   const currentOrientationRef = useRef<CubeOrientation | undefined>(undefined);
 
+  // ── Facelets tracking (B6: ground-truth initial state for analysis) ─────
+  // lastFaceletsRef: the most recent facelets event from the real cube.
+  // solveStartFaceletsRef: captured when the timer enters RUNNING — this is
+  //   the scrambled state the solver sees, used to seed the analysis timeline.
+  const lastFaceletsRef = useRef<string>('');
+  const solveStartFaceletsRef = useRef<string>('');
+  const [lastSolveStartFacelets, setLastSolveStartFacelets] = useState<string>('');
+
   const onSolveRef = useRef(options.onSolve);
   useEffect(() => {
     onSolveRef.current = options.onSolve;
@@ -169,6 +189,16 @@ export function useSolveSession(
         collectedMovesRef.current = [];
         collectedOrientationsRef.current = [];
         setCollectedMoves([]);
+        // B6: clear facelets tracking so stale data doesn't leak into the
+        // next solve.
+        solveStartFaceletsRef.current = '';
+      }
+      // B6: capture the real cube state at the moment the timer starts
+      // running. lastFaceletsRef holds the most recent FACELETS event from
+      // the cube, which (since no moves happen during IDLE/INSPECTION) is
+      // the scrambled state the solver is about to solve.
+      if (engineState === EngineState.RUNNING) {
+        solveStartFaceletsRef.current = lastFaceletsRef.current;
       }
       setPhase(mapEngineStateToUIState(engineState));
     });
@@ -180,6 +210,8 @@ export function useSolveSession(
       lastSolveOrientationsRef.current = [...collectedOrientationsRef.current];
       setLastSolveMoves(lastSolveMovesRef.current);
       setLastSolveOrientations(lastSolveOrientationsRef.current);
+      // B6: snapshot the facelets captured at solve start for analysis.
+      setLastSolveStartFacelets(solveStartFaceletsRef.current);
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
@@ -285,6 +317,8 @@ export function useSolveSession(
     if ("facelets$" in adapter && adapter.facelets$) {
       faceletSub = (adapter.facelets$ as import("rxjs").Observable<string>).subscribe(
         (f: string) => {
+          // B6: track the most recent real-cube facelets for analysis seeding.
+          lastFaceletsRef.current = f;
           const isSolved = SOLVED_FACELETS.test(f);
           if (isSolved && engine.getState() === EngineState.RUNNING) {
             engine.handleSmartCubeStop();
@@ -421,6 +455,7 @@ export function useSolveSession(
     collectedMoves,
     lastSolveMoves,
     lastSolveOrientations,
+    lastSolveStartFacelets,
   };
 }
 
