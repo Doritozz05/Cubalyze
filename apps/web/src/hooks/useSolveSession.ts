@@ -100,7 +100,9 @@ async function runAnalysis(
 
   try {
     const methodDef = METHOD_DEFS[method];
-    const timeline = TimelineBuilder.build(moves, method, orientations);
+    // Pass the scramble so timeline starts from the scrambled state,
+    // which is required for correct phase detection (Cross, F2L, OLL, PLL).
+    const timeline = TimelineBuilder.build(moves, method, orientations, scramble);
     PhaseSplitter.splitAndAnnotate(timeline, methodDef);
     return await MetricsAggregator.computeAll(timeline, scramble);
   } catch (err) {
@@ -261,6 +263,11 @@ export function useSolveSession(
         current === EngineState.READY_FOR_MOVE
       ) {
         engine.handleSmartCubeStart();
+        // Capture the move that triggered the start — it is part of the solve
+        collectedMovesRef.current.push(move);
+        collectedOrientationsRef.current.push(currentOrientationRef.current);
+        setCollectedMoves([...collectedMovesRef.current]);
+        return;
       }
     });
 

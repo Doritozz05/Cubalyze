@@ -1,6 +1,4 @@
 import {
-  CubeState,
-  MoveTransformer,
   StateMatcher,
   type MethodDefinition,
 } from '@cubeforge/math-core';
@@ -15,6 +13,13 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
  * mask in the method definition, it advances through the timeline until
  * the mask condition is satisfied. When a phase transition is detected,
  * a PhaseSegment is created with the start/end indices and timestamps.
+ *
+ * CRITICAL: The splitter uses the pre-computed CubeState snapshots stored
+ * in each TimelineEntry (via TimelineBuilder.fromSnapshot). This means it
+ * automatically works with any initial state — whether the timeline was
+ * built from a scrambled cube (scramble passed to build()) or from a solved
+ * cube (no scramble). The state at each entry reflects the actual cube
+ * state at that point in the solve.
  *
  * Design:
  * - Generic: works with any MethodDefinition (CFOP, Roux, ZZ, Petrus...)
@@ -32,9 +37,9 @@ export class PhaseSplitter {
    * Split a timeline into phases according to the given method definition.
    *
    * Algorithm:
-   * 1. Initialize a fresh CubeState from solved.
-   * 2. For each timeline entry:
-   *    a. Apply the move to the tracking state.
+   * 1. For each timeline entry:
+   *    a. Restore the cube state from the entry's saved snapshot.
+   *       (This snapshot already reflects the scramble if one was applied.)
    *    b. Check if the current phase mask is now satisfied.
    *    c. If satisfied, record a PhaseSegment and advance to the next phase.
    *    d. If all phases complete, extend the last phase to cover any
@@ -54,10 +59,6 @@ export class PhaseSplitter {
       return [];
     }
 
-    // Reconstruct cube state from scratch
-    const state = new CubeState();
-    CubeState.initTables();
-
     const phases: PhaseSegment[] = [];
     let currentPhaseIdx = 0;
     let phaseStartIndex = 0;
@@ -65,12 +66,10 @@ export class PhaseSplitter {
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
 
-      // Apply this move to our tracking state
-      const notation = MoveTransformer.moveToNotation(
-        entry.move.face,
-        entry.move.direction,
-      );
-      state.applySequence(notation);
+      // Restore the cube state from the entry's saved snapshot.
+      // This reflects the actual cube state after this move was applied,
+      // including any scramble that was applied during timeline construction.
+      const state = TimelineBuilder.fromSnapshot(entry.state);
 
       // Check if the current phase is now complete
       const currentMask = method.phases[currentPhaseIdx];
@@ -166,6 +165,8 @@ export class PhaseSplitter {
    * Validate phase splits by replaying the timeline and verifying that
    * each detected phase boundary satisfies its mask condition.
    *
+   * Uses the same snapshot-based approach as split() for consistency.
+   *
    * Returns true if all phase boundaries are correct.
    */
   static validate(
@@ -176,19 +177,13 @@ export class PhaseSplitter {
 
     if (phases.length === 0) return false;
 
-    // Replay from scratch and verify each phase boundary
-    const state = new CubeState();
-    CubeState.initTables();
-
     let phaseIdx = 0;
 
     for (let i = 0; i < timeline.entries.length; i++) {
       const entry = timeline.entries[i];
-      const notation = MoveTransformer.moveToNotation(
-        entry.move.face,
-        entry.move.direction,
-      );
-      state.applySequence(notation);
+
+      // Use the saved snapshot instead of re-applying moves
+      const state = TimelineBuilder.fromSnapshot(entry.state);
 
       // Check if we're at a phase boundary
       if (phaseIdx < phases.length && i === phases[phaseIdx].endIndex) {

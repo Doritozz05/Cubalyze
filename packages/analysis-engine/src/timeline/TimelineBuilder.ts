@@ -33,12 +33,16 @@ export class TimelineBuilder {
    * @param moves - The raw CubeMoveEvents from the solve session.
    * @param methodName - The solving method identifier (e.g. "CFOP", "Roux").
    * @param orientations - Optional orientation snapshots per move index.
+   * @param scramble - Optional scramble to apply to the initial state.
+   *                   When provided, the timeline starts from the scrambled
+   *                   state, which is required for correct phase detection.
    * @returns A fully reconstructed SolveTimeline ready for phase recognition.
    */
   static build(
     moves: CubeMoveEvent[],
     methodName = 'CFOP',
     orientations?: (CubeOrientation | undefined)[],
+    scramble?: string,
   ): SolveTimeline {
     if (moves.length === 0) {
       return {
@@ -53,6 +57,13 @@ export class TimelineBuilder {
 
     const state = new CubeState();
     CubeState.initTables();
+
+    // Apply scramble first so the initial cube state matches what the
+    // solver actually sees. Without this, phase detection starts from
+    // a solved cube and cannot detect when phases are completed.
+    if (scramble) {
+      state.applySequence(scramble);
+    }
 
     const entries: TimelineEntry[] = [];
     let startTimestamp = Infinity;
@@ -129,13 +140,19 @@ export class TimelineBuilder {
    *
    * The solve already has `moves: CubeMoveEvent[]` stored.
    * This method is the bridge between persistence and analysis.
+   *
+   * @param solveId - Database solve ID.
+   * @param moves - The moves from the stored solve.
+   * @param methodName - Solving method identifier.
+   * @param scramble - Optional scramble to apply for correct phase detection.
    */
   static fromStoredSolve(
     solveId: string,
     moves: CubeMoveEvent[],
     methodName = 'CFOP',
+    scramble?: string,
   ): SolveTimeline {
-    const timeline = TimelineBuilder.build(moves, methodName);
+    const timeline = TimelineBuilder.build(moves, methodName, undefined, scramble);
     timeline.solveId = solveId;
     return timeline;
   }
