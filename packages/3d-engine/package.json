@@ -1,8 +1,0 @@
-{
-  "name": "@cubeforge/3d-engine",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "typecheck": "echo no sources"
-  }
-}

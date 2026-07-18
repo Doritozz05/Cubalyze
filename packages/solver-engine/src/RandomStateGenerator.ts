@@ -1,4 +1,4 @@
-import { CubeState } from './CubeState';
+import { CubeState } from '@cubeforge/math-core';
 
 export interface ISolver {
   solve(state: CubeState): string;

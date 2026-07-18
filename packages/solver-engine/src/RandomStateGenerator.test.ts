@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { CubeState } from '@cubeforge/math-core';
 import { RandomStateGenerator, ISolver } from './RandomStateGenerator';
-import { CubeState } from './CubeState';
 
 // Dummy solver for tests
 class DummySolver implements ISolver {

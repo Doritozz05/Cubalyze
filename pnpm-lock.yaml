@@ -46,6 +46,9 @@ importers:
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../../packages/math-core
+      '@cubeforge/solver-engine':
+        specifier: workspace:*
+        version: link:../../packages/solver-engine
       '@cubeforge/state':
         specifier: workspace:*
         version: link:../../packages/state
@@ -267,8 +270,6 @@ importers:
         specifier: ^8.1.1
         version: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)
 
-  packages/3d-engine: {}
-
   packages/ai-core: {}
 
   packages/analysis-engine:
@@ -276,6 +277,9 @@ importers:
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../math-core
+      '@cubeforge/solver-engine':
+        specifier: workspace:*
+        version: link:../solver-engine
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../types
@@ -287,13 +291,11 @@ importers:
         specifier: ^8.0.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
       typescript:
-        specifier: ^5.3.3
+        specifier: ^5.7.3
         version: 5.9.3
       vitest:
         specifier: ^1.2.2
         version: 1.6.1(@types/node@24.13.3)(lightningcss@1.32.0)(terser@5.49.0)
-
-  packages/bluetooth: {}
 
   packages/config-eslint:
     dependencies:
@@ -343,7 +345,7 @@ importers:
         specifier: ^8.0.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
       typescript:
-        specifier: ^5.3.3
+        specifier: ^5.7.3
         version: 5.9.3
       vitest:
         specifier: ^3.0.5
@@ -351,6 +353,12 @@ importers:
 
   packages/database:
     dependencies:
+      '@cubeforge/models':
+        specifier: workspace:*
+        version: link:../models
+      '@cubeforge/types':
+        specifier: workspace:*
+        version: link:../types
       '@sqlite.org/sqlite-wasm':
         specifier: 3.53.0-build1
         version: 3.53.0-build1
@@ -413,9 +421,6 @@ importers:
       '@cubeforge/gan-protocol':
         specifier: workspace:*
         version: link:../gan-protocol
-      '@cubeforge/timer-engine':
-        specifier: workspace:*
-        version: link:../timer-engine
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../types
@@ -467,7 +472,7 @@ importers:
         specifier: ^8.0.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
       typescript:
-        specifier: ^5.3.3
+        specifier: ^5.7.3
         version: 5.9.3
       vitest:
         specifier: ^1.2.2
@@ -498,7 +503,27 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)
 
-  packages/solver-engine: {}
+  packages/solver-engine:
+    dependencies:
+      '@cubeforge/math-core':
+        specifier: workspace:*
+        version: link:../math-core
+      min2phase.js:
+        specifier: ^0.0.4
+        version: 0.0.4
+    devDependencies:
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      tsup:
+        specifier: ^8.3.6
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)
 
   packages/state:
     dependencies:
@@ -548,7 +573,7 @@ importers:
         specifier: ^8.0.0
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
       typescript:
-        specifier: ^5.0.0
+        specifier: ^5.7.3
         version: 5.9.3
       vitest:
         specifier: ^3.0.5
@@ -611,7 +636,7 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.19)
       typescript:
-        specifier: ^5.4.5
+        specifier: ^5.7.3
         version: 5.9.3
 
 packages:

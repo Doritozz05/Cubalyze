@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
 import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { CubeState, FaceletStringConverter, MoveTransformer } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS } from '@cubeforge/math-core';
 import { orientationStore } from '@cubeforge/state';
 
 export type ScrambleMoveState = 'pending' | 'correct' | 'incorrect';
@@ -24,7 +24,6 @@ function parseScramble(scramble: string): string[] {
 }
 
 const MAX_CONSECUTIVE_ERRORS = 3;
-const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
 
 function isDoubleMove(token: string): boolean {
   return (
@@ -239,9 +238,8 @@ export function useScrambleValidator(
 
     let faceletCleanup: (() => void) | undefined;
 
-    if ('facelets$' in adapter && (adapter as unknown as { facelets$?: { subscribe: (cb: (f: string) => void) => { unsubscribe: () => void } } }).facelets$) {
-      const obs = (adapter as unknown as { facelets$: { subscribe: (cb: (f: string) => void) => { unsubscribe: () => void } } }).facelets$;
-      const faceletSub = obs.subscribe((f: string) => {
+    if (adapter.facelets$) {
+      const faceletSub = adapter.facelets$.subscribe((f: string) => {
         handleFacelets(f);
       });
       faceletCleanup = () => faceletSub.unsubscribe();
@@ -299,8 +297,7 @@ export function useScrambleValidator(
     const moveSub = adapter.moves$.subscribe((ev: CubeMoveEvent) => {
       const s = stateRef.current;
 
-      const notation =
-        ev.face + (ev.direction === -1 ? "'" : ev.direction === 2 ? "2" : "");
+      const notation = MoveTransformer.moveToNotation(ev.face, ev.direction);
 
       if (s.needsReset) {
         s.actualMoves.push(notation);
@@ -409,7 +406,7 @@ export function useScrambleValidator(
           )
         : -1;
 
-      // B3 FIX: When in an error state, prioritize BACKWARD recovery over
+      // When in an error state, prioritize BACKWARD recovery over
       // FORWARD jumps. Without this, a rectifying move (e.g. R' after a
       // wrong R at currentIndex > 0) that happens to match a later expected
       // state would jump forward via matchedForward instead of recovering
@@ -418,8 +415,8 @@ export function useScrambleValidator(
       // The F→F' case worked because F' returns the cube to SOLVED, which
       // triggers the isError && isSolved() → resetRef() branch above. But
       // R→R' at currentIndex > 0 returns to the pre-error state (NOT solved),
-      // so it falls through to this logic. With the old code, matchedForward
-      // took priority and a false-positive forward match prevented recovery.
+      // so it falls through to this logic. Without backward-first, matchedForward
+      // would take priority and a false-positive forward match would prevent recovery.
       const recoverTo =
         s.isError && matchedBackward !== -1
           ? matchedBackward

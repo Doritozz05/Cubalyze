@@ -44,7 +44,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   // Tracks whether orientation+rotation callbacks have been registered on the singleton worker.
   // Prevents duplicate registrations across Strict Mode remounts.
   const callbacksRegistered = useRef(false);
-  // B5 FIX: Force the first facelet sync after mount/remount to happen
+  // Force the first facelet sync after mount/remount to happen
   // regardless of pendingMoves. When the panel is hidden, the SyncBridge
   // is unbound (losing track of cube moves); on remount, the model may be
   // desynchronized. This flag ensures the first facelet event corrects it.
@@ -53,7 +53,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // B5: Reset the initial-sync flag so the first facelet event after
+    // Reset the initial-sync flag so the first facelet event after
     // mount/remount corrects any desync from the panel being hidden.
     needsInitialSyncRef.current = true;
     moveSub.current?.unsubscribe();
@@ -72,7 +72,7 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
     const faceletSub = globalCubeAdapter.facelets$
       ? globalCubeAdapter.facelets$.subscribe((facelets: string) => {
           if (!syncBridge.current) return;
-          // B5 FIX: On mount/remount, force-sync the 3D model from the
+          // On mount/remount, force-sync the 3D model from the
           // real cube state regardless of pending moves. The model may
           // be desynchronized from being hidden (SyncBridge unbound).
           // After the first sync, resume the normal guard.

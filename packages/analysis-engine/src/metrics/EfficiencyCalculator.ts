@@ -1,4 +1,5 @@
-import { CubeState, Min2PhaseSolver } from '@cubeforge/math-core';
+import { CubeState } from '@cubeforge/math-core';
+import { Min2PhaseSolver } from '@cubeforge/solver-engine';
 import type { SolveTimeline, EfficiencyMetrics } from '@cubeforge/types';
 
 /**

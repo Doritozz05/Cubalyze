@@ -1,4 +1,5 @@
 import type { Solve } from './types.js';
+import type { CubeMoveEvent } from '@cubeforge/types';
 
 export interface SolveRow {
   id: string;
@@ -24,9 +25,9 @@ function rowToSolve(row: SolveRow): Solve {
     timeMs: row.time_ms,
     date: row.date,
     scramble: row.scramble,
-    penalty: row.penalty,
+    penalty: row.penalty as Solve['penalty'],
     method: row.method ?? undefined,
-    moves: JSON.parse(row.moves),
+    moves: JSON.parse(row.moves) as CubeMoveEvent[],
     analysisEngineVersion: row.analysis_engine_version ?? undefined,
     analysis: row.analysis ?? undefined,
     createdAt: row.created_at,

@@ -1,5 +1,8 @@
 import { CubeState } from './CubeState';
 
+/** Matches the solved facelet string (9 of each of 6 colors, in order). */
+export const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
+
 // Facelet offsets: U: 0..8, R: 9..17, F: 18..26, D: 27..35, L: 36..44, B: 45..53
 const cornerFacelet = [
   [8, 9, 20],   // URF

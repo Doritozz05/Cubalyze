@@ -2,6 +2,7 @@ import {
   CubeState,
   FaceletStringConverter,
   MoveTransformer,
+  SOLVED_FACELETS,
 } from '@cubeforge/math-core';
 import type {
   CubeMoveEvent,
@@ -12,9 +13,6 @@ import type {
   SolveTimeline,
   TimelineEntry,
 } from '@cubeforge/types';
-
-/** Matches the solved facelet string (9 of each of 6 colors, in order). */
-const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
 
 /**
  * Builds a SolveTimeline from a sequence of raw CubeMoveEvents.

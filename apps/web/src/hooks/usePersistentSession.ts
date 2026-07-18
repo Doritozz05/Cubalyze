@@ -168,7 +168,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       timeMs: input.time,
       date: new Date().toISOString(),
       scramble: input.scramble,
-      penalty: input.penalty || "none",
+      penalty: (input.penalty?.toLowerCase() || "none") as DBSolve['penalty'],
       method: input.method,
       moves: input.moves || [],
       analysisEngineVersion: '0.1.0',
@@ -197,7 +197,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const existing = await solvesRepo.findById(id);
     if (!existing) return;
     
-    existing.penalty = updates.penalty ?? existing.penalty;
+    existing.penalty = (updates.penalty?.toLowerCase() ?? existing.penalty) as DBSolve['penalty'];
     if (updates.note !== undefined) {
        existing.method = updates.note === null ? undefined : updates.note;
     }

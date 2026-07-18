@@ -21,7 +21,7 @@ import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { preferencesStore } from "@cubeforge/state";
-import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/math-core";
+import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Penalty, SolveMethod } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";

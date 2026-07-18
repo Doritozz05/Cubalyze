@@ -17,8 +17,8 @@ function rowToAlgorithm(row: AlgorithmRow): Algorithm {
   return {
     id: row.id,
     name: row.name,
-    moves: JSON.parse(row.moves),
-    alternatives: JSON.parse(row.alternatives),
+    moves: JSON.parse(row.moves) as string[],
+    alternatives: JSON.parse(row.alternatives) as string[][],
     subset: row.subset,
     puzzleType: row.puzzle_type,
     createdAt: row.created_at,

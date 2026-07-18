@@ -7,9 +7,8 @@ import path from 'path'
 export default defineConfig({
   server: {
     host: true,
-    // B1 FIX: Explicit HMR config prevents wss://localhost handshake failures
-    // when basicSsl is active. Without this, the HMR client uses the wrong
-    // WebSocket URL and the connection fails (cosmetic — HMR falls back).
+    // Explicit HMR config for wss://localhost when basicSsl is active.
+    // Prevents WebSocket URL mismatch that causes HMR connection failure.
     hmr: {
       protocol: 'wss',
       host: 'localhost',

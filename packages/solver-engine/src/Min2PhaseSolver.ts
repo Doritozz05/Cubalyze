@@ -1,7 +1,5 @@
-// @ts-ignore
 import min2phase from 'min2phase.js';
-import { CubeState } from './CubeState';
-import { FaceletStringConverter } from './FaceletStringConverter';
+import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
 import { ISolver } from './RandomStateGenerator';
 
 export class Min2PhaseSolver implements ISolver {

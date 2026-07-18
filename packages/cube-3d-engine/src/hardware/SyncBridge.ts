@@ -65,7 +65,7 @@ export class SyncBridge {
     if (this.coalesceBuffer.length === 0) return;
 
     // Check for M move coalesce (L' and R or R' and L).
-    // B9 FIX: Iterate ALL adjacent pairs, not just the first two.
+    // Iterate ALL adjacent pairs, not just the first two.
     // Multiple pairs may need coalescing within the 45ms window.
     for (let i = 0; i < this.coalesceBuffer.length - 1; i++) {
       const m1 = this.coalesceBuffer[i];

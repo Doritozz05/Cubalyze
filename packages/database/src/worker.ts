@@ -1,8 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import * as Comlink from 'comlink';
 import { MIGRATIONS } from './migrations/index.js';
 
+// The @sqlite.org/sqlite-wasm package exposes a runtime API that is not
+// fully typed by the bundled type declarations. We use `any` for the `db`
+// reference and the sqlite3 factory result because the public types do not
+// cover the OPFS-backed OpfsDb constructor or the oo1 namespace.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null;
 
 function runMigrations(): void {
@@ -12,7 +16,7 @@ function runMigrations(): void {
 
   const applied = new Set(
     db.exec({ sql: 'SELECT id FROM _migrations', rowMode: 'object', resultRows: [] })
-      .resultRows?.map((r: any) => r.id) ?? []
+      .resultRows?.map((r: { id: string }) => r.id) ?? []
   );
 
   for (const migration of MIGRATIONS) {
@@ -29,11 +33,14 @@ export const DBWorker = {
     try {
       const sqlite3 = await sqlite3InitModule();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((sqlite3 as any).opfs) {
         console.log('[DB Worker] OPFS is available. Using OpfsDb.');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         db = new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
       } else {
         // Fallback to memory
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
       }
 
@@ -56,6 +63,7 @@ export const DBWorker = {
   execute(sql: string, bind?: unknown[]) {
     if (!db) throw new Error('Database not initialized');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const results: any[] = [];
     db.exec({
       sql,

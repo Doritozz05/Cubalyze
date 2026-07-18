@@ -87,7 +87,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.connectionStatusSubject.next('connected');
   }
 
-  // B2 FIX: Track whether a REQUEST_FACELETS is already in-flight to
+  // Track whether a REQUEST_FACELETS is already in-flight to
   // deduplicate concurrent calls. Multiple subscribers (validator,
   // connect flow, Cube3DPanel) may trigger requestFacelets simultaneously
   // — only the first call issues the GATT command; subsequent calls wait

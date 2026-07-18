@@ -1,6 +1,6 @@
 {
   "name": "@cubeforge/hardware-hal",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Hardware Abstraction Layer for Smart Cubes and Timers",
@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@cubeforge/gan-protocol": "workspace:*",
-    "@cubeforge/timer-engine": "workspace:*",
     "@cubeforge/types": "workspace:*",
     "rxjs": "^7.8.1"
   },
