@@ -3,7 +3,7 @@ import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
 import { ClockDriftReconciler } from '../sync/ClockDrift';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { connectGanCube, type GanCubeConnection } from '@cubeforge/gan-protocol';
+import { connectGanCube, reconnectGanCube, type GanCubeConnection, type BluetoothDeviceWithMAC } from '@cubeforge/gan-protocol';
 
 function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
   const match = move.match(/^([UDRLBF])(2|'|2')?$/);
@@ -53,7 +53,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   private clockReconciler = new ClockDriftReconciler();
 
   // ── BLE reconnection state ──────────────────────────────────────────────────
-  private device: BluetoothDevice | null = null;
+  private device: BluetoothDeviceWithMAC | null = null;
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private isUserDisconnect = false;
@@ -202,6 +202,11 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   // ── Private: reconnection logic ─────────────────────────────────────────────
 
   private attemptReconnect(): void {
+    // Guard: skip if already reconnecting or already connected
+    if (this.reconnectTimer !== null || this.connection !== null) {
+      return;
+    }
+
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts = 0;
       this.device = null;
@@ -217,12 +222,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       this.reconnectTimer = null;
       try {
         if (!this.device) throw new Error('No device reference for reconnection');
-        await this.device.gatt!.connect();
-        this.connection = await connectGanCube(async (device, isFallback) => {
-          if (this.manualMac) return this.manualMac;
-          if (isFallback) return null;
-          return null;
-        });
+        // reconnectGanCube does a single GATT connect — no picker dialog, no double connect
+        this.connection = await reconnectGanCube(this.device);
         this.reconnectAttempts = 0;
         this.setupEventsSubscription();
         this.onConnectionChange?.('connected');
