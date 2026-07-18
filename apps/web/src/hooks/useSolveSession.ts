@@ -166,7 +166,6 @@ export function useSolveSession(
   useEffect(() => {
     const sub1 = engine.state$.subscribe((engineState) => {
       if (engineState === EngineState.IDLE) {
-        swallowNextCubeMoveRef.current = false;
         collectedMovesRef.current = [];
         collectedOrientationsRef.current = [];
         setCollectedMoves([]);
@@ -211,7 +210,6 @@ export function useSolveSession(
 
   // Auto-arm logic
   const wasScrambledRef = useRef(false);
-  const swallowNextCubeMoveRef = useRef(false);
   useEffect(() => {
     const justScrambled = validation.isScrambled && !wasScrambledRef.current;
     wasScrambledRef.current = validation.isScrambled;
@@ -225,9 +223,23 @@ export function useSolveSession(
         stateIsIdle: engine.getState() === EngineState.IDLE,
       })
     ) {
-      if (engine.arm()) {
-        swallowNextCubeMoveRef.current = true;
-      }
+      // arm() transitions to READY_FOR_MOVE. The NEXT cube move — which is
+      // necessarily the user's FIRST solve move (the scramble validator has
+      // already consumed every scramble move to set isScrambled=true) — is
+      // captured by the READY_FOR_MOVE branch of the move wiring below, which
+      // also starts the timer via handleSmartCubeStart(). We must NOT swallow
+      // it: dropping the first solve move offsets the reconstructed cube
+      // state by one move, so no CFOP phase mask ever matches and the phase
+      // breakdown collapses to "all 0.00" or a single spurious late Cross.
+      // (Regression: see diagnostic-cfop-zero-phases.test.ts, H2.)
+      //
+      // Known residual race (not worsened by this fix, low practical impact):
+      // a move arriving between isScrambled=true and this effect running
+      // arrives in IDLE (arm() hasn't fired yet) and is neither captured nor
+      // swallowed — so it is lost. React re-renders in <16ms while users
+      // take >100ms to start solving, so this is rare. If the H2 symptom
+      // recurs for very fast solvers, this race is the next place to look.
+      engine.arm();
     }
   }, [
     validation.isScrambled,
@@ -252,14 +264,10 @@ export function useSolveSession(
         setCollectedMoves([...collectedMovesRef.current]);
       }
 
-      if (
-        swallowNextCubeMoveRef.current &&
-        current === EngineState.READY_FOR_MOVE
-      ) {
-        swallowNextCubeMoveRef.current = false;
-        return;
-      }
-
+      // First solve move (auto-arm path) or a move during inspection:
+      // start the timer and capture this move as part of the solve.
+      // This branch handles the move that auto-arm was waiting for — it is
+      // NOT a scramble move (the validator already finished the scramble).
       if (
         current === EngineState.INSPECTION ||
         current === EngineState.READY_FOR_MOVE
@@ -335,7 +343,6 @@ export function useSolveSession(
     if (inspectionPref) {
       engine.startInspection();
     } else if (smartCubeConnected) {
-      swallowNextCubeMoveRef.current = false;
       engine.arm();
     } else {
       engine.handleDown();
