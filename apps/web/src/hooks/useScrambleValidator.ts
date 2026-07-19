@@ -43,6 +43,24 @@ function baseFaceOfMove(token: string): string | null {
   return 'URFDLB'.includes(c) ? c : null;
 }
 
+/**
+ * Returns true when `b` undoes `a` on the same face.
+ * - R  ↔ R'   (CW ↔ CCW)
+ * - R2 ↔ R2   (half-turn is its own inverse)
+ */
+function isInverse(a: string, b: string): boolean {
+  if (a.length < 1 || b.length < 1) return false;
+  if (a[0] !== b[0]) return false;
+  const aDir: number = a.endsWith('2') ? 2 : a.endsWith("'") ? -1 : 1;
+  const bDir: number = b.endsWith('2') ? 2 : b.endsWith("'") ? -1 : 1;
+  // 2 is its own inverse
+  if (aDir === 2 && bDir === 2) return true;
+  // 1 ↔ -1
+  if (aDir === 1 && bDir === -1) return true;
+  if (aDir === -1 && bDir === 1) return true;
+  return false;
+}
+
 function computeExpected(scramble: string): {
   moves: string[];
   expectedFacelets: string[];
@@ -72,7 +90,7 @@ interface ValidatorState {
   startedFromSolved: boolean;
   actualMoves: string[];
   consecutiveErrors: number;
-  errorStartIndex: number;
+  activeErrorMoves: string[];
   needsReset: boolean;
   awaitingSolve: boolean;
   initialCheckDone: boolean;
@@ -92,7 +110,7 @@ function freshValidatorState(): ValidatorState {
     startedFromSolved: true,
     actualMoves: [],
     consecutiveErrors: 0,
-    errorStartIndex: -1,
+    activeErrorMoves: [],
     needsReset: false,
     awaitingSolve: false,
     initialCheckDone: false,
@@ -118,7 +136,7 @@ function resetRef(s: ValidatorState): void {
   s.isError = false;
   s.actualMoves = [];
   s.consecutiveErrors = 0;
-  s.errorStartIndex = -1;
+  s.activeErrorMoves = [];
   s.needsReset = false;
   s.errorState = new CubeState();
   s.pendingHalfFace = null;
@@ -189,8 +207,7 @@ export function useScrambleValidator(
       !s.needsReset &&
       !s.awaitingSolve;
 
-    const errorMoves =
-      s.errorStartIndex >= 0 ? s.actualMoves.slice(s.errorStartIndex) : [];
+    const errorMoves = s.activeErrorMoves;
 
     // Compute display-notation error moves using current orientation
     const orientation = orientationStore.getState().orientation;
@@ -302,6 +319,22 @@ export function useScrambleValidator(
       if (s.needsReset) {
         s.actualMoves.push(notation);
         try { s.errorState.applySequence(notation); } catch { /* skip */ }
+
+        // Allow undoing errors when in needsReset. Pop from the active
+        // error stack so the user can recover deterministically.
+        if (s.activeErrorMoves.length > 0 && isInverse(notation, s.activeErrorMoves[s.activeErrorMoves.length - 1])) {
+          s.activeErrorMoves.pop();
+          s.consecutiveErrors = Math.max(0, s.consecutiveErrors - 1);
+          if (s.activeErrorMoves.length === 0) {
+            // All errors undone — exit needsReset back to the pre-error state.
+            s.isError = false;
+            s.consecutiveErrors = 0;
+            s.needsReset = false;
+          }
+        } else {
+          s.activeErrorMoves.push(notation);
+        }
+
         scheduleFacelets(s);
         if (s.errorState.isSolved()) {
           resetRef(s);
@@ -328,9 +361,10 @@ export function useScrambleValidator(
         if (inputFace !== s.pendingHalfFace) {
           s.actualMoves.push(notation);
           try { s.currentState.applySequence(notation); } catch { /* skip */ }
+
           s.isError = true;
           s.consecutiveErrors++;
-          if (s.errorStartIndex === -1) s.errorStartIndex = s.actualMoves.length - 1;
+          s.activeErrorMoves.push(notation);
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
@@ -349,12 +383,13 @@ export function useScrambleValidator(
           s.currentIndex = tokenIdx + 1;
           s.isError = false;
           s.consecutiveErrors = 0;
-          s.errorStartIndex = -1;
+          s.activeErrorMoves = [];
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
         } else {
           s.isError = true;
           s.consecutiveErrors++;
+          s.activeErrorMoves.push(notation);
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
@@ -381,7 +416,7 @@ export function useScrambleValidator(
         if (baseFace !== inputFace) {
           s.isError = true;
           s.consecutiveErrors++;
-          if (s.errorStartIndex === -1) s.errorStartIndex = s.actualMoves.length - 1;
+          s.activeErrorMoves.push(notation);
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
           scheduleFacelets(s);
           updateUI();
@@ -392,11 +427,34 @@ export function useScrambleValidator(
         s.pendingHalfTokenIndex = s.currentIndex;
         s.isError = false;
         s.consecutiveErrors = 0;
-        s.errorStartIndex = -1;
+        s.activeErrorMoves = [];
         updateUI();
         return;
       }
 
+      // ── Error recovery: inverse-move detection (stack-based) ──────
+      // When the user is in an error state and performs the INVERSE of
+      // the last active error movement, pop from the stack instead of
+      // pushing a new error. This is the deterministic undo path — it
+      // handles `currentIndex === 0` (where matchedBackward can never
+      // find a match because `i < 0` is empty) and multi-step undo
+      // (R → B → B′ → R′).
+      if (
+        s.isError &&
+        s.activeErrorMoves.length > 0 &&
+        isInverse(notation, s.activeErrorMoves[s.activeErrorMoves.length - 1])
+      ) {
+        s.activeErrorMoves.pop();
+        s.consecutiveErrors = Math.max(0, s.consecutiveErrors - 1);
+        if (s.activeErrorMoves.length === 0) {
+          s.isError = false;
+          s.consecutiveErrors = 0;
+        }
+        updateUI();
+        return;
+      }
+
+      // ── Facelet-based recovery (the existing safety net) ───────────
       const matchedForward = s.expectedFacelets.findIndex(
         (f, i) => i >= s.currentIndex && f === currentFacelets
       );
@@ -406,17 +464,6 @@ export function useScrambleValidator(
           )
         : -1;
 
-      // When in an error state, prioritize BACKWARD recovery over
-      // FORWARD jumps. Without this, a rectifying move (e.g. R' after a
-      // wrong R at currentIndex > 0) that happens to match a later expected
-      // state would jump forward via matchedForward instead of recovering
-      // backward — the user gets stuck in the error.
-      //
-      // The F→F' case worked because F' returns the cube to SOLVED, which
-      // triggers the isError && isSolved() → resetRef() branch above. But
-      // R→R' at currentIndex > 0 returns to the pre-error state (NOT solved),
-      // so it falls through to this logic. Without backward-first, matchedForward
-      // would take priority and a false-positive forward match would prevent recovery.
       const recoverTo =
         s.isError && matchedBackward !== -1
           ? matchedBackward
@@ -428,13 +475,20 @@ export function useScrambleValidator(
         s.currentIndex = recoverTo + 1;
         s.isError = false;
         s.consecutiveErrors = 0;
-        s.errorStartIndex = -1;
+        s.activeErrorMoves = [];
         s.pendingHalfFace = null;
         s.pendingHalfTokenIndex = -1;
-      } else {
+      } else if (!s.isError) {
+        // Only push a NEW error — skip if we already handled an undo above.
         s.isError = true;
         s.consecutiveErrors++;
-        if (s.errorStartIndex === -1) s.errorStartIndex = s.actualMoves.length - 1;
+        s.activeErrorMoves.push(notation);
+        if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
+        scheduleFacelets(s);
+      } else {
+        // Already in error and the move is not an inverse — new error.
+        s.consecutiveErrors++;
+        s.activeErrorMoves.push(notation);
         if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
         scheduleFacelets(s);
       }
