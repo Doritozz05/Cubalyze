@@ -72,6 +72,8 @@ Selector de método (CFOP / Roux / ZZ / Petrus) en Settings → Analysis.
 | Cross efficiency + cross→F2L transition | ✅ Completo |
 | OLL/PLL recognition + execution time + TPS | ✅ Completo |
 | F2L lookahead score + pair count | ✅ Completo |
+| F2L per-pair detail (state-based detection) | ✅ Completo |
+| Rotaciones por fase (byPhase) | ✅ Completo |
 | Compactación D+D→D2 (GEN2) | ✅ Completo |
 | Panel UI de análisis post-solve | ✅ Completo |
 | Sesión stats (Ao5, Ao12, Best, Mean) | ✅ Completo |
@@ -98,17 +100,21 @@ Selector de método (CFOP / Roux / ZZ / Petrus) en Settings → Analysis.
 
 **Complejidad**: Media. Las máscaras ya existen para las fases genéricas (Cross/F2L/OLL/PLL). Crear máscaras por caso específico es el mismo patrón pero ×78.
 
-### 🟠 P1 — F2L per-pair detail
+### 🟠 P1 — F2L per-pair detail ✅
 
-**Estado actual**: `f2lPairs: 4` con `pairTimes: ['3736ms', '1449ms', ...]`. Sin tipo de caso, sin TPS por par, sin pausa entre pares.
+**Estado**: ✅ **COMPLETADO** (19 julio 2026)
 
-**Lo que debería haber** (según Cubeast + r/Cubers):
-- Por cada par: tiempo, moves, TPS
-- Tipo de caso (corner in slot, edge in slot, both in slot, paired, etc.)
-- Pausa ENTRE pares (lookahead real entre inserción de par N y primer move de par N+1)
-- ¿Qué par fue el más lento?
+**Implementación**:
+- Detección por estado del cubo: escanea cada entry en F2L, cuenta slots completados usando `FACE_LAYERS[crossFace]`
+- Detecta caras de cross con `COLOR_NEUTRAL_CFOP_MASKS` (6 caras)
+- Por cada par: tiempo, moves, TPS, pausa antes del par
+- UI marca el par más lento con badge "slowest" y fondo rojo
+- Fallback a heurística (segmentos iguales) si no detecta cross face
 
-**Complejidad**: Alta. Requiere detectar cuándo empieza y acaba cada par dentro de la fase F2L. No es trivial porque el PhaseSplitter actual detecta F2L como bloque.
+**Archivos modificados**:
+- `packages/math-core/src/methods/cfop/cfopMasks.ts` — export `FACE_LAYERS`, `FaceLayerData`
+- `packages/analysis-engine/src/metrics/CFOPMetricsCalculator.ts` — detección por estado
+- `apps/web/src/components/Stats/SolveAnalysisPanel.tsx` — UI F2L pair breakdown
 
 ### 🟠 P1 — Weakest Phase Identification (AI Coaching)
 
@@ -134,13 +140,17 @@ Selector de método (CFOP / Roux / ZZ / Petrus) en Settings → Analysis.
 
 **Complejidad**: Media.
 
-### 🟡 P2 — Rotaciones por fase
+### 🟡 P2 — Rotaciones por fase ✅
 
-**Estado actual**: rotaciones son globales (`rotation.byAxis: {x:22, y:9, z:1}`).
+**Estado**: ✅ **COMPLETADO** (19 julio 2026)
 
-**Lo que debería haber**: `rotation.byPhase: {Cross: {x:1, y:0}, F2L: {x:18, y:7}, OLL: {x:0, y:0}, PLL: {x:3, y:2}}`.
+**Implementación**:
+- Backend: `RotationCounter.compute()` ya calculaba `byPhase` (asigna cada rotación a su fase vía `entry.phaseName`)
+- UI: se agregó "Rotations by Phase" breakdown en el acordeón Rotations & Efficiency
+- Muestra conteo por fase con highlight amber si > 3 rotaciones
 
-**Complejidad**: Baja. El `OrientationTracker` ya registra orientación por timestamp. Solo hay que asignar cada rotación a la fase correspondiente según el timeline.
+**Archivos modificados**:
+- `apps/web/src/components/Stats/SolveAnalysisPanel.tsx` — UI rotations by phase breakdown
 
 ### 🟡 P2 — Histórico persistente
 
@@ -165,15 +175,15 @@ Clasificar cada par F2L por tipo (corner in slot, edge in slot, etc.) analizando
 
 ## 4. Roadmap recomendado
 
-| # | Feature | Impacto | Esfuerzo | Depende de |
-|---|---------|---------|----------|------------|
-| 1 | **OLL/PLL Algorithm ID** | 🔴 Crítico | Medio | — |
-| 2 | **Weakest Phase AI** | 🟠 Alto | Bajo | #1 |
-| 3 | **Rotaciones por fase** | 🟡 Medio | Bajo | — |
-| 4 | **F2L per-pair detail** | 🟠 Alto | Alto | — |
-| 5 | **Cross Solver** | 🟡 Medio | Medio | — |
-| 6 | **Histórico persistente** | 🟡 Medio | Medio | — |
-| 7 | **Pause Heatmap** | 🟢 Bajo | Bajo | — |
+| # | Feature | Impacto | Esfuerzo | Estado |
+|---|---------|---------|----------|--------|
+| 1 | **OLL/PLL Algorithm ID** | 🔴 Crítico | Medio | ❌ Pendiente |
+| 2 | **Weakest Phase AI** | 🟠 Alto | Bajo | ❌ Pendiente (depende de #1) |
+| 3 | **Rotaciones por fase** | 🟡 Medio | Bajo | ✅ Completo |
+| 4 | **F2L per-pair detail** | 🟠 Alto | Alto | ✅ Completo |
+| 5 | **Cross Solver** | 🟡 Medio | Medio | ❌ Pendiente |
+| 6 | **Histórico persistente** | 🟡 Medio | Medio | ❌ Pendiente |
+| 7 | **Pause Heatmap** | 🟢 Bajo | Bajo | ❌ Pendiente |
 
 ### 🎯 Próximo paso inmediato: OLL/PLL Algorithm ID
 

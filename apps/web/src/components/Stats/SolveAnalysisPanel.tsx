@@ -255,6 +255,35 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
                 </>
               )}
             </div>
+            {/* Rotations per phase breakdown */}
+            {Object.keys(rotation.byPhase).length > 0 && (
+              <div className="mt-2 rounded-lg border border-line bg-surface overflow-hidden">
+                <div className="px-3 py-2 border-b border-line/50">
+                  <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
+                    Rotations by Phase
+                  </span>
+                </div>
+                {Object.entries(rotation.byPhase).map(([phase, count]) => (
+                  <div
+                    key={phase}
+                    className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-line/30 last:border-0"
+                  >
+                    <span className="font-medium text-ink-2 text-xs uppercase tracking-wide">
+                      {phase}
+                    </span>
+                    <div className="flex items-center gap-2 nums text-ink-3">
+                      <span className={cn(
+                        "font-medium",
+                        count > 3 ? "text-amber-400" : count > 0 ? "text-ink" : "text-ink-3/50"
+                      )}>
+                        {count}
+                      </span>
+                      <span className="text-ink-3/50">rot</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -283,6 +312,55 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
                     />
                     <MetricTile label="F2L Pairs" value={`${m.cfop.f2lPairs.length}`} />
                   </>
+                )}
+                {m.cfop && m.cfop.f2lPairs.length > 0 && (
+                  <div className="col-span-2 border-t border-line/50">
+                    <div className="px-3 py-2">
+                      <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
+                        F2L Pair Breakdown
+                      </span>
+                    </div>
+                    <div className="space-y-0">
+                      {m.cfop.f2lPairs.map((pair) => {
+                        const isSlowest = pair.timeMs === Math.max(...m.cfop!.f2lPairs.map(p => p.timeMs));
+                        return (
+                          <div
+                            key={pair.pairNumber}
+                            className={cn(
+                              "flex items-center justify-between px-3 py-1.5 text-xs",
+                              "border-t border-line/30 first:border-0",
+                              isSlowest && "bg-red-500/5"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "w-5 h-5 flex items-center justify-center rounded text-[0.6rem] font-bold",
+                                isSlowest ? "bg-red-500/15 text-red-400" : "bg-surface text-ink-3"
+                              )}>
+                                {pair.pairNumber}
+                              </span>
+                              <span className="text-ink-2">Pair {pair.pairNumber}</span>
+                              {isSlowest && (
+                                <span className="text-[0.5rem] uppercase tracking-wider text-red-400 font-medium">
+                                  slowest
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 nums text-ink-3">
+                              <span>{pair.moves}m</span>
+                              <span>{formatTime(pair.timeMs)}</span>
+                              <span className="text-ink font-medium">{pair.tps.toFixed(1)} tps</span>
+                              {pair.pauseBeforeMs > 50 && (
+                                <span className="text-amber-400/70">
+                                  +{formatTime(pair.pauseBeforeMs)} pause
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
                 {m.roux && (
                   <>

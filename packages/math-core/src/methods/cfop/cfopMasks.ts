@@ -90,7 +90,7 @@ export const CFOPDefinition: MethodDefinition = {
  * The "equator" is the set of edges between the cross layer and the
  * opposite layer (solved in F2L).
  */
-interface FaceLayerData {
+export interface FaceLayerData {
   crossEdges: Edge[];
   f2lCorners: Corner[];
   f2lEdges: Edge[];
@@ -105,7 +105,7 @@ interface FaceLayerData {
  *   Edges: UR=0, UF=1, UL=2, UB=3, DR=4, DF=5, DL=6, DB=7, FR=8, FL=9, BL=10, BR=11
  *   Corners: URF=0, UFL=1, ULB=2, UBR=3, DFR=4, DLF=5, DBL=6, DRB=7
  */
-const FACE_LAYERS: Record<string, FaceLayerData> = {
+export const FACE_LAYERS: Record<string, FaceLayerData> = {
   D: {
     crossEdges: [Edge.DF, Edge.DR, Edge.DB, Edge.DL],
     f2lCorners: [Corner.DFR, Corner.DRB, Corner.DBL, Corner.DLF],
