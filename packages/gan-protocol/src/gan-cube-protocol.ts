@@ -411,12 +411,13 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
                     for (let i = diff - 1; i >= 0; i--) {
                         const face = msg.getBitWord(12 + 5 * i, 4);
                         const direction = msg.getBitWord(16 + 5 * i, 1);
-                        const move = "URFDLB".charAt(face) + " '".charAt(direction);
                         let elapsed = msg.getBitWord(47 + 16 * i, 16);
                         if (elapsed == 0) { // In case of 16-bit cube timestamp register overflow
                             elapsed = timestamp - this.lastMoveTimestamp;
                         }
                         this.cubeTimestamp += elapsed;
+
+                        const move = "URFDLB".charAt(face) + " '".charAt(direction);
                         cubeEvents.push({
                             type: "MOVE",
                             serial: (serial - i) & 0xFF,

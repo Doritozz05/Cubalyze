@@ -531,6 +531,67 @@ function logSolveDiagnostic(args: {
 }
 
 /**
+ * Merges consecutive same-face same-direction CubeMoveEvents into X2 moves.
+ *
+ * The GAN Gen2 BLE protocol has no native encoding for 180° turns — a
+ * physical D2 is reported as two separate 90° D events in the same packet.
+ * This compacts them for analysis so move counts and TPS reflect the
+ * solver's intent, not the BLE encoding.
+ *
+ * Only merges exact same-face+same-direction pairs (e.g. D + D → D2).
+ * Different faces (M-slice: B+F') and cancelling pairs (D + D') are NOT
+ * merged — those are distinct physical moves.
+ *
+ * The orientations array is compacted in lockstep so TimelineBuilder
+ * receives aligned arrays after merging.
+ *
+ * Raw moves are preserved for the debug diagnostic; compacted moves
+ * feed the analysis pipeline (TimelineBuilder, PhaseSplitter, metrics).
+ */
+function compactCubeMoves(
+  moves: CubeMoveEvent[],
+  orientations?: (CubeOrientation | undefined)[],
+): {
+  moves: CubeMoveEvent[];
+  orientations: (CubeOrientation | undefined)[];
+} {
+  if (moves.length === 0) {
+    return { moves: [], orientations: orientations ?? [] };
+  }
+
+  const compactedMoves: CubeMoveEvent[] = [];
+  const compactedOrientations: (CubeOrientation | undefined)[] = [];
+
+  for (let i = 0; i < moves.length; i++) {
+    const current = moves[i];
+
+    // Look ahead: if next move is same face + same direction, merge into X2.
+    if (
+      i + 1 < moves.length &&
+      moves[i + 1].face === current.face &&
+      moves[i + 1].direction === current.direction
+    ) {
+      const next = moves[i + 1];
+      compactedMoves.push({
+        ...current,
+        direction: 2 as CubeMoveDirection,
+        move: `${current.face}2`,
+        hostTimestamp: next.hostTimestamp,
+        cubeTimestamp: next.cubeTimestamp,
+      });
+      // Use the orientation from the second sub-move (end of the 180° turn).
+      compactedOrientations.push(orientations?.[i + 1]);
+      i++; // skip the merged move
+    } else {
+      compactedMoves.push(current);
+      compactedOrientations.push(orientations?.[i]);
+    }
+  }
+
+  return { moves: compactedMoves, orientations: compactedOrientations };
+}
+
+/**
  * Runs the analysis pipeline on collected moves after a solve.
  *
  * This is intentionally async (via setTimeout 0) to avoid blocking
@@ -547,15 +608,23 @@ async function runAnalysis(
 
   try {
     const methodDef = METHOD_DEFS[method];
+
+    // Compact consecutive same-face same-direction moves (D + D → D2)
+    // before feeding the analysis pipeline. The GAN Gen2 protocol has no
+    // native 180° encoding, so physical half-turns are reported as two
+    // 90° events. Compacting here keeps move counts, TPS, and phase
+    // boundaries honest. Raw moves are preserved for the debug diagnostic.
+    const compacted = compactCubeMoves(moves, orientations);
+
     // Pass the move-tracked CubeState as the ground truth for the
     // initial state. This is more reliable than facelets (works on Gen2
     // cubes and in all modes). TimelineBuilder uses initialState first,
     // then falls back to initialFacelets, then scramble.
     // Enable color-neutral detection so any cross face is recognized.
     const timeline = TimelineBuilder.build(
-      moves,
+      compacted.moves,
       method,
-      orientations,
+      compacted.orientations,
       scramble,
       undefined, // initialFacelets (deprecated in favour of initialState)
       initialState,
