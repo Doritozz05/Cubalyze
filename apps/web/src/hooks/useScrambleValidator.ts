@@ -99,7 +99,6 @@ interface ValidatorState {
   scrambleCompleted: boolean;
   awaitingSolve: boolean;
   initialCheckDone: boolean;
-  errorState: CubeState;
   requestFaceletsTimeout: ReturnType<typeof setTimeout> | undefined;
   pendingHalfFace: string | null;
   pendingHalfTokenIndex: number;
@@ -120,7 +119,6 @@ function freshValidatorState(): ValidatorState {
     scrambleCompleted: false,
     awaitingSolve: false,
     initialCheckDone: false,
-    errorState: new CubeState(),
     requestFaceletsTimeout: undefined,
     pendingHalfFace: null,
     pendingHalfTokenIndex: -1,
@@ -148,7 +146,6 @@ function resetRef(s: ValidatorState): void {
   // persists across resetRef so that after a full solve the validator
   // stays in "post-scramble" mode and stops tracking moves. It is
   // only reset when the scramble text changes (via freshValidatorState).
-  s.errorState = new CubeState();
   s.pendingHalfFace = null;
   s.pendingHalfTokenIndex = -1;
 }
@@ -337,19 +334,38 @@ export function useScrambleValidator(
       const notation = MoveTransformer.moveToNotation(ev.face, ev.direction);
 
       if (s.needsReset) {
-        // ── STICKY needsReset ──────────────────────────────────
-        // Once we hit too many errors, the ONLY way out is solving
-        // the cube. We track moves in errorState (a fresh CubeState)
-        // so that if the user undoes exactly back to identity we can
-        // detect the cube has returned to its starting state and
-        // reset. But the UI never shows the scramble while in this
-        // mode — only the "Too many mistakes" message.
+        // ── STICKY needsReset — 100% DETERMINISTIC ─────────────
+        // Once too many errors fire, the scramble is FORBIDDEN until
+        // the cube is PHYSICALLY solved (verified by the SOLVED_FACELETS
+        // regex on a facelets event in handleFacelets).
+        //
+        // We deliberately do NOT use any in-memory CubeState math to
+        // decide "cube is solved":
+        //   - A previous implementation tracked `errorState` and only
+        //     applied needsReset-phase moves to it (skipping the moves
+        //     made BEFORE needsReset was triggered). That meant
+        //     `errorState.isSolved()` could return true after an
+        //     identity sequence even when the physical cube was at a
+        //     completely scrambled state. The buggy resetRef then put
+        //     the validator back into a position-0 frame and the next
+        //     user move advanced currentIndex via a false-positive
+        //     facelet match — scramble reappeared at "position one"
+        //     with the cube still disordered. THIS IS THE BUG.
+        //
+        // The ONLY reliable source of truth is the absolute cube
+        // snapshot delivered by the hardware via `facelets$`. The
+        // scheduleFacelets() below triggers that snapshot request;
+        // when SOLVED_FACELETS.test(f) returns true (in handleFacelets),
+        // resetRef fires and we're out. Until then, the UI shows the
+        // "Too many mistakes" message and nothing else.
+        //
+        // We still apply the notation to currentState so the math
+        // state stays in sync with the cube (in case any future code
+        // relies on it). But we never use currentState.isSolved() as
+        // a trigger either — only facelets can confirm solved.
         s.actualMoves.push(notation);
-        try { s.errorState.applySequence(notation); } catch { /* skip */ }
+        try { s.currentState.applySequence(notation); } catch { /* skip */ }
         scheduleFacelets(s);
-        if (s.errorState.isSolved()) {
-          resetRef(s);
-        }
         updateUI();
         return;
       }
