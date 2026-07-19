@@ -92,6 +92,11 @@ interface ValidatorState {
   consecutiveErrors: number;
   activeErrorMoves: string[];
   needsReset: boolean;
+  /** Once the scramble is fully verified, this stays true until the
+   *  scramble text changes. It locks the validator into a "post-scramble"
+   *  mode where solve moves and post-solve random moves are ignored so
+   *  the UI doesn't show errors once the user's job is done. */
+  scrambleCompleted: boolean;
   awaitingSolve: boolean;
   initialCheckDone: boolean;
   errorState: CubeState;
@@ -112,6 +117,7 @@ function freshValidatorState(): ValidatorState {
     consecutiveErrors: 0,
     activeErrorMoves: [],
     needsReset: false,
+    scrambleCompleted: false,
     awaitingSolve: false,
     initialCheckDone: false,
     errorState: new CubeState(),
@@ -138,6 +144,10 @@ function resetRef(s: ValidatorState): void {
   s.consecutiveErrors = 0;
   s.activeErrorMoves = [];
   s.needsReset = false;
+  // NOTE: scrambleCompleted is intentionally NOT reset here. It
+  // persists across resetRef so that after a full solve the validator
+  // stays in "post-scramble" mode and stops tracking moves. It is
+  // only reset when the scramble text changes (via freshValidatorState).
   s.errorState = new CubeState();
   s.pendingHalfFace = null;
   s.pendingHalfTokenIndex = -1;
@@ -206,6 +216,16 @@ export function useScrambleValidator(
       !s.isError &&
       !s.needsReset &&
       !s.awaitingSolve;
+
+    // Lock the validator into post-scramble mode once the scramble has
+    // been fully verified. This flag STAYS true through resetRef and
+    // is only cleared when a new scramble is generated (freshValidatorState
+    // resets it to false). This is what makes the validator deterministic
+    // post-solve: solve moves and random post-solve moves no longer
+    // trigger spurious error UI.
+    if (isScrambled && !s.scrambleCompleted) {
+      s.scrambleCompleted = true;
+    }
 
     const errorMoves = s.activeErrorMoves;
 
@@ -317,24 +337,15 @@ export function useScrambleValidator(
       const notation = MoveTransformer.moveToNotation(ev.face, ev.direction);
 
       if (s.needsReset) {
+        // ── STICKY needsReset ──────────────────────────────────
+        // Once we hit too many errors, the ONLY way out is solving
+        // the cube. We track moves in errorState (a fresh CubeState)
+        // so that if the user undoes exactly back to identity we can
+        // detect the cube has returned to its starting state and
+        // reset. But the UI never shows the scramble while in this
+        // mode — only the "Too many mistakes" message.
         s.actualMoves.push(notation);
         try { s.errorState.applySequence(notation); } catch { /* skip */ }
-
-        // Allow undoing errors when in needsReset. Pop from the active
-        // error stack so the user can recover deterministically.
-        if (s.activeErrorMoves.length > 0 && isInverse(notation, s.activeErrorMoves[s.activeErrorMoves.length - 1])) {
-          s.activeErrorMoves.pop();
-          s.consecutiveErrors = Math.max(0, s.consecutiveErrors - 1);
-          if (s.activeErrorMoves.length === 0) {
-            // All errors undone — exit needsReset back to the pre-error state.
-            s.isError = false;
-            s.consecutiveErrors = 0;
-            s.needsReset = false;
-          }
-        } else {
-          s.activeErrorMoves.push(notation);
-        }
-
         scheduleFacelets(s);
         if (s.errorState.isSolved()) {
           resetRef(s);
@@ -345,7 +356,11 @@ export function useScrambleValidator(
 
       if (s.moves.length === 0) return;
 
-      if (s.currentIndex >= s.expectedFacelets.length && !s.isError) return;
+      // Once the scramble is verified complete, the validator's job is
+      // done. Don't fire errors on random post-solve moves. needsReset is
+      // prioritized: if the cube state somehow got into a "too many
+      // errors" condition during/after solving, that path still handles it.
+      if (s.scrambleCompleted && !s.needsReset) return;
 
       if (s.awaitingSolve) {
         scheduleFacelets(s);
