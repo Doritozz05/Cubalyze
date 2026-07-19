@@ -7,6 +7,7 @@ export * from './FaceletStringConverter';
 export * from './orientation/OrientationTable';
 export * from './orientation/MoveTransformer';
 export * from './orientation/MoveNotationCompactor';
+export * from './orientation/CubeMoveCompacter';
 
 // Method definitions and phase detectors
 export * from './methods/IMethodDefinition';
