@@ -12,7 +12,13 @@ import {
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
 import { shouldAutoArm } from "@/hooks/shouldAutoArm";
-import type { CubeMoveEvent, CubeOrientation, SolveMetrics } from "@cubeforge/types";
+import type {
+  CubeMoveDirection,
+  CubeMoveEvent,
+  CubeOrientation,
+  SolveMetrics,
+  SolveTimeline,
+} from "@cubeforge/types";
 import {
   TimelineBuilder,
   PhaseSplitter,
@@ -87,6 +93,443 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
   }
 };
 
+// ─── End-of-solve diagnostic logging ──────────────────────────────────────
+// Opt-in. Enable with either:
+//   • URL flag   → append `?cfop_debug=1` to the page URL, OR
+//   • localStorage → set `cubeforge:cfop-debug` to `"1"` / `"true"`.
+//
+// Each solve ends with one collapsed `console.group` block at
+// `[Analysis Diagnostic] Solve …`. Expand to see scramble, moves,
+// initial/final state (cp/co/ep/eo + facelets), detected phases, and
+// the full CFOP metric breakdown. Use this to investigate issues like
+// "CFOP metrics all 0.00" — the log exposes whether the
+// reconstruction reached a solved state, where (if at all) phases
+// were detected, and the initial/final state strings for manual
+// comparison.
+// Two opt-in debug levels, both re-evaluated on every call so the user
+// can toggle them at runtime (URL hash or localStorage) without reloading
+// the page. Set on init: also printed to console so the user can see the
+// current state at page load.
+//
+//   cfop_debug  → end-of-solve console.group with full diagnostic
+//   moves_debug → per-move console.log so you can BEC the source of inflated
+//                 move counts (BLE double-send, scramble moves leaking
+//                 through IDLE race, etc.)
+//
+// Enable via URL `?cfop_debug=1` or `?moves_debug=1`, OR via localStorage
+// `cubeforge:cfop-debug = "1"` / `cubeforge:moves-debug = "1"`.
+type DebugSource = "none" | "url" | "localStorage";
+
+function readDebugFlag(
+  paramNames: string[],
+): { enabled: boolean; source: DebugSource } {
+  if (typeof window === "undefined") return { enabled: false, source: "none" };
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const name of paramNames) {
+      if (params.has(name)) {
+        const raw = params.get(name);
+        if (raw === null || raw === "" || raw === "1" || raw === "true") {
+          return { enabled: true, source: "url" };
+        }
+      }
+    }
+    for (const name of paramNames) {
+      const stored = window.localStorage.getItem(`cubeforge:${name}`);
+      if (stored === "1" || stored === "true") {
+        return { enabled: true, source: "localStorage" };
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return { enabled: false, source: "none" };
+}
+
+const _debugInitState = (() => {
+  const cfop = readDebugFlag(["cfop_debug", "cfop-debug"]);
+  const moves = readDebugFlag(["moves_debug", "moves-debug"]);
+  // Use console.log (always-visible) NOT console.debug — Chrome hides
+  // console.debug by default unless "Verbose" is enabled, which is why
+  // users kept seeing nothing in the console.
+  /* eslint-disable no-console */
+  console.log(
+    "%c[CFOP Debug]%c init \u00b7 cfop=%s(%s) \u00b7 moves=%s(%s)",
+    "color:#38bdf8;font-weight:bold",
+    "color:inherit",
+    cfop.enabled ? "ON" : "off",
+    cfop.source,
+    moves.enabled ? "ON" : "off",
+    moves.source,
+  );
+  if (!cfop.enabled) {
+    console.log(
+      '%c[CFOP Debug]%c end-of-solve logs OFF \u2014 turn on with ?cfop_debug=1, or localStorage.setItem("cubeforge:cfop-debug","1")',
+      "color:#facc15;font-weight:bold",
+      "color:inherit",
+    );
+  }
+  if (!moves.enabled) {
+    console.log(
+      '%c[CFOP Debug]%c per-move debug OFF \u2014 turn on with ?moves_debug=1 to log every BLE move as it arrives',
+      "color:#facc15;font-weight:bold",
+      "color:inherit",
+    );
+  }
+  /* eslint-enable no-console */
+  return { cfop: cfop.enabled, moves: moves.enabled };
+})();
+
+function isCFOPDebugEnabled(): boolean {
+  return _debugInitState.cfop || readDebugFlag(["cfop_debug", "cfop-debug"]).enabled;
+}
+
+function isMovesDebugEnabled(): boolean {
+  return _debugInitState.moves || readDebugFlag(["moves_debug", "moves-debug"]).enabled;
+}
+
+function moveNotation(m: CubeMoveEvent): string {
+  if (m.direction === -1) return `${m.face}'`;
+  if (m.direction === 2) return `${m.face}2`;
+  return m.face;
+}
+
+function logSolveDiagnostic(args: {
+  moves: CubeMoveEvent[];
+  scramble: string;
+  method: SolveMethod;
+  timeline: SolveTimeline;
+  metrics: SolveMetrics | null;
+  initialStateProvided: boolean;
+}): void {
+  if (!isCFOPDebugEnabled()) return;
+  const { moves, scramble, method, timeline, metrics, initialStateProvided } = args;
+  const first = moves[0];
+  const last = moves[moves.length - 1];
+  const durationMs =
+    first && last ? Math.max(0, last.hostTimestamp - first.hostTimestamp) : 0;
+
+  const initialEntryState = TimelineBuilder.fromSnapshot(
+    timeline.entries[0]?.state ?? { cp: [], co: [], ep: [], eo: [] },
+  );
+  const finalState = TimelineBuilder.fromSnapshot(
+    timeline.entries[timeline.entries.length - 1]?.state ?? {
+      cp: [], co: [], ep: [], eo: [],
+    },
+  );
+  // The pre-move-0 state is what the analyzer had as initial — available
+  // via the snapshot BEFORE move 0 was applied. Reconstruct from move 0 by
+  // undoing its notation. (NOTE: this only works for the first move; if
+  // there's a scramble-leak via pendingFirstMoveRef, undoing move 0 gives
+  // you state BEFORE the leaked scramble move → ideally what the analyst
+  // would want to see.)
+  const postMove0Facelets = FaceletStringConverter.toFaceletString(initialEntryState);
+  const finalFacelets = FaceletStringConverter.toFaceletString(finalState);
+  const preMove0Facelets = (() => {
+    try {
+      const inverse = TimelineBuilder.fromSnapshot(
+        timeline.entries[0]?.state ?? { cp: [], co: [], ep: [], eo: [] },
+      );
+      const m0 = timeline.entries[0]?.move;
+      if (!m0) return postMove0Facelets;
+      const invDir: CubeMoveDirection =
+        m0.direction === 1 ? -1 : m0.direction === -1 ? 1 : 2;
+      inverse.applySequence(
+        MoveTransformer.moveToNotation(m0.face, invDir),
+      );
+      return FaceletStringConverter.toFaceletString(inverse);
+    } catch {
+      return postMove0Facelets;
+    }
+  })();
+  const finalIsSolved = finalState.isSolved();
+
+  const phases = timeline.phases.map((p) => ({
+    name: p.phaseName,
+    moves: `${p.startIndex + 1}–${p.endIndex + 1}`,
+    moveCount: p.moveCount,
+    durationMs: p.durationMs,
+  }));
+  const phaseSummary =
+    phases.length === 0
+      ? "(no phases detected!)"
+      : phases.map((p) => `${p.name}(${p.moveCount}m)`).join(" → ");
+
+  const labelStyle = "color: #c084fc; font-weight: bold";
+
+  /* eslint-disable no-console */
+  console.groupCollapsed(
+    `%c[Analysis Diagnostic] Solve · ${moves.length} moves / ${(durationMs / 1000).toFixed(2)}s · method=${method} · %c${finalIsSolved ? "✓ reached solved" : "✗ did NOT reach solved"} · phases=${phases.length}`,
+    "color: #38bdf8; font-weight: bold",
+    finalIsSolved
+      ? "color: #4ade80; font-weight: bold"
+      : "color: #f87171; font-weight: bold",
+  );
+
+  console.log("%cScramble", labelStyle, scramble || "(empty)");
+
+  // Always show the full move list (this is what the user explicitly asked
+  // for: "para ver que ha ocurrido si se han perdido movimientos").
+  // ── Per-move detail + duplicate detection ───────────────────────
+  // Useful to find the source of inflated move counts (BLE double-send,
+  // scramble moves leaking into solve, etc.). Duplicate detection:
+  // same (face, direction) within 120ms of a previous move.
+  const moveRows = moves.map((m, i) => {
+    const dt =
+      i === 0 ? 0 : Math.max(0, m.hostTimestamp - moves[i - 1].hostTimestamp);
+    return {
+      "#": i + 1,
+      notation: moveNotation(m),
+      face: m.face,
+      direction: m.direction,
+      t_ms: Math.round(m.hostTimestamp),
+      dt_prev_ms: Math.round(dt),
+    };
+  });
+  const duplicates: Array<{
+    duplicate_index: number;
+    first_index: number;
+    delta_ms: number;
+  }> = [];
+  const DUP_WINDOW_MS = 120;
+  for (let i = 0; i < moves.length; i++) {
+    for (let j = i - 1; j >= 0; j--) {
+      const dt = moves[i].hostTimestamp - moves[j].hostTimestamp;
+      if (dt > DUP_WINDOW_MS) break;
+      if (
+        moves[i].face === moves[j].face &&
+        moves[i].direction === moves[j].direction
+      ) {
+        duplicates.push({
+          duplicate_index: i + 1,
+          first_index: j + 1,
+          delta_ms: Math.round(dt),
+        });
+        break;
+      }
+    }
+  }
+  const movesPerFace: Record<string, number> = {};
+  for (const m of moves) {
+    const key = `${m.face}${moveNotation(m).slice(1)}`;
+    movesPerFace[key] = (movesPerFace[key] || 0) + 1;
+  }
+
+  console.log(
+    `%cMoves (${moves.length}) notation`,
+    labelStyle,
+    moves.map(moveNotation).join(" ") || "(none)",
+  );
+  console.log("%cMoves per face/direction", labelStyle, movesPerFace);
+  if (moves.length <= 200) {
+    console.log(
+      "%cPer-move detail (#, notation, t_ms, dt_prev_ms)",
+      labelStyle,
+      moveRows,
+    );
+  } else {
+    // Avoid spamming huge arrays — just first 20 + last 5.
+    console.log(
+      `%cPer-move detail (#, notation, t_ms, dt_prev_ms) — ${moves.length} moves, showing head + tail`,
+      labelStyle,
+      moveRows.slice(0, 20).concat(moveRows.slice(-5)),
+    );
+  }
+  if (duplicates.length > 0) {
+    console.log(
+      "%c⚠ Duplicate moves (same face+direction within 120ms)",
+      "color: #fb923c; font-weight: bold",
+      duplicates,
+    );
+  }
+  if (first) {
+    console.log("%cFirst move", labelStyle, {
+      ...first,
+      notation: moveNotation(first),
+    });
+  }
+  if (last && last !== first) {
+    console.log("%cLast move", labelStyle, {
+      ...last,
+      notation: moveNotation(last),
+    });
+  }
+  console.log(
+    "%cTime range",
+    labelStyle,
+    first && last
+      ? `[${first.hostTimestamp.toFixed(0)}ms → ${last.hostTimestamp.toFixed(0)}ms] = ${durationMs.toFixed(0)}ms`
+      : "(n/a)",
+  );
+
+  console.log("%cInput sources", labelStyle, {
+    method,
+    colorNeutralDetection: true,
+    scrambleProvided: !!scramble,
+    initialStateProvided,
+    initialFaceletsProvided: false, // currently always null in the call site
+  });
+
+  // Log BOTH pre-move-0 (what the analyzer was seeded with) and
+  // post-move-0 (the state at timeline.entries[0]) so the user can verify
+  // whether move 0 was a real solve move or a scramble-leak from the
+  // IDLE → READY_FOR_MOVE race.
+  console.log("%cPre-move-0 state (analyzer seed)", labelStyle, {
+    facelets: preMove0Facelets,
+    note: "Reconstructed by undoing move 0 from timeline.entries[0].state. If the scramble validator already published isScrambled=true before the cube sent m0, this is the post-scramble state. If there was an IDLE→RFM race, this is state BEFORE that move.",
+  });
+
+  console.log("%cState at timeline.entries[0] (post move 0)", labelStyle, {
+    cp: Array.from(initialEntryState.cp),
+    co: Array.from(initialEntryState.co),
+    ep: Array.from(initialEntryState.ep),
+    eo: Array.from(initialEntryState.eo),
+    facelets: postMove0Facelets,
+    isSolved: initialEntryState.isSolved(),
+    note: "Snapshot AFTER applying the FIRST logged move. Compare with pre-move-0 above: if they differ, a move was applied (as it should). If they match, the move was a no-op (cube saw same state twice).",
+  });
+
+  console.log("%cFinal state (Timeline entry N)", labelStyle, {
+    cp: Array.from(finalState.cp),
+    co: Array.from(finalState.co),
+    ep: Array.from(finalState.ep),
+    eo: Array.from(finalState.eo),
+    facelets: finalFacelets,
+    isSolved: finalIsSolved,
+  });
+
+  console.log("%cPhases detected", labelStyle, {
+    summary: phaseSummary,
+    detail: phases,
+  });
+
+  if (metrics) {
+    console.log("%cAggregate metrics", labelStyle, {
+      totalTimeMs: metrics.totalTimeMs,
+      totalMoves: metrics.totalMoves,
+      tps: metrics.tps,
+      pauses: {
+        count: metrics.pauses.totalCount,
+        totalPauseTimeMs: metrics.pauses.totalPauseTimeMs,
+        ratio: metrics.pauses.pauseRatio,
+      },
+      rotation: metrics.rotation
+        ? {
+            count: metrics.rotation.totalCount,
+            byAxis: metrics.rotation.byAxis,
+            estimatedTimeMs: metrics.rotation.estimatedRotationTimeMs,
+          }
+        : null,
+      redundancy: metrics.redundancy
+        ? {
+            total: metrics.redundancy.totalRedundancies,
+            rate: metrics.redundancy.redundancyRate,
+          }
+        : null,
+    });
+    if (metrics.cfop) {
+      const cfop = metrics.cfop;
+      console.log("%cCFOP details", labelStyle, {
+        crossEfficiency: cfop.crossEfficiency,
+        crossMoves: cfop.crossMoves,
+        crossTPS: cfop.crossTPS,
+        crossToF2LTransitionMs: cfop.crossToF2LTransitionMs,
+        f2lPairs: cfop.f2lPairs.length,
+        f2lLookaheadScore: cfop.f2lLookaheadScore,
+        f2lPairTimes: cfop.f2lPairs.map((p) => `${p.timeMs}ms`),
+        oll: {
+          recognitionMs: cfop.ollRecognitionMs,
+          executionMs: cfop.ollExecutionMs,
+          tps: cfop.ollTPS,
+          algorithmId: cfop.ollAlgorithmId,
+        },
+        pll: {
+          recognitionMs: cfop.pllRecognitionMs,
+          executionMs: cfop.pllExecutionMs,
+          tps: cfop.pllTPS,
+          algorithmId: cfop.pllAlgorithmId,
+        },
+      });
+    } else {
+      console.log(
+        "%cCFOP details",
+        labelStyle,
+        "(none — method is not CFOP, or phase split returned 0 phases)",
+      );
+    }
+  } else {
+    console.log("%cMetrics", labelStyle, "(analysis pipeline failed)");
+  }
+
+  // Sanity warnings. These cover exactly the symptoms the user is
+  // seeing: "CFOP all 0.00", "weird 11s cross / 11s F2L", "85 moves".
+  const warnings: string[] = [];
+  if (moves.length === 0) warnings.push("moves.length = 0");
+  if (timeline.phases.length === 0 && moves.length > 0) {
+    warnings.push(
+      "no phases detected — reconstruction is likely wrong (initial state offset, wrong scramble, or lost moves)",
+    );
+  }
+  if (!finalIsSolved && moves.length > 0) {
+    warnings.push(
+      "final state is NOT solved — reconstruction diverged from real cube (compare last 9 facelets above with the STOP facelets your cube sent)",
+    );
+  }
+  if (metrics && metrics.cfop && timeline.phases.length > 0) {
+    if (metrics.cfop.crossEfficiency === 0 && metrics.cfop.crossMoves === 0) {
+      warnings.push(
+        "Cross efficiency 0.00 with phases present — Cross phase likely matched on the wrong face (greedy lock) or at the wrong move",
+      );
+    }
+  }
+  if (duplicates.length > 0) {
+    warnings.push(
+      `${duplicates.length} duplicate moves within 120ms — likely BLE retransmits. Inflates TPS/wrong phase boundaries.`,
+    );
+  }
+  if (warnings.length > 0) {
+    console.warn(
+      "%c[Analysis Diagnostic] Warnings",
+      "color: #facc15; font-weight: bold",
+      warnings,
+    );
+  }
+
+  // Expose for ad-hoc inspection from the DevTools console.
+  try {
+    type DebugGlobal = { __cubeforgeLastSolve__?: unknown };
+    const w = window as unknown as DebugGlobal;
+    w.__cubeforgeLastSolve__ = {
+      moveCount: moves.length,
+      moves,
+      moveNotations: moves.map(moveNotation),
+      duplicateCount: duplicates.length,
+      duplicates,
+      movesPerFace,
+      phaseNames: timeline.phases.map((p) => p.phaseName),
+      finalIsSolved,
+      // pre-move-0 state = the cube state the analyzer was seeded with
+      // (reconstructed by undoing move 0 from entries[0].state).
+      // This is what Time-lineBuilder’s analys-sis trajectory STARTS from.
+      initialFacelets: preMove0Facelets,
+      // Post-move-0 state = state at entries[0] (after applying first move).
+      // Provided for debugging the IDLE → RUNNING race: if pre/post are
+      // virtually identical, the first move was a no-op (or duplicate).
+      postMove0Facelets,
+      finalFacelets,
+      firstMoveGapMs:
+        moves.length >= 2
+          ? Math.max(0, moves[1].hostTimestamp - moves[0].hostTimestamp)
+          : null,
+    };
+  } catch {
+    /* SSR / no window */
+  }
+
+  console.groupEnd();
+  /* eslint-enable no-console */
+}
+
 /**
  * Runs the analysis pipeline on collected moves after a solve.
  *
@@ -118,7 +561,21 @@ async function runAnalysis(
       initialState,
     );
     PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
-    return await MetricsAggregator.computeAll(timeline, scramble);
+    const metrics = await MetricsAggregator.computeAll(timeline, scramble);
+
+    // End-of-solve diagnostic. Gated behind URL/localStorage flag
+    // (?cfop_debug=1 or localStorage.cubeforge:cfop-debug="1") so
+    // production consoles stay clean.
+    logSolveDiagnostic({
+      moves,
+      scramble,
+      method,
+      timeline,
+      metrics,
+      initialStateProvided: !!initialState,
+    });
+
+    return metrics;
   } catch (err) {
     console.error("[Analysis] Pipeline failed:", err);
     return null;
@@ -187,6 +644,19 @@ export function useSolveSession(
   //   replayed when the engine enters RUNNING (via the state$ subscription).
   const pendingFirstMoveRef = useRef<CubeMoveEvent | null>(null);
 
+  // Mirror validation.isScrambled into a ref so it can be read synchronously
+  // from the move subscriber (which fires from a Subject callback BEFORE
+  // React state has propagated). The move subscriber uses this to filter
+  // out IDLE-buffered moves that are scramble-leaks — i.e. the last
+  // scramble move arriving after the validator published isScrambled=true
+  // but before engine.arm() actually fires the RFM state transition.
+  // Without this filter, the scramble-leak is replayed as moves[0] and
+  // inflates move counts by 1 per solve (e.g. 136 moves instead of ~30).
+  const isScrambledRef = useRef(false);
+  useEffect(() => {
+    isScrambledRef.current = validation.isScrambled;
+  }, [validation.isScrambled]);
+
   const onSolveRef = useRef(options.onSolve);
   useEffect(() => {
     onSolveRef.current = options.onSolve;
@@ -202,14 +672,42 @@ export function useSolveSession(
         // next solve.
         solveStartStateRef.current = null;
       }
+      // Defensive: clear any stale IDLE-buffered pending move whenever the
+      // engine arms (inspection/RFM/touching). This catches scramble-leak
+      // noise that may have re-buffered itself after the initial
+      // justScrambled effect. Without this, the pending replay on RUNNING
+      // transition would push it back as moves[0].
+      if (
+        engineState === EngineState.INSPECTION ||
+        engineState === EngineState.READY_FOR_MOVE ||
+        engineState === EngineState.TOUCHING
+      ) {
+        pendingFirstMoveRef.current = null;
+      }
       // capture the real cube state at the moment the timer starts
       // running. realCubeStateRef tracks all moves from connect, so this
       // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
-        solveStartStateRef.current = realCubeStateRef.current.clone();
-        // replay the pending first move that arrived during the IDLE
-        // race window (if any). This move is part of the solve but arrived
-        // before the auto-arm effect armed the engine.
+        // Fallback snapshot: snapshot realCubeStateRef at the moment the
+        // timer starts running IF the move subscriber hasn't already
+        // captured a pre-apply snapshot (Spacebar-only start with no
+        // first-move event yet). The previous "always overwrite here"
+        // caused an offset-by-one bug: by the time this ran, the first
+        // solve move had already been applied to realCubeStateRef at the
+        // top of the move subscriber, so the cloned snapshot included
+        // it. That snapshot was then passed as `initialState` to
+        // TimelineBuilder.build, and the same move was also pushed into
+        // collectedMovesRef, so the reconstruction applied the first
+        // move twice → final isSolved=false → PhaseSplitter returned 0
+        // phases → every CFOP metric collapsed to 0.00.
+        if (!solveStartStateRef.current) {
+          solveStartStateRef.current = realCubeStateRef.current.clone();
+        }
+        // Replay the pending first solve move that arrived during the
+        // IDLE race window (if any). The move subscriber already took a
+        // pre-apply snapshot for it (after undoing the buffered move's
+        // effect on realCubeStateRef), so we just push it into
+        // collected-moves here.
         if (pendingFirstMoveRef.current) {
           collectedMovesRef.current.push(pendingFirstMoveRef.current);
           collectedOrientationsRef.current.push(currentOrientationRef.current);
@@ -306,16 +804,57 @@ export function useSolveSession(
     const moveSub = adapter.moves$.subscribe((move: CubeMoveEvent) => {
       const current = engine.getState();
 
+      // ── Snapshot the cube state BEFORE applying this move IF this
+      //    will be the first collected solve move. Captured pre-apply so
+      //    TimelineBuilder's reconstruction has the correct initial
+      //    state (without the move's effect doubled in). If a pending
+      //    first move from the IDLE race window is already in the
+      //    tracker, undo its effect before cloning so the snapshot
+      //    reflects pre-buffered-move state (= pre-first-solve-move
+      //    state).
+      if (
+        current !== EngineState.IDLE &&
+        collectedMovesRef.current.length === 0 &&
+        !solveStartStateRef.current
+      ) {
+        const snap = realCubeStateRef.current.clone();
+        if (pendingFirstMoveRef.current) {
+          const buffered = pendingFirstMoveRef.current;
+          const invDir: CubeMoveDirection =
+            buffered.direction === 1
+              ? -1
+              : buffered.direction === -1
+                ? 1
+                : 2;
+          snap.applySequence(
+            MoveTransformer.moveToNotation(buffered.face, invDir),
+          );
+        }
+        solveStartStateRef.current = snap;
+      }
+
       // Track the real cube state from ALL moves, regardless of timer
       // state. This is the ground truth for timeline seeding — more reliable
       // than facelets because MOVE events are immediate (not periodic).
       const notation = MoveTransformer.moveToNotation(move.face, move.direction);
       realCubeStateRef.current.applySequence(notation);
 
-      // If a move arrives in IDLE (before auto-arm has fired), buffer
-      // it as the pending first solve move. It will be replayed when the
-      // engine enters RUNNING via the state$ subscription.
+      // If a move arrives in IDLE (before auto-arm has fired):
+      //   • If the validator has already published isScrambled=true, any
+      //     move we see here is either (a) settling noise from the cube
+      //     after the final scramble move arrived, or (b) the scramble-leak
+      //     itself (the last scramble move emitted during the ~16ms race
+      //     window between isScrambled publication and engine.arm()). Either
+      //     way it must NOT be treated as the first solve move.
+      //     We still apply it to realCubeStateRef (it happened physically)
+      //     but skip buffering.
+      //   • Otherwise (validator still expecting scrambles), buffer as the
+      //     pending first solve move in case the user does a premovel
+      //     before the timer actually starts.
       if (current === EngineState.IDLE) {
+        if (isScrambledRef.current) {
+          return;
+        }
         pendingFirstMoveRef.current = move;
         return;
       }
