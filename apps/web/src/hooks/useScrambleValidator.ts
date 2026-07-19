@@ -23,7 +23,7 @@ function parseScramble(scramble: string): string[] {
   return scramble.trim().split(/\s+/).filter(Boolean);
 }
 
-const MAX_CONSECUTIVE_ERRORS = 3;
+const MAX_CONSECUTIVE_ERRORS = 5;
 
 function isDoubleMove(token: string): boolean {
   return (
