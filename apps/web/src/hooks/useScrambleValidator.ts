@@ -431,13 +431,24 @@ export function useScrambleValidator(
       }
 
       try { s.currentState.applySequence(notation); } catch { return; }
-      s.actualMoves.push(notation);
 
+      // DO NOT trust math state to decide whether the cube is solved.
+      // currentState.isSolved() can drift from the real cube if BLE
+      // events are lost/duplicated. The single source of truth is the
+      // absolute facelets snapshot delivered by hardware and gated by
+      // SOLVED_FACELETS regex in handleFacelets. When math hints at
+      // solved and we're in error mode, drop the move SILENTLY (no
+      // error bookkeeping, no reset, NOT pushed to actualMoves) and
+      // rely on handleFacelets to fire resetRef when the next facelets
+      // event confirms solved. This prevents a math-drift false-positive
+      // from polluting the error stack or triggering a spurious
+      // needsReset escalation.
       if (s.isError && s.currentState.isSolved()) {
-        resetRef(s);
-        updateUI();
+        scheduleFacelets(s);
         return;
       }
+
+      s.actualMoves.push(notation);
 
       const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
 
