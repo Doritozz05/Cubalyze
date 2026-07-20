@@ -36,19 +36,6 @@ export interface ReplaySectionProps {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline gap-1">
-      <span className="text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
-        {label}
-      </span>
-      <span className="nums text-[0.7rem] font-semibold text-ink tabular-nums">
-        {value}
-      </span>
-    </div>
-  );
-}
-
 // ─── ReplaySection ─────────────────────────────────────────────────────────
 
 export function ReplaySection({
@@ -425,21 +412,6 @@ export function ReplaySection({
                       ))}
                     </div>
                   </div>
-
-                  {/* Quick stats */}
-                  {hasMoves && (
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-line/30 pt-2">
-                      <StatChip
-                        label="TPS"
-                        value={(totalMoves / (totalMs / 1000)).toFixed(1)}
-                      />
-                      <StatChip label="Moves" value={String(totalMoves)} />
-                      <StatChip
-                        label="Avg"
-                        value={`${(totalMs / totalMoves).toFixed(0)}ms`}
-                      />
-                    </div>
-                  )}
 
 
                 </div>

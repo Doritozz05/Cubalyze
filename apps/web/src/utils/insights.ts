@@ -118,7 +118,7 @@ export interface StageSegment {
 
 /** Output of `deriveTimeline`. */
 export interface TimelineData {
-  /** Total solve duration (ms) = span from first to last move. */
+  /** Total solve duration (ms) — the timer time (solve.time). */
   totalMs: number;
   /** Per-move ticks (with BLE hostTimestamp offsets, kept for TPS curve). */
   moveTicks: MoveTick[];
@@ -139,8 +139,7 @@ export interface TimelineData {
    * Unified segments that tile the entire timeline: phase-execution blocks
    * interleaved with pause blocks. All positioned using REAL move
    * timestamps (not cumulative analysis durations). Sum of all
-   * `durationMs` === `totalMs` exactly. No "tail" block — the last phase
-   * ends at the last move, same as the TPS curve.
+   * `durationMs` === `totalMs` exactly.
    */
   segments: TimelineSegment[];
 }
@@ -173,39 +172,32 @@ function rollingTps(timestamps: number[], windowSize = 4): TpsSample[] {
 /**
  * Derive all timeline visualization data from a single solve.
  *
- * **`totalMs` is the span from the first to the last move** (not the timer
- * time `solve.time`). The timer time includes the post-last-move stop
- * reaction — the time between the last physical turn and pressing Space to
- * stop the timer — which is NOT part of the solve execution. Representing
- * it as a "Stop" block was misleading and made PLL appear to end before the
- * right edge of the timeline. Now the last phase block and the TPS curve
- * both end at the last move = `totalMs`, and they align perfectly.
+ * **`totalMs` is `solve.time`** (the authoritative timer time). This
+ * keeps the timeline total in sync with the timer display. The move span
+ * (last hostTimestamp − first hostTimestamp) is used as fallback when
+ * solve.time is unavailable (manual entries without moves).
  *
  * **All segments use REAL move-timestamp coordinates** (from
  * `moveTicks[i].offsetMs`), not cumulative `phase.durationMs`. This
  * eliminates the coordinate-system mismatch that caused transition pauses
- * to be misplaced (a pause at the Cross→F2L boundary was rendered inside
- * the Cross block, followed by a spurious Cross block).
+ * to be misplaced.
  *
- * The returned `segments` tile the timeline: `[Cross][transition pause][F2L][mid-phase pause][F2L][pre-algorithm pause][OLL][PLL]`.
- * `Σ segments[i].durationMs === totalMs` exactly. No "tail" / "Stop" block.
+ * The returned `segments` tile the timeline completely.
+ * `Σ segments[i].durationMs === totalMs` exactly.
  */
 export function deriveTimeline(solve: Solve): TimelineData {
   const moves = solve.moves ?? [];
   const analysis = solve.analysis;
 
   const baseTime = moves.length > 0 ? moves[0].hostTimestamp : 0;
-  // totalMs = move span (first→last move) when moves exist. This GUARANTEES
-  // the last phase block and the TPS curve both end at the same x = totalMs,
-  // with no "Stop"/tail gap. analysis.totalTimeMs is computed by the
-  // pipeline as endTimestamp − startTimestamp (last move − first move), so
-  // it equals the move span in practice — but we compute it directly from
-  // moves to avoid any drift. Falls back to analysis/solve.time only for
-  // manual entries with no moves.
+  // totalMs = solve.time (the authoritative timer time). Falls back to
+  // move span when solve.time is unavailable (e.g. seed data).
   const totalMs =
-    moves.length > 0
-      ? moves[moves.length - 1].hostTimestamp - baseTime
-      : (analysis?.totalTimeMs ?? solve.time);
+    solve.time > 0
+      ? solve.time
+      : moves.length > 0
+        ? moves[moves.length - 1].hostTimestamp - baseTime
+        : (analysis?.totalTimeMs ?? 0);
 
   // Per-move ticks (offsets relative to solve start).
   const moveTicks: MoveTick[] = moves.map((ev, i) => ({
@@ -487,6 +479,11 @@ function buildUnifiedSegments(
           phaseName: run.phaseName,
         });
         pos += finalExecMs;
+      } else if (finalMoveCount > 0) {
+        // Budget exhausted by pauses — fallback to prevent moveVisualMs=0
+        for (let m = 0; m < finalMoveCount; m++) {
+          moveVisualMs[blkStart + m] = pos;
+        }
       }
       // Boundary pause fills the remaining gap to the next phase.
       const gapMs = Math.max(0, nextPhaseStartMs - pos);
@@ -522,6 +519,13 @@ function buildUnifiedSegments(
           label: run.phaseName,
           phaseName: run.phaseName,
         });
+      } else if (finalMoveCount > 0) {
+        // Budget exhausted by pauses — assign the current position as
+        // a fallback so moveVisualMs isn't left at 0 (which would
+        // cause the TPS curve to jump backward).
+        for (let m = 0; m < finalMoveCount; m++) {
+          moveVisualMs[blkStart + m] = pos;
+        }
       }
     }
   }
