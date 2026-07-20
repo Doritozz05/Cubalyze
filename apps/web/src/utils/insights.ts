@@ -260,17 +260,22 @@ export function deriveTimeline(solve: Solve): TimelineData {
         : [];
 
   // Pause marks with move indices + real offsets.
+  // Filter out pauses at or after the last move (post-solve "stop" gap).
+  // The timeline now ends at the last move, so pauses beyond it would
+  // collapse to zero width (startMs === endMs === totalMs).
   const pauseMarks: PauseMark[] = analysis
-    ? analysis.pauses.pauses.map((p) => ({
-        startMs: p.startIndex < moveTicks.length ? moveTicks[p.startIndex].offsetMs : 0,
-        endMs: p.endIndex < moveTicks.length ? moveTicks[p.endIndex].offsetMs : totalMs,
-        durationMs: p.durationMs,
-        phase: p.phase,
-        category: p.category,
-        probableCause: derivePauseCause(p, analysis.phases),
-        startIndex: p.startIndex,
-        endIndex: p.endIndex,
-      }))
+    ? analysis.pauses.pauses
+        .filter((p) => moveTicks.length === 0 || p.startIndex < moveTicks.length - 1)
+        .map((p) => ({
+          startMs: p.startIndex < moveTicks.length ? moveTicks[p.startIndex].offsetMs : 0,
+          endMs: p.endIndex < moveTicks.length ? moveTicks[p.endIndex].offsetMs : totalMs,
+          durationMs: p.durationMs,
+          phase: p.phase,
+          category: p.category,
+          probableCause: derivePauseCause(p, analysis.phases),
+          startIndex: p.startIndex,
+          endIndex: p.endIndex,
+        }))
     : [];
 
   // Unified segments from REAL move coordinates. No coordinate mismatch,
@@ -300,7 +305,7 @@ function computePhaseRuns(moveTicks: MoveTick[]): PhaseRun[] {
   let runStart = 0;
   let currentPhase = moveTicks[0].phaseName;
   for (let i = 1; i <= moveTicks.length; i++) {
-    const phase = i < moveTicks.length ? moveTicks[i].phaseName : null;
+    const phase = i < moveTicks.length ? moveTicks[i].phaseName : undefined;
     if (phase !== currentPhase) {
       if (currentPhase) {
         runs.push({ phaseName: currentPhase, startIdx: runStart, endIdx: i - 1 });
@@ -313,26 +318,18 @@ function computePhaseRuns(moveTicks: MoveTick[]): PhaseRun[] {
 }
 
 /**
- * Build unified timeline segments using REAL move-timestamp coordinates.
+ * Build unified timeline segments.
  *
- * For each phase run, the time window is [firstMove.offsetMs, lastMove.offsetMs].
- * Between consecutive phase runs there's an inter-phase GAP
- * [lastMoveOfA.offsetMs, firstMoveOfB.offsetMs] which is NOT covered by
- * either phase's move span. This gap is where transition / pre-algorithm
- * pauses live — as their own blocks, not inside any phase.
+ * **Phase boundaries** still use moveTicks offsets (they're reliable —
+ * inter-phase gaps are large enough to survive BLE batching).
+ * **Mid-phase pause widths** use `durationMs` from the PauseDetector
+ * instead of `moveTicks[end].offsetMs - moveTicks[start].offsetMs`,
+ * because BLE packet batching compresses intra-phase hostTimestamp gaps
+ * even when the cube's hardware clock records the correct pause duration.
  *
- * Algorithm per phase run:
- *   1. Emit exec sub-blocks split by mid-phase pauses (pauses whose gap
- *      is between two moves BOTH inside this run).
- *   2. Check for a boundary pause (startIndex === run.endIdx, i.e. the gap
- *      between this run's last move and the next run's first move).
- *      - If found → emit it as a pause block filling the inter-phase gap.
- *      - If not → absorb the inter-phase gap into this phase (extend the
- *        last exec sub-block to the next phase's start). This keeps
- *        Σ segments === totalMs without inventing a "gap" block type.
- *
- * The last phase run has no inter-phase gap after it — it ends at
- * moveTicks[last].offsetMs = totalMs, same as the TPS curve.
+ * Exec (phase) blocks fill the remaining budget within each phase run,
+ * distributed proportionally to move count so that phases with more moves
+ * between pauses get wider exec blocks.
  */
 function buildUnifiedSegments(
   moveTicks: MoveTick[],
@@ -347,45 +344,72 @@ function buildUnifiedSegments(
   for (let r = 0; r < phaseRuns.length; r++) {
     const run = phaseRuns[r];
     const phaseStartMs = moveTicks[run.startIdx].offsetMs;
-    const phaseEndMs = moveTicks[run.endIdx].offsetMs;
-    // Where the next phase starts (or totalMs for the last phase).
     const nextPhaseStartMs =
       r + 1 < phaseRuns.length
         ? moveTicks[phaseRuns[r + 1].startIdx].offsetMs
         : totalMs;
+    const phaseBudget = Math.max(0, nextPhaseStartMs - phaseStartMs);
 
-    // Mid-phase pauses: gap between two moves BOTH within this run
-    // (startIndex in [run.startIdx, run.endIdx - 1]).
+    // ── Mid-phase pauses ─────────────────────────────────────────────
     const midPhasePauses = pauseMarks
       .filter((pm) => pm.startIndex >= run.startIdx && pm.startIndex < run.endIdx)
       .sort((a, b) => a.startMs - b.startMs);
 
-    // Boundary pause: gap between this run's last move and the next run's
-    // first move (startIndex === run.endIdx). Covers both "transition" and
-    // "pre-algorithm" categories — both live in the inter-phase gap.
     const boundaryPause = pauseMarks.find(
       (pm) => pm.startIndex === run.endIdx && r + 1 < phaseRuns.length,
     );
 
-    // Walk through mid-phase pauses, emitting exec + pause blocks.
-    let execStart = phaseStartMs;
+    // Total pause time from the analysis engine (correct), not from
+    // moveTicks (BLE-compressed). Capped at phaseBudget so corrupted
+    // data can't overflow past the phase boundary.
+    const totalPauseMs = Math.min(
+      phaseBudget,
+      midPhasePauses.reduce((s, pm) => s + pm.durationMs, 0),
+    );
+    const totalExecMs = Math.max(0, phaseBudget - totalPauseMs);
+
+    // Move counts per exec block (for proportional time distribution).
+    const execMoveCounts: number[] = [];
+    let prevEnd = run.startIdx;
     for (const pm of midPhasePauses) {
-      // Exec part before this pause.
-      if (pm.startMs > execStart) {
+      // +1 includes the move at pm.startIndex — the last move executed
+      // BEFORE this pause gap begins.
+      execMoveCounts.push(pm.startIndex - prevEnd + 1);
+      prevEnd = pm.endIndex;
+    }
+    // Final exec block: from last pause (or phase start) to the
+    // boundary pause / phase end.
+    execMoveCounts.push(
+      (boundaryPause ? boundaryPause.startIndex : run.endIdx) - prevEnd + 1,
+    );
+    const totalExecMoves = execMoveCounts.reduce((s, c) => s + c, 0);
+
+    let pos = phaseStartMs;
+
+    for (let i = 0; i < midPhasePauses.length; i++) {
+      const pm = midPhasePauses[i];
+      const execMs =
+        totalExecMoves > 0 && totalExecMs > 0
+          ? (execMoveCounts[i] / totalExecMoves) * totalExecMs
+          : 0;
+
+      if (execMs > 0) {
         segments.push({
           kind: "phase",
-          startMs: execStart,
-          endMs: pm.startMs,
-          durationMs: pm.startMs - execStart,
+          startMs: pos,
+          endMs: pos + execMs,
+          durationMs: execMs,
           label: run.phaseName,
           phaseName: run.phaseName,
         });
+        pos += execMs;
       }
-      // Pause block.
+
+      // Mid-phase pause: visual width = analysis duration (correct).
       segments.push({
         kind: "pause",
-        startMs: pm.startMs,
-        endMs: pm.endMs,
+        startMs: pos,
+        endMs: pos + pm.durationMs,
         durationMs: pm.durationMs,
         label: pm.probableCause,
         phaseName: run.phaseName,
@@ -394,44 +418,52 @@ function buildUnifiedSegments(
         moveStartIndex: pm.startIndex,
         moveEndIndex: pm.endIndex,
       });
-      execStart = pm.endMs;
+      pos += pm.durationMs;
     }
 
-    // Handle the inter-phase gap (phaseEndMs → nextPhaseStartMs).
+    // ── Final exec block + boundary pause ────────────────────────────
+    const finalExecMs =
+      totalExecMoves > 0 && totalExecMs > 0
+        ? (execMoveCounts[execMoveCounts.length - 1] / totalExecMoves) * totalExecMs
+        : 0;
+
     if (boundaryPause) {
-      // Exec part up to the boundary pause (which starts at phaseEndMs).
-      if (boundaryPause.startMs > execStart) {
+      if (finalExecMs > 0) {
         segments.push({
           kind: "phase",
-          startMs: execStart,
-          endMs: boundaryPause.startMs,
-          durationMs: boundaryPause.startMs - execStart,
+          startMs: pos,
+          endMs: pos + finalExecMs,
+          durationMs: finalExecMs,
           label: run.phaseName,
           phaseName: run.phaseName,
         });
+        pos += finalExecMs;
       }
-      // Boundary pause fills the inter-phase gap.
-      segments.push({
-        kind: "pause",
-        startMs: boundaryPause.startMs,
-        endMs: boundaryPause.endMs,
-        durationMs: boundaryPause.durationMs,
-        label: boundaryPause.probableCause,
-        phaseName: run.phaseName,
-        pauseCategory: boundaryPause.category,
-        probableCause: boundaryPause.probableCause,
-        moveStartIndex: boundaryPause.startIndex,
-        moveEndIndex: boundaryPause.endIndex,
-      });
+      // Boundary pause fills the remaining gap to the next phase.
+      const gapMs = Math.max(0, nextPhaseStartMs - pos);
+      if (gapMs > 0) {
+        segments.push({
+          kind: "pause",
+          startMs: pos,
+          endMs: nextPhaseStartMs,
+          durationMs: gapMs,
+          label: boundaryPause.probableCause,
+          phaseName: run.phaseName,
+          pauseCategory: boundaryPause.category,
+          probableCause: boundaryPause.probableCause,
+          moveStartIndex: boundaryPause.startIndex,
+          moveEndIndex: boundaryPause.endIndex,
+        });
+      }
     } else {
-      // No boundary pause → extend the phase to the next phase's start,
-      // absorbing the inter-phase gap as normal turning/transition time.
-      if (nextPhaseStartMs > execStart) {
+      // No boundary pause → fill the rest with exec time.
+      const remaining = Math.max(0, nextPhaseStartMs - pos);
+      if (remaining > 0) {
         segments.push({
           kind: "phase",
-          startMs: execStart,
+          startMs: pos,
           endMs: nextPhaseStartMs,
-          durationMs: nextPhaseStartMs - execStart,
+          durationMs: remaining,
           label: run.phaseName,
           phaseName: run.phaseName,
         });

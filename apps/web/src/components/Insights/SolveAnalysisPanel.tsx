@@ -863,7 +863,7 @@ function PhaseBreakdownSection({
                 <span>{formatTime(p.durationMs)}</span>
                 <span className="font-medium text-ink">{p.tps.toFixed(1)} tps</span>
                 {p.pauseCount > 0 && (
-                  <span className="text-caution/70">{p.pauseCount}p</span>
+                  <span className="text-caution/70" title={`${p.pauseCount} pause${p.pauseCount !== 1 ? "s" : ""} in this phase`}>{p.pauseCount}p</span>
                 )}
               </div>
             </div>
