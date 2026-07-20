@@ -148,7 +148,11 @@ function readDebugFlag(
 }
 
 const _debugInitState = (() => {
+  const isDev = import.meta.env.DEV;
   const cfop = readDebugFlag(["cfop_debug", "cfop-debug"]);
+  const moves = readDebugFlag(["moves_debug", "moves-debug"]);
+  // In dev mode, CFOP debug logs are always ON (no URL flag needed).
+  const cfopEffective = cfop.enabled || isDev;
   // Use console.log (always-visible) NOT console.debug — Chrome hides
   // console.debug by default unless "Verbose" is enabled, which is why
   // users kept seeing nothing in the console.
@@ -157,10 +161,14 @@ const _debugInitState = (() => {
     "%c[CFOP Debug]%c init \u00b7 cfop=%s(%s) \u00b7 moves=%s(%s)",
     "color:#38bdf8;font-weight:bold",
     "color:inherit",
-    cfop.enabled ? "ON" : "off",
-    cfop.source,
+    cfopEffective ? "ON" : "off",
+    isDev && !cfop.enabled ? "dev" : cfop.source,
+    moves.enabled ? "ON" : "off",
+    moves.source,
   );
-  if (!cfop.enabled) {
+  // Only show the "how to enable" hint when logs are actually OFF — in dev
+  // mode they're always on, so this message would be misleading.
+  if (!cfopEffective) {
     console.log(
       '%c[CFOP Debug]%c end-of-solve logs OFF \u2014 turn on with ?cfop_debug=1, or localStorage.setItem("cubeforge:cfop-debug","1")',
       "color:#facc15;font-weight:bold",
@@ -168,10 +176,15 @@ const _debugInitState = (() => {
     );
   }
   /* eslint-enable no-console */
-  return { cfop: cfop.enabled };
+  return { cfop: cfopEffective };
 })();
 
 function isCFOPDebugEnabled(): boolean {
+  // In dev mode (vite dev server), the end-of-solve diagnostic logs are
+  // ALWAYS enabled — the user no longer needs ?cfop_debug=1 or the
+  // localStorage flag. Production builds keep the opt-in gate so user
+  // consoles stay clean.
+  if (import.meta.env.DEV) return true;
   return _debugInitState.cfop || readDebugFlag(["cfop_debug", "cfop-debug"]).enabled;
 }
 

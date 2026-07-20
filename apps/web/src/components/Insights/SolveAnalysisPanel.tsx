@@ -5,7 +5,8 @@ import { ArrowLeft, Clipboard, ClipboardCheck, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
-import { phaseColorHex, pauseColorHex, tailColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
+import { phaseColorHex, pauseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import type { Penalty, Solve } from "@/types";
 import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics } from "@cubeforge/types";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,10 @@ export function SolveAnalysisPanel({
     () => (m ? deriveTimeline({ ...solve, analysis: m }) : deriveTimeline(solve)),
     [solve, m],
   );
+
+  // Lifted cross-highlight state: hovering a timeline block or a phase
+  // breakdown row highlights the other. Null = nothing highlighted.
+  const [hoveredPhase, setHoveredPhase] = useState<string | null>(null);
 
   return (
     <div className={cn("flex flex-col gap-4 px-1 pb-4", className)}>
@@ -177,13 +182,22 @@ export function SolveAnalysisPanel({
       ) : (
         <>
           {/* ── Interactive timeline ────────────────────────────────────── */}
-          <TimelineSection timeline={timeline} />
+          <TimelineSection
+            timeline={timeline}
+            meanTps={m.tps.global}
+            hoveredPhase={hoveredPhase}
+            onHoverPhase={setHoveredPhase}
+          />
 
           {/* ── Key metric rings ────────────────────────────────────────── */}
           <MetricRingsSection metrics={m} />
 
           {/* ── Phase breakdown ─────────────────────────────────────────── */}
-          <PhaseBreakdownSection metrics={m} />
+          <PhaseBreakdownSection
+            metrics={m}
+            hoveredPhase={hoveredPhase}
+            onHoverPhase={setHoveredPhase}
+          />
 
           {/* ── Pauses with probable causes ─────────────────────────────── */}
           {/* (removed — pauses are now integrated in the timeline above) */}
@@ -207,8 +221,14 @@ export function SolveAnalysisPanel({
 
 function TimelineSection({
   timeline,
+  meanTps,
+  hoveredPhase,
+  onHoverPhase,
 }: {
   timeline: TimelineData;
+  meanTps: number;
+  hoveredPhase: string | null;
+  onHoverPhase: (phase: string | null) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
@@ -307,6 +327,27 @@ function TimelineSection({
     () => pauseMarks.reduce((s, p) => s + p.durationMs, 0),
     [pauseMarks],
   );
+  const meanPauseMs = pauseMarks.length > 0 ? totalPauseMs / pauseMarks.length : 0;
+
+  // P1.c — Y-axis TPS ticks (0 … maxTps)
+  const yTickCount = 4;
+  const yTicks = useMemo(
+    () => Array.from({ length: yTickCount }, (_, i) => (i / (yTickCount - 1)) * maxTps),
+    [maxTps],
+  );
+  // P1.a — X-axis tick fractions (0/25/50/75/100%)
+  const xTickFracs = [0, 0.25, 0.5, 0.75, 1];
+  // P1.c — Mean TPS reference line y-position (clamped to the TPS band)
+  const meanTpsY =
+    TPS_AREA_BOTTOM - (Math.min(meanTps, maxTps) / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
+  // Y-axis label column width (px)
+  const Y_LABEL_W = 26;
+
+  // P1.d — Segment highlight state for cross-highlight
+  const segHighlight = (seg: TimelineSegment): "active" | "dim" | "normal" => {
+    if (hoveredPhase === null) return "normal";
+    return seg.phaseName === hoveredPhase ? "active" : "dim";
+  };
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
@@ -318,128 +359,319 @@ function TimelineSection({
       />
 
       <div className="mt-3">
-        <svg
-          ref={svgRef}
-          width="100%"
-          viewBox={`0 0 ${width} ${TIMELINE_HEIGHT}`}
-          preserveAspectRatio="none"
-          className="overflow-visible"
-          role="img"
-          aria-label={`Solve timeline: ${segments.length} segments over ${formatTime(totalMs)}`}
-          onPointerMove={handleMove}
-          onPointerLeave={handleLeave}
-        >
-          <defs>
-            <linearGradient id="timeline-tps-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--ink-2)" stopOpacity={0.18} />
-              <stop offset="100%" stopColor="var(--ink-2)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-
-          {/* TPS area fill (spans the full width via the tail samples) */}
-          {tpsAreaPath && <path d={tpsAreaPath} fill="url(#timeline-tps-fill)" />}
-          {/* TPS line */}
-          {tpsPath && (
-            <path
-              d={tpsPath}
-              fill="none"
-              stroke="var(--ink-2)"
-              strokeWidth={1.2}
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
-
-          {/* Unified segment blocks (phases + pauses + tail) on the SAME x-axis */}
-          {segments.map((seg, i) => {
-            const x = xForMs(seg.startMs);
-            const w = Math.max(0.5, xForMs(seg.endMs) - x);
-            const color =
-              seg.kind === "phase"
-                ? phaseColorHex(seg.phaseName ?? "", i)
-                : seg.kind === "pause"
-                  ? pauseColorHex(seg.pauseCategory ?? "mid-phase")
-                  : tailColorHex();
-            const fillOpacity = seg.kind === "phase" ? 0.22 : seg.kind === "pause" ? 0.45 : 0.18;
-            return (
-              <g key={`${seg.kind}-${i}`}>
-                <rect
-                  x={x}
-                  y={SEG_TOP}
-                  width={w}
-                  height={SEG_BOTTOM - SEG_TOP}
-                  fill={color}
-                  fillOpacity={fillOpacity}
-                  rx={seg.kind === "pause" ? 1 : 2}
-                  stroke={seg.kind === "pause" ? color : "none"}
-                  strokeOpacity={0.5}
-                  strokeWidth={0.5}
-                  vectorEffect="non-scaling-stroke"
+        {/* Chart row: Y-labels column + SVG + pause overlays */}
+        <div className="flex items-stretch gap-1">
+          {/* P1.c — Y-axis TPS labels (HTML, not stretched by SVG) */}
+          <div className="relative shrink-0" style={{ width: Y_LABEL_W, height: TIMELINE_HEIGHT }}>
+            {yTicks.map((t, i) => {
+              const y = TPS_AREA_BOTTOM - (t / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
+              return (
+                <span
+                  key={`yt-${i}`}
+                  className="absolute right-0 nums text-[0.5rem] leading-none text-ink-3"
+                  style={{ top: y, transform: "translateY(-50%)" }}
                 >
-                  <title>
-                    {seg.kind === "pause"
-                      ? `${seg.label} · ${formatTime(seg.durationMs)} · ${seg.phaseName ?? ""}`
-                      : `${seg.label} · ${formatTime(seg.durationMs)}${
-                          seg.moveCount != null ? ` · ${seg.moveCount} moves` : ""
-                        }${seg.tps != null ? ` · ${seg.tps.toFixed(1)} tps` : ""}`}
-                  </title>
-                </rect>
-                {/* Label inside wide-enough blocks */}
-                {w > 26 && (
-                  <text
-                    x={x + w / 2}
-                    y={SEG_TOP + (SEG_BOTTOM - SEG_TOP) / 2 + 2.5}
-                    textAnchor="middle"
+                  {t.toFixed(0)}
+                </span>
+              );
+            })}
+            <span className="absolute right-0 top-0 text-[0.42rem] uppercase tracking-wide text-ink-3/50">
+              tps
+            </span>
+          </div>
+
+          {/* SVG + pause popover overlays */}
+          <div className="relative flex-1" style={{ height: TIMELINE_HEIGHT }}>
+            <svg
+              ref={svgRef}
+              width="100%"
+              height={TIMELINE_HEIGHT}
+              viewBox={`0 0 ${width} ${TIMELINE_HEIGHT}`}
+              preserveAspectRatio="none"
+              className="overflow-visible"
+              role="img"
+              aria-label={`Solve timeline: ${segments.length} segments over ${formatTime(totalMs)}`}
+              onPointerMove={handleMove}
+              onPointerLeave={handleLeave}
+            >
+              <defs>
+                <linearGradient id="timeline-tps-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--ink-2)" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--ink-2)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {/* P1.a — Vertical gridlines at 0/25/50/75/100% */}
+              {xTickFracs.map((f, i) => (
+                <line
+                  key={`gx-${i}`}
+                  x1={f * width}
+                  y1={TPS_AREA_TOP}
+                  x2={f * width}
+                  y2={SEG_BOTTOM}
+                  stroke="var(--ink-3)"
+                  strokeWidth={0.5}
+                  strokeOpacity={0.15}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+              {/* P1.c — Horizontal TPS gridlines */}
+              {yTicks.map((t, i) => (
+                <line
+                  key={`gy-${i}`}
+                  x1={0}
+                  y1={TPS_AREA_BOTTOM - (t / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP)}
+                  x2={width}
+                  y2={TPS_AREA_BOTTOM - (t / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP)}
+                  stroke="var(--ink-3)"
+                  strokeWidth={0.5}
+                  strokeOpacity={0.1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+
+              {/* TPS area fill */}
+              {tpsAreaPath && <path d={tpsAreaPath} fill="url(#timeline-tps-fill)" />}
+              {/* TPS line */}
+              {tpsPath && (
+                <path
+                  d={tpsPath}
+                  fill="none"
+                  stroke="var(--ink-2)"
+                  strokeWidth={1.2}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )}
+
+              {/* P1.c — Mean TPS dashed reference line */}
+              {meanTps > 0 && (
+                <line
+                  x1={0}
+                  y1={meanTpsY}
+                  x2={width}
+                  y2={meanTpsY}
+                  stroke="var(--ready)"
+                  strokeWidth={0.8}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )}
+
+              {/* Unified segment blocks with P1.d cross-highlight dimming */}
+              {segments.map((seg, i) => {
+                const x = xForMs(seg.startMs);
+                const w = Math.max(0.5, xForMs(seg.endMs) - x);
+                const isPause = seg.kind === "pause";
+                const color = isPause
+                  ? pauseColorHex(seg.pauseCategory ?? "mid-phase")
+                  : phaseColorHex(seg.phaseName ?? "", i);
+                const hl = segHighlight(seg);
+                const fillOpacity = isPause
+                  ? hl === "dim" ? 0.15 : 0.45
+                  : hl === "dim" ? 0.08 : hl === "active" ? 0.35 : 0.22;
+                const showStroke = hl === "active" || isPause;
+                return (
+                  <rect
+                    key={`${seg.kind}-${i}`}
+                    x={x}
+                    y={SEG_TOP}
+                    width={w}
+                    height={SEG_BOTTOM - SEG_TOP}
                     fill={color}
-                    fillOpacity={0.95}
-                    style={{
-                      fontSize: seg.kind === "pause" ? "7px" : "8px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {seg.kind === "pause"
-                      ? formatTime(seg.durationMs)
-                      : seg.label.slice(0, 6)}
-                  </text>
-                )}
-              </g>
-            );
-          })}
+                    fillOpacity={fillOpacity}
+                    rx={isPause ? 1 : 2}
+                    stroke={showStroke ? color : "none"}
+                    strokeOpacity={hl === "active" ? 0.9 : 0.5}
+                    strokeWidth={hl === "active" ? 1.2 : 0.5}
+                    vectorEffect="non-scaling-stroke"
+                    style={{ pointerEvents: isPause ? "none" : "all" }}
+                    onMouseEnter={() => onHoverPhase(seg.phaseName ?? null)}
+                    onMouseLeave={() => onHoverPhase(null)}
+                  />
+                );
+              })}
 
-          {/* Move ticks — sit above the segment row, traverse both bands */}
-          {moveTicks.map((tick) => {
-            const x = xForMs(tick.offsetMs);
-            return (
-              <line
-                key={tick.index}
-                x1={x}
-                y1={TPS_AREA_BOTTOM + 1}
-                x2={x}
-                y2={SEG_TOP - 2}
-                stroke="var(--ink-3)"
-                strokeWidth={0.6}
-                strokeOpacity={0.3}
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
+              {/* Move ticks */}
+              {moveTicks.map((tick) => (
+                <line
+                  key={tick.index}
+                  x1={xForMs(tick.offsetMs)}
+                  y1={TPS_AREA_BOTTOM + 1}
+                  x2={xForMs(tick.offsetMs)}
+                  y2={SEG_TOP - 2}
+                  stroke="var(--ink-3)"
+                  strokeWidth={0.6}
+                  strokeOpacity={0.3}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
 
-          {/* Hover playhead — spans the full height */}
-          {hoverMs !== null && (
-            <line
-              x1={xForMs(hoverMs)}
-              y1={TPS_AREA_TOP}
-              x2={xForMs(hoverMs)}
-              y2={SEG_BOTTOM}
-              stroke="var(--ink)"
-              strokeWidth={1}
-              strokeOpacity={0.6}
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
-        </svg>
+              {/* Hover playhead */}
+              {hoverMs !== null && (
+                <line
+                  x1={xForMs(hoverMs)}
+                  y1={TPS_AREA_TOP}
+                  x2={xForMs(hoverMs)}
+                  y2={SEG_BOTTOM}
+                  stroke="var(--ink)"
+                  strokeWidth={1}
+                  strokeOpacity={0.6}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )}
+            </svg>
+
+            {/* P1.c — Mean TPS badge (HTML, not stretched) */}
+            {meanTps > 0 && (
+              <span
+                className="pointer-events-none absolute right-0 nums text-[0.5rem] leading-none text-ready/70"
+                style={{ top: meanTpsY, transform: "translateY(-50%)" }}
+              >
+                avg {meanTps.toFixed(1)}
+              </span>
+            )}
+
+            {/* P1.b — Pause popover triggers: invisible divs over each pause block */}
+            {totalMs > 0 &&
+              segments
+                .filter((s) => s.kind === "pause")
+                .map((seg, i) => {
+                  const leftPct = (seg.startMs / totalMs) * 100;
+                  const widthPct = (seg.durationMs / totalMs) * 100;
+                  const topPct = (SEG_TOP / TIMELINE_HEIGHT) * 100;
+                  const heightPct = ((SEG_BOTTOM - SEG_TOP) / TIMELINE_HEIGHT) * 100;
+                  // Adjacent moves for the popover
+                  const startIdx = seg.moveStartIndex ?? 0;
+                  const endIdx = seg.moveEndIndex ?? 0;
+                  const before = [-2, -1]
+                    .map((d) => startIdx + d)
+                    .filter((j) => j >= 0)
+                    .map((j) => moveTicks[j])
+                    .filter(Boolean);
+                  const after = [1, 2]
+                    .map((d) => endIdx + d)
+                    .filter((j) => j < moveTicks.length)
+                    .map((j) => moveTicks[j])
+                    .filter(Boolean);
+                  const cause = seg.probableCause ?? seg.label;
+                  const category = seg.pauseCategory ?? "mid-phase";
+                  const catColor = pauseColorHex(category);
+                  const vsMean =
+                    meanPauseMs > 0 ? ((seg.durationMs - meanPauseMs) / meanPauseMs) * 100 : 0;
+
+                  return (
+                    <HoverCard key={`pause-${i}`} openDelay={200} closeDelay={150}>
+                      <HoverCardTrigger asChild>
+                        <div
+                          className="absolute cursor-help"
+                          style={{
+                            left: `${leftPct}%`,
+                            width: `max(${widthPct}%, 6px)`,
+                            top: `${topPct}%`,
+                            height: `${heightPct}%`,
+                            minHeight: 10,
+                          }}
+                          onMouseEnter={() => onHoverPhase(seg.phaseName ?? null)}
+                          onMouseLeave={() => onHoverPhase(null)}
+                        />
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        side="bottom"
+                        align="start"
+                        sideOffset={4}
+                        className="w-72 p-3 text-xs"
+                      >
+                        {/* Cause */}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block size-2.5 shrink-0 rounded-sm"
+                            style={{ background: catColor }}
+                          />
+                          <span className="font-medium text-ink">{cause}</span>
+                        </div>
+                        {/* Category badge + phase */}
+                        <div className="mt-1.5 flex items-center gap-2 text-[0.6rem] text-ink-3">
+                          <span
+                            className="rounded px-1.5 py-0.5 font-medium uppercase tracking-wide"
+                            style={{ background: `${catColor}22`, color: catColor }}
+                          >
+                            {category}
+                          </span>
+                          <span className="uppercase tracking-wide">{seg.phaseName}</span>
+                        </div>
+                        {/* Duration + comparison vs avg */}
+                        <div className="mt-2 flex items-baseline gap-2">
+                          <span className="nums text-base font-medium text-ink">
+                            {formatTime(seg.durationMs)}
+                          </span>
+                          {meanPauseMs > 0 && (
+                            <span
+                              className={cn(
+                                "nums text-[0.6rem] font-medium",
+                                vsMean > 20
+                                  ? "text-dnf"
+                                  : vsMean < -20
+                                    ? "text-ready"
+                                    : "text-ink-3",
+                              )}
+                            >
+                              {vsMean > 0 ? "+" : ""}
+                              {Math.round(vsMean)}% vs avg
+                            </span>
+                          )}
+                        </div>
+                        {/* Adjacent moves */}
+                        {(before.length > 0 || after.length > 0) && (
+                          <div className="mt-2 border-t border-line/40 pt-2">
+                            <span className="text-[0.55rem] uppercase tracking-wide text-ink-3">
+                              Adjacent moves
+                            </span>
+                            <div className="mt-1 flex items-center gap-1 font-mono text-[0.65rem]">
+                              {before.map((m, j) => (
+                                <span key={`b-${j}`} className="text-ink-3">
+                                  {m.label}
+                                </span>
+                              ))}
+                              <span className="text-dnf">‖</span>
+                              {after.map((m, j) => (
+                                <span key={`a-${j}`} className="font-medium text-ink-2">
+                                  {m.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </HoverCardContent>
+                    </HoverCard>
+                  );
+                })}
+          </div>
+        </div>
+
+        {/* P1.a — X-axis time labels */}
+        <div className="relative" style={{ height: 14, marginLeft: Y_LABEL_W + 4 }}>
+          {xTickFracs.map((f, i) => (
+            <span
+              key={`xt-${i}`}
+              className="absolute nums text-[0.5rem] leading-none text-ink-3/70"
+              style={{
+                left: `${f * 100}%`,
+                transform:
+                  i === 0
+                    ? "translateX(0)"
+                    : i === xTickFracs.length - 1
+                      ? "translateX(-100%)"
+                      : "translateX(-50%)",
+              }}
+            >
+              {formatTime(f * totalMs)}
+            </span>
+          ))}
+        </div>
 
         {/* Hover readout — time, segment, nearest move, TPS at cursor */}
-        <div className="mt-2 flex min-h-5 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[0.62rem] text-ink-3">
+        <div className="mt-1 flex min-h-5 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[0.62rem] text-ink-3">
           <span className="nums">
             {hoverMs !== null ? formatTime(hoverMs) : formatTime(0)}
           </span>
@@ -450,9 +682,7 @@ function TimelineSection({
                 color:
                   hoverSegment.kind === "phase"
                     ? phaseColorHex(hoverSegment.phaseName ?? "", 0)
-                    : hoverSegment.kind === "pause"
-                      ? pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase")
-                      : tailColorHex(),
+                    : pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase"),
               }}
             >
               <span
@@ -461,9 +691,7 @@ function TimelineSection({
                   background:
                     hoverSegment.kind === "phase"
                       ? phaseColorHex(hoverSegment.phaseName ?? "", 0)
-                      : hoverSegment.kind === "pause"
-                        ? pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase")
-                        : tailColorHex(),
+                      : pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase"),
                   opacity: 0.7,
                 }}
               />
@@ -484,9 +712,8 @@ function TimelineSection({
         </div>
       </div>
 
-      {/* Legend — real labels, grouped: phases / pauses / tail / TPS */}
+      {/* Legend — real labels, grouped: phases / pauses / TPS / avg */}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.58rem] text-ink-3">
-        {/* Phase legend — only the phases actually present in this solve */}
         {timeline.stageSegments.map((seg, i) => (
           <span key={seg.phaseName} className="flex items-center gap-1.5">
             <span
@@ -496,7 +723,6 @@ function TimelineSection({
             {seg.phaseName}
           </span>
         ))}
-        {/* Pause legend — by category (only categories present) */}
         {pauseMarks.length > 0 && (
           <span className="flex items-center gap-1.5">
             <span
@@ -509,20 +735,19 @@ function TimelineSection({
             Pauses ({pauseMarks.length} · {formatTime(totalPauseMs)})
           </span>
         )}
-        {/* Tail legend — only if there's a tail segment */}
-        {segments.some((s) => s.kind === "tail") && (
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block size-2 rounded-sm"
-              style={{ background: tailColorHex(), opacity: 0.6 }}
-            />
-            Stop
-          </span>
-        )}
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-4 bg-ink-2" />
           TPS
         </span>
+        {meanTps > 0 && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-0 w-4 border-t border-dashed"
+              style={{ borderColor: "var(--ready)", opacity: 0.6 }}
+            />
+            Avg {meanTps.toFixed(1)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -596,35 +821,54 @@ function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
 
 // ─── Phase breakdown ───────────────────────────────────────────────────────
 
-function PhaseBreakdownSection({ metrics }: { metrics: SolveMetrics }) {
+function PhaseBreakdownSection({
+  metrics,
+  hoveredPhase,
+  onHoverPhase,
+}: {
+  metrics: SolveMetrics;
+  hoveredPhase: string | null;
+  onHoverPhase: (phase: string | null) => void;
+}) {
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="Phase breakdown" eyebrow={`${metrics.phases.length} phases`} />
       <div className="mt-3 overflow-hidden rounded-lg border border-line/60">
-        {metrics.phases.map((p, i) => (
-          <div
-            key={p.phaseName}
-            className="flex items-center justify-between px-3 py-2 text-sm border-b border-line/40 last:border-0"
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className="size-2 rounded-sm"
-                style={{ background: phaseColorHex(p.phaseName, i) }}
-              />
-              <span className="text-xs font-medium uppercase tracking-wide text-ink-2">
-                {p.phaseName}
-              </span>
+        {metrics.phases.map((p, i) => {
+          const isHighlighted = hoveredPhase === p.phaseName;
+          const isDimmed = hoveredPhase !== null && hoveredPhase !== p.phaseName;
+          const color = phaseColorHex(p.phaseName, i);
+          return (
+            <div
+              key={p.phaseName}
+              className="flex items-center justify-between px-3 py-2 text-sm border-b border-line/40 last:border-0 transition-opacity duration-150"
+              style={{
+                boxShadow: isHighlighted ? `inset 2px 0 0 ${color}` : undefined,
+                opacity: isDimmed ? 0.4 : 1,
+              }}
+              onMouseEnter={() => onHoverPhase(p.phaseName)}
+              onMouseLeave={() => onHoverPhase(null)}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="size-2 rounded-sm"
+                  style={{ background: color }}
+                />
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-2">
+                  {p.phaseName}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 nums text-xs text-ink-3">
+                <span>{p.moveCount}m</span>
+                <span>{formatTime(p.durationMs)}</span>
+                <span className="font-medium text-ink">{p.tps.toFixed(1)} tps</span>
+                {p.pauseCount > 0 && (
+                  <span className="text-caution/70">{p.pauseCount}p</span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3 nums text-xs text-ink-3">
-              <span>{p.moveCount}m</span>
-              <span>{formatTime(p.durationMs)}</span>
-              <span className="font-medium text-ink">{p.tps.toFixed(1)} tps</span>
-              {p.pauseCount > 0 && (
-                <span className="text-caution/70">{p.pauseCount}p</span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

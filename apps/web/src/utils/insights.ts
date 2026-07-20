@@ -49,23 +49,30 @@ export interface PauseMark {
   endMs: number;
   /** Duration (ms). */
   durationMs: number;
-  /** Phase where the pause occurred. */
+  /** Phase where the pause occurred (the phase of the move BEFORE the gap). */
   phase: string;
   /** Position category. */
   category: PauseCategory;
   /** Human-readable probable cause (derived). */
   probableCause: string;
+  /** Move index where the pause starts (the move BEFORE the gap). */
+  startIndex: number;
+  /** Move index where the pause ends (the move AFTER the gap). */
+  endIndex: number;
 }
 
 /** Type of a unified timeline segment. */
-export type TimelineSegmentKind = "phase" | "pause" | "tail";
+export type TimelineSegmentKind = "phase" | "pause";
 
 /**
- * A unified timeline segment — phases (execution time only), pauses, and an
- * optional tail (post-last-move stop reaction) all live on the SAME x-axis.
+ * A unified timeline segment — phase execution blocks and pause blocks,
+ * all on the SAME x-axis derived from real move timestamps.
  *
  * The sum of every segment's `durationMs` equals `totalMs` exactly, so the
- * timeline reads as: `[Cross][pause][F2L][pause][F2L][OLL][pause][PLL][tail]`.
+ * timeline reads as: `[Cross][transition pause][F2L][mid-phase pause][F2L][pre-algorithm pause][OLL][PLL]`.
+ * Transition/pre-algorithm pauses live in the GAPS between phase blocks
+ * (between the last move of one phase and the first move of the next),
+ * not inside any phase.
  */
 export interface TimelineSegment {
   /** Discriminator. */
@@ -76,22 +83,22 @@ export interface TimelineSegment {
   endMs: number;
   /** Duration (ms). */
   durationMs: number;
-  /** Human-readable label (phase name / pause cause / "Stop"). */
+  /** Human-readable label (phase name / pause cause). */
   label: string;
   /**
    * Phase name this segment belongs to. For `"phase"` it's the phase name;
-   * for `"pause"` it's the phase the pause happened in; for `"tail"` it's
-   * `undefined`.
+   * for `"pause"` it's the phase the pause was attributed to (the phase
+   * of the move before the gap).
    */
   phaseName?: string;
   /** For pauses: the category. */
   pauseCategory?: PauseCategory;
   /** For pauses: the probable cause. */
   probableCause?: string;
-  /** For phases: the move count. */
-  moveCount?: number;
-  /** For phases: the average TPS (execution TPS, pause time excluded). */
-  tps?: number;
+  /** For pauses: move index where the pause starts (the move before the gap). */
+  moveStartIndex?: number;
+  /** For pauses: move index where the pause ends (the move after the gap). */
+  moveEndIndex?: number;
 }
 
 /** A phase segment rendered as a colored rectangle on the timeline. */
@@ -111,20 +118,22 @@ export interface StageSegment {
 
 /** Output of `deriveTimeline`. */
 export interface TimelineData {
-  /** Total solve duration (ms). Always equal to solve timer time. */
+  /** Total solve duration (ms) = span from first to last move. */
   totalMs: number;
   /** Per-move ticks. */
   moveTicks: MoveTick[];
-  /** Rolling-window TPS samples, extended to end at `totalMs` with a 0-TPS tail. */
+  /** Rolling-window TPS samples (end at the last move = `totalMs`). */
   tpsSamples: TpsSample[];
-  /** Pause markers (with probable cause). */
+  /** Pause markers (with probable cause + move indices). */
   pauseMarks: PauseMark[];
-  /** Legacy phase segments (kept for the `PhaseBreakdownSection` table). */
+  /** Phase segments derived from REAL move offsets (for the legend). */
   stageSegments: StageSegment[];
   /**
-   * Unified segments that tile the entire timeline: execution-phase blocks
-   * interleaved with pause blocks, plus an optional `"tail"` block for the
-   * post-last-move stop reaction. Sum of all `durationMs` === `totalMs`.
+   * Unified segments that tile the entire timeline: phase-execution blocks
+   * interleaved with pause blocks. All positioned using REAL move
+   * timestamps (not cumulative analysis durations). Sum of all
+   * `durationMs` === `totalMs` exactly. No "tail" block — the last phase
+   * ends at the last move, same as the TPS curve.
    */
   segments: TimelineSegment[];
 }
@@ -157,34 +166,41 @@ function rollingTps(timestamps: number[], windowSize = 4): TpsSample[] {
 /**
  * Derive all timeline visualization data from a single solve.
  *
- * `totalMs` is ALWAYS the solve's timer time (`solve.time` or
- * `analysis.totalTimeMs`), never the span between first and last move — so
- * the x-axis is consistent across solves and the post-last-move "stop
- * reaction" gap is represented as a `"tail"` segment.
+ * **`totalMs` is the span from the first to the last move** (not the timer
+ * time `solve.time`). The timer time includes the post-last-move stop
+ * reaction — the time between the last physical turn and pressing Space to
+ * stop the timer — which is NOT part of the solve execution. Representing
+ * it as a "Stop" block was misleading and made PLL appear to end before the
+ * right edge of the timeline. Now the last phase block and the TPS curve
+ * both end at the last move = `totalMs`, and they align perfectly.
  *
- * The returned `segments` array tiles the entire timeline: execution-phase
- * blocks interleaved with pause blocks, plus an optional `"tail"` block.
- * `Σ segments[i].durationMs === totalMs` exactly.
+ * **All segments use REAL move-timestamp coordinates** (from
+ * `moveTicks[i].offsetMs`), not cumulative `phase.durationMs`. This
+ * eliminates the coordinate-system mismatch that caused transition pauses
+ * to be misplaced (a pause at the Cross→F2L boundary was rendered inside
+ * the Cross block, followed by a spurious Cross block).
+ *
+ * The returned `segments` tile the timeline: `[Cross][transition pause][F2L][mid-phase pause][F2L][pre-algorithm pause][OLL][PLL]`.
+ * `Σ segments[i].durationMs === totalMs` exactly. No "tail" / "Stop" block.
  */
 export function deriveTimeline(solve: Solve): TimelineData {
   const moves = solve.moves ?? [];
   const analysis = solve.analysis;
 
-  // Total duration: ALWAYS the timer time. We prefer analysis.totalTimeMs
-  // (computed by the pipeline), then fall back to solve.time (the timer
-  // reading). We do NOT derive from move timestamps — that would silently
-  // drop the post-last-move stop-reaction gap and make the TPS curve end
-  // before the right edge of the timeline.
-  const totalMs = analysis?.totalTimeMs ?? solve.time;
-
   const baseTime = moves.length > 0 ? moves[0].hostTimestamp : 0;
-  const lastMoveOffsetMs =
-    moves.length > 0 ? moves[moves.length - 1].hostTimestamp - baseTime : 0;
+  // totalMs = move span (first→last move) when moves exist. This GUARANTEES
+  // the last phase block and the TPS curve both end at the same x = totalMs,
+  // with no "Stop"/tail gap. analysis.totalTimeMs is computed by the
+  // pipeline as endTimestamp − startTimestamp (last move − first move), so
+  // it equals the move span in practice — but we compute it directly from
+  // moves to avoid any drift. Falls back to analysis/solve.time only for
+  // manual entries with no moves.
+  const totalMs =
+    moves.length > 0
+      ? moves[moves.length - 1].hostTimestamp - baseTime
+      : (analysis?.totalTimeMs ?? solve.time);
 
   // Per-move ticks (offsets relative to solve start).
-  // `isRotation` is always false for CubeMoveEvent — rotations (x/y/z) are
-  // tracked separately in RotationMetrics, not as move events. The field is
-  // kept on the type for future extensibility if the protocol evolves.
   const moveTicks: MoveTick[] = moves.map((ev, i) => ({
     index: i,
     offsetMs: ev.hostTimestamp - baseTime,
@@ -194,9 +210,10 @@ export function deriveTimeline(solve: Solve): TimelineData {
   }));
 
   // TPS samples: prefer the analysis instantaneousWindow if present,
-  // otherwise compute a rolling window from raw timestamps.
+  // otherwise compute a rolling window from raw timestamps. Both end at
+  // the last move's offset = totalMs, so no tail extension is needed.
   const windowLen = analysis?.tps.instantaneousWindow?.length ?? 0;
-  const rawTpsSamples: TpsSample[] =
+  const tpsSamples: TpsSample[] =
     windowLen > 1
       ? analysis!.tps.instantaneousWindow!.map((tps, i) => ({
           offsetMs:
@@ -209,17 +226,40 @@ export function deriveTimeline(solve: Solve): TimelineData {
         }))
       : rollingTps(moves.map((m) => m.hostTimestamp));
 
-  // Extend TPS samples to `totalMs` with a 0-TPS tail, so the curve always
-  // reaches the right edge of the timeline. After the last move, no more
-  // turns happen → TPS drops to 0 (the "stop reaction" gap).
-  const tpsSamples: TpsSample[] = extendTpsToTotal(rawTpsSamples, totalMs, lastMoveOffsetMs);
+  // Flat 0-TPS baseline when there are no TPS samples (0-1 moves).
+  const tpsFinal: TpsSample[] =
+    tpsSamples.length === 0 && totalMs > 0
+      ? [{ offsetMs: 0, tps: 0 }, { offsetMs: totalMs, tps: 0 }]
+      : tpsSamples;
 
-  // Phase segments (from analysis). Used by the phase-breakdown TABLE.
-  const stageSegments: StageSegment[] = analysis
-    ? buildStageSegments(analysis.phases, baseTime)
-    : [];
+  // Phase runs: consecutive moves sharing the same phaseName. Each run's
+  // time window = [firstMove.offsetMs, lastMove.offsetMs] using REAL
+  // timestamps — no cumulative durationMs.
+  const phaseRuns = computePhaseRuns(moveTicks);
 
-  // Pause marks (from analysis pauses, with probable cause).
+  // Stage segments from REAL move offsets (for the legend + table).
+  // Falls back to cumulative durationMs when there are no moves (e.g. a
+  // solve with analysis loaded from DB but moves not yet hydrated).
+  const stageSegments: StageSegment[] =
+    phaseRuns.length > 0
+      ? phaseRuns.map((run) => {
+          const startMs = moveTicks[run.startIdx].offsetMs;
+          const endMs = moveTicks[run.endIdx].offsetMs;
+          const phase = analysis?.phases.find((p) => p.phaseName === run.phaseName);
+          return {
+            phaseName: run.phaseName,
+            startMs,
+            endMs,
+            durationMs: Math.max(0, endMs - startMs),
+            moveCount: run.endIdx - run.startIdx + 1,
+            tps: phase?.tps ?? 0,
+          };
+        })
+      : analysis
+        ? buildStageSegments(analysis.phases, baseTime)
+        : [];
+
+  // Pause marks with move indices + real offsets.
   const pauseMarks: PauseMark[] = analysis
     ? analysis.pauses.pauses.map((p) => ({
         startMs: p.startIndex < moveTicks.length ? moveTicks[p.startIndex].offsetMs : 0,
@@ -228,204 +268,175 @@ export function deriveTimeline(solve: Solve): TimelineData {
         phase: p.phase,
         category: p.category,
         probableCause: derivePauseCause(p, analysis.phases),
+        startIndex: p.startIndex,
+        endIndex: p.endIndex,
       }))
     : [];
 
-  // Unified segments: execution phases interleaved with pauses, plus an
-  // optional tail block. Sums to `totalMs` exactly.
-  const segments = buildUnifiedSegments(analysis, pauseMarks, totalMs, lastMoveOffsetMs);
+  // Unified segments from REAL move coordinates. No coordinate mismatch,
+  // no "Stop" block. Pauses at phase boundaries live in the inter-phase
+  // gap (between the last move of one phase and the first move of the next).
+  const segments = buildUnifiedSegments(moveTicks, phaseRuns, pauseMarks, totalMs);
 
-  return { totalMs, moveTicks, tpsSamples, pauseMarks, stageSegments, segments };
+  return { totalMs, moveTicks, tpsSamples: tpsFinal, pauseMarks, stageSegments, segments };
+}
+
+/** A run of consecutive moves belonging to the same phase. */
+interface PhaseRun {
+  phaseName: string;
+  /** Index of the first move in this run. */
+  startIdx: number;
+  /** Index of the last move in this run (inclusive). */
+  endIdx: number;
 }
 
 /**
- * Extend a TPS sample series to end exactly at `totalMs`.
- *
- * If the last sample is before `totalMs`, append two synthetic samples:
- *   1. A 0-TPS sample at the last move's offset (the curve drops to 0 right
- *      when turning stops).
- *   2. A 0-TPS sample at `totalMs` (so the area fill closes at the right
- *      edge of the timeline).
- *
- * If `rawSamples` is empty (no moves), returns a single 0-TPS sample at
- * `totalMs` so the chart still renders a flat baseline.
+ * Group consecutive moves by phaseName into runs. Each run is one phase
+ * block on the timeline, bounded by REAL move offsets.
  */
-function extendTpsToTotal(
-  rawSamples: TpsSample[],
-  totalMs: number,
-  lastMoveOffsetMs: number,
-): TpsSample[] {
-  if (rawSamples.length === 0) {
-    return totalMs > 0 ? [{ offsetMs: 0, tps: 0 }, { offsetMs: totalMs, tps: 0 }] : [];
+function computePhaseRuns(moveTicks: MoveTick[]): PhaseRun[] {
+  if (moveTicks.length === 0) return [];
+  const runs: PhaseRun[] = [];
+  let runStart = 0;
+  let currentPhase = moveTicks[0].phaseName;
+  for (let i = 1; i <= moveTicks.length; i++) {
+    const phase = i < moveTicks.length ? moveTicks[i].phaseName : null;
+    if (phase !== currentPhase) {
+      if (currentPhase) {
+        runs.push({ phaseName: currentPhase, startIdx: runStart, endIdx: i - 1 });
+      }
+      runStart = i;
+      currentPhase = phase;
+    }
   }
-  const last = rawSamples[rawSamples.length - 1];
-  // Gap between the last move and the timer stop → tail at TPS 0.
-  const tailMs = Math.max(0, totalMs - lastMoveOffsetMs);
-  if (tailMs <= 0) return rawSamples;
-  // Drop to 0 at the last move, then hold 0 until totalMs.
-  return [
-    ...rawSamples,
-    { offsetMs: lastMoveOffsetMs, tps: 0 },
-    { offsetMs: totalMs, tps: 0 },
-  ];
+  return runs;
 }
 
 /**
- * Build the unified timeline segments: execution-phase blocks interleaved
- * with pause blocks, plus an optional tail block.
+ * Build unified timeline segments using REAL move-timestamp coordinates.
  *
- * Each phase's `durationMs` (as reported by analysis) INCLUDES the pauses
- * that happened inside it. To get "execution time" per phase, we subtract
- * the pause durations attributed to that phase. The pauses then become
- * their own blocks, positioned at their actual time offsets.
+ * For each phase run, the time window is [firstMove.offsetMs, lastMove.offsetMs].
+ * Between consecutive phase runs there's an inter-phase GAP
+ * [lastMoveOfA.offsetMs, firstMoveOfB.offsetMs] which is NOT covered by
+ * either phase's move span. This gap is where transition / pre-algorithm
+ * pauses live — as their own blocks, not inside any phase.
  *
- * Layout per phase (e.g. F2L with 2 pauses):
- *   [F2L-exec-part1][pause][F2L-exec-part2][pause][F2L-exec-part3]
+ * Algorithm per phase run:
+ *   1. Emit exec sub-blocks split by mid-phase pauses (pauses whose gap
+ *      is between two moves BOTH inside this run).
+ *   2. Check for a boundary pause (startIndex === run.endIdx, i.e. the gap
+ *      between this run's last move and the next run's first move).
+ *      - If found → emit it as a pause block filling the inter-phase gap.
+ *      - If not → absorb the inter-phase gap into this phase (extend the
+ *        last exec sub-block to the next phase's start). This keeps
+ *        Σ segments === totalMs without inventing a "gap" block type.
  *
- * We approximate the pause positions WITHIN a phase by distributing them
- * proportionally, since PauseDetail only carries start/end move indices
- * (and we already map those to time offsets in `pauseMarks`). We use the
- * pause marks' time offsets to slice the phase execution into the gaps
- * between consecutive pauses.
- *
- * Finally, if there's leftover time between the last segment and `totalMs`
- * (the post-last-move stop reaction), we emit a `"tail"` segment.
+ * The last phase run has no inter-phase gap after it — it ends at
+ * moveTicks[last].offsetMs = totalMs, same as the TPS curve.
  */
 function buildUnifiedSegments(
-  analysis: SolveMetrics | undefined,
+  moveTicks: MoveTick[],
+  phaseRuns: PhaseRun[],
   pauseMarks: PauseMark[],
   totalMs: number,
-  lastMoveOffsetMs: number,
 ): TimelineSegment[] {
-  // No analysis → at most a tail block.
-  if (!analysis || analysis.phases.length === 0) {
-    const segs: TimelineSegment[] = [];
-    if (totalMs > lastMoveOffsetMs && lastMoveOffsetMs >= 0) {
-      segs.push({
-        kind: "tail",
-        startMs: Math.max(0, lastMoveOffsetMs),
-        endMs: totalMs,
-        durationMs: totalMs - Math.max(0, lastMoveOffsetMs),
-        label: "Stop",
-      });
-    } else if (totalMs > 0) {
-      segs.push({
-        kind: "tail",
-        startMs: 0,
-        endMs: totalMs,
-        durationMs: totalMs,
-        label: "Stop",
-      });
-    }
-    return segs;
-  }
-
-  const phases = analysis.phases;
-  // Group pauses by phase name.
-  const pausesByPhase = new Map<string, PauseMark[]>();
-  for (const pm of pauseMarks) {
-    const arr = pausesByPhase.get(pm.phase) ?? [];
-    arr.push(pm);
-    pausesByPhase.set(pm.phase, arr);
-  }
+  if (phaseRuns.length === 0) return [];
 
   const segments: TimelineSegment[] = [];
-  let cursorMs = 0;
 
-  for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
-    const phase = phases[phaseIdx];
-    const phaseEndMs = cursorMs + phase.durationMs;
-    const pausesInPhase = (pausesByPhase.get(phase.phaseName) ?? []).slice().sort((a, b) => a.startMs - b.startMs);
+  for (let r = 0; r < phaseRuns.length; r++) {
+    const run = phaseRuns[r];
+    const phaseStartMs = moveTicks[run.startIdx].offsetMs;
+    const phaseEndMs = moveTicks[run.endIdx].offsetMs;
+    // Where the next phase starts (or totalMs for the last phase).
+    const nextPhaseStartMs =
+      r + 1 < phaseRuns.length
+        ? moveTicks[phaseRuns[r + 1].startIdx].offsetMs
+        : totalMs;
 
-    if (pausesInPhase.length === 0) {
-      // No pauses inside this phase → one solid execution block.
-      segments.push({
-        kind: "phase",
-        startMs: cursorMs,
-        endMs: phaseEndMs,
-        durationMs: phase.durationMs,
-        label: phase.phaseName,
-        phaseName: phase.phaseName,
-        moveCount: phase.moveCount,
-        tps: phase.tps,
-      });
-    } else {
-      // Slice the phase into execution parts separated by pause blocks.
-      //
-      // NOTE on coordinate systems: phase boundaries come from cumulative
-      // `phase.durationMs` (analysis-derived), while pause positions come
-      // from `moveTicks[startIndex/endIndex].offsetMs` (raw move
-      // timestamps). These two clocks can disagree slightly, so a pause
-      // attributed to "F2L" may have a time offset that falls outside the
-      // F2L segment window. We clamp pauses to the phase's
-      // [cursorMs, phaseEndMs] window below — this prevents crashes and
-      // preserves Σ segments === totalMs, but a pause could be visually
-      // misplaced or zero-clamped out of existence in pathological cases.
-      let execStart = cursorMs;
-      for (const pm of pausesInPhase) {
-        const pauseStart = Math.max(cursorMs, Math.min(phaseEndMs, pm.startMs));
-        const pauseEnd = Math.max(cursorMs, Math.min(phaseEndMs, pm.endMs));
-        const pauseDur = Math.max(0, pauseEnd - pauseStart);
-        if (pauseDur <= 0) continue;
+    // Mid-phase pauses: gap between two moves BOTH within this run
+    // (startIndex in [run.startIdx, run.endIdx - 1]).
+    const midPhasePauses = pauseMarks
+      .filter((pm) => pm.startIndex >= run.startIdx && pm.startIndex < run.endIdx)
+      .sort((a, b) => a.startMs - b.startMs);
 
-        // Execution part before this pause.
-        const execDur = pauseStart - execStart;
-        if (execDur > 0) {
-          segments.push({
-            kind: "phase",
-            startMs: execStart,
-            endMs: pauseStart,
-            durationMs: execDur,
-            label: phase.phaseName,
-            phaseName: phase.phaseName,
-            tps: phase.tps,
-          });
-        }
-        // Pause block.
-        segments.push({
-          kind: "pause",
-          startMs: pauseStart,
-          endMs: pauseEnd,
-          durationMs: pauseDur,
-          label: pm.probableCause,
-          phaseName: phase.phaseName,
-          pauseCategory: pm.category,
-          probableCause: pm.probableCause,
-        });
-        execStart = pauseEnd;
-      }
-      // Trailing execution part after the last pause in this phase.
-      // Move-count attribution is approximate when a phase is sliced; the
-      // table view still uses the phase's full move count via
-      // stageSegments.
-      if (phaseEndMs > execStart) {
-        const execDur = phaseEndMs - execStart;
+    // Boundary pause: gap between this run's last move and the next run's
+    // first move (startIndex === run.endIdx). Covers both "transition" and
+    // "pre-algorithm" categories — both live in the inter-phase gap.
+    const boundaryPause = pauseMarks.find(
+      (pm) => pm.startIndex === run.endIdx && r + 1 < phaseRuns.length,
+    );
+
+    // Walk through mid-phase pauses, emitting exec + pause blocks.
+    let execStart = phaseStartMs;
+    for (const pm of midPhasePauses) {
+      // Exec part before this pause.
+      if (pm.startMs > execStart) {
         segments.push({
           kind: "phase",
           startMs: execStart,
-          endMs: phaseEndMs,
-          durationMs: execDur,
-          label: phase.phaseName,
-          phaseName: phase.phaseName,
-          tps: phase.tps,
+          endMs: pm.startMs,
+          durationMs: pm.startMs - execStart,
+          label: run.phaseName,
+          phaseName: run.phaseName,
+        });
+      }
+      // Pause block.
+      segments.push({
+        kind: "pause",
+        startMs: pm.startMs,
+        endMs: pm.endMs,
+        durationMs: pm.durationMs,
+        label: pm.probableCause,
+        phaseName: run.phaseName,
+        pauseCategory: pm.category,
+        probableCause: pm.probableCause,
+        moveStartIndex: pm.startIndex,
+        moveEndIndex: pm.endIndex,
+      });
+      execStart = pm.endMs;
+    }
+
+    // Handle the inter-phase gap (phaseEndMs → nextPhaseStartMs).
+    if (boundaryPause) {
+      // Exec part up to the boundary pause (which starts at phaseEndMs).
+      if (boundaryPause.startMs > execStart) {
+        segments.push({
+          kind: "phase",
+          startMs: execStart,
+          endMs: boundaryPause.startMs,
+          durationMs: boundaryPause.startMs - execStart,
+          label: run.phaseName,
+          phaseName: run.phaseName,
+        });
+      }
+      // Boundary pause fills the inter-phase gap.
+      segments.push({
+        kind: "pause",
+        startMs: boundaryPause.startMs,
+        endMs: boundaryPause.endMs,
+        durationMs: boundaryPause.durationMs,
+        label: boundaryPause.probableCause,
+        phaseName: run.phaseName,
+        pauseCategory: boundaryPause.category,
+        probableCause: boundaryPause.probableCause,
+        moveStartIndex: boundaryPause.startIndex,
+        moveEndIndex: boundaryPause.endIndex,
+      });
+    } else {
+      // No boundary pause → extend the phase to the next phase's start,
+      // absorbing the inter-phase gap as normal turning/transition time.
+      if (nextPhaseStartMs > execStart) {
+        segments.push({
+          kind: "phase",
+          startMs: execStart,
+          endMs: nextPhaseStartMs,
+          durationMs: nextPhaseStartMs - execStart,
+          label: run.phaseName,
+          phaseName: run.phaseName,
         });
       }
     }
-
-    cursorMs = phaseEndMs;
-  }
-
-  // Tail: post-last-move stop reaction. The phase cursor lands at
-  // Σ phase.durationMs which may be < totalMs (timer time includes the
-  // reaction gap). Emit a tail block for the remainder.
-  if (totalMs > cursorMs) {
-    segments.push({
-      kind: "tail",
-      startMs: cursorMs,
-      endMs: totalMs,
-      durationMs: totalMs - cursorMs,
-      label: "Stop",
-    });
   }
 
   return segments;

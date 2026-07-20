@@ -207,12 +207,16 @@ export async function seedDemoDataIfEmpty(
   sessionsRepo: SessionsRepository,
   solvesRepo: SolvesRepository,
 ): Promise<void> {
-  // Only seed if localStorage flag is set (opt-in, not automatic)
+  // In dev mode (vite dev server), demo data is ALWAYS seeded when the DB
+  // is empty — the user no longer needs ?seed=demo or the localStorage flag.
+  // Production builds keep the opt-in gate so real user DBs are never
+  // silently populated with fake solves.
   if (typeof window === "undefined") return;
 
+  const isDev = import.meta.env.DEV;
   const flag = window.localStorage.getItem("cubeforge:seed-demo");
   const url = new URL(window.location.href);
-  if (flag !== "1" && !url.searchParams.has("seed")) return;
+  if (!isDev && flag !== "1" && !url.searchParams.has("seed")) return;
 
   // Check if solves already exist (don't double-seed)
   const existing = await solvesRepo.count();
