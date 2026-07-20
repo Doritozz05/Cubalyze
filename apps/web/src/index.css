@@ -69,6 +69,8 @@
   --color-dnf-soft: var(--dnf-soft);
   --color-plus2: var(--plus2);
   --color-plus2-soft: var(--plus2-soft);
+  --color-caution: var(--caution);
+  --color-caution-soft: var(--caution-soft);
 }
 
 :root {
@@ -115,6 +117,11 @@
   --dnf-soft: #fcebec;
   --plus2: #a8650a;
   --plus2-soft: #fbf0dc;
+  /* Inspection countdown — pure yellow, sits between +2 (ochre) and hold (salmon).
+     Bumped from amber-600 (#ca8a04) to yellow-500 (#eab308) for crisper
+     separation from +2's ochre on the hue wheel. */
+  --caution: #eab308;
+  --caution-soft: #fef3c7;
   --sidebar: #ffffff;
   --sidebar-foreground: #212529;
   --sidebar-primary: #212529;
@@ -173,6 +180,8 @@
   --dnf-soft: rgba(224, 106, 95, 0.14);
   --plus2: #d9a441;
   --plus2-soft: rgba(217, 164, 65, 0.14);
+  --caution: #facc15;
+  --caution-soft: rgba(250, 204, 21, 0.14);
 }
 
 @layer base {

@@ -115,6 +115,10 @@ export function TimerContainer({
           // start. The soft green tint mirrors the other arming halos so the
           // visual rhythm reads "almost-ready" without screaming.
           phase === "ready_for_move" && "bg-ready-soft/40",
+        // Countdown: joins the arming-halo family under the caution hue so the
+        // timer area reads as "in warning mode" without the digits themselves
+        // needing additional decoration.
+        phase === "inspection" && "bg-caution-soft/30",
         )}
       />
       <TimerDisplay

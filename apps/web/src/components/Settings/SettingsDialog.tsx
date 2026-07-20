@@ -13,6 +13,7 @@ import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { TimerSection } from './sections/TimerSection';
 import { AnalysisSection } from './sections/AnalysisSection';
+import { SmartCubeSection } from './sections/SmartCubeSection';
 import { PlaceholderSection } from './sections/PlaceholderSection';
 
 export interface SettingsDialogProps {
@@ -78,6 +79,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return <TimerSection />;
       case 'analysis':
         return <AnalysisSection />;
+      case 'smart-cube':
+        return <SmartCubeSection />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {
@@ -126,7 +129,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-                  className="h-full"
                 >
                   {renderContent()}
                 </motion.div>

@@ -36,7 +36,7 @@ export function FloatingCubeButton({ onClick }: FloatingCubeButtonProps) {
 
   // Lazy-init the default position once (window is available post-mount).
   const [defaultPos] = useState(getDefaultPos);
-  const drag = useDraggable(defaultPos, {
+  const drag = useDraggable<HTMLButtonElement>(defaultPos, {
     storageKey: STORAGE_KEY,
     clickThreshold: 5,
   });

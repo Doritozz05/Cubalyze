@@ -44,7 +44,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
 
   useEffect(() => setMounted(true), []);
 
-  const drag = useDraggable(DEFAULT_POS, {
+  const drag = useDraggable<HTMLDivElement>(DEFAULT_POS, {
     storageKey: STORAGE_KEY,
     clickThreshold: 4,
   });
@@ -66,7 +66,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              props.onClear();
+              props.onClear?.();
             }}
             className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
           >

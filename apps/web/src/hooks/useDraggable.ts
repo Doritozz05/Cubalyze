@@ -34,7 +34,7 @@ interface DragState {
  * Attach `onPointerDown/Move/Up` to the drag handle and spread `elementRef`
  * onto the element whose size should be used for clamping.
  */
-export function useDraggable(
+export function useDraggable<T extends HTMLElement = HTMLElement>(
   initial: Position,
   options: UseDraggableOptions = {},
 ) {
@@ -62,7 +62,7 @@ export function useDraggable(
   /** Tracks whether the *current* interaction exceeded the click threshold.
    *  Reset on pointer-down, set on pointer-move. Read via `wasDrag()`. */
   const movedRef = useRef(false);
-  const elementRef = useRef<HTMLDivElement | null>(null);
+  const elementRef = useRef<T | null>(null);
 
   const persist = useCallback(
     (pos: Position) => {
@@ -142,7 +142,7 @@ export function useDraggable(
   );
 
   /** True if the last pointer interaction moved beyond the click threshold. */
-  const wasDrag = useCallback(() => movedRef.current, []);
+  const wasDrag = () => movedRef.current;
 
   return {
     position,

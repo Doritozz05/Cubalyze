@@ -17,7 +17,7 @@ export interface TimerDisplayProps {
 
 const STATE_COLOR: Record<TimerState, string> = {
   idle: "text-ink",
-  inspection: "text-red-500",
+  inspection: "text-caution",
   // Post-inspection, scramble verified, waiting for first face move.
   // Neutral ink-2 keeps it visually distinct from `ready` (green) and
   // `holding` (warm) without introducing a brand-new hue.
@@ -41,7 +41,7 @@ const STATE_SCALE: Record<TimerState, string> = {
 function dotColor(state: TimerState): string {
   switch (state) {
     case "inspection":
-      return "bg-red-500";
+      return "bg-caution";
     case "ready_for_move":
       return "bg-ink-2";
     case "holding":

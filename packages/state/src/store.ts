@@ -11,6 +11,10 @@ import { persist } from 'zustand/middleware';
  * - `theme`                 : theme preference.
  * - `scrambleFollowsCube`   : visual preference for the orientation tracking.
  *
+ * Only preferences that have a wired runtime consumer belong here. See the
+ * `useSolveSession` and `useScrambleValidator` hooks for the read paths;
+ * without a consumer, a stored flag is unreachable behaviour.
+ *
  * Persisted in localStorage under `cubeforge-prefs` via zustand/middleware so
  * the state is rehydrated synchronously on cold load. No backend migration
  * is required.

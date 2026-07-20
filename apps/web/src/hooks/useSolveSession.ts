@@ -113,7 +113,7 @@ const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
 // current state at page load.
 //
 //   cfop_debug  → end-of-solve console.group with full diagnostic
-//   moves_debug → per-move console.log so you can BEC the source of inflated
+//   cfop_debug -> end-of-solve console.log of phase breakdown
 //                 move counts (BLE double-send, scramble moves leaking
 //                 through IDLE race, etc.)
 //
@@ -149,7 +149,6 @@ function readDebugFlag(
 
 const _debugInitState = (() => {
   const cfop = readDebugFlag(["cfop_debug", "cfop-debug"]);
-  const moves = readDebugFlag(["moves_debug", "moves-debug"]);
   // Use console.log (always-visible) NOT console.debug — Chrome hides
   // console.debug by default unless "Verbose" is enabled, which is why
   // users kept seeing nothing in the console.
@@ -160,8 +159,6 @@ const _debugInitState = (() => {
     "color:inherit",
     cfop.enabled ? "ON" : "off",
     cfop.source,
-    moves.enabled ? "ON" : "off",
-    moves.source,
   );
   if (!cfop.enabled) {
     console.log(
@@ -170,23 +167,12 @@ const _debugInitState = (() => {
       "color:inherit",
     );
   }
-  if (!moves.enabled) {
-    console.log(
-      '%c[CFOP Debug]%c per-move debug OFF \u2014 turn on with ?moves_debug=1 to log every BLE move as it arrives',
-      "color:#facc15;font-weight:bold",
-      "color:inherit",
-    );
-  }
   /* eslint-enable no-console */
-  return { cfop: cfop.enabled, moves: moves.enabled };
+  return { cfop: cfop.enabled };
 })();
 
 function isCFOPDebugEnabled(): boolean {
   return _debugInitState.cfop || readDebugFlag(["cfop_debug", "cfop-debug"]).enabled;
-}
-
-function isMovesDebugEnabled(): boolean {
-  return _debugInitState.moves || readDebugFlag(["moves_debug", "moves-debug"]).enabled;
 }
 
 function moveNotation(m: CubeMoveEvent): string {
