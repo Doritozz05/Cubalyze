@@ -104,7 +104,7 @@ export const TimesList = memo(function TimesList({
               return (
                 <li
                   key={solve.id}
-                  className="group flex items-center gap-2.5 border-b border-line/70 px-1 py-[9px] transition-colors hover:bg-surface-2 last:border-0"
+                  className="group flex items-center gap-2.5 border-b border-line/70 px-1 py-2.25 transition-colors hover:bg-surface-2 last:border-0"
                 >
                   {/* Index + best marker */}
                   <span className="flex w-8 shrink-0 items-center justify-end gap-1">
