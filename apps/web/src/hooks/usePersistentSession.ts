@@ -5,6 +5,7 @@ import type { Solve as UISolve, Penalty, SolveSource } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
 import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
+import { seedDemoDataIfEmpty } from "@/utils/seedDemoData";
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -111,6 +112,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
               };
               await sessionsRepo.insert(defaultSession);
             }
+            // Seed demo data if DB is empty and flag is set
+            await seedDemoDataIfEmpty(sessionsRepo, solvesRepo);
           })();
         }
         await seedPromise;

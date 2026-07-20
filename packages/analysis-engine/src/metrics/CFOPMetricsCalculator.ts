@@ -196,15 +196,25 @@ export class CFOPMetricsCalculator {
       return CFOPMetricsCalculator.analyzeF2LPairsHeuristic(f2lEntries);
     }
 
+    const faceData = FACE_LAYERS[crossFace];
+    if (!faceData) {
+      return CFOPMetricsCalculator.analyzeF2LPairsHeuristic(f2lEntries);
+    }
+
     // ── State-based pair boundary detection ──────────────────────────
     // KEY INSIGHT: During F2L, inserting pair N may temporarily un-do slots
     // from pairs 0..N-1 (pieces get moved around). So slotCount FLUCTUATES.
     // We track the MAXIMUM slot count ever seen (maxSlotCountSeen). A new
     // pair boundary is only recorded when we exceed that maximum.
     // This guarantees exactly 4 pairs for a full F2L solve.
-    const boundaries: Array<{ start: number; end: number }> = [];
+    //
+    // We also track WHICH slots are completed at each step so we can assign
+    // slotId ("FR", "FL", "BR", "BL" relative to cross face) to each pair.
+    const boundaries: Array<{ start: number; end: number; slotIdx: number }> = [];
     let maxSlotCountSeen = 0;
     let pairStartIdx = 0;
+    // Track which slots were previously completed (bitmask: 0-3 mapped to faceData indices)
+    let prevCompletedMask = 0;
 
     for (let i = 0; i < f2lEntries.length; i++) {
       const entry = f2lEntries[i];
@@ -213,15 +223,28 @@ export class CFOPMetricsCalculator {
 
       // New pair completed only when we exceed the historical max
       if (slotCount > maxSlotCountSeen && boundaries.length < 4) {
-        boundaries.push({ start: pairStartIdx, end: i });
+        // Find which new slot was completed (compare current vs previous mask)
+        const currentMask = CFOPMetricsCalculator.getCompletedSlotMask(state, crossFace);
+        const newMask = currentMask & ~prevCompletedMask;
+        // Find the first newly completed slot index
+        let newSlotIdx = 0;
+        for (let s = 0; s < 4; s++) {
+          if (newMask & (1 << s)) {
+            newSlotIdx = s;
+            break;
+          }
+        }
+
+        boundaries.push({ start: pairStartIdx, end: i, slotIdx: newSlotIdx });
         pairStartIdx = i + 1;
         maxSlotCountSeen = slotCount;
+        prevCompletedMask = currentMask;
       }
     }
 
     // Handle remaining entries (if last pair wasn't detected by state transition)
     if (pairStartIdx < f2lEntries.length && boundaries.length < 4) {
-      boundaries.push({ start: pairStartIdx, end: f2lEntries.length - 1 });
+      boundaries.push({ start: pairStartIdx, end: f2lEntries.length - 1, slotIdx: boundaries.length });
     }
 
     // Safety: never return more than 4 pairs
@@ -233,8 +256,11 @@ export class CFOPMetricsCalculator {
     const pairs: F2LPairMetrics[] = [];
     let prevPairEndTs = f2lEntries[0]?.hostTimestamp ?? 0;
 
+    // Slot name mapping for the 4 F2L slots (order from FACE_LAYERS)
+    const slotNames = CFOPMetricsCalculator.getF2LSlotNames(crossFace);
+
     for (let p = 0; p < boundaries.length; p++) {
-      const { start, end } = boundaries[p];
+      const { start, end, slotIdx } = boundaries[p];
       const pairEntries = f2lEntries.slice(start, end + 1);
       const startTs = pairEntries[0].hostTimestamp;
       const endTs = pairEntries[pairEntries.length - 1].hostTimestamp;
@@ -242,6 +268,7 @@ export class CFOPMetricsCalculator {
 
       pairs.push({
         pairNumber: p + 1,
+        slotId: slotNames[slotIdx] ?? null,
         timeMs: durationMs,
         moves: pairEntries.length,
         tps: durationMs > 0
@@ -254,6 +281,45 @@ export class CFOPMetricsCalculator {
     }
 
     return pairs;
+  }
+
+  /**
+   * Get a bitmask of which F2L slots (0-3) are completed in the given state.
+   */
+  private static getCompletedSlotMask(state: CubeState, crossFace: string): number {
+    const faceData = FACE_LAYERS[crossFace];
+    if (!faceData) return 0;
+
+    let mask = 0;
+    for (let i = 0; i < 4; i++) {
+      const edgePos = faceData.f2lEdges[i];
+      const cornerPos = faceData.f2lCorners[i];
+
+      const edgeOk =
+        state.ep[edgePos] === edgePos && state.eo[edgePos] === 0;
+      const cornerOk =
+        state.cp[cornerPos] === cornerPos && state.co[cornerPos] === 0;
+
+      if (edgeOk && cornerOk) {
+        mask |= (1 << i);
+      }
+    }
+    return mask;
+  }
+
+  /**
+   * Returns human-readable slot names for the 4 F2L slots.
+   * These are relative to the cross face (e.g. for D-cross: "FR", "BR", "BL", "FL").
+   */
+  private static getF2LSlotNames(crossFace: string): string[] {
+    const faceData = FACE_LAYERS[crossFace];
+    if (!faceData) return ['SLOT-0', 'SLOT-1', 'SLOT-2', 'SLOT-3'];
+
+    // Derive slot names from the edge position names
+    return faceData.f2lEdges.map((e) => {
+      const name = Edge[e] ?? '??';
+      return name;
+    });
   }
 
   /**
@@ -282,6 +348,7 @@ export class CFOPMetricsCalculator {
 
       pairs.push({
         pairNumber: p + 1,
+        slotId: null,
         timeMs: durationMs,
         moves: segEntries.length,
         tps: durationMs > 0

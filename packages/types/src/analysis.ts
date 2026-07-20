@@ -362,6 +362,8 @@ export interface CFOPMetrics {
 
 export interface F2LPairMetrics {
   pairNumber: number;
+  /** F2L slot identifier: "FR", "FL", "BR", "BL" (relative to cross face). */
+  slotId: string | null;
   timeMs: number;
   moves: number;
   tps: number;

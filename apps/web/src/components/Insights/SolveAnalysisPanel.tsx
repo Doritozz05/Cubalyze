@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, Pause as PauseIcon } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline, type TimelineData } from "@/utils/insights";
@@ -30,14 +30,16 @@ export interface SolveAnalysisPanelProps {
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-const TIMELINE_HEIGHT = 80;
-const TIMELINE_TPS_AREA_H = 40; // TPS overlay occupies the top portion
+const TIMELINE_HEIGHT = 90;
+const TIMELINE_TPS_AREA_H = 32; // TPS overlay occupies the top portion
+const TIMELINE_PHASE_TOP = 42;
+const TIMELINE_PHASE_BOTTOM = 82;
 
 const PHASE_COLORS_CSS = [
-  "var(--ink-3)",
-  "var(--ink-2)",
-  "var(--caution)",
-  "var(--ready)",
+  "#4F8CF7",  // Cross  → blue
+  "#22C55E",  // F2L    → green
+  "#F59E0B",  // OLL    → amber
+  "#EF4444",  // PLL    → red
 ];
 
 const EMPTY_ROTATION: RotationMetrics = {
@@ -189,9 +191,7 @@ export function SolveAnalysisPanel({
           <PhaseBreakdownSection metrics={m} />
 
           {/* ── Pauses with probable causes ─────────────────────────────── */}
-          {timeline.pauseMarks.length > 0 && (
-            <PausesSection timeline={timeline} metrics={m} />
-          )}
+          {/* (removed — pauses are now integrated in the timeline above) */}
 
           {/* ── Method-specific details ─────────────────────────────────── */}
           {m.cfop && <CfopDetailsSection metrics={m} />}
@@ -223,8 +223,8 @@ function TimelineSection({
   const width = 600; // viewBox width; scales to container via preserveAspectRatio
   const tpsAreaTop = 2;
   const tpsAreaBottom = TIMELINE_TPS_AREA_H;
-  const phaseTop = tpsAreaBottom + 8;
-  const phaseBottom = TIMELINE_HEIGHT - 2;
+  const phaseTop = TIMELINE_PHASE_TOP;
+  const phaseBottom = TIMELINE_PHASE_BOTTOM;
 
   // TPS scale: 0 to max tps + 1
   const maxTps = useMemo(() => {
@@ -331,7 +331,7 @@ function TimelineSection({
                   width={w}
                   height={phaseBottom - phaseTop}
                   fill={PHASE_COLORS_CSS[i % PHASE_COLORS_CSS.length]}
-                  fillOpacity={0.25}
+                  fillOpacity={0.2}
                   rx={2}
                 />
                 {w > 30 && (
@@ -339,7 +339,8 @@ function TimelineSection({
                     x={x + w / 2}
                     y={phaseTop + (phaseBottom - phaseTop) / 2 + 3}
                     textAnchor="middle"
-                    className="fill-ink-2"
+                    fill={PHASE_COLORS_CSS[i % PHASE_COLORS_CSS.length]}
+                    fillOpacity={0.85}
                     style={{ fontSize: "8px", fontWeight: 500 }}
                   >
                     {seg.phaseName.slice(0, 6)}
@@ -352,45 +353,50 @@ function TimelineSection({
           {/* Move ticks */}
           {moveTicks.map((tick) => {
             const x = xForMs(tick.offsetMs);
-            return (                <line
-                  key={tick.index}
-                  x1={x}
-                  y1={phaseTop - 2}
-                  x2={x}
-                  y2={phaseTop}
-                  stroke="var(--ink-3)"
-                  strokeWidth={0.5}
-                  strokeOpacity={0.4}
-                  vectorEffect="non-scaling-stroke"
-                />
+            return (
+              <line
+                key={tick.index}
+                x1={x}
+                y1={phaseTop - 3}
+                x2={x}
+                y2={phaseTop}
+                stroke="var(--ink-3)"
+                strokeWidth={0.8}
+                strokeOpacity={0.35}
+                vectorEffect="non-scaling-stroke"
+              />
             );
           })}
 
-          {/* Pause markers */}
+          {/* Pause markers — integrated colored bands */}
           {pauseMarks.map((pause, i) => {
             const x = xForMs(pause.startMs);
-            const w = Math.max(2, xForMs(pause.endMs) - x);
+            const w = Math.max(3, xForMs(pause.endMs) - x);
             return (
               <g key={i}>
+                {/* Colored pause band in the phase area */}
                 <rect
                   x={x}
                   y={tpsAreaTop}
                   width={w}
                   height={phaseBottom - tpsAreaTop}
-                  fill="var(--caution)"
-                  fillOpacity={0.08}
+                  fill="#F59E0B"
+                  fillOpacity={0.25}
+                  rx={1}
                 />
-                <line
-                  x1={x}
-                  y1={tpsAreaTop}
-                  x2={x}
-                  y2={phaseBottom}
-                  stroke="var(--caution)"
-                  strokeWidth={1}
-                  strokeDasharray="2 2"
-                  strokeOpacity={0.5}
-                  vectorEffect="non-scaling-stroke"
-                />
+                {/* Duration label inside the band (if wide enough) */}
+                {w > 30 && (
+                  <text
+                    x={x + w / 2}
+                    y={phaseTop + (phaseBottom - phaseTop) / 2 + 2.5}
+                    textAnchor="middle"
+                    fill="#F59E0B"
+                    fillOpacity={0.9}
+                    style={{ fontSize: "7px", fontWeight: 600 }}
+                  >
+                    {formatTime(pause.durationMs)}
+                  </text>
+                )}
                 <title>
                   {pause.probableCause} ({formatTime(pause.durationMs)})
                 </title>
@@ -426,17 +432,18 @@ function TimelineSection({
           )}
           <span className="nums">{formatTime(totalMs)}</span>
         </div>
-      </div>
-
-      {/* Legend */}
+      </div>        {/* Legend */}
       <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.58rem] text-ink-3">
+        {PHASE_COLORS_CSS.map((color, i) => (
+          <span key={i} className="flex items-center gap-1.5">
+            <span className="inline-block size-2 rounded-sm" style={{ background: color, opacity: 0.5 }} />
+          </span>
+        ))}
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-4 rounded-sm bg-ink-2/20" />
-          Phases
-        </span>
-        <span className="flex items-center gap-1.5">
-          <PauseIcon className="size-3 text-caution" />
-          Pauses ({pauseMarks.length})
+          <span className="inline-block size-2 rounded-sm" style={{ background: "#F59E0B", opacity: 0.5 }} />
+          Pauses ({pauseMarks.length} · {formatTime(
+            pauseMarks.reduce((s, p) => s + p.durationMs, 0),
+          )})
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-4 bg-ink-2" />
@@ -549,45 +556,6 @@ function PhaseBreakdownSection({ metrics }: { metrics: SolveMetrics }) {
   );
 }
 
-// ─── Pauses section ────────────────────────────────────────────────────────
-
-function PausesSection({
-  timeline,
-  metrics,
-}: {
-  timeline: TimelineData;
-  metrics: SolveMetrics;
-}) {
-  const { pauseMarks } = timeline;
-  return (
-    <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader
-        title="Pauses"
-        eyebrow={`${pauseMarks.length} · ${formatTime(metrics.pauses.totalPauseTimeMs)}`}
-      />
-      <div className="mt-3 space-y-1.5">
-        {pauseMarks.map((pause, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 rounded border border-line/40 bg-surface-2/50 px-3 py-2"
-          >
-            <PauseIcon className="size-3.5 shrink-0 text-caution" />
-            <div className="flex flex-1 flex-col gap-0.5">
-              <span className="text-xs font-medium text-ink">{pause.probableCause}</span>
-              <span className="text-[0.58rem] uppercase tracking-wide text-ink-3">
-                {pause.phase} · {pause.category}
-              </span>
-            </div>
-            <span className="nums text-xs font-medium text-caution">
-              {formatTime(pause.durationMs)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── CFOP details ──────────────────────────────────────────────────────────
 
 function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
@@ -616,6 +584,25 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
   );
 }
 
+// ─── F2L slot color mapping (derived from face letters) ────────────────────
+
+/** Maps face letters (U,R,F,D,L,B) to hex colors (standard Rubik's cube). */
+const FACE_HEX: Record<string, string> = {
+  U: "#FFFFFF", R: "#EF4444", F: "#22C55E",
+  D: "#FACC15", L: "#F97316", B: "#3B82F6",
+};
+
+/**
+ * Derive two face colors from an edge slotId (e.g. "FR" → ["#22C55E", "#EF4444"]).
+ */
+function slotFaceColors(slotId: string): [string, string] | null {
+  if (slotId.length < 2) return null;
+  const a = FACE_HEX[slotId[0]];
+  const b = FACE_HEX[slotId[1]];
+  if (!a || !b) return null;
+  return [a, b];
+}
+
 function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
   const slowest = Math.max(...pairs.map((p) => p.timeMs));
   return (
@@ -626,6 +613,8 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
       <div className="mt-1.5 space-y-0">
         {pairs.map((pair) => {
           const isSlowest = pair.timeMs === slowest;
+          const colors = pair.slotId ? slotFaceColors(pair.slotId) : null;
+
           return (
             <div
               key={pair.pairNumber}
@@ -635,15 +624,7 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
               )}
             >
               <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "flex size-5 items-center justify-center rounded text-[0.6rem] font-bold",
-                    isSlowest ? "bg-caution/15 text-caution" : "bg-surface-2 text-ink-3",
-                  )}
-                >
-                  {pair.pairNumber}
-                </span>
-                <span className="text-ink-2">Pair {pair.pairNumber}</span>
+                <span className="text-ink-2 font-medium">Pair {pair.pairNumber}</span>
                 {isSlowest && (
                   <span className="text-[0.5rem] uppercase tracking-wider text-caution font-medium">
                     slowest
@@ -651,6 +632,18 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
                 )}
               </div>
               <div className="flex items-center gap-3 nums text-ink-3">
+                {colors && (
+                  <span className="flex items-center gap-0.5" title={pair.slotId ?? undefined}>
+                    <span
+                      className="inline-block size-2.5 rounded-sm border border-white/20"
+                      style={{ background: colors[0] }}
+                    />
+                    <span
+                      className="inline-block size-2.5 rounded-sm border border-white/20"
+                      style={{ background: colors[1] }}
+                    />
+                  </span>
+                )}
                 <span>{pair.moves}m</span>
                 <span>{formatTime(pair.timeMs)}</span>
                 <span className="font-medium text-ink">{pair.tps.toFixed(1)} tps</span>
