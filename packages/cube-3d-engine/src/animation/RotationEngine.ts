@@ -1,6 +1,6 @@
 import { Group, Quaternion, Vector3, MathUtils } from 'three';
 import { CubeModel } from '../core/CubeModel';
-import { easeOutBack } from './Easing';
+import { getEasing, type EasingStrategy } from './Easing';
 
 export type RotationAxis = 'x' | 'y' | 'z';
 
@@ -10,6 +10,8 @@ export interface RotationTaskConfig {
   angleInDegrees: number;
   durationMs: number;
   elapsedMs?: number;
+  /** Easing strategy for this animation. Defaults to 'bounce'. */
+  easingStrategy?: EasingStrategy;
   resolve?: () => void;
 }
 
@@ -54,7 +56,8 @@ export class RotationEngine {
     layerValues: number[],
     angleInDegrees: number,
     durationMs: number,
-    elapsedMs?: number
+    elapsedMs?: number,
+    easingStrategy?: EasingStrategy
   ): Promise<void> {
     return new Promise((resolve) => {
       // 1. Collision detection: if any target piece is already rotating, force it to finish
@@ -93,7 +96,7 @@ export class RotationEngine {
 
       // 3. Configure the task
       task.inUse = true;
-      task.config = { axis, layerValues, angleInDegrees, durationMs, elapsedMs, resolve };
+      task.config = { axis, layerValues, angleInDegrees, durationMs, elapsedMs, easingStrategy, resolve };
       task.startTime = 0; // will be calculated in next update()
 
       this.preparePivot(task, targetCubies);
@@ -141,7 +144,10 @@ export class RotationEngine {
       if (t >= 1.0) {
         this.snapTask(task);
       } else {
-        const easedT = easeOutBack(t);
+        // Adaptive easing: use the strategy from config, fall back to bounce (easeOutBack)
+        const strategy = task.config.easingStrategy ?? 'bounce';
+        const easingFn = getEasing(strategy);
+        const easedT = easingFn(t);
         task.currentQuat.slerpQuaternions(task.startQuat, task.endQuat, easedT);
         task.pivot.quaternion.copy(task.currentQuat);
         task.pivot.updateMatrixWorld(true);

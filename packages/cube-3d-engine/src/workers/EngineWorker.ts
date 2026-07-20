@@ -71,9 +71,23 @@ export class EngineWorkerAPI {
     }
   }
 
-  public async rotateLayers(axis: RotationAxis, layerValues: number[], angle: number, durationMs: number, elapsedMs?: number) {
+  public async rotateLayers(
+    axis: RotationAxis,
+    layerValues: number[],
+    angle: number,
+    durationMs: number,
+    elapsedMs?: number,
+    easingStrategy?: string
+  ) {
     if (!this.rotationEngine) return;
-    await this.rotationEngine.rotateLayers(axis, layerValues, angle, durationMs, elapsedMs);
+    await this.rotationEngine.rotateLayers(
+      axis,
+      layerValues,
+      angle,
+      durationMs,
+      elapsedMs,
+      easingStrategy as 'bounce' | 'smooth' | 'fast' | 'linear' | undefined
+    );
   }
 
   public resetCube() {
