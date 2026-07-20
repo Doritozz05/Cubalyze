@@ -408,6 +408,26 @@ export function ReplaySection({
                     </div>
                   )}
 
+                  {/* Orientation count indicator */}
+                  {solve.orientationTimeline && solve.orientationTimeline.length > 0 && (
+                    <div className="flex items-center gap-1.5 border-t border-line/30 pt-1.5">
+                      <span
+                        className="inline-block size-2 rounded-full"
+                        style={{ backgroundColor: "#a78bfa" }}
+                        title="Orientation data available"
+                      />
+                      <span className="text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
+                        Orientation
+                      </span>
+                      <span className="nums text-[0.65rem] font-semibold text-ink tabular-nums">
+                        {solve.orientationTimeline.length}{" "}
+                        <span className="text-[0.5rem] font-normal text-ink-2">
+                          keyframe{solve.orientationTimeline.length !== 1 ? "s" : ""}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+
                   {/* Transport controls */}
                   <div className="flex items-center gap-1">
                     {/* Restart */}

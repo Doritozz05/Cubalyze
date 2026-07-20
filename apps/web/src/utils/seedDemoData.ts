@@ -8,9 +8,66 @@
  * Persisted to IndexedDB (SQLite) so data survives hard reloads.
  */
 
-import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { v4 as uuidv4 } from "uuid";
 import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
+
+// ─── Orientation Timeline Generator ───────────────────────────────────────
+
+/**
+ * Generate a random orientation timeline for a solve with the given number of moves.
+ *
+ * A typical CFOP solve has 1-4 whole-cube rotations (y rotations during F2L,
+ * occasional x rotations during OLL/PLL recognition). Each rotation moves from
+ * one of the 24 orientations to another.
+ *
+ * @param totalMoves - Total number of moves in the solve
+ * @returns An OrientationTimeline
+ */
+function generateOrientationTimeline(totalMoves: number): OrientationTimeline {
+  const timeline: OrientationTimeline = [];
+
+  // Identity orientation at move 0
+  timeline.push([0, 0]);
+
+  if (totalMoves < 4) return timeline;
+
+  // Random number of orientation changes: 0-3 for short solves, 1-4 for normal
+  const numChanges = totalMoves < 15
+    ? Math.floor(Math.random() * 3) // 0-2 for short solves
+    : 1 + Math.floor(Math.random() * 3); // 1-3 for normal solves
+
+  if (numChanges === 0) return timeline;
+
+  // Pick random move indices for orientation changes (not too close together)
+  const changeIndices: number[] = [];
+  for (let attempt = 0; attempt < numChanges * 3; attempt++) {
+    const idx = 2 + Math.floor(Math.random() * Math.max(1, totalMoves - 3));
+    // Ensure not too close to existing changes (at least 3 moves apart)
+    if (changeIndices.every((ci) => Math.abs(ci - idx) >= 3)) {
+      changeIndices.push(idx);
+      if (changeIndices.length >= numChanges) break;
+    }
+  }
+  changeIndices.sort((a, b) => a - b);
+
+  if (changeIndices.length === 0) return timeline;
+
+  // Pick random orientations for each change (from the 24 available)
+  let lastOrientationIndex = 0;
+  for (const changeIdx of changeIndices) {
+    // Pick a random orientation (0-23) different from current
+    let newOrientationIndex: number;
+    do {
+      newOrientationIndex = Math.floor(Math.random() * 24);
+    } while (newOrientationIndex === lastOrientationIndex);
+
+    timeline.push([changeIdx, newOrientationIndex]);
+    lastOrientationIndex = newOrientationIndex;
+  }
+
+  return timeline;
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -18,7 +75,17 @@ const FACES = ["R", "U", "F", "L", "D", "B"] as const;
 
 /**
  * Compute the inverse of a scramble notation string.
- * e.g. "R U R'" → "R U' R'"
+ * The CORRECT mathematical inverse of a move sequence:
+ *   1) REVERSE the order of moves
+ *   2) Invert each move in place
+ *
+ * e.g. "R U R' U'" → "U R U' R'" (NOT "R' U' R U"!)
+ *
+ * Without the reversal, applying the "inverse" after the scramble does NOT
+ * return the cube to solved state — the replay ends with a scrambled cube
+ * and the analysis pipeline cannot detect phases.
+ *
+ * Root cause of "seed solves never end solved" — FIXED by adding .reverse().
  */
 function inverseNotation(notation: string): string {
   return notation
@@ -31,6 +98,7 @@ function inverseNotation(notation: string): string {
       if (suffix === "'") return face; // inverse of R' is R
       return face + "'"; // inverse of R is R'
     })
+    .reverse() // ← CRITICAL FIX: reverse the order for correct mathematical inverse
     .join(" ");
 }
 
@@ -365,6 +433,8 @@ export async function seedDemoDataIfEmpty(
     const { moves, pauseGaps } = solveMovesFromScramble(scramble, ts.getTime(), totalTimeMs);
     const totalMoves = moves.length;
     const analysis = generateMetrics(totalTimeMs, totalMoves, pauseGaps);
+    // Generate orientation timeline (simulates IMU/gyro data from a smart cube)
+    const orientationTimeline = generateOrientationTimeline(totalMoves);
 
     return {
       id: uuidv4(),
@@ -376,6 +446,7 @@ export async function seedDemoDataIfEmpty(
       method: "CFOP" as const,
       source: "smart" as const,
       moves,
+      orientationTimeline,
       analysisEngineVersion: "0.1.0",
       analysis: JSON.stringify(analysis),
       createdAt: ts.toISOString(),
