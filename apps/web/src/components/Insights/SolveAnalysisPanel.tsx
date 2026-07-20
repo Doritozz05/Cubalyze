@@ -263,7 +263,6 @@ function TimelineSection({
 
   const handleLeave = useCallback(() => {
     setHoverMs(null);
-    setHoverIdx(null);
   }, []);
 
   // TPS area path — always closes at the right edge (totalMs).
@@ -433,7 +432,8 @@ function TimelineSection({
                 />
               )}
 
-              {/* Unified segment blocks with P1.d cross-highlight dimming */}
+              {/* Unified segment blocks — sharp rectangles, no rounded corners,
+                  no colored borders, clean cross-highlight via opacity only. */}
               {segments.map((seg, i) => {
                 const x = xForMs(seg.startMs);
                 const w = Math.max(0.5, xForMs(seg.endMs) - x);
@@ -443,9 +443,8 @@ function TimelineSection({
                   : phaseColorHex(seg.phaseName ?? "", i);
                 const hl = segHighlight(seg);
                 const fillOpacity = isPause
-                  ? hl === "dim" ? 0.15 : 0.45
-                  : hl === "dim" ? 0.08 : hl === "active" ? 0.35 : 0.22;
-                const showStroke = hl === "active" || isPause;
+                  ? hl === "dim" ? 0.18 : hl === "active" ? 0.65 : 0.40
+                  : hl === "dim" ? 0.12 : hl === "active" ? 0.55 : 0.30;
                 return (
                   <rect
                     key={`${seg.kind}-${i}`}
@@ -455,11 +454,6 @@ function TimelineSection({
                     height={SEG_BOTTOM - SEG_TOP}
                     fill={color}
                     fillOpacity={fillOpacity}
-                    rx={isPause ? 1 : 2}
-                    stroke={showStroke ? color : "none"}
-                    strokeOpacity={hl === "active" ? 0.9 : 0.5}
-                    strokeWidth={hl === "active" ? 1.2 : 0.5}
-                    vectorEffect="non-scaling-stroke"
                   />
                 );
               })}
