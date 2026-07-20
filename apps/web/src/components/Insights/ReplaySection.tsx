@@ -50,6 +50,12 @@ export function ReplaySection({
   const [speed, setSpeed] = useState<number>(1);
   const [currentMoveIdx, setCurrentMoveIdx] = useState(-1);
 
+  // Incremented on each re-init to force a fresh <canvas> DOM element.
+  // transferControlToOffscreen() can only be called once per canvas element,
+  // so we must recreate the element when the worker is torn down and recreated
+  // (e.g., when switching solves or toggling the section).
+  const [canvasKey, setCanvasKey] = useState(0);
+
   const engineRef = useRef<ReplayEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -106,6 +112,7 @@ export function ReplaySection({
   /**
    * Clean up worker + engine resources.
    * Called both on collapse and on unmount.
+   * Also increments canvasKey so the next init gets a fresh <canvas>.
    */
   const teardownWorker = useCallback(() => {
     engineRef.current?.dispose();
@@ -116,6 +123,10 @@ export function ReplaySection({
       workerRef.current.terminate();
       workerRef.current = null;
     }
+    // Force recreation of the canvas DOM element for the next init.
+    // transferControlToOffscreen() is one-way — calling it twice on the
+    // same element throws InvalidStateError.
+    setCanvasKey((k) => k + 1);
   }, []);
 
   // ── Initialize mini cube worker ─────────────────────────────────────────
@@ -313,6 +324,7 @@ export function ReplaySection({
                   className="relative size-56 shrink-0 overflow-hidden rounded-lg border border-line bg-black/5"
                 >
                   <canvas
+                    key={canvasKey}
                     ref={canvasRef}
                     width={280}
                     height={280}
