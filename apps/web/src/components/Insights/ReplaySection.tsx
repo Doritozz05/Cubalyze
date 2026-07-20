@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
-import { phaseColorHex } from "@/utils/phaseColors";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
 import { ReplayEngine, type ReplayState } from "@cubeforge/cube-3d-engine";
@@ -20,8 +19,6 @@ import {
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SPEEDS = [0.25, 0.5, 1, 2] as const;
-/** Blue used for replay accents (matches the Cross phase color in phaseColors). */
-const REPLAY_BLUE = "#4F8CF7";
 
 // ─── Props ─────────────────────────────────────────────────────────────────
 
@@ -38,49 +35,6 @@ export interface ReplaySectionProps {
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-
-/** Get the phase color for a given position in the solve timeline. */
-function getPhaseAtPosition(solve: Solve, positionMs: number): string {
-  if (!solve.analysis?.phases || solve.analysis.phases.length === 0)
-    return "#6B7280";
-  let cumulativeMs = 0;
-  for (let i = 0; i < solve.analysis.phases.length; i++) {
-    const p = solve.analysis.phases[i];
-    cumulativeMs += p.durationMs;
-    if (positionMs <= cumulativeMs) return phaseColorHex(p.phaseName, i);
-  }
-  return phaseColorHex(
-    solve.analysis.phases[solve.analysis.phases.length - 1].phaseName,
-    solve.analysis.phases.length - 1,
-  );
-}
-
-/** Build progress bar segments from analysis phases. */
-function buildProgressSegments(solve: Solve, totalMs: number) {
-  if (!solve.analysis?.phases || totalMs <= 0) return [];
-
-  const segments: {
-    name: string;
-    color: string;
-    startPct: number;
-    endPct: number;
-  }[] = [];
-  let cumulativeMs = 0;
-
-  for (let i = 0; i < solve.analysis.phases.length; i++) {
-    const p = solve.analysis.phases[i];
-    const startPct = (cumulativeMs / totalMs) * 100;
-    cumulativeMs += p.durationMs;
-    const endPct = (cumulativeMs / totalMs) * 100;
-    segments.push({
-      name: p.phaseName,
-      color: phaseColorHex(p.phaseName, i),
-      startPct,
-      endPct,
-    });
-  }
-  return segments;
-}
 
 // ─── ReplaySection ─────────────────────────────────────────────────────────
 
@@ -105,6 +59,10 @@ export function ReplaySection({
   /** Comlink.Remote<EngineWorkerAPI> but typed loosely due to dynamic import. */
   const workerProxyRef = useRef<any>(null);
   const cubeReadyRef = useRef(false);
+
+  // Camera drag state for the mini cube
+  const isDraggingRef = useRef(false);
+  const lastPointerRef = useRef({ x: 0, y: 0 });
 
   const totalMs = useMemo(() => {
     const moves = solve.moves ?? [];
@@ -273,10 +231,6 @@ export function ReplaySection({
     setTimeout(() => engine.play(), 50);
   }, []);
 
-  // ── Compute phase position for the progress bar ────────────────────────
-  const phaseColor = getPhaseAtPosition(solve, positionMs);
-  const progressPct = totalMs > 0 ? (positionMs / totalMs) * 100 : 0;
-  const progressSegments = buildProgressSegments(solve, totalMs);
   const totalMoves = solve.moves?.length ?? 0;
 
   const canPlay = hasMoves && replayState !== "seeking";
@@ -320,23 +274,41 @@ export function ReplaySection({
             <div className="flex flex-col gap-3">
               {/* Top row: mini cube + controls */}
               <div className="flex items-start gap-4">
-                {/* Mini cube 3D */}
+                {/* Mini cube 3D — solo el cubo, sin overlay */}
                 <div
                   ref={containerRef}
-                  className="relative size-28 shrink-0 overflow-hidden rounded-lg border border-line bg-black/5"
+                  className="relative size-56 shrink-0 overflow-hidden rounded-lg border border-line bg-black/5"
                 >
                   <canvas
                     ref={canvasRef}
-                    width={160}
-                    height={160}
-                    className="h-full w-full"
+                    width={280}
+                    height={280}
+                    className={cn(
+                      "h-full w-full",
+                      replayState === "playing" && "cursor-grab active:cursor-grabbing",
+                    )}
+                    onPointerDown={(e) => {
+                      if (replayState !== "playing") return;
+                      isDraggingRef.current = true;
+                      lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+                    }}
+                    onPointerMove={(e) => {
+                      if (!isDraggingRef.current || !workerProxyRef.current) return;
+                      const dx = e.clientX - lastPointerRef.current.x;
+                      const dy = e.clientY - lastPointerRef.current.y;
+                      lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                      workerProxyRef.current.rotateCamera(dx, dy).catch(console.error);
+                    }}
+                    onPointerUp={(e) => {
+                      isDraggingRef.current = false;
+                      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                    }}
+                    onPointerCancel={(e) => {
+                      isDraggingRef.current = false;
+                      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                    }}
                   />
-                  {/* Play-overlay when stopped/idle */}
-                  {replayState === "idle" && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px] transition-opacity">
-                      <Play className="size-8 text-white/70 drop-shadow-sm" />
-                    </div>
-                  )}
                 </div>
 
                 {/* Controls column */}
@@ -430,53 +402,11 @@ export function ReplaySection({
                     </div>
                   </div>
 
-                  {/* Move counter */}
-                  <div className="text-[0.6rem] text-ink-3">
-                    Move{" "}
-                    <span className="nums font-medium text-ink-2">
-                      {Math.max(0, currentMoveIdx + 1)}
-                    </span>{" "}
-                    / <span className="nums text-ink-2">{totalMoves}</span>
-                  </div>
+
                 </div>
               </div>
 
-              {/* Phase-colored progress bar */}
-              <div className="relative h-3">
-                {/* Background segments */}
-                <div className="absolute inset-0 flex overflow-hidden rounded-full bg-line/30">
-                  {progressSegments.map((seg, i) => (
-                    <div
-                      key={seg.name}
-                      className="h-full transition-opacity"
-                      style={{
-                        width: `${seg.endPct - seg.startPct}%`,
-                        backgroundColor: seg.color,
-                        opacity: 0.25,
-                      }}
-                      title={seg.name}
-                    />
-                  ))}
-                </div>
 
-                {/* Playhead dot */}
-                <div
-                  className="absolute top-1/2 z-10 -translate-y-1/2 transition-[left] duration-75"
-                  style={{ left: `${Math.min(progressPct, 100)}%` }}
-                >
-                  <div
-                    className="size-2.5 rounded-full border-2 border-white shadow-md"
-                    style={{ backgroundColor: phaseColor }}
-                  />
-                </div>
-              </div>
-
-              {/* Phase labels under the bar */}
-              <div className="flex justify-between text-[0.5rem] uppercase tracking-wider text-ink-3">
-                {progressSegments.map((seg, i) => (
-                  <span key={seg.name}>{seg.name}</span>
-                ))}
-              </div>
             </div>
           )}
         </div>

@@ -17,39 +17,73 @@ import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
 const FACES = ["R", "U", "F", "L", "D", "B"] as const;
 
 /** Generate `n` random cube move events with realistic timestamps.
- *  Returns the moves AND the indices where pauses were detected. */
-function randomMoves(n: number, baseTs: number, avgGapMs = 180): {
+ *  Returns the moves AND the indices where pauses were detected.
+ *
+ *  The returned hostTimestamps are normalized so that
+ *  `lastMove.hostTimestamp - firstMove.hostTimestamp === totalSpanMs`.
+ *  This guarantees the replay total time matches the solve time shown in the UI. */
+function randomMoves(
+  n: number,
+  baseTs: number,
+  totalSpanMs: number,
+): {
   moves: CubeMoveEvent[];
   pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[];
 } {
-  const moves: CubeMoveEvent[] = [];
+  // Step 1: generate raw inter-move gaps (ms) with occasional pauses
+  const gaps: number[] = [];
   const pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[] = [];
-  let cubeTs = 1000; // simulate cube's internal clock (ms counter)
-  let hostTs = baseTs;
+  let rawTotal = 0;
+  const avgGapMs = totalSpanMs / n;
+
   for (let i = 0; i < n; i++) {
-    const gap = Math.max(40, avgGapMs + (Math.random() - 0.5) * 160);
-    hostTs += gap;
-    cubeTs += gap; // cube and host clocks run at same speed for seed data
+    const gap = Math.max(40, avgGapMs + (Math.random() - 0.5) * avgGapMs * 0.8);
+    gaps.push(gap);
+    rawTotal += gap;
+
     // Occasionally insert a detectable pause (gap >= 600ms → PauseDetector
     // would flag it after subtracting 100ms turn-execution time).
-    if (Math.random() < 0.08) {
+    if (i > 0 && Math.random() < 0.08) {
       const pauseMs = Math.round(500 + Math.random() * 1200);
-      hostTs += pauseMs;
-      cubeTs += pauseMs;
-      // The pause is between move i-1 (already added) and move i (about to be added)
-      if (i > 0) {
-        pauseGaps.push({ startIndex: i - 1, endIndex: i, durationMs: pauseMs });
-      }
+      gaps[i - 1] += pauseMs;
+      rawTotal += pauseMs;
+      pauseGaps.push({ startIndex: i - 1, endIndex: i, durationMs: pauseMs });
     }
+  }
+
+  // Step 2: scale all gaps to fit exactly within totalSpanMs
+  const scale = totalSpanMs / rawTotal;
+  let cumulativeHost = baseTs;
+  let cumulativeCube = 1000;
+  const moves: CubeMoveEvent[] = [];
+
+  // Recompute pause durations after scaling
+  const adjustedPauseGaps: typeof pauseGaps = [];
+
+  for (let i = 0; i < n; i++) {
+    const scaledGap = Math.round(gaps[i] * scale);
+    cumulativeHost += scaledGap;
+    cumulativeCube += scaledGap;
 
     moves.push({
       face: FACES[Math.floor(Math.random() * FACES.length)],
       direction: (Math.random() < 0.15 ? 2 : Math.random() < 0.5 ? 1 : -1) as 1 | -1 | 2,
-      hostTimestamp: Math.round(hostTs),
-      cubeTimestamp: Math.round(cubeTs),
+      hostTimestamp: cumulativeHost,
+      cubeTimestamp: cumulativeCube,
     });
+
+    // Track adjusted pause durations (scale the original pause by the same factor)
+    const rawPause = pauseGaps.find(p => p.startIndex === i - 1 && p.endIndex === i);
+    if (rawPause) {
+      adjustedPauseGaps.push({
+        startIndex: rawPause.startIndex,
+        endIndex: rawPause.endIndex,
+        durationMs: Math.round(rawPause.durationMs * scale),
+      });
+    }
   }
-  return { moves, pauseGaps };
+
+  return { moves, pauseGaps: adjustedPauseGaps };
 }
 
 /** Random scramble string. */
@@ -291,7 +325,7 @@ export async function seedDemoDataIfEmpty(
     const ts = new Date(now - minsAgo * 60_000);
     const totalTimeMs = cfopTime();
     const totalMoves = 48 + Math.floor(Math.random() * 14); // 48-61 moves
-    const { moves, pauseGaps } = randomMoves(totalMoves, ts.getTime(), totalTimeMs / totalMoves);
+    const { moves, pauseGaps } = randomMoves(totalMoves, ts.getTime(), totalTimeMs);
     const analysis = generateMetrics(totalTimeMs, totalMoves, pauseGaps);
 
     return {

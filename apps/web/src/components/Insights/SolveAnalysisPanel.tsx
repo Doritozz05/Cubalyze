@@ -514,10 +514,10 @@ function TimelineSection({
                 />
               )}
 
-              {/* Replay playhead (animated) */}
+              {/* Replay playhead — centrado en los bloques de segmentos (no sube al área TPS) */}
               {replayPositionMs !== null && replayPositionMs !== undefined && (
                 <>
-                  {/* Tail: gradient that fades behind the playhead */}
+                  {/* Tail: subtle fill behind the playhead */}
                   <rect
                     x={0}
                     y={SEG_TOP}
@@ -528,19 +528,13 @@ function TimelineSection({
                   />
                   <line
                     x1={xForMs(replayPositionMs)}
-                    y1={TPS_AREA_TOP}
+                    y1={SEG_TOP}
                     x2={xForMs(replayPositionMs)}
                     y2={SEG_BOTTOM}
                     stroke="#4F8CF7"
                     strokeWidth={1.5}
                     strokeOpacity={0.85}
                     vectorEffect="non-scaling-stroke"
-                  />
-                  {/* Small diamond at the top of the playhead */}
-                  <polygon
-                    points={`${xForMs(replayPositionMs)},${TPS_AREA_TOP - 1} ${xForMs(replayPositionMs) - 3},${TPS_AREA_TOP + 5} ${xForMs(replayPositionMs) + 3},${TPS_AREA_TOP + 5}`}
-                    fill="#4F8CF7"
-                    opacity={0.9}
                   />
                 </>
               )}
