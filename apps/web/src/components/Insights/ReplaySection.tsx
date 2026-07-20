@@ -64,13 +64,44 @@ export function ReplaySection({
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
 
+  // Use solve.time as the authoritative total (matches the timeline).
+  // Falls back to move span only when solve.time is unavailable.
   const totalMs = useMemo(() => {
+    if (solve.time > 0) return solve.time;
     const moves = solve.moves ?? [];
     if (moves.length < 2) return solve.time;
     return moves[moves.length - 1].hostTimestamp - moves[0].hostTimestamp;
   }, [solve]);
 
   const hasMoves = (solve.moves?.length ?? 0) >= 2;
+  const totalMoves = solve.moves?.length ?? 0;
+  const moves = solve.moves ?? [];
+
+  // ── Live stats (derived from current move index) ────────────────────────
+  const liveStats = useMemo(() => {
+    if (currentMoveIdx < 0 || currentMoveIdx >= moves.length) return null;
+    const move = moves[currentMoveIdx];
+    const suffix = move.direction === 2 ? "2" : move.direction === -1 ? "'" : "";
+    const notation = `${move.face}${suffix}`;
+
+    // Find current phase from analysis phases (cumulative move counts)
+    const phases = solve.analysis?.phases ?? [];
+    let phaseName: string | null = null;
+    let phaseProgress = "";
+    let cumulative = 0;
+    for (const p of phases) {
+      const start = cumulative;
+      cumulative += p.moveCount;
+      if (currentMoveIdx < cumulative) {
+        phaseName = p.phaseName;
+        const done = currentMoveIdx - start + 1;
+        phaseProgress = `${done}/${p.moveCount}`;
+        break;
+      }
+    }
+
+    return { notation, phaseName, phaseProgress };
+  }, [currentMoveIdx, moves, solve.analysis?.phases]);
 
   /**
    * Clean up worker + engine resources.
@@ -196,14 +227,14 @@ export function ReplaySection({
 
   // ── Controls ────────────────────────────────────────────────────────────
 
-  const handlePlayPause = useCallback(() => {
+  const handlePlayPause = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine) return;
 
     if (replayState === "playing") {
       engine.pause();
     } else {
-      engine.play();
+      await engine.play();
     }
   }, [replayState]);
 
@@ -222,16 +253,14 @@ export function ReplaySection({
     setSpeed(newSpeed);
   }, []);
 
-  const handleRestart = useCallback(() => {
+  const handleRestart = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine) return;
-    engine.seek(0);
-    setPositionMs(0);
-    setCurrentMoveIdx(-1);
-    setTimeout(() => engine.play(), 50);
+    await engine.seek(0);
+    // seek(0) already fires onPosition(0,-1) which sets positionMs/idx —
+    // no need to set them again here. Just start playback.
+    await engine.play();
   }, []);
-
-  const totalMoves = solve.moves?.length ?? 0;
 
   const canPlay = hasMoves && replayState !== "seeking";
 
@@ -331,7 +360,27 @@ export function ReplaySection({
                       </span>
                       {" / "}
                       <span className="nums text-ink-2">{totalMoves}</span>
+                      {liveStats && (
+                        <>
+                          {" — "}
+                          <span className="font-mono font-medium text-ink">
+                            {liveStats.notation}
+                          </span>
+                        </>
+                      )}
                     </p>
+                  )}
+
+                  {/* Live stats */}
+                  {liveStats?.phaseName && (
+                    <div className="flex items-center gap-2 border-t border-line/30 pt-1.5">
+                      <span className="text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
+                        {liveStats.phaseName}
+                      </span>
+                      <span className="nums text-[0.65rem] font-semibold text-ink tabular-nums">
+                        {liveStats.phaseProgress}
+                      </span>
+                    </div>
                   )}
 
                   {/* Transport controls */}

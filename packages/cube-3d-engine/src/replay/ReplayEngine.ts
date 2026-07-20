@@ -158,10 +158,12 @@ export class ReplayEngine {
   }
 
   /** Start or resume playback. */
-  public play(): void {
+  public async play(): Promise<void> {
     if (this._state === 'complete') {
-      // Restart from beginning
-      this.seek(0);
+      // Restart from beginning — await the seek so the cube is fully
+      // reset before we start the tick loop. Without this, tick() races
+      // against the async resetCube + rotateLayers inside seek(0).
+      await this.seek(0);
     }
     if (this._state === 'playing') return;
     if (this.rotations.length === 0) return;

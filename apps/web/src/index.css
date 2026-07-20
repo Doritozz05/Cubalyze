@@ -188,7 +188,10 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html,
+  html {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
   body {
     @apply overflow-x-hidden bg-background text-foreground;
     /* Stable, slightly tighter rendering for the utilitarian look. */
