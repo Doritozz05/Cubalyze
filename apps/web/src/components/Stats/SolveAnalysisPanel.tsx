@@ -132,7 +132,7 @@ export function SolveAnalysisPanel({ solve, className }: SolveAnalysisPanelProps
           <span className="text-[0.62rem] uppercase tracking-[0.2em] text-ink-3">
             Last Solve Analysis
           </span>
-          <span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-blue-500">
+          <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-ink-2">
             {solve.method || "CFOP"}
           </span>
         </div>

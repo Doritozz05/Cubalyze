@@ -110,7 +110,11 @@ export function TimerContainer({
           "pointer-events-none absolute inset-0 rounded-lg transition-colors duration-200",
           phase === "ready" && "bg-ready-soft/60",
           phase === "holding" && "bg-hold-soft/40",
-          phase === "ready_for_move" && "bg-blue-500/10",
+          // `ready_for_move` lives between `inspection` and the first measured
+          // move: scramble verified, thumb released, waiting for the cube to
+          // start. The soft green tint mirrors the other arming halos so the
+          // visual rhythm reads "almost-ready" without screaming.
+          phase === "ready_for_move" && "bg-ready-soft/40",
         )}
       />
       <TimerDisplay
