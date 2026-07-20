@@ -60,7 +60,7 @@ export function FloatingCubeButton({ onClick }: FloatingCubeButtonProps) {
       onPointerUp={handlePointerUp}
       style={{ left: drag.position.x, top: drag.position.y }}
       className={
-        "fixed z-40 grid size-12 touch-none select-none place-items-center " +
+        "fixed z-[45] grid size-12 touch-none select-none place-items-center " +
         "rounded-full border border-line bg-surface shadow-lg " +
         "transition-colors hover:border-ink-2/40 " +
         (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
