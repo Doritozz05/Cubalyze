@@ -200,6 +200,16 @@ export function ReplaySection({
           engine.moveAnimationDurationMs = 70;
           engineRef.current = engine;
 
+          // Apply the scramble so the cube starts in the scrambled
+          // state at position 0, then solve moves take it to solved.
+          if (solve.scramble) {
+            try {
+              await engine.applyInitialScramble(solve.scramble);
+            } catch (e) {
+              console.warn("[Replay] Scramble apply failed:", e);
+            }
+          }
+
           engine.onPosition = (pos, idx) => {
             if (!cancelled) {
               setPositionMs(pos);

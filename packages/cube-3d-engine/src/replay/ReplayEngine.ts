@@ -65,6 +65,8 @@ export type ReplayState = 'idle' | 'playing' | 'paused' | 'seeking' | 'complete'
 export class ReplayEngine {
   /** The list of moves with pre-computed rotation params. */
   private rotations: RotationParams[] = [];
+  /** Pre-computed scramble rotations (applied before solve moves in seek). */
+  private scrambleRotations: RotationParams[] = [];
   /** Total solve duration in ms (last move offset - first move offset). */
   private _totalMs = 0;
 
@@ -167,6 +169,7 @@ export class ReplayEngine {
     this.nextIndex = 0;
     this._positionMs = 0;
     this.lastAppliedOrientation = -1;
+    this.scrambleRotations = [];
     this.setState('idle');
   }
 
@@ -174,6 +177,41 @@ export class ReplayEngine {
   public setOrientationTimeline(timeline: OrientationTimeline | undefined): void {
     this.orientationTimeline = timeline;
     this.lastAppliedOrientation = -1;
+  }
+
+  /**
+   * Parse and apply the initial scramble so the 3D cube shows the
+   * scrambled state at position 0 (before any solve moves are replayed).
+   *
+   * Must be called once after the engine is created and the renderer is
+   * ready. The scramble rotations are stored and re-applied automatically
+   * during every seek() call.
+   *
+   * After this, the replay starts from scrambled → ends solved.
+   */
+  public async applyInitialScramble(scramble: string): Promise<void> {
+    const tokens = scramble.trim().split(/\s+/).filter(Boolean);
+    this.scrambleRotations = tokens.map((token) => {
+      const face = token[0] as CubeFace;
+      const suffix = token.length > 1 ? token[1] : '';
+      const direction = suffix === '2' ? 2 : suffix === "'" ? -1 : 1;
+      const mapping = FACE_ROTATION_MAP[face];
+      const angle = direction * (mapping?.angleSign ?? 1) * 90;
+      return {
+        axis: (mapping?.axis ?? 'y') as RotationAxis,
+        layerValues: [mapping?.layerValue ?? 0],
+        angle,
+        offsetMs: -1, // before time 0, never re-applied by tick loop
+        hostTimestamp: 0,
+      };
+    });
+
+    // Apply scramble rotations to the visual cube immediately
+    // (the renderer starts in solved state; this makes it scrambled)
+    for (const sr of this.scrambleRotations) {
+      const prom = this.callbacks.rotateLayers(sr.axis, sr.layerValues, sr.angle, 0);
+      if (prom instanceof Promise) await prom;
+    }
   }
 
   /** Start or resume playback. */
@@ -220,10 +258,16 @@ export class ReplayEngine {
     const clampedMs = Math.max(0, Math.min(targetMs, this._totalMs));
     this._positionMs = clampedMs;
 
-    // Fast-forward: reset cube + re-apply moves with duration=0
+    // Fast-forward: reset cube + apply scramble + re-apply solve moves
     this.setState('seeking');
     await this.callbacks.resetCube();
     this.lastAppliedOrientation = -1;
+
+    // Apply stored scramble rotations so the cube starts from the
+    // correct scrambled state, not from solved.
+    for (const sr of this.scrambleRotations) {
+      await this.callbacks.rotateLayers(sr.axis, sr.layerValues, sr.angle, 0);
+    }
 
     this.nextIndex = 0;
     for (let i = 0; i < this.rotations.length; i++) {
@@ -297,13 +341,33 @@ export class ReplayEngine {
   public async stepBackward(): Promise<void> {
     this.cancelRaf();
 
-    // Target move index = previous move
-    const targetIdx = Math.max(0, this.nextIndex - 1);
-    const targetMs = targetIdx > 0
-      ? this.rotations[targetIdx - 1].offsetMs
-      : 0;
+    // No moves applied → already at start
+    if (this.nextIndex === 0) return;
 
-    await this.seek(targetMs);
+    const targetIdx = this.nextIndex - 1;
+    const lastRot = this.rotations[targetIdx];
+
+    // Apply the inverse rotation with animation so the cube visually
+    // undoes the last move instead of resetting + fast-forwarding.
+    // This is O(1) and avoids the visual flash of resetCube().
+    const inverseAngle = -lastRot.angle;
+    await this.callbacks.rotateLayers(
+      lastRot.axis,
+      lastRot.layerValues,
+      inverseAngle,
+      this.moveAnimationDurationMs,
+    );
+
+    // Update position and index to reflect the undone move
+    this.nextIndex = targetIdx;
+    this._positionMs =
+      targetIdx > 0 ? this.rotations[targetIdx - 1].offsetMs : 0;
+
+    // Apply orientation at the new position (the move before the undone one)
+    this.applyOrientationAt(Math.max(0, this.nextIndex - 1));
+
+    this.onPosition?.(this._positionMs, this.nextIndex - 1);
+    this.setState('paused');
   }
 
   // ─── Getters ─────────────────────────────────────────────────────────────

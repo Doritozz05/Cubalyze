@@ -16,20 +16,43 @@ import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
 
 const FACES = ["R", "U", "F", "L", "D", "B"] as const;
 
-/** Generate `n` random cube move events with realistic timestamps.
- *  Returns the moves AND the indices where pauses were detected.
+/**
+ * Compute the inverse of a scramble notation string.
+ * e.g. "R U R'" → "R U' R'"
+ */
+function inverseNotation(notation: string): string {
+  return notation
+    .split(/\s+/)
+    .map((token) => {
+      if (!token) return "";
+      const face = token[0];
+      const suffix = token.length > 1 ? token[1] : "";
+      if (suffix === "2") return token; // 180° is its own inverse
+      if (suffix === "'") return face; // inverse of R' is R
+      return face + "'"; // inverse of R is R'
+    })
+    .join(" ");
+}
+
+/**
+ * Generate real solve moves from a scramble using inverse-scramble.
+ * This guarantees the replay ends with a solved cube.
  *
- *  The returned hostTimestamps are normalized so that
- *  `lastMove.hostTimestamp - firstMove.hostTimestamp === totalSpanMs`.
- *  This guarantees the replay total time matches the solve time shown in the UI. */
-function randomMoves(
-  n: number,
+ * Returns the moves AND the indices where pauses were detected.
+ * The hostTimestamps are normalized so the last move's offset ≈ totalSpanMs.
+ */
+function solveMovesFromScramble(
+  scramble: string,
   baseTs: number,
   totalSpanMs: number,
 ): {
   moves: CubeMoveEvent[];
   pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[];
 } {
+  const solveNotation = inverseNotation(scramble);
+  const tokens = solveNotation.split(/\s+/).filter(Boolean);
+  const n = tokens.length;
+
   // Step 1: generate raw inter-move gaps (ms) with occasional pauses
   const gaps: number[] = [];
   const pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[] = [];
@@ -56,8 +79,6 @@ function randomMoves(
   let cumulativeHost = baseTs;
   let cumulativeCube = 1000;
   const moves: CubeMoveEvent[] = [];
-
-  // Recompute pause durations after scaling
   const adjustedPauseGaps: typeof pauseGaps = [];
 
   for (let i = 0; i < n; i++) {
@@ -65,14 +86,21 @@ function randomMoves(
     cumulativeHost += scaledGap;
     cumulativeCube += scaledGap;
 
+    // Parse the token into face + direction
+    const token = tokens[i];
+    const face = token[0];
+    const suffix = token.length > 1 ? token[1] : "";
+    const direction: 1 | -1 | 2 =
+      suffix === "2" ? 2 : suffix === "'" ? -1 : 1;
+
     moves.push({
-      face: FACES[Math.floor(Math.random() * FACES.length)],
-      direction: (Math.random() < 0.15 ? 2 : Math.random() < 0.5 ? 1 : -1) as 1 | -1 | 2,
+      face,
+      direction,
       hostTimestamp: cumulativeHost,
       cubeTimestamp: cumulativeCube,
     });
 
-    // Track adjusted pause durations (scale the original pause by the same factor)
+    // Track adjusted pause durations
     const rawPause = pauseGaps.find(p => p.startIndex === i - 1 && p.endIndex === i);
     if (rawPause) {
       adjustedPauseGaps.push({
@@ -86,11 +114,15 @@ function randomMoves(
   return { moves, pauseGaps: adjustedPauseGaps };
 }
 
-/** Random scramble string. */
-function randomScramble(): string {
+/**
+ * Random scramble string (no consecutive same face on successive moves).
+ * Generates exactly `length` moves so the inverse-scramble solve also has
+ * `length` moves, matching the expected CFOP move count range (~48-61).
+ */
+function randomScramble(length: number): string {
   const moves: string[] = [];
   let last = "";
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < length; i++) {
     let f: string;
     do {
       f = FACES[Math.floor(Math.random() * FACES.length)];
@@ -324,8 +356,14 @@ export async function seedDemoDataIfEmpty(
     const minsAgo = (19 - i) * 5 + Math.floor(Math.random() * 3); // every ~5 min
     const ts = new Date(now - minsAgo * 60_000);
     const totalTimeMs = cfopTime();
-    const totalMoves = 48 + Math.floor(Math.random() * 14); // 48-61 moves
-    const { moves, pauseGaps } = randomMoves(totalMoves, ts.getTime(), totalTimeMs);
+    // Target move count must match the scramble length so the inverse-scramble
+    // solve has the same number of moves as the metrics expect.
+    const targetMoves = 48 + Math.floor(Math.random() * 14); // 48-61
+    const scramble = randomScramble(targetMoves);
+    // Generate REAL solve moves as the inverse of the scramble, so the
+    // replay actually ends with a solved cube.
+    const { moves, pauseGaps } = solveMovesFromScramble(scramble, ts.getTime(), totalTimeMs);
+    const totalMoves = moves.length;
     const analysis = generateMetrics(totalTimeMs, totalMoves, pauseGaps);
 
     return {
@@ -333,7 +371,7 @@ export async function seedDemoDataIfEmpty(
       sessionId,
       timeMs: totalTimeMs,
       date: ts.toISOString(),
-      scramble: randomScramble(),
+      scramble,
       penalty: (Math.random() < 0.1 ? "+2" : "none") as "none" | "+2" | "dnf",
       method: "CFOP" as const,
       source: "smart" as const,

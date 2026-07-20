@@ -693,11 +693,25 @@ export function useSolveSession(
       // noise that may have re-buffered itself after the initial
       // justScrambled effect. Without this, the pending replay on RUNNING
       // transition would push it back as moves[0].
+      //
+      // IMPORTANT: also undo the buffered move from realCubeStateRef so the
+      // tracker state matches the real cube. The move was applied to the
+      // tracker in the IDLE branch but is NOT a solve move — it's a
+      // scramble-leak from the race window where isScrambledRef hadn't
+      // propagated yet.
       if (
         engineState === EngineState.INSPECTION ||
         engineState === EngineState.READY_FOR_MOVE ||
         engineState === EngineState.TOUCHING
       ) {
+        if (pendingFirstMoveRef.current) {
+          const buffered = pendingFirstMoveRef.current;
+          const invDir: CubeMoveDirection =
+            buffered.direction === 1 ? -1 : buffered.direction === -1 ? 1 : 2;
+          realCubeStateRef.current.applySequence(
+            MoveTransformer.moveToNotation(buffered.face, invDir),
+          );
+        }
         pendingFirstMoveRef.current = null;
       }
       // capture the real cube state at the moment the timer starts
@@ -853,28 +867,25 @@ export function useSolveSession(
         solveStartStateRef.current = snap;
       }
 
-      // Track the real cube state from ALL moves, regardless of timer
-      // state. This is the ground truth for timeline seeding — more reliable
-      // than facelets because MOVE events are immediate (not periodic).
+      // GUARD: if in IDLE and the scramble validator has already confirmed
+      // isScrambled=true, this move is a scramble-leak (settling noise or
+      // the last scramble move emitted during the ~16ms race window). Drop
+      // it entirely — do not apply to the tracker.
+      if (current === EngineState.IDLE && isScrambledRef.current) {
+        return;
+      }
+
+      // Track the real cube state from ALL legitimate moves, regardless of
+      // timer state. This is the ground truth for timeline seeding — more
+      // reliable than facelets because MOVE events are immediate (not
+      // periodic).
       const notation = MoveTransformer.moveToNotation(move.face, move.direction);
       realCubeStateRef.current.applySequence(notation);
 
-      // If a move arrives in IDLE (before auto-arm has fired):
-      //   • If the validator has already published isScrambled=true, any
-      //     move we see here is either (a) settling noise from the cube
-      //     after the final scramble move arrived, or (b) the scramble-leak
-      //     itself (the last scramble move emitted during the ~16ms race
-      //     window between isScrambled publication and engine.arm()). Either
-      //     way it must NOT be treated as the first solve move.
-      //     We still apply it to realCubeStateRef (it happened physically)
-      //     but skip buffering.
-      //   • Otherwise (validator still expecting scrambles), buffer as the
-      //     pending first solve move in case the user does a premovel
-      //     before the timer actually starts.
+      // Buffer in IDLE (isScrambledRef may not have propagated yet — race
+      // window). The state subscription will undo this from the tracker
+      // if it turns out to be a scramble-leak.
       if (current === EngineState.IDLE) {
-        if (isScrambledRef.current) {
-          return;
-        }
         pendingFirstMoveRef.current = move;
         return;
       }
