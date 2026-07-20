@@ -153,8 +153,11 @@
   --sidebar-border: #2a2f35;
   --sidebar-ring: #495057;
 
-  /* Custom palette (dark) — tuned for low-glare night use. */
-  --canvas: #14171a;
+  /* Custom palette (dark) — tuned for low-glare night use.
+     Canvas matches surface so the main stage blends seamlessly with floating
+     panels and the SessionStats card; the floating elevations come from
+     shadows rather than from a darker backplate. */
+  --canvas: #1b1f23;
   --surface: #1b1f23;
   --surface-2: #24292e;
   --ink: #e9ecef;

@@ -249,7 +249,9 @@ export function Header({
           <Select value={puzzle} onValueChange={(v) => setPuzzle(v as PuzzleCategory)}>
             <SelectTrigger
               size="sm"
-              className="w-30 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink"
+              // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`
+              // so the chip matches the sibling PB / session chips in dark mode.
+              className="w-30 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
               aria-label="Puzzle category"
             >
               <SelectValue />

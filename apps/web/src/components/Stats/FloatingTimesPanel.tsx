@@ -36,7 +36,11 @@ export interface FloatingTimesPanelProps {
 export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
-  const [minimized, setMinimized] = useState(false);
+  // Start in the compact pill state by default — matches the 3D panel's
+  // behaviour (closed on entry, user opens when they want it). We deliberately
+  // do not persist the toggle, so users who expand once get the pill back
+  // next session — a surprise-free default for an opt-in widget.
+  const [minimized, setMinimized] = useState(true);
 
   useEffect(() => setMounted(true), []);
 
@@ -130,7 +134,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
         onPointerMove={drag.onPointerMove}
         onPointerUp={drag.onPointerUp}
         className={cn(
-          "fixed z-40 flex touch-none select-none items-center gap-2 rounded-full border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
+          "fixed z-40 flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
           drag.isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab",
           "transition-colors hover:border-ink-2/40",
         )}
