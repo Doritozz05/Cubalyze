@@ -4,7 +4,8 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { ArrowLeft, Clipboard, ClipboardCheck, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
-import { deriveTimeline, type TimelineData } from "@/utils/insights";
+import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
+import { phaseColorHex, pauseColorHex, tailColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import type { Penalty, Solve } from "@/types";
 import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics } from "@cubeforge/types";
 import { Button } from "@/components/ui/button";
@@ -30,17 +31,11 @@ export interface SolveAnalysisPanelProps {
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-const TIMELINE_HEIGHT = 90;
-const TIMELINE_TPS_AREA_H = 32; // TPS overlay occupies the top portion
-const TIMELINE_PHASE_TOP = 42;
-const TIMELINE_PHASE_BOTTOM = 82;
-
-const PHASE_COLORS_CSS = [
-  "#4F8CF7",  // Cross  → blue
-  "#22C55E",  // F2L    → green
-  "#F59E0B",  // OLL    → amber
-  "#EF4444",  // PLL    → red
-];
+const TIMELINE_HEIGHT = 92;
+const TPS_AREA_TOP = 4;
+const TPS_AREA_BOTTOM = 34; // TPS chart occupies the top band
+const SEG_TOP = 44;        // unified segment blocks (phases + pauses) live here
+const SEG_BOTTOM = 82;
 
 const EMPTY_ROTATION: RotationMetrics = {
   totalCount: 0,
@@ -219,23 +214,47 @@ function TimelineSection({
   const [hoverMs, setHoverMs] = useState<number | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  const { totalMs, moveTicks, tpsSamples, stageSegments, pauseMarks } = timeline;
+  const { totalMs, moveTicks, tpsSamples, segments, pauseMarks } = timeline;
   const width = 600; // viewBox width; scales to container via preserveAspectRatio
-  const tpsAreaTop = 2;
-  const tpsAreaBottom = TIMELINE_TPS_AREA_H;
-  const phaseTop = TIMELINE_PHASE_TOP;
-  const phaseBottom = TIMELINE_PHASE_BOTTOM;
 
-  // TPS scale: 0 to max tps + 1
+  // TPS scale: data-driven ceiling rounded up to a sensible tick.
   const maxTps = useMemo(() => {
     const max = Math.max(...tpsSamples.map((s) => s.tps), 0);
-    return Math.max(max + 1, 5);
+    if (max <= 0) return 5;
+    // Round up to the next whole number with a little headroom (no arbitrary +1 floor).
+    return Math.max(Math.ceil(max + 0.5), 3);
   }, [tpsSamples]);
 
   const xForMs = useCallback(
     (ms: number) => (totalMs > 0 ? (ms / totalMs) * width : 0),
     [totalMs, width],
   );
+
+  // TPS value at a given time offset (linear interpolation between samples).
+  const tpsAtMs = useCallback(
+    (ms: number): number => {
+      if (tpsSamples.length === 0) return 0;
+      if (ms <= tpsSamples[0].offsetMs) return tpsSamples[0].tps;
+      const last = tpsSamples[tpsSamples.length - 1];
+      if (ms >= last.offsetMs) return last.tps;
+      for (let i = 0; i < tpsSamples.length - 1; i++) {
+        const a = tpsSamples[i];
+        const b = tpsSamples[i + 1];
+        if (ms >= a.offsetMs && ms <= b.offsetMs) {
+          const t = b.offsetMs > a.offsetMs ? (ms - a.offsetMs) / (b.offsetMs - a.offsetMs) : 0;
+          return a.tps + (b.tps - a.tps) * t;
+        }
+      }
+      return last.tps;
+    },
+    [tpsSamples],
+  );
+
+  // Segment under the hover cursor (for the readout line).
+  const hoverSegment = useMemo<TimelineSegment | null>(() => {
+    if (hoverMs === null) return null;
+    return segments.find((s) => hoverMs >= s.startMs && hoverMs < s.endMs) ?? null;
+  }, [hoverMs, segments]);
 
   const handleMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
@@ -245,7 +264,7 @@ function TimelineSection({
       const ratio = (e.clientX - rect.left) / rect.width;
       const ms = Math.max(0, Math.min(totalMs, ratio * totalMs));
       setHoverMs(ms);
-      // Find nearest move tick
+      // Find nearest move tick (only meaningful while inside the moves span).
       let nearest = 0;
       let minDist = Infinity;
       for (let i = 0; i < moveTicks.length; i++) {
@@ -265,13 +284,13 @@ function TimelineSection({
     setHoverIdx(null);
   }, []);
 
-  // TPS area path
+  // TPS area path — always closes at the right edge (totalMs).
   const tpsPath = useMemo(() => {
     if (tpsSamples.length < 2) return "";
     return tpsSamples
       .map((s, i) => {
         const x = xForMs(s.offsetMs);
-        const y = tpsAreaBottom - (s.tps / maxTps) * (tpsAreaBottom - tpsAreaTop);
+        const y = TPS_AREA_BOTTOM - (s.tps / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
         return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(" ");
@@ -279,13 +298,24 @@ function TimelineSection({
 
   const tpsAreaPath = useMemo(() => {
     if (tpsPath === "") return "";
-    const lastX = xForMs(tpsSamples[tpsSamples.length - 1]?.offsetMs ?? 0);
-    return `${tpsPath} L${lastX.toFixed(1)},${tpsAreaBottom} L0,${tpsAreaBottom} Z`;
-  }, [tpsPath, tpsSamples, xForMs]);
+    const lastX = xForMs(tpsSamples[tpsSamples.length - 1]?.offsetMs ?? totalMs);
+    return `${tpsPath} L${lastX.toFixed(1)},${TPS_AREA_BOTTOM} L0,${TPS_AREA_BOTTOM} Z`;
+  }, [tpsPath, tpsSamples, xForMs, totalMs]);
+
+  // Total pause time for the eyebrow.
+  const totalPauseMs = useMemo(
+    () => pauseMarks.reduce((s, p) => s + p.durationMs, 0),
+    [pauseMarks],
+  );
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="Timeline" eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)}`} />
+      <SectionHeader
+        title="Timeline"
+        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)}${
+          totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
+        }`}
+      />
 
       <div className="mt-3">
         <svg
@@ -294,6 +324,8 @@ function TimelineSection({
           viewBox={`0 0 ${width} ${TIMELINE_HEIGHT}`}
           preserveAspectRatio="none"
           className="overflow-visible"
+          role="img"
+          aria-label={`Solve timeline: ${segments.length} segments over ${formatTime(totalMs)}`}
           onPointerMove={handleMove}
           onPointerLeave={handleLeave}
         >
@@ -304,10 +336,8 @@ function TimelineSection({
             </linearGradient>
           </defs>
 
-          {/* TPS area fill */}
-          {tpsAreaPath && (
-            <path d={tpsAreaPath} fill="url(#timeline-tps-fill)" />
-          )}
+          {/* TPS area fill (spans the full width via the tail samples) */}
+          {tpsAreaPath && <path d={tpsAreaPath} fill="url(#timeline-tps-fill)" />}
           {/* TPS line */}
           {tpsPath && (
             <path
@@ -319,98 +349,87 @@ function TimelineSection({
             />
           )}
 
-          {/* Phase segments */}
-          {stageSegments.map((seg, i) => {
+          {/* Unified segment blocks (phases + pauses + tail) on the SAME x-axis */}
+          {segments.map((seg, i) => {
             const x = xForMs(seg.startMs);
-            const w = Math.max(1, xForMs(seg.endMs) - x);
+            const w = Math.max(0.5, xForMs(seg.endMs) - x);
+            const color =
+              seg.kind === "phase"
+                ? phaseColorHex(seg.phaseName ?? "", i)
+                : seg.kind === "pause"
+                  ? pauseColorHex(seg.pauseCategory ?? "mid-phase")
+                  : tailColorHex();
+            const fillOpacity = seg.kind === "phase" ? 0.22 : seg.kind === "pause" ? 0.45 : 0.18;
             return (
-              <g key={seg.phaseName}>
+              <g key={`${seg.kind}-${i}`}>
                 <rect
                   x={x}
-                  y={phaseTop}
+                  y={SEG_TOP}
                   width={w}
-                  height={phaseBottom - phaseTop}
-                  fill={PHASE_COLORS_CSS[i % PHASE_COLORS_CSS.length]}
-                  fillOpacity={0.2}
-                  rx={2}
-                />
-                {w > 30 && (
+                  height={SEG_BOTTOM - SEG_TOP}
+                  fill={color}
+                  fillOpacity={fillOpacity}
+                  rx={seg.kind === "pause" ? 1 : 2}
+                  stroke={seg.kind === "pause" ? color : "none"}
+                  strokeOpacity={0.5}
+                  strokeWidth={0.5}
+                  vectorEffect="non-scaling-stroke"
+                >
+                  <title>
+                    {seg.kind === "pause"
+                      ? `${seg.label} · ${formatTime(seg.durationMs)} · ${seg.phaseName ?? ""}`
+                      : `${seg.label} · ${formatTime(seg.durationMs)}${
+                          seg.moveCount != null ? ` · ${seg.moveCount} moves` : ""
+                        }${seg.tps != null ? ` · ${seg.tps.toFixed(1)} tps` : ""}`}
+                  </title>
+                </rect>
+                {/* Label inside wide-enough blocks */}
+                {w > 26 && (
                   <text
                     x={x + w / 2}
-                    y={phaseTop + (phaseBottom - phaseTop) / 2 + 3}
+                    y={SEG_TOP + (SEG_BOTTOM - SEG_TOP) / 2 + 2.5}
                     textAnchor="middle"
-                    fill={PHASE_COLORS_CSS[i % PHASE_COLORS_CSS.length]}
-                    fillOpacity={0.85}
-                    style={{ fontSize: "8px", fontWeight: 500 }}
+                    fill={color}
+                    fillOpacity={0.95}
+                    style={{
+                      fontSize: seg.kind === "pause" ? "7px" : "8px",
+                      fontWeight: 600,
+                    }}
                   >
-                    {seg.phaseName.slice(0, 6)}
+                    {seg.kind === "pause"
+                      ? formatTime(seg.durationMs)
+                      : seg.label.slice(0, 6)}
                   </text>
                 )}
               </g>
             );
           })}
 
-          {/* Move ticks */}
+          {/* Move ticks — sit above the segment row, traverse both bands */}
           {moveTicks.map((tick) => {
             const x = xForMs(tick.offsetMs);
             return (
               <line
                 key={tick.index}
                 x1={x}
-                y1={phaseTop - 3}
+                y1={TPS_AREA_BOTTOM + 1}
                 x2={x}
-                y2={phaseTop}
+                y2={SEG_TOP - 2}
                 stroke="var(--ink-3)"
-                strokeWidth={0.8}
-                strokeOpacity={0.35}
+                strokeWidth={0.6}
+                strokeOpacity={0.3}
                 vectorEffect="non-scaling-stroke"
               />
             );
           })}
 
-          {/* Pause markers — integrated colored bands */}
-          {pauseMarks.map((pause, i) => {
-            const x = xForMs(pause.startMs);
-            const w = Math.max(3, xForMs(pause.endMs) - x);
-            return (
-              <g key={i}>
-                {/* Colored pause band in the phase area */}
-                <rect
-                  x={x}
-                  y={tpsAreaTop}
-                  width={w}
-                  height={phaseBottom - tpsAreaTop}
-                  fill="#F59E0B"
-                  fillOpacity={0.25}
-                  rx={1}
-                />
-                {/* Duration label inside the band (if wide enough) */}
-                {w > 30 && (
-                  <text
-                    x={x + w / 2}
-                    y={phaseTop + (phaseBottom - phaseTop) / 2 + 2.5}
-                    textAnchor="middle"
-                    fill="#F59E0B"
-                    fillOpacity={0.9}
-                    style={{ fontSize: "7px", fontWeight: 600 }}
-                  >
-                    {formatTime(pause.durationMs)}
-                  </text>
-                )}
-                <title>
-                  {pause.probableCause} ({formatTime(pause.durationMs)})
-                </title>
-              </g>
-            );
-          })}
-
-          {/* Hover playhead */}
+          {/* Hover playhead — spans the full height */}
           {hoverMs !== null && (
             <line
               x1={xForMs(hoverMs)}
-              y1={tpsAreaTop}
+              y1={TPS_AREA_TOP}
               x2={xForMs(hoverMs)}
-              y2={phaseBottom}
+              y2={SEG_BOTTOM}
               stroke="var(--ink)"
               strokeWidth={1}
               strokeOpacity={0.6}
@@ -419,32 +438,87 @@ function TimelineSection({
           )}
         </svg>
 
-        {/* Hover readout */}
-        <div className="mt-2 flex h-5 items-center justify-between text-[0.62rem] text-ink-3">
+        {/* Hover readout — time, segment, nearest move, TPS at cursor */}
+        <div className="mt-2 flex min-h-5 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[0.62rem] text-ink-3">
           <span className="nums">
             {hoverMs !== null ? formatTime(hoverMs) : formatTime(0)}
           </span>
-          {hoverIdx !== null && moveTicks[hoverIdx] && (
+          {hoverSegment ? (
+            <span
+              className="flex items-center gap-1.5 font-medium"
+              style={{
+                color:
+                  hoverSegment.kind === "phase"
+                    ? phaseColorHex(hoverSegment.phaseName ?? "", 0)
+                    : hoverSegment.kind === "pause"
+                      ? pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase")
+                      : tailColorHex(),
+              }}
+            >
+              <span
+                className="inline-block size-2 rounded-sm"
+                style={{
+                  background:
+                    hoverSegment.kind === "phase"
+                      ? phaseColorHex(hoverSegment.phaseName ?? "", 0)
+                      : hoverSegment.kind === "pause"
+                        ? pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase")
+                        : tailColorHex(),
+                  opacity: 0.7,
+                }}
+              />
+              {hoverSegment.label}
+              <span className="nums opacity-70">{formatTime(hoverSegment.durationMs)}</span>
+            </span>
+          ) : null}
+          {hoverIdx !== null && moveTicks[hoverIdx] && hoverMs !== null && hoverMs <= (moveTicks[moveTicks.length - 1]?.offsetMs ?? 0) + 50 ? (
             <span className="font-mono text-ink-2">
               #{hoverIdx + 1} {moveTicks[hoverIdx].label}
               {moveTicks[hoverIdx].phaseName ? ` · ${moveTicks[hoverIdx].phaseName}` : ""}
+              <span className="ml-1.5 text-ink-3">
+                {tpsAtMs(hoverMs).toFixed(2)} tps
+              </span>
             </span>
-          )}
+          ) : null}
           <span className="nums">{formatTime(totalMs)}</span>
         </div>
-      </div>        {/* Legend */}
-      <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.58rem] text-ink-3">
-        {PHASE_COLORS_CSS.map((color, i) => (
-          <span key={i} className="flex items-center gap-1.5">
-            <span className="inline-block size-2 rounded-sm" style={{ background: color, opacity: 0.5 }} />
+      </div>
+
+      {/* Legend — real labels, grouped: phases / pauses / tail / TPS */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.58rem] text-ink-3">
+        {/* Phase legend — only the phases actually present in this solve */}
+        {timeline.stageSegments.map((seg, i) => (
+          <span key={seg.phaseName} className="flex items-center gap-1.5">
+            <span
+              className="inline-block size-2 rounded-sm"
+              style={{ background: phaseColorHex(seg.phaseName, i), opacity: 0.7 }}
+            />
+            {seg.phaseName}
           </span>
         ))}
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2 rounded-sm" style={{ background: "#F59E0B", opacity: 0.5 }} />
-          Pauses ({pauseMarks.length} · {formatTime(
-            pauseMarks.reduce((s, p) => s + p.durationMs, 0),
-          )})
-        </span>
+        {/* Pause legend — by category (only categories present) */}
+        {pauseMarks.length > 0 && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block size-2 rounded-sm"
+              style={{
+                background: PAUSE_COLOR_BY_CATEGORY["mid-phase"],
+                opacity: 0.7,
+              }}
+            />
+            Pauses ({pauseMarks.length} · {formatTime(totalPauseMs)})
+          </span>
+        )}
+        {/* Tail legend — only if there's a tail segment */}
+        {segments.some((s) => s.kind === "tail") && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block size-2 rounded-sm"
+              style={{ background: tailColorHex(), opacity: 0.6 }}
+            />
+            Stop
+          </span>
+        )}
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-4 bg-ink-2" />
           TPS
@@ -535,7 +609,7 @@ function PhaseBreakdownSection({ metrics }: { metrics: SolveMetrics }) {
             <div className="flex items-center gap-2">
               <span
                 className="size-2 rounded-sm"
-                style={{ background: PHASE_COLORS_CSS[i % PHASE_COLORS_CSS.length] }}
+                style={{ background: phaseColorHex(p.phaseName, i) }}
               />
               <span className="text-xs font-medium uppercase tracking-wide text-ink-2">
                 {p.phaseName}

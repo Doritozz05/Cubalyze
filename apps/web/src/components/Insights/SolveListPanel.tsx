@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
 import type { StatsFilters, SortOrder } from "@/hooks/useStatsFilters";
+import { phaseColorHex } from "@/utils/phaseColors";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -26,19 +27,6 @@ const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "best", label: "Fastest" },
   { value: "worst", label: "Slowest" },
   { value: "pbDelta", label: "PB gap" },
-];
-
-/**
- * Muted palette for the per-solve phase-bar segments. Maps positionally:
- * 0 → Cross/FB (foundation), 1 → F2L/SB (main work),
- * 2 → OLL/CMLL (recognition), 3 → PLL/LSE (finish).
- * Cycles for methods with more than 4 phases.
- */
-const PHASE_COLORS = [
-  "bg-ink/20",
-  "bg-ink/40",
-  "bg-caution/45",
-  "bg-ready/45",
 ];
 
 // ─── Sub-components ────────────────────────────────────────────────────────
@@ -434,11 +422,12 @@ export const SolveListPanel = memo(function SolveListPanel({
                           return (
                             <div
                               key={p.phaseName}
-                              className={cn(
-                                "h-full rounded-full",
-                                PHASE_COLORS[pi % PHASE_COLORS.length],
-                              )}
-                              style={{ width: `${pct}%` }}
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${pct}%`,
+                                background: phaseColorHex(p.phaseName, pi),
+                                opacity: 0.55,
+                              }}
                             />
                           );
                         })}

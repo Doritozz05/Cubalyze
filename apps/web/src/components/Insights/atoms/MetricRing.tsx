@@ -16,6 +16,12 @@ export interface MetricRingProps {
   size?: number;
   strokeWidth?: number;
   color?: RingColor;
+  /**
+   * Arbitrary hex/CSS color for the arc stroke. When provided, overrides
+   * `color`. Useful for phase-distribution rings where each phase has its
+   * own semantic color (see `phaseColorHex`).
+   */
+  strokeColor?: string;
   className?: string;
 }
 
@@ -40,6 +46,7 @@ export function MetricRing({
   size = 72,
   strokeWidth = 5,
   color = "ink",
+  strokeColor,
   className,
 }: MetricRingProps) {
   const radius = (size - strokeWidth) / 2;
@@ -47,7 +54,7 @@ export function MetricRing({
   const pct = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
   // Arc starts at 12 o'clock: rotate -90deg via the group transform.
   const dashOffset = circumference * (1 - pct);
-  const stroke = colorVar[color];
+  const stroke = strokeColor ?? colorVar[color];
   const trackStroke = "var(--line)";
 
   return (

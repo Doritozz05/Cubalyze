@@ -260,6 +260,9 @@ describe("deriveTimeline", () => {
   it("computes rolling TPS from timestamps when no analysis window", () => {
     const base = 1000;
     const solve = makeSolve({
+      // totalMs === move span so no 0-TPS tail is appended (lets us assert
+      // on the last REAL rolling sample).
+      time: 1000,
       moves: [
         makeMove("R", base),
         makeMove("U", base + 250),
@@ -310,9 +313,84 @@ describe("deriveTimeline", () => {
   it("handles solve with no moves and no analysis", () => {
     const tl = deriveTimeline(makeSolve({ moves: undefined, analysis: undefined }));
     expect(tl.moveTicks).toEqual([]);
-    expect(tl.tpsSamples).toEqual([]);
+    // No move data → a flat 0-TPS baseline spanning [0, totalMs] (the TPS
+    // curve always extends to the right edge of the timeline now).
+    expect(tl.tpsSamples).toEqual([
+      { offsetMs: 0, tps: 0 },
+      { offsetMs: 12_000, tps: 0 },
+    ]);
     expect(tl.stageSegments).toEqual([]);
     expect(tl.pauseMarks).toEqual([]);
+    expect(tl.segments).toEqual([
+      { kind: "tail", startMs: 0, endMs: 12_000, durationMs: 12_000, label: "Stop" },
+    ]);
     expect(tl.totalMs).toBe(12_000); // falls back to solve.time
+  });
+
+  it("segments tile the timeline: Σ durationMs === totalMs", () => {
+    const metrics = makeMetrics();
+    const solve = makeSolve({ analysis: metrics });
+    const tl = deriveTimeline(solve);
+    expect(tl.segments.length).toBeGreaterThan(0);
+    const sum = tl.segments.reduce((s, seg) => s + seg.durationMs, 0);
+    expect(sum).toBeCloseTo(tl.totalMs, 0);
+    // First segment starts at 0; last ends at totalMs.
+    expect(tl.segments[0].startMs).toBe(0);
+    expect(tl.segments[tl.segments.length - 1].endMs).toBe(tl.totalMs);
+  });
+
+  it("segments include pause blocks interleaved with phase blocks", () => {
+    // Moves are 50 @ 200ms apart → move index N maps to offset N*200ms.
+    // Phase windows: Cross[0,2000] F2L[2000,8000] OLL[8000,9500] PLL[9500,12000].
+    // The pause's time offset (from move indices) must fall INSIDE its
+    // phase's window, or buildUnifiedSegments clamps it out. So:
+    //   - F2L pause at index 10 → offset 2000ms (F2L start edge) ✓
+    //   - OLL pause at index 40 → offset 8000ms (OLL start edge) ✓
+    const metrics = makeMetrics({
+      pauses: {
+        totalCount: 2,
+        maxDurationMs: 300,
+        avgDurationMs: 250,
+        byPhase: {},
+        totalPauseTimeMs: 500,
+        pauseRatio: 0.05,
+        pauses: [
+          { startIndex: 10, endIndex: 11, durationMs: 200, phase: "F2L", category: "mid-phase" },
+          { startIndex: 40, endIndex: 41, durationMs: 300, phase: "OLL", category: "pre-algorithm" },
+        ],
+      },
+    });
+    const solve = makeSolve({
+      moves: Array.from({ length: 50 }, (_, i) => makeMove("R", 1000 + i * 200)),
+      analysis: metrics,
+    });
+    const tl = deriveTimeline(solve);
+    const pauseSegs = tl.segments.filter((s) => s.kind === "pause");
+    expect(pauseSegs).toHaveLength(2);
+    expect(pauseSegs[0].pauseCategory).toBe("mid-phase");
+    expect(pauseSegs[1].pauseCategory).toBe("pre-algorithm");
+    expect(pauseSegs[0].phaseName).toBe("F2L");
+    expect(pauseSegs[1].phaseName).toBe("OLL");
+    // Σ still equals totalMs.
+    const sum = tl.segments.reduce((s, seg) => s + seg.durationMs, 0);
+    expect(sum).toBeCloseTo(tl.totalMs, 0);
+  });
+
+  it("tpsSamples extend to totalMs with a 0-TPS tail", () => {
+    // Moves span only the first ~10s; totalMs is 12s → 2s tail at TPS 0.
+    const base = 1000;
+    const solve = makeSolve({
+      time: 12_000,
+      moves: Array.from({ length: 50 }, (_, i) => makeMove("R", base + i * 200)),
+      analysis: makeMetrics({
+        totalTimeMs: 12_000,
+        tps: { global: 4.1, effective: 4.5, byPhase: {}, peakInstantaneous: 7.2 },
+      }),
+    });
+    const tl = deriveTimeline(solve);
+    expect(tl.tpsSamples.length).toBeGreaterThan(0);
+    const last = tl.tpsSamples[tl.tpsSamples.length - 1];
+    expect(last.offsetMs).toBe(tl.totalMs);
+    expect(last.tps).toBe(0);
   });
 });

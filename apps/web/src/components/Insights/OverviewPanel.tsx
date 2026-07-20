@@ -31,8 +31,8 @@ import {
   ActivityHeatmap,
   MetricRing,
   EmptyState,
-  type RingColor,
 } from "./atoms";
+import { phaseColorHex } from "@/utils/phaseColors";
 
 export interface OverviewPanelProps {
   solves: Solve[];
@@ -40,8 +40,8 @@ export interface OverviewPanelProps {
   className?: string;
 }
 
-// ─── Phase ring palette (matches the list panel's PHASE_COLORS) ────────────
-const PHASE_RING_COLORS: RingColor[] = ["ink", "ink", "amber", "ready"];
+// NOTE: phase ring colors are now derived semantically via phaseColorHex()
+// (one source of truth shared with SolveListPanel and SolveAnalysisPanel).
 
 export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
   const stats = useMemo(() => computeStats(solves), [solves]);
@@ -310,7 +310,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
                   sub={p.phaseName}
                   size={68}
                   strokeWidth={4}
-                  color={PHASE_RING_COLORS[i % PHASE_RING_COLORS.length]}
+                  strokeColor={phaseColorHex(p.phaseName, i)}
                 />
               ))}
             </div>
