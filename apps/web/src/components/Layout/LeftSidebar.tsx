@@ -192,7 +192,7 @@ function SidebarGroupTitle({
     <motion.span
       animate={{ opacity: labelVisible ? 1 : 0 }}
       transition={SIDEBAR_MOTION.label}
-      className="block overflow-hidden px-3 pb-1 text-[0.62rem] uppercase tracking-[0.15em] text-sidebar-foreground/40 whitespace-nowrap"
+      className="relative z-20 block overflow-hidden px-3 pb-1 text-[0.62rem] uppercase tracking-[0.15em] text-sidebar-foreground/40 whitespace-nowrap"
     >
       {label}
     </motion.span>

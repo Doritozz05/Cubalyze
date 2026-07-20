@@ -425,17 +425,21 @@ export default function App() {
           onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
           main={renderMain()}
         />
-        {/* Floating solve log — draggable, minimizable, doesn't affect layout */}
-        <FloatingTimesPanel
-          solves={solves}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          onClear={handleClear}
-          onAnalyze={handleAnalyzeSolve}
-        />
+        {/* Floating solve log — draggable, minimizable, doesn't affect layout.
+            Only rendered on the Timer stage; Stats/Analysis take over the stage. */}
+        {activeView === "timer" && (
+          <FloatingTimesPanel
+            solves={solves}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            onClear={handleClear}
+            onAnalyze={handleAnalyzeSolve}
+          />
+        )}
 
-        {/* Floating cube button — only when connected and panel is closed */}
-        {smartCubeConnected && !cubePanelOpen && (
+        {/* Floating cube button — only on the Timer stage, when connected and
+            the panel is closed. Stats/Analysis don't host the split. */}
+        {activeView === "timer" && smartCubeConnected && !cubePanelOpen && (
           <FloatingCubeButton onClick={handleOpenCube} />
         )}
 
