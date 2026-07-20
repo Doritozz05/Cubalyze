@@ -155,7 +155,7 @@ export function MainLayout({
         <main className="mx-auto flex w-full flex-1 flex-col lg:h-[calc(100dvh-3.5rem)] lg:flex-row lg:overflow-hidden">
           <section
             id="timer-section"
-            className="flex flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 lg:min-w-0 lg:flex-1 lg:overflow-y-auto"
+            className="flex min-h-0 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 lg:min-w-0 lg:flex-1 lg:overflow-hidden"
           >
             {main}
           </section>

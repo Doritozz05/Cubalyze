@@ -145,12 +145,13 @@ export function InsightsDashboard({
   }, []);
 
   return (
-    <div
-      className={cn(
-        "flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:gap-5",
-        className,
-      )}
-    >
+    <div className="relative flex-1 min-h-0 w-full">
+      <div
+        className={cn(
+          "absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5",
+          className,
+        )}
+      >
       {/* Column A: solve list (fixed width on desktop, own scroll) */}
       <SolveListPanel
         solves={filtered}
@@ -166,7 +167,7 @@ export function InsightsDashboard({
       />
 
       {/* Column B: content (flex-1, own scroll) */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-lg">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg">
         {selected ? (
           <SolveAnalysisPanel
             solve={selected}
@@ -179,6 +180,7 @@ export function InsightsDashboard({
         ) : (
           <OverviewPanel solves={filtered} pb={pb} />
         )}
+      </div>
       </div>
     </div>
   );

@@ -138,7 +138,7 @@ export const TimesList = memo(function TimesList({
                       variant="ghost"
                       size="icon"
                       onClick={() => onAnalyze(solve)}
-                      className="size-7 text-ink-3 opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+                      className="size-7 text-ink-3 hover:text-ink"
                       aria-label="Analyze solve"
                       title="Analysis"
                     >
@@ -150,7 +150,7 @@ export const TimesList = memo(function TimesList({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-7 text-ink-3 opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+                        className="size-7 text-ink-3 hover:text-ink data-[state=open]:text-ink"
                         aria-label="Solve actions"
                       >
                         <MoreHorizontal className="size-4" />
