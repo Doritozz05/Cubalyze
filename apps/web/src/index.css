@@ -211,27 +211,13 @@
     color: var(--ink);
   }
 
-  /* Custom scrollbar — thin, flat, no chrome (theme-aware). */
+  /* Scrollbar hidden everywhere — content scrolls but no visual chrome.
+     Keeps overflow:auto / overflow-y:auto working, just hides the bar.
+     Users who need scroll indicators will see the content clipping. */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--ink-3) transparent;
+    scrollbar-width: none;
   }
   *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  *::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--ink-3) 50%, transparent);
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-  *::-webkit-scrollbar-thumb:hover {
-    background: var(--ink-3);
-    background-clip: padding-box;
-    border: 2px solid transparent;
+    display: none;
   }
 }

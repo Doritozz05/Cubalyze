@@ -230,9 +230,8 @@ function TimelineSection({
   hoveredPhase: string | null;
   onHoverPhase: (phase: string | null) => void;
 }) {
-  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   const { totalMs, moveTicks, moveVisualMs, tpsSamples, segments, pauseMarks } = timeline;
   const width = 600; // viewBox width; scales to container via preserveAspectRatio
@@ -250,53 +249,16 @@ function TimelineSection({
     [totalMs, width],
   );
 
-  // TPS value at a given time offset (linear interpolation between samples).
-  const tpsAtMs = useCallback(
-    (ms: number): number => {
-      if (tpsSamples.length === 0) return 0;
-      if (ms <= tpsSamples[0].offsetMs) return tpsSamples[0].tps;
-      const last = tpsSamples[tpsSamples.length - 1];
-      if (ms >= last.offsetMs) return last.tps;
-      for (let i = 0; i < tpsSamples.length - 1; i++) {
-        const a = tpsSamples[i];
-        const b = tpsSamples[i + 1];
-        if (ms >= a.offsetMs && ms <= b.offsetMs) {
-          const t = b.offsetMs > a.offsetMs ? (ms - a.offsetMs) / (b.offsetMs - a.offsetMs) : 0;
-          return a.tps + (b.tps - a.tps) * t;
-        }
-      }
-      return last.tps;
-    },
-    [tpsSamples],
-  );
-
-  // Segment under the hover cursor (for the readout line).
-  const hoverSegment = useMemo<TimelineSegment | null>(() => {
-    if (hoverMs === null) return null;
-    return segments.find((s) => hoverMs >= s.startMs && hoverMs < s.endMs) ?? null;
-  }, [hoverMs, segments]);
-
   const handleMove = useCallback(
-    (e: React.PointerEvent<SVGSVGElement>) => {
-      const svg = svgRef.current;
-      if (!svg || totalMs <= 0) return;
-      const rect = svg.getBoundingClientRect();
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const container = containerRef.current;
+      if (!container || totalMs <= 0) return;
+      const rect = container.getBoundingClientRect();
       const ratio = (e.clientX - rect.left) / rect.width;
       const ms = Math.max(0, Math.min(totalMs, ratio * totalMs));
       setHoverMs(ms);
-      // Find nearest move by visual position (aligned with segment coords).
-      let nearest = 0;
-      let minDist = Infinity;
-      for (let i = 0; i < moveVisualMs.length; i++) {
-        const d = Math.abs(moveVisualMs[i] - ms);
-        if (d < minDist) {
-          minDist = d;
-          nearest = i;
-        }
-      }
-      setHoverIdx(nearest);
     },
-    [moveVisualMs, totalMs],
+    [totalMs],
   );
 
   const handleLeave = useCallback(() => {
@@ -353,7 +315,7 @@ function TimelineSection({
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader
         title="Timeline"
-        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)}${
+        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)} total${
           totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
         }`}
       />
@@ -375,24 +337,37 @@ function TimelineSection({
                 </span>
               );
             })}
-            <span className="absolute right-0 top-0 text-[0.42rem] uppercase tracking-wide text-ink-3/50">
+            <span className="absolute left-0 text-[0.4rem] uppercase tracking-wider text-ink-3/50 leading-none"
+              style={{ top: 0, lineHeight: 1 }}
+            >
               tps
             </span>
+            {meanTps > 0 && (
+              <span
+                className="absolute left-0 nums text-[0.4rem] leading-none text-ready/70"
+                style={{ top: meanTpsY, transform: "translateY(-50%)" }}
+              >
+                avg&nbsp;{meanTps.toFixed(1)}
+              </span>
+            )}
           </div>
 
           {/* SVG + pause popover overlays */}
-          <div className="relative flex-1" style={{ height: TIMELINE_HEIGHT }}>
+          <div
+            ref={containerRef}
+            className="relative flex-1"
+            style={{ height: TIMELINE_HEIGHT }}
+            onPointerMove={handleMove}
+            onPointerLeave={handleLeave}
+          >
             <svg
-              ref={svgRef}
               width="100%"
               height={TIMELINE_HEIGHT}
               viewBox={`0 0 ${width} ${TIMELINE_HEIGHT}`}
               preserveAspectRatio="none"
-              className="overflow-visible"
+              className="overflow-visible pointer-events-none"
               role="img"
               aria-label={`Solve timeline: ${segments.length} segments over ${formatTime(totalMs)}`}
-              onPointerMove={handleMove}
-              onPointerLeave={handleLeave}
             >
               <defs>
                 <linearGradient id="timeline-tps-fill" x1="0" y1="0" x2="0" y2="1">
@@ -485,9 +460,6 @@ function TimelineSection({
                     strokeOpacity={hl === "active" ? 0.9 : 0.5}
                     strokeWidth={hl === "active" ? 1.2 : 0.5}
                     vectorEffect="non-scaling-stroke"
-                    style={{ pointerEvents: isPause ? "none" : "all" }}
-                    onMouseEnter={() => onHoverPhase(seg.phaseName ?? null)}
-                    onMouseLeave={() => onHoverPhase(null)}
                   />
                 );
               })}
@@ -522,15 +494,7 @@ function TimelineSection({
               )}
             </svg>
 
-            {/* P1.c — Mean TPS badge (HTML, not stretched) */}
-            {meanTps > 0 && (
-              <span
-                className="pointer-events-none absolute right-0 nums text-[0.5rem] leading-none text-ready/70"
-                style={{ top: meanTpsY, transform: "translateY(-50%)" }}
-              >
-                avg {meanTps.toFixed(1)}
-              </span>
-            )}
+
 
             {/* P1.b — Pause popover triggers: invisible divs over each pause block */}
             {totalMs > 0 &&
@@ -646,6 +610,91 @@ function TimelineSection({
                     </HoverCard>
                   );
                 })}
+            {/* Phase hover popover triggers: invisible divs over each phase block */}
+            {totalMs > 0 &&
+              segments
+                .filter((s) => s.kind === "phase")
+                .map((seg, i) => {
+                  const leftPct = (seg.startMs / totalMs) * 100;
+                  const widthPct = (seg.durationMs / totalMs) * 100;
+                  const topPct = (SEG_TOP / TIMELINE_HEIGHT) * 100;
+                  const heightPct = ((SEG_BOTTOM - SEG_TOP) / TIMELINE_HEIGHT) * 100;
+                  const color = phaseColorHex(seg.phaseName ?? "", i);
+                  // Compute TPS and move count for this phase segment
+                  const moveCount = moveTicks.filter(
+                    (t) => t.phaseName === seg.phaseName &&
+                      t.offsetMs >= seg.startMs &&
+                      t.offsetMs <= seg.endMs
+                  ).length;
+                  const phaseTps = moveCount > 0 && seg.durationMs > 0
+                    ? (moveCount / seg.durationMs) * 1000
+                    : 0;
+
+                  return (
+                    <HoverCard key={`phase-${i}`} openDelay={200} closeDelay={150}>
+                      <HoverCardTrigger asChild>
+                        <div
+                          className="absolute cursor-pointer"
+                          style={{
+                            left: `${leftPct}%`,
+                            width: `max(${widthPct}%, 4px)`,
+                            top: `${topPct}%`,
+                            height: `${heightPct}%`,
+                            minHeight: 10,
+                          }}
+                          onMouseEnter={() => onHoverPhase(seg.phaseName ?? null)}
+                          onMouseLeave={() => onHoverPhase(null)}
+                        />
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        side="bottom"
+                        align="start"
+                        sideOffset={4}
+                        className="w-56 p-3 text-xs"
+                      >
+                        {/* Phase name */}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block size-2.5 shrink-0 rounded-sm"
+                            style={{ background: color }}
+                          />
+                          <span className="font-medium text-ink">{seg.phaseName}</span>
+                        </div>
+                        {/* Stats */}
+                        <div className="mt-2 flex items-baseline gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-[0.55rem] uppercase tracking-wider text-ink-3">
+                              Time
+                            </span>
+                            <span className="nums text-base font-medium text-ink">
+                              {formatTime(seg.durationMs)}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[0.55rem] uppercase tracking-wider text-ink-3">
+                              Moves
+                            </span>
+                            <span className="nums text-base font-medium text-ink">
+                              {moveCount}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[0.55rem] uppercase tracking-wider text-ink-3">
+                              TPS
+                            </span>
+                            <span className="nums text-base font-medium text-ink">
+                              {phaseTps.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Duration fraction */}
+                        <div className="mt-1.5 text-[0.55rem] text-ink-3">
+                          {Math.round((seg.durationMs / totalMs) * 100)}% of solve
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  );
+                })}
           </div>
         </div>
 
@@ -670,46 +719,7 @@ function TimelineSection({
           ))}
         </div>
 
-        {/* Hover readout — time, segment, nearest move, TPS at cursor */}
-        <div className="mt-1 flex min-h-5 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[0.62rem] text-ink-3">
-          <span className="nums">
-            {hoverMs !== null ? formatTime(hoverMs) : formatTime(0)}
-          </span>
-          {hoverSegment ? (
-            <span
-              className="flex items-center gap-1.5 font-medium"
-              style={{
-                color:
-                  hoverSegment.kind === "phase"
-                    ? phaseColorHex(hoverSegment.phaseName ?? "", 0)
-                    : pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase"),
-              }}
-            >
-              <span
-                className="inline-block size-2 rounded-sm"
-                style={{
-                  background:
-                    hoverSegment.kind === "phase"
-                      ? phaseColorHex(hoverSegment.phaseName ?? "", 0)
-                      : pauseColorHex(hoverSegment.pauseCategory ?? "mid-phase"),
-                  opacity: 0.7,
-                }}
-              />
-              {hoverSegment.label}
-              <span className="nums opacity-70">{formatTime(hoverSegment.durationMs)}</span>
-            </span>
-          ) : null}
-          {hoverIdx !== null && moveTicks[hoverIdx] && hoverMs !== null && hoverMs <= totalMs + 50 ? (
-            <span className="font-mono text-ink-2">
-              #{hoverIdx + 1} {moveTicks[hoverIdx].label}
-              {moveTicks[hoverIdx].phaseName ? ` · ${moveTicks[hoverIdx].phaseName}` : ""}
-              <span className="ml-1.5 text-ink-3">
-                {tpsAtMs(hoverMs).toFixed(2)} tps
-              </span>
-            </span>
-          ) : null}
-          <span className="nums">{formatTime(totalMs)}</span>
-        </div>
+
       </div>
 
       {/* Legend — real labels, grouped: phases / pauses / TPS / avg */}
