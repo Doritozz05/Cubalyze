@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, RefreshCw, X } from "lucide-react";
+import { Plus, RefreshCw, X, Clock, Shuffle, Tag, FileText, CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,13 +148,15 @@ export function ManualSolveSheet({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 360, opacity: 0 }}
             transition={{ type: "spring", stiffness: 360, damping: 32 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-[360px] flex-col overflow-hidden border-l border-line bg-surface shadow-2xl"
+            className="fixed right-0 top-0 z-50 flex h-screen w-[380px] flex-col border-l border-line bg-canvas shadow-2xl"
             aria-label="Manual solve"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Plus className="size-4 text-ink-2" />
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="grid size-7 place-items-center rounded-md bg-ink text-surface">
+                  <Plus className="size-3.5" />
+                </div>
                 <span className="text-sm font-medium text-ink">
                   Add manual solve
                 </span>
@@ -169,16 +171,17 @@ export function ManualSolveSheet({
             </div>
 
             {/* Body */}
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+            <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
               {/* Time */}
-              <div className="flex flex-col gap-1.5">
-                <label className="flex items-center justify-between">
+              <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
                     Time
                   </span>
                   <span
                     className={cn(
-                      "nums text-[0.62rem]",
+                      "ml-auto nums text-[0.62rem]",
                       timeValid ? "text-ink-3" : "text-dnf",
                     )}
                   >
@@ -186,7 +189,7 @@ export function ManualSolveSheet({
                       ? `${(parsedMs / 1000).toFixed(2)} s`
                       : "—"}
                   </span>
-                </label>
+                </div>
                 <Input
                   placeholder="e.g. 12.34"
                   inputMode="decimal"
@@ -195,112 +198,138 @@ export function ManualSolveSheet({
                   className="h-10 text-base"
                   autoFocus
                 />
-                <p className="text-[0.62rem] text-ink-3">
-                  Accepts <code>ss.cs</code> or <code>m:ss.cs</code>.
+                <p className="mt-2 text-[0.6rem] text-ink-3">
+                  Accepts <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">ss.cs</code> or{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">m:ss.cs</code>.
                 </p>
-              </div>
+              </section>
 
               {/* Scramble */}
-              <div className="flex flex-col gap-1.5">
-                <label className="flex items-center justify-between">
+              <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shuffle className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
                     Scramble
                   </span>
                   <button
                     onClick={regenScramble}
-                    className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+                    className="ml-auto flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
                   >
                     <RefreshCw className="size-3" />
                     Generate
                   </button>
-                </label>
+                </div>
                 <textarea
                   value={scramble}
                   onChange={(e) => setScramble(e.target.value)}
-                  className="min-h-[64px] resize-none rounded-md border border-line bg-surface px-3 py-2 text-xs text-ink focus:outline-none focus:border-ink-2"
+                  className="min-h-[64px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
+                  placeholder="R U R' U'..."
                 />
-              </div>
+              </section>
 
               {/* Method */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                  Method
-                </span>
-                <div className="flex overflow-hidden rounded-md border border-line text-xs">
-                  {METHODS.map((m, i) => (
+              <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Tag className="size-3.5 text-ink-3" />
+                  <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
+                    Method
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {METHODS.map((m) => (
                     <button
                       key={m}
                       onClick={() => setMethod(m)}
                       className={cn(
-                        "flex-1 px-2 py-1.5 transition-colors",
-                        i !== 0 && "border-l border-line",
+                        "rounded-md px-2 py-2 text-xs font-medium transition-all",
                         method === m
-                          ? "bg-ink text-surface"
-                          : "bg-surface text-ink-3 hover:text-ink-2",
+                          ? "bg-ink text-surface shadow-sm"
+                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
                       )}
                     >
                       {m}
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
               {/* Penalty */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                  Penalty
-                </span>
-                <div className="flex overflow-hidden rounded-md border border-line text-xs">
-                  {PENALTIES.map((p, i) => (
-                    <button
-                      key={p}
-                      onClick={() => setPenalty(p)}
-                      className={cn(
-                        "flex-1 px-2 py-1.5 transition-colors",
-                        i !== 0 && "border-l border-line",
-                        penalty === p
-                          ? "bg-ink text-surface"
-                          : "bg-surface text-ink-3 hover:text-ink-2",
-                      )}
-                    >
-                      {p}
-                    </button>
-                  ))}
+              <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
+                <div className="flex items-center gap-2 mb-3">
+                  <CircleAlert className="size-3.5 text-ink-3" />
+                  <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
+                    Penalty
+                  </span>
                 </div>
-              </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {PENALTIES.map((p) => {
+                    const isDnf = p === "DNF";
+                    const isPlus2 = p === "+2";
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => setPenalty(p)}
+                        className={cn(
+                          "rounded-md px-2 py-2 text-xs font-medium transition-all",
+                          penalty === p
+                            ? isDnf
+                              ? "bg-dnf-soft text-dnf ring-1 ring-dnf/30"
+                              : isPlus2
+                                ? "bg-plus2-soft text-plus2 ring-1 ring-plus2/30"
+                                : "bg-ink text-surface shadow-sm"
+                            : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
+                        )}
+                      >
+                        {p === "none" ? "Clean" : p}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
 
               {/* Notes */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                  Notes (optional)
-                </span>
+              <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="size-3.5 text-ink-3" />
+                  <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
+                    Notes
+                  </span>
+                  <span className="ml-auto text-[0.55rem] text-ink-3/50">optional</span>
+                </div>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. focus on lookahead"
-                  className="min-h-[60px] resize-none rounded-md border border-line bg-surface px-3 py-2 text-xs text-ink focus:outline-none focus:border-ink-2"
+                  className="min-h-[60px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                 />
-              </div>
+              </section>
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-surface-2 px-4 py-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={submit}
-                disabled={!canSubmit}
-                className="h-8"
-              >
-                {submitting ? "Adding…" : "Add solve"}
-              </Button>
+            <div className="flex shrink-0 items-center justify-between border-t border-line bg-canvas px-5 py-3.5">
+              <p className="text-[0.6rem] text-ink-3">
+                {timeValid && scrambleValid
+                  ? "Ready to log"
+                  : "Fill in time and scramble"}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={submit}
+                  disabled={!canSubmit}
+                  className="h-8 text-xs bg-ink text-surface hover:bg-ink/85"
+                >
+                  {submitting ? "Adding…" : "Add solve"}
+                </Button>
+              </div>
             </div>
           </motion.aside>
         </>

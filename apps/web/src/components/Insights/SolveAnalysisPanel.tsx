@@ -95,7 +95,7 @@ export function SolveAnalysisPanel({
   );
 
   return (
-    <div className={cn("flex flex-col gap-4 px-1 pb-4", className)}>
+    <div className={cn("flex flex-col gap-4 px-1 pb-4 bg-canvas", className)}>
       {/* Back to overview */}
       <button
         onClick={onBackToOverview}
