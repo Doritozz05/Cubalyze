@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -31,9 +31,10 @@ interface Point {
 const WINDOWS: Array<5 | 12 | 100> = [5, 12, 100];
 
 /**
- * Flat, single-stroke Ao-N trend chart (recharts) with a window switcher.
+ * Ao-N trend chart (recharts AreaChart) with a window switcher.
  * Renders the rolling average oldest→newest so progress is visible at a
- * glance. DNFs produce gaps. No fill, no grid chrome.
+ * glance. Vertical gradient area fill + horizontal gradient line stroke.
+ * DNFs produce gaps. No grid chrome, no axis labels.
  */
 export function TrendChart({
   solves,
@@ -104,14 +105,18 @@ export function TrendChart({
       {hasData ? (
         <div className="h-[72px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={data}
               margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
             >
               <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+                <linearGradient id={`${gradId}-line`} x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="var(--ink-3)" />
                   <stop offset="100%" stopColor="var(--ready)" />
+                </linearGradient>
+                <linearGradient id={`${gradId}-fill`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--ready)" stopOpacity={0.12} />
+                  <stop offset="100%" stopColor="var(--ready)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="label" hide domain={["dataMin", "dataMax"]} />
@@ -138,16 +143,17 @@ export function TrendChart({
                 labelFormatter={(l) => `Solve ${l}`}
                 formatter={(v) => [formatTime(Number(v)), `Ao${window}`]}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="ao"
-                stroke={`url(#${gradId})`}
+                stroke={`url(#${gradId}-line)`}
+                fill={`url(#${gradId}-fill)`}
                 strokeWidth={1.5}
                 dot={false}
                 activeDot={{ r: 2.5, fill: "var(--ready)" }}
                 connectNulls
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       ) : (

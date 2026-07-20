@@ -100,8 +100,14 @@ export function Sparkline({
       preserveAspectRatio="none"
     >
       {fill ? (
-        <path d={areaPath} fill={stroke} opacity={0.12} />
+        <path d={areaPath} fill={`url(#sf-${color})`} />
       ) : null}
+      <defs>
+        <linearGradient id={`sf-${color}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity={0.15} />
+          <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+        </linearGradient>
+      </defs>
       {refY != null ? (
         <line
           x1={0}
