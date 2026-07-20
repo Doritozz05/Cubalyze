@@ -70,6 +70,35 @@ export function ReplaySection({
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
 
+  // Track which solve the worker is currently initialized for — when solve
+  // changes, we must tear down and re-init with fresh state.
+  const lastSolveIdRef = useRef<string | null>(null);
+  /** Tracks the canvasKey generation that the current worker was created for.
+   *  Prevents init with a stale canvas that already had transferControlToOffscreen
+   *  called on it (a one-way operation). */
+  const canvasGenRef = useRef(-1);
+
+  // ── Reset state when solve changes ────────────────────────────────────────
+  // This runs BEFORE the init effect, resetting display state so the user
+  // never sees stale move count / time from the previous solve.
+  // Increments canvasKey to force a fresh <canvas> DOM element (since
+  // transferControlToOffscreen() is a one-way operation).
+  // On FIRST mount, `lastSolveIdRef` is null — we skip state/canvas reset
+  // because initial state is already correct and the canvas hasn't been
+  // transferred yet (avoids a needless canvas re-mount + double init).
+  useEffect(() => {
+    if (lastSolveIdRef.current !== solve.id) {
+      if (lastSolveIdRef.current !== null) {
+        setPositionMs(0);
+        setCurrentMoveIdx(-1);
+        setReplayState("idle");
+        setSpeed(1);
+        setCanvasKey((k) => k + 1);
+      }
+      lastSolveIdRef.current = solve.id;
+    }
+  }, [solve.id]);
+
   // Use solve.time as the authoritative total (matches the timeline).
   // Falls back to move span only when solve.time is unavailable.
   const totalMs = useMemo(() => {
@@ -145,6 +174,12 @@ export function ReplaySection({
     // Guard: don't re-init if worker already exists (prevents thrash on
     // parent re-renders during playback).
     if (!canvasRef.current || workerRef.current) return;
+
+    // Guard: skip if this canvas is stale from a previous solve-change
+    // render — the canvasKey has been incremented but the DOM hasn't
+    // re-rendered yet. Wait for the next commit with a fresh canvas.
+    if (canvasGenRef.current >= canvasKey) return;
+    canvasGenRef.current = canvasKey;
 
     let cancelled = false;
 
@@ -240,7 +275,7 @@ export function ReplaySection({
       setCanvasKey((k) => k + 1);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, solve]);
+  }, [expanded, solve, canvasKey]);
 
   // ── Cleanup on unmount ──────────────────────────────────────────────────
   useEffect(() => {
