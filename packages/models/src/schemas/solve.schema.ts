@@ -16,6 +16,8 @@ export const SolveSchema = z.object({
   scramble: z.string(),
   penalty: z.enum(['none', '+2', 'dnf']).default('none'),
   method: z.string().optional(),
+  /** How the solve was recorded: "smart" (cube hardware) or "manual". */
+  source: z.enum(['smart', 'manual']).default('manual'),
   moves: z.array(CubeMoveEventSchema).default([]),
   analysisEngineVersion: z.string().optional(),
   analysis: z.string().optional(),

@@ -101,4 +101,11 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE solves ADD COLUMN analysis TEXT;
     `,
   },
+  {
+    id: '006_add_source_column',
+    description: 'Add source column to solves table ("smart" | "manual")',
+    sql: `
+      ALTER TABLE solves ADD COLUMN source TEXT NOT NULL DEFAULT 'manual';
+    `,
+  },
 ];

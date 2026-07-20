@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Timer, BarChart3, Activity, Grid3x3 } from "lucide-react";
+import { Timer, LayoutDashboard, Grid3x3 } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -25,7 +25,7 @@ export const ACTIVE_PILL_SPRING = {
 };
 
 /** Views the main stage can show. Driven by the LeftSidebar nav. */
-export type ViewId = "timer" | "stats" | "analysis";
+export type ViewId = "timer" | "insights";
 
 export interface NavItem {
   id: ViewId;
@@ -40,7 +40,8 @@ export interface NavGroup {
 
 /**
  * Nav rail sections. "Main" holds the live stage (timer + 3D cube);
- * "Insights" holds the post-solve content that takes over the stage.
+ * "Insights" holds the unified stats + analysis dashboard that takes over
+ * the stage (sidebar of solves + overview / per-solve analysis).
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -52,8 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Insights",
     items: [
-      { id: "stats", label: "Stats", icon: BarChart3 },
-      { id: "analysis", label: "Analysis", icon: Activity },
+      { id: "insights", label: "Insights", icon: LayoutDashboard },
     ],
   },
 ];

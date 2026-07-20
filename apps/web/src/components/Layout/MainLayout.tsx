@@ -32,6 +32,8 @@ export interface MainLayoutProps {
   leftSidebar?: React.ReactNode;
   /** Toggle mobile nav sheet. */
   onToggleMobileNav?: () => void;
+  /** Open the manual solve entry sheet (the "+" button in the header). */
+  onAddManual?: () => void;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (shows the split). */
@@ -72,6 +74,7 @@ export function MainLayout({
   main,
   leftSidebar,
   onToggleMobileNav,
+  onAddManual,
   cube3D,
   cube3DActive,
   cube3DReady,
@@ -146,6 +149,7 @@ export function MainLayout({
           onRenameSession={onRenameSession}
           onDeleteSession={onDeleteSession}
           onToggleMobileNav={onToggleMobileNav}
+          onAddManual={onAddManual}
         />
 
         <main className="mx-auto flex w-full flex-1 flex-col lg:h-[calc(100dvh-3.5rem)] lg:flex-row lg:overflow-hidden">

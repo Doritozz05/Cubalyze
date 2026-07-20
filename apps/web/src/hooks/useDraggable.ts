@@ -40,6 +40,19 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
 ) {
   const { clickThreshold = 4, storageKey } = options;
 
+  /** Clamp to viewport minus a safety margin so the element is never
+   *  positioned off-screen after a viewport resize or resolution change.
+   *  Without the element ref we use 48px as the smallest draggable size. */
+  function clampToViewport(pos: Position, margin = 48): Position {
+    if (typeof window === "undefined") return pos;
+    const maxX = Math.max(0, window.innerWidth - margin);
+    const maxY = Math.max(0, window.innerHeight - margin);
+    return {
+      x: Math.max(0, Math.min(maxX, pos.x)),
+      y: Math.max(0, Math.min(maxY, pos.y)),
+    };
+  }
+
   const [position, setPosition] = useState<Position>(() => {
     if (storageKey && typeof window !== "undefined") {
       try {
@@ -47,14 +60,14 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
         if (saved) {
           const parsed = JSON.parse(saved) as Position;
           if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) {
-            return parsed;
+            return clampToViewport(parsed);
           }
         }
       } catch {
         /* corrupt entry — fall through to default */
       }
     }
-    return initial;
+    return clampToViewport(initial);
   });
 
   const [isDragging, setIsDragging] = useState(false);

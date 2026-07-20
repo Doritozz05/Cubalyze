@@ -5,8 +5,8 @@ import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
-import { StatsPanel } from "@/components/Stats/StatsPanel";
-import { SolveAnalysisPanel } from "@/components/Stats/SolveAnalysisPanel";
+import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
+import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { FloatingCubeButton } from "@/components/Cube3D/FloatingCubeButton";
 import { FloatingTimesPanel } from "@/components/Stats/FloatingTimesPanel";
@@ -18,7 +18,7 @@ import { useOrientation } from "@/hooks/useOrientation";
 import { preferencesStore } from "@cubeforge/state";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { ThemeProvider } from "@/components/theme-provider";
-import type { Penalty, SolveMethod } from "@/types";
+import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import "@/index.css";
@@ -59,8 +59,11 @@ export default function App() {
   const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
   // Track the DB solve ID for the current solve so we can persist analysis later
   const pendingSolveIdRef = useRef<string | null>(null);
-  // Selected solve for historical analysis viewing
-  const [selectedSolve, setSelectedSolve] = useState<import("@/types").Solve | null>(null);
+  // Tracks the live Smart Cube connection state so `handleComplete` (which
+  // must be defined *before* `useSolveSession` provides `smartCubeConnected`)
+  // can read the current connection status without a temporal-dead-zone
+  // dependency. Synced via the effect below.
+  const smartCubeConnectedRef = useRef(false);
 
   const handleRegenerate = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
@@ -73,12 +76,18 @@ export default function App() {
       // Capture the current scramble before it changes
       const capturedScramble = currentScramble;
       const capturedMethod = methodPref;
+      // `smartCubeConnectedRef.current` reflects the live connection state at
+      // solve-stop time (synced by the effect below). We use a ref instead of
+      // the `smartCubeConnected` variable directly because `handleComplete` is
+      // declared before `useSolveSession` provides it (it's passed as `onSolve`).
+      const capturedSource: SolveSource = smartCubeConnectedRef.current ? "smart" : "manual";
 
       addSolve({
         time,
         scramble: capturedScramble,
         penalty,
         method: capturedMethod,
+        source: capturedSource,
       })
         .then((solveId) => {
           pendingSolveIdRef.current = solveId;
@@ -109,6 +118,12 @@ export default function App() {
     lastSolveStartState,
   } = session$;
 
+  // Sync the connection ref so handleComplete (declared above, before session$
+  // was available) can read the current Smart Cube connection state.
+  useEffect(() => {
+    smartCubeConnectedRef.current = smartCubeConnected;
+  }, [smartCubeConnected]);
+
   // ── Run analysis on solve complete ─────────────────────────────────────
   const prevLastTimeRef = useRef<number | null>(null);
   // Capture scramble & method at solve stop time to avoid stale closure race
@@ -125,14 +140,11 @@ export default function App() {
     // Detect new solve completion (lastTime changed from something to a new value)
     if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
       prevLastTimeRef.current = timerLastTime;
-      setSelectedSolve(null); // Show new solve analysis instead of historical
 
       // Use the stable snapshot captured at stop time (avoids race with IDLE clearing)
       const moves = lastSolveMoves;
       const scr = scrambleAtSolveRef.current;
-      const m = methodAtSolveRef.current;
-
-      if (moves.length > 0) {
+      const m = methodAtSolveRef.current;          if (moves.length > 0) {
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
           runAnalysis(moves, scr, m, lastSolveOrientations, lastSolveStartState ?? undefined).then((analysis) => {
@@ -140,10 +152,20 @@ export default function App() {
               lastSolveRef.current = { solve: null, analysis };
               setLastAnalysis(analysis);
 
-              // Persist analysis to DB
+              // Persist analysis + the raw moves to DB. The moves are
+              // captured at solve-stop time (lastSolveMoves) and were not
+              // passed to addSolve (which only stores time/scramble/penalty/
+              // method/source), so we persist them here alongside the analysis.
+              // This also fixes the previous bug where solves made with a
+              // Smart Cube were later shown as "Manual" because `moves` was
+              // empty in the DB — now `source` (set in addSolve) is the
+              // authoritative indicator, and moves are persisted here.
               const solveId = pendingSolveIdRef.current;
               if (solveId) {
-                updateSolve(solveId, { analysis }).catch(() =>
+                updateSolve(solveId, {
+                  analysis,
+                  moves,
+                }).catch(() =>
                   console.warn("Failed to persist analysis"),
                 );
                 pendingSolveIdRef.current = null;
@@ -291,68 +313,65 @@ export default function App() {
 
   const handleCloseCube = useCallback(() => setCubePanelOpen(false), []);
 
-  // Stable callback so memo(TimesList) doesn't re-render on every App render
-  // (e.g. timer ticks) — only when solves actually change.
-  const handleAnalyzeSolve = useCallback(
-    (solve: import("@/types").Solve) => {
-      setSelectedSolve(solve);
-      setActiveView("analysis");
-      // The 3D cube split only makes sense alongside the timer; close it
-      // when jumping to Analysis from a row click, otherwise the panel
-      // would stay mounted over the analysis view.
-      setCubePanelOpen(false);
+  // State for the manual solve sheet (opened from the Header "+" button).
+  const [manualOpen, setManualOpen] = useState(false);
+
+  // Manual solve submit — delegates to addSolve (manual entry, no moves,
+  // no analysis). The sheet handles its own scramble generation.
+  const handleAddManual = useCallback(
+    async (input: {
+      time: number;
+      scramble: string;
+      method: SolveMethod;
+      notes: string;
+      penalty: Penalty;
+    }) => {
+      await addSolve({
+        time: input.time,
+        penalty: input.penalty,
+        scramble: input.scramble,
+        method: input.method,
+        source: "manual",
+      });
     },
-    [],
+    [addSolve],
   );
 
-  // Create a solve object for the analysis panel — prefer selected, then last
-  const solveForPanel = selectedSolve
-    ? selectedSolve
-    : lastAnalysis
-      ? {
-          id: "latest",
-          time: timerLastTime ?? 0,
-          penalty: "none" as Penalty,
-          scramble: scrambleAtSolveRef.current || currentScramble,
-          timestamp: Date.now(),
-          method: methodAtSolveRef.current || methodPref,
-          analysis: lastAnalysis,
-        } satisfies import("@/types").Solve
-      : undefined;
+  // Clicking "Analysis" on a solve row jumps to Insights AND selects that
+  // specific solve via the URL param — fixing the old bug where the click
+  // navigated to a *different* solve. The InsightsDashboard reads ?solve=
+  // on mount and selects accordingly.
+  const handleAnalyzeSolve = useCallback((solve: Solve) => {
+    setActiveView("insights");
+    setCubePanelOpen(false);
+    // Push the selected solve to the URL so InsightsDashboard picks it up.
+    const url = new URL(window.location.href);
+    url.searchParams.set("solve", solve.id);
+    window.history.replaceState(null, "", url.toString());
+    // Force re-read of the URL by toggling a noop state (the dashboard's
+    // mount effect reads ?solve=, so we only need to ensure we're on the
+    // insights view — the URL is already set). A remount via key isn't
+    // needed because the dashboard is conditionally rendered (mounts fresh
+    // when switching from timer → insights).
+  }, []);
 
   // ── Main stage composition by active view ──────────────────────────────
   // Timer & Cube 3D share the live stage (scramble + timer + compact stats);
   // selecting Cube 3D additionally splits the stage with the 3D aside.
-  // Times/Stats/Analysis take over the stage fully ("en grande").
+  // Insights takes over the stage fully (sidebar of solves + overview /
+  // per-solve analysis) and owns its own scroll per panel.
   const renderMain = () => {
-    if (activeView === "stats") {
+    if (activeView === "insights") {
       return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-          <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-ink-3">
-            Session Stats
-          </h2>
-          <StatsPanel solves={solves} pb={currentPB ?? undefined} />
-        </div>
-      );
-    }
-
-    if (activeView === "analysis") {
-      return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-          <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-ink-3">
-            Last Solve Analysis
-          </h2>
-          {solveForPanel ? (
-            <SolveAnalysisPanel solve={solveForPanel} />
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
-              <p className="text-sm text-ink-2">No analysis yet</p>
-              <p className="text-xs text-ink-3">
-                Complete a solve with a Smart Cube to see your analysis.
-              </p>
-            </div>
-          )}
-        </div>
+        <InsightsDashboard
+          key={session?.id ?? "none"}
+          solves={solves}
+          pb={currentPB ?? undefined}
+          pendingAnalysis={lastAnalysis}
+          sessionId={session?.id ?? null}
+          onUpdateSolve={handleUpdate}
+          onDeleteSolve={handleDelete}
+        />
       );
     }
 
@@ -396,7 +415,7 @@ export default function App() {
 
         <SessionStats
           solves={solves}
-          onExpand={() => setActiveView("stats")}
+          onExpand={() => setActiveView("insights")}
         />
       </>
     );
@@ -427,7 +446,19 @@ export default function App() {
             />
           }
           onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
+          onAddManual={() => setManualOpen(true)}
           main={renderMain()}
+        />
+
+        {/* Manual solve sheet — mounted at App level (opened from the
+            Header "+" button). A manual entry is a session action, not an
+            analysis action, so it lives here rather than inside the
+            Insights dashboard. */}
+        <ManualSolveSheet
+          open={manualOpen}
+          onClose={() => setManualOpen(false)}
+          defaultMethod={methodPref}
+          onSubmit={handleAddManual}
         />
         {/* Floating solve log — draggable, minimizable, doesn't affect layout.
             Only rendered on the Timer stage; Stats/Analysis take over the stage. */}

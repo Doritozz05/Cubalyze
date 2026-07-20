@@ -10,6 +10,9 @@ export type Penalty = "none" | "+2" | "DNF";
 /** Solving method identifier. */
 export type SolveMethod = 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
 
+/** How the solve was recorded. */
+export type SolveSource = "smart" | "manual";
+
 /** A single recorded solve. */
 export interface Solve {
   /** Stable unique id (used as React key + for mutations). */
@@ -26,6 +29,8 @@ export interface Solve {
   note?: string;
   /** Solving method used for this solve. */
   method?: SolveMethod;
+  /** How the solve was recorded: "smart" (cube hardware) or "manual". */
+  source?: SolveSource;
   /** Raw moves captured from Smart Cube during the solve. */
   moves?: import('@cubeforge/types').CubeMoveEvent[];
   /** Post-solve analysis metrics (computed after solve completes). */

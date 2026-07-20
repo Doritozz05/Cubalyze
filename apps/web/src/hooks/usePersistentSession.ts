@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
-import type { Solve as UISolve, Penalty } from "@/types";
+import type { Solve as UISolve, Penalty, SolveSource } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
 import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
@@ -26,12 +26,19 @@ export interface UsePersistentSessionResult {
     penalty?: Penalty;
     scramble: string;
     method?: string;
+    source?: SolveSource;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
   }) => Promise<string | null>;
   updateSolve: (
     id: string,
-    updates: { penalty?: Penalty; note?: string | null; analysis?: SolveMetrics },
+    updates: {
+      penalty?: Penalty;
+      note?: string | null;
+      source?: SolveSource;
+      moves?: CubeMoveEvent[];
+      analysis?: SolveMetrics;
+    },
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   clearSession: () => Promise<void>;
@@ -59,6 +66,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     timestamp: new Date(dbSolve.date).getTime(),
     note: dbSolve.method,
     method: dbSolve.method as UISolve['method'],
+    source: (dbSolve.source as SolveSource) ?? "manual",
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
   };
@@ -155,6 +163,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     penalty?: Penalty;
     scramble: string;
     method?: string;
+    source?: SolveSource;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
   }): Promise<string | null> => {
@@ -170,6 +179,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       scramble: input.scramble,
       penalty: (input.penalty?.toLowerCase() || "none") as DBSolve['penalty'],
       method: input.method,
+      source: input.source ?? "manual",
       moves: input.moves || [],
       analysisEngineVersion: '0.1.0',
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
@@ -180,6 +190,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const uiSolve: UISolve = {
       ...toUISolve(dbSolve),
       method: (input.method as UISolve['method']) || undefined,
+      source: input.source ?? "manual",
       moves: input.moves,
       analysis: input.analysis,
     };
@@ -190,7 +201,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     return solveId;
   }, [session]);
 
-  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; analysis?: SolveMetrics }) => {
+  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; source?: SolveSource; moves?: CubeMoveEvent[]; analysis?: SolveMetrics }) => {
     if (!session || !reposRef.current) return;
     const { solves: solvesRepo } = reposRef.current;
     
@@ -200,6 +211,12 @@ export function usePersistentSession(): UsePersistentSessionResult {
     existing.penalty = (updates.penalty?.toLowerCase() ?? existing.penalty) as DBSolve['penalty'];
     if (updates.note !== undefined) {
        existing.method = updates.note === null ? undefined : updates.note;
+    }
+    if (updates.source !== undefined) {
+       existing.source = updates.source;
+    }
+    if (updates.moves !== undefined) {
+       existing.moves = updates.moves;
     }
     if (updates.analysis !== undefined) {
        existing.analysis = JSON.stringify(updates.analysis);
@@ -213,6 +230,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
            ...s,
            penalty: updates.penalty ?? s.penalty,
            note: updates.note === null ? undefined : (updates.note ?? s.note),
+           source: updates.source ?? s.source,
+           moves: updates.moves ?? s.moves,
            analysis: updates.analysis ?? s.analysis,
          };
       }

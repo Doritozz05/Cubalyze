@@ -9,6 +9,7 @@ export interface SolveRow {
   scramble: string;
   penalty: string;
   method: string | null;
+  source: string;
   moves: string;
   analysis_engine_version: string | null;
   analysis: string | null;
@@ -27,6 +28,7 @@ function rowToSolve(row: SolveRow): Solve {
     scramble: row.scramble,
     penalty: row.penalty as Solve['penalty'],
     method: row.method ?? undefined,
+    source: (row.source as Solve['source']) ?? 'manual',
     moves: JSON.parse(row.moves) as CubeMoveEvent[],
     analysisEngineVersion: row.analysis_engine_version ?? undefined,
     analysis: row.analysis ?? undefined,
@@ -44,6 +46,7 @@ function solveToRow(solve: Solve): SolveRow {
     scramble: solve.scramble,
     penalty: solve.penalty,
     method: solve.method ?? null,
+    source: solve.source ?? 'manual',
     moves: JSON.stringify(solve.moves || []),
     analysis_engine_version: solve.analysisEngineVersion ?? null,
     analysis: solve.analysis ?? null,
@@ -80,16 +83,16 @@ export class SolvesRepository {
   async insert(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, moves, analysis_engine_version, analysis, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.moves, row.analysis_engine_version, row.analysis, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, moves, analysis_engine_version, analysis, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.moves, row.analysis_engine_version, row.analysis, row.created_at, row.updated_at]
     );
   }
 
   async update(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, moves = ?, analysis_engine_version = ?, analysis = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.moves, row.analysis_engine_version, row.analysis, new Date().toISOString(), row.id]
+      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, source = ?, moves = ?, analysis_engine_version = ?, analysis = ?, updated_at = ? WHERE id = ?',
+      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.moves, row.analysis_engine_version, row.analysis, new Date().toISOString(), row.id]
     );
   }
 

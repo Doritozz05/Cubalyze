@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
+// `Plus` is reused below for the manual-solve button.
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +64,8 @@ export interface HeaderProps {
   onDeleteSession?: (id: string) => void;
   /** Toggle the mobile nav sheet. */
   onToggleMobileNav?: () => void;
+  /** Open the manual solve entry sheet (the "+" button). */
+  onAddManual?: () => void;
   className?: string;
 }
 
@@ -83,6 +86,7 @@ export function Header({
   onRenameSession,
   onDeleteSession,
   onToggleMobileNav,
+  onAddManual,
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -127,8 +131,20 @@ export function Header({
           )}
         </div>
 
-        {/* Right: PB + session + puzzle grouped together */}
+        {/* Right: PB + session + manual + puzzle grouped together */}
         <div className="flex items-center gap-2">
+          {onAddManual ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onAddManual}
+              className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
+              aria-label="Add manual solve"
+              title="Add manual solve"
+            >
+              <Plus className="size-4" />
+            </Button>
+          ) : null}
           {pb != null && Number.isFinite(pb) ? (
             <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
               <Timer className="size-3.5 text-ink-3" />
