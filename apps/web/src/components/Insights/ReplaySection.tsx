@@ -36,6 +36,19 @@ export interface ReplaySectionProps {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
+function StatChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-1">
+      <span className="text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
+        {label}
+      </span>
+      <span className="nums text-[0.7rem] font-semibold text-ink tabular-nums">
+        {value}
+      </span>
+    </div>
+  );
+}
+
 // ─── ReplaySection ─────────────────────────────────────────────────────────
 
 export function ReplaySection({
@@ -273,7 +286,7 @@ export function ReplaySection({
           ) : (
             <div className="flex flex-col gap-3">
               {/* Top row: mini cube + controls */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-center gap-4">
                 {/* Mini cube 3D — solo el cubo, sin overlay */}
                 <div
                   ref={containerRef}
@@ -285,10 +298,9 @@ export function ReplaySection({
                     height={280}
                     className={cn(
                       "h-full w-full",
-                      replayState === "playing" && "cursor-grab active:cursor-grabbing",
+                      "cursor-grab active:cursor-grabbing",
                     )}
                     onPointerDown={(e) => {
-                      if (replayState !== "playing") return;
                       isDraggingRef.current = true;
                       lastPointerRef.current = { x: e.clientX, y: e.clientY };
                       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
@@ -312,7 +324,7 @@ export function ReplaySection({
                 </div>
 
                 {/* Controls column */}
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
                   {/* Time display */}
                   <div className="flex items-baseline gap-1.5">
                     <span className="nums text-lg font-semibold text-ink tabular-nums">
@@ -322,6 +334,18 @@ export function ReplaySection({
                       / {formatTime(totalMs)}
                     </span>
                   </div>
+
+                  {/* Move counter */}
+                  {hasMoves && (
+                    <p className="text-[0.65rem] text-ink-3">
+                      Move{" "}
+                      <span className="nums font-medium text-ink">
+                        {Math.max(0, currentMoveIdx + 1)}
+                      </span>
+                      {" / "}
+                      <span className="nums text-ink-2">{totalMoves}</span>
+                    </p>
+                  )}
 
                   {/* Transport controls */}
                   <div className="flex items-center gap-1">
@@ -401,6 +425,21 @@ export function ReplaySection({
                       ))}
                     </div>
                   </div>
+
+                  {/* Quick stats */}
+                  {hasMoves && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-line/30 pt-2">
+                      <StatChip
+                        label="TPS"
+                        value={(totalMoves / (totalMs / 1000)).toFixed(1)}
+                      />
+                      <StatChip label="Moves" value={String(totalMoves)} />
+                      <StatChip
+                        label="Avg"
+                        value={`${(totalMs / totalMoves).toFixed(0)}ms`}
+                      />
+                    </div>
+                  )}
 
 
                 </div>

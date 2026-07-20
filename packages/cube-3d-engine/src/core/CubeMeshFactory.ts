@@ -1,4 +1,4 @@
-import { BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, Color, Group, Mesh, Shape, ExtrudeGeometry } from 'three';
+import { BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, Color, Group, Mesh, Shape, ShapeGeometry } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
 import type { CubeFace } from '@cubeforge/types';
 
@@ -34,7 +34,7 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
  */
 export class CubeMeshFactory {
   private coreGeometry: BoxGeometry;
-  private stickerGeometry: BoxGeometry;
+  private stickerGeometry: ShapeGeometry;
   private coreMaterial!: MeshStandardMaterial;
   private stickerMaterials: Record<string, MeshBasicMaterial> = {};
   private style: CubeStyleOptions;
@@ -45,13 +45,13 @@ export class CubeMeshFactory {
     // Core 1.0 = no gap between cubies (spacing is 1.0), subtle rounding
     this.coreGeometry = new RoundedBoxGeometry(1.0, 1.0, 1.0, 6, 0.05) as unknown as BoxGeometry;
     
-    // Stickers: custom rounded-rect extrusion (RoundedBoxGeometry clamps radius to thickness/2)
-    this.stickerGeometry = this.createRoundedStickerGeometry(0.84, 0.84, 0.002, 0.06);
+    // Stickers: flat rounded-rect ShapeGeometry — completely flush with the cube surface
+    this.stickerGeometry = this.createRoundedStickerGeometry(0.84, 0.84, 0.06);
     
     this.initMaterials();
   }
 
-  private createRoundedStickerGeometry(w: number, h: number, depth: number, r: number): BoxGeometry {
+  private createRoundedStickerGeometry(w: number, h: number, r: number): ShapeGeometry {
     const shape = new Shape();
     const hw = w / 2;
     const hh = h / 2;
@@ -67,15 +67,7 @@ export class CubeMeshFactory {
     shape.lineTo(-hw, -hh + cr);
     shape.quadraticCurveTo(-hw, -hh, -hw + cr, -hh);
     
-    const geo = new ExtrudeGeometry(shape, {
-      depth,
-      bevelEnabled: true,
-      bevelThickness: 0.015,
-      bevelSize: 0.008,
-      bevelSegments: 6,
-    });
-    geo.translate(0, 0, -depth / 2);
-    return geo as unknown as BoxGeometry;
+    return new ShapeGeometry(shape);
   }
 
   private initMaterials(): void {
@@ -107,9 +99,10 @@ export class CubeMeshFactory {
     group.add(coreMesh);
 
     // 2. Add stickers based on exposed faces
-    // Core is 1.0 (radius 0.5). Sticker extends ±0.001 from center.
-    // Offset 0.5015 puts sticker surface at 0.5025 = 0.0025 past core.
-    const offset = 0.5015;
+    // Core is 1.0 (radius 0.5). Stickers are flat ShapeGeometry, positioned
+    // at 0.5001 — a 0.0001 epsilon above the core surface to avoid z-fighting
+    // while appearing completely flush.
+    const offset = 0.5001;
 
     if (x === 1) {
       const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['R']);
