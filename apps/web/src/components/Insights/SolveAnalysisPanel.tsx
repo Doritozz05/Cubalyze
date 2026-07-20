@@ -16,7 +16,6 @@ import {
   EmptyState,
   MetricRing,
   AlgorithmNotation,
-  type RingColor,
 } from "./atoms";
 
 export interface SolveAnalysisPanelProps {
@@ -759,65 +758,126 @@ function TimelineSection({
 
 // ─── Metric rings section ──────────────────────────────────────────────────
 
+/**
+ * Quality score: 0 (worst) → 1 (best).
+ *
+ * For **lower-is-better** metrics we scale from the optimal value to the max
+ * so that optimal = 1.0, max = 0:
+ *   quality = (max − value) / (max − optimal)
+ *
+ * For eff the optimal is 1.0 (moves = optimal); for pauses/pause% it is 0.
+ *
+ * For **higher-is-better** metrics quality is simply value / max.
+ */
+function quality(
+  value: number,
+  max: number,
+  lowerIsBetter: boolean,
+  optimal = 0,
+): number {
+  if (max <= 0) return 0;
+  const clamped = Math.max(optimal, Math.min(value, max));
+  if (lowerIsBetter && max !== optimal) {
+    return (max - clamped) / (max - optimal);
+  }
+  return clamped / max;
+}
+
+/**
+ * Colour gradient with wide hue span + varying saturation/lightness so
+ * adjacent tiers (q=0.4 vs q=0.5) are clearly distinguishable.
+ * Blue → indigo → purple → magenta → rose.
+ *
+ *   q=0.00  🔵 muted blue   hsl(200, 55%, 40%)
+ *   q=0.25  🖤 indigo        hsl(232, 61%, 44%)
+ *   q=0.50  🖤 purple        hsl(265, 68%, 48%)
+ *   q=0.75  🖤 magenta       hsl(298, 74%, 52%)
+ *   q=1.00  🖤 rose          hsl(330, 80%, 56%)
+ */
+function qualityColorHex(q: number): string {
+  const hue = Math.round(200 + q * 130);     // 200 (blue) → 330 (rose)
+  const sat = Math.round(55 + q * 25);       // 55% → 80%
+  const light = Math.round(40 + q * 16);     // 40% → 56%
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
+}
+
+/**
+ * Benchmark caps — real-world data from competitive speedcubing.
+ *
+ *   TPS:       /12 —  12+ = world-class (sub-6)     6+ = good (sub-15)
+ *                     3+ = learning                   1–2 = just started
+ *   Pauses:    /8  —  0   = world-class (seamless)   1–2 = sub-10 (near seamless)
+ *                     3–4 = advanced (brief pauses)  5–6 = intermediate (stop-and-go)
+ *                     7+  = beginner (many pauses)
+ *   Efficiency /1  —  1.0 = optimal (theoretical shortest solve ~42–52 moves)
+ *                     0.8 = very efficient (15 % over optimal)
+ *                     0.5 = average efficient (2× optimal, typical intermediate)
+ *
+ * Efficiency is shown as a 0–1 score just like in engineering (1 = perfect).
+ * Internally we store actual÷optimal (always ≥1); we convert to 1÷(actual÷optimal)
+ * so the ring and colour behave intuitively.
+ */
+interface MetricDef {
+  /** Value to feed into quality(). */
+  value: number;
+  max: number;
+  label: string;
+  sub: string;
+  lowerIsBetter: boolean;
+  optimal?: number;
+}
+
 function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
-  const rings: { value: number; max: number; label: string; sub: string; color: RingColor }[] = [
+  const rings: MetricDef[] = [
     {
       value: metrics.tps.global,
-      max: 8,
+      max: 12,
       label: metrics.tps.global.toFixed(1),
       sub: "TPS",
-      color: "ink",
-    },
-    {
-      value: metrics.tps.peakInstantaneous,
-      max: 12,
-      label: metrics.tps.peakInstantaneous.toFixed(1),
-      sub: "Peak",
-      color: "ready",
+      lowerIsBetter: false,
     },
     {
       value: metrics.pauses.totalCount,
-      max: Math.max(metrics.pauses.totalCount, 5),
+      max: 8,
       label: `${metrics.pauses.totalCount}`,
       sub: "Pauses",
-      color: metrics.pauses.totalCount > 3 ? "amber" : "ink",
-    },
-    {
-      value: metrics.pauses.pauseRatio,
-      max: 1,
-      label: `${Math.round(metrics.pauses.pauseRatio * 100)}%`,
-      sub: "Pause%",
-      color: metrics.pauses.pauseRatio > 0.15 ? "dnf" : "ink",
+      lowerIsBetter: true,
     },
   ];
 
+  // Efficiency on a 0-1 scale where 1 = optimal (moveEfficiencyRatio = 1.0).
+  // The ring fills to the efficiency value directly, higher = better.
   const efficiency = metrics.efficiency ?? EMPTY_EFFICIENCY;
   if (efficiency.moveEfficiencyRatio > 0) {
+    const effScore = Math.min(1, 1 / efficiency.moveEfficiencyRatio);
     rings.push({
-      value: Math.min(efficiency.moveEfficiencyRatio, 2),
-      max: 2,
-      label: efficiency.moveEfficiencyRatio.toFixed(2),
-      sub: "Eff",
-      color: efficiency.moveEfficiencyRatio > 1.3 ? "amber" : "ready",
+      value: effScore,
+      max: 1,
+      label: `${Math.round(effScore * 100)}%`,
+      sub: "Efficiency",
+      lowerIsBetter: false,
     });
   }
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="Key metrics" />
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-4">
-        {rings.map((r) => (
-          <MetricRing
-            key={r.sub}
-            value={r.value}
-            max={r.max}
-            label={r.label}
-            sub={r.sub}
-            size={72}
-            strokeWidth={5}
-            color={r.color}
-          />
-        ))}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-6">
+        {rings.map((r) => {
+          const q = quality(r.value, r.max, r.lowerIsBetter, r.optimal);
+          return (
+            <MetricRing
+              key={r.sub}
+              value={q * r.max}
+              max={r.max}
+              label={r.label}
+              sub={r.sub}
+              size={80}
+              strokeWidth={4}
+              strokeColor={qualityColorHex(q)}
+            />
+          );
+        })}
       </div>
     </div>
   );

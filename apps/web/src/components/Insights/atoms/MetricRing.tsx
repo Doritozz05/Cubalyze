@@ -13,6 +13,11 @@ export interface MetricRingProps {
   label: string;
   /** Sub-label rendered below the main label, smaller. */
   sub?: string;
+  /**
+   * Benchmark label shown below the sub, e.g. "/10" or "0-5".
+   * Makes it clear what the ring's max represents.
+   */
+  benchmark?: string;
   size?: number;
   strokeWidth?: number;
   color?: RingColor;
@@ -43,6 +48,7 @@ export function MetricRing({
   max,
   label,
   sub,
+  benchmark,
   size = 72,
   strokeWidth = 5,
   color = "ink",

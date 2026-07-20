@@ -220,4 +220,8 @@
   *::-webkit-scrollbar {
     display: none;
   }
+  /* Radix ScrollArea uses its own custom scrollbar elements — hide them too. */
+  [data-slot="scroll-area-scrollbar"] {
+    display: none;
+  }
 }

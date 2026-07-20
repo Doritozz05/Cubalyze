@@ -395,15 +395,6 @@ export const SolveListPanel = memo(function SolveListPanel({
                       {/* Spacer pushes trailing items right */}
                       <span className="flex-1" />
 
-                      {/* Source indicator */}
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          s.source === "smart" ? "bg-ink" : "bg-ink-3/40",
-                        )}
-                        title={s.source === "smart" ? "Smart Cube" : "Manual"}
-                      />
-
                       <PenaltyBadge penalty={s.penalty} />
                     </div>
 
