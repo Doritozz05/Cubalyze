@@ -325,10 +325,21 @@ function computePhaseRuns(moveTicks: MoveTick[]): PhaseRun[] {
     if (phase !== currentPhase) {
       if (currentPhase) {
         runs.push({ phaseName: currentPhase, startIdx: runStart, endIdx: i - 1 });
+      } else if (runs.length > 0) {
+        // Unassigned gap between valid phases: absorb into previous run
+        // so no move gets left with moveVisualMs = 0 (which would cause
+        // the TPS curve to jump backward).
+        runs[runs.length - 1].endIdx = i - 1;
       }
       runStart = i;
       currentPhase = phase;
     }
+  }
+  // Absorb trailing unassigned moves into the last run, and leading
+  // unassigned moves into the first run, so no move is left uncovered.
+  if (runs.length > 0) {
+    runs[runs.length - 1].endIdx = moveTicks.length - 1;
+    if (runs[0].startIdx > 0) runs[0].startIdx = 0;
   }
   return runs;
 }
