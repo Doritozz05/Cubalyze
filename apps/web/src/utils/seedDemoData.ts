@@ -16,25 +16,40 @@ import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
 
 const FACES = ["R", "U", "F", "L", "D", "B"] as const;
 
-/** Generate `n` random cube move events with realistic timestamps. */
-function randomMoves(n: number, baseTs: number, avgGapMs = 180): CubeMoveEvent[] {
+/** Generate `n` random cube move events with realistic timestamps.
+ *  Returns the moves AND the indices where pauses were detected. */
+function randomMoves(n: number, baseTs: number, avgGapMs = 180): {
+  moves: CubeMoveEvent[];
+  pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[];
+} {
   const moves: CubeMoveEvent[] = [];
-  let ts = baseTs;
+  const pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[] = [];
+  let cubeTs = 1000; // simulate cube's internal clock (ms counter)
+  let hostTs = baseTs;
   for (let i = 0; i < n; i++) {
-    // simulate variable inter-move gaps
     const gap = Math.max(40, avgGapMs + (Math.random() - 0.5) * 160);
-    ts += gap;
-    // Insert occasional pauses (1 in 12 chance)
-    if (Math.random() < 0.08) ts += 400 + Math.random() * 1200;
+    hostTs += gap;
+    cubeTs += gap; // cube and host clocks run at same speed for seed data
+    // Occasionally insert a detectable pause (gap >= 600ms → PauseDetector
+    // would flag it after subtracting 100ms turn-execution time).
+    if (Math.random() < 0.08) {
+      const pauseMs = Math.round(500 + Math.random() * 1200);
+      hostTs += pauseMs;
+      cubeTs += pauseMs;
+      // The pause is between move i-1 (already added) and move i (about to be added)
+      if (i > 0) {
+        pauseGaps.push({ startIndex: i - 1, endIndex: i, durationMs: pauseMs });
+      }
+    }
 
     moves.push({
       face: FACES[Math.floor(Math.random() * FACES.length)],
       direction: (Math.random() < 0.15 ? 2 : Math.random() < 0.5 ? 1 : -1) as 1 | -1 | 2,
-      hostTimestamp: Math.round(ts),
-      cubeTimestamp: 0,
+      hostTimestamp: Math.round(hostTs),
+      cubeTimestamp: Math.round(cubeTs),
     });
   }
-  return moves;
+  return { moves, pauseGaps };
 }
 
 /** Random scramble string. */
@@ -65,25 +80,30 @@ function cfopTime(): number {
 
 // ─── Full SolveMetrics generator ────────────────────────────────────────────
 
-function generateMetrics(totalTimeMs: number, totalMoves: number): SolveMetrics {
+function generateMetrics(
+  totalTimeMs: number,
+  totalMoves: number,
+  pauseGaps: { startIndex: number; endIndex: number; durationMs: number }[],
+): SolveMetrics {
   const solveId = uuidv4();
 
   // Phase splits (CFOP proportions: Cross~10%, F2L~55%, OLL~15%, PLL~20%)
   const crossPct = 0.08 + Math.random() * 0.04;
   const f2lPct = 0.48 + Math.random() * 0.1;
   const ollPct = 0.12 + Math.random() * 0.06;
-  const pllPct = 1 - crossPct - f2lPct - ollPct;
+  const pllPct = Math.max(0.05, 1 - crossPct - f2lPct - ollPct);
 
   const crossMs = Math.round(totalTimeMs * crossPct);
   const f2lMs = Math.round(totalTimeMs * f2lPct);
   const ollMs = Math.round(totalTimeMs * ollPct);
   const pllMs = Math.round(totalTimeMs * pllPct);
 
-  // Move count distribution
-  const crossMoves = 5 + Math.floor(Math.random() * 4);  // 5-8
-  const f2lMoves = 24 + Math.floor(Math.random() * 8);   // 24-31
-  const ollMoves = 7 + Math.floor(Math.random() * 5);    // 7-11
-  const pllMoves = 10 + Math.floor(Math.random() * 6);   // 10-15
+  // Move count distribution — ensure sum equals totalMoves
+  const crossMoves = Math.max(3, Math.min(8, 5 + Math.floor(Math.random() * 4)));
+  const f2lMoves = Math.max(18, Math.min(35, 24 + Math.floor(Math.random() * 8)));
+  const ollMoves = Math.max(5, Math.min(12, 7 + Math.floor(Math.random() * 5)));
+  // PLL gets whatever moves remain to make the sum exact
+  const pllMoves = Math.max(6, totalMoves - crossMoves - f2lMoves - ollMoves);
 
   // TPS per phase
   const crossTps = crossMs > 0 ? +(crossMoves / (crossMs / 1000)).toFixed(1) : 0;
@@ -92,37 +112,59 @@ function generateMetrics(totalTimeMs: number, totalMoves: number): SolveMetrics 
   const pllTps = pllMs > 0 ? +(pllMoves / (pllMs / 1000)).toFixed(1) : 0;
   const globalTps = totalTimeMs > 0 ? +(totalMoves / (totalTimeMs / 1000)).toFixed(2) : 0;
 
-  // Pauses
-  const pauseCount = 1 + Math.floor(Math.random() * 5);
-  const totalPauseTimeMs = Math.round(totalTimeMs * (0.05 + Math.random() * 0.12));
+  // ── Pauses: derived from actual inter-move gaps ────────────────────
+  const pauseCount = Math.min(pauseGaps.length, 10);
+  const realPauses = pauseGaps.slice(0, pauseCount).map((g) => {
+    // Determine phase based on where this pause falls in the move sequence
+    const ratio = g.startIndex / totalMoves;
+    let phase = "F2L";
+    const crossEnd = crossMoves / totalMoves;
+    const f2lEnd = (crossMoves + f2lMoves) / totalMoves;
+    const ollEnd = (crossMoves + f2lMoves + ollMoves) / totalMoves;
+    if (ratio < crossEnd) phase = "Cross";
+    else if (ratio < f2lEnd) phase = "F2L";
+    else if (ratio < ollEnd) phase = "OLL";
+    else phase = "PLL";
+
+    let category: "mid-phase" | "pre-algorithm" | "transition" = "mid-phase";
+    // Classify: near phase boundaries → transition, near OLL/PLL → pre-algorithm
+    const nearCrossF2L = Math.abs(g.startIndex - crossMoves) <= 2;
+    const nearF2lOll = Math.abs(g.startIndex - (crossMoves + f2lMoves)) <= 2;
+    const nearOllPll = Math.abs(g.startIndex - (crossMoves + f2lMoves + ollMoves)) <= 2;
+    if (nearCrossF2L || nearF2lOll || nearOllPll) category = "transition";
+    else if (phase === "OLL" || phase === "PLL") category = "pre-algorithm";
+
+    return {
+      startIndex: g.startIndex,
+      endIndex: g.endIndex,
+      durationMs: g.durationMs,
+      phase,
+      category,
+    };
+  });
+
+  const totalPauseTimeMs = realPauses.reduce((s, p) => s + p.durationMs, 0);
   const pauseRatio = totalTimeMs > 0 ? totalPauseTimeMs / totalTimeMs : 0;
 
   const phases = [
-    { phaseName: "Cross", durationMs: crossMs, moveCount: crossMoves, tps: crossTps, pauseCount: 0, pauseTimeMs: 0 },
-    { phaseName: "F2L", durationMs: f2lMs, moveCount: f2lMoves, tps: f2lTps, pauseCount: Math.floor(pauseCount * 0.5), pauseTimeMs: Math.round(totalPauseTimeMs * 0.5) },
-    { phaseName: "OLL", durationMs: ollMs, moveCount: ollMoves, tps: ollTps, pauseCount: Math.floor(pauseCount * 0.25), pauseTimeMs: Math.round(totalPauseTimeMs * 0.25) },
-    { phaseName: "PLL", durationMs: pllMs, moveCount: pllMoves, tps: pllTps, pauseCount: Math.floor(pauseCount * 0.25), pauseTimeMs: Math.round(totalPauseTimeMs * 0.25) },
+    { phaseName: "Cross", durationMs: crossMs, moveCount: crossMoves, tps: crossTps, pauseCount: realPauses.filter(p => p.phase === "Cross").length, pauseTimeMs: realPauses.filter(p => p.phase === "Cross").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "F2L", durationMs: f2lMs, moveCount: f2lMoves, tps: f2lTps, pauseCount: realPauses.filter(p => p.phase === "F2L").length, pauseTimeMs: realPauses.filter(p => p.phase === "F2L").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "OLL", durationMs: ollMs, moveCount: ollMoves, tps: ollTps, pauseCount: realPauses.filter(p => p.phase === "OLL").length, pauseTimeMs: realPauses.filter(p => p.phase === "OLL").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "PLL", durationMs: pllMs, moveCount: pllMoves, tps: pllTps, pauseCount: realPauses.filter(p => p.phase === "PLL").length, pauseTimeMs: realPauses.filter(p => p.phase === "PLL").reduce((s, p) => s + p.durationMs, 0) },
   ];
 
   const pauses = {
     totalCount: pauseCount,
-    maxDurationMs: Math.round(300 + Math.random() * 900),
+    maxDurationMs: pauseCount > 0 ? Math.max(...realPauses.map(p => p.durationMs)) : 0,
     avgDurationMs: pauseCount > 0 ? Math.round(totalPauseTimeMs / pauseCount) : 0,
-    byPhase: {
-      F2L: { count: Math.floor(pauseCount * 0.5), avgMs: Math.round(totalPauseTimeMs * 0.5 / Math.max(1, Math.floor(pauseCount * 0.5))) },
-      OLL: { count: Math.floor(pauseCount * 0.25), avgMs: Math.round(totalPauseTimeMs * 0.25 / Math.max(1, Math.floor(pauseCount * 0.25))) },
-      PLL: { count: Math.ceil(pauseCount * 0.25), avgMs: Math.round(totalPauseTimeMs * 0.25 / Math.max(1, Math.ceil(pauseCount * 0.25))) },
-    },
+    byPhase: Object.fromEntries(
+      phases.filter(p => p.pauseCount > 0).map(p => [p.phaseName, { count: p.pauseCount, avgMs: p.pauseCount > 0 ? Math.round(p.pauseTimeMs / p.pauseCount) : 0 }])
+    ),
     totalPauseTimeMs,
     pauseRatio,
-    pauses: Array.from({ length: pauseCount }, (_ , i) => ({
-      startIndex: Math.floor((i / pauseCount) * totalMoves),
-      endIndex: Math.floor(((i + 1) / pauseCount) * totalMoves) - 1,
-      durationMs: Math.round(200 + Math.random() * 700),
-      phase: ["F2L", "F2L", "OLL", "PLL"][i] ?? "F2L",
-      category: (["mid-phase", "pre-algorithm", "transition"] as const)[i % 3],
-    })),
+    pauses: realPauses,
   };
+
 
   const f2lPairCount = 4;
   const f2lPairMs = f2lMs / f2lPairCount;
@@ -145,6 +187,11 @@ function generateMetrics(totalTimeMs: number, totalMoves: number): SolveMetrics 
     }
   }
 
+  // ── TPS instantaneous window: one TPS value per move ──────────────
+  const instantaneousWindow: number[] = Array.from({ length: totalMoves }, () =>
+    +Math.max(1.5, globalTps * (0.5 + Math.random())).toFixed(2),
+  );
+
   return {
     solveId,
     totalTimeMs,
@@ -155,7 +202,7 @@ function generateMetrics(totalTimeMs: number, totalMoves: number): SolveMetrics 
       effective: +(totalMoves / ((totalTimeMs - totalPauseTimeMs) / 1000)).toFixed(2),
       byPhase: { Cross: crossTps, F2L: f2lTps, OLL: ollTps, PLL: pllTps },
       peakInstantaneous: +(globalTps * (1.2 + Math.random() * 0.8)).toFixed(1),
-      instantaneousWindow: [],
+      instantaneousWindow,
     },
     pauses,
     fluidity: {
@@ -244,8 +291,8 @@ export async function seedDemoDataIfEmpty(
     const ts = new Date(now - minsAgo * 60_000);
     const totalTimeMs = cfopTime();
     const totalMoves = 48 + Math.floor(Math.random() * 14); // 48-61 moves
-    const moves = randomMoves(totalMoves, ts.getTime(), totalTimeMs / totalMoves);
-    const analysis = generateMetrics(totalTimeMs, totalMoves);
+    const { moves, pauseGaps } = randomMoves(totalMoves, ts.getTime(), totalTimeMs / totalMoves);
+    const analysis = generateMetrics(totalTimeMs, totalMoves, pauseGaps);
 
     return {
       id: uuidv4(),
