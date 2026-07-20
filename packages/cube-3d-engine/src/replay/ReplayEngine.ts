@@ -122,15 +122,16 @@ export class ReplayEngine {
   constructor(
     moves: CubeMoveEvent[],
     callbacks: ReplayCallbacks,
+    totalMs?: number,
   ) {
     this.callbacks = callbacks;
-    this.setMoves(moves);
+    this.setMoves(moves, totalMs);
   }
 
   // ─── Public API ──────────────────────────────────────────────────────────
 
   /** Replace the move sequence (stops playback). */
-  public setMoves(moves: CubeMoveEvent[]): void {
+  public setMoves(moves: CubeMoveEvent[], totalMsOverride?: number): void {
     this.stop();
 
     const firstTs = moves.length > 0 ? moves[0].hostTimestamp : 0;
@@ -146,11 +147,14 @@ export class ReplayEngine {
       };
     });
 
+    // Use the override (timer time) when provided; fall back to move span.
     this._totalMs =
-      moves.length > 1
-        ? moves[moves.length - 1].hostTimestamp - firstTs
-        : 0;
-    if (moves.length === 1) this._totalMs = 0;
+      totalMsOverride != null && totalMsOverride > 0
+        ? totalMsOverride
+        : moves.length > 1
+          ? moves[moves.length - 1].hostTimestamp - firstTs
+          : 0;
+    if (moves.length === 1 && totalMsOverride == null) this._totalMs = 0;
 
     this.nextIndex = 0;
     this._positionMs = 0;

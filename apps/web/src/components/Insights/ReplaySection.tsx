@@ -185,7 +185,7 @@ export function ReplaySection({
               dur: number,
               elapsed?: number,
             ) => proxy.rotateLayers(axis, layers, angle, dur, elapsed ?? 0),
-          });
+          }, solve.time);
           engine.moveAnimationDurationMs = 70;
           engineRef.current = engine;
 
