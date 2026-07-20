@@ -94,7 +94,7 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
       syncBridge.current = workerSingleton.syncBridge;
 
       const rect = containerRef.current?.getBoundingClientRect();
-      if (rect) {
+      if (rect && rect.width > 0 && rect.height > 0) {
         workerProxy.current.resize(rect.width, rect.height);
       }        if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
           syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
@@ -217,12 +217,15 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
       }
     }
 
-    // Resize Observer
+    // Resize Observer — guard against 0×0 (panel collapsed) to prevent
+    // the WebGL context being destroyed when the aside animates to width 0.
+    // Without this, reopening the panel leaves the cube invisible because
+    // the context was lost at 0×0 and never recovers.
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        if (entry.contentBoxSize) {
-          const width = entry.contentRect.width;
-          const height = entry.contentRect.height;
+        const width = entry.contentRect.width;
+        const height = entry.contentRect.height;
+        if (width > 0 && height > 0) {
           workerProxy.current?.resize(width, height);
         }
       }

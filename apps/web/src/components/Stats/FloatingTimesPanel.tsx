@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ListOrdered, X, ChevronDown, ChevronUp } from "lucide-react";
+import { ListOrdered, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDraggable } from "@/hooks/useDraggable";
@@ -24,19 +24,18 @@ export interface FloatingTimesPanelProps {
 }
 
 /**
- * Floating solve-log panel.
+ * Floating solve-log panel — always open, draggable, minimizable.
  *
- * - **Desktop**: free-floating, draggable by the header, minimizable (collapse
- *   to header-only), closable (collapses to a pill that re-opens it).
- * - **Mobile**: fixed bottom bar, expand/collapse by tapping the header (not
- *   draggable — dragging on small screens is awkward).
+ * - **Desktop**: free-floating panel. Minimizing collapses it to a compact
+ *   rounded-full pill (icon + count) so it takes minimal screen space while
+ *   staying draggable.
+ * - **Mobile**: fixed bottom bar. Minimizing collapses it to the header only.
  *
  * Portaled to `document.body` so it never affects the main layout flow.
  */
 export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
-  const [open, setOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -85,17 +84,6 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
             <ChevronDown className="size-3.5" />
           )}
         </button>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen(false);
-          }}
-          className="grid size-6 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-          aria-label="Close panel"
-        >
-          <X className="size-3.5" />
-        </button>
       </div>
     </>
   );
@@ -103,122 +91,112 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
   // ── Mobile: fixed bottom bar (not draggable) ───────────────────────────
   if (isMobile) {
     return createPortal(
-      <>
-        {/* Re-open pill */}
-        {!open && (
-          <motion.button
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={() => {
-              setOpen(true);
-              setMinimized(false);
-            }}
-            className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 shadow-lg"
-          >
-            <ListOrdered className="size-4 text-ink-3" />
-            <span className="text-xs font-medium text-ink">Times</span>
-            <span className="nums text-[0.6rem] text-ink-3">
-              {props.solves.length}
-            </span>
-          </motion.button>
-        )}
-
-        {open && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-surface shadow-xl">
-            <div
-              className="flex items-center justify-between px-3 py-2 select-none"
-              onClick={() => setMinimized((m) => !m)}
-            >
-              {headerContent}
-            </div>
-            {!minimized && (
-              <div style={{ height: "50vh" }} className="min-h-0">
-                <TimesList
-                  solves={props.solves}
-                  onUpdate={props.onUpdate}
-                  onDelete={props.onDelete}
-                  onAnalyze={props.onAnalyze}
-                  hideHeader
-                  className="h-full"
-                />
-              </div>
-            )}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-surface shadow-xl">
+        <div
+          className="flex items-center justify-between px-3 py-2 select-none"
+          onClick={() => setMinimized((m) => !m)}
+        >
+          {headerContent}
+        </div>
+        {!minimized && (
+          <div style={{ height: "50vh" }} className="min-h-0">
+            <TimesList
+              solves={props.solves}
+              onUpdate={props.onUpdate}
+              onDelete={props.onDelete}
+              onAnalyze={props.onAnalyze}
+              hideHeader
+              className="h-full"
+            />
           </div>
         )}
-      </>,
+      </div>,
       document.body,
     );
   }
 
   // ── Desktop: free-floating draggable panel ─────────────────────────────
-  return createPortal(
-    <>
-      {/* Re-open pill */}
-      {!open && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          onClick={() => {
-            setOpen(true);
+  // When minimized, collapse to a compact rounded-full pill (icon + count +
+  // expand chevron) so it occupies minimal space while staying draggable.
+  if (minimized) {
+    return createPortal(
+      <motion.div
+        ref={drag.elementRef}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", stiffness: 380, damping: 28 }}
+        style={{ left: drag.position.x, top: drag.position.y }}
+        onPointerDown={drag.onPointerDown}
+        onPointerMove={drag.onPointerMove}
+        onPointerUp={drag.onPointerUp}
+        className={cn(
+          "fixed z-40 flex touch-none select-none items-center gap-2 rounded-full border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
+          drag.isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab",
+          "transition-colors hover:border-ink-2/40",
+        )}
+      >
+        <ListOrdered className="size-4 text-ink-3" />
+        <span className="text-xs font-medium text-ink">Times</span>
+        <span className="nums text-[0.6rem] text-ink-3">
+          {props.solves.length}
+        </span>
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
             setMinimized(false);
           }}
-          className="fixed bottom-6 left-6 z-40 flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 shadow-lg transition-colors hover:border-ink-2/40"
+          className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+          aria-label="Expand"
         >
-          <ListOrdered className="size-4 text-ink-3" />
-          <span className="text-xs font-medium text-ink">Times</span>
-          <span className="nums text-[0.6rem] text-ink-3">
-            {props.solves.length}
-          </span>
-        </motion.button>
-      )}
+          <ChevronUp className="size-3.5" />
+        </button>
+      </motion.div>,
+      document.body,
+    );
+  }
 
-      {open && (
-        <motion.div
-          ref={drag.elementRef}
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          style={{
-            left: drag.position.x,
-            top: drag.position.y,
-            width: PANEL_WIDTH,
-          }}
-          className={cn(
-            "fixed z-40 flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
-            drag.isDragging && "shadow-2xl",
-          )}
-        >
-          {/* Drag handle / header */}
-          <div
-            onPointerDown={drag.onPointerDown}
-            onPointerMove={drag.onPointerMove}
-            onPointerUp={drag.onPointerUp}
-            className={cn(
-              "flex items-center justify-between border-b border-line px-3 py-2",
-              drag.isDragging ? "cursor-grabbing" : "cursor-grab",
-              minimized && "border-b-0",
-            )}
-          >
-            {headerContent}
-          </div>
-
-          {/* Body */}
-          {!minimized && (
-            <div style={{ height: PANEL_HEIGHT }} className="min-h-0">
-              <TimesList
-                solves={props.solves}
-                onUpdate={props.onUpdate}
-                onDelete={props.onDelete}
-                onAnalyze={props.onAnalyze}
-                hideHeader
-                className="h-full"
-              />
-            </div>
-          )}
-        </motion.div>
+  return createPortal(
+    <motion.div
+      ref={drag.elementRef}
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+      style={{
+        left: drag.position.x,
+        top: drag.position.y,
+        width: PANEL_WIDTH,
+      }}
+      className={cn(
+        "fixed z-40 flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
+        drag.isDragging && "shadow-2xl",
       )}
-    </>,
+    >
+      {/* Drag handle / header */}
+      <div
+        onPointerDown={drag.onPointerDown}
+        onPointerMove={drag.onPointerMove}
+        onPointerUp={drag.onPointerUp}
+        className={cn(
+          "flex items-center justify-between border-b border-line px-3 py-2",
+          drag.isDragging ? "cursor-grabbing" : "cursor-grab",
+        )}
+      >
+        {headerContent}
+      </div>
+
+      {/* Body */}
+      <div style={{ height: PANEL_HEIGHT }} className="min-h-0">
+        <TimesList
+          solves={props.solves}
+          onUpdate={props.onUpdate}
+          onDelete={props.onDelete}
+          onAnalyze={props.onAnalyze}
+          hideHeader
+          className="h-full"
+        />
+      </div>
+    </motion.div>,
     document.body,
   );
 }

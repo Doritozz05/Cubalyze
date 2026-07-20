@@ -67,11 +67,11 @@ export interface HeaderProps {
 }
 
 /**
- * Slim, flat top bar. Session switcher left, puzzle selector + PB right.
+ * Slim, flat top bar. Mobile nav trigger left; PB + session switcher + puzzle
+ * selector grouped on the right.
  *
- * The 3D-cube and sidebar toggles used to live here; they now belong to the
- * LeftSidebar nav rail, so the header stays focused on identity + puzzle +
- * personal best.
+ * The session switcher sits next to the puzzle selector so both "what am I
+ * working on" context selectors are visually adjacent.
  */
 export function Header({
   pb,
@@ -112,8 +112,8 @@ export function Header({
       )}
     >
       <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
+        {/* Left: mobile nav trigger only */}
         <div className="flex items-center gap-2.5">
-          {/* Mobile nav trigger */}
           {onToggleMobileNav && (
             <Button
               variant="ghost"
@@ -125,8 +125,23 @@ export function Header({
               <Menu className="size-4" />
             </Button>
           )}
+        </div>
 
-          {/* Session switcher */}
+        {/* Right: PB + session + puzzle grouped together */}
+        <div className="flex items-center gap-2">
+          {pb != null && Number.isFinite(pb) ? (
+            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
+              <Timer className="size-3.5 text-ink-3" />
+              <span className="text-[0.62rem] uppercase tracking-[0.16em] text-ink-3">
+                PB
+              </span>
+              <span className="nums text-xs text-ink">
+                {formatPb(pb)}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Session switcher — next to the puzzle selector */}
           {sessions && sessions.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -143,7 +158,7 @@ export function Header({
                   <span className="nums text-ink-3">{sessionCount ?? 0}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-60">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
                   Sessions
                 </DropdownMenuLabel>
@@ -229,20 +244,6 @@ export function Header({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : null}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {pb != null && Number.isFinite(pb) ? (
-            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
-              <Timer className="size-3.5 text-ink-3" />
-              <span className="text-[0.62rem] uppercase tracking-[0.16em] text-ink-3">
-                PB
-              </span>
-              <span className="nums text-xs text-ink">
-                {formatPb(pb)}
-              </span>
-            </div>
           ) : null}
 
           <Select value={puzzle} onValueChange={(v) => setPuzzle(v as PuzzleCategory)}>

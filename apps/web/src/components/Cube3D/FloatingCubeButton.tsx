@@ -10,9 +10,11 @@ const STORAGE_KEY = "cubeforge:cubeBtnPos";
 
 function getDefaultPos(): Position {
   if (typeof window === "undefined") return { x: 100, y: 100 };
+  // Middle-right, vertically centered. The button (48px) sits just inside
+  // the right edge with a small margin.
   return {
-    x: window.innerWidth - 76,
-    y: window.innerHeight - 140,
+    x: window.innerWidth - 72,
+    y: Math.round((window.innerHeight - 48) / 2),
   };
 }
 
@@ -67,8 +69,6 @@ export function FloatingCubeButton({ onClick }: FloatingCubeButtonProps) {
       title="Open 3D cube"
     >
       <Box className="size-5 text-ink-2" />
-      {/* Connected indicator dot */}
-      <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full bg-blue-500 ring-2 ring-surface" />
     </motion.button>,
     document.body,
   );
