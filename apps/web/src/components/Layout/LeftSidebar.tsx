@@ -129,7 +129,10 @@ export function LeftSidebar({
           variant="rail" 
           expanded={labelVisible} 
           onOpenChange={(open) => {
-            if (!open) onMobileOpenChange?.(false);
+            if (!open) {
+              onMobileOpenChange?.(false);
+              setIsHovered(false);
+            }
           }}
         />
         <SidebarFooterItem
@@ -162,7 +165,16 @@ export function LeftSidebar({
             </div>
           </SheetContent>
         </Sheet>
-        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <SettingsDialog 
+          open={settingsOpen} 
+          onOpenChange={(open) => {
+            setSettingsOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+              setIsHovered(false);
+            }
+          }} 
+        />
       </>
     );
   }
@@ -180,7 +192,13 @@ export function LeftSidebar({
         {sidebarContent}
       </motion.aside>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsDialog 
+        open={settingsOpen} 
+        onOpenChange={(open) => {
+          setSettingsOpen(open);
+          if (!open) setIsHovered(false);
+        }} 
+      />
     </>
   );
 }
