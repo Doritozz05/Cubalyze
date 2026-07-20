@@ -112,7 +112,6 @@ export function ReplaySection({
   /**
    * Clean up worker + engine resources.
    * Called both on collapse and on unmount.
-   * Also increments canvasKey so the next init gets a fresh <canvas>.
    */
   const teardownWorker = useCallback(() => {
     engineRef.current?.dispose();
@@ -123,13 +122,7 @@ export function ReplaySection({
       workerRef.current.terminate();
       workerRef.current = null;
     }
-    // Force recreation of the canvas DOM element for the next init.
-    // transferControlToOffscreen() is one-way — calling it twice on the
-    // same element throws InvalidStateError.
-    setCanvasKey((k) => k + 1);
-  }, []);
-
-  // ── Initialize mini cube worker ─────────────────────────────────────────
+  }, []);    // ── Initialize mini cube worker ─────────────────────────────────────────
   // Lazily init the cube worker only when expanded.
   // On collapse, fully tear down everything so re-expand starts fresh.
   //
@@ -143,6 +136,9 @@ export function ReplaySection({
   useEffect(() => {
     if (!expanded) {
       teardownWorker();
+      // Force fresh canvas on re-expand — transferControlToOffscreen() is
+      // a one-way operation that can only be called once per element.
+      setCanvasKey((k) => k + 1);
       return;
     }
 
@@ -229,6 +225,9 @@ export function ReplaySection({
     return () => {
       cancelled = true;
       teardownWorker();
+      // Force fresh canvas on next init (solve change or re-expand).
+      // transferControlToOffscreen() is one-way — a new DOM element is needed.
+      setCanvasKey((k) => k + 1);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, solve]);
