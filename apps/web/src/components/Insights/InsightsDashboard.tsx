@@ -163,7 +163,7 @@ export function InsightsDashboard({
         filteredCount={filteredCount}
         totalCount={totalCount}
         reset={reset}
-        className="lg:w-[340px] lg:shrink-0"
+        className="lg:w-85 lg:shrink-0"
       />
 
       {/* Column B: content (flex-1, own scroll) */}
