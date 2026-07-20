@@ -9,7 +9,7 @@ import type { Subscription } from "rxjs";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw } from "lucide-react";
+import { RefreshCw, RotateCcw, X } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore } from "@cubeforge/state";
 import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
@@ -17,6 +17,7 @@ import type { CubeMoveEvent, CubeOrientation, RotationEvent } from "@cubeforge/t
 
 export interface Cube3DPanelProps {
   className?: string;
+  onClose?: () => void;
 }
 
 interface WorkerSingleton {
@@ -28,7 +29,7 @@ interface WorkerSingleton {
 /** Survives Strict Mode unmount/remount so OffscreenCanvas isn't re-transferred */
 let workerSingleton: WorkerSingleton | null = null;
 
-export function Cube3DPanel({ className }: Cube3DPanelProps) {
+export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -304,6 +305,18 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
             <RefreshCw className="size-3" />
             Calibrate
           </Button>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+              title="Close 3D view"
+              aria-label="Close 3D view"
+            >
+              <X className="size-3" />
+            </Button>
+          )}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Timer, Plus, History, Pencil, Trash2, Check, X, Box, PanelRight, Menu } from "lucide-react";
+import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 
@@ -62,22 +61,17 @@ export interface HeaderProps {
   onRenameSession?: (id: string, name: string) => void;
   /** Delete a session entirely. */
   onDeleteSession?: (id: string) => void;
-  /** Whether the 3D cube view is currently active. */
-  cube3DActive?: boolean;
-  /** Toggle the 3D cube view. */
-  onToggleCube3D?: () => void;
-  /** Whether the sidebar is active. */
-  sidebarActive?: boolean;
-  /** Toggle the sidebar view. */
-  onToggleSidebar?: () => void;
   /** Toggle the mobile nav sheet. */
   onToggleMobileNav?: () => void;
   className?: string;
 }
 
 /**
- * Slim, flat top bar. Wordmark left, puzzle selector + settings right.
- * Includes a session switcher dropdown (with rename/delete) + dark-mode toggle.
+ * Slim, flat top bar. Session switcher left, puzzle selector + PB right.
+ *
+ * The 3D-cube and sidebar toggles used to live here; they now belong to the
+ * LeftSidebar nav rail, so the header stays focused on identity + puzzle +
+ * personal best.
  */
 export function Header({
   pb,
@@ -88,10 +82,6 @@ export function Header({
   onNewSession,
   onRenameSession,
   onDeleteSession,
-  cube3DActive,
-  onToggleCube3D,
-  sidebarActive,
-  onToggleSidebar,
   onToggleMobileNav,
   className,
 }: HeaderProps) {
@@ -135,16 +125,14 @@ export function Header({
               <Menu className="size-4" />
             </Button>
           )}
-        </div>
 
-        <div className="flex items-center gap-2">
           {/* Session switcher */}
           {sessions && sessions.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="hidden h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink sm:flex"
+                  className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
                   aria-label="Switch session"
                 >
                   <History className="size-3.5 text-ink-3" />
@@ -155,7 +143,7 @@ export function Header({
                   <span className="nums text-ink-3">{sessionCount ?? 0}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuContent align="start" className="w-60">
                 <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
                   Sessions
                 </DropdownMenuLabel>
@@ -242,9 +230,9 @@ export function Header({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
+        </div>
 
-          <CubeConnector />
-
+        <div className="flex items-center gap-2">
           {pb != null && Number.isFinite(pb) ? (
             <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
               <Timer className="size-3.5 text-ink-3" />
@@ -273,40 +261,6 @@ export function Header({
               ))}
             </SelectContent>
           </Select>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleCube3D}
-            className={cn(
-              "size-8 rounded-md border",
-              cube3DActive
-              ? "bg-ink text-surface border-transparent"
-              : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
-            )}
-            aria-label={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
-            aria-pressed={cube3DActive}
-            title={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
-          >
-            <Box className="size-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleSidebar}
-            className={cn(
-              "size-8 rounded-md border",
-              sidebarActive
-              ? "bg-ink text-surface border-transparent"
-              : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
-            )}
-            aria-label={sidebarActive ? "Hide sidebar" : "Show sidebar"}
-            aria-pressed={sidebarActive}
-            title={sidebarActive ? "Hide sidebar" : "Show sidebar"}
-          >
-            <PanelRight className="size-4" />
-          </Button>
         </div>
       </div>
 

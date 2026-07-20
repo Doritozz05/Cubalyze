@@ -5,16 +5,11 @@ import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
-import { TimesList } from "@/components/Stats/TimesList";
 import { StatsPanel } from "@/components/Stats/StatsPanel";
 import { SolveAnalysisPanel } from "@/components/Stats/SolveAnalysisPanel";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { FloatingCubeButton } from "@/components/Cube3D/FloatingCubeButton";
+import { FloatingTimesPanel } from "@/components/Stats/FloatingTimesPanel";
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
@@ -25,6 +20,7 @@ import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine"
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Penalty, SolveMethod } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
+import type { ViewId } from "@/components/Layout/sidebar.constants";
 import "@/index.css";
 
 export default function App() {
@@ -32,7 +28,6 @@ export default function App() {
     session,
     sessions,
     solves,
-    loading,
     addSolve,
     updateSolve,
     deleteSolve,
@@ -46,15 +41,17 @@ export default function App() {
   const methodPref = useStore(preferencesStore, (s) => s.method);
 
   const [scrambleIndex, setScrambleIndex] = useState(0);
-  const [cube3DActive, setCube3DActive] = useState(false);
+  // Single source of truth for what the main stage shows. Replaces the old
+  // cube3DActive + sidebarActive pair.
+  const [activeView, setActiveView] = useState<ViewId>("timer");
+  const [cubePanelOpen, setCubePanelOpen] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
-  const [sidebarActive, setSidebarActive] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [currentScramble, setCurrentScramble] = useState(() =>
     RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
   );
 
-  // ── Last solve analysis (displayed in sidebar "Analysis" tab) ─────────
+  // ── Last solve analysis (displayed in the "Analysis" view) ─────────────
   const lastSolveRef = useRef<{
     solve: ReturnType<typeof usePersistentSession>['solves'][number] | null;
     analysis: SolveMetrics | null;
@@ -272,6 +269,38 @@ export default function App() {
     });
   }, []);
 
+  // ── Stage navigation (driven by the LeftSidebar rail) ───────────────────
+  const handleNavigate = useCallback(
+    (view: ViewId) => {
+      setActiveView(view);
+      // Close the 3D cube panel when leaving the timer stage — the split
+      // only makes sense alongside the timer, not Stats/Analysis.
+      if (view !== "timer") setCubePanelOpen(false);
+      if (view === "timer") scrollToTimer();
+    },
+    [scrollToTimer],
+  );
+
+  // Open the 3D cube panel from the floating button. Always returns to the
+  // timer stage so the split is timer | cube.
+  const handleOpenCube = useCallback(() => {
+    setActiveView("timer");
+    setCube3DReady(true);
+    setCubePanelOpen(true);
+  }, []);
+
+  const handleCloseCube = useCallback(() => setCubePanelOpen(false), []);
+
+  // Stable callback so memo(TimesList) doesn't re-render on every App render
+  // (e.g. timer ticks) — only when solves actually change.
+  const handleAnalyzeSolve = useCallback(
+    (solve: import("@/types").Solve) => {
+      setSelectedSolve(solve);
+      setActiveView("analysis");
+    },
+    [],
+  );
+
   // Create a solve object for the analysis panel — prefer selected, then last
   const solveForPanel = selectedSolve
     ? selectedSolve
@@ -287,6 +316,88 @@ export default function App() {
         } satisfies import("@/types").Solve
       : undefined;
 
+  // ── Main stage composition by active view ──────────────────────────────
+  // Timer & Cube 3D share the live stage (scramble + timer + compact stats);
+  // selecting Cube 3D additionally splits the stage with the 3D aside.
+  // Times/Stats/Analysis take over the stage fully ("en grande").
+  const renderMain = () => {
+    if (activeView === "stats") {
+      return (
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+          <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-ink-3">
+            Session Stats
+          </h2>
+          <StatsPanel solves={solves} pb={currentPB ?? undefined} />
+        </div>
+      );
+    }
+
+    if (activeView === "analysis") {
+      return (
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+          <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-ink-3">
+            Last Solve Analysis
+          </h2>
+          {solveForPanel ? (
+            <SolveAnalysisPanel solve={solveForPanel} />
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
+              <p className="text-sm text-ink-2">No analysis yet</p>
+              <p className="text-xs text-ink-3">
+                Complete a solve with a Smart Cube to see your analysis.
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // timer
+    return (
+      <>
+        {scrambleVerification && (
+          <ScrambleDisplay
+            scramble={currentScramble}
+            displayScramble={displayScramble}
+            states={validation.states}
+            currentIndex={validation.currentIndex}
+            errorMoves={validation.displayErrorMoves}
+            pendingHalfDouble={validation.pendingHalfDouble}
+            isScrambled={validation.isScrambled}
+            needsReset={validation.needsReset}
+            awaitingSolve={validation.awaitingSolve}
+            onRegenerate={handleRegenerate}
+            onCopy={handleCopy}
+            indexLabel={`#${scrambleIndex + 1}`}
+          />
+        )}
+
+        <TimerContainer
+          phase={timerPhase}
+          time={timerTime}
+          lastTime={timerLastTime}
+          hintCtx={{
+            smartCube: smartCubeConnected,
+            scrambleVerif: scrambleVerification,
+            inspection,
+            isScrambled: validation.isScrambled,
+          }}
+          onPress={timerPress}
+          onRelease={timerRelease}
+          onCancel={handleTimerCancel}
+          stateRef={timerStateRef}
+          cancelRef={cancelRef}
+          className="mt-1 flex-1"
+        />
+
+        <SessionStats
+          solves={solves}
+          onExpand={() => setActiveView("stats")}
+        />
+      </>
+    );
+  };
+
   return (
     <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
       <ThemeProvider>
@@ -299,127 +410,35 @@ export default function App() {
           onNewSession={handleNewSession}
           onRenameSession={renameSession}
           onDeleteSession={deleteSession}
-          cube3DActive={cube3DActive}
+          cube3DActive={cubePanelOpen}
           cube3DReady={cube3DReady}
-          onToggleCube3D={() => {
-            setCube3DActive((prev) => {
-              if (!prev) setCube3DReady(true);
-              return !prev;
-            });
-          }}
-          sidebarActive={sidebarActive}
-          onToggleSidebar={() => setSidebarActive((a) => !a)}
-          cube3D={<Cube3DPanel />}
+          cube3D={<Cube3DPanel onClose={handleCloseCube} />}
           leftSidebar={
             <LeftSidebar
+              activeView={activeView}
+              onNavigate={handleNavigate}
               timerActive={timerRunning}
-              onNavigateTimer={scrollToTimer}
               mobileOpen={mobileNavOpen}
               onMobileOpenChange={setMobileNavOpen}
             />
           }
           onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
-          main={
-            <>
-              {scrambleVerification && (
-                <ScrambleDisplay
-                  scramble={currentScramble}
-                  displayScramble={displayScramble}
-                  states={validation.states}
-                  currentIndex={validation.currentIndex}
-                  errorMoves={validation.displayErrorMoves}
-                  pendingHalfDouble={validation.pendingHalfDouble}
-                  isScrambled={validation.isScrambled}
-                  needsReset={validation.needsReset}
-                  awaitingSolve={validation.awaitingSolve}
-                  onRegenerate={handleRegenerate}
-                  onCopy={handleCopy}
-                  indexLabel={`#${scrambleIndex + 1}`}
-                />
-              )}
-
-              <TimerContainer
-                phase={timerPhase}
-                time={timerTime}
-                lastTime={timerLastTime}
-                hintCtx={{
-                  smartCube: smartCubeConnected,
-                  scrambleVerif: scrambleVerification,
-                  inspection,
-                  isScrambled: validation.isScrambled,
-                }}
-                onPress={timerPress}
-                onRelease={timerRelease}
-                onCancel={handleTimerCancel}
-                stateRef={timerStateRef}
-                cancelRef={cancelRef}
-                className="mt-1 flex-1"
-              />
-
-              <SessionStats solves={solves} />
-            </>
-          }
-          sidebar={
-            <Tabs
-              defaultValue="times"
-              className="flex h-full min-h-0 flex-col gap-4"
-            >
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="times" className="text-xs">
-                  Times
-                  {loading ? null : (
-                    <span className="nums ml-1.5 text-[0.6rem] text-ink-3">
-                      {solves.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="stats" className="text-xs">
-                  Stats
-                </TabsTrigger>
-                <TabsTrigger value="analysis" className="text-xs">
-                  Analysis
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent
-                value="times"
-                className="min-h-0 flex-1 flex flex-col"
-              >
-                <TimesList
-                  solves={solves}
-                  onUpdate={handleUpdate}
-                  onDelete={handleDelete}
-                  onClear={handleClear}
-                  onSelect={setSelectedSolve}
-                  className="h-[55vh] lg:h-full"
-                />
-              </TabsContent>
-
-              <TabsContent
-                value="stats"
-                className="min-h-0 flex-1 overflow-y-auto pr-1"
-              >
-                <StatsPanel solves={solves} pb={currentPB ?? undefined} />
-              </TabsContent>
-
-              <TabsContent
-                value="analysis"
-                className="min-h-0 flex-1 overflow-y-auto pr-1"
-              >
-                {solveForPanel ? (
-                  <SolveAnalysisPanel solve={solveForPanel} />
-                ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
-                    <p className="text-sm text-ink-2">No analysis yet</p>
-                    <p className="text-xs text-ink-3">
-                      Complete a solve with a Smart Cube to see your analysis.
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          }
+          main={renderMain()}
         />
+        {/* Floating solve log — draggable, minimizable, doesn't affect layout */}
+        <FloatingTimesPanel
+          solves={solves}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+          onClear={handleClear}
+          onAnalyze={handleAnalyzeSolve}
+        />
+
+        {/* Floating cube button — only when connected and panel is closed */}
+        {smartCubeConnected && !cubePanelOpen && (
+          <FloatingCubeButton onClick={handleOpenCube} />
+        )}
+
         <Toaster position="bottom-center" richColors={false} />
       </ThemeProvider>
     </div>

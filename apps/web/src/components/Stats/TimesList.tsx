@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { MoreHorizontal, Plus, Skull, Eraser, Trash2 } from "lucide-react";
+import { useMemo, memo } from "react";
+import { MoreHorizontal, Plus, Skull, Eraser, Trash2, Activity, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
@@ -24,6 +24,8 @@ export interface TimesListProps {
   onDelete: (id: string) => void;
   onClear?: () => void;
   onSelect?: (solve: Solve) => void;
+  onAnalyze?: (solve: Solve) => void;
+  hideHeader?: boolean;
   className?: string;
 }
 
@@ -48,13 +50,18 @@ function PenaltyBadge({ penalty }: { penalty: Penalty }) {
 /**
  * Vertical solve log. Each row exposes a dropdown with +2 / DNF / clear /
  * delete. Newest first. Highlights the session best (PB) row with a green dot.
+ *
+ * Memoized so dragging a parent floating panel doesn't re-render the whole
+ * list on every pointermove.
  */
-export function TimesList({
+export const TimesList = memo(function TimesList({
   solves,
   onUpdate,
   onDelete,
   onClear,
   onSelect,
+  onAnalyze,
+  hideHeader,
   className,
 }: TimesListProps) {
   const stats = useMemo(() => computeStats(solves), [solves]);
@@ -62,22 +69,24 @@ export function TimesList({
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-sm font-medium text-ink">Solves</h3>
-          <span className="nums text-xs text-ink-3">{solves.length}</span>
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-sm font-medium text-ink">Solves</h3>
+            <span className="nums text-xs text-ink-3">{solves.length}</span>
+          </div>
+          {solves.length > 0 && onClear ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
+            >
+              Clear
+            </Button>
+          ) : null}
         </div>
-        {solves.length > 0 && onClear ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClear}
-            className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
-          >
-            Clear
-          </Button>
-        ) : null}
-      </div>
+      )}
 
       {solves.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
@@ -127,6 +136,18 @@ export function TimesList({
 
                   <PenaltyBadge penalty={solve.penalty} />
 
+                  {onAnalyze && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onAnalyze(solve)}
+                      className="size-7 text-ink-3 opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+                      aria-label="Analyze solve"
+                      title="Analysis"
+                    >
+                      <Activity className="size-4" />
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -171,6 +192,17 @@ export function TimesList({
                         </DropdownMenuItem>
                       ) : null}
                       <DropdownMenuSeparator />
+                      {onAnalyze && (
+                        <DropdownMenuItem onClick={() => onAnalyze(solve)}>
+                          <Activity className="size-3.5" />
+                          Analysis
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem disabled>
+                        <RotateCcw className="size-3.5" />
+                        Replay <span className="ml-auto text-[0.6rem] text-ink-3">soon</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
                         onClick={() => onDelete(solve.id)}
@@ -188,4 +220,4 @@ export function TimesList({
       )}
     </div>
   );
-}
+});

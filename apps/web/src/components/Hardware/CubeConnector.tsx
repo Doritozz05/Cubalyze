@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Bluetooth, BluetoothConnected, Info } from "lucide-react";
 import { GanCubeAdapter } from "@cubeforge/hardware-hal";
 import { toast } from "sonner";
@@ -16,12 +17,29 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 
-// Global singleton adapter to keep connection alive across re-renders
-// In a full app, this might be in a global store (Zustand/Context).
+// Global singleton adapter to keep connection alive across re-renders.
+// Imported by useSolveSession, useScrambleValidator and Cube3DPanel —
+// DO NOT remove this export.
 export const globalCubeAdapter = new GanCubeAdapter();
 
-export function CubeConnector({ className }: { className?: string }) {
+export interface CubeConnectorProps {
+  className?: string;
+  /**
+   * "header" — bordered icon button (legacy, hidden on small screens).
+   * "rail"   — full-width footer item for the LeftSidebar (icon + animated label).
+   */
+  variant?: "header" | "rail";
+  /** When variant="rail", toggles the text label visibility (sidebar expanded). */
+  expanded?: boolean;
+}
+
+export function CubeConnector({
+  className,
+  variant = "header",
+  expanded = false,
+}: CubeConnectorProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">(
     globalCubeAdapter.isConnected ? "connected" : "disconnected"
@@ -44,26 +62,26 @@ export function CubeConnector({ className }: { className?: string }) {
     try {
       setStatus("connecting");
       setErrorMsg("");
-      
+
       await globalCubeAdapter.connect(showMacInput ? manualMac : undefined);
-      
+
       setStatus("connected");
       setShowMacInput(false);
       toast.success("Cube Connected!");
-      
+
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
-      
+
       setOpen(false); // Close dialog on success
     } catch (e: unknown) {
       console.error(e);
       const errMsg = e instanceof Error ? e.message : String(e);
-      
+
       setStatus("disconnected");
-      
+
       const notSecure = !window.isSecureContext;
       const bluetoothMissing = !("bluetooth" in navigator);
-      
+
       if (notSecure) {
         setErrorMsg("Web Bluetooth requires HTTPS. Open via http://localhost:5173 instead of the LAN IP.");
         setShowMacInput(false);
@@ -71,7 +89,7 @@ export function CubeConnector({ className }: { className?: string }) {
         setErrorMsg("Web Bluetooth is globally disabled in your browser. Open chrome://flags/#enable-web-bluetooth, set to Enabled, and restart your browser.");
         setShowMacInput(false);
       } else if (
-        errMsg === "MAC_REQUIRED" || 
+        errMsg === "MAC_REQUIRED" ||
         errMsg.includes("requestDevice")
       ) {
         setErrorMsg("Browser blocks automatic MAC reading.");
@@ -94,30 +112,58 @@ export function CubeConnector({ className }: { className?: string }) {
     }
   };
 
-  const instructions = /Edg\//i.test(navigator.userAgent) 
+  const instructions = /Edg\//i.test(navigator.userAgent)
     ? "edge://flags/#enable-experimental-web-platform-features"
     : "chrome://flags/#enable-experimental-web-platform-features";
 
+  const trigger =
+    variant === "rail" ? (
+      <button
+        type="button"
+        className={cn(
+          "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors",
+          "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          status === "connected" && "text-blue-500",
+          className,
+        )}
+        title={!expanded ? "Smart Cube" : undefined}
+        aria-label="Connect Smart Cube"
+      >
+        {status === "connected" ? (
+          <BluetoothConnected className="size-4 shrink-0 ml-1" />
+        ) : (
+          <Bluetooth className="size-4 shrink-0 ml-1" />
+        )}
+        <motion.span
+          animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
+          transition={SIDEBAR_MOTION.label}
+          className="overflow-hidden whitespace-nowrap"
+        >
+          Smart Cube
+        </motion.span>
+      </button>
+    ) : (
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
+          status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
+          className,
+        )}
+        aria-label="Connect Smart Cube"
+      >
+        {status === "connected" ? (
+          <BluetoothConnected className="size-4" />
+        ) : (
+          <Bluetooth className="size-4" />
+        )}
+      </Button>
+    );
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
-            status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
-            className
-          )}
-          aria-label="Connect Smart Cube"
-        >
-          {status === "connected" ? (
-            <BluetoothConnected className="size-4" />
-          ) : (
-            <Bluetooth className="size-4" />
-          )}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Connect Smart Cube</DialogTitle>
@@ -177,16 +223,16 @@ export function CubeConnector({ className }: { className?: string }) {
           )}
 
           {status === "connected" ? (
-            <Button 
-              onClick={disconnectCube} 
+            <Button
+              onClick={disconnectCube}
               variant="destructive"
               className="w-full mt-2"
             >
               Disconnect Cube
             </Button>
           ) : (
-            <Button 
-              onClick={connectCube} 
+            <Button
+              onClick={connectCube}
               disabled={status === "connecting" || (showMacInput && !manualMac)}
               className="w-full mt-2"
             >

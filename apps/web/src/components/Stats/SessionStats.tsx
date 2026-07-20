@@ -8,6 +8,8 @@ import type { Solve } from "@/types";
 export interface SessionStatsProps {
   solves: Solve[];
   className?: string;
+  /** When provided, the row becomes a clickable shortcut to the full Stats view. */
+  onExpand?: () => void;
 }
 
 interface Cell {
@@ -20,8 +22,12 @@ interface Cell {
 /**
  * Compact, flat summary row shown beneath the timer: Ao5, Ao12, Best, Mean.
  * The "Best" cell is emphasized with a faint green tint so the eye lands on it.
+ *
+ * When `onExpand` is supplied the whole row acts as a button that jumps to the
+ * full Stats view — a lightweight affordance that "there's more to see"
+ * without pushing the timer down.
  */
-export function SessionStats({ solves, className }: SessionStatsProps) {
+export function SessionStats({ solves, className, onExpand }: SessionStatsProps) {
   const stats = useMemo(() => computeStats(solves), [solves]);
 
   const cells: Cell[] = [
@@ -31,12 +37,30 @@ export function SessionStats({ solves, className }: SessionStatsProps) {
     { label: "Mean", value: statLabel(stats.mean) },
   ];
 
+  const interactive = !!onExpand;
+
   return (
     <div
       className={cn(
-        "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface",
+        "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
+        interactive &&
+          "cursor-pointer hover:border-ink-2/40 focus-visible:border-ink-2 focus-visible:outline-none",
         className,
       )}
+      onClick={interactive ? onExpand : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onExpand();
+              }
+            }
+          : undefined
+      }
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      title={interactive ? "View full stats" : undefined}
     >
       {cells.map((c, i) => (
         <div
