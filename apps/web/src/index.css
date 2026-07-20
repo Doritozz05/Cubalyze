@@ -133,14 +133,14 @@
 }
 
 .dark {
-  --background: #14171a;
+  --background: #1b1f23;
   --foreground: #e9ecef;
   --card: #1b1f23;
   --card-foreground: #e9ecef;
   --popover: #1b1f23;
   --popover-foreground: #e9ecef;
   --primary: #e9ecef;
-  --primary-foreground: #14171a;
+  --primary-foreground: #1b1f23;
   --secondary: #24292e;
   --secondary-foreground: #e9ecef;
   --muted: #24292e;
