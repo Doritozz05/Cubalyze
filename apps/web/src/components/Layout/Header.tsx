@@ -111,11 +111,11 @@ export function Header({
   return (
     <header
       className={cn(
-        "fixed inset-x-0 md:left-14 top-0 z-20 border-b border-line bg-surface",
+        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b border-line bg-surface",
         className,
       )}
     >
-      <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-full w-full items-center justify-between px-4 sm:px-6">
         {/* Left: mobile nav trigger only */}
         <div className="flex items-center gap-2.5">
           {onToggleMobileNav && (
