@@ -120,8 +120,15 @@ export interface StageSegment {
 export interface TimelineData {
   /** Total solve duration (ms) = span from first to last move. */
   totalMs: number;
-  /** Per-move ticks. */
+  /** Per-move ticks (with BLE hostTimestamp offsets, kept for TPS curve). */
   moveTicks: MoveTick[];
+  /**
+   * Visual position (ms) for each move, aligned with the unified segment
+   * coordinate system. Moves within exec blocks are evenly distributed.
+   * Use this for SVG move tick lines and hover nearest-move search.
+   * Same length as `moveTicks`.
+   */
+  moveVisualMs: number[];
   /** Rolling-window TPS samples (end at the last move = `totalMs`). */
   tpsSamples: TpsSample[];
   /** Pause markers (with probable cause + move indices). */
@@ -278,12 +285,21 @@ export function deriveTimeline(solve: Solve): TimelineData {
         }))
     : [];
 
-  // Unified segments from REAL move coordinates. No coordinate mismatch,
-  // no "Stop" block. Pauses at phase boundaries live in the inter-phase
-  // gap (between the last move of one phase and the first move of the next).
-  const segments = buildUnifiedSegments(moveTicks, phaseRuns, pauseMarks, totalMs);
+  // Unified segments + visual move positions from a single pass so both
+  // coordinate systems are derived from the same proportional distribution.
+  const { segments, moveVisualMs } = buildUnifiedSegments(moveTicks, phaseRuns, pauseMarks, totalMs);
 
-  return { totalMs, moveTicks, tpsSamples: tpsFinal, pauseMarks, stageSegments, segments };
+  // Reposition TPS samples to use visual move positions so the TPS curve
+  // aligns with the visual segment timeline. Uses tpsFinal (which includes
+  // the 0-TPS baseline fallback for 0-1 moves) as the source.
+  const tpsSamplesVisual: TpsSample[] = tpsFinal.length > 0 && moveVisualMs.length > 0
+    ? tpsFinal.map((s, i) => ({
+        offsetMs: i < moveVisualMs.length ? moveVisualMs[i] : s.offsetMs,
+        tps: s.tps,
+      }))
+    : tpsFinal;
+
+  return { totalMs, moveTicks, moveVisualMs, tpsSamples: tpsSamplesVisual, pauseMarks, stageSegments, segments };
 }
 
 /** A run of consecutive moves belonging to the same phase. */
@@ -336,8 +352,9 @@ function buildUnifiedSegments(
   phaseRuns: PhaseRun[],
   pauseMarks: PauseMark[],
   totalMs: number,
-): TimelineSegment[] {
-  if (phaseRuns.length === 0) return [];
+): { segments: TimelineSegment[]; moveVisualMs: number[] } {
+  const moveVisualMs = new Array<number>(moveTicks.length).fill(0);
+  if (phaseRuns.length === 0) return { segments: [], moveVisualMs };
 
   const segments: TimelineSegment[] = [];
 
@@ -385,6 +402,9 @@ function buildUnifiedSegments(
     const totalExecMoves = execMoveCounts.reduce((s, c) => s + c, 0);
 
     let pos = phaseStartMs;
+    // Separate index tracker for the rendering loop — prevEnd was already
+    // advanced by the pre-computation pass above.
+    let blkStart = run.startIdx;
 
     for (let i = 0; i < midPhasePauses.length; i++) {
       const pm = midPhasePauses[i];
@@ -394,6 +414,16 @@ function buildUnifiedSegments(
           : 0;
 
       if (execMs > 0) {
+        // Assign visual positions to moves in this exec block (evenly
+        // distributed). The block covers moves from blkStart to
+        // pm.startIndex (inclusive).
+        const execMoveCount = execMoveCounts[i];
+        if (execMoveCount > 0) {
+          const msPerMove = execMs / execMoveCount;
+          for (let m = 0; m < execMoveCount; m++) {
+            moveVisualMs[blkStart + m] = pos + m * msPerMove;
+          }
+        }
         segments.push({
           kind: "phase",
           startMs: pos,
@@ -404,6 +434,7 @@ function buildUnifiedSegments(
         });
         pos += execMs;
       }
+      blkStart = pm.endIndex;
 
       // Mid-phase pause: visual width = analysis duration (correct).
       segments.push({
@@ -426,9 +457,16 @@ function buildUnifiedSegments(
       totalExecMoves > 0 && totalExecMs > 0
         ? (execMoveCounts[execMoveCounts.length - 1] / totalExecMoves) * totalExecMs
         : 0;
+    const finalMoveCount = execMoveCounts[execMoveCounts.length - 1];
 
     if (boundaryPause) {
       if (finalExecMs > 0) {
+        if (finalMoveCount > 0) {
+          const msPerMove = finalExecMs / finalMoveCount;
+          for (let m = 0; m < finalMoveCount; m++) {
+            moveVisualMs[blkStart + m] = pos + m * msPerMove;
+          }
+        }
         segments.push({
           kind: "phase",
           startMs: pos,
@@ -459,6 +497,12 @@ function buildUnifiedSegments(
       // No boundary pause → fill the rest with exec time.
       const remaining = Math.max(0, nextPhaseStartMs - pos);
       if (remaining > 0) {
+        if (finalMoveCount > 0) {
+          const msPerMove = remaining / finalMoveCount;
+          for (let m = 0; m < finalMoveCount; m++) {
+            moveVisualMs[blkStart + m] = pos + m * msPerMove;
+          }
+        }
         segments.push({
           kind: "phase",
           startMs: pos,
@@ -471,7 +515,7 @@ function buildUnifiedSegments(
     }
   }
 
-  return segments;
+  return { segments, moveVisualMs };
 }
 
 /** Find the phase name for a given move index (inclusive ranges). */

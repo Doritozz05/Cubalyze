@@ -234,7 +234,7 @@ function TimelineSection({
   const [hoverMs, setHoverMs] = useState<number | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  const { totalMs, moveTicks, tpsSamples, segments, pauseMarks } = timeline;
+  const { totalMs, moveTicks, moveVisualMs, tpsSamples, segments, pauseMarks } = timeline;
   const width = 600; // viewBox width; scales to container via preserveAspectRatio
 
   // TPS scale: data-driven ceiling rounded up to a sensible tick.
@@ -284,11 +284,11 @@ function TimelineSection({
       const ratio = (e.clientX - rect.left) / rect.width;
       const ms = Math.max(0, Math.min(totalMs, ratio * totalMs));
       setHoverMs(ms);
-      // Find nearest move tick (only meaningful while inside the moves span).
+      // Find nearest move by visual position (aligned with segment coords).
       let nearest = 0;
       let minDist = Infinity;
-      for (let i = 0; i < moveTicks.length; i++) {
-        const d = Math.abs(moveTicks[i].offsetMs - ms);
+      for (let i = 0; i < moveVisualMs.length; i++) {
+        const d = Math.abs(moveVisualMs[i] - ms);
         if (d < minDist) {
           minDist = d;
           nearest = i;
@@ -296,7 +296,7 @@ function TimelineSection({
       }
       setHoverIdx(nearest);
     },
-    [moveTicks, totalMs],
+    [moveVisualMs, totalMs],
   );
 
   const handleLeave = useCallback(() => {
@@ -492,13 +492,13 @@ function TimelineSection({
                 );
               })}
 
-              {/* Move ticks */}
-              {moveTicks.map((tick) => (
+              {/* Move ticks — positioned using visual coords (aligned with segments) */}
+              {moveVisualMs.map((visMs, i) => (
                 <line
-                  key={tick.index}
-                  x1={xForMs(tick.offsetMs)}
+                  key={moveTicks[i].index}
+                  x1={xForMs(visMs)}
                   y1={TPS_AREA_BOTTOM + 1}
-                  x2={xForMs(tick.offsetMs)}
+                  x2={xForMs(visMs)}
                   y2={SEG_TOP - 2}
                   stroke="var(--ink-3)"
                   strokeWidth={0.6}
@@ -699,7 +699,7 @@ function TimelineSection({
               <span className="nums opacity-70">{formatTime(hoverSegment.durationMs)}</span>
             </span>
           ) : null}
-          {hoverIdx !== null && moveTicks[hoverIdx] && hoverMs !== null && hoverMs <= (moveTicks[moveTicks.length - 1]?.offsetMs ?? 0) + 50 ? (
+          {hoverIdx !== null && moveTicks[hoverIdx] && hoverMs !== null && hoverMs <= totalMs + 50 ? (
             <span className="font-mono text-ink-2">
               #{hoverIdx + 1} {moveTicks[hoverIdx].label}
               {moveTicks[hoverIdx].phaseName ? ` · ${moveTicks[hoverIdx].phaseName}` : ""}
