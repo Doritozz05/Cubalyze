@@ -297,6 +297,10 @@ export default function App() {
     (solve: import("@/types").Solve) => {
       setSelectedSolve(solve);
       setActiveView("analysis");
+      // The 3D cube split only makes sense alongside the timer; close it
+      // when jumping to Analysis from a row click, otherwise the panel
+      // would stay mounted over the analysis view.
+      setCubePanelOpen(false);
     },
     [],
   );

@@ -33,16 +33,14 @@ export function TimerSection() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start gap-3 rounded-xl border border-line/40 bg-surface-2/50 p-4">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
+      <div className="flex items-center gap-3 rounded-xl border border-line/40 bg-surface-2/50 p-4">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Clock className="size-4 text-ink-2" />
         </div>
-        <div>
-          <p className="text-[0.82rem] text-ink-2">
-            Configure how a solve should begin. These settings also apply
-            when no Smart Cube is connected.
-          </p>
-        </div>
+        <p className="text-[0.82rem] text-ink-2">
+          Configure how a solve should begin. These settings also apply
+          when no Smart Cube is connected.
+        </p>
       </div>
 
       <SettingToggle
