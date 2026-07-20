@@ -355,6 +355,12 @@ export default function App() {
     // when switching from timer → insights).
   }, []);
 
+  // "Replay" from TimesList dropdown: same as analyze — navigate to Insights
+  // with the solve selected. ReplaySection is auto-expanded there.
+  const handleReplaySolve = useCallback((solve: Solve) => {
+    handleAnalyzeSolve(solve);
+  }, [handleAnalyzeSolve]);
+
   // ── Main stage composition by active view ──────────────────────────────
   // Timer & Cube 3D share the live stage (scramble + timer + compact stats);
   // selecting Cube 3D additionally splits the stage with the 3D aside.
@@ -469,6 +475,7 @@ export default function App() {
             onDelete={handleDelete}
             onClear={handleClear}
             onAnalyze={handleAnalyzeSolve}
+            onReplay={handleReplaySolve}
           />
         )}
 

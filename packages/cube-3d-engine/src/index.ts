@@ -17,3 +17,6 @@ export * from './hardware/OrientationTracker';
 
 // Worker API (type-only export for consumers to use with Comlink.wrap<T>())
 export type { EngineWorkerAPI } from './workers/EngineWorker';
+
+// Replay Engine
+export { ReplayEngine, type ReplayCallbacks, type ReplayState, type RotationParams } from './replay/ReplayEngine';

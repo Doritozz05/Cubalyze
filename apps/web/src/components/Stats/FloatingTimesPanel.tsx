@@ -21,6 +21,7 @@ export interface FloatingTimesPanelProps {
   onDelete: (id: string) => void;
   onClear?: () => void;
   onAnalyze?: (solve: Solve) => void;
+  onReplay?: (solve: Solve) => void;
 }
 
 /**
@@ -109,6 +110,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
               onUpdate={props.onUpdate}
               onDelete={props.onDelete}
               onAnalyze={props.onAnalyze}
+              onReplay={props.onReplay}
               hideHeader
               className="h-full"
             />
@@ -196,6 +198,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
           onUpdate={props.onUpdate}
           onDelete={props.onDelete}
           onAnalyze={props.onAnalyze}
+          onReplay={props.onReplay}
           hideHeader
           className="h-full"
         />

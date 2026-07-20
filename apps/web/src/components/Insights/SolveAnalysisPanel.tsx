@@ -17,6 +17,7 @@ import {
   MetricRing,
   AlgorithmNotation,
 } from "./atoms";
+import { ReplaySection } from "./ReplaySection";
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -82,6 +83,16 @@ export function SolveAnalysisPanel({
   // Lifted cross-highlight state: hovering a timeline block or a phase
   // breakdown row highlights the other. Null = nothing highlighted.
   const [hoveredPhase, setHoveredPhase] = useState<string | null>(null);
+
+  // ── Replay state ──────────────────────────────────────────────────────────
+  const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
+  const [replaying, setReplaying] = useState(false);
+
+  // Stable solve object for the ReplaySection (avoids unnecessary re-creates).
+  const replaySolve = useMemo(
+    () => (solve.analysis ? solve : { ...solve, analysis: m }),
+    [solve, m],
+  );
 
   return (
     <div className={cn("flex flex-col gap-4 px-1 pb-4", className)}>
@@ -167,6 +178,19 @@ export function SolveAnalysisPanel({
         )}
       </div>
 
+      {/* ── Replay (always visible, even without analysis, as long as there are moves) ── */}
+      <ReplaySection
+        solve={replaySolve}
+        onReplayPosition={(ms) => {
+          setReplayPosMs(ms);
+          setReplaying(true);
+        }}
+        onReplayComplete={() => {
+          setReplayPosMs(null);
+          setReplaying(false);
+        }}
+      />
+
       {/* Analysis sections or empty banner */}
       {!m ? (
         <EmptyState
@@ -186,6 +210,7 @@ export function SolveAnalysisPanel({
             meanTps={m.tps.global}
             hoveredPhase={hoveredPhase}
             onHoverPhase={setHoveredPhase}
+            replayPositionMs={replayPosMs}
           />
 
           {/* ── Key metric rings ────────────────────────────────────────── */}
@@ -223,11 +248,14 @@ function TimelineSection({
   meanTps,
   hoveredPhase,
   onHoverPhase,
+  replayPositionMs,
 }: {
   timeline: TimelineData;
   meanTps: number;
   hoveredPhase: string | null;
   onHoverPhase: (phase: string | null) => void;
+  /** Animated replay playhead position (ms), null when not replaying. */
+  replayPositionMs?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
@@ -484,6 +512,37 @@ function TimelineSection({
                   strokeOpacity={0.6}
                   vectorEffect="non-scaling-stroke"
                 />
+              )}
+
+              {/* Replay playhead (animated) */}
+              {replayPositionMs !== null && replayPositionMs !== undefined && (
+                <>
+                  {/* Tail: gradient that fades behind the playhead */}
+                  <rect
+                    x={0}
+                    y={SEG_TOP}
+                    width={xForMs(replayPositionMs)}
+                    height={SEG_BOTTOM - SEG_TOP}
+                    fill="#4F8CF7"
+                    fillOpacity={0.08}
+                  />
+                  <line
+                    x1={xForMs(replayPositionMs)}
+                    y1={TPS_AREA_TOP}
+                    x2={xForMs(replayPositionMs)}
+                    y2={SEG_BOTTOM}
+                    stroke="#4F8CF7"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.85}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  {/* Small diamond at the top of the playhead */}
+                  <polygon
+                    points={`${xForMs(replayPositionMs)},${TPS_AREA_TOP - 1} ${xForMs(replayPositionMs) - 3},${TPS_AREA_TOP + 5} ${xForMs(replayPositionMs) + 3},${TPS_AREA_TOP + 5}`}
+                    fill="#4F8CF7"
+                    opacity={0.9}
+                  />
+                </>
               )}
             </svg>
 

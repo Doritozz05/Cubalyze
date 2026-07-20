@@ -24,6 +24,7 @@ export interface TimesListProps {
   onDelete: (id: string) => void;
   onClear?: () => void;
   onAnalyze?: (solve: Solve) => void;
+  onReplay?: (solve: Solve) => void;
   hideHeader?: boolean;
   className?: string;
 }
@@ -59,6 +60,7 @@ export const TimesList = memo(function TimesList({
   onDelete,
   onClear,
   onAnalyze,
+  onReplay,
   hideHeader,
   className,
 }: TimesListProps) {
@@ -195,10 +197,12 @@ export const TimesList = memo(function TimesList({
                           Analysis
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem disabled>
-                        <RotateCcw className="size-3.5" />
-                        Replay <span className="ml-auto text-[0.6rem] text-ink-3">soon</span>
-                      </DropdownMenuItem>
+                      {onReplay && (
+                        <DropdownMenuItem onClick={() => onReplay(solve)}>
+                          <RotateCcw className="size-3.5" />
+                          Replay
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
