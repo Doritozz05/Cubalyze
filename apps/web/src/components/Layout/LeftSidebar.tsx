@@ -125,7 +125,13 @@ export function LeftSidebar({
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-2 space-y-1">
-        <CubeConnector variant="rail" expanded={labelVisible} />
+        <CubeConnector 
+          variant="rail" 
+          expanded={labelVisible} 
+          onOpenChange={(open) => {
+            if (!open) onMobileOpenChange?.(false);
+          }}
+        />
         <SidebarFooterItem
           icon={Settings}
           label="Settings"

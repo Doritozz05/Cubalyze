@@ -33,12 +33,15 @@ export interface CubeConnectorProps {
   variant?: "header" | "rail";
   /** When variant="rail", toggles the text label visibility (sidebar expanded). */
   expanded?: boolean;
+  /** Callback fired when the dialog opens or closes. */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function CubeConnector({
   className,
   variant = "header",
   expanded = false,
+  onOpenChange,
 }: CubeConnectorProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">(
@@ -50,6 +53,7 @@ export function CubeConnector({
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
+    onOpenChange?.(newOpen);
     if (newOpen) {
       setStatus(globalCubeAdapter.isConnected ? "connected" : "disconnected");
       setErrorMsg("");
@@ -73,6 +77,7 @@ export function CubeConnector({
       globalCubeAdapter.requestFacelets().catch(() => {});
 
       setOpen(false); // Close dialog on success
+      onOpenChange?.(false);
     } catch (e: unknown) {
       console.error(e);
       const errMsg = e instanceof Error ? e.message : String(e);
