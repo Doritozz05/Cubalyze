@@ -8,6 +8,7 @@ export * from './orientation/OrientationTable';
 export * from './orientation/MoveTransformer';
 export * from './orientation/MoveNotationCompactor';
 export * from './orientation/CubeMoveCompacter';
+export * from './orientation/OrientationTimeline';
 
 // Method definitions and phase detectors
 export * from './methods/IMethodDefinition';

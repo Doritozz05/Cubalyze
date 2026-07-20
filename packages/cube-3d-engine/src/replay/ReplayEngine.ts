@@ -28,7 +28,7 @@
  */
 
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
-import type { CubeFace, CubeMoveEvent, RotationAxis } from '@cubeforge/types';
+import type { CubeFace, CubeMoveEvent, RotationAxis, OrientationTimeline } from '@cubeforge/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -53,6 +53,8 @@ export interface ReplayCallbacks {
     durationMs: number,
     elapsedMs?: number,
   ) => void | Promise<void>;
+  /** Called when orientation changes. orientationIndex is 0-23 (OrientationTable.ENTRIES). */
+  setOrientation?: (orientationIndex: number) => void | Promise<void>;
 }
 
 /** Playback states. */
@@ -117,14 +119,20 @@ export class ReplayEngine {
   /** Duration per move animation (ms). Shorter = snappier. */
   public moveAnimationDurationMs = 80;
 
+  /** Compact orientation timeline for gyro replay (if IMU was available). */
+  private orientationTimeline: OrientationTimeline | undefined;
+  private lastAppliedOrientation = -1;
+
   // ─── Constructor ────────────────────────────────────────────────────────
 
   constructor(
     moves: CubeMoveEvent[],
     callbacks: ReplayCallbacks,
     totalMs?: number,
+    orientationTimeline?: OrientationTimeline,
   ) {
     this.callbacks = callbacks;
+    this.orientationTimeline = orientationTimeline;
     this.setMoves(moves, totalMs);
   }
 
@@ -158,7 +166,14 @@ export class ReplayEngine {
 
     this.nextIndex = 0;
     this._positionMs = 0;
+    this.lastAppliedOrientation = -1;
     this.setState('idle');
+  }
+
+  /** Update the orientation timeline (e.g., after reloading solve data). */
+  public setOrientationTimeline(timeline: OrientationTimeline | undefined): void {
+    this.orientationTimeline = timeline;
+    this.lastAppliedOrientation = -1;
   }
 
   /** Start or resume playback. */
@@ -208,6 +223,7 @@ export class ReplayEngine {
     // Fast-forward: reset cube + re-apply moves with duration=0
     this.setState('seeking');
     await this.callbacks.resetCube();
+    this.lastAppliedOrientation = -1;
 
     this.nextIndex = 0;
     for (let i = 0; i < this.rotations.length; i++) {
@@ -216,6 +232,8 @@ export class ReplayEngine {
       const p = this.rotations[i];
       await this.callbacks.rotateLayers(p.axis, p.layerValues, p.angle, 0);
       this.nextIndex = i + 1;
+      // Apply orientation at this move index during seek
+      this.applyOrientationAt(i);
     }
 
     this.onPosition?.(clampedMs, this.nextIndex - 1);
@@ -341,6 +359,8 @@ export class ReplayEngine {
       if (prom instanceof Promise) prom.catch(() => {});
       this.nextIndex++;
       this.onMove?.(this.nextIndex - 1, this.rotations.length);
+      // Apply orientation at this move index
+      this.applyOrientationAt(this.nextIndex - 1);
     }
 
     this._positionMs = pos;
@@ -374,5 +394,29 @@ export class ReplayEngine {
     this.onComplete = null;
     this.onMove = null;
     this.onStateChange = null;
+  }
+
+  /**
+   * Apply the orientation for the given move index from the timeline.
+   * Uses getOrientationAtIndex to find the correct keyframe.
+   */
+  private applyOrientationAt(moveIndex: number): void {
+    if (!this.orientationTimeline || !this.callbacks.setOrientation) return;
+    
+    // Find the orientation index for this move
+    let orientationIndex = 0;
+    for (const [mi, oi] of this.orientationTimeline) {
+      if (mi <= moveIndex) {
+        orientationIndex = oi;
+      } else {
+        break;
+      }
+    }
+
+    if (orientationIndex !== this.lastAppliedOrientation) {
+      this.lastAppliedOrientation = orientationIndex;
+      const prom = this.callbacks.setOrientation(orientationIndex);
+      if (prom instanceof Promise) prom.catch(() => {});
+    }
   }
 }

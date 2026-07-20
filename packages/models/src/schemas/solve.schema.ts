@@ -19,6 +19,16 @@ export const SolveSchema = z.object({
   /** How the solve was recorded: "smart" (cube hardware) or "manual". */
   source: z.enum(['smart', 'manual']).default('manual'),
   moves: z.array(CubeMoveEventSchema).default([]),
+  /**
+   * Compact gyro/orientation timeline for smart cube solves with IMU.
+   * Array of [moveIndex, orientationIndex] keyframes where orientationIndex
+   * is 0-23 (index into OrientationTable.ENTRIES). Only present when
+   * source='smart' and the cube has gyro/IMU support.
+   *
+   * Between keyframes, the orientation is assumed constant.
+   * For a solve with 3 rotations: 4 keyframes ≈ 16 bytes.
+   */
+  orientationTimeline: z.array(z.tuple([z.number(), z.number()])).optional(),
   analysisEngineVersion: z.string().optional(),
   analysis: z.string().optional(),
   createdAt: z.string().datetime().optional(),

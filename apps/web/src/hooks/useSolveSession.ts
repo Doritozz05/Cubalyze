@@ -16,6 +16,7 @@ import type {
   CubeMoveDirection,
   CubeMoveEvent,
   CubeOrientation,
+  OrientationTimeline,
   SolveMetrics,
   SolveTimeline,
 } from "@cubeforge/types";
@@ -27,6 +28,7 @@ import {
 import {
   CFOPDefinition,
   compactCubeMoves,
+  compactOrientationTimeline,
   CubeState,
   FaceletStringConverter,
   MoveTransformer,
@@ -70,6 +72,8 @@ export interface UseSolveSessionResult {
   lastSolveOrientations: (CubeOrientation | undefined)[];
   /** Real cube CubeState at solve start (move-tracked ground truth for phase detection). */
   lastSolveStartState: CubeState | null;
+  /** Compact orientation timeline for persistent storage (IMU solves only). */
+  lastSolveOrientationTimeline: OrientationTimeline | undefined;
 }
 
 const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
@@ -647,6 +651,10 @@ export function useSolveSession(
   const solveStartStateRef = useRef<CubeState | null>(null);
   const [lastSolveStartState, setLastSolveStartState] = useState<CubeState | null>(null);
 
+  // ── Orientation timeline compression (for persistent storage) ────────────
+  const lastSolveOrientationTimelineRef = useRef<OrientationTimeline | undefined>(undefined);
+  const [lastSolveOrientationTimeline, setLastSolveOrientationTimeline] = useState<OrientationTimeline | undefined>(undefined);
+
   // ── Pending first solve move — arrives in IDLE during the ~16ms race
   //   between isScrambled=true and the auto-arm effect. Buffered here and
   //   replayed when the engine enters RUNNING (via the state$ subscription).
@@ -735,6 +743,10 @@ export function useSolveSession(
       setLastSolveOrientations(lastSolveOrientationsRef.current);
       // snapshot the move-tracked CubeState for analysis.
       setLastSolveStartState(solveStartStateRef.current);
+      // Compress orientations to ultra-compact keyframe timeline for storage
+      const timeline = compactOrientationTimeline(lastSolveOrientationsRef.current);
+      lastSolveOrientationTimelineRef.current = timeline;
+      setLastSolveOrientationTimeline(timeline);
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
@@ -1045,6 +1057,7 @@ export function useSolveSession(
     lastSolveMoves,
     lastSolveOrientations,
     lastSolveStartState,
+    lastSolveOrientationTimeline,
   };
 }
 

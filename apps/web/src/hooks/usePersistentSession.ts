@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import type { Solve as UISolve, Penalty, SolveSource } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
-import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { seedDemoDataIfEmpty } from "@/utils/seedDemoData";
 
 /** Session metadata returned by the API. */
@@ -30,16 +30,18 @@ export interface UsePersistentSessionResult {
     source?: SolveSource;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
+    orientationTimeline?: OrientationTimeline;
   }) => Promise<string | null>;
   updateSolve: (
     id: string,
     updates: {
       penalty?: Penalty;
       note?: string | null;
-      source?: SolveSource;
-      moves?: CubeMoveEvent[];
-      analysis?: SolveMetrics;
-    },
+    source?: SolveSource;
+    moves?: CubeMoveEvent[];
+    analysis?: SolveMetrics;
+    orientationTimeline?: OrientationTimeline;
+  },
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   clearSession: () => Promise<void>;
@@ -70,6 +72,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     source: (dbSolve.source as SolveSource) ?? "manual",
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
+    orientationTimeline: dbSolve.orientationTimeline,
   };
 }
 
@@ -169,6 +172,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     source?: SolveSource;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
+    orientationTimeline?: OrientationTimeline;
   }): Promise<string | null> => {
     if (!session || !reposRef.current) return null;
     const { solves: solvesRepo } = reposRef.current;
@@ -184,6 +188,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       method: input.method,
       source: input.source ?? "manual",
       moves: input.moves || [],
+      orientationTimeline: input.orientationTimeline,
       analysisEngineVersion: '0.1.0',
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
     };
@@ -204,7 +209,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     return solveId;
   }, [session]);
 
-  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; source?: SolveSource; moves?: CubeMoveEvent[]; analysis?: SolveMetrics }) => {
+  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; source?: SolveSource; moves?: CubeMoveEvent[]; analysis?: SolveMetrics; orientationTimeline?: OrientationTimeline }) => {
     if (!session || !reposRef.current) return;
     const { solves: solvesRepo } = reposRef.current;
     
@@ -224,6 +229,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
     if (updates.analysis !== undefined) {
        existing.analysis = JSON.stringify(updates.analysis);
     }
+    if (updates.orientationTimeline !== undefined) {
+       existing.orientationTimeline = updates.orientationTimeline;
+    }
     
     await solvesRepo.update(existing);
     
@@ -236,6 +244,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
            source: updates.source ?? s.source,
            moves: updates.moves ?? s.moves,
            analysis: updates.analysis ?? s.analysis,
+           orientationTimeline: updates.orientationTimeline ?? s.orientationTimeline,
          };
       }
       return s;

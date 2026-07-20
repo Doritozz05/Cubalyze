@@ -209,6 +209,18 @@ export class EngineWorkerAPI {
     this.gyroFusion.resetCalibration();
   }
 
+  /**
+   * Sets the cube root group orientation from an OrientationTable index (0-23).
+   * Used during replays to accurately show the cube's physical orientation
+   * at each move based on stored gyro data.
+   */
+  public setCubeOrientation(orientationIndex: number) {
+    if (!this.model) return;
+    const entry = OrientationTable.ENTRIES[orientationIndex];
+    if (!entry) return;
+    this.model.root.quaternion.copy(entry.quaternion);
+  }
+
   // ─── Visual API pass-through ────────────────────────────────────────────
 
   /** Changes a single face color at runtime */

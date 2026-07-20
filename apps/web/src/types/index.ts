@@ -35,6 +35,8 @@ export interface Solve {
   moves?: import('@cubeforge/types').CubeMoveEvent[];
   /** Post-solve analysis metrics (computed after solve completes). */
   analysis?: import('@cubeforge/types').SolveMetrics;
+  /** Compact orientation timeline for smart cube solves with IMU. */
+  orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
 }
 
 /**

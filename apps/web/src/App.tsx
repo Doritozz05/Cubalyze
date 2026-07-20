@@ -116,6 +116,7 @@ export default function App() {
     lastSolveMoves,
     lastSolveOrientations,
     lastSolveStartState,
+    lastSolveOrientationTimeline,
   } = session$;
 
   // Sync the connection ref so handleComplete (declared above, before session$
@@ -165,6 +166,7 @@ export default function App() {
                 updateSolve(solveId, {
                   analysis,
                   moves,
+                  orientationTimeline: lastSolveOrientationTimeline,
                 }).catch(() =>
                   console.warn("Failed to persist analysis"),
                 );
@@ -180,7 +182,7 @@ export default function App() {
     if (timerPhase === "idle") {
       prevLastTimeRef.current = null;
     }
-  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveStartState, currentScramble, method]);
+  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveStartState, lastSolveOrientationTimeline, currentScramble, method]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);

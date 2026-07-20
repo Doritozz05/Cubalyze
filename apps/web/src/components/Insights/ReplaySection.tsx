@@ -176,6 +176,7 @@ export function ReplaySection({
         // Set up the replay engine
         const moves = solve.moves ?? [];
         if (moves.length >= 2) {
+          const orientationTimeline = solve.orientationTimeline;
           const engine = new ReplayEngine(moves, {
             resetCube: () => proxy.resetCube(),
             rotateLayers: (
@@ -185,7 +186,10 @@ export function ReplaySection({
               dur: number,
               elapsed?: number,
             ) => proxy.rotateLayers(axis, layers, angle, dur, elapsed ?? 0),
-          }, solve.time);
+            setOrientation: orientationTimeline
+              ? (orientationIndex: number) => proxy.setCubeOrientation(orientationIndex)
+              : undefined,
+          }, solve.time, orientationTimeline);
           engine.moveAnimationDurationMs = 70;
           engineRef.current = engine;
 

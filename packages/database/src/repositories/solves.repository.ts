@@ -1,5 +1,5 @@
 import type { Solve } from './types.js';
-import type { CubeMoveEvent } from '@cubeforge/types';
+import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
 
 export interface SolveRow {
   id: string;
@@ -11,6 +11,7 @@ export interface SolveRow {
   method: string | null;
   source: string;
   moves: string;
+  orientation_timeline: string | null;
   analysis_engine_version: string | null;
   analysis: string | null;
   created_at: string;
@@ -30,6 +31,9 @@ function rowToSolve(row: SolveRow): Solve {
     method: row.method ?? undefined,
     source: (row.source as Solve['source']) ?? 'manual',
     moves: JSON.parse(row.moves) as CubeMoveEvent[],
+    orientationTimeline: row.orientation_timeline
+      ? (JSON.parse(row.orientation_timeline) as OrientationTimeline)
+      : undefined,
     analysisEngineVersion: row.analysis_engine_version ?? undefined,
     analysis: row.analysis ?? undefined,
     createdAt: row.created_at,
@@ -48,6 +52,9 @@ function solveToRow(solve: Solve): SolveRow {
     method: solve.method ?? null,
     source: solve.source ?? 'manual',
     moves: JSON.stringify(solve.moves || []),
+    orientation_timeline: solve.orientationTimeline
+      ? JSON.stringify(solve.orientationTimeline)
+      : null,
     analysis_engine_version: solve.analysisEngineVersion ?? null,
     analysis: solve.analysis ?? null,
     created_at: solve.createdAt ?? new Date().toISOString(),
@@ -83,16 +90,16 @@ export class SolvesRepository {
   async insert(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, moves, analysis_engine_version, analysis, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.moves, row.analysis_engine_version, row.analysis, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, moves, orientation_timeline, analysis_engine_version, analysis, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.created_at, row.updated_at]
     );
   }
 
   async update(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, source = ?, moves = ?, analysis_engine_version = ?, analysis = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.moves, row.analysis_engine_version, row.analysis, new Date().toISOString(), row.id]
+      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, source = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, updated_at = ? WHERE id = ?',
+      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, new Date().toISOString(), row.id]
     );
   }
 

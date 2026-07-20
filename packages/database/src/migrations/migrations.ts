@@ -108,4 +108,11 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE solves ADD COLUMN source TEXT NOT NULL DEFAULT 'manual';
     `,
   },
+  {
+    id: '007_add_orientation_timeline',
+    description: 'Add orientation_timeline JSON column for gyro/IMU replay data',
+    sql: `
+      ALTER TABLE solves ADD COLUMN orientation_timeline TEXT;
+    `,
+  },
 ];
