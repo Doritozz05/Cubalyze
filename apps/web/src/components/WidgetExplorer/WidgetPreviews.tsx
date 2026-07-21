@@ -104,14 +104,112 @@ function Scramble2DPreview() {
   );
 }
 
+/**
+ * Clean isometric 3×3×3 Rubik's cube with simple, rock-solid SVG isometric projection.
+ */
 function Cube3DPreview() {
+  // Simple isometric projection math:
+  // Center front vertex: (24, 25)
+  // Length of cube edge = 15
+  // W-axis (down): (0, 15)
+  // U-axis (right-up 30°): (13, -7.5)
+  // V-axis (left-up 30°): (-13, -7.5)
+
+  // 3x3 grid points for each face
+  // Left face (Green): extends along V and W
+  // Right face (Red): extends along U and W
+  // Top face (White): extends along U and V (from top vertex)
+
+  const cx = 24;
+  const cy = 24;
+
+  const u = [12.5, -7.2] as const;  // right-up
+  const v = [-12.5, -7.2] as const; // left-up
+  const w = [0, 14.4] as const;     // down
+
+  // Colors
+  const U_color = "#f8fafc";
+  const F_color = "#16a34a";
+  const R_color = "#dc2626";
+
+  const pad = 0.08; // gap between stickers (8%)
+
+  // Helper to calculate 4 vertices for a single sticker (r = 0..2, c = 0..2)
+  const getCell = (
+    origin: [number, number],
+    dir1: readonly [number, number],
+    dir2: readonly [number, number],
+    r: number,
+    c: number
+  ) => {
+    // Cell start in 0..1 normalized units of the face
+    const s1 = c / 3 + pad / 6;
+    const e1 = (c + 1) / 3 - pad / 6;
+    const s2 = r / 3 + pad / 6;
+    const e2 = (r + 1) / 3 - pad / 6;
+
+    const p0 = [origin[0] + s1 * dir1[0] + s2 * dir2[0], origin[1] + s1 * dir1[1] + s2 * dir2[1]];
+    const p1 = [origin[0] + e1 * dir1[0] + s2 * dir2[0], origin[1] + e1 * dir1[1] + s2 * dir2[1]];
+    const p2 = [origin[0] + e1 * dir1[0] + e2 * dir2[0], origin[1] + e1 * dir1[1] + e2 * dir2[1]];
+    const p3 = [origin[0] + s1 * dir1[0] + e2 * dir2[0], origin[1] + s1 * dir1[1] + e2 * dir2[1]];
+
+    return `${p0[0].toFixed(2)},${p0[1].toFixed(2)} ${p1[0].toFixed(2)},${p1[1].toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)} ${p3[0].toFixed(2)},${p3[1].toFixed(2)}`;
+  };
+
+  // Outer boundary vertices for the dark background frame
+  const topPeak: [number, number] = [cx + u[0] + v[0], cy + u[1] + v[1]];
+  const rightCorner: [number, number] = [cx + u[0], cy + u[1]];
+  const bottomRight: [number, number] = [cx + u[0] + w[0], cy + u[1] + w[1]];
+  const bottomPeak: [number, number] = [cx + w[0], cy + w[1]];
+  const bottomLeft: [number, number] = [cx + v[0] + w[0], cy + v[1] + w[1]];
+  const leftCorner: [number, number] = [cx + v[0], cy + v[1]];
+
+  const outerFrame = [
+    topPeak, rightCorner, bottomRight, bottomPeak, bottomLeft, leftCorner
+  ].map(p => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(" ");
+
   return (
     <div className="grid size-full place-items-center">
-      <svg viewBox="0 0 24 24" className="size-8 text-ink-2">
-        {/* Isometric cube */}
-        <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="none" stroke="currentColor" strokeWidth="1.2" />
-        <path d="M12 2v20M2 7l10 5M22 7l-10 5" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
-        <path d="M2 7l10 5M22 7l-10 5" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.4" />
+      <svg viewBox="0 0 48 44" className="size-full max-h-11">
+        {/* Drop shadow */}
+        <ellipse cx={24} cy={41} rx={16} ry={3} fill="rgba(0,0,0,0.14)" />
+
+        {/* Outer dark frame behind stickers */}
+        <polygon points={outerFrame} fill="#111111" stroke="#111111" strokeWidth={1} strokeLinejoin="round" />
+
+        {/* TOP FACE (White): Origin = cx,cy. dir1 = v, dir2 = u */}
+        {Array.from({ length: 3 }).map((_, r) =>
+          Array.from({ length: 3 }).map((_, c) => (
+            <polygon
+              key={`u-${r}-${c}`}
+              points={getCell([cx, cy], v, u, r, c)}
+              fill={U_color}
+              rx={0.5}
+            />
+          ))
+        )}
+
+        {/* LEFT FACE (Green): Origin = cx,cy. dir1 = v, dir2 = w */}
+        {Array.from({ length: 3 }).map((_, r) =>
+          Array.from({ length: 3 }).map((_, c) => (
+            <polygon
+              key={`l-${r}-${c}`}
+              points={getCell([cx, cy], v, w, r, c)}
+              fill={F_color}
+            />
+          ))
+        )}
+
+        {/* RIGHT FACE (Red): Origin = cx,cy. dir1 = u, dir2 = w */}
+        {Array.from({ length: 3 }).map((_, r) =>
+          Array.from({ length: 3 }).map((_, c) => (
+            <polygon
+              key={`r-${r}-${c}`}
+              points={getCell([cx, cy], u, w, r, c)}
+              fill={R_color}
+            />
+          ))
+        )}
       </svg>
     </div>
   );

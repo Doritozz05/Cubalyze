@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Box, ChevronUp, ChevronDown } from "lucide-react";
+import { Grid3x3, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
 import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
@@ -192,7 +192,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
           className
         )}
       >
-        <Box className="size-4 text-ink-3" />
+        <Grid3x3 className="size-4 text-ink-3" />
         <span className="text-xs font-medium text-ink">Scramble</span>
         <button
           onPointerDown={(e) => e.stopPropagation()}
@@ -238,7 +238,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
         )}
       >
         <div className="flex items-center gap-2">
-          <Box className="size-3.5 text-ink-3" />
+          <Grid3x3 className="size-3.5 text-ink-3" />
           <span className="text-xs font-medium text-ink">Scramble</span>
         </div>
         <button

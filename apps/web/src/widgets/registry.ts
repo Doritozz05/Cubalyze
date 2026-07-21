@@ -2,7 +2,7 @@
 
 import {
   ListOrdered,
-  Box,
+  Grid3x3,
   Cuboid,
   type LucideIcon,
 } from "lucide-react";
@@ -61,7 +61,7 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
     id: "scramble-2d",
     name: "Scramble Visualizer",
     description: "2D cube net showing the current scramble state. csTimer-style layout with WCA-standard colors.",
-    icon: Box,
+    icon: Grid3x3,
     category: "visual",
     author: "cubeforge",
     version: "1.0.0",
