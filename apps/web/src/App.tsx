@@ -24,6 +24,7 @@ import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics 
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import { migrateWidgetPositions } from "@/widgets/migration";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
+import { connectWidgetLifecycle } from "@/widgets/sdk";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.
@@ -31,11 +32,6 @@ registerAllWidgets();
 import "@/index.css";
 
 export default function App() {
-  // ── One-time migration of old per-widget localStorage positions ─────────
-  useEffect(() => {
-    migrateWidgetPositions();
-  }, []);
-
   const {
     session,
     sessions,
@@ -54,6 +50,12 @@ export default function App() {
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
 
+  // ── Refs to avoid stale closures in the lifecycle callback ────────────
+  const solvesRef = useRef(solves);
+  solvesRef.current = solves;
+  const methodRef = useRef(methodPref);
+  methodRef.current = methodPref;
+
   const [scrambleIndex, setScrambleIndex] = useState(0);
   // Single source of truth for what the main stage shows. Replaces the old
   // cube3DActive + sidebarActive pair.
@@ -64,6 +66,19 @@ export default function App() {
   const [currentScramble, setCurrentScramble] = useState(() =>
     RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
   );
+
+  // ── Widget lifecycle connection (avoids stale closure via refs) ────────
+  useEffect(() => {
+    migrateWidgetPositions();
+    const disconnect = connectWidgetLifecycle(() => ({
+      solves: solvesRef.current,
+      method: methodRef.current,
+      theme: "system" as const,
+      onNavigate: (view) => setActiveView(view),
+    }));
+    return disconnect;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Last solve analysis (displayed in the "Analysis" view) ─────────────
   const lastSolveRef = useRef<{

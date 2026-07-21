@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Search, Puzzle } from "lucide-react";
+import { Search, Puzzle, Plus } from "lucide-react";
+import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
+import { WidgetRegistry } from "@/widgets/WidgetRegistry";
+import { validateWidgetPlugin, sanitizeWidgetId } from "@/widgets/loader";
+import type { WidgetPlugin } from "@/widgets/sdk";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +56,12 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
     }
   }, [open]);
 
-  const allWidgets = useMemo(() => getAllWidgets(), []);
+  // Merge built-in + custom widgets. Subscribes to store for live updates.
+  const customWidgets = useWidgetStore((s) => s.customWidgets);
+  const allWidgets = useMemo(
+    () => [...getAllWidgets(), ...(customWidgets ?? [])],
+    [customWidgets],
+  );
 
   const filteredWidgets = useMemo(() => {
     let list = allWidgets;
@@ -78,6 +87,48 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
 
   const handleSelectCategory = useCallback((id: WidgetCategoryId) => {
     setActiveCategory(id);
+  }, []);
+
+  const handleImportWidget = useCallback(() => {
+    const url = prompt("Enter the URL of the widget module:");
+    if (!url?.trim()) return;
+
+    // Dynamic import for custom widget
+    import(/* @vite-ignore */ url.trim())
+      .then((module) => {
+        const plugin = (module.default ?? module) as WidgetPlugin;
+        const validation = validateWidgetPlugin(plugin);
+        if (!validation.valid) {
+          alert(`Invalid widget:\n${validation.errors.join("\n")}`);
+          return;
+        }
+
+        // Register the custom widget
+        const safeId = sanitizeWidgetId(plugin.id || plugin.definition?.id);
+        if (!safeId) {
+          alert("Widget must have a valid id");
+          return;
+        }
+
+        const definition = {
+          ...plugin.definition,
+          id: safeId,
+          source: "custom" as const,
+          icon: plugin.definition.icon as never,
+        };
+
+        widgetStore.getState().registerCustomWidget(definition);
+        WidgetRegistry.register(safeId, {
+          component: plugin.component as unknown as React.ComponentType<Record<string, unknown>>,
+          preview: plugin.preview ?? (() => null),
+          mapProps: () => ({}),
+        });
+
+        alert(`Widget "${definition.name}" imported successfully!`);
+      })
+      .catch((err) => {
+        alert(`Failed to load widget: ${err}`);
+      });
   }, []);
 
   return (
@@ -112,10 +163,21 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
                   </p>
                 </div>
 
-                {/* Count */}
-                <span className="nums shrink-0 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[0.7rem] text-ink-3">
-                  {filteredWidgets.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  {/* Import custom widget */}
+                  <button
+                    onClick={handleImportWidget}
+                    className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[0.7rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                    title="Import a custom widget from a URL"
+                  >
+                    <Plus className="size-3" />
+                    Import
+                  </button>
+                  {/* Count */}
+                  <span className="nums shrink-0 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[0.7rem] text-ink-3">
+                    {filteredWidgets.length}
+                  </span>
+                </div>
               </div>
             </div>
 

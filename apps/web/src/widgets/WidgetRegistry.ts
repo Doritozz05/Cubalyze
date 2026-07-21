@@ -1,21 +1,17 @@
 import type { ComponentType } from "react";
 import type { WidgetId } from "./types";
+import type { WidgetHostProps } from "@/widgets/WidgetHostProps";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-/** Props that WidgetHost passes to every widget component. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface WidgetComponentProps {
-  // Each widget receives its own specific props from WidgetHost.
-  // The actual props are spread from the host, typed per widget.
-}
-
-/** A widget registration: the React component and its preview. */
+/** A widget registration: the React component, its preview, and prop mapper. */
 export interface WidgetRegistration {
-  /** The floating panel component (receives props from WidgetHost). */
+  /** The floating panel component (receives mapped props from WidgetHost). */
   component: ComponentType<Record<string, unknown>>;
   /** Mini preview shown on WidgetCard. */
   preview: ComponentType;
+  /** Maps WidgetHostProps → props for this specific widget. Eliminates the old switch-case. */
+  mapProps: (hostProps: WidgetHostProps) => Record<string, unknown>;
 }
 
 // ── Registry ─────────────────────────────────────────────────────────────

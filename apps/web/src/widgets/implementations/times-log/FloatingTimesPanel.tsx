@@ -6,7 +6,7 @@ import { ListOrdered } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
-import { TimesList } from "./TimesList";
+import { TimesList } from "@/components/Stats/TimesList";
 import type { Solve } from "@/types";
 
 const PANEL_WIDTH = 320;

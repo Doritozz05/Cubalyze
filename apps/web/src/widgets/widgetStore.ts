@@ -3,7 +3,7 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { persist } from "zustand/middleware";
-import type { WidgetId, WidgetInstanceState } from "./types";
+import type { WidgetId, WidgetInstanceState, WidgetDefinition } from "./types";
 import { BUILT_IN_WIDGETS } from "./registry";
 
 // ── State shape ──────────────────────────────────────────────────────────
@@ -11,17 +11,19 @@ import { BUILT_IN_WIDGETS } from "./registry";
 export interface WidgetStoreState {
   /** Per-widget runtime state keyed by widget id. */
   instances: Record<WidgetId, WidgetInstanceState>;
+  /** Custom widget definitions registered by the user (persisted). */
+  customWidgets: WidgetDefinition[];
 }
 
 export interface WidgetStoreActions {
-  /** Toggle a widget's visibility on/off. */
   toggleWidget: (id: WidgetId) => void;
-  /** Set a widget's minimized state. */
   setMinimized: (id: WidgetId, minimized: boolean) => void;
-  /** Update a widget's position (from drag). */
   setPosition: (id: WidgetId, position: { x: number; y: number }) => void;
-  /** Batch-set all instances (e.g. hydration). */
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
+  /** Register a custom widget. Adds to registry + creates instance state. */
+  registerCustomWidget: (def: WidgetDefinition) => void;
+  /** Remove a custom widget. */
+  removeCustomWidget: (id: WidgetId) => void;
 }
 
 export type WidgetStore = WidgetStoreState & WidgetStoreActions;
@@ -46,6 +48,7 @@ export const widgetStore = createStore<WidgetStore>()(
   persist(
     (set) => ({
       instances: buildDefaultInstances(),
+      customWidgets: [],
 
       toggleWidget: (id) =>
         set((s) => ({
@@ -75,22 +78,39 @@ export const widgetStore = createStore<WidgetStore>()(
         })),
 
       setInstances: (instances) => set({ instances }),
+
+      registerCustomWidget: (def) =>
+        set((s) => {
+          // Don't duplicate
+          if (s.customWidgets.some((w) => w.id === def.id)) return s;
+          return {
+            customWidgets: [...s.customWidgets, def],
+            instances: {
+              ...s.instances,
+              [def.id]: {
+                visible: def.defaultActive,
+                minimized: def.defaultMinimized,
+                position: { ...def.defaultPosition },
+              },
+            },
+          };
+        }),
+
+      removeCustomWidget: (id) =>
+        set((s) => {
+          const { [id]: _, ...rest } = s.instances;
+          return {
+            customWidgets: s.customWidgets.filter((w) => w.id !== id),
+            instances: rest,
+          };
+        }),
     }),
     {
       name: "cubeforge:widgets",
-      // Only persist the instances map
-      partialize: (state) => ({ instances: state.instances }),
-      merge: (persistedState, currentState) => {
-        const persisted = (persistedState as WidgetStoreState)?.instances ?? {};
-        const defaults = buildDefaultInstances();
-        return {
-          ...currentState,
-          instances: {
-            ...defaults,
-            ...persisted,
-          },
-        };
-      },
+      partialize: (state) => ({
+        instances: state.instances,
+        customWidgets: state.customWidgets,
+      }),
     },
   ),
 );

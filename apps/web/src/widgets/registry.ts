@@ -53,9 +53,18 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   solveTimelineDefinition,
 ];
 
-/** All widgets (built-in + future community). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _getCustomWidgets: (() => WidgetDefinition[]) | null = null;
+
+/** Set a getter for custom widgets (called by widgetStore after initialization). */
+export function setCustomWidgetsGetter(getter: () => WidgetDefinition[]): void {
+  _getCustomWidgets = getter;
+}
+
+/** All widgets (built-in + registered custom). */
 export function getAllWidgets(): WidgetDefinition[] {
-  return [...BUILT_IN_WIDGETS];
+  const custom = _getCustomWidgets?.() ?? [];
+  return [...BUILT_IN_WIDGETS, ...custom];
 }
 
 /** Lookup a widget definition by id. */
