@@ -16,8 +16,8 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
  * layout, clamped so it stays readable on small or very wide screens.
  */
 const LEFT_NAV_WIDTH = 56; // matches md:pl-14 on the row
-const CUBE_MIN_WIDTH = 460;
-const CUBE_MAX_WIDTH = 720;
+const CUBE_MIN_WIDTH = 510;
+const CUBE_MAX_WIDTH = 800;
 
 /** Padding applied around the cube canvas. Lives on the inner wrapper (NOT on
  *  the animated <motion.aside>) so the container can collapse to width=0 /
