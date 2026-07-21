@@ -301,9 +301,6 @@ export function ReplaySection({
     return () => {
       cancelled = true;
       teardownWorker();
-      // Force fresh canvas on next init (solve change or re-expand).
-      // transferControlToOffscreen() is one-way — a new DOM element is needed.
-      setCanvasKey((k) => k + 1);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, canvasKey]);
