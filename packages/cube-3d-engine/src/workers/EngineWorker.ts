@@ -1,4 +1,5 @@
 import * as Comlink from 'comlink';
+import { Quaternion } from 'three';
 import { SceneManager } from '../core/SceneManager';
 import { CubeMeshFactory, type CubeStyleOptions } from '../core/CubeMeshFactory';
 import { CubeModel } from '../core/CubeModel';
@@ -24,6 +25,14 @@ export class EngineWorkerAPI {
   private onRotationEventCb?: (e: RotationEvent) => void;
   private orientationSub?: Subscription;
   private rotationEventSub?: Subscription;
+
+  // ── Orientation animation state (for smooth replay) ──────────────────
+  private orientationAnim: {
+    startQuat: Quaternion;
+    targetQuat: Quaternion;
+    startTime: number;
+    durationMs: number;
+  } | null = null;
 
   private lastTime: number = 0;
   private isRunning: boolean = false;
@@ -210,15 +219,50 @@ export class EngineWorkerAPI {
   }
 
   /**
-   * Sets the cube root group orientation from an OrientationTable index (0-23).
-   * Used during replays to accurately show the cube's physical orientation
-   * at each move based on stored gyro data.
+   * Sets the camera to an isometric corner view showing three faces of the
+   * cube (top, front, right). Used for replay to give a more informative
+   * perspective where multiple faces are visible at once.
    */
-  public setCubeOrientation(orientationIndex: number) {
+  public setIsometricView() {
+    if (!this.sceneManager) return;
+    // Reset to identity rotation, then set isometric angles
+    this.sceneManager.resetCamera();
+    // Rotate to show U (top), F (front), R (right) faces
+    // pitch = -30° to look down, yaw = -45° to see the right face
+    const pitch = -Math.PI / 6;  // -30°
+    const yaw = -Math.PI / 4;    // -45°
+    this.sceneManager.cameraGroup.rotation.set(pitch, yaw, 0);
+  }
+
+  /**
+   * Sets the cube root group orientation from an OrientationTable index (0-23)
+   * with smooth SLERP animation. Used during replays to accurately show the
+   * cube's physical orientation changes as animated whole-cube rotations.
+   *
+   * When durationMs is 0 or the method is called without animation, falls
+   * back to the previous hard-snap behavior for backward compatibility.
+   */
+  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number) {
     if (!this.model) return;
     const entry = OrientationTable.ENTRIES[orientationIndex];
     if (!entry) return;
-    this.model.root.quaternion.copy(entry.quaternion);
+
+    const duration = animationDurationMs ?? 0;
+
+    if (duration <= 0) {
+      // Zero-duration: hard snap (backward compatible, used during seek)
+      this.orientationAnim = null;
+      this.model.root.quaternion.copy(entry.quaternion);
+      return;
+    }
+
+    // Animated transition: capture start + target for SLERP in the render loop
+    this.orientationAnim = {
+      startQuat: this.model.root.quaternion.clone(),
+      targetQuat: entry.quaternion.clone(),
+      startTime: performance.now(),
+      durationMs: duration,
+    };
   }
 
   // ─── Visual API pass-through ────────────────────────────────────────────
@@ -253,6 +297,26 @@ export class EngineWorkerAPI {
 
     if (this.rotationEngine) this.rotationEngine.update(timeMs);
     if (this.gyroFusion) this.gyroFusion.update(deltaMs);
+
+    // ── Orientation animation (smooth replay whole-cube rotations) ──
+    if (this.orientationAnim && this.model) {
+      const elapsed = timeMs - this.orientationAnim.startTime;
+      let t = elapsed / this.orientationAnim.durationMs;
+
+      if (t >= 1.0) {
+        // Animation complete — snap to exact target
+        this.model.root.quaternion.copy(this.orientationAnim.targetQuat);
+        this.orientationAnim = null;
+      } else {
+        // Ease-out cubic for natural deceleration
+        const eased = 1 - Math.pow(1 - t, 3);
+        this.model.root.quaternion.slerpQuaternions(
+          this.orientationAnim.startQuat,
+          this.orientationAnim.targetQuat,
+          eased,
+        );
+      }
+    }
 
     if (this.sceneManager) this.sceneManager.render();
   }

@@ -53,8 +53,9 @@ export interface ReplayCallbacks {
     durationMs: number,
     elapsedMs?: number,
   ) => void | Promise<void>;
-  /** Called when orientation changes. orientationIndex is 0-23 (OrientationTable.ENTRIES). */
-  setOrientation?: (orientationIndex: number) => void | Promise<void>;
+  /** Called when orientation changes. orientationIndex is 0-23 (OrientationTable.ENTRIES).
+   *  Pass animationDurationMs > 0 for smooth SLERP, 0 for instant snap (seeking). */
+  setOrientation?: (orientationIndex: number, animationDurationMs: number) => void | Promise<void>;
 }
 
 /** Playback states. */
@@ -276,8 +277,8 @@ export class ReplayEngine {
       const p = this.rotations[i];
       await this.callbacks.rotateLayers(p.axis, p.layerValues, p.angle, 0);
       this.nextIndex = i + 1;
-      // Apply orientation at this move index during seek
-      this.applyOrientationAt(i);
+      // Apply orientation at this move index during seek (instant snap, no animation)
+      this.applyOrientationAt(i, 0);
     }
 
     this.onPosition?.(clampedMs, this.nextIndex - 1);
@@ -364,7 +365,8 @@ export class ReplayEngine {
       targetIdx > 0 ? this.rotations[targetIdx - 1].offsetMs : 0;
 
     // Apply orientation at the new position (the move before the undone one)
-    this.applyOrientationAt(Math.max(0, this.nextIndex - 1));
+    // Use animation duration for smooth visual during step-backward
+    this.applyOrientationAt(Math.max(0, this.nextIndex - 1), this.moveAnimationDurationMs);
 
     this.onPosition?.(this._positionMs, this.nextIndex - 1);
     this.setState('paused');
@@ -423,8 +425,8 @@ export class ReplayEngine {
       if (prom instanceof Promise) prom.catch(() => {});
       this.nextIndex++;
       this.onMove?.(this.nextIndex - 1, this.rotations.length);
-      // Apply orientation at this move index
-      this.applyOrientationAt(this.nextIndex - 1);
+      // Apply orientation at this move index with smooth animation
+      this.applyOrientationAt(this.nextIndex - 1, this.moveAnimationDurationMs);
     }
 
     this._positionMs = pos;
@@ -463,8 +465,13 @@ export class ReplayEngine {
   /**
    * Apply the orientation for the given move index from the timeline.
    * Uses getOrientationAtIndex to find the correct keyframe.
+   * Passes animationDurationMs so the renderer can smoothly SLERP the
+   * cube root instead of hard-snapping.
+   *
+   * @param moveIndex - Current move index in the solve
+   * @param animateMs - Duration for the orientation animation (0 = instant snap for seeking)
    */
-  private applyOrientationAt(moveIndex: number): void {
+  private applyOrientationAt(moveIndex: number, animateMs = 0): void {
     if (!this.orientationTimeline || !this.callbacks.setOrientation) return;
     
     // Find the orientation index for this move
@@ -479,7 +486,7 @@ export class ReplayEngine {
 
     if (orientationIndex !== this.lastAppliedOrientation) {
       this.lastAppliedOrientation = orientationIndex;
-      const prom = this.callbacks.setOrientation(orientationIndex);
+      const prom = this.callbacks.setOrientation(orientationIndex, animateMs);
       if (prom instanceof Promise) prom.catch(() => {});
     }
   }

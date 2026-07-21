@@ -8,6 +8,8 @@ import { MIGRATIONS } from './migrations/index.js';
 // cover the OPFS-backed OpfsDb constructor or the oo1 namespace.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null;
+/** Whether the database is backed by OPFS (persistent) or memory (volatile). */
+let _storageType: 'opfs' | 'memory' = 'memory';
 
 function runMigrations(): void {
   if (!db) throw new Error('Database not initialized');
@@ -35,13 +37,16 @@ export const DBWorker = {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((sqlite3 as any).opfs) {
-        console.log('[DB Worker] OPFS is available. Using OpfsDb.');
+        console.log('[DB Worker] OPFS is available. Using OpfsDb (PERSISTENT).');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         db = new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
+        _storageType = 'opfs';
       } else {
-        // Fallback to memory
+        // Fallback to memory — DATA WILL BE LOST ON RELOAD
+        console.warn('[DB Worker] OPFS NOT available. Using in-memory DB (DATA LOST ON RELOAD).');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
+        _storageType = 'memory';
       }
 
       db.exec(`
@@ -79,6 +84,11 @@ export const DBWorker = {
       db.close();
       db = null;
     }
+  },
+
+  /** Returns the storage backend type so the UI can warn if data won't persist. */
+  getStorageType() {
+    return _storageType;
   },
 };
 

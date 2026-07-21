@@ -19,7 +19,7 @@ import { preferencesStore } from "@cubeforge/state";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import "@/index.css";
 
@@ -59,6 +59,12 @@ export default function App() {
   const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
   // Track the DB solve ID for the current solve so we can persist analysis later
   const pendingSolveIdRef = useRef<string | null>(null);
+  // Buffer for moves + orientationTimeline captured at solve-stop time.
+  // Persisted immediately when addSolve resolves so data survives reload.
+  const pendingMovesRef = useRef<{
+    moves: CubeMoveEvent[];
+    orientationTimeline: OrientationTimeline | undefined;
+  } | null>(null);
   // Tracks the live Smart Cube connection state so `handleComplete` (which
   // must be defined *before* `useSolveSession` provides `smartCubeConnected`)
   // can read the current connection status without a temporal-dead-zone
@@ -91,12 +97,26 @@ export default function App() {
       })
         .then((solveId) => {
           pendingSolveIdRef.current = solveId;
+
+          // Persist moves + orientationTimeline IMMEDIATELY so they survive
+          // page reload. The async analysis comes later via updateSolve.
+          const pending = pendingMovesRef.current;
+          if (pending && pending.moves.length > 0) {
+            updateSolve(solveId, {
+              moves: pending.moves,
+              orientationTimeline: pending.orientationTimeline,
+            }).catch(() =>
+              console.warn("Failed to persist moves immediately"),
+            );
+            pendingMovesRef.current = null;
+          }
+
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
         })
         .catch(() => toast.error("Couldn't save solve"));
     },
-    [addSolve, currentScramble, methodPref],
+    [addSolve, currentScramble, methodPref, updateSolve],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
@@ -145,7 +165,14 @@ export default function App() {
       // Use the stable snapshot captured at stop time (avoids race with IDLE clearing)
       const moves = lastSolveMoves;
       const scr = scrambleAtSolveRef.current;
-      const m = methodAtSolveRef.current;          if (moves.length > 0) {
+      const m = methodAtSolveRef.current;
+
+      // Buffer moves so handleComplete can persist them immediately
+      pendingMovesRef.current = moves.length > 0
+        ? { moves, orientationTimeline: lastSolveOrientationTimeline }
+        : null;
+
+      if (moves.length > 0) {
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
           runAnalysis(moves, scr, m, lastSolveOrientations, lastSolveStartState ?? undefined).then((analysis) => {
@@ -163,10 +190,10 @@ export default function App() {
               // authoritative indicator, and moves are persisted here.
               const solveId = pendingSolveIdRef.current;
               if (solveId) {
+                // Moves were already persisted immediately in handleComplete.
+                // Only update the analysis field here.
                 updateSolve(solveId, {
                   analysis,
-                  moves,
-                  orientationTimeline: lastSolveOrientationTimeline,
                 }).catch(() =>
                   console.warn("Failed to persist analysis"),
                 );

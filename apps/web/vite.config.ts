@@ -7,6 +7,14 @@ import path from 'path'
 export default defineConfig({
   server: {
     host: true,
+    // Cross-origin isolation headers REQUIRED for OPFS (persistent SQLite).
+    // Without these, SharedArrayBuffer is unavailable and the DB falls back
+    // to in-memory storage — losing all data on page reload.
+    // credentialless = safe for dev (allows cross-origin images/fonts).
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
     // Explicit HMR config for wss://localhost when basicSsl is active.
     // Prevents WebSocket URL mismatch that causes HMR connection failure.
     hmr: {

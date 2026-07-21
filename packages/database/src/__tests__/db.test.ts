@@ -10,6 +10,7 @@ vi.mock('comlink', () => ({
       if (sql.includes('SELECT')) return [{ key: 'theme', value: 'dark' }];
       return [];
     }),
+    getStorageType: vi.fn().mockResolvedValue('opfs'),
     close: vi.fn().mockResolvedValue(undefined),
     [Symbol.for('comlink.releaseProxy')]: vi.fn(),
   })),

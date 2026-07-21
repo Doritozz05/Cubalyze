@@ -633,6 +633,18 @@ export function useSolveSession(
   const lastSolveMovesRef = useRef<CubeMoveEvent[]>([]);
   const [lastSolveMoves, setLastSolveMoves] = useState<CubeMoveEvent[]>([]);
 
+  // ── BLE deduplication: tracks the last processed cubeTimestamp + face +
+  //     direction to filter hardware-level retransmits. The GAN BLE stack
+  //     sometimes sends the exact same physical MOVE event twice with
+  //     identical cubeTimestamp. Including face+direction in the check
+  //     protects against firmware that sends static cubeTimestamp=0.
+  //     Reset on IDLE so each solve starts fresh. Do NOT reset on RUNNING —
+  //     doing so creates a race window where the first solve move's
+  //     duplicate bypasses the filter (the ref was just cleared to null).
+  const lastCubeTimestampRef = useRef<number | null>(null);
+  const lastMoveFaceRef = useRef<string | null>(null);
+  const lastMoveDirRef = useRef<number | null>(null);
+
   // ── Orientation collection (one per move, for RotationCounter) ─────────
   const collectedOrientationsRef = useRef<(CubeOrientation | undefined)[]>([]);
   const lastSolveOrientationsRef = useRef<(CubeOrientation | undefined)[]>([]);
@@ -687,6 +699,10 @@ export function useSolveSession(
         // clear solve-start state so stale data doesn't leak into the
         // next solve.
         solveStartStateRef.current = null;
+        // Reset BLE dedup tracker for the next solve
+        lastCubeTimestampRef.current = null;
+        lastMoveFaceRef.current = null;
+        lastMoveDirRef.current = null;
       }
       // Defensive: clear any stale IDLE-buffered pending move whenever the
       // engine arms (inspection/RFM/touching). This catches scramble-leak
@@ -836,6 +852,34 @@ export function useSolveSession(
     if (!adapter.moves$) return;
 
     const moveSub = adapter.moves$.subscribe((move: CubeMoveEvent) => {
+      // ── BLE DEDUPLICATION: drop hardware-level retransmits ────────────
+      // The GAN BLE stack occasionally sends the exact same physical move
+      // twice with identical cubeTimestamp (the hardware's internal move
+      // counter). Filtering here — before any state mutation — keeps
+      // realCubeStateRef 100% in sync with the physical cube.
+      //
+      // Genuine 180° turns arrive as two 90° events with DIFFERENT
+      // cubeTimestamps (the hardware increments per quarter-turn), so
+      // they safely pass through and are later compacted by
+      // compactCubeMoves.
+      //
+      // Guard: only dedup when cubeTimestamp is a valid number AND the
+      // full (face, direction) tuple matches the previous move. The face+
+      // direction check protects against firmware that sends static
+      // cubeTimestamp=0 for every move (would otherwise drop all moves
+      // after the first).
+      if (
+        move.cubeTimestamp != null &&
+        lastCubeTimestampRef.current === move.cubeTimestamp &&
+        lastMoveFaceRef.current === move.face &&
+        lastMoveDirRef.current === move.direction
+      ) {
+        return; // hardware duplicate — drop silently
+      }
+      lastCubeTimestampRef.current = move.cubeTimestamp ?? null;
+      lastMoveFaceRef.current = move.face;
+      lastMoveDirRef.current = move.direction;
+
       const current = engine.getState();
 
       // ── Snapshot the cube state BEFORE applying this move IF this

@@ -215,6 +215,9 @@ export function ReplaySection({
 
         cubeReadyRef.current = true;
 
+        // Set isometric camera angle so 3 faces are visible
+        await proxy.setIsometricView();
+
         // Set up the replay engine
         const moves = solve.moves ?? [];
         if (moves.length >= 2) {
@@ -229,7 +232,7 @@ export function ReplaySection({
               elapsed?: number,
             ) => proxy.rotateLayers(axis, layers, angle, dur, elapsed ?? 0),
             setOrientation: orientationTimeline
-              ? (orientationIndex: number) => proxy.setCubeOrientation(orientationIndex)
+              ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
           }, solve.time, orientationTimeline);
           engine.moveAnimationDurationMs = 70;
@@ -359,51 +362,58 @@ export function ReplaySection({
                 : "Connect a Smart Cube to capture moves."}
             </p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {/* Top row: mini cube + controls */}
-              <div className="flex items-center gap-4">
-                {/* Mini cube 3D — solo el cubo, sin overlay */}
-                <div
-                  ref={containerRef}
-                  className="relative size-56 shrink-0 overflow-hidden rounded-lg border border-line bg-black/5"
-                >
-                  <canvas
-                    key={canvasKey}
-                    ref={canvasRef}
-                    width={280}
-                    height={280}
-                    className={cn(
-                      "h-full w-full",
-                      "cursor-grab active:cursor-grabbing",
-                    )}
-                    onPointerDown={(e) => {
-                      isDraggingRef.current = true;
-                      lastPointerRef.current = { x: e.clientX, y: e.clientY };
-                      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
-                    }}
-                    onPointerMove={(e) => {
-                      if (!isDraggingRef.current || !workerProxyRef.current) return;
-                      const dx = e.clientX - lastPointerRef.current.x;
-                      const dy = e.clientY - lastPointerRef.current.y;
-                      lastPointerRef.current = { x: e.clientX, y: e.clientY };
-                      workerProxyRef.current.rotateCamera(dx, dy).catch(console.error);
-                    }}
-                    onPointerUp={(e) => {
-                      isDraggingRef.current = false;
-                      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
-                    }}
-                    onPointerCancel={(e) => {
-                      isDraggingRef.current = false;
-                      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
-                    }}
-                  />
-                </div>
+            <div className="flex flex-col gap-3 items-center">
+              {/* Mini cube 3D — centered, max-w-sm for compactness */}
+              <div
+                ref={containerRef}
+                className="relative w-full max-w-xs aspect-square overflow-hidden rounded-lg bg-black/[0.03]"
+              >
+                <canvas
+                  key={canvasKey}
+                  ref={canvasRef}
+                  className={cn(
+                    "h-full w-full",
+                    "cursor-grab active:cursor-grabbing",
+                  )}
+                  onPointerDown={(e) => {
+                    isDraggingRef.current = true;
+                    lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+                  }}
+                  onPointerMove={(e) => {
+                    if (!isDraggingRef.current || !workerProxyRef.current) return;
+                    const dx = e.clientX - lastPointerRef.current.x;
+                    const dy = e.clientY - lastPointerRef.current.y;
+                    lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                    workerProxyRef.current.rotateCamera(dx, dy).catch(console.error);
+                  }}
+                  onPointerUp={(e) => {
+                    isDraggingRef.current = false;
+                    (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                  }}
+                  onPointerCancel={(e) => {
+                    isDraggingRef.current = false;
+                    (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                  }}
+                />
 
-                {/* Controls column */}
-                <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-                  {/* Time display */}
+                {/* Progress bar overlay at bottom of canvas */}
+                {totalMs > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-line/40">
+                    <div
+                      className="h-full bg-blue-500/60 transition-[width] duration-75 linear"
+                      style={{ width: `${Math.min(100, (positionMs / totalMs) * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Controls bar — centered, max-w-sm */}
+              <div className="flex flex-col gap-2 w-full max-w-xs">
+                {/* Top row: time + stats */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="nums text-lg font-semibold text-ink tabular-nums">
+                    <span className="nums text-xl font-semibold text-ink tabular-nums">
                       {formatTime(positionMs)}
                     </span>
                     <span className="nums text-xs text-ink-3">
@@ -411,142 +421,135 @@ export function ReplaySection({
                     </span>
                   </div>
 
-                  {/* Move counter */}
-                  {hasMoves && (
-                    <p className="text-[0.65rem] text-ink-3">
+                  <div className="flex items-center gap-3 text-[0.62rem] text-ink-3">
+                    {/* Move counter */}
+                    <span className="nums">
                       Move{" "}
-                      <span className="nums font-medium text-ink">
+                      <span className="font-medium text-ink">
                         {Math.max(0, currentMoveIdx + 1)}
                       </span>
-                      {" / "}
-                      <span className="nums text-ink-2">{totalMoves}</span>
-                      {liveStats && (
-                        <>
-                          {" — "}
-                          <span className="font-mono font-medium text-ink">
-                            {liveStats.notation}
-                          </span>
-                        </>
-                      )}
-                    </p>
-                  )}
+                      /{totalMoves}
+                    </span>
 
-                  {/* Live stats */}
-                  {liveStats?.phaseName && (
-                    <div className="flex items-center gap-2 border-t border-line/30 pt-1.5">
-                      <span className="text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
-                        {liveStats.phaseName}
+                    {/* Current move notation */}
+                    {liveStats && (
+                      <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono font-medium text-ink text-xs">
+                        {liveStats.notation}
                       </span>
-                      <span className="nums text-[0.65rem] font-semibold text-ink tabular-nums">
-                        {liveStats.phaseProgress}
-                      </span>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Orientation count indicator */}
-                  {solve.orientationTimeline && solve.orientationTimeline.length > 0 && (
-                    <div className="flex items-center gap-1.5 border-t border-line/30 pt-1.5">
-                      <span
-                        className="inline-block size-2 rounded-full"
-                        style={{ backgroundColor: "#a78bfa" }}
-                        title="Orientation data available"
-                      />
-                      <span className="text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
-                        Orientation
-                      </span>
-                      <span className="nums text-[0.65rem] font-semibold text-ink tabular-nums">
-                        {solve.orientationTimeline.length}{" "}
-                        <span className="text-[0.5rem] font-normal text-ink-2">
-                          keyframe{solve.orientationTimeline.length !== 1 ? "s" : ""}
+                    {/* Phase info */}
+                    {liveStats?.phaseName && (
+                      <span className="flex items-center gap-1">
+                        <span className="font-medium uppercase tracking-wide text-ink-2">
+                          {liveStats.phaseName}
+                        </span>
+                        <span className="nums font-semibold text-ink">
+                          {liveStats.phaseProgress}
                         </span>
                       </span>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Transport controls */}
-                  <div className="flex items-center gap-1">
-                    {/* Restart */}
-                    <button
-                      onClick={handleRestart}
-                      disabled={!canPlay}
-                      className="grid size-7 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                      title="Restart"
-                      aria-label="Restart replay"
-                    >
-                      <RotateCcw className="size-3.5" />
-                    </button>
-
-                    {/* Step backward */}
-                    <button
-                      onClick={handleSeekBackward}
-                      disabled={!canPlay}
-                      className="grid size-7 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                      title="Step backward"
-                      aria-label="Step backward one move"
-                    >
-                      <SkipBack className="size-3.5" />
-                    </button>
-
-                    {/* Play / Pause */}
-                    <button
-                      onClick={handlePlayPause}
-                      disabled={!canPlay}
-                      className={cn(
-                        "grid size-8 place-items-center rounded-full transition-colors disabled:opacity-30",
-                        replayState === "playing"
-                          ? "bg-ink text-background hover:bg-ink/80"
-                          : "bg-blue-500 text-white hover:bg-blue-600",
-                      )}
-                      title={
-                        replayState === "playing" ? "Pause" : "Play"
-                      }
-                      aria-label={
-                        replayState === "playing" ? "Pause" : "Play"
-                      }
-                    >
-                      {replayState === "playing" ? (
-                        <Pause className="size-4" />
-                      ) : (
-                        <Play className="size-4 pl-0.5" />
-                      )}
-                    </button>
-
-                    {/* Step forward */}
-                    <button
-                      onClick={handleSeekForward}
-                      disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
-                      className="grid size-7 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                      title="Step forward"
-                      aria-label="Step forward one move"
-                    >
-                      <SkipForward className="size-3.5" />
-                    </button>
-
-                    {/* Speed selector */}
-                    <div className="ml-2 flex items-center gap-0.5 rounded-md border border-line/60 p-0.5">
-                      {SPEEDS.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => handleSetSpeed(s)}
-                          className={cn(
-                            "rounded px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wider transition-colors",
-                            speed === s
-                              ? "bg-ink text-background"
-                              : "text-ink-3 hover:text-ink",
-                          )}
-                          title={`${s}x speed`}
-                        >
-                          {s}x
-                        </button>
-                      ))}
-                    </div>
+                    {/* Orientation indicator */}
+                    {solve.orientationTimeline && solve.orientationTimeline.length > 0 && (
+                      <span
+                        className="flex items-center gap-1"
+                        title={`${solve.orientationTimeline.length} orientation keyframe${solve.orientationTimeline.length !== 1 ? "s" : ""}`}
+                      >
+                        <span
+                          className="inline-block size-1.5 rounded-full"
+                          style={{ backgroundColor: "#a78bfa" }}
+                        />
+                        <span className="nums font-medium text-ink">
+                          {solve.orientationTimeline.length}
+                        </span>
+                      </span>
+                    )}
                   </div>
+                </div>
 
+                {/* Bottom row: transport controls */}
+                <div className="flex items-center gap-1.5">
+                  {/* Restart */}
+                  <button
+                    onClick={handleRestart}
+                    disabled={!canPlay}
+                    className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                    title="Restart"
+                    aria-label="Restart replay"
+                  >
+                    <RotateCcw className="size-3.5" />
+                  </button>
 
+                  {/* Step backward */}
+                  <button
+                    onClick={handleSeekBackward}
+                    disabled={!canPlay}
+                    className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                    title="Step backward"
+                    aria-label="Step backward one move"
+                  >
+                    <SkipBack className="size-3.5" />
+                  </button>
+
+                  {/* Play / Pause */}
+                  <button
+                    onClick={handlePlayPause}
+                    disabled={!canPlay}
+                    className={cn(
+                      "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
+                      replayState === "playing"
+                        ? "bg-ink text-background hover:bg-ink/80 hover:scale-105"
+                        : "bg-blue-500 text-white hover:bg-blue-600 hover:scale-105",
+                    )}
+                    title={
+                      replayState === "playing" ? "Pause" : "Play"
+                    }
+                    aria-label={
+                      replayState === "playing" ? "Pause" : "Play"
+                    }
+                  >
+                    {replayState === "playing" ? (
+                      <Pause className="size-4" />
+                    ) : (
+                      <Play className="size-4 pl-0.5" />
+                    )}
+                  </button>
+
+                  {/* Step forward */}
+                  <button
+                    onClick={handleSeekForward}
+                    disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
+                    className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                    title="Step forward"
+                    aria-label="Step forward one move"
+                  >
+                    <SkipForward className="size-3.5" />
+                  </button>
+
+                  {/* Spacer */}
+                  <span className="flex-1" />
+
+                  {/* Speed selector */}
+                  <div className="flex items-center gap-0.5 rounded-md border border-line/60 p-0.5">
+                    {SPEEDS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => handleSetSpeed(s)}
+                        className={cn(
+                          "rounded px-2 py-1 text-[0.62rem] font-medium uppercase tracking-wider transition-all duration-150",
+                          speed === s
+                            ? "bg-ink text-background"
+                            : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                        )}
+                        title={`${s}x speed`}
+                      >
+                        {s}x
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-
-
             </div>
           )}
         </div>
