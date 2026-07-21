@@ -213,13 +213,20 @@ function SidebarGroupTitle({
   labelVisible: boolean;
 }) {
   return (
-    <motion.span
-      animate={{ opacity: labelVisible ? 1 : 0 }}
+    <motion.div
+      initial={false}
+      animate={{
+        height: labelVisible ? "auto" : 0,
+        opacity: labelVisible ? 1 : 0,
+        marginBottom: labelVisible ? 4 : 0,
+      }}
       transition={SIDEBAR_MOTION.label}
-      className="relative z-20 block overflow-hidden px-3 pb-1 text-[0.62rem] uppercase tracking-[0.15em] text-sidebar-foreground/40 whitespace-nowrap"
+      className="overflow-hidden"
     >
-      {label}
-    </motion.span>
+      <span className="relative z-20 block px-3 text-[0.62rem] uppercase tracking-[0.15em] text-sidebar-foreground/40 whitespace-nowrap">
+        {label}
+      </span>
+    </motion.div>
   );
 }
 
@@ -256,13 +263,14 @@ function SidebarNavItem({
           transition={ACTIVE_PILL_SPRING}
         />
       )}
-      <span className="relative z-10 inline-flex shrink-0 ml-1">
+      <div className="relative z-10 flex size-5 shrink-0 items-center justify-center">
         <Icon className="size-4" />
         {badge && (
           <span className="absolute -right-0.5 -top-0.5">{badge}</span>
         )}
-      </span>
+      </div>
       <motion.span
+        initial={false}
         animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
         transition={SIDEBAR_MOTION.label}
         className="relative z-10 overflow-hidden whitespace-nowrap"
@@ -290,8 +298,11 @@ function SidebarFooterItem({
       title={!labelVisible ? label : undefined}
       className="flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
     >
-      <Icon className="size-4 shrink-0 ml-1" />
+      <div className="flex size-5 shrink-0 items-center justify-center">
+        <Icon className="size-4" />
+      </div>
       <motion.span
+        initial={false}
         animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
         transition={SIDEBAR_MOTION.label}
         className="overflow-hidden whitespace-nowrap"

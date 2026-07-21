@@ -168,12 +168,15 @@ export function CubeConnector({
         title={!expanded ? "Smart Cube" : undefined}
         aria-label="Connect Smart Cube"
       >
-        {status === "connected" ? (
-          <BluetoothConnected className="size-4 shrink-0 ml-1" />
-        ) : (
-          <Bluetooth className="size-4 shrink-0 ml-1" />
-        )}
+        <div className="flex size-5 shrink-0 items-center justify-center">
+          {status === "connected" ? (
+            <BluetoothConnected className="size-4" />
+          ) : (
+            <Bluetooth className="size-4" />
+          )}
+        </div>
         <motion.span
+          initial={false}
           animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
           transition={SIDEBAR_MOTION.label}
           className="overflow-hidden whitespace-nowrap"
