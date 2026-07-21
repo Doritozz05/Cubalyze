@@ -37,7 +37,7 @@ interface FaceGridProps {
 
 function FaceGrid({ stickers, defaultColor }: FaceGridProps) {
   return (
-    <div className="grid grid-cols-3 gap-[1px] bg-neutral-900 p-[1px] shadow-sm rounded-sm">
+    <div className="grid grid-cols-3 gap-px bg-neutral-900 p-px shadow-sm rounded-sm">
       {Array.from({ length: 9 }).map((_, i) => {
         const colorKey = stickers?.[i];
         const bg = colorKey && FACE_COLOR_MAP[colorKey] ? FACE_COLOR_MAP[colorKey] : defaultColor;
@@ -57,7 +57,7 @@ function FaceGrid({ stickers, defaultColor }: FaceGridProps) {
  * Empty 3x3 slot helper to maintain 4-column symmetrical alignment
  */
 function EmptySlot() {
-  return <div className="size-11 sm:size-[50px]" />;
+  return <div className="size-11 sm:size-12.5" />;
 }
 
 /**
