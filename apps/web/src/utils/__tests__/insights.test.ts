@@ -325,23 +325,23 @@ describe("deriveTimeline", () => {
     expect(tl.totalMs).toBe(12_000); // falls back to solve.time
   });
 
-  it("totalMs = move span (last move − first move), not solve.time", () => {
-    // Moves span only the first 10s; solve.time is 12s. totalMs must be
-    // the move span (10000), NOT solve.time (12000) — the post-last-move
-    // stop reaction is NOT part of the timeline.
+  it("totalMs uses solve.time (timer) when moves exist", () => {
+    // solve.time is the authoritative timer time. The timeline total
+    // must match the timer display, not the move span (which excludes
+    // the reaction-time gap before the first move and after the last).
     const base = 1000;
     const solve = makeSolve({
       time: 12_000,
       moves: Array.from({ length: 50 }, (_, i) => makeMove("R", base + i * 200)), // span 9800ms
       analysis: makeMetrics({
-        totalTimeMs: 12_000, // pipeline reports timer time; we override with move span
+        totalTimeMs: 12_000,
         tps: { global: 4.1, effective: 4.5, byPhase: {}, peakInstantaneous: 7.2 },
       }),
     });
     const tl = deriveTimeline(solve);
-    const lastMoveOffset = solve.moves![solve.moves!.length - 1].hostTimestamp - base;
-    expect(tl.totalMs).toBe(lastMoveOffset);
-    expect(tl.totalMs).not.toBe(12_000);
+    // totalMs = solve.time (the authoritative timer), NOT the move span.
+    expect(tl.totalMs).toBe(12_000);
+    expect(tl.totalMs).not.toBe(9800);
   });
 
   it("segments tile the timeline: Σ durationMs === totalMs (no tail block)", () => {
@@ -362,18 +362,10 @@ describe("deriveTimeline", () => {
     expect(tl.segments[tl.segments.length - 1].endMs).toBe(tl.totalMs);
   });
 
-  it("segments use REAL move coordinates — transition pause lives between phases", () => {
-    // Moves: 50 @ 200ms apart → move index N → offset N*200ms.
-    // phaseForMove assigns by cumulative moveCount: Cross 8, F2L 29, OLL 9, PLL 13.
-    //   Cross = indices 0-7  → offsets [0, 1400]
-    //   F2L  = indices 8-36  → offsets [1600, 7200]
-    //   OLL  = indices 37-45 → offsets [7400, 9000]
-    //   PLL  = indices 46-49 → offsets [9200, 9800]
-    // A transition pause between Cross and F2L: startIndex=7 (last Cross move),
-    // endIndex=8 (first F2L move). Its gap = offset[8] - offset[7] = 200ms.
-    // It must appear as a PAUSE block in the inter-phase gap [1400, 1600],
-    // NOT inside the Cross block. The Cross block must END at 1400, and the
-    // F2L block must START at 1600 (after the pause).
+  it("transition pause tracked in pauseMarks, gap absorbed in proportional segments", () => {
+    // The proportional distribution absorbs the inter-phase pause gap
+    // into the phase exec block. The pause metadata is still available
+    // via `pauseMarks` (the separate pause annotation array).
     const metrics = makeMetrics({
       pauses: {
         totalCount: 1,
@@ -392,40 +384,39 @@ describe("deriveTimeline", () => {
       analysis: metrics,
     });
     const tl = deriveTimeline(solve);
-    const pauseSegs = tl.segments.filter((s) => s.kind === "pause");
-    expect(pauseSegs).toHaveLength(1);
-    expect(pauseSegs[0].pauseCategory).toBe("transition");
-    expect(pauseSegs[0].phaseName).toBe("Cross");
-    // The pause must be at the inter-phase gap [1400, 1600], not inside Cross.
-    expect(pauseSegs[0].startMs).toBe(1400); // offset of last Cross move
-    expect(pauseSegs[0].endMs).toBe(1600); // offset of first F2L move
-    // P1.b — pause segments carry move indices for the adjacent-moves popover.
-    expect(pauseSegs[0].moveStartIndex).toBe(7); // last Cross move
-    expect(pauseSegs[0].moveEndIndex).toBe(8); // first F2L move
-    // The Cross phase block must end at 1400 (the pause's start), and the
-    // F2L phase block must start at 1600 (the pause's end). This is the key
-    // fix: the transition pause is BETWEEN the phases, not inside Cross.
+
+    // The pause is tracked in pauseMarks with correct metadata.
+    expect(tl.pauseMarks).toHaveLength(1);
+    expect(tl.pauseMarks[0].category).toBe("transition");
+    expect(tl.pauseMarks[0].startIndex).toBe(7);
+    expect(tl.pauseMarks[0].endIndex).toBe(8);
+    expect(tl.pauseMarks[0].phase).toBe("Cross");
+
+    // No pause segments — the boundary gap is absorbed into the Cross exec
+    // block by proportional distribution.
+    expect(tl.segments.filter((s) => s.kind === "pause")).toHaveLength(0);
+
+    // Cross exec fills the full phase budget [0, 1600].
     const crossSegs = tl.segments.filter((s) => s.phaseName === "Cross" && s.kind === "phase");
+    expect(crossSegs.length).toBe(1);
+    expect(crossSegs[0].startMs).toBe(0);
+    expect(crossSegs[0].endMs).toBe(1600);
+
+    // F2L starts right after Cross (no visible gap in segments).
     const f2lSegs = tl.segments.filter((s) => s.phaseName === "F2L" && s.kind === "phase");
-    expect(crossSegs.length).toBeGreaterThan(0);
-    expect(f2lSegs.length).toBeGreaterThan(0);
-    expect(crossSegs[crossSegs.length - 1].endMs).toBe(1400);
     expect(f2lSegs[0].startMs).toBe(1600);
-    // Σ still equals totalMs.
+
+    // Σ still tiles exactly.
     const sum = tl.segments.reduce((s, seg) => s + seg.durationMs, 0);
     expect(sum).toBeCloseTo(tl.totalMs, 0);
   });
 
-  it("mid-phase pause splits a phase into exec sub-blocks", () => {
-    // F2L = indices 8-36 (offsets 1600→7200). A mid-phase pause at
-    // startIndex=15, endIndex=16 (offset 3000→3200) splits F2L into
-    // [exec 1600-3000][pause 3000-3200][exec 3200-7400].
-    //
-    // The trailing exec sub-block ends at 7400 (NOT 7200) because there's
-    // no detected boundary pause between F2L and OLL — so the inter-phase
-    // gap [7200, 7400] (last F2L move → first OLL move) is absorbed into
-    // F2L's last exec block. This is the gap-absorption rule that keeps
-    // Σ segments === totalMs without inventing a gap block type.
+  it("mid-phase pause splits a phase into exec sub-blocks (proportional distribution)", () => {
+    // F2L phaseBudget = 7400 - 1600 = 5800ms. The 200ms mid-phase pause
+    // leaves 5600ms for exec blocks. These are distributed proportionally
+    // by move count: 8 moves before the pause, 21 after → exec blocks
+    // get (8/29)*5600 ≈ 1544.8ms and (21/29)*5600 ≈ 4055.2ms.
+    // The trailing exec block absorbs the inter-phase gap to 7400.
     const metrics = makeMetrics({
       pauses: {
         totalCount: 1,
@@ -446,20 +437,32 @@ describe("deriveTimeline", () => {
     const tl = deriveTimeline(solve);
     const f2lSegs = tl.segments.filter((s) => s.phaseName === "F2L");
     expect(f2lSegs).toHaveLength(3); // exec + pause + exec
+
+    // Phase budget = 5800, totalPauseMs = 200, totalExecMs = 5600
+    // Exec 1: (8/29)*5600 ≈ 1544.83, Exec 2: (21/29)*5600 ≈ 4055.17
+    const phaseBudget = 5800;
+    const totalPauseMs = 200;
+    const totalExecMs = phaseBudget - totalPauseMs;
+    const totalExecMoves = 29;
+    const exec1End = 1600 + (8 / totalExecMoves) * totalExecMs;
+    const pauseEnd = exec1End + 200;
+
     expect(f2lSegs[0].kind).toBe("phase");
     expect(f2lSegs[0].startMs).toBe(1600);
-    expect(f2lSegs[0].endMs).toBe(3000);
+    expect(f2lSegs[0].endMs).toBeCloseTo(exec1End, 4);
     expect(f2lSegs[1].kind).toBe("pause");
-    expect(f2lSegs[1].startMs).toBe(3000);
-    expect(f2lSegs[1].endMs).toBe(3200);
+    expect(f2lSegs[1].startMs).toBeCloseTo(exec1End, 4);
+    expect(f2lSegs[1].endMs).toBeCloseTo(pauseEnd, 4);
     expect(f2lSegs[2].kind).toBe("phase");
-    expect(f2lSegs[2].startMs).toBe(3200);
-    // Ends at 7400 = first OLL move offset (gap-absorption), not 7200.
+    expect(f2lSegs[2].startMs).toBeCloseTo(pauseEnd, 4);
+    // Gap-absorption: last exec extends to first OLL offset.
     expect(f2lSegs[2].endMs).toBe(7400);
-    // Contiguity: OLL's first block starts exactly where F2L's last ends.
-    // No visual gap between segments — this is the gap-absorption contract.
+
+    // Contiguity: OLL's first block starts where F2L's last ends.
     const ollSegs = tl.segments.filter((s) => s.phaseName === "OLL");
     expect(ollSegs[0].startMs).toBe(7400);
+
+    // Σ tiles exactly.
     const sum = tl.segments.reduce((s, seg) => s + seg.durationMs, 0);
     expect(sum).toBeCloseTo(tl.totalMs, 0);
   });

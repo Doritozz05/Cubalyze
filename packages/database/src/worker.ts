@@ -38,9 +38,16 @@ export const DBWorker = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((sqlite3 as any).opfs) {
         console.log('[DB Worker] OPFS is available. Using OpfsDb (PERSISTENT).');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        db = new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
-        _storageType = 'opfs';
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          db = new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
+          _storageType = 'opfs';
+        } catch (e) {
+          console.warn('[DB Worker] OPFS database failed to open (likely locked by another tab or HMR). Falling back to memory.', e);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
+          _storageType = 'memory';
+        }
       } else {
         // Fallback to memory — DATA WILL BE LOST ON RELOAD
         console.warn('[DB Worker] OPFS NOT available. Using in-memory DB (DATA LOST ON RELOAD).');
