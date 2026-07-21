@@ -215,6 +215,66 @@ function Cube3DPreview() {
   );
 }
 
+/**
+ * Mini bar chart preview for Time Distribution widget.
+ */
+function TimeDistributionPreview() {
+  const bars = [20, 45, 70, 55, 30, 15];
+  const max = Math.max(...bars);
+  return (
+    <div className="flex h-full items-end gap-[1px] p-2">
+      {bars.map((h, i) => (
+        <div
+          key={i}
+          className="flex-1 rounded-t-sm bg-ink-3/50"
+          style={{ height: `${(h / max) * 70}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Trophy + steps preview for PB Progression widget.
+ */
+function PbProgressionPreview() {
+  return (
+    <div className="flex flex-col gap-1 p-2">
+      <div className="flex items-center gap-1">
+        <div className="size-1.5 rounded-full bg-ink-3/30" />
+        <div className="h-1.5 w-12 rounded-sm bg-ink-3/20" />
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="size-1.5 rounded-full bg-ink-3/30" />
+        <div className="h-1.5 w-10 rounded-sm bg-ink-3/20" />
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="size-1.5 rounded-full bg-ready" />
+        <div className="h-1.5 w-8 rounded-sm bg-ready/40" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Mini phase bar preview for Solve Timeline widget.
+ */
+function SolveTimelinePreview() {
+  const phaseColors = ["#4F8CF7", "#22C55E", "#F59E0B", "#EF4444"];
+  const widths = [30, 40, 15, 15];
+  return (
+    <div className="flex h-full items-center gap-0.5 p-2">
+      {phaseColors.map((c, i) => (
+        <div
+          key={i}
+          className="h-[60%] rounded-sm"
+          style={{ width: `${widths[i]}%`, backgroundColor: c, opacity: 0.7 }}
+        />
+      ))}
+    </div>
+  );
+}
+
 /* ── Preview resolver ──────────────────────────────────────────────────── */
 
 interface WidgetPreviewProps {
@@ -232,6 +292,12 @@ export function WidgetPreview({ widgetId, className }: WidgetPreviewProps) {
         return <Scramble2DPreview />;
       case "cube-button":
         return <Cube3DPreview />;
+      case "time-distribution":
+        return <TimeDistributionPreview />;
+      case "pb-progression":
+        return <PbProgressionPreview />;
+      case "solve-timeline":
+        return <SolveTimelinePreview />;
       default:
         return (
           <div className="grid size-full place-items-center">

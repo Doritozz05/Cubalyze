@@ -530,7 +530,8 @@ export default function App() {
           onSubmit={handleAddManual}
         />
         {/* WidgetHost renders all active floating widgets (Solve Log, Scramble
-            Visualizer, 3D Cube button, etc.) driven by the Widget Store. Only
+            Visualizer, Time Distribution, PB Progression, Solve Timeline, 
+            3D Cube button, etc.) driven by the Widget Store. Only
             rendered on the Timer stage; Stats/Analysis take over the stage. */}
         {activeView === "timer" && !isFocused && (
           <WidgetHost
@@ -544,6 +545,7 @@ export default function App() {
             smartCubeConnected={smartCubeConnected}
             cubePanelOpen={cubePanelOpen}
             onOpenCube={handleOpenCube}
+            lastAnalysis={lastAnalysis}
           />
         )}
 

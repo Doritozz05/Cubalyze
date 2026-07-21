@@ -3,9 +3,13 @@
 import { useCallback } from "react";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { FloatingTimesPanel } from "@/components/Stats/FloatingTimesPanel";
+import { FloatingTimeDistribution } from "@/components/Stats/FloatingTimeDistribution";
+import { FloatingPbProgression } from "@/components/Stats/FloatingPbProgression";
+import { FloatingPhaseTimeline } from "@/components/Stats/FloatingPhaseTimeline";
 import { FloatingCube2DPanel } from "@/components/Cube3D/FloatingCube2DPanel";
 import { FloatingCubeButton } from "@/components/Cube3D/FloatingCubeButton";
 import type { Solve } from "@/types";
+import type { SolveMetrics } from "@cubeforge/types";
 
 // ── Props ────────────────────────────────────────────────────────────────
 
@@ -20,6 +24,8 @@ export interface WidgetHostProps {
   smartCubeConnected: boolean;
   cubePanelOpen: boolean;
   onOpenCube: () => void;
+  /** Pending analysis from the just-completed live solve (not yet persisted). */
+  lastAnalysis?: SolveMetrics | null;
 }
 
 /**
@@ -41,6 +47,7 @@ export function WidgetHost({
   smartCubeConnected,
   cubePanelOpen,
   onOpenCube,
+  lastAnalysis,
 }: WidgetHostProps) {
   const instances = useWidgetStore(useCallback((s) => s.instances, []));
 
@@ -56,6 +63,21 @@ export function WidgetHost({
           onAnalyze={onAnalyze}
           onReplay={onReplay}
         />
+      )}
+
+      {/* Time Distribution (csTimer-style histogram) */}
+      {instances["time-distribution"]?.visible && (
+        <FloatingTimeDistribution solves={solves} />
+      )}
+
+      {/* PB Progression Timeline */}
+      {instances["pb-progression"]?.visible && (
+        <FloatingPbProgression solves={solves} />
+      )}
+
+      {/* Phase Timeline of the last solve */}
+      {instances["solve-timeline"]?.visible && (
+        <FloatingPhaseTimeline solves={solves} lastAnalysis={lastAnalysis} />
       )}
 
       {/* Scramble 2D Visualizer */}
