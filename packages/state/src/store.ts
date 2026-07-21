@@ -23,6 +23,10 @@ export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
 
+  /** 3D Appearance mode */
+  appearance3d: string;
+  setAppearance3d: (value: string) => void;
+
   /** Whether the scramble display rotates to match cube orientation. */
   scrambleFollowsCube: boolean;
   setScrambleFollowsCube: (value: boolean) => void;
@@ -56,6 +60,9 @@ export const createPreferencesStore = () => {
         theme: 'system',
         setTheme: (theme) => set({ theme }),
 
+        appearance3d: 'default',
+        setAppearance3d: (value) => set({ appearance3d: value }),
+
         scrambleFollowsCube: true,
         setScrambleFollowsCube: (value) => set({ scrambleFollowsCube: value }),
 
@@ -75,6 +82,7 @@ export const createPreferencesStore = () => {
         name: 'cubeforge-prefs',
         partialize: (state) => ({
           theme: state.theme,
+          appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
           inspection: state.inspection,
           scrambleVerification: state.scrambleVerification,

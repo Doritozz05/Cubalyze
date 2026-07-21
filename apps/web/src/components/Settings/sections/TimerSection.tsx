@@ -8,30 +8,17 @@ import { SettingToggle } from '../components/SettingToggle';
 /**
  * Timer settings section.
  *
- * Houses the two preferences that drive the start-of-solve flow:
- *   - Scramble Verification  : require the scramble to be physically applied
- *                              on a Smart Cube before the solve can start.
+ * Houses the preference that drives the start-of-solve flow:
  *   - Inspection             : run the 15s WCA inspection countdown before
  *                              the solve.
  *
- * Four combinations are supported by the unified state machine in
- * `useSolveSession`; both toggles default to ON to preserve current
- * behaviour.
+ * Unified state machine in `useSolveSession` applies these preferences.
  */
 export function TimerSection() {
   const inspection = useStore(preferencesStore, (s) => s.inspection);
   const setInspection = useStore(preferencesStore, (s) => s.setInspection);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
   const setFocusMode = useStore(preferencesStore, (s) => s.setFocusMode);
-
-  const scrambleVerification = useStore(
-    preferencesStore,
-    (s) => s.scrambleVerification,
-  );
-  const setScrambleVerification = useStore(
-    preferencesStore,
-    (s) => s.setScrambleVerification,
-  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -50,13 +37,6 @@ export function TimerSection() {
         description="Show the 15-second WCA inspection countdown before the timer starts. Recommended for competition-style practice."
         checked={inspection}
         onCheckedChange={setInspection}
-      />
-
-      <SettingToggle
-        title="Scramble Verification"
-        description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
-        checked={scrambleVerification}
-        onCheckedChange={setScrambleVerification}
       />
 
       <SettingToggle

@@ -1,0 +1,43 @@
+'use client';
+
+import { useStore } from 'zustand';
+import { preferencesStore } from '@cubeforge/state';
+import { SettingToggle } from '../components/SettingToggle';
+
+export function ScrambleSection() {
+  const scrambleFollowsCube = useStore(
+    preferencesStore,
+    (s) => s.scrambleFollowsCube,
+  );
+  const setScrambleFollowsCube = useStore(
+    preferencesStore,
+    (s) => s.setScrambleFollowsCube,
+  );
+
+  const scrambleVerification = useStore(
+    preferencesStore,
+    (s) => s.scrambleVerification,
+  );
+  const setScrambleVerification = useStore(
+    preferencesStore,
+    (s) => s.setScrambleVerification,
+  );
+
+  return (
+    <div className="flex flex-col gap-5">
+      <SettingToggle
+        title="Rotate scramble with cube"
+        description="The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
+        checked={scrambleFollowsCube}
+        onCheckedChange={setScrambleFollowsCube}
+      />
+
+      <SettingToggle
+        title="Scramble Verification"
+        description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
+        checked={scrambleVerification}
+        onCheckedChange={setScrambleVerification}
+      />
+    </div>
+  );
+}

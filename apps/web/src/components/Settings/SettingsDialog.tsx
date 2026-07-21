@@ -15,6 +15,7 @@ import { TimerSection } from './sections/TimerSection';
 import { AnalysisSection } from './sections/AnalysisSection';
 import { SmartCubeSection } from './sections/SmartCubeSection';
 import { PlaceholderSection } from './sections/PlaceholderSection';
+import { ScrambleSection } from './sections/ScrambleSection';
 
 export interface SettingsDialogProps {
   open: boolean;
@@ -77,6 +78,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return <AppearanceSection />;
       case 'timer':
         return <TimerSection />;
+      case 'scramble':
+        return <ScrambleSection />;
       case 'analysis':
         return <AnalysisSection />;
       case 'smart-cube':
@@ -94,7 +97,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${SETTINGS_DIALOG_WIDTH} max-h-[85vh] h-[580px] overflow-hidden p-0`}
+        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
