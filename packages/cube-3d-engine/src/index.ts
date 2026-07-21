@@ -6,6 +6,9 @@ export * from './core/SceneManager';
 export * from './core/CubeMeshFactory';
 export * from './core/CubeModel';
 
+// Styles (skins / appearances)
+export * from './styles/cubeSkins';
+
 // Animation
 export * from './animation/RotationEngine';
 export * from './animation/Easing';

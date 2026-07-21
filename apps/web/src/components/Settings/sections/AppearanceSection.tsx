@@ -2,6 +2,7 @@
 
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
+import { CUBE_SKINS } from '@cubeforge/cube-3d-engine';
 
 import {
   Select,
@@ -15,6 +16,7 @@ import {
  * Appearance settings section.
  *
  * Contains visual preferences like the 3D cube appearance.
+ * Skin options are loaded dynamically from the CUBE_SKINS registry.
  */
 export function AppearanceSection() {
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
@@ -35,8 +37,11 @@ export function AppearanceSection() {
               <SelectValue placeholder="Select appearance" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
-              <SelectItem value="stickerless">Stickerless</SelectItem>
+              {CUBE_SKINS.map((skin) => (
+                <SelectItem key={skin.id} value={skin.id}>
+                  {skin.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

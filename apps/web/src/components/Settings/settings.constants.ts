@@ -8,7 +8,7 @@ import {
   GraduationCap,
   Bell,
   Wrench,
-  Dices,
+  Shuffle,
 } from 'lucide-react';
 
 export interface SettingsSection {
@@ -46,7 +46,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: 'scramble',
     label: 'Scramble',
-    icon: Dices,
+    icon: Shuffle,
     description: 'Scramble verification and display options.',
   },
   {

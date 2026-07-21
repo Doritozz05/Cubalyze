@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as Comlink from "comlink";
-import { SyncBridge } from "@cubeforge/cube-3d-engine";
+import { useStore } from "zustand";
+import { SyncBridge, getSkinStyle } from "@cubeforge/cube-3d-engine";
 import type { EngineWorkerAPI } from "@cubeforge/cube-3d-engine";
 import EngineWorker from "@cubeforge/cube-3d-engine/worker?worker";
 import type { Subscription } from "rxjs";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, X } from "lucide-react";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
-import { orientationStore } from "@cubeforge/state";
+import { orientationStore, preferencesStore } from "@cubeforge/state";
 import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
 import type { CubeMoveEvent, CubeOrientation, RotationEvent } from "@cubeforge/types";
 
@@ -50,6 +51,20 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
   // is unbound (losing track of cube moves); on remount, the model may be
   // desynchronized. This flag ensures the first facelet event corrects it.
   const needsInitialSyncRef = useRef(true);
+
+  // ── Reactive appearance (skin) ───────────────────────────────────────
+  // Watch the user's appearance3d preference and push the corresponding
+  // style to the worker whenever it changes. This also covers the initial
+  // render (the store defaults to 'default').
+  const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
+
+  useEffect(() => {
+    if (!workerProxy.current) return;
+    const style = getSkinStyle(appearance3d);
+    workerProxy.current
+      .updateStyle(style)
+      .catch((err: unknown) => console.error('[Cube3DPanel] updateStyle failed', err));
+  }, [appearance3d]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -146,6 +161,12 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
           gyroSupported: globalCubeAdapter.gyroSupported,
         });
 
+        // Apply initial skin style after worker is ready on re-mount.
+        // Read directly from the store to avoid closure dependency on
+        // `appearance3d` — the separate reactive effect handles changes.
+        const reSkin = getSkinStyle(preferencesStore.getState().appearance3d);
+        workerProxy.current.updateStyle(reSkin).catch(console.error);
+
         setIs3DReady(true);
       } else {
         // First mount: create worker, transfer canvas, init
@@ -207,6 +228,11 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
           hasIMU: globalCubeAdapter.gyroSupported,
           gyroSupported: globalCubeAdapter.gyroSupported,
         });
+
+        // Apply initial skin style immediately after worker init.
+        // Read directly from the store to avoid closure dependency.
+        const initSkin = getSkinStyle(preferencesStore.getState().appearance3d);
+        workerProxy.current.updateStyle(initSkin).catch(console.error);
 
         workerSingleton = {
           worker: workerInstance.current,
