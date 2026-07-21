@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDraggable } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
+import { dockZoneState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
 // ── Props ────────────────────────────────────────────────────────────────
@@ -65,6 +66,13 @@ export function FloatingWidgetWrapper({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Clean up dock zone state on unmount (prevents stale true leak)
+  useEffect(() => {
+    return () => {
+      dockZoneState.active = false;
+    };
+  }, []);
+
   // ── Read runtime state from widgetStore ────────────────────────────────
   const instance = useWidgetStore(
     useCallback((s) => s.instances[widgetId], [widgetId]),
@@ -74,9 +82,23 @@ export function FloatingWidgetWrapper({
   const minimized = instance?.minimized ?? defaultMinimized;
 
   // ── Drag: sync position back to store on change ────────────────────────
+  // Detect dock zone: if dragged near the header (y < DOCK_THRESHOLD),
+  // auto-dock the widget instead of saving position.
+  const DOCK_THRESHOLD = 70; // px from top of viewport
+
   const handlePositionChange = useCallback(
     (pos: { x: number; y: number }) => {
-      widgetStore.getState().setPosition(widgetId, pos);
+      const store = widgetStore.getState();
+      // Reset dock zone indicator on drag end
+      dockZoneState.active = false;
+      // Check if widget was dropped near the header → dock it
+      if (pos.y < DOCK_THRESHOLD) {
+        store.setDockMode(widgetId, "docked");
+        store.setMinimized(widgetId, true);
+        store.toggleWidget(widgetId); // hide the panel (set visible=false)
+      } else {
+        store.setPosition(widgetId, pos);
+      }
     },
     [widgetId],
   );
@@ -84,6 +106,10 @@ export function FloatingWidgetWrapper({
   const drag = useDraggable<HTMLDivElement>(storePosition, {
     clickThreshold: 4,
     onPositionChange: handlePositionChange,
+    // Update dock zone state during drag for visual feedback
+    onDrag: (pos) => {
+      dockZoneState.active = pos.y < 100;
+    },
   });
 
   // ── Minimize/expand toggle ─────────────────────────────────────────────

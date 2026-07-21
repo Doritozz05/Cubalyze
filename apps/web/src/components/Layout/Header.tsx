@@ -6,6 +6,8 @@ import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-rea
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
+import { WidgetDock } from "@/widgets/dock";
+import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -146,6 +148,7 @@ export function Header({
   const isCubeConnected = connectionStatus === "connected";
 
   const active = sessions?.find((s) => s.id === activeSessionId) ?? null;
+  const isDockZoneActive = useDockZoneActive();
 
   const startRename = (s: SessionMeta) => {
     setRenamingId(s.id);
@@ -162,7 +165,10 @@ export function Header({
   return (
     <header
       className={cn(
-        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b border-line bg-surface",
+        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color] duration-300",
+        isDockZoneActive
+          ? "border-ink/20"
+          : "border-line",
         className,
       )}
     >
@@ -197,6 +203,11 @@ export function Header({
               </span>
             </div>
           )}
+        </div>
+
+        {/* Center: Widget dock — dynamic flowing row like Apple menu bar */}
+        <div className="flex flex-1 items-center min-w-0 px-4">
+          <WidgetDock />
         </div>
 
         {/* Right: PB + session + manual + puzzle grouped together */}

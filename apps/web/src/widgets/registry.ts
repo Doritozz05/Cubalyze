@@ -67,7 +67,10 @@ export function getAllWidgets(): WidgetDefinition[] {
   return [...BUILT_IN_WIDGETS, ...custom];
 }
 
-/** Lookup a widget definition by id. */
+/** Lookup a widget definition by id (searches built-in + custom). */
 export function getWidget(id: WidgetId): WidgetDefinition | undefined {
-  return BUILT_IN_WIDGETS.find((w) => w.id === id);
+  return (
+    BUILT_IN_WIDGETS.find((w) => w.id === id) ??
+    _getCustomWidgets?.().find((w) => w.id === id)
+  );
 }

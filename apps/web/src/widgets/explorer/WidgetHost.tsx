@@ -17,6 +17,10 @@ export type { WidgetHostProps };
  *
  * Each widget's `mapProps` function translates WidgetHostProps into the
  * specific props that widget needs — no switch-case required.
+ *
+ * **Dock mode**: Docked widgets appear as pills in the header WidgetDock.
+ * When made visible (via dock pill click), they render here as normal
+ * floating panels — positioned just below the header.
  */
 export function WidgetHost(hostProps: WidgetHostProps) {
   const instances = useWidgetStore(useCallback((s) => s.instances, []));

@@ -37,9 +37,14 @@ export interface WidgetDefinition {
   tags: string[];
 }
 
+/** Widget docking mode. */
+export type WidgetDockMode = "floating" | "docked";
+
 /** Runtime state for an active widget instance. */
 export interface WidgetInstanceState {
   visible: boolean;
   minimized: boolean;
   position: { x: number; y: number };
+  /** Whether the widget is floating freely or anchored in the header dock. */
+  dockMode: WidgetDockMode;
 }

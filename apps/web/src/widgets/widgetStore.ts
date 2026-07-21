@@ -13,6 +13,8 @@ export interface WidgetStoreState {
   instances: Record<WidgetId, WidgetInstanceState>;
   /** Custom widget definitions registered by the user (persisted). */
   customWidgets: WidgetDefinition[];
+  /** Ordered list of docked widget IDs (first = leftmost in dock). */
+  dockOrder: WidgetId[];
 }
 
 export interface WidgetStoreActions {
@@ -20,6 +22,10 @@ export interface WidgetStoreActions {
   setMinimized: (id: WidgetId, minimized: boolean) => void;
   setPosition: (id: WidgetId, position: { x: number; y: number }) => void;
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
+  /** Dock a widget (anchors it to the header). */
+  setDockMode: (id: WidgetId, mode: WidgetInstanceState["dockMode"]) => void;
+  /** Reorder docked widgets. */
+  setDockOrder: (order: WidgetId[]) => void;
   /** Register a custom widget. Adds to registry + creates instance state. */
   registerCustomWidget: (def: WidgetDefinition) => void;
   /** Remove a custom widget. */
@@ -37,6 +43,7 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
       visible: w.defaultActive,
       minimized: w.defaultMinimized,
       position: { ...w.defaultPosition },
+      dockMode: "floating",
     };
   }
   return map;
@@ -49,6 +56,7 @@ export const widgetStore = createStore<WidgetStore>()(
     (set) => ({
       instances: buildDefaultInstances(),
       customWidgets: [],
+      dockOrder: [],
 
       toggleWidget: (id) =>
         set((s) => ({
@@ -79,6 +87,34 @@ export const widgetStore = createStore<WidgetStore>()(
 
       setInstances: (instances) => set({ instances }),
 
+      setDockMode: (id, mode) =>
+        set((s) => {
+          const instance = s.instances[id];
+          if (!instance) return s;
+          const wasDocked = instance.dockMode === "docked";
+          const isDocked = mode === "docked";
+
+          // Update dockOrder when docking/undocking
+          let dockOrder = s.dockOrder;
+          if (isDocked && !wasDocked) {
+            // Add to dock order (append to end)
+            dockOrder = [...dockOrder.filter((i) => i !== id), id];
+          } else if (!isDocked && wasDocked) {
+            // Remove from dock order
+            dockOrder = dockOrder.filter((i) => i !== id);
+          }
+
+          return {
+            dockOrder,
+            instances: {
+              ...s.instances,
+              [id]: { ...instance, dockMode: mode },
+            },
+          };
+        }),
+
+      setDockOrder: (order) => set({ dockOrder: order }),
+
       registerCustomWidget: (def) =>
         set((s) => {
           // Don't duplicate
@@ -91,6 +127,7 @@ export const widgetStore = createStore<WidgetStore>()(
                 visible: def.defaultActive,
                 minimized: def.defaultMinimized,
                 position: { ...def.defaultPosition },
+                dockMode: "floating",
               },
             },
           };
@@ -107,9 +144,29 @@ export const widgetStore = createStore<WidgetStore>()(
     }),
     {
       name: "cubeforge:widgets",
+      version: 1,
+      migrate: (persisted, version) => {
+        // v0 → v1: Add dockMode + dockOrder to old persisted data
+        if (version === 0) {
+          const raw = persisted as Record<string, unknown>;
+          const instances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
+          for (const id of Object.keys(instances)) {
+            if (!instances[id].dockMode) {
+              instances[id].dockMode = "floating";
+            }
+          }
+          return {
+            ...raw,
+            instances,
+            dockOrder: raw.dockOrder ?? [],
+          } as Record<string, unknown>;
+        }
+        return persisted as Record<string, unknown>;
+      },
       partialize: (state) => ({
         instances: state.instances,
         customWidgets: state.customWidgets,
+        dockOrder: state.dockOrder,
       }),
     },
   ),

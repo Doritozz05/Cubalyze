@@ -20,6 +20,11 @@ interface UseDraggableOptions {
    * Use this to sync position to a store instead of localStorage.
    */
   onPositionChange?: (pos: Position) => void;
+  /**
+   * Called continuously during a drag with the current position.
+   * Useful for real-time feedback (e.g., dock zone detection).
+   */
+  onDrag?: (pos: Position) => void;
 }
 
 interface DragState {
@@ -46,7 +51,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   initial: Position,
   options: UseDraggableOptions = {},
 ) {
-  const { clickThreshold = 4, storageKey, onPositionChange } = options;
+  const { clickThreshold = 4, storageKey, onPositionChange, onDrag } = options;
 
   /** Clamp to viewport minus a safety margin so the element is never
    *  positioned off-screen after a viewport resize or resolution change.
@@ -139,10 +144,13 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       const h = el?.offsetHeight ?? 0;
       const maxX = Math.max(0, window.innerWidth - w);
       const maxY = Math.max(0, window.innerHeight - h);
-      setPosition({
+      const newPos = {
         x: Math.max(0, Math.min(maxX, state.origX + dx)),
         y: Math.max(0, Math.min(maxY, state.origY + dy)),
-      });
+      };
+      setPosition(newPos);
+      // Fire onDrag callback for real-time feedback
+      onDrag?.(newPos);
     },
     [clickThreshold],
   );
