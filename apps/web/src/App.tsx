@@ -228,6 +228,7 @@ export default function App() {
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
   const timerStateRef = useRef(timerPhase);
+  timerStateRef.current = timerPhase;
   const cancelRef = useRef<(() => void) | null>(null);
 
   const handleTimerCancel = useCallback(() => {
