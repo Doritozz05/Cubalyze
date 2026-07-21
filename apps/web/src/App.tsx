@@ -8,9 +8,7 @@ import { SessionStats } from "@/components/Stats/SessionStats";
 import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
-import { FloatingCubeButton } from "@/components/Cube3D/FloatingCubeButton";
-import { FloatingCube2DPanel } from "@/components/Cube3D/FloatingCube2DPanel";
-import { FloatingTimesPanel } from "@/components/Stats/FloatingTimesPanel";
+import { WidgetHost } from "@/components/WidgetExplorer";
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
@@ -531,28 +529,22 @@ export default function App() {
           defaultMethod={methodPref}
           onSubmit={handleAddManual}
         />
-        {/* Floating solve log — draggable, minimizable, doesn't affect layout.
-            Only rendered on the Timer stage; Stats/Analysis take over the stage. */}
+        {/* WidgetHost renders all active floating widgets (Solve Log, Scramble
+            Visualizer, 3D Cube button, etc.) driven by the Widget Store. Only
+            rendered on the Timer stage; Stats/Analysis take over the stage. */}
         {activeView === "timer" && !isFocused && (
-          <FloatingTimesPanel
+          <WidgetHost
             solves={solves}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
             onClear={handleClear}
             onAnalyze={handleAnalyzeSolve}
             onReplay={handleReplaySolve}
+            scramble={currentScramble}
+            smartCubeConnected={smartCubeConnected}
+            cubePanelOpen={cubePanelOpen}
+            onOpenCube={handleOpenCube}
           />
-        )}
-
-        {/* Floating 2D Cube Net Panel - draggable, minimizable */}
-        {activeView === "timer" && !isFocused && (
-          <FloatingCube2DPanel scramble={currentScramble} />
-        )}
-
-        {/* Floating cube button — only on the Timer stage, when connected and
-            the panel is closed. Stats/Analysis don't host the split. */}
-        {activeView === "timer" && smartCubeConnected && !cubePanelOpen && !isFocused && (
-          <FloatingCubeButton onClick={handleOpenCube} />
         )}
 
         <Toaster position="bottom-center" richColors={false} />

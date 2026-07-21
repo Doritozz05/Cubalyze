@@ -24,6 +24,7 @@ import {
   type ViewId,
 } from "./sidebar.constants";
 import { SettingsDialog } from "@/components/Settings/SettingsDialog";
+import { WidgetExplorer } from "@/components/WidgetExplorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
 
 export interface LeftSidebarProps {
@@ -49,6 +50,7 @@ export function LeftSidebar({
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => setMounted(true), []);
@@ -75,6 +77,21 @@ export function LeftSidebar({
       onMobileOpenChange?.(false);
     },
     [onNavigate, onMobileOpenChange],
+  );
+
+  /**
+   * Handle nav-item clicks (both view-navigation and action-items like
+   * "widgets" which open dialogs rather than switching the stage).
+   */
+  const handleNavItemClick = useCallback(
+    (id: string) => {
+      if (id === "widgets") {
+        setWidgetExplorerOpen(true);
+        return;
+      }
+      handleNavigateItem(id as ViewId);
+    },
+    [handleNavigateItem],
   );
 
   const sidebarContent = (
@@ -109,7 +126,7 @@ export function LeftSidebar({
                     label={item.label}
                     labelVisible={labelVisible}
                     isActive={activeView === item.id}
-                    onClick={() => handleNavigateItem(item.id)}
+                    onClick={() => handleNavItemClick(item.id)}
                     badge={
                       item.id === "timer" && timerActive ? (
                         <span className="size-1.5 rounded-full bg-ready animate-pulse" />
@@ -165,8 +182,18 @@ export function LeftSidebar({
             </div>
           </SheetContent>
         </Sheet>
-        <SettingsDialog 
-          open={settingsOpen} 
+        <WidgetExplorer
+          open={widgetExplorerOpen}
+          onOpenChange={(open) => {
+            setWidgetExplorerOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+              setIsHovered(false);
+            }
+          }}
+        />
+        <SettingsDialog
+          open={settingsOpen}
           onOpenChange={(open) => {
             setSettingsOpen(open);
             if (!open) {
@@ -192,12 +219,19 @@ export function LeftSidebar({
         {sidebarContent}
       </motion.aside>
 
-      <SettingsDialog 
-        open={settingsOpen} 
+      <WidgetExplorer
+        open={widgetExplorerOpen}
+        onOpenChange={(open) => {
+          setWidgetExplorerOpen(open);
+          if (!open) setIsHovered(false);
+        }}
+      />
+      <SettingsDialog
+        open={settingsOpen}
         onOpenChange={(open) => {
           setSettingsOpen(open);
           if (!open) setIsHovered(false);
-        }} 
+        }}
       />
     </>
   );
