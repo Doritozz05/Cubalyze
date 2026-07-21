@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
@@ -110,10 +109,7 @@ export function TrendChart({
               margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
             >
               <defs>
-                <linearGradient id={`${gradId}-line`} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="var(--ink-3)" />
-                  <stop offset="100%" stopColor="var(--ready)" />
-                </linearGradient>
+
                 <linearGradient id={`${gradId}-fill`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--ready)" stopOpacity={0.12} />
                   <stop offset="100%" stopColor="var(--ready)" stopOpacity={0} />
@@ -121,14 +117,7 @@ export function TrendChart({
               </defs>
               <XAxis dataKey="label" hide domain={["dataMin", "dataMax"]} />
               <YAxis domain={["dataMin - 200", "dataMax + 200"]} hide />
-              {bestAo !== null ? (
-                <ReferenceLine
-                  y={bestAo}
-                  stroke="var(--ready)"
-                  strokeDasharray="2 3"
-                  strokeOpacity={0.4}
-                />
-              ) : null}
+
               <Tooltip
                 cursor={{ stroke: "var(--line-2)", strokeWidth: 1 }}
                 contentStyle={{
@@ -146,7 +135,7 @@ export function TrendChart({
               <Area
                 type="monotone"
                 dataKey="ao"
-                stroke={`url(#${gradId}-line)`}
+                stroke="var(--ready)"
                 fill={`url(#${gradId}-fill)`}
                 strokeWidth={1.5}
                 dot={false}

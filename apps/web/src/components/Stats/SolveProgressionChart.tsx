@@ -9,8 +9,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
-  CartesianGrid,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
@@ -120,7 +118,7 @@ export interface SolveProgressionChartProps {
  *  7. All solves scatter (white dots, PB solves are yellow dots)
  */
 export function SolveProgressionChart({ solves, className }: SolveProgressionChartProps) {
-  const { data, bestAo5, bestAo12, hasEnoughForAo5, hasEnoughForAo12, hasPbHistory, maxY, yTicks, hasDnfs } =
+  const { data, hasEnoughForAo5, hasEnoughForAo12, hasPbHistory, maxY, yTicks, hasDnfs } =
     useMemo(() => {
       const chrono = [...solves].reverse(); // oldest → newest
       let runningPb = Infinity;

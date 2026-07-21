@@ -108,13 +108,7 @@ export const SolveListPanel = memo(function SolveListPanel({
   const bestTime = Number.isFinite(stats.best) ? stats.best : null;
   const mean = stats.mean;
   const sparkData = useMemo(() => deriveSparkline(solves, solves.length), [solves]);
-  // Mean of the sparkline's visible window (last 20), used as the reference
-  // line. Using the full-session mean would clamp to an edge when the last 20
-  // are all above/below it, which is misleading.
-  const sparkMean = useMemo(
-    () => sparkData.length > 0 ? sparkData.reduce((a, b) => a + b, 0) / sparkData.length : null,
-    [sparkData],
-  );
+
 
   // Chip counts (from the full unfiltered set so they don't change when
   // you toggle a penalty chip).
@@ -349,7 +343,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                     )}
                   />
 
-                  <div className="px-3 pb-[7px] pt-[7px]">
+                  <div className="px-3 pb-1.75 pt-1.75">
                     {/* Line 1: index + time + delta + source + penalty */}
                     <div className="flex items-center gap-2.5">
                       <span className="flex w-7 shrink-0 items-center justify-end gap-1.5">
