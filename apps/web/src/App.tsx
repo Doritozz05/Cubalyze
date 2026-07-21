@@ -323,6 +323,15 @@ export default function App() {
         )
       : null;
 
+  // Previous PB (excluding the most recent solve) for accurate PB delta comparison
+  const previousSolves = solves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
+  const previousPB =
+    previousSolves.length > 0
+      ? Math.min(
+          ...previousSolves.map((s) => effectiveTime(s)),
+        )
+      : null;
+
   const timerStateRefValue = timerStateRef.current;
   const timerRunning =
     timerStateRefValue === "running" || timerStateRefValue === "ready";
@@ -455,7 +464,7 @@ export default function App() {
           phase={timerPhase}
           time={timerTime}
           lastTime={timerLastTime}
-          pb={currentPB}
+          pb={previousPB}
           showPbDelta={showPbDelta}
           hintCtx={{
             smartCube: smartCubeConnected,
