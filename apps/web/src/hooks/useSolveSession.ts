@@ -70,8 +70,6 @@ export interface UseSolveSessionResult {
   lastSolveMoves: CubeMoveEvent[];
   /** Orientations captured at solve stop (one per move, for RotationCounter). */
   lastSolveOrientations: (CubeOrientation | undefined)[];
-  /** Real cube CubeState at solve start (move-tracked ground truth for phase detection). */
-  lastSolveStartState: CubeState | null;
   /** Compact orientation timeline for persistent storage (IMU solves only). */
   lastSolveOrientationTimeline: OrientationTimeline | undefined;
 }
@@ -369,9 +367,8 @@ function logSolveDiagnostic(args: {
   console.log("%cInput sources", labelStyle, {
     method,
     colorNeutralDetection: true,
+    seedSource: 'scramble', // deterministic — same source as ReplayEngine
     scrambleProvided: !!scramble,
-    initialStateProvided,
-    initialFaceletsProvided: false, // currently always null in the call site
   });
 
   // Log BOTH pre-move-0 (what the analyzer was seeded with) and
@@ -545,7 +542,6 @@ async function runAnalysis(
   scramble: string,
   method: SolveMethod,
   orientations?: (CubeOrientation | undefined)[],
-  initialState?: CubeState,
 ): Promise<SolveMetrics | null> {
   if (moves.length === 0) return null;
 
@@ -564,13 +560,14 @@ async function runAnalysis(
     // cubes and in all modes). TimelineBuilder uses initialState first,
     // then falls back to initialFacelets, then scramble.
     // Enable color-neutral detection so any cross face is recognized.
+    // Initial state is now always derived from the scramble notation.
+    // This is the SAME scramble the ReplayEngine uses, guaranteeing
+    // analysis and replay start from identical initial states.
     const timeline = TimelineBuilder.build(
       compacted.moves,
       method,
       compacted.orientations,
       scramble,
-      undefined, // initialFacelets (deprecated in favour of initialState)
-      initialState,
     );
     PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
     const metrics = await MetricsAggregator.computeAll(timeline, scramble);
@@ -584,7 +581,7 @@ async function runAnalysis(
       method,
       timeline,
       metrics,
-      initialStateProvided: !!initialState,
+      initialStateProvided: false,
     });
 
     return metrics;
@@ -659,9 +656,6 @@ export function useSolveSession(
   // then kept in sync move-by-move.
   const realCubeStateRef = useRef(new CubeState());
   const realCubeStateSeededRef = useRef(false);
-  // Snapshot of realCubeStateRef at solve start (cloned when RUNNING fires).
-  const solveStartStateRef = useRef<CubeState | null>(null);
-  const [lastSolveStartState, setLastSolveStartState] = useState<CubeState | null>(null);
 
   // ── Orientation timeline compression (for persistent storage) ────────────
   const lastSolveOrientationTimelineRef = useRef<OrientationTimeline | undefined>(undefined);
@@ -696,9 +690,6 @@ export function useSolveSession(
         collectedMovesRef.current = [];
         collectedOrientationsRef.current = [];
         setCollectedMoves([]);
-        // clear solve-start state so stale data doesn't leak into the
-        // next solve.
-        solveStartStateRef.current = null;
         // Reset BLE dedup tracker for the next solve
         lastCubeTimestampRef.current = null;
         lastMoveFaceRef.current = null;
@@ -734,21 +725,6 @@ export function useSolveSession(
       // running. realCubeStateRef tracks all moves from connect, so this
       // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
-        // Fallback snapshot: snapshot realCubeStateRef at the moment the
-        // timer starts running IF the move subscriber hasn't already
-        // captured a pre-apply snapshot (Spacebar-only start with no
-        // first-move event yet). The previous "always overwrite here"
-        // caused an offset-by-one bug: by the time this ran, the first
-        // solve move had already been applied to realCubeStateRef at the
-        // top of the move subscriber, so the cloned snapshot included
-        // it. That snapshot was then passed as `initialState` to
-        // TimelineBuilder.build, and the same move was also pushed into
-        // collectedMovesRef, so the reconstruction applied the first
-        // move twice → final isSolved=false → PhaseSplitter returned 0
-        // phases → every CFOP metric collapsed to 0.00.
-        if (!solveStartStateRef.current) {
-          solveStartStateRef.current = realCubeStateRef.current.clone();
-        }
         // Replay the pending first solve move that arrived during the
         // IDLE race window (if any). The move subscriber already took a
         // pre-apply snapshot for it (after undoing the buffered move's
@@ -771,8 +747,6 @@ export function useSolveSession(
       lastSolveOrientationsRef.current = [...collectedOrientationsRef.current];
       setLastSolveMoves(lastSolveMovesRef.current);
       setLastSolveOrientations(lastSolveOrientationsRef.current);
-      // snapshot the move-tracked CubeState for analysis.
-      setLastSolveStartState(solveStartStateRef.current);
       // Compress orientations to ultra-compact keyframe timeline for storage
       const timeline = compactOrientationTimeline(lastSolveOrientationsRef.current);
       lastSolveOrientationTimelineRef.current = timeline;
@@ -881,35 +855,6 @@ export function useSolveSession(
       lastMoveDirRef.current = move.direction;
 
       const current = engine.getState();
-
-      // ── Snapshot the cube state BEFORE applying this move IF this
-      //    will be the first collected solve move. Captured pre-apply so
-      //    TimelineBuilder's reconstruction has the correct initial
-      //    state (without the move's effect doubled in). If a pending
-      //    first move from the IDLE race window is already in the
-      //    tracker, undo its effect before cloning so the snapshot
-      //    reflects pre-buffered-move state (= pre-first-solve-move
-      //    state).
-      if (
-        current !== EngineState.IDLE &&
-        collectedMovesRef.current.length === 0 &&
-        !solveStartStateRef.current
-      ) {
-        const snap = realCubeStateRef.current.clone();
-        if (pendingFirstMoveRef.current) {
-          const buffered = pendingFirstMoveRef.current;
-          const invDir: CubeMoveDirection =
-            buffered.direction === 1
-              ? -1
-              : buffered.direction === -1
-                ? 1
-                : 2;
-          snap.applySequence(
-            MoveTransformer.moveToNotation(buffered.face, invDir),
-          );
-        }
-        solveStartStateRef.current = snap;
-      }
 
       // GUARD: if in IDLE and the scramble validator has already confirmed
       // isScrambled=true, this move is a scramble-leak (settling noise or
@@ -1111,7 +1056,6 @@ export function useSolveSession(
     collectedMoves,
     lastSolveMoves,
     lastSolveOrientations,
-    lastSolveStartState,
     lastSolveOrientationTimeline,
   };
 }

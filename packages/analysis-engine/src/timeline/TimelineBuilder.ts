@@ -41,14 +41,7 @@ export class TimelineBuilder {
    * @param initialFacelets - Optional 54-char facelet string from the real
    *                          Smart Cube state at solve start. When provided
    *                          (and not a stale "solved" state), this is used
-   *                          as ground truth INSTEAD of the scramble — making
-   *                          phase detection deterministic even when scramble
-   *                          verification is disabled.
-   * @param initialState - Optional CubeState from the move-based tracker.
-   *                       Takes highest priority over initialFacelets and
-   *                       scramble. This is the most reliable source because
-   *                       it is updated from every MOVE event (immediate and
-   *                       universal across all GAN cube generations).
+   *                          as ground truth INSTEAD of the scramble.
    * @returns A fully reconstructed SolveTimeline ready for phase recognition.
    */
   static build(
@@ -57,7 +50,6 @@ export class TimelineBuilder {
     orientations?: (CubeOrientation | undefined)[],
     scramble?: string,
     initialFacelets?: string,
-    initialState?: CubeState,
   ): SolveTimeline {
     if (moves.length === 0) {
       return {
@@ -73,33 +65,29 @@ export class TimelineBuilder {
     const state = new CubeState();
     CubeState.initTables();
 
-    // B6+: Precedence: initialState > initialFacelets > scramble > solved.
+    // ── Initial state: always from scramble notation ────────────────────
+    // The scramble is the single source of truth for the initial cube
+    // state, matching what the ReplayEngine uses. This guarantees analysis
+    // and replay start from the same state.
     //
-    // 1. initialState (CubeState): move-tracked state from useSolveSession.
-    //    Updated on EVERY MOVE event — immediate, universal, no GATT dep.
-    // 2. initialFacelets (string): facelets from the cube's FACELETS event.
-    //    Good for Gen3/Gen4 (periodic), less reliable for Gen2 (on-demand).
-    // 3. scramble (string): the displayed scramble notation. Used as
-    //    fallback when neither of the above is available.
+    // Precedence: initialFacelets > scramble > solved.
+    //   - initialFacelets: 54-char string from the cube at solve start.
+    //     Used only when available AND not stale-solved.
+    //   - scramble: the displayed scramble notation.
+    //   - solved: fallback when neither is available.
     //
-    // Stale-solved guard (facelets only): if facelets show solved AND a
-    // scramble is provided, the facelets are likely stale (from before
-    // scrambling — Gen2 doesn't send periodic facelets in Mode 3/4).
-    // Fall back to the scramble in that case.
+    // NOTE: The `initialState` (move-tracked CubeState) parameter was
+    // removed because BLE move tracking can diverge from the physical
+    // scramble state (dropped moves, race conditions). The scramble
+    // notation is deterministic and what the user actually executed.
     const hasValidFacelets =
-      !initialState && !!initialFacelets && initialFacelets.length === 54;
+      !!initialFacelets && initialFacelets.length === 54;
     const faceletsAreSolved =
       hasValidFacelets && SOLVED_FACELETS.test(initialFacelets!);
     const useRealFacelets =
       hasValidFacelets && !(faceletsAreSolved && scramble);
 
-    if (initialState) {
-      // Use the move-tracked CubeState directly — no parsing needed
-      state.cp.set(initialState.cp);
-      state.co.set(initialState.co);
-      state.ep.set(initialState.ep);
-      state.eo.set(initialState.eo);
-    } else if (useRealFacelets) {
+    if (useRealFacelets) {
       const realState = FaceletStringConverter.fromFaceletString(initialFacelets!);
       state.cp.set(realState.cp);
       state.co.set(realState.co);
