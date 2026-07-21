@@ -5,7 +5,9 @@ import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
-import { ReplayEngine, type ReplayState } from "@cubeforge/cube-3d-engine";
+import { ReplayEngine, type ReplayState, getSkinStyle } from "@cubeforge/cube-3d-engine";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import {
   Play,
   Pause,
@@ -87,6 +89,18 @@ export function ReplaySection({
    */
   const solveRef = useRef(solve);
   solveRef.current = solve;
+
+  // ── Reactive appearance (skin) — watch user preference ──────────────
+  const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
+
+  // Push skin changes to the replay worker whenever the user changes skin
+  useEffect(() => {
+    if (!workerProxyRef.current || !cubeReadyRef.current) return;
+    const style = getSkinStyle(appearance3d);
+    workerProxyRef.current
+      .updateStyle(style)
+      .catch((err: unknown) => console.warn("[Replay] updateStyle failed", err));
+  }, [appearance3d]);
 
   // ── Reset state when solve changes ────────────────────────────────────────
   // This runs BEFORE the init effect, resetting display state so the user
@@ -235,6 +249,12 @@ export function ReplaySection({
         );
 
         cubeReadyRef.current = true;
+
+        // Apply current skin style to the replay cube
+        const currentSkin = getSkinStyle(preferencesStore.getState().appearance3d);
+        proxy.updateStyle(currentSkin).catch((err: unknown) =>
+          console.warn("[Replay] Initial skin update failed", err),
+        );
 
         // Set isometric camera angle so 3 faces are visible
         await proxy.setIsometricView();

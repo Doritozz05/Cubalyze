@@ -68,7 +68,7 @@ export const CUBE_SKINS: CubeSkin[] = [
       coreColor: '#1a1a1a',
       coreOpacity: 1.0,
       seamColor: '#2a2a2a',
-      cubieSize: 0.97,
+      cubieSize: 0.985,
       stickerColors: {
         U: '#ece8e2', // white
         D: '#ffe62a', // yellow
@@ -111,6 +111,7 @@ export const CUBE_SKINS: CubeSkin[] = [
       skinType: 'translucent',
       coreColor: '#1a1a1a',
       coreOpacity: 0.0,
+      stickerSize: 0.71,
       stickerColors: {
         U: '#ece8e2', // white
         D: '#ffe62a', // yellow
