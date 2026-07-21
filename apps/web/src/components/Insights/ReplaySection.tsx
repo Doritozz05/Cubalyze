@@ -462,21 +462,6 @@ export function ReplaySection({
                       </span>
                     )}
 
-                    {/* Orientation indicator */}
-                    {solve.orientationTimeline && solve.orientationTimeline.length > 0 && (
-                      <span
-                        className="flex items-center gap-1"
-                        title={`${solve.orientationTimeline.length} orientation keyframe${solve.orientationTimeline.length !== 1 ? "s" : ""}`}
-                      >
-                        <span
-                          className="inline-block size-1.5 rounded-full"
-                          style={{ backgroundColor: "#a78bfa" }}
-                        />
-                        <span className="nums font-medium text-ink">
-                          {solve.orientationTimeline.length}
-                        </span>
-                      </span>
-                    )}
                   </div>
                 </div>
 

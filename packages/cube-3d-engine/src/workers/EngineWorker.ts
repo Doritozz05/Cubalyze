@@ -225,13 +225,9 @@ export class EngineWorkerAPI {
    */
   public setIsometricView() {
     if (!this.sceneManager) return;
-    // Reset to identity rotation, then set isometric angles
-    this.sceneManager.resetCamera();
-    // Rotate to show U (top), F (front), R (right) faces
-    // pitch = -30° to look down, yaw = -45° to see the right face
-    const pitch = -Math.PI / 6;  // -30°
-    const yaw = -Math.PI / 4;    // -45°
-    this.sceneManager.cameraGroup.rotation.set(pitch, yaw, 0);
+    // theta = π/4 (45°) — azimuth to see the front-right corner
+    // phi   = π/6 (30°) — elevation to look down at the top face
+    this.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
   }
 
   /**
