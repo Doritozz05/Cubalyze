@@ -328,7 +328,11 @@ export default function App() {
 
   const isFocused =
     focusMode &&
-    (timerPhase === "running" || (timerPhase === "ready" && !smartCubeConnected));
+    (timerPhase === "running" ||
+      timerPhase === "inspection" ||
+      timerPhase === "holding" ||
+      timerPhase === "ready_for_move" ||
+      (timerPhase === "ready" && !smartCubeConnected));
 
   const scrollToTimer = useCallback(() => {
     document.getElementById("timer-section")?.scrollIntoView({
