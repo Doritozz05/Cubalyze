@@ -22,7 +22,7 @@ export interface WidgetExplorerProps {
 }
 
 /**
- * Widget Explorer dialog.
+ * Widgets dialog.
  *
  * A clean, minimal panel (matching the Settings dialog aesthetic) where
  * users can discover, preview, and toggle built-in (and future community)
@@ -87,7 +87,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Widget Explorer</DialogTitle>
+          <DialogTitle>Widgets</DialogTitle>
         </DialogHeader>
 
         <div className="flex h-full min-h-0">
@@ -105,7 +105,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
                 <div>
                   <h2 className="flex items-center gap-2 text-[0.95rem] font-semibold text-ink">
                     <Puzzle className="size-4 text-ink-3" />
-                    Widget Explorer
+                    Widgets
                   </h2>
                   <p className="mt-1 text-[0.78rem] text-ink-3">
                     Discover and toggle optional panels, tools, and visualizers.

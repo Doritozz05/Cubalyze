@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Box, Cuboid, ListOrdered, BarChart3 } from "lucide-react";
+import { Box } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { WidgetDefinition, WidgetId } from "@/widgets/types";
+import type { WidgetId } from "@/widgets/types";
 
 /* ───────────────────────────────────────────────────────────────────────
  * Widget preview components
@@ -117,22 +117,6 @@ function Cube3DPreview() {
   );
 }
 
-function SessionStatsPreview() {
-  return (
-    <div className="grid grid-cols-4 gap-px p-1.5">
-      {["Ao5", "Ao12", "Best", "Mean"].map((label, i) => (
-        <div key={label} className="flex flex-col items-center gap-0.5 rounded-sm px-0.5 py-1">
-          <span className="text-[4px] uppercase tracking-wider text-ink-3">{label}</span>
-          <span className={cn(
-            "nums h-1.5 w-[80%] rounded-sm",
-            i === 2 ? "bg-ready/30" : "bg-ink-3/20",
-          )} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* ── Preview resolver ──────────────────────────────────────────────────── */
 
 interface WidgetPreviewProps {
@@ -148,12 +132,8 @@ export function WidgetPreview({ widgetId, className }: WidgetPreviewProps) {
         return <TimesLogPreview />;
       case "scramble-2d":
         return <Scramble2DPreview />;
-      case "cube-3d":
-        return <Cube3DPreview />;
       case "cube-button":
         return <Cube3DPreview />;
-      case "session-stats":
-        return <SessionStatsPreview />;
       default:
         return (
           <div className="grid size-full place-items-center">

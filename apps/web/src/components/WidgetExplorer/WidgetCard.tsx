@@ -14,7 +14,7 @@ export interface WidgetCardProps {
 }
 
 /**
- * A single widget card shown inside the Widget Explorer.
+ * A single widget card shown inside the Widgets.
  *
  * Layout (left-to-right):
  *   [Icon + Name + Tag] [Preview thumbnail] [Toggle switch]

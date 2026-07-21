@@ -2,7 +2,6 @@
 
 import {
   ListOrdered,
-  BarChart3,
   Box,
   Cuboid,
   type LucideIcon,
@@ -12,7 +11,7 @@ import type { WidgetDefinition, WidgetId, WidgetCategory, WidgetCategoryId } fro
 /** Available widget categories for the explorer sidebar. */
 export const WIDGET_CATEGORIES: WidgetCategory[] = [
   { id: "all", label: "All Widgets" },
-  { id: "visualizers", label: "Visualizers" },
+  { id: "visual", label: "Visual" },
   { id: "timer", label: "Timer" },
   { id: "analysis", label: "Analysis" },
   { id: "training", label: "Training" },
@@ -21,7 +20,7 @@ export const WIDGET_CATEGORIES: WidgetCategory[] = [
 /** Maps category IDs to human labels (for card tags). */
 export const CATEGORY_LABEL: Record<WidgetCategoryId, string> = {
   all: "All",
-  visualizers: "Visualizers",
+  visual: "Visual",
   timer: "Timer",
   analysis: "Analysis",
   training: "Training",
@@ -30,9 +29,13 @@ export const CATEGORY_LABEL: Record<WidgetCategoryId, string> = {
 /**
  * ── BUILT-IN WIDGET REGISTRY ─────────────────────────────────────────────
  *
- * Each entry describes a widget available in the Explorer. The `id` must
- * match a case in the WidgetHost render switch so the host knows which
- * component to mount when the widget is active.
+ * Each entry describes a widget available in the Explorer. Widgets are
+ * floating, portaled panels the user can toggle on/off from the Explore >
+ * Widgets nav.
+ *
+ * Only true floating-panel widgets belong here. For example, the 3D cube
+ * panel itself is NOT a widget — it's a sidebar in MainLayout. The floating
+ * button that *opens* it IS a widget (cube-button).
  *
  * To add a new built-in widget:
  *   1. Define it here with a unique `id`.
@@ -42,7 +45,7 @@ export const CATEGORY_LABEL: Record<WidgetCategoryId, string> = {
 export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   {
     id: "times-log",
-    name: "Solve Log",
+    name: "Times",
     description: "Floating solve history with penalties, analysis, and quick actions. Minimizable to a compact pill.",
     icon: ListOrdered,
     category: "timer",
@@ -59,7 +62,7 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
     name: "Scramble Visualizer",
     description: "2D cube net showing the current scramble state. csTimer-style layout with WCA-standard colors.",
     icon: Box,
-    category: "visualizers",
+    category: "visual",
     author: "cubeforge",
     version: "1.0.0",
     source: "built-in",
@@ -69,25 +72,11 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
     tags: ["scramble", "2d", "net", "visualizer", "cube"],
   },
   {
-    id: "cube-3d",
-    name: "3D Cube View",
-    description: "Interactive 3D Rubik's cube rendered with Three.js/WebGL. Orbit controls, multiple skins, real-time facelet updates.",
-    icon: Cuboid,
-    category: "visualizers",
-    author: "cubeforge",
-    version: "1.0.0",
-    source: "built-in",
-    defaultActive: false,
-    defaultPosition: { x: 9999, y: 9999 }, // opened via FloatingCubeButton
-    defaultMinimized: false,
-    tags: ["3d", "cube", "webgl", "three", "render"],
-  },
-  {
     id: "cube-button",
-    name: "3D Cube Launcher",
-    description: "Floating button to toggle the 3D cube view. Only appears when a Smart Cube is connected.",
+    name: "3D Cube",
+    description: "Floating button to toggle the interactive 3D cube view. Only appears when a Smart Cube is connected.",
     icon: Cuboid,
-    category: "visualizers",
+    category: "visual",
     author: "cubeforge",
     version: "1.0.0",
     source: "built-in",
@@ -95,20 +84,6 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
     defaultPosition: { x: 100, y: 100 },
     defaultMinimized: false,
     tags: ["3d", "launcher", "button", "smart", "cube"],
-  },
-  {
-    id: "session-stats",
-    name: "Session Stats",
-    description: "Compact Ao5, Ao12, Best, and Mean displayed in a flat row. Click to expand into the full Insights dashboard.",
-    icon: BarChart3,
-    category: "analysis",
-    author: "cubeforge",
-    version: "1.0.0",
-    source: "built-in",
-    defaultActive: true,
-    defaultPosition: { x: 72, y: 320 },
-    defaultMinimized: false,
-    tags: ["stats", "average", "session", "analysis"],
   },
 ];
 
