@@ -957,17 +957,21 @@ function PhaseBreakdownSection({
   hoveredPhase: string | null;
   onHoverPhase: (phase: string | null) => void;
 }) {
-  // Sum of all phase durations (should equal metrics.totalTimeMs).
+  // Sum of all phase durations (should equal metrics.totalTimeMs minus transition gaps).
   const phaseSumMs = metrics.phases.reduce((s, p) => s + p.durationMs, 0);
-  // Gap between timer time and the move-span total.
-  const timerGapMs = Math.max(0, solveTimeMs - metrics.totalTimeMs);
-  const hasGap = timerGapMs > 200; // only show if > 200ms (meaningful)
+  // Transition gaps: time between the last move of one phase and first move of the next.
+  const transitionGapMs = Math.max(0, metrics.totalTimeMs - phaseSumMs);
+  // Timer idle: time before first move + after last move.
+  const timerIdleMs = Math.max(0, solveTimeMs - metrics.totalTimeMs);
+  // Total unaccounted: all time not in phase measurements.
+  const totalGapMs = Math.max(0, solveTimeMs - phaseSumMs);
+  const showGap = totalGapMs > 200;
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader
         title="Phase breakdown"
-        eyebrow={`${metrics.phases.length} phases · ${formatTime(phaseSumMs)} total${hasGap ? ` (+${formatTime(timerGapMs)} gap)` : ""}`}
+        eyebrow={`${metrics.phases.length} phases · ${formatTime(phaseSumMs)} active${showGap ? ` (+${formatTime(totalGapMs)} idle/transition)` : ""}`}
       />
       <div className="mt-3 overflow-hidden rounded-lg border border-line/60">
         {metrics.phases.map((p, i) => {
@@ -1007,12 +1011,10 @@ function PhaseBreakdownSection({
           );
         })}
       </div>
-      {/* Gap explanation: timer time includes pre-first-move and post-last-move idle time */}
-      {hasGap && (
+      {/* Gap explanation: phases only measure within-phase execution time. */}
+      {showGap && (
         <p className="mt-2 text-[0.6rem] text-ink-3/60">
-          Solve time {formatTime(solveTimeMs)} includes {formatTime(timerGapMs)} of idle time
-          before the first move and after the last. Phases only measure the active
-          move span ({formatTime(phaseSumMs)}).
+          Solve time {formatTime(solveTimeMs)} = {formatTime(phaseSumMs)} active + {formatTime(totalGapMs)} idle/transition
         </p>
       )}
     </div>
