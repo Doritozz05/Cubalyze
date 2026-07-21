@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Timer, LayoutDashboard, Grid3x3 } from "lucide-react";
+import { Timer, BarChart3, Grid3x3 } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -53,7 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Progress",
     items: [
-      { id: "insights", label: "Stats", icon: LayoutDashboard },
+      { id: "insights", label: "Stats", icon: BarChart3 },
     ],
   },
 ];
