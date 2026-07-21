@@ -25,6 +25,9 @@ interface SolveProgressionPoint {
   timeClean: number | null; // always null for DNFs (used for the connecting line)
   timeFormatted: string;
   isPb: boolean;
+  pbTime: number | null; // solve time (only for PB solves, null otherwise) — for scatter
+  bestAo5Time: number | null; // best Ao5 value (only at its solve position, null otherwise) — for marker dot
+  bestAo12Time: number | null; // best Ao12 value (only at its solve position, null otherwise) — for marker dot
   pbHistory: number | null; // running PB up to this solve
   ao5: number | null;
   ao12: number | null;
@@ -70,45 +73,27 @@ function generateYTicks(maxMs: number, targetTicks = 5): number[] {
 
 // ─── Custom dot renderers ───────────────────────────────────────────────────
 
-/** Scatter shape: normal solve dot (white).
- *  DNFs are rendered as red ✕ marks, PBs as yellow glow dots. */
-function SolveDot(props: any) {
-  const { cx, cy, payload } = props;
+/** PB solve dot (yellow glow + solid centre) — receives cx/cy from Recharts. */
+function PbDotShape(props: any) {
+  const { cx, cy } = props;
   if (cx == null || cy == null) return null;
-  if (payload?.isDnf) return <DnfDot cx={cx} cy={cy} />;
-  if (payload?.isPb) return <PbDotPure cx={cx} cy={cy} />;
-  return <circle cx={cx} cy={cy} r={2.5} fill="var(--ink)" fillOpacity={0.5} />;
-}
-
-/** PB solve dot (yellow glow + solid centre). */
-function PbDotPure({ cx, cy }: { cx: number; cy: number }) {
   return (
     <g>
-      {/* Outer glow ring */}
       <circle cx={cx} cy={cy} r={6} fill="none" stroke="#FBBF24" strokeWidth={2} strokeOpacity={0.45} />
-      {/* Inner ring */}
       <circle cx={cx} cy={cy} r={4} fill="none" stroke="#FBBF24" strokeWidth={1.5} strokeOpacity={0.75} />
-      {/* Solid centre */}
       <circle cx={cx} cy={cy} r={2.5} fill="#FBBF24" />
     </g>
   );
 }
 
-/** DNF cross mark. */
-function DnfDot(props: any) {
-  const { cx, cy } = props;
+/** Single marker dot for best Ao5 or Ao12 — receives cx/cy from Recharts. */
+function MarkerDotShape(props: any) {
+  const { cx, cy, color } = props;
   if (cx == null || cy == null) return null;
-  const s = 4;
   return (
     <g>
-      <line
-        x1={cx - s} y1={cy - s} x2={cx + s} y2={cy + s}
-        stroke="var(--dnf)" strokeWidth={1.5} strokeOpacity={0.6}
-      />
-      <line
-        x1={cx + s} y1={cy - s} x2={cx - s} y2={cy + s}
-        stroke="var(--dnf)" strokeWidth={1.5} strokeOpacity={0.6}
-      />
+      <circle cx={cx} cy={cy} r={5} fill="none" stroke={color} strokeWidth={2} strokeOpacity={0.5} />
+      <circle cx={cx} cy={cy} r={2.5} fill={color} />
     </g>
   );
 }
@@ -155,6 +140,9 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
           timeClean: isDnf ? null : t,
           timeFormatted: isDnf ? "DNF" : formatTime(t),
           isPb: false, // will set after ceiling computed
+          pbTime: null, // will set in second pass
+          bestAo5Time: null, // will set in second pass
+          bestAo12Time: null, // will set in second pass
           pbHistory: Number.isFinite(runningPb) ? runningPb : null,
           ao5: rollingAverage(chrono, i, 5),
           ao12: rollingAverage(chrono, i, 12),
@@ -175,6 +163,8 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
         if (!p.isDnf && p.time != null && p.time < pbCheck) pbCheck = p.time;
         p.isPb = !p.isDnf && p.time != null && p.time <= pbCheck && p.time > 0;
         if (p.isDnf) p.time = ceiling;
+        // Set pbTime for scatter dots (only PB solves, actual time not ceiling)
+        p.pbTime = p.isPb && !p.isDnf && p.time != null && p.time > 0 ? p.time : null;
       }
 
       // Collect all Ao5/Ao12 values for reference lines
@@ -185,11 +175,19 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
         .map((p) => p.ao12)
         .filter((v): v is number => v != null);
 
+      // Best Ao5 / Ao12 — mark the best value's position
+      const bestAo5Val = allAo5.length > 0 ? Math.min(...allAo5) : null;
+      const bestAo12Val = allAo12.length > 0 ? Math.min(...allAo12) : null;
+      for (const p of pts) {
+        if (bestAo5Val != null && p.ao5 != null && p.ao5 === bestAo5Val) p.bestAo5Time = bestAo5Val;
+        if (bestAo12Val != null && p.ao12 != null && p.ao12 === bestAo12Val) p.bestAo12Time = bestAo12Val;
+      }
+
       const pbValues = pts.filter((p) => p.pbHistory != null);
       return {
         data: pts,
-        bestAo5: allAo5.length > 0 ? Math.min(...allAo5) : null,
-        bestAo12: allAo12.length > 0 ? Math.min(...allAo12) : null,
+        bestAo5: bestAo5Val,
+        bestAo12: bestAo12Val,
         hasEnoughForAo5: chrono.length >= 5,
         hasEnoughForAo12: chrono.length >= 12,
         hasPbHistory: pbValues.length > 0,
@@ -251,7 +249,8 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               tick={{ fontSize: 10, fill: "var(--ink-3)" }}
               tickLine={false}
               axisLine={{ stroke: "var(--line)", strokeOpacity: 0.25 }}
-              minTickGap={20}
+              interval="preserveStartEnd"
+              minTickGap={10}
             />
 
             <YAxis
@@ -309,13 +308,14 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               isAnimationActive={false}
             />
 
-            {/* ── PB history step line (only when data exists) ── */}
+            {/* ── PB history step line (dashed, only when data exists) ── */}
             {hasPbHistory && (
               <Line
                 type="stepAfter"
                 dataKey="pbHistory"
                 stroke="#FBBF24"
                 strokeWidth={1.5}
+                strokeDasharray="5 3"
                 dot={false}
                 activeDot={false}
                 connectNulls={false}
@@ -354,17 +354,36 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               />
             )}
 
-            {/* ── All solves scatter (white dots + PB yellow dots) ── */}
+            {/* ── PB yellow dots (from chart data, only at PB positions) ── */}
             <Scatter
-              dataKey="time"
-              fill="var(--ink-3)"
-              fillOpacity={0.5}
-              shape={<SolveDot />}
-              activeDot={false}
-              name="time"
+              dataKey="pbTime"
+              fill="#FBBF24"
+              shape={<PbDotShape />}
+              name="pbDots"
               isAnimationActive={false}
             />
 
+            {/* ── Best Ao5 marker dot (red, single point) ── */}
+            {hasEnoughForAo5 && (
+              <Scatter
+                dataKey="bestAo5Time"
+                fill="#EF4444"
+                shape={<MarkerDotShape color="#EF4444" />}
+                name="bestAo5"
+                isAnimationActive={false}
+              />
+            )}
+
+            {/* ── Best Ao12 marker dot (green, single point) ── */}
+            {hasEnoughForAo12 && (
+              <Scatter
+                dataKey="bestAo12Time"
+                fill="#22C55E"
+                shape={<MarkerDotShape color="#22C55E" />}
+                name="bestAo12"
+                isAnimationActive={false}
+              />
+            )}
 
           </ComposedChart>
         </ResponsiveContainer>
