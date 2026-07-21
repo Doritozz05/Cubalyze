@@ -553,7 +553,7 @@ async function runAnalysis(
   scramble: string,
   method: SolveMethod,
   orientations?: (CubeOrientation | undefined)[],
-): Promise<SolveMetrics | null> {
+): Promise<{ metrics: SolveMetrics; compactedMoves: CubeMoveEvent[]; compactedOrientationTimeline: OrientationTimeline | undefined } | null> {
   if (moves.length === 0) return null;
 
   try {
@@ -563,7 +563,11 @@ async function runAnalysis(
     // before feeding the analysis pipeline. The GAN Gen2 protocol has no
     // native 180° encoding, so physical half-turns are reported as two
     // 90° events. Compacting here keeps move counts, TPS, and phase
-    // boundaries honest. Raw moves are preserved for the debug diagnostic.
+    // boundaries honest.
+    //
+    // CRITICAL: We return the compacted moves so the caller can persist
+    // them as the single source of truth. This guarantees that
+    // solve.moves.length === analysis.totalMoves at all times.
     const compacted = compactCubeMoves(moves, orientations);
 
     // Pass the move-tracked CubeState as the ground truth for the
@@ -595,7 +599,12 @@ async function runAnalysis(
       initialStateProvided: false,
     });
 
-    return metrics;
+    // Build orientation timeline from COMPACTED orientations so indices
+    // match the compacted moves array. This guarantees that replay and
+    // analysis see the same orientation at each move index.
+    const compactedOrientationTimeline = compactOrientationTimeline(compacted.orientations);
+
+    return { metrics, compactedMoves: compacted.moves, compactedOrientationTimeline };
   } catch (err) {
     console.error("[Analysis] Pipeline failed:", err);
     return null;

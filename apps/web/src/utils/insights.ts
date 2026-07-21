@@ -259,12 +259,12 @@ export function deriveTimeline(solve: Solve): TimelineData {
         : [];
 
   // Pause marks with move indices + real offsets.
-  // Filter out pauses at or after the last move (post-solve "stop" gap).
-  // The timeline now ends at the last move, so pauses beyond it would
-  // collapse to zero width (startMs === endMs === totalMs).
+  // Include ALL pauses including the post-solve gap (between last move
+  // and timer stop). The timeline rendering handles zero-width pauses
+  // gracefully (they don't produce visible blocks), but the count must
+  // match analysis.pauses.totalCount for UI consistency.
   const pauseMarks: PauseMark[] = analysis
     ? analysis.pauses.pauses
-        .filter((p) => moveTicks.length === 0 || p.startIndex < moveTicks.length - 1)
         .map((p) => ({
           startMs: p.startIndex < moveTicks.length ? moveTicks[p.startIndex].offsetMs : 0,
           endMs: p.endIndex < moveTicks.length ? moveTicks[p.endIndex].offsetMs : totalMs,

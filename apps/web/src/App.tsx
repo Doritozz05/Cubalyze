@@ -180,27 +180,27 @@ export default function App() {
         );
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
-          runAnalysis(moves, scr, m, lastSolveOrientations).then((analysis) => {
-            if (analysis) {
+          runAnalysis(moves, scr, m, lastSolveOrientations).then((result) => {
+            if (result) {
+              const { metrics: analysis, compactedMoves, compactedOrientationTimeline } = result;
               lastSolveRef.current = { solve: null, analysis };
               setLastAnalysis(analysis);
 
-              // Persist analysis + the raw moves to DB.
-              // handleComplete (which runs synchronously BEFORE this effect)
-              // already created the solve with addSolve but without moves.
-              // We persist BOTH moves and analysis here since we have them
-              // from lastSolveMoves (captured at solve-stop time).
+              // Persist COMPACTED moves + analysis to DB.
+              // This guarantees solve.moves.length === analysis.totalMoves
+              // for all downstream consumers (replay, timeline, widgets).
               const solveId = pendingSolveIdRef.current;
               if (solveId) {
                 console.log(
-                  '%c[App] Persisting moves+analysis to solve %s · %d moves',
+                  '%c[App] Persisting moves+analysis to solve %s · %d raw → %d compacted',
                   'color:#38bdf8',
                   solveId.slice(0, 8),
                   moves.length,
+                  compactedMoves.length,
                 );
                 updateSolve(solveId, {
-                  moves,
-                  orientationTimeline: lastSolveOrientationTimeline,
+                  moves: compactedMoves,
+                  orientationTimeline: compactedOrientationTimeline,
                   analysis,
                 }).catch(() =>
                   console.warn("Failed to persist moves + analysis"),

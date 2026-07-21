@@ -219,6 +219,7 @@ export function SolveAnalysisPanel({
           {/* ── Phase breakdown ─────────────────────────────────────────── */}
           <PhaseBreakdownSection
             metrics={m}
+            solveTimeMs={solve.time}
             hoveredPhase={hoveredPhase}
             onHoverPhase={setHoveredPhase}
           />
@@ -947,21 +948,33 @@ function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
 
 function PhaseBreakdownSection({
   metrics,
+  solveTimeMs,
   hoveredPhase,
   onHoverPhase,
 }: {
   metrics: SolveMetrics;
+  solveTimeMs: number;
   hoveredPhase: string | null;
   onHoverPhase: (phase: string | null) => void;
 }) {
+  // Sum of all phase durations (should equal metrics.totalTimeMs).
+  const phaseSumMs = metrics.phases.reduce((s, p) => s + p.durationMs, 0);
+  // Gap between timer time and the move-span total.
+  const timerGapMs = Math.max(0, solveTimeMs - metrics.totalTimeMs);
+  const hasGap = timerGapMs > 200; // only show if > 200ms (meaningful)
+
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="Phase breakdown" eyebrow={`${metrics.phases.length} phases`} />
+      <SectionHeader
+        title="Phase breakdown"
+        eyebrow={`${metrics.phases.length} phases · ${formatTime(phaseSumMs)} total${hasGap ? ` (+${formatTime(timerGapMs)} gap)` : ""}`}
+      />
       <div className="mt-3 overflow-hidden rounded-lg border border-line/60">
         {metrics.phases.map((p, i) => {
           const isHighlighted = hoveredPhase === p.phaseName;
           const isDimmed = hoveredPhase !== null && hoveredPhase !== p.phaseName;
           const color = phaseColorHex(p.phaseName, i);
+          const phasePct = phaseSumMs > 0 ? Math.round((p.durationMs / phaseSumMs) * 100) : 0;
           return (
             <div
               key={p.phaseName}
@@ -984,7 +997,7 @@ function PhaseBreakdownSection({
               </div>
               <div className="flex items-center gap-3 nums text-xs text-ink-3">
                 <span>{p.moveCount}m</span>
-                <span>{formatTime(p.durationMs)}</span>
+                <span title={`${phasePct}% of phase total`}>{formatTime(p.durationMs)}</span>
                 <span className="font-medium text-ink">{p.tps.toFixed(1)} tps</span>
                 {p.pauseCount > 0 && (
                   <span className="text-caution/70" title={`${p.pauseCount} pause${p.pauseCount !== 1 ? "s" : ""} in this phase`}>{p.pauseCount}p</span>
@@ -994,6 +1007,14 @@ function PhaseBreakdownSection({
           );
         })}
       </div>
+      {/* Gap explanation: timer time includes pre-first-move and post-last-move idle time */}
+      {hasGap && (
+        <p className="mt-2 text-[0.6rem] text-ink-3/60">
+          Solve time {formatTime(solveTimeMs)} includes {formatTime(timerGapMs)} of idle time
+          before the first move and after the last. Phases only measure the active
+          move span ({formatTime(phaseSumMs)}).
+        </p>
+      )}
     </div>
   );
 }
