@@ -42,6 +42,7 @@ export default function App() {
 
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
+  const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
 
   const [scrambleIndex, setScrambleIndex] = useState(0);
   // Single source of truth for what the main stage shows. Replaces the old
@@ -454,6 +455,8 @@ export default function App() {
           phase={timerPhase}
           time={timerTime}
           lastTime={timerLastTime}
+          pb={currentPB}
+          showPbDelta={showPbDelta}
           hintCtx={{
             smartCube: smartCubeConnected,
             scrambleVerif: scrambleVerification,

@@ -54,6 +54,10 @@ export interface PreferencesState {
   /** Voice type for inspection audio cues. */
   voiceType: 'male' | 'female';
   setVoiceType: (value: 'male' | 'female') => void;
+
+  /** Show PB delta (+/- offset from personal best) next to the timer. */
+  showPbDelta: boolean;
+  setShowPbDelta: (value: boolean) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -91,6 +95,9 @@ export const createPreferencesStore = () => {
 
         voiceType: 'male',
         setVoiceType: (value) => set({ voiceType: value }),
+
+        showPbDelta: false,
+        setShowPbDelta: (value) => set({ showPbDelta: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -104,6 +111,7 @@ export const createPreferencesStore = () => {
           focusMode: state.focusMode,
           audioCues: state.audioCues,
           voiceType: state.voiceType,
+          showPbDelta: state.showPbDelta,
         }),
         version: 1,
       },

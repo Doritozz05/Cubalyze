@@ -33,6 +33,8 @@ export function TimerSection() {
   const setAudioCues = useStore(preferencesStore, (s) => s.setAudioCues);
   const voiceType = useStore(preferencesStore, (s) => s.voiceType);
   const setVoiceType = useStore(preferencesStore, (s) => s.setVoiceType);
+  const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
+  const setShowPbDelta = useStore(preferencesStore, (s) => s.setShowPbDelta);
 
   return (
     <div className="flex flex-col gap-5">
@@ -98,6 +100,13 @@ export function TimerSection() {
           </div>
         </div>
       )}
+
+      <SettingToggle
+        title="PB Delta"
+        description="Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best."
+        checked={showPbDelta}
+        onCheckedChange={setShowPbDelta}
+      />
 
       <SettingToggle
         title="Focus Mode"

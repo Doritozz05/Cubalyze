@@ -11,6 +11,10 @@ export interface TimerDisplayProps {
   displayTime: number;
   /** Whether a previous solve exists (affects idle hint copy). */
   hasLast: boolean;
+  /** Personal best time in ms. null if no solves yet. */
+  pb?: number | null;
+  /** Show PB delta indicator next to timer. */
+  showPbDelta?: boolean;
   /** Context required to compute the hint. */
   hintCtx: HintContext;
 }
@@ -46,6 +50,8 @@ export function TimerDisplay({
   state,
   displayTime,
   hasLast,
+  pb,
+  showPbDelta = false,
   hintCtx,
 }: TimerDisplayProps) {
   const hint = hintFor(state, hasLast, hintCtx);
@@ -68,19 +74,40 @@ export function TimerDisplay({
   const isDnf = formattedTime === "DNF";
   const textColor = isDnf ? "text-dnf" : STATE_COLOR[state];
 
+  // Compute PB delta when stopped (brief) or idle (shows last solve time)
+  // and there's a PB. In "idle" the timer displays `lastTime` via TimerContainer,
+  // so the delta should remain visible until the next solve begins.
+  const canShowDelta = state === "stopped" || (state === "idle" && hasLast);
+  const deltaMs =
+    showPbDelta && canShowDelta && pb != null && displayTime > 0 && Number.isFinite(pb)
+      ? displayTime - pb
+      : null;
+
   return (
     <div className="flex select-none flex-col items-center justify-center gap-7">
-      <div
-        className={cn(
-          "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
-          "text-[clamp(3.75rem,15vw,9.5rem)]",
-          textColor,
-          STATE_SCALE[state],
+      <div className="flex items-baseline justify-center gap-3">
+        <div
+          className={cn(
+            "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
+            "text-[clamp(3.75rem,15vw,9.5rem)]",
+            textColor,
+            STATE_SCALE[state],
+          )}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {formattedTime}
+        </div>
+        {deltaMs != null && (
+          <span
+            className={cn(
+              "nums text-[clamp(1rem,3vw,1.8rem)] font-medium leading-none",
+              deltaMs <= 0 ? "text-emerald-400" : "text-red-400",
+            )}
+          >
+            {deltaMs <= 0 ? "\u2212" : "+"}{formatTime(Math.abs(deltaMs))}
+          </span>
         )}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {formattedTime}
       </div>
 
       <div className="flex items-center justify-center text-ink-3">

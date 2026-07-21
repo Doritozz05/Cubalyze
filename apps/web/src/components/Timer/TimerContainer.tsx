@@ -13,6 +13,10 @@ export interface TimerContainerProps {
   time: number;
   /** Last finalized time. null until first solve. */
   lastTime: number | null;
+  /** Personal best time in ms. null if no solves yet. */
+  pb?: number | null;
+  /** Show PB delta indicator next to timer. */
+  showPbDelta?: boolean;
   /** Hint context required by `TimerDisplay`. */
   hintCtx: HintContext;
   /** Trigger the smart press logic. */
@@ -37,6 +41,8 @@ export function TimerContainer({
   phase,
   time,
   lastTime,
+  pb,
+  showPbDelta,
   hintCtx,
   onPress,
   onRelease,
@@ -125,6 +131,8 @@ export function TimerContainer({
         state={phase}
         displayTime={displayTime}
         hasLast={lastTime !== null}
+        pb={pb}
+        showPbDelta={showPbDelta}
         hintCtx={hintCtx}
       />
     </div>

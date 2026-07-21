@@ -107,13 +107,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
 
-        <div className="flex h-full">
+        <div className="flex h-full min-h-0">
           <SettingsSidebar
             activeSection={activeSection}
             onSelectSection={handleSelectSection}
           />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             {/* Section header */}
             <div className="shrink-0 border-b border-line px-8 py-6">
               <h2 className="text-[0.95rem] font-semibold text-ink">
