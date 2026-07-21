@@ -837,20 +837,27 @@ function quality(
 }
 
 /**
- * Colour gradient with wide hue span + varying saturation/lightness so
- * adjacent tiers (q=0.4 vs q=0.5) are clearly distinguishable.
- * Blue → indigo → purple → magenta → rose.
+ * Colour gradient: gray → amber → green.
+ * Bad values (q≈0) render as neutral gray so they don't demotivate.
+ * Good values (q≈1) render as green.
  *
- *   q=0.00  🔵 muted blue   hsl(200, 55%, 40%)
- *   q=0.25  🖤 indigo        hsl(232, 61%, 44%)
- *   q=0.50  🖤 purple        hsl(265, 68%, 48%)
- *   q=0.75  🖤 magenta       hsl(298, 74%, 52%)
- *   q=1.00  🖤 rose          hsl(330, 80%, 56%)
+ *   q=0.00  ◻ gray       hsl(0, 0%, 48%)
+ *   q=0.25  ◇ muted amber hsl(40, 27%, 45%)
+ *   q=0.50  ◈ amber       hsl(40, 55%, 42%)
+ *   q=0.75  ◆ yellow-green hsl(90, 55%, 38%)
+ *   q=1.00  ◆ green       hsl(140, 55%, 35%)
  */
 function qualityColorHex(q: number): string {
-  const hue = Math.round(200 + q * 130);     // 200 (blue) → 330 (rose)
-  const sat = Math.round(55 + q * 25);       // 55% → 80%
-  const light = Math.round(40 + q * 16);     // 40% → 56%
+  const clamped = Math.max(0, Math.min(1, q));
+  // Saturation ramps up quickly: 0 at q=0 → 55 at q=0.5, stays at 55.
+  const sat = Math.round(Math.min(clamped / 0.5, 1) * 55);
+  // Lightness: 48% at q=0 → 35% at q=1.0 (denser = more vivid).
+  const light = Math.round(48 - clamped * 13);
+  // Hue: gray at q=0 (sat=0, hue irrelevant), amber at q≤0.5, green at q=1.
+  const hue = clamped <= 0.5
+    ? 40   // amber
+    : Math.round(40 + (clamped - 0.5) * 2 * 100); // 40 (amber) → 140 (green)
+  if (sat === 0) return `hsl(0, 0%, ${light}%)`;
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 

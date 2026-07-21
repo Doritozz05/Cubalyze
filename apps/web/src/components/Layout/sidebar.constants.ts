@@ -51,9 +51,9 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "Insights",
+    title: "Progress",
     items: [
-      { id: "insights", label: "Insights", icon: LayoutDashboard },
+      { id: "insights", label: "Stats", icon: LayoutDashboard },
     ],
   },
 ];
