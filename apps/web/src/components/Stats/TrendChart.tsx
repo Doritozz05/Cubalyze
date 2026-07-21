@@ -102,7 +102,7 @@ export function TrendChart({
       </div>
 
       {hasData ? (
-        <div className="h-[72px] w-full">
+        <div className="h-18 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
@@ -146,7 +146,7 @@ export function TrendChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-[72px] items-center justify-center text-[0.7rem] text-ink-3">
+        <div className="flex h-18 items-center justify-center text-[0.7rem] text-ink-3">
           Need at least {window} solves
         </div>
       )}

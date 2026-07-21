@@ -31,7 +31,6 @@ import {
   SectionHeader,
   AnimatedNumber,
   ActivityHeatmap,
-  MetricRing,
   EmptyState,
 } from "./atoms";
 import { phaseColorHex } from "@/utils/phaseColors";
