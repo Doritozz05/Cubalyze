@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import type { Solve, Penalty } from "@/types";
+import { PenaltyBadge } from "@/components/Insights/atoms";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,24 +28,6 @@ export interface TimesListProps {
   onReplay?: (solve: Solve) => void;
   hideHeader?: boolean;
   className?: string;
-}
-
-function PenaltyBadge({ penalty }: { penalty: Penalty }) {
-  if (penalty === "none") return null;
-  const cls =
-    penalty === "DNF"
-      ? "bg-dnf-soft text-dnf"
-      : "bg-plus2-soft text-plus2";
-  return (
-    <span
-      className={cn(
-        "nums rounded px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide",
-        cls,
-      )}
-    >
-      {penalty}
-    </span>
-  );
 }
 
 /**
