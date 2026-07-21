@@ -213,6 +213,7 @@ export const SolveListPanel = memo(function SolveListPanel({
             <FilterChip
               active={filters.penalties.has("none")}
               count={chipCounts.clean}
+              dot="bg-ready"
               onClick={() => togglePenalty("none")}
             >
               Clean

@@ -12,6 +12,8 @@ import {
   YAxis,
   Tooltip,
   Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { computeStats, formatTime, formatDuration, statLabel } from "@/utils/formatTime";
@@ -276,7 +278,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
           <ActivityHeatmap counts={activity} weeks={12} />
         </div>
 
-        {/* Phase distribution rings */}
+        {/* Phase distribution donut */}
         <div className="rounded-lg border border-line bg-surface px-5 py-4">
           <SectionHeader
             title="Phase split"
@@ -295,19 +297,66 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
               </span>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {phaseDist.slice(0, 5).map((p, i) => (
-                <MetricRing
-                  key={p.phaseName}
-                  value={p.share}
-                  max={1}
-                  label={`${Math.round(p.share * 100)}%`}
-                  sub={p.phaseName}
-                  size={68}
-                  strokeWidth={4}
-                  strokeColor={phaseColorHex(p.phaseName, i)}
-                />
-              ))}
+            <div className="flex flex-col sm:flex-row items-center gap-6 mt-4">
+              <div className="h-32 w-32 shrink-0 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={phaseDist}
+                      dataKey="share"
+                      nameKey="phaseName"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={42}
+                      outerRadius={58}
+                      stroke="none"
+                      paddingAngle={3}
+                    >
+                      {phaseDist.map((p, i) => (
+                        <Cell key={p.phaseName} fill={phaseColorHex(p.phaseName, i)} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      cursor={{ fill: "var(--surface-2)", opacity: 0.5 }}
+                      contentStyle={{
+                        border: "1px solid var(--line)",
+                        borderRadius: "6px",
+                        background: "var(--surface)",
+                        color: "var(--ink)",
+                        fontSize: "0.7rem",
+                        padding: "4px 8px",
+                        boxShadow: "none",
+                      }}
+                      formatter={(v: number, name: string) => [
+                        `${Math.round(v * 100)}%`,
+                        name,
+                      ]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center text for the donut */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[0.6rem] font-medium uppercase tracking-wider text-ink-3/70">Total</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-1 flex-col justify-center gap-2.5 w-full">
+                {phaseDist.map((p, i) => (
+                  <div key={p.phaseName} className="flex items-center justify-between text-[0.75rem]">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="size-2.5 rounded-full"
+                        style={{ backgroundColor: phaseColorHex(p.phaseName, i) }}
+                      />
+                      <span className="font-medium text-ink-2">{p.phaseName}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="nums text-[0.65rem] text-ink-3">{formatTime(p.avgDurationMs)}</span>
+                      <span className="nums w-8 text-right font-medium text-ink">{Math.round(p.share * 100)}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -327,23 +376,55 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
   const dnf = solves.filter((s) => s.penalty === "DNF").length;
   const plus2 = solves.filter((s) => s.penalty === "+2").length;
   const ok = total - dnf - plus2;
-  const pct = (n: number) => `${Math.round((n / total) * 100)}%`;
+  
+  const pctNum = (n: number) => (n / total) * 100;
+  const pctStr = (n: number) => `${Math.round(pctNum(n))}%`;
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="Penalty mix" eyebrow={`${total} solves`} />
-      <div className="mt-3 flex items-center gap-3 text-xs">
-        <div className="flex items-baseline gap-2">
-          <span className="nums text-[0.7rem] text-ink-3">Clean</span>
-          <span className="nums text-base font-medium text-ink">{pct(ok)}</span>
+      
+      {/* Stacked Bar */}
+      <div className="mt-4 mb-3 flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
+        {ok > 0 && (
+          <div 
+            className="h-full bg-ready transition-all" 
+            style={{ width: `${pctNum(ok)}%` }} 
+            title={`Clean: ${ok} solves`}
+          />
+        )}
+        {plus2 > 0 && (
+          <div 
+            className="h-full bg-plus2 transition-all" 
+            style={{ width: `${pctNum(plus2)}%` }} 
+            title={`+2: ${plus2} solves`}
+          />
+        )}
+        {dnf > 0 && (
+          <div 
+            className="h-full bg-dnf transition-all" 
+            style={{ width: `${pctNum(dnf)}%` }} 
+            title={`DNF: ${dnf} solves`}
+          />
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-5 text-[0.7rem]">
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-ready" />
+          <span className="text-ink-3">Clean</span>
+          <span className="nums font-medium text-ink">{pctStr(ok)}</span>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="nums text-[0.7rem] text-ink-3">+2</span>
-          <span className="nums text-base font-medium text-plus2">{pct(plus2)}</span>
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-plus2" />
+          <span className="text-ink-3">+2</span>
+          <span className="nums font-medium text-plus2">{pctStr(plus2)}</span>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="nums text-[0.7rem] text-ink-3">DNF</span>
-          <span className="nums text-base font-medium text-dnf">{pct(dnf)}</span>
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-dnf" />
+          <span className="text-ink-3">DNF</span>
+          <span className="nums font-medium text-dnf">{pctStr(dnf)}</span>
         </div>
       </div>
     </div>
