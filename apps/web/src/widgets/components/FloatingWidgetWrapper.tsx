@@ -95,7 +95,7 @@ export function FloatingWidgetWrapper({
       if (pos.y < DOCK_THRESHOLD) {
         store.setDockMode(widgetId, "docked");
         store.setMinimized(widgetId, true);
-        store.toggleWidget(widgetId); // hide the panel (set visible=false)
+        // Don't toggle visible — docked ≠ disabled. The dock pill always shows.
       } else {
         store.setPosition(widgetId, pos);
       }

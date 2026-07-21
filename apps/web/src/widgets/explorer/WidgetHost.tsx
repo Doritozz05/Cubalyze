@@ -29,6 +29,8 @@ export function WidgetHost(hostProps: WidgetHostProps) {
     <>
       {Object.entries(instances).map(([id, state]) => {
         if (!state.visible) return null;
+        // Docked widgets render in WidgetDock (header pills), not as floating panels
+        if (state.dockMode === "docked") return null;
 
         const reg = WidgetRegistry.get(id);
         if (!reg) {

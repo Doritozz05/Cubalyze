@@ -37,7 +37,7 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
   const [isDragging, setIsDragging] = useState(false);
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
 
-  const isVisible = instance?.visible ?? false;
+  const isVisible = instance?.dockMode === "floating";
   const isDocked = instance?.dockMode === "docked";
 
   if (!definition || !isDocked) return null;
@@ -49,24 +49,22 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
     const inst = store.instances[widgetId];
     if (!inst) return;
 
-    if (inst.visible) {
-      // Hide the floating panel
-      store.toggleWidget(widgetId);
-    } else {
-      // Show floating panel. Only reposition if position hasn't been
-      // customized yet (still at origin or dock default near top).
-      const hasCustomPosition =
-        inst.position &&
-        (inst.position.x > 10 || inst.position.y > 80);
-
-      store.setMinimized(widgetId, false);
-      if (!hasCustomPosition) {
-        store.setPosition(widgetId, {
-          x: Math.max(50, (window.innerWidth - 360) / 2),
-          y: 68,
-        });
-      }
-      store.toggleWidget(widgetId);
+    // Launch: undock and show floating panel below header
+    store.setDockMode(widgetId, "floating");
+    store.setMinimized(widgetId, false);
+    const fresh = widgetStore.getState();
+    if (!fresh.instances[widgetId]?.visible) {
+      fresh.toggleWidget(widgetId);
+    }
+    // Only set default position on first launch
+    const hasCustomPosition =
+      inst.position &&
+      (inst.position.x > 10 || inst.position.y > 80);
+    if (!hasCustomPosition) {
+      store.setPosition(widgetId, {
+        x: Math.max(50, (window.innerWidth - 360) / 2),
+        y: 68,
+      });
     }
   };
 
@@ -114,7 +112,7 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
     if (state?.active) {
       const totalDy = e.clientY - state.startY;
       if (totalDy > 35) {
-        // Undock: transition to floating at cursor position
+        // Undock: transition to floating at cursor position, show as pill
         const store = widgetStore.getState();
         store.setDockMode(widgetId, "floating");
         store.setPosition(widgetId, {
@@ -122,7 +120,6 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
           y: Math.max(0, e.clientY - 14),
         });
         store.setMinimized(widgetId, true);
-        // Re-read fresh state after mutations (avoid stale closure)
         const fresh = widgetStore.getState();
         if (!fresh.instances[widgetId]?.visible) {
           fresh.toggleWidget(widgetId);
