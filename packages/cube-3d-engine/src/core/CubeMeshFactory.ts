@@ -9,7 +9,6 @@ import {
   Shape,
   ShapeGeometry,
   DoubleSide,
-  CanvasTexture,
 } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
 import type { CubeFace } from '@cubeforge/types';
@@ -108,12 +107,6 @@ export class CubeMeshFactory {
   private stickerlessFaceMaterials: Record<string, MeshBasicMaterial> = {};
   /** Translucent sticker panels — DoubleSide, depthWrite:false for see-through */
   private translucentStickerMaterials: Record<string, MeshBasicMaterial> = {};
-  /**
-   * Cache of diagonal-split materials for stickerless internal faces.
-   * Key: "hex1_hex2" — maps a pair of colors to a textured material
-   * whose canvas texture shows a diagonal split between the two.
-   */
-  private splitMaterials = new Map<string, MeshBasicMaterial>();
   /** Track all sticker meshes with their face for runtime material swaps */
   private stickerMeshes: { mesh: Mesh; face: string }[] = [];
   /** Track all core meshes so we can update material/scale/visibility at runtime */
@@ -213,15 +206,9 @@ export class CubeMeshFactory {
    * Returns the material(s) for a cubie core at position (x, y, z).
    *
    * - `stickered` / `coreless` / `translucent` → single `coreMaterial`
-   * - `stickerless` → 6-material array of `MeshBasicMaterial`:
-   *   Exposed faces get the colored `stickerlessFaceMaterials`.
-   *   Internal faces show the **piece's own colored plastic**:
-   *   - Centers: solid color on all 5 internal faces.
-   *   - Edges: solid color on faces opposite an exposed face;
-   *            diagonal split (2 colors) on the axis with no exposed face.
-   *   - Corners: diagonal split (2 colors) on all 3 internal faces —
-   *              the two colors from the orthogonal axes.
-   *   - Core (0,0,0): falls back to `seamMaterial` (not normally visible).
+   * - `stickerless` → 6-material array:
+   *   Exposed faces get the colored `stickerlessFaceMaterials`,
+   *   internal faces get `seamMaterial` for natural gaps.
    *
    * Material group order follows Three.js BoxGeometry convention:
    *   [ +x(R), -x(L), +y(U), -y(D), +z(F), -z(B) ]
@@ -234,125 +221,15 @@ export class CubeMeshFactory {
       return this.coreMaterial;
     }
 
-    // Colors exposed on each axis (null = no exposed face on that axis)
-    const axisColor: Record<string, string | null> = {
-      X: x === 1 ? 'R' : x === -1 ? 'L' : null,
-      Y: y === 1 ? 'U' : y === -1 ? 'D' : null,
-      Z: z === 1 ? 'F' : z === -1 ? 'B' : null,
-    };
-
-    // All exposed colors for this cubie (1 for center, 2 for edge, 3 for corner, 0 for core)
-    const pieceColors = Object.values(axisColor).filter((c): c is string => c !== null);
-
-    // Face definitions: [faceName, axis, isExposed]
-    const faces: [string, string, boolean][] = [
-      ['R', 'X', x === 1],    // 0: +x
-      ['L', 'X', x === -1],   // 1: -x
-      ['U', 'Y', y === 1],    // 2: +y
-      ['D', 'Y', y === -1],   // 3: -y
-      ['F', 'Z', z === 1],    // 4: +z
-      ['B', 'Z', z === -1],   // 5: -z
+    // stickerless: per-face colored plastic (unlit, flat color)
+    return [
+      x === 1 ? this.stickerlessFaceMaterials['R'] : this.seamMaterial, //  0: +x (Right)
+      x === -1 ? this.stickerlessFaceMaterials['L'] : this.seamMaterial, // 1: -x (Left)
+      y === 1 ? this.stickerlessFaceMaterials['U'] : this.seamMaterial, //  2: +y (Up)
+      y === -1 ? this.stickerlessFaceMaterials['D'] : this.seamMaterial, // 3: -y (Down)
+      z === 1 ? this.stickerlessFaceMaterials['F'] : this.seamMaterial, //  4: +z (Front)
+      z === -1 ? this.stickerlessFaceMaterials['B'] : this.seamMaterial, // 5: -z (Back)
     ];
-
-    return faces.map(([faceName, axis, isExposed]) => {
-      // Exposed face → solid stickerless color
-      if (isExposed) {
-        return this.stickerlessFaceMaterials[faceName];
-      }
-
-      // Internal face: collect colors from the two ORTHOGONAL axes
-      const orthogonalAxes = (['X', 'Y', 'Z'] as const).filter(a => a !== axis);
-      const orthogonalColors = orthogonalAxes
-        .map(a => axisColor[a])
-        .filter((c): c is string => c !== null);
-
-      // 0 orthogonal colors → core piece or center opposite face
-      // Use the piece's first color, or fall back to seam
-      if (orthogonalColors.length === 0) {
-        if (pieceColors.length > 0) {
-          return this.stickerlessFaceMaterials[pieceColors[0]];
-        }
-        return this.seamMaterial;
-      }
-
-      // 1 orthogonal color → solid (edge: face opposite to exposed face)
-      if (orthogonalColors.length === 1) {
-        return this.stickerlessFaceMaterials[orthogonalColors[0]];
-      }
-
-      // 2 orthogonal colors → diagonal split texture (corner internal faces,
-      // or edge faces on the axis with no exposed face)
-      return this.getSplitMaterial(
-        (this.style.stickerColors as Record<string, string>)[orthogonalColors[0]],
-        (this.style.stickerColors as Record<string, string>)[orthogonalColors[1]],
-      );
-    });
-  }
-
-  /**
-   * Creates (or returns a cached) MeshBasicMaterial with a diagonal-split
-   * canvas texture between two hex colors.
-   *
-   * The texture is a 128×128 canvas split top-left→bottom-right:
-   *   - Top-left triangle: colorA
-   *   - Bottom-right triangle: colorB
-   *
-   * Used for internal faces of corner/edge pieces in stickerless mode
-   * to simulate two-colored fused plastic.
-   */
-  private getSplitMaterial(hexA: string, hexB: string): MeshBasicMaterial {
-    // Normalize key so "#ff0000_#00ff00" === "#00ff00_#ff0000"
-    const key = [hexA, hexB].sort().join('_');
-
-    const cached = this.splitMaterials.get(key);
-    if (cached) return cached;
-
-    const size = 128;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
-
-    // Top-left triangle: colorA
-    ctx.fillStyle = hexA;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(size, 0);
-    ctx.lineTo(0, size);
-    ctx.closePath();
-    ctx.fill();
-
-    // Bottom-right triangle: colorB
-    ctx.fillStyle = hexB;
-    ctx.beginPath();
-    ctx.moveTo(size, size);
-    ctx.lineTo(size, 0);
-    ctx.lineTo(0, size);
-    ctx.closePath();
-    ctx.fill();
-
-    const texture = new CanvasTexture(canvas);
-    texture.minFilter = 1006; // LinearFilter
-    texture.magFilter = 1006;
-    texture.generateMipmaps = false;
-
-    const mat = new MeshBasicMaterial({ map: texture });
-    this.splitMaterials.set(key, mat);
-    return mat;
-  }
-
-  /**
-   * Clear and dispose all cached diagonal-split materials.
-   * Called when sticker colors change (textures become stale) or on full disposal.
-   */
-  private clearSplitMaterials(): void {
-    for (const mat of this.splitMaterials.values()) {
-      if (mat.map) {
-        mat.map.dispose();
-      }
-      mat.dispose();
-    }
-    this.splitMaterials.clear();
   }
 
   /**
@@ -462,6 +339,9 @@ export class CubeMeshFactory {
    * - `cubieSize` → rescale core meshes (stickerless only)
    */
   public updateStyle(newStyle: Partial<CubeStyleOptions>): void {
+    // ── Sticker geometry rebuild flag (declared early — used in skinTypeChanged) ──
+    let geometryNeedsUpdate = false;
+
     // ── Structural flags ──────────────────────────────────────────────
     let skinTypeChanged = false;
     if (newStyle.skinType !== undefined && newStyle.skinType !== this.style.skinType) {
@@ -514,13 +394,19 @@ export class CubeMeshFactory {
         ? (this.style.cubieSize ?? 0.97)
         : 1.0;
 
+      // Reset stickerSize to the new skin's value (or default 0.84).
+      // This prevents the translucent skin's smaller stickers from
+      // "sticking" when switching back to default/coreless/stickerless.
+      if (skinTypeChanged) {
+        const newStickerSize = newStyle.stickerSize ?? 0.84;
+        if (newStickerSize !== (this.style.stickerSize ?? 0.84)) {
+          this.style.stickerSize = newStickerSize;
+          geometryNeedsUpdate = true;
+        }
+      }
+
       // Determine which sticker material pool to use
       const activePool = this.getActiveStickerMaterials();
-
-      // When switching away from stickerless, dispose split-material cache
-      if (newSkinType !== 'stickerless') {
-        this.clearSplitMaterials();
-      }
 
       // Update all sticker meshes: visibility + material pool
       for (const { mesh, face } of this.stickerMeshes) {
@@ -536,18 +422,7 @@ export class CubeMeshFactory {
       }
     }
 
-    // ── Sticker color changes → invalidate diagonal-split texture cache ──
-    if (newStyle.stickerColors && this.style.skinType === 'stickerless') {
-      this.clearSplitMaterials();
-      // Rebuild core mesh material arrays so split faces pick up fresh
-      // textures with the new colors (solid faces auto-update via shared refs).
-      for (const cm of this.coreMeshes) {
-        cm.mesh.material = this.getCoreMaterialArray(cm.x, cm.y, cm.z);
-      }
-    }
-
     // ── Sticker geometry rebuild (size / radius change) ───────────────
-    let geometryNeedsUpdate = false;
     if (newStyle.stickerSize !== undefined && newStyle.stickerSize !== this.style.stickerSize) {
       this.style.stickerSize = newStyle.stickerSize;
       geometryNeedsUpdate = true;
@@ -601,7 +476,6 @@ export class CubeMeshFactory {
     Object.values(this.stickerMaterials).forEach((mat) => mat.dispose());
     Object.values(this.stickerlessFaceMaterials).forEach((mat) => mat.dispose());
     Object.values(this.translucentStickerMaterials).forEach((mat) => mat.dispose());
-    this.clearSplitMaterials();
     this.stickerMeshes = [];
     this.coreMeshes = [];
   }
