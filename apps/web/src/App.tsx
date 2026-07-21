@@ -19,7 +19,7 @@ import { preferencesStore } from "@cubeforge/state";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
-import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import "@/index.css";
 
@@ -59,17 +59,20 @@ export default function App() {
   const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
   // Track the DB solve ID for the current solve so we can persist analysis later
   const pendingSolveIdRef = useRef<string | null>(null);
-  // Buffer for moves + orientationTimeline captured at solve-stop time.
-  // Persisted immediately when addSolve resolves so data survives reload.
-  const pendingMovesRef = useRef<{
-    moves: CubeMoveEvent[];
-    orientationTimeline: OrientationTimeline | undefined;
-  } | null>(null);
+
   // Tracks the live Smart Cube connection state so `handleComplete` (which
   // must be defined *before* `useSolveSession` provides `smartCubeConnected`)
   // can read the current connection status without a temporal-dead-zone
   // dependency. Synced via the effect below.
   const smartCubeConnectedRef = useRef(false);
+
+  // Capture scramble & method at solve stop time to avoid stale closure race.
+  // These refs are populated by handleComplete (synchronous callback from
+  // engine.stop$) BEFORE setCurrentScramble regenerates. The analysis effect
+  // reads these refs instead of the React state to guarantee it uses the
+  // correct scramble — not the newly generated one.
+  const scrambleAtSolveRef = useRef<string>("");
+  const methodAtSolveRef = useRef<SolveMethod>("CFOP");
 
   const handleRegenerate = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
@@ -79,9 +82,13 @@ export default function App() {
 
   const handleComplete = useCallback(
     (time: number, penalty: Penalty) => {
-      // Capture the current scramble before it changes
-      const capturedScramble = currentScramble;
-      const capturedMethod = methodPref;
+      // Capture scramble & method in refs BEFORE regenerating.
+      // The analysis useEffect reads these refs (not the React state) to
+      // avoid the race where setCurrentScramble(newScramble) has already
+      // fired by the time the effect executes.
+      scrambleAtSolveRef.current = currentScramble;
+      methodAtSolveRef.current = methodPref;
+
       // `smartCubeConnectedRef.current` reflects the live connection state at
       // solve-stop time (synced by the effect below). We use a ref instead of
       // the `smartCubeConnected` variable directly because `handleComplete` is
@@ -90,26 +97,20 @@ export default function App() {
 
       addSolve({
         time,
-        scramble: capturedScramble,
+        scramble: currentScramble,
         penalty,
-        method: capturedMethod,
+        method: methodPref,
         source: capturedSource,
       })
         .then((solveId) => {
           pendingSolveIdRef.current = solveId;
 
-          // Persist moves + orientationTimeline IMMEDIATELY so they survive
-          // page reload. The async analysis comes later via updateSolve.
-          const pending = pendingMovesRef.current;
-          if (pending && pending.moves.length > 0) {
-            updateSolve(solveId, {
-              moves: pending.moves,
-              orientationTimeline: pending.orientationTimeline,
-            }).catch(() =>
-              console.warn("Failed to persist moves immediately"),
-            );
-            pendingMovesRef.current = null;
-          }
+          // NOTE: moves + orientationTimeline are NOT persisted here.
+          // pendingMovesRef is populated by the analysis useEffect which
+          // runs AFTER this callback (React useEffect fires after commit).
+          // So pendingMovesRef.current is still null at this point.
+          // Moves are persisted in the analysis effect via updateSolve.
+          // See the useEffect below for the actual moves persistence.
 
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
@@ -132,7 +133,6 @@ export default function App() {
     smartCubeConnected,
     inspection,
     scrambleVerification,
-    method,
     lastSolveMoves,
     lastSolveOrientations,
     lastSolveOrientationTimeline,
@@ -146,30 +146,18 @@ export default function App() {
 
   // ── Run analysis on solve complete ─────────────────────────────────────
   const prevLastTimeRef = useRef<number | null>(null);
-  // Capture scramble & method at solve stop time to avoid stale closure race
-  const scrambleAtSolveRef = useRef<string>("");
-  const methodAtSolveRef = useRef<SolveMethod>("CFOP");
 
   useEffect(() => {
-    // Capture scramble & method when solve stops (before handleComplete regenerates)
-    if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
-      scrambleAtSolveRef.current = currentScramble;
-      methodAtSolveRef.current = method;
-    }
-
     // Detect new solve completion (lastTime changed from something to a new value)
     if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
       prevLastTimeRef.current = timerLastTime;
 
-      // Use the stable snapshot captured at stop time (avoids race with IDLE clearing)
+      // Use the stable snapshot captured at stop time (avoids race with IDLE clearing).
+      // scrambleAtSolveRef / methodAtSolveRef were set by handleComplete which
+      // runs synchronously from engine.stop$ BEFORE setCurrentScramble fires.
       const moves = lastSolveMoves;
       const scr = scrambleAtSolveRef.current;
       const m = methodAtSolveRef.current;
-
-      // Buffer moves so handleComplete can persist them immediately
-      pendingMovesRef.current = moves.length > 0
-        ? { moves, orientationTimeline: lastSolveOrientationTimeline }
-        : null;
 
       if (moves.length > 0) {
         // Defer to next tick to avoid blocking the UI
@@ -179,22 +167,19 @@ export default function App() {
               lastSolveRef.current = { solve: null, analysis };
               setLastAnalysis(analysis);
 
-              // Persist analysis + the raw moves to DB. The moves are
-              // captured at solve-stop time (lastSolveMoves) and were not
-              // passed to addSolve (which only stores time/scramble/penalty/
-              // method/source), so we persist them here alongside the analysis.
-              // This also fixes the previous bug where solves made with a
-              // Smart Cube were later shown as "Manual" because `moves` was
-              // empty in the DB — now `source` (set in addSolve) is the
-              // authoritative indicator, and moves are persisted here.
+              // Persist analysis + the raw moves to DB.
+              // handleComplete (which runs synchronously BEFORE this effect)
+              // already created the solve with addSolve but without moves.
+              // We persist BOTH moves and analysis here since we have them
+              // from lastSolveMoves (captured at solve-stop time).
               const solveId = pendingSolveIdRef.current;
               if (solveId) {
-                // Moves were already persisted immediately in handleComplete.
-                // Only update the analysis field here.
                 updateSolve(solveId, {
+                  moves,
+                  orientationTimeline: lastSolveOrientationTimeline,
                   analysis,
                 }).catch(() =>
-                  console.warn("Failed to persist analysis"),
+                  console.warn("Failed to persist moves + analysis"),
                 );
                 pendingSolveIdRef.current = null;
               }
@@ -208,7 +193,7 @@ export default function App() {
     if (timerPhase === "idle") {
       prevLastTimeRef.current = null;
     }
-  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveOrientationTimeline, currentScramble, method]);
+  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveOrientationTimeline, updateSolve]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);

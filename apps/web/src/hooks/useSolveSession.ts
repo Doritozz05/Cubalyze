@@ -46,6 +46,17 @@ const METHOD_DEFS: Record<SolveMethod, MethodDefinition> = {
   Petrus: PetrusDefinition,
 };
 
+// ── BLE Move Audit Log types ──────────────────────────────────────────
+type BleMovePhase = 'scramble' | 'race-idle' | 'dropped-dedup' | 'dropped-leak' | 'pending-idle' | 'rfm-start' | 'running';
+interface BleAuditEntry {
+  move: CubeMoveEvent;
+  notation: string;
+  phase: BleMovePhase;
+  engineState: string;
+  isScrambledRef: boolean;
+  bleIndex: number;
+}
+
 export interface UseSolveSessionOptions {
   onSolve?: (time: number, penalty: Penalty) => void;
 }
@@ -661,10 +672,17 @@ export function useSolveSession(
   const lastSolveOrientationTimelineRef = useRef<OrientationTimeline | undefined>(undefined);
   const [lastSolveOrientationTimeline, setLastSolveOrientationTimeline] = useState<OrientationTimeline | undefined>(undefined);
 
-  // ── Pending first solve move — arrives in IDLE during the ~16ms race
-  //   between isScrambled=true and the auto-arm effect. Buffered here and
+  // ── Pending first solve move(s) — arrives in IDLE during the ~16ms race
+  //   between isScrambled=true and the auto-arm effect. Buffered here as an
+  //   ARRAY because the user may start with a double-turn (e.g. D2 = two
+  //   consecutive D90° BLE events). A single-ref buffer would overwrite the
+  //   first event with the second, losing it.  All buffered moves are
   //   replayed when the engine enters RUNNING (via the state$ subscription).
-  const pendingFirstMoveRef = useRef<CubeMoveEvent | null>(null);
+  const pendingMovesBufferRef = useRef<CubeMoveEvent[]>([]);
+
+  // ── Full BLE move audit log ──────────────────────────────────────────
+  const bleAuditLogRef = useRef<BleAuditEntry[]>([]);
+  const bleAuditCounterRef = useRef(0);
 
   // Mirror validation.isScrambled into a ref so it can be read synchronously
   // from the move subscriber (which fires from a Subject callback BEFORE
@@ -694,47 +712,64 @@ export function useSolveSession(
         lastCubeTimestampRef.current = null;
         lastMoveFaceRef.current = null;
         lastMoveDirRef.current = null;
+        // Reset BLE audit log for the next cycle
+        bleAuditLogRef.current = [];
+        bleAuditCounterRef.current = 0;
       }
-      // Defensive: clear any stale IDLE-buffered pending move whenever the
+      // Defensive: clear any stale IDLE-buffered pending moves whenever the
       // engine arms (inspection/RFM/touching). This catches scramble-leak
       // noise that may have re-buffered itself after the initial
       // justScrambled effect. Without this, the pending replay on RUNNING
-      // transition would push it back as moves[0].
+      // transition would push them back as solve moves.
       //
-      // IMPORTANT: also undo the buffered move from realCubeStateRef so the
-      // tracker state matches the real cube. The move was applied to the
-      // tracker in the IDLE branch but is NOT a solve move — it's a
+      // IMPORTANT: also undo ALL buffered moves from realCubeStateRef so the
+      // tracker state matches the real cube. Each buffered move was applied
+      // to the tracker in the IDLE branch but is NOT a solve move — it's a
       // scramble-leak from the race window where isScrambledRef hadn't
-      // propagated yet.
+      // propagated yet.  Undo in reverse order to correctly peel off each
+      // layer.
       if (
         engineState === EngineState.INSPECTION ||
         engineState === EngineState.READY_FOR_MOVE ||
         engineState === EngineState.TOUCHING
       ) {
-        if (pendingFirstMoveRef.current) {
-          const buffered = pendingFirstMoveRef.current;
-          const invDir: CubeMoveDirection =
-            buffered.direction === 1 ? -1 : buffered.direction === -1 ? 1 : 2;
-          realCubeStateRef.current.applySequence(
-            MoveTransformer.moveToNotation(buffered.face, invDir),
-          );
+        const buf = pendingMovesBufferRef.current;
+        if (buf.length > 0) {
+          // ALWAYS clear the buffer on arm.  The buffer contains moves
+          // that arrived in IDLE — these are either scramble-leaks
+          // (last scramble moves arriving after isScrambled was set but
+          // before the effect propagated) or pre-scramble noise.
+          // Legitimate solve moves arrive AFTER the engine arms (in RFM
+          // or RUNNING), never before.  Undo from realCubeStateRef and
+          // discard.
+          for (let bi = buf.length - 1; bi >= 0; bi--) {
+            const buffered = buf[bi];
+            const invDir: CubeMoveDirection =
+              buffered.direction === 1 ? -1 : buffered.direction === -1 ? 1 : 2;
+            realCubeStateRef.current.applySequence(
+              MoveTransformer.moveToNotation(buffered.face, invDir),
+            );
+          }
+          pendingMovesBufferRef.current = [];
         }
-        pendingFirstMoveRef.current = null;
       }
       // capture the real cube state at the moment the timer starts
       // running. realCubeStateRef tracks all moves from connect, so this
       // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
-        // Replay the pending first solve move that arrived during the
+        // Replay ALL pending first solve moves that arrived during the
         // IDLE race window (if any). The move subscriber already took a
-        // pre-apply snapshot for it (after undoing the buffered move's
-        // effect on realCubeStateRef), so we just push it into
+        // pre-apply snapshot for them (after undoing the buffered moves'
+        // effect on realCubeStateRef), so we just push them into
         // collected-moves here.
-        if (pendingFirstMoveRef.current) {
-          collectedMovesRef.current.push(pendingFirstMoveRef.current);
-          collectedOrientationsRef.current.push(currentOrientationRef.current);
+        const buf = pendingMovesBufferRef.current;
+        if (buf.length > 0) {
+          for (const m of buf) {
+            collectedMovesRef.current.push(m);
+            collectedOrientationsRef.current.push(currentOrientationRef.current);
+          }
           setCollectedMoves([...collectedMovesRef.current]);
-          pendingFirstMoveRef.current = null;
+          pendingMovesBufferRef.current = [];
         }
       }
       setPhase(mapEngineStateToUIState(engineState));
@@ -751,6 +786,102 @@ export function useSolveSession(
       const timeline = compactOrientationTimeline(lastSolveOrientationsRef.current);
       lastSolveOrientationTimelineRef.current = timeline;
       setLastSolveOrientationTimeline(timeline);
+
+      // ── BLE Audit Log dump ────────────────────────────────────────────
+      // Dump the FULL BLE move audit log at solve-stop so the user can
+      // compare every move the cube sent vs what the analysis received.
+      if (isCFOPDebugEnabled()) {
+        const auditLog = bleAuditLogRef.current;
+        const collected = collectedMovesRef.current;
+        /* eslint-disable no-console */
+        console.groupCollapsed(
+          '%c[BLE Audit] %d total BLE moves · %d collected solve moves · phases: %s',
+          'color: #22d3ee; font-weight: bold',
+          auditLog.length,
+          collected.length,
+          [...new Set(auditLog.map(e => e.phase))].join(', '),
+        );
+
+        // Phase breakdown
+        const phaseBreakdown: Record<string, number> = {};
+        for (const e of auditLog) {
+          phaseBreakdown[e.phase] = (phaseBreakdown[e.phase] || 0) + 1;
+        }
+        console.log('%cPhase breakdown', 'color: #c084fc; font-weight: bold', phaseBreakdown);
+
+        // Full audit table
+        if (auditLog.length <= 300) {
+          console.log(
+            '%cFull BLE audit (%d entries)',
+            'color: #c084fc; font-weight: bold',
+            auditLog.length,
+            auditLog.map(e => ({
+              '#': e.bleIndex + 1,
+              notation: e.notation,
+              phase: e.phase,
+              engine: e.engineState,
+              scrambled: e.isScrambledRef,
+              cubeTs: e.move.cubeTimestamp,
+              hostTs: Math.round(e.move.hostTimestamp),
+            })),
+          );
+        } else {
+          console.log(
+            '%cFull BLE audit (%d entries, showing first 50 + last 20)',
+            'color: #c084fc; font-weight: bold',
+            auditLog.length,
+            auditLog.slice(0, 50).concat(auditLog.slice(-20)).map(e => ({
+              '#': e.bleIndex + 1,
+              notation: e.notation,
+              phase: e.phase,
+              engine: e.engineState,
+              scrambled: e.isScrambledRef,
+            })),
+          );
+        }
+
+        // Collected solve moves for comparison
+        console.log(
+          '%cCollected solve moves (%d):',
+          'color: #c084fc; font-weight: bold',
+          collected.length,
+          collected.map((m, i) => ({ '#': i + 1, notation: moveNotation(m) })),
+        );
+
+        // Discrepancy check: collected moves vs audit "running" + "rfm-start" entries
+        const expectedSolve = auditLog
+          .filter(e => e.phase === 'running' || e.phase === 'rfm-start')
+          .map(e => e.notation);
+        const actualSolve = collected.map(moveNotation);
+        const notationMatch = expectedSolve.length === actualSolve.length &&
+          expectedSolve.every((n, i) => n === actualSolve[i]);
+        console.log(
+          `%cCollected vs Audit match: %c${notationMatch ? '✓ YES' : '✗ NO — DISCREPANCY DETECTED'}`,
+          'color: #c084fc; font-weight: bold',
+          notationMatch
+            ? 'color: #4ade80; font-weight: bold'
+            : 'color: #f87171; font-weight: bold',
+        );
+        if (!notationMatch) {
+          console.log('%cExpected (from audit):', 'color: #f87171', expectedSolve.join(' '));
+          console.log('%cActual (collected):', 'color: #f87171', actualSolve.join(' '));
+        }
+
+        // Pending buffer check
+        const pendingBuf = pendingMovesBufferRef.current;
+        if (pendingBuf.length > 0) {
+          console.warn(
+            '%c⚠ %d moves still in pending buffer at solve-stop! These were NOT replayed.',
+            'color: #fb923c; font-weight: bold',
+            pendingBuf.length,
+            pendingBuf.map(m => moveNotation(m)),
+          );
+        }
+
+        console.groupEnd();
+        /* eslint-enable no-console */
+      }
+
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
@@ -848,6 +979,12 @@ export function useSolveSession(
         lastMoveFaceRef.current === move.face &&
         lastMoveDirRef.current === move.direction
       ) {
+        // Audit: log dropped dedup even though we return early
+        bleAuditLogRef.current.push({
+          move, notation: moveNotation(move), phase: 'dropped-dedup',
+          engineState: EngineState[engine.getState()],
+          isScrambledRef: isScrambledRef.current, bleIndex: bleAuditCounterRef.current++,
+        });
         return; // hardware duplicate — drop silently
       }
       lastCubeTimestampRef.current = move.cubeTimestamp ?? null;
@@ -861,6 +998,12 @@ export function useSolveSession(
       // the last scramble move emitted during the ~16ms race window). Drop
       // it entirely — do not apply to the tracker.
       if (current === EngineState.IDLE && isScrambledRef.current) {
+        // Audit: log dropped scramble-leak
+        bleAuditLogRef.current.push({
+          move, notation: moveNotation(move), phase: 'dropped-leak',
+          engineState: 'IDLE',
+          isScrambledRef: true, bleIndex: bleAuditCounterRef.current++,
+        });
         return;
       }
 
@@ -872,15 +1015,31 @@ export function useSolveSession(
       realCubeStateRef.current.applySequence(notation);
 
       // Buffer in IDLE (isScrambledRef may not have propagated yet — race
-      // window). The state subscription will undo this from the tracker
-      // if it turns out to be a scramble-leak.
+      // window). Multiple moves may arrive before the engine arms (e.g.
+      // a double-turn D2 sent as two D90° events). The state subscription
+      // will undo ALL buffered moves from the tracker if they turn out to
+      // be scramble-leaks.
       if (current === EngineState.IDLE) {
-        pendingFirstMoveRef.current = move;
+        // Moves in IDLE when isScrambledRef is false are scramble moves
+        // (the validator hasn't confirmed the scramble yet). Moves when
+        // isScrambledRef is true would have been caught by the leak guard
+        // above, so everything reaching here is pre-scramble or race-window.
+        bleAuditLogRef.current.push({
+          move, notation: moveNotation(move), phase: 'scramble',
+          engineState: 'IDLE',
+          isScrambledRef: isScrambledRef.current, bleIndex: bleAuditCounterRef.current++,
+        });
+        pendingMovesBufferRef.current.push(move);
         return;
       }
 
       // Collect moves while running
       if (current === EngineState.RUNNING) {
+        bleAuditLogRef.current.push({
+          move, notation: moveNotation(move), phase: 'running',
+          engineState: 'RUNNING',
+          isScrambledRef: isScrambledRef.current, bleIndex: bleAuditCounterRef.current++,
+        });
         collectedMovesRef.current.push(move);
         collectedOrientationsRef.current.push(currentOrientationRef.current);
         setCollectedMoves([...collectedMovesRef.current]);
@@ -894,6 +1053,11 @@ export function useSolveSession(
         current === EngineState.INSPECTION ||
         current === EngineState.READY_FOR_MOVE
       ) {
+        bleAuditLogRef.current.push({
+          move, notation: moveNotation(move), phase: 'rfm-start',
+          engineState: EngineState[current],
+          isScrambledRef: isScrambledRef.current, bleIndex: bleAuditCounterRef.current++,
+        });
         engine.handleSmartCubeStart();
         // Capture the move that triggered the start — it is part of the solve
         collectedMovesRef.current.push(move);
