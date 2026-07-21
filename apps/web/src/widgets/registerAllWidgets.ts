@@ -77,6 +77,10 @@ export function registerAllWidgets(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: FloatingCubeButton as any,
     preview: Cube3DPreview,
-    mapProps: ({ onOpenCube }: WidgetHostProps) => ({ onClick: onOpenCube }),
+    mapProps: ({ onOpenCube, cubePanelOpen, smartCubeConnected }: WidgetHostProps) => ({
+      onClick: onOpenCube,
+      cubePanelOpen,
+      smartCubeConnected,
+    }),
   });
 }

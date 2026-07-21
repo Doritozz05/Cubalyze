@@ -66,6 +66,4 @@ export function createHostAPI(deps: HostAPIDependencies): WidgetHostAPI {
   } as WidgetHostAPI;
 
   return api;
-
-  return api;
 }
