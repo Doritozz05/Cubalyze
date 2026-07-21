@@ -169,7 +169,7 @@ const _debugInitState = (() => {
   // Use console.log (always-visible) NOT console.debug — Chrome hides
   // console.debug by default unless "Verbose" is enabled, which is why
   // users kept seeing nothing in the console.
-  /* eslint-disable no-console */
+   
   console.log(
     "%c[CFOP Debug]%c init \u00b7 cfop=%s(%s) \u00b7 moves=%s(%s)",
     "color:#38bdf8;font-weight:bold",
@@ -188,7 +188,7 @@ const _debugInitState = (() => {
       "color:inherit",
     );
   }
-  /* eslint-enable no-console */
+   
   return { cfop: cfopEffective };
 })();
 
@@ -270,7 +270,7 @@ function logSolveDiagnostic(args: {
 
   const labelStyle = "color: #c084fc; font-weight: bold";
 
-  /* eslint-disable no-console */
+   
   console.groupCollapsed(
     `%c[Analysis Diagnostic] Solve · ${moves.length} moves / ${(durationMs / 1000).toFixed(2)}s · method=${method} · %c${finalIsSolved ? "✓ reached solved" : "✗ did NOT reach solved"} · phases=${phases.length}`,
     "color: #38bdf8; font-weight: bold",
@@ -539,7 +539,7 @@ function logSolveDiagnostic(args: {
   }
 
   console.groupEnd();
-  /* eslint-enable no-console */
+   
 }
 
 /**
@@ -793,7 +793,7 @@ export function useSolveSession(
       if (isCFOPDebugEnabled()) {
         const auditLog = bleAuditLogRef.current;
         const collected = collectedMovesRef.current;
-        /* eslint-disable no-console */
+         
         console.groupCollapsed(
           '%c[BLE Audit] %d total BLE moves · %d collected solve moves · phases: %s',
           'color: #22d3ee; font-weight: bold',
@@ -879,7 +879,7 @@ export function useSolveSession(
         }
 
         console.groupEnd();
-        /* eslint-enable no-console */
+         
       }
 
       if (onSolveRef.current) {
