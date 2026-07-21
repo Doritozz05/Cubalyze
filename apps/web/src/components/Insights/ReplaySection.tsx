@@ -179,6 +179,11 @@ export function ReplaySection({
       // Force fresh canvas on re-expand — transferControlToOffscreen() is
       // a one-way operation that can only be called once per element.
       setCanvasKey((k) => k + 1);
+      // Reset playback state when collapsing so re-opening shows the correct
+      // UI (idle button, not a stale "playing" from before collapse).
+      setReplayState("idle");
+      setPositionMs(0);
+      setCurrentMoveIdx(-1);
       return;
     }
 
@@ -276,6 +281,12 @@ export function ReplaySection({
           engine.onStateChange = (state) => {
             if (!cancelled) setReplayState(state);
           };
+
+          // Sync React state with engine state — the constructor already
+          // fired setState('idle') via setMoves(), but onStateChange was
+          // still null at that point, so the React state never got updated.
+          // Without this, a stale "playing" from before collapse persists.
+          setReplayState("idle");
         }
       } catch (err) {
         console.warn("[Replay] Mini cube init failed:", err);
@@ -292,7 +303,7 @@ export function ReplaySection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, canvasKey]);
 
-  // ── Cleanup on unmount ──────────────────────────────────────────────────
+  // ── Cleanup on unmount — also reset playback state ─────────────────────
   useEffect(() => {
     return () => {
       teardownWorker();
