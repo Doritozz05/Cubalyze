@@ -28,6 +28,13 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   public onConnectionChange: ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void) | null = null;
 
+  /**
+   * Callback fired when a HARDWARE event is received from the cube.
+   * Carries the detected model name and gyro support flag so upstream
+   * consumers (orientation store, UI) can react without needing the 3D panel.
+   */
+  public onHardwareInfo: ((info: { model: string; gyroSupported: boolean }) => void) | null = null;
+
   public get isConnected(): boolean {
     return this.connection !== null;
   }
@@ -164,6 +171,14 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         }
         if (typeof evt.gyroSupported === 'boolean') {
           this.gyroSupported = evt.gyroSupported;
+        }
+        // Notify upstream consumers (e.g. orientation store) immediately
+        // so the UI shows correct gyro status without needing the 3D panel.
+        if (typeof evt.gyroSupported === 'boolean' || evt.hardwareName) {
+          this.onHardwareInfo?.({
+            model: this.model,
+            gyroSupported: this.gyroSupported,
+          });
         }
       }
     });

@@ -18,11 +18,27 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
+import { orientationStore } from "@cubeforge/state";
 
 // Global singleton adapter to keep connection alive across re-renders.
 // Imported by useSolveSession, useScrambleValidator and Cube3DPanel —
 // DO NOT remove this export.
 export const globalCubeAdapter = new GanCubeAdapter();
+
+// Wire hardware info events to the orientation store so the UI (e.g.
+// SmartCubeSection) shows the correct gyro status immediately after
+// connecting, regardless of whether the 3D panel is open.
+globalCubeAdapter.onHardwareInfo = ({ gyroSupported }) => {
+  if (gyroSupported) {
+    const caps = orientationStore.getState().capabilities;
+    if (!caps.gyroSupported) {
+      orientationStore.getState().setCapabilities({
+        hasIMU: true,
+        gyroSupported: true,
+      });
+    }
+  }
+};
 
 export interface CubeConnectorProps {
   className?: string;
