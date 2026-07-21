@@ -619,6 +619,7 @@ export function useSolveSession(
     (s) => s.scrambleVerification,
   );
   const methodPref = useStore(preferencesStore, (s) => s.method);
+  const voiceTypePref = useStore(preferencesStore, (s) => s.voiceType);
 
   const engine = useMemo(
     () => new TimerEngine({ useInspection: inspectionPref }),
@@ -889,6 +890,9 @@ export function useSolveSession(
       }
     });
     const sub4 = engine.inspectionWarning$.subscribe((warning) => {
+      // Read fresh value from store each time (avoids stale closure)
+      const cues = preferencesStore.getState().audioCues;
+      if (!cues) return;
       if (warning === "8s") globalAudioSystem.play8s();
       if (warning === "12s") globalAudioSystem.play12s();
     });
@@ -1116,6 +1120,31 @@ export function useSolveSession(
       currentOrientationRef.current = state.orientation;
     });
     return unsub;
+  }, []);
+
+  // ── Audio system: voice type sync ────────────────────────────────────────
+  // Sync the voice type preference to the global audio system whenever it
+  // changes. The Web Speech API will use a voice matching the selected type.
+  useEffect(() => {
+    globalAudioSystem.setVoice(voiceTypePref);
+  }, [voiceTypePref]);
+
+  // ── Audio system: init on first user interaction ─────────────────────────
+  // Browsers block audio playback until the user has interacted with the page.
+  // This effect installs one-shot listeners on pointerdown and keydown to
+  // initialise the embedded Audio objects at the earliest safe moment.
+  useEffect(() => {
+    const handler = () => {
+      globalAudioSystem.init();
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+    };
+    window.addEventListener('pointerdown', handler);
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+    };
   }, []);
 
   const press = useCallback(() => {

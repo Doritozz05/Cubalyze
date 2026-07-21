@@ -46,6 +46,14 @@ export interface PreferencesState {
   /** Focus mode: hide everything except timer when ready or running. */
   focusMode: boolean;
   setFocusMode: (value: boolean) => void;
+
+  /** Audio cues during inspection (8s and 12s WCA warnings). */
+  audioCues: boolean;
+  setAudioCues: (value: boolean) => void;
+
+  /** Voice type for inspection audio cues. */
+  voiceType: 'male' | 'female';
+  setVoiceType: (value: 'male' | 'female') => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -77,6 +85,12 @@ export const createPreferencesStore = () => {
 
         focusMode: false,
         setFocusMode: (value) => set({ focusMode: value }),
+
+        audioCues: true,
+        setAudioCues: (value) => set({ audioCues: value }),
+
+        voiceType: 'male',
+        setVoiceType: (value) => set({ voiceType: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -88,6 +102,8 @@ export const createPreferencesStore = () => {
           scrambleVerification: state.scrambleVerification,
           method: state.method,
           focusMode: state.focusMode,
+          audioCues: state.audioCues,
+          voiceType: state.voiceType,
         }),
         version: 1,
       },
