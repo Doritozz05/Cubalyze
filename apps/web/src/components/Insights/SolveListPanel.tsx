@@ -107,7 +107,7 @@ export const SolveListPanel = memo(function SolveListPanel({
   const stats = useMemo(() => computeStats(solves), [solves]);
   const bestTime = Number.isFinite(stats.best) ? stats.best : null;
   const mean = stats.mean;
-  const sparkData = useMemo(() => deriveSparkline(solves, 20), [solves]);
+  const sparkData = useMemo(() => deriveSparkline(solves, solves.length), [solves]);
   // Mean of the sparkline's visible window (last 20), used as the reference
   // line. Using the full-session mean would clamp to an edge when the last 20
   // are all above/below it, which is misleading.
@@ -207,7 +207,6 @@ export const SolveListPanel = memo(function SolveListPanel({
               height={28}
               fill
               dot
-              reference={sparkMean ?? undefined}
               color="ink"
               className="mt-1 w-full"
             />
