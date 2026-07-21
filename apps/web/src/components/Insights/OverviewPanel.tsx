@@ -250,14 +250,6 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
                   }}
                   labelFormatter={() => ""}
                 />
-                {stats.mean != null && Number.isFinite(stats.mean) && meanBinLabel ? (
-                  <ReferenceLine
-                    x={meanBinLabel}
-                    stroke="var(--caution)"
-                    strokeDasharray="3 3"
-                    strokeOpacity={0.5}
-                  />
-                ) : null}
                 <Bar dataKey="count" radius={[2, 2, 0, 0]}>
                   {histogram.map((_, i) => (
                     <Cell
