@@ -233,7 +233,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
       </div>
 
       {/* ── Chart ───────────────────────────────────────────────────────── */}
-      <div className="h-[220px] w-full sm:h-[260px]">
+      <div className="h-55 w-full sm:h-65">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}

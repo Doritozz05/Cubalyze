@@ -21,7 +21,6 @@
 
     "jsx": "react-jsx",
 
-    "baseUrl": ".",
     "paths": {
       "@cubeforge/types": ["./packages/types/src/index.ts"],
       "@cubeforge/math-core": ["./packages/math-core/src/index.ts"],

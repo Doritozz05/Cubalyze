@@ -113,16 +113,18 @@ export function ReplaySection({
   // Falls back to move span only when solve.time is unavailable.
   // Depend on primitive/value properties only (not the whole `solve` object)
   // to avoid recomputing on every prop-reference change.
+  const moves = useMemo(() => solve.moves ?? [], [solve.moves]);
+  const firstMoveTimestamp = moves[0]?.hostTimestamp;
+  const lastMoveTimestamp = moves[moves.length - 1]?.hostTimestamp;
+
   const totalMs = useMemo(() => {
     if (solve.time > 0) return solve.time;
-    const moves = solve.moves ?? [];
     if (moves.length < 2) return solve.time;
-    return moves[moves.length - 1].hostTimestamp - moves[0].hostTimestamp;
-  }, [solve.time, solve.moves?.length, solve.moves?.[0]?.hostTimestamp, solve.moves?.[solve.moves?.length - 1]?.hostTimestamp]);
+    return (lastMoveTimestamp ?? 0) - (firstMoveTimestamp ?? 0);
+  }, [solve.time, moves.length, firstMoveTimestamp, lastMoveTimestamp]);
 
-  const hasMoves = (solve.moves?.length ?? 0) >= 2;
-  const totalMoves = solve.moves?.length ?? 0;
-  const moves = solve.moves ?? [];
+  const hasMoves = moves.length >= 2;
+  const totalMoves = moves.length;
 
   // ── Live stats (derived from current move index) ────────────────────────
   const liveStats = useMemo(() => {
@@ -392,7 +394,7 @@ export function ReplaySection({
               {/* Mini cube 3D — centered, max-w-sm for compactness */}
               <div
                 ref={containerRef}
-                className="relative w-full max-w-xs aspect-square overflow-hidden rounded-lg bg-black/[0.03]"
+                className="relative w-full max-w-xs aspect-square overflow-hidden rounded-lg bg-black/3"
               >
                 <canvas
                   key={canvasKey}
