@@ -80,6 +80,10 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
           if (needsInitialSyncRef.current) {
             needsInitialSyncRef.current = false;
             workerProxy.current?.syncFacelets(facelets).catch(console.error);
+            // Clear any stale moves replayed by the ReplaySubject buffer —
+            // otherwise they would animate on top of the freshly-synced state
+            // and cause a visual desync ("one row off").
+            syncBridge.current?.clearPendingMoves();
           } else if (syncBridge.current.pendingMoves === 0) {
             workerProxy.current?.syncFacelets(facelets).catch(console.error);
           }

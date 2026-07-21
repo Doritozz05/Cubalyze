@@ -270,6 +270,21 @@ export class SyncBridge {
     return this.moveBuffer.length + this.coalesceBuffer.length;
   }
 
+  /**
+   * Discard all buffered moves without processing them.
+   * Used after a facelets sync to clear stale moves replayed by the
+   * ReplaySubject buffer (which would otherwise animate on top of the
+   * freshly-synced state and cause a visual desync).
+   */
+  public clearPendingMoves(): void {
+    if (this.coalesceTimeout) {
+      clearTimeout(this.coalesceTimeout);
+      this.coalesceTimeout = null;
+    }
+    this.coalesceBuffer = [];
+    this.moveBuffer = [];
+  }
+
   public async syncState(moves: CubeMoveEvent[]): Promise<void> {
     for (const move of moves) {
       const mapping = FACE_ROTATION_MAP[move.face as CubeFace];
