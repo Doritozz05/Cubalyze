@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
 import { CATEGORY_LABEL } from "@/widgets/registry";
-import { WidgetPreview } from "./WidgetPreviews";
+import { WidgetPreview } from "@/widgets/explorer/WidgetPreviews";
 import type { WidgetDefinition } from "@/widgets/types";
 
 export interface WidgetCardProps {

@@ -1,17 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
-import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import { useMemo } from "react";
+import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDraggable } from "@/hooks/useDraggable";
-import { deriveHistogram, type HistogramBin } from "@/utils/insights";
+import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import { deriveHistogram } from "@/utils/insights";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import type { Solve } from "@/types";
-
-const STORAGE_KEY = "cubeforge:timeDistPanelPos";
-const DEFAULT_POS = { x: 420, y: 120 };
 
 export interface FloatingTimeDistributionProps {
   solves: Solve[];
@@ -21,20 +16,9 @@ export interface FloatingTimeDistributionProps {
  * Floating histogram widget showing the distribution of solve times.
  * Inspired by csTimer's Time Distribution feature.
  *
- * Bins are computed from all valid (non-DNF) solves using 0.5s intervals.
- * The modal bin (most solves) and the mean line are highlighted.
+ * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
  */
 export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionProps) {
-  const [mounted, setMounted] = useState(false);
-  const [minimized, setMinimized] = useState(true);
-
-  useEffect(() => setMounted(true), []);
-
-  const drag = useDraggable<HTMLDivElement>(DEFAULT_POS, {
-    storageKey: STORAGE_KEY,
-    clickThreshold: 4,
-  });
-
   const { histogram, stats } = useMemo(() => {
     const h = deriveHistogram(solves, 500);
     const s = computeStats(solves);
@@ -47,104 +31,16 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
   );
 
   const BAR_HEIGHT = 120;
-  const BAR_W = 28;
-  const BAR_GAP = 2;
 
-  if (!mounted) return null;
-
-  const headerContent = (
-    <>
-      <div className="flex items-center gap-2">
-        <BarChart3 className="size-3.5 text-ink-3" />
-        <span className="text-xs font-medium text-ink">Distribution</span>
-        <span className="nums text-[0.6rem] text-ink-3">
-          {stats.count} solves
-        </span>
-      </div>
-      <div className="flex items-center gap-0.5">
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setMinimized((m) => !m);
-          }}
-          className="grid size-6 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-          aria-label={minimized ? "Expand" : "Minimize"}
-        >
-          {minimized ? (
-            <ChevronUp className="size-3.5" />
-          ) : (
-            <ChevronDown className="size-3.5" />
-          )}
-        </button>
-      </div>
-    </>
-  );
-
-  // ── Minimized pill ─────────────────────────────────────────────────
-  if (minimized) {
-    return createPortal(
-      <motion.div
-        ref={drag.elementRef}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 380, damping: 28 }}
-        style={{ left: drag.position.x, top: drag.position.y }}
-        onPointerDown={drag.onPointerDown}
-        onPointerMove={drag.onPointerMove}
-        onPointerUp={drag.onPointerUp}
-        className={cn(
-          "fixed z-45 flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
-          drag.isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab",
-          "transition-colors hover:border-ink-2/40",
-        )}
-      >
-        <BarChart3 className="size-4 text-ink-3" />
-        <span className="text-xs font-medium text-ink">Distribution</span>
-        <span className="nums text-[0.6rem] text-ink-3">{stats.count}</span>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setMinimized(false);
-          }}
-          className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-          aria-label="Expand"
-        >
-          <ChevronUp className="size-3.5" />
-        </button>
-      </motion.div>,
-      document.body,
-    );
-  }
-
-  // ── Expanded panel ─────────────────────────────────────────────────
-  return createPortal(
-    <motion.div
-      ref={drag.elementRef}
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring", stiffness: 380, damping: 28 }}
-      style={{ left: drag.position.x, top: drag.position.y, width: 340 }}
-      className={cn(
-        "fixed z-45 flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
-        drag.isDragging && "shadow-2xl",
-      )}
+  return (
+    <FloatingWidgetWrapper
+      widgetId="time-distribution"
+      icon={BarChart3}
+      label="Distribution"
+      pillBadge={`${stats.count} solves`}
+      panelWidth={340}
+      defaultPosition={{ x: 420, y: 120 }}
     >
-      {/* Header */}
-      <div
-        onPointerDown={drag.onPointerDown}
-        onPointerMove={drag.onPointerMove}
-        onPointerUp={drag.onPointerUp}
-        className={cn(
-          "flex items-center justify-between border-b border-line px-3 py-2",
-          drag.isDragging ? "cursor-grabbing" : "cursor-grab",
-        )}
-      >
-        {headerContent}
-      </div>
-
-      {/* Body */}
       <div className="p-3">
         {histogram.length === 0 ? (
           <div className="flex h-28 items-center justify-center text-[0.7rem] text-ink-3">
@@ -182,7 +78,7 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
               })}
             </div>
 
-            {/* X-axis labels (first, middle, last) */}
+            {/* X-axis labels */}
             {histogram.length > 0 && (
               <div className="mt-1.5 flex justify-between text-[0.5rem] text-ink-3/70">
                 <span className="nums">{histogram[0].label.split("–")[0]}s</span>
@@ -216,8 +112,7 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
           </>
         )}
       </div>
-    </motion.div>,
-    document.body,
+    </FloatingWidgetWrapper>
   );
 }
 

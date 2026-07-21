@@ -960,10 +960,6 @@ function PhaseBreakdownSection({
   // Sum of all phase durations (should equal metrics.totalTimeMs minus transition gaps).
   const phaseSumMs = metrics.phases.reduce((s, p) => s + p.durationMs, 0);
   // Transition gaps: time between the last move of one phase and first move of the next.
-  const transitionGapMs = Math.max(0, metrics.totalTimeMs - phaseSumMs);
-  // Timer idle: time before first move + after last move.
-  const timerIdleMs = Math.max(0, solveTimeMs - metrics.totalTimeMs);
-  // Total unaccounted: all time not in phase measurements.
   const totalGapMs = Math.max(0, solveTimeMs - phaseSumMs);
   const showGap = totalGapMs > 200;
 

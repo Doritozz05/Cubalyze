@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { WidgetExplorerSidebar, EXPLORER_SIDEBAR_WIDTH } from "./WidgetExplorerSidebar";
+import { WidgetExplorerSidebar } from "./WidgetExplorerSidebar";
 import { WidgetCard } from "./WidgetCard";
 import { getAllWidgets } from "@/widgets/registry";
 import type { WidgetCategoryId } from "@/widgets/types";

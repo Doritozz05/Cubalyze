@@ -10,8 +10,16 @@ export interface Position {
 interface UseDraggableOptions {
   /** Minimum pointer movement (px) before drag engages. Below this it's a click. */
   clickThreshold?: number;
-  /** If set, position is persisted to localStorage under this key. */
+  /**
+   * If set, position is persisted to localStorage under this key.
+   * @deprecated New widgets should use `onPositionChange` + widgetStore instead.
+   */
   storageKey?: string;
+  /**
+   * Called whenever the position is persisted (at the end of a successful drag).
+   * Use this to sync position to a store instead of localStorage.
+   */
+  onPositionChange?: (pos: Position) => void;
 }
 
 interface DragState {
@@ -29,7 +37,7 @@ interface DragState {
  * - Click-vs-drag: `wasDrag()` returns true if the last interaction moved
  *   beyond `clickThreshold`, letting callers suppress click after a drag.
  * - Optional persistence: pass `storageKey` to remember position across
- *   sessions.
+ *   sessions, or `onPositionChange` to sync to a custom store.
  *
  * Attach `onPointerDown/Move/Up` to the drag handle and spread `elementRef`
  * onto the element whose size should be used for clamping.
@@ -38,7 +46,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   initial: Position,
   options: UseDraggableOptions = {},
 ) {
-  const { clickThreshold = 4, storageKey } = options;
+  const { clickThreshold = 4, storageKey, onPositionChange } = options;
 
   /** Clamp to viewport minus a safety margin so the element is never
    *  positioned off-screen after a viewport resize or resolution change.
@@ -79,6 +87,11 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
 
   const persist = useCallback(
     (pos: Position) => {
+      // New: call the onPositionChange callback if provided
+      if (onPositionChange) {
+        onPositionChange(pos);
+      }
+      // Legacy: persist to localStorage (deprecated but kept for compatibility)
       if (storageKey && typeof window !== "undefined") {
         try {
           localStorage.setItem(storageKey, JSON.stringify(pos));
@@ -87,7 +100,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
         }
       }
     },
-    [storageKey],
+    [storageKey, onPositionChange],
   );
 
   const onPointerDown = useCallback(

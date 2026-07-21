@@ -8,7 +8,7 @@ import { SessionStats } from "@/components/Stats/SessionStats";
 import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
-import { WidgetHost } from "@/components/WidgetExplorer";
+import { WidgetHost } from "@/widgets/explorer";
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
@@ -22,9 +22,20 @@ import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty, effectiveTime } from "@/types";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
+import { migrateWidgetPositions } from "@/widgets/migration";
+import { registerAllWidgets } from "@/widgets/registerAllWidgets";
+
+// Module-level registration — must happen before first render so WidgetHost
+// can resolve components from WidgetRegistry immediately.
+registerAllWidgets();
 import "@/index.css";
 
 export default function App() {
+  // ── One-time migration of old per-widget localStorage positions ─────────
+  useEffect(() => {
+    migrateWidgetPositions();
+  }, []);
+
   const {
     session,
     sessions,

@@ -24,7 +24,7 @@ import {
   type ViewId,
 } from "./sidebar.constants";
 import { SettingsDialog } from "@/components/Settings/SettingsDialog";
-import { WidgetExplorer } from "@/components/WidgetExplorer";
+import { WidgetExplorer } from "@/widgets/explorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
 
 export interface LeftSidebarProps {

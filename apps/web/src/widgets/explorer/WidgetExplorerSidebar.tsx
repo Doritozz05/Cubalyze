@@ -2,7 +2,8 @@
 
 import { motion, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { WIDGET_CATEGORIES, type WidgetCategory, type WidgetCategoryId } from "@/widgets/registry";
+import { WIDGET_CATEGORIES } from "@/widgets/registry";
+import type { WidgetCategory, WidgetCategoryId } from "@/widgets/types";
 
 export const EXPLORER_SIDEBAR_WIDTH = 200;
 

@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Box } from "lucide-react";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
-
-const STORAGE_KEY = "cubeforge:cubeBtnPos";
+import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 
 function getDefaultPos(): Position {
   if (typeof window === "undefined") return { x: 100, y: 100 };
-  // Middle-right, vertically centered. The button (48px) sits just inside
-  // the right edge with a small margin.
   return {
     x: window.innerWidth - 72,
     y: Math.round((window.innerHeight - 48) / 2),
@@ -25,21 +22,37 @@ export interface FloatingCubeButtonProps {
 
 /**
  * Circular floating button shown when a Smart Cube is connected and the 3D
- * panel is closed. Draggable; click (vs. drag) opens the panel. Position is
- * persisted to localStorage.
+ * panel is closed. Draggable; click (vs. drag) opens the panel.
  *
- * Portaled to `document.body` so it floats above the layout.
+ * Position is synced to widgetStore instead of per-widget localStorage.
  */
 export function FloatingCubeButton({ onClick }: FloatingCubeButtonProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Lazy-init the default position once (window is available post-mount).
+  // Read position from widgetStore
+  const instance = useWidgetStore(
+    useCallback((s) => s.instances["cube-button"], []),
+  );
+  const storePosition = instance?.position ?? getDefaultPos();
+
+  // Lazy-init default position (used as fallback)
   const [defaultPos] = useState(getDefaultPos);
-  const drag = useDraggable<HTMLButtonElement>(defaultPos, {
-    storageKey: STORAGE_KEY,
-    clickThreshold: 5,
-  });
+
+  const handlePositionChange = useCallback(
+    (pos: Position) => {
+      widgetStore.getState().setPosition("cube-button", pos);
+    },
+    [],
+  );
+
+  const drag = useDraggable<HTMLButtonElement>(
+    storePosition || defaultPos,
+    {
+      clickThreshold: 5,
+      onPositionChange: handlePositionChange,
+    },
+  );
 
   if (!mounted) return null;
 

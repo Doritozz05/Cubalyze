@@ -6,7 +6,7 @@ import type { LucideIcon } from "lucide-react";
 export type WidgetId = string;
 
 /** Categories for grouping widgets in the explorer sidebar. */
-export type WidgetCategoryId = "all" | "visualizers" | "timer" | "analysis" | "training";
+export type WidgetCategoryId = "all" | "visual" | "timer" | "analysis" | "training";
 
 export interface WidgetCategory {
   id: WidgetCategoryId;
