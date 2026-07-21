@@ -239,12 +239,6 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
             data={data}
             margin={{ top: 8, right: 8, bottom: 4, left: 4 }}
           >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="var(--line)"
-              strokeOpacity={0.2}
-              vertical={false}
-            />
 
             <XAxis
               dataKey="solveIndex"
@@ -274,27 +268,6 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               content={<ScatterTooltip />}
             />
 
-            {/* ── Best Ao5 reference line ── */}
-            {hasEnoughForAo5 && bestAo5 != null && (
-              <ReferenceLine
-                y={bestAo5}
-                stroke="#EF4444"
-                strokeDasharray="4 4"
-                strokeOpacity={0.25}
-                strokeWidth={1}
-              />
-            )}
-
-            {/* ── Best Ao12 reference line ── */}
-            {hasEnoughForAo12 && bestAo12 != null && (
-              <ReferenceLine
-                y={bestAo12}
-                stroke="#22C55E"
-                strokeDasharray="4 4"
-                strokeOpacity={0.25}
-                strokeWidth={1}
-              />
-            )}
 
             {/* ── Connecting line between solves (gaps at DNFs) ── */}
             <Line
