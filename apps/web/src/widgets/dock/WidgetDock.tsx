@@ -195,10 +195,10 @@ export function WidgetDock() {
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
 
-  // Filter to currently-docked widgets (present in dock order)
+  // Filter to docked widgets that are also active (not toggled off in WidgetExplorer)
   const dockedIds = dockOrder.filter((id) => {
     const inst = instances[id];
-    return inst && inst.dockMode === "docked";
+    return inst && inst.dockMode === "docked" && inst.visible;
   });
 
   if (dockedIds.length === 0) return null;
