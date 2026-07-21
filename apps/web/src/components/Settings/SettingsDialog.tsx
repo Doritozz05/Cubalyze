@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { SettingsSidebar } from './SettingsSidebar';
 import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
+import { GeneralSection } from './sections/GeneralSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { TimerSection } from './sections/TimerSection';
 import { AnalysisSection } from './sections/AnalysisSection';
@@ -74,6 +75,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
+      case 'general':
+        return <GeneralSection />;
       case 'appearance':
         return <AppearanceSection />;
       case 'timer':

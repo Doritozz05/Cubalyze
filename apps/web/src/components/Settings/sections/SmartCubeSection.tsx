@@ -22,18 +22,16 @@ type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
  * auto-corrected when real gyro data starts flowing (even if the HARDWARE
  * event hasn't arrived yet or reports a false negative).
  */
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
 export function SmartCubeSection() {
-  // Live status pulled from the shared BLE adapter. The adapter keeps a
-  // stable BehaviorSubject so this stays fresh across disconnects /
-  // reconnects.
   const [status, setStatus] = useState<ConnStatus>(
     globalCubeAdapter.isConnected ? "connected" : "disconnected",
   );
   const [model, setModel] = useState<string>(globalCubeAdapter.model);
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  // Read gyro/IMU status from the orientation store (which gets auto-corrected
-  // when real gyro data flows from the worker). This is reactive: the component
-  // re-renders whenever capabilities change.
   const isGyroSupported = useStore(
     orientationStore,
     (s) => s.capabilities.gyroSupported,
@@ -42,12 +40,6 @@ export function SmartCubeSection() {
   const prevStatusRef = useRef<ConnStatus | null>(null);
 
   useEffect(() => {
-    // Single source of truth for status + model refresh. Used both for
-    // the initial snapshot and for every BLE status emission. The adapter
-    // updates `model` synchronously on HARDWARE events but does NOT expose
-    // it as an observable, so the only moment we can re-read safely is
-    // when the link transitions INTO 'connected' (initial mount with an
-    // already-paired cube, a reconnect, or pairing a different cube).
     const applyStatus = (next: ConnStatus) => {
       setStatus(next);
       if (next === "connected" && prevStatusRef.current !== "connected") {
@@ -63,9 +55,32 @@ export function SmartCubeSection() {
     return () => sub?.unsubscribe();
   }, []);
 
+  const handleConnect = async () => {
+    try {
+      setIsConnecting(true);
+      await globalCubeAdapter.connect();
+      toast.success("Cube connected!");
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Failed to connect cube");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await globalCubeAdapter.disconnect();
+      toast.success("Cube disconnected");
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Failed to disconnect cube");
+    }
+  };
+
   const isConnected = status === "connected";
   const isTransitioning =
-    status === "connecting" || status === "reconnecting";
+    status === "connecting" || status === "reconnecting" || isConnecting;
 
   const statusBadge = (
     <span
@@ -93,14 +108,12 @@ export function SmartCubeSection() {
           <Cpu className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] text-ink-2">
-          Bluetooth pairing, the gyroscope/IMU feed, and what to do when
-          the link drops. Connect or disconnect from the sidebar&rsquo;s
-          Bluetooth button.
+          Bluetooth pairing, the gyroscope/IMU feed, and connection management for your Smart Cube.
         </p>
       </div>
 
-      {/* Read-only status panel */}
-      <div className="rounded-xl border border-line bg-surface p-5">
+      {/* Read & action status panel */}
+      <div className="rounded-xl border border-line bg-surface p-5 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h4 className="text-[0.85rem] font-medium text-ink">
@@ -111,7 +124,7 @@ export function SmartCubeSection() {
           <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
             {isConnected
               ? `${globalCubeAdapter.vendor} · ${model}`
-              : "No cube paired. Use the Bluetooth button in the sidebar to start a pairing scan."}
+              : "No cube paired. Click Connect to search for your Smart Cube."}
           </p>
           {isConnected && (
             <p className="mt-2 flex items-center gap-1.5 text-[0.74rem] text-ink-3">
@@ -129,8 +142,29 @@ export function SmartCubeSection() {
             </p>
           )}
         </div>
-      </div>
 
+        <div className="shrink-0 mt-0.5">
+          {isConnected ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDisconnect}
+              className="h-8 border-line text-xs font-medium text-ink hover:bg-surface-2"
+            >
+              Disconnect
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={handleConnect}
+              disabled={isTransitioning}
+              className="h-8 text-xs font-medium"
+            >
+              {isTransitioning ? "Connecting..." : "Connect"}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
