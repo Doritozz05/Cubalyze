@@ -58,7 +58,21 @@ interface BleAuditEntry {
 }
 
 export interface UseSolveSessionOptions {
-  onSolve?: (time: number, penalty: Penalty) => void;
+  /**
+   * Called when a solve completes (timer stops).
+   *
+   * Receives the raw collected moves, orientations, and orientation
+   * timeline so the caller can persist them immediately. The analysis
+   * pipeline runs separately and updates the solve with compacted moves
+   * and computed metrics.
+   */
+  onSolve?: (
+    time: number,
+    penalty: Penalty,
+    moves: CubeMoveEvent[],
+    orientations: (CubeOrientation | undefined)[],
+    orientationTimeline: OrientationTimeline | undefined,
+  ) => void;
 }
 
 export interface UseSolveSessionResult {
@@ -895,7 +909,16 @@ export function useSolveSession(
       if (onSolveRef.current) {
         const uiPenalty: Penalty =
           ev.penalty === "NONE" ? "none" : (ev.penalty as "+2" | "DNF");
-        onSolveRef.current(ev.timeMs, uiPenalty);
+        // Pass the raw collected data so the caller can persist moves
+        // immediately — before the async analysis pipeline completes.
+        // This prevents the "0 moves" flash in replay/timeline widgets.
+        onSolveRef.current(
+          ev.timeMs,
+          uiPenalty,
+          lastSolveMovesRef.current,
+          lastSolveOrientationsRef.current,
+          lastSolveOrientationTimelineRef.current,
+        );
       }
     });
     const sub4 = engine.inspectionWarning$.subscribe((warning) => {

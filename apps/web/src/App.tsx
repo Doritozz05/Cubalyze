@@ -20,7 +20,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { v4 as uuidv4 } from "uuid";
 import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty, effectiveTime } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import "@/index.css";
 
@@ -84,7 +84,13 @@ export default function App() {
   }, []);
 
   const handleComplete = useCallback(
-    (time: number, penalty: Penalty) => {
+    (
+      time: number,
+      penalty: Penalty,
+      rawMoves: CubeMoveEvent[],
+      _rawOrientations: (CubeOrientation | undefined)[],
+      rawOrientationTimeline: OrientationTimeline | undefined,
+    ) => {
       // Capture scramble & method in refs BEFORE regenerating.
       // The analysis useEffect reads these refs (not the React state) to
       // avoid the race where setCurrentScramble(newScramble) has already
@@ -105,6 +111,9 @@ export default function App() {
       const solveId = uuidv4();
       pendingSolveIdRef.current = solveId;
 
+      // Save with raw moves immediately so replay/timeline have data
+      // from the first render. The analysis effect will overwrite with
+      // compacted moves + computed metrics.
       addSolve({
         id: solveId,
         time,
@@ -112,6 +121,8 @@ export default function App() {
         penalty,
         method: methodPref,
         source: capturedSource,
+        moves: rawMoves,
+        orientationTimeline: rawOrientationTimeline,
       })
         .then((returnedId) => {
           if (!returnedId) {
