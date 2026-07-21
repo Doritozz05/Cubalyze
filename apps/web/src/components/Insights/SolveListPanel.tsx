@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
 import type { StatsFilters, SortOrder } from "@/hooks/useStatsFilters";
-import { phaseColorHex } from "@/utils/phaseColors";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -300,9 +299,6 @@ export const SolveListPanel = memo(function SolveListPanel({
               const isDnf = !Number.isFinite(eff);
               const isBest = bestTime !== null && eff === bestTime && !isDnf;
               const isSelected = s.id === selectedId;
-              const hasAnalysis =
-                !!s.analysis && s.analysis.phases.length > 0;
-
               // Delta vs session average (only when meaningful).
               const delta = mean !== null ? eff - mean : 0;
               const showDelta =
@@ -311,13 +307,6 @@ export const SolveListPanel = memo(function SolveListPanel({
                 !isDnf &&
                 !isBest &&
                 Math.abs(delta) > 500;
-
-              // Phase bar data.
-              const phases = s.analysis?.phases ?? [];
-              const totalPhaseMs = phases.reduce(
-                (sum, p) => sum + p.durationMs,
-                0,
-              );
 
               return (
                 <li
@@ -393,32 +382,6 @@ export const SolveListPanel = memo(function SolveListPanel({
                       <PenaltyBadge penalty={s.penalty} />
                     </div>
 
-                    {/* Line 2: mini phase bar (analysed solves only) */}
-                    {hasAnalysis && totalPhaseMs > 0 && (
-                      <div
-                        className="mt-1.5 flex h-1 gap-px overflow-hidden rounded-full"
-                        title={phases
-                          .map(
-                            (p) => `${p.phaseName}: ${formatTime(p.durationMs)}`,
-                          )
-                          .join(" · ")}
-                      >
-                        {phases.map((p, pi) => {
-                          const pct = (p.durationMs / totalPhaseMs) * 100;
-                          return (
-                            <div
-                              key={p.phaseName}
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${pct}%`,
-                                background: phaseColorHex(p.phaseName, pi),
-                                opacity: 0.55,
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 </li>
               );
