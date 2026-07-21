@@ -85,26 +85,6 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
       });
     }
 
-    const faceletSub = globalCubeAdapter.facelets$
-      ? globalCubeAdapter.facelets$.subscribe((facelets: string) => {
-          if (!syncBridge.current) return;
-          // On mount/remount, force-sync the 3D model from the
-          // real cube state regardless of pending moves. The model may
-          // be desynchronized from being hidden (SyncBridge unbound).
-          // After the first sync, resume the normal guard.
-          if (needsInitialSyncRef.current) {
-            needsInitialSyncRef.current = false;
-            workerProxy.current?.syncFacelets(facelets).catch(console.error);
-            // Clear any stale moves replayed by the ReplaySubject buffer —
-            // otherwise they would animate on top of the freshly-synced state
-            // and cause a visual desync ("one row off").
-            syncBridge.current?.clearPendingMoves();
-          } else if (syncBridge.current.pendingMoves === 0) {
-            workerProxy.current?.syncFacelets(facelets).catch(console.error);
-          }
-        })
-      : undefined;
-
     if (workerSingleton) {
       // Re-mount: canvas still in DOM, OffscreenCanvas still linked.
       // Just resize — no new WebGL context.
@@ -244,6 +224,28 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
         console.warn("Canvas already transferred — 3D rendering unavailable");
       }
     }
+
+    // ── Facelet subscription (AFTER bindCube, so clearPendingMoves
+    // catches stale moves replayed by the ReplaySubject buffer) ────────
+    const faceletSub = globalCubeAdapter.facelets$
+      ? globalCubeAdapter.facelets$.subscribe((facelets: string) => {
+          if (!syncBridge.current) return;
+          // On mount/remount, force-sync the 3D model from the
+          // real cube state regardless of pending moves. The model may
+          // be desynchronized from being hidden (SyncBridge unbound).
+          // After the first sync, resume the normal guard.
+          if (needsInitialSyncRef.current) {
+            needsInitialSyncRef.current = false;
+            workerProxy.current?.syncFacelets(facelets).catch(console.error);
+            // Clear any stale moves replayed by the ReplaySubject buffer —
+            // otherwise they would animate on top of the freshly-synced state
+            // and cause a visual desync ("one row off").
+            syncBridge.current?.clearPendingMoves();
+          } else if (syncBridge.current.pendingMoves === 0) {
+            workerProxy.current?.syncFacelets(facelets).catch(console.error);
+          }
+        })
+      : undefined;
 
     const connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
       if (status === 'connected') {
