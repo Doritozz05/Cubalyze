@@ -452,7 +452,14 @@ export function useScrambleValidator(
 
       const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
 
-      if (expectedToken && isDoubleMove(expectedToken)) {
+      // ── Double-move handling ──────────────────────────────────────
+      // IMPORTANT: skip if already in error so inverse detection can run first.
+      // Otherwise, when the expected token is a double move (e.g. D2) but the
+      // user is on a different face trying to undo (R'), the double-move handler
+      // intercepts the move as a "wrong face" error and appends it — the inverse
+      // detection code (below) is never reached, and the error stack grows
+      // instead of shrinking. Bug scenario: D ✓ R ✓ R (mistake) R' (no undo).
+      if (expectedToken && isDoubleMove(expectedToken) && !s.isError) {
         const baseFace = baseFaceOfDouble(expectedToken);
         const inputFace = baseFaceOfMove(notation);
         if (baseFace !== inputFace) {
