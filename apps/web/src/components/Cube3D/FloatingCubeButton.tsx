@@ -18,6 +18,10 @@ function getDefaultPos(): Position {
 export interface FloatingCubeButtonProps {
   /** Fired on click (pointer-up without drag). */
   onClick: () => void;
+  /** Whether a Smart Cube is connected. */
+  smartCubeConnected?: boolean;
+  /** Whether the 3D cube panel is currently open. */
+  cubePanelOpen?: boolean;
 }
 
 /**
@@ -26,7 +30,11 @@ export interface FloatingCubeButtonProps {
  *
  * Position is synced to widgetStore instead of per-widget localStorage.
  */
-export function FloatingCubeButton({ onClick }: FloatingCubeButtonProps) {
+export function FloatingCubeButton({
+  onClick,
+  smartCubeConnected = true,
+  cubePanelOpen = false,
+}: FloatingCubeButtonProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -54,7 +62,7 @@ export function FloatingCubeButton({ onClick }: FloatingCubeButtonProps) {
     },
   );
 
-  if (!mounted) return null;
+  if (!mounted || cubePanelOpen || !smartCubeConnected) return null;
 
   const handlePointerUp = (e: React.PointerEvent) => {
     const dragged = drag.wasDrag();

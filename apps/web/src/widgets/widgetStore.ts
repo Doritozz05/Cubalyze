@@ -80,6 +80,17 @@ export const widgetStore = createStore<WidgetStore>()(
       name: "cubeforge:widgets",
       // Only persist the instances map
       partialize: (state) => ({ instances: state.instances }),
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState as WidgetStoreState)?.instances ?? {};
+        const defaults = buildDefaultInstances();
+        return {
+          ...currentState,
+          instances: {
+            ...defaults,
+            ...persisted,
+          },
+        };
+      },
     },
   ),
 );
