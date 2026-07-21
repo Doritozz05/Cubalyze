@@ -2,7 +2,9 @@
 
 import { Cpu, Bluetooth, BluetoothConnected, Compass } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
+import { orientationStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
 
 type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
@@ -14,6 +16,11 @@ type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
  * and model of the paired cube, gyro/IMU availability. Connect /
  * disconnect actions live in the sidebar's Bluetooth button — this
  * section is purely informational.
+ *
+ * Gyro/IMU status is read from the reactive `orientationStore` rather than
+ * from `globalCubeAdapter.gyroSupported` directly, because the store is
+ * auto-corrected when real gyro data starts flowing (even if the HARDWARE
+ * event hasn't arrived yet or reports a false negative).
  */
 export function SmartCubeSection() {
   // Live status pulled from the shared BLE adapter. The adapter keeps a
@@ -23,6 +30,14 @@ export function SmartCubeSection() {
     globalCubeAdapter.isConnected ? "connected" : "disconnected",
   );
   const [model, setModel] = useState<string>(globalCubeAdapter.model);
+
+  // Read gyro/IMU status from the orientation store (which gets auto-corrected
+  // when real gyro data flows from the worker). This is reactive: the component
+  // re-renders whenever capabilities change.
+  const isGyroSupported = useStore(
+    orientationStore,
+    (s) => s.capabilities.gyroSupported,
+  );
 
   const prevStatusRef = useRef<ConnStatus | null>(null);
 
@@ -103,12 +118,12 @@ export function SmartCubeSection() {
               <Compass
                 className={cn(
                   "size-3",
-                  globalCubeAdapter.gyroSupported
+                  isGyroSupported
                     ? "text-ink-2"
                     : "text-ink-3/60",
                 )}
               />
-              {globalCubeAdapter.gyroSupported
+              {isGyroSupported
                 ? "Gyroscope/IMU available on this cube"
                 : "No gyroscope/IMU on this cube"}
             </p>

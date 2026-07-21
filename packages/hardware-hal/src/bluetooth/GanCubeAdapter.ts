@@ -83,6 +83,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
     this.reconnectAttempts = 0;
     this.setupEventsSubscription();
+    // Request hardware info to populate model name and gyroSupported flag
+    this.requestHardware().catch(() => {});
     this.onConnectionChange?.('connected');
     this.connectionStatusSubject.next('connected');
   }
@@ -94,6 +96,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   // for the same promise. The GATT queue in GanCubeClassicConnection
   // serialises the actual writeValue calls.
   private faceletsRequestPromise: Promise<void> | null = null;
+  private hardwareRequestPromise: Promise<void> | null = null;
 
   public async requestFacelets(): Promise<void> {
     if (!this.connection) return;
@@ -102,6 +105,19 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.faceletsRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_FACELETS" })
       .finally(() => { this.faceletsRequestPromise = null; });
     return this.faceletsRequestPromise;
+  }
+
+  /**
+   * Request hardware info from the cube (model name, gyro support, firmware versions).
+   * The HARDWARE event response will update `this.model` and `this.gyroSupported`.
+   */
+  public async requestHardware(): Promise<void> {
+    if (!this.connection) return;
+    // Dedup: reuse the in-flight promise
+    if (this.hardwareRequestPromise) return this.hardwareRequestPromise;
+    this.hardwareRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_HARDWARE" })
+      .finally(() => { this.hardwareRequestPromise = null; });
+    return this.hardwareRequestPromise;
   }
 
   async disconnect(): Promise<void> {
@@ -245,6 +261,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.connection = await reconnectGanCube(this.device);
         this.reconnectAttempts = 0;
         this.setupEventsSubscription();
+        // Request hardware info to populate model name and gyroSupported flag
+        this.requestHardware().catch(() => {});
         this.onConnectionChange?.('connected');
         this.connectionStatusSubject.next('connected');
       } catch {

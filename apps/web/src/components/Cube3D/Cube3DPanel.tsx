@@ -109,13 +109,20 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
           workerProxy.current.onOrientationChange(
             Comlink.proxy((o: CubeOrientation) => {
               orientationStore.getState().setOrientation(o);
-              // When orientation updates flow, gyro is confirmed working
+              // When orientation updates flow, gyro is confirmed working.
+              // Update BOTH the orientation store AND the adapter so every
+              // consumer (SmartCubeSection, etc.) sees the correct state.
               const caps = orientationStore.getState().capabilities;
               if (!caps.gyroSupported) {
                 orientationStore.getState().setCapabilities({
                   hasIMU: true,
                   gyroSupported: true,
                 });
+              }
+              // Sync the adapter's gyroSupported flag so direct reads
+              // (e.g. requestFacelets guard, SmartCubeSection) also see it.
+              if (!globalCubeAdapter.gyroSupported) {
+                globalCubeAdapter.gyroSupported = true;
               }
             }),
           );
@@ -164,13 +171,20 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
           workerProxy.current.onOrientationChange(
             Comlink.proxy((o: CubeOrientation) => {
               orientationStore.getState().setOrientation(o);
-              // When orientation updates flow, gyro is confirmed working
+              // When orientation updates flow, gyro is confirmed working.
+              // Update BOTH the orientation store AND the adapter so every
+              // consumer (SmartCubeSection, etc.) sees the correct state.
               const caps = orientationStore.getState().capabilities;
               if (!caps.gyroSupported) {
                 orientationStore.getState().setCapabilities({
                   hasIMU: true,
                   gyroSupported: true,
                 });
+              }
+              // Sync the adapter's gyroSupported flag so direct reads
+              // (e.g. requestFacelets guard, SmartCubeSection) also see it.
+              if (!globalCubeAdapter.gyroSupported) {
+                globalCubeAdapter.gyroSupported = true;
               }
             }),
           );
