@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -225,13 +225,48 @@ export function FloatingPhaseTimeline({
 
       {/* Body */}
       <div className="max-h-[360px] overflow-y-auto p-3">
+        {/* ── Solve picker — always visible when multiple solves ── */}
+        {recentSolves.length > 1 && (
+          <div className="mb-3 flex items-center gap-1">
+            {recentSolves.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedIdx(i)}
+                className={cn(
+                  "rounded px-2 py-1 text-[0.6rem] transition-colors",
+                  i === selectedIdx
+                    ? "bg-ink text-surface"
+                    : "bg-surface-2 text-ink-3 hover:text-ink",
+                )}
+              >
+                #{solves.length - i}
+                {" "}
+                <span className="nums">
+                  {formatTime(s.time)}
+                </span>
+              </button>
+            ))}
+            {/* Quick "Back to latest" when viewing an older solve */}
+            {selectedIdx !== 0 && (
+              <button
+                onClick={() => setSelectedIdx(0)}
+                className="ml-auto rounded bg-ready-soft px-2 py-1 text-[0.55rem] font-medium uppercase tracking-wide text-ready transition-colors hover:bg-ready-soft/80"
+              >
+                Back to latest
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Empty state: no solves at all ── */}
         {!selectedSolve ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <Activity className="size-8 text-ink-3/30" />
             <p className="text-sm text-ink-2">No solves yet</p>
             <p className="text-xs text-ink-3">Complete a solve to see the phase timeline.</p>
           </div>
-        ) : !selectedSolve.analysis && !(selectedIdx === 0 && lastAnalysis) ? (
+        ) : /* ── Selected solve has no analysis ── */
+        !selectedSolve.analysis && !(selectedIdx === 0 && lastAnalysis) ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <Activity className="size-8 text-ink-3/30" />
             <p className="text-sm text-ink-2">No analysis yet</p>
@@ -243,30 +278,6 @@ export function FloatingPhaseTimeline({
           </div>
         ) : (
           <>
-            {/* Solve picker (if multiple recent solves) */}
-            {recentSolves.length > 1 && (
-              <div className="mb-3 flex gap-1">
-                {recentSolves.map((s, i) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedIdx(i)}
-                    className={cn(
-                      "rounded px-2 py-1 text-[0.6rem] transition-colors",
-                      i === selectedIdx
-                        ? "bg-ink text-surface"
-                        : "bg-surface-2 text-ink-3 hover:text-ink",
-                    )}
-                  >
-                    #{solves.length - i}
-                    {" "}
-                    <span className="nums">
-                      {formatTime(s.time)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
             {/* Horizontal phase bar */}
             {timelinePhaseEntries.length > 0 && (
               <>

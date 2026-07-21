@@ -217,18 +217,23 @@ function Cube3DPreview() {
 
 /**
  * Mini bar chart preview for Time Distribution widget.
+ * Uses taller bars with a subtle gradient effect and a highlight bar.
  */
 function TimeDistributionPreview() {
-  const bars = [20, 45, 70, 55, 30, 15];
-  const max = Math.max(...bars);
+  const bars = [0.25, 0.55, 0.85, 0.70, 0.40, 0.15];
   return (
-    <div className="flex h-full items-end gap-[1px] p-2">
+    <div className="flex h-full items-end justify-center gap-[3px] px-2 pb-2 pt-4">
       {bars.map((h, i) => (
-        <div
-          key={i}
-          className="flex-1 rounded-t-sm bg-ink-3/50"
-          style={{ height: `${(h / max) * 70}%` }}
-        />
+        <div key={i} className="flex flex-1 flex-col items-center justify-end gap-0.5" style={{ height: '100%' }}>
+          <div
+            className="w-full rounded-[2px] transition-all"
+            style={{
+              height: `${h * 100}%`,
+              backgroundColor: i === 2 ? '#4F8CF7' : '#6B7280',
+              opacity: i === 2 ? 0.9 : 0.35,
+            }}
+          />
+        </div>
       ))}
     </div>
   );
@@ -236,21 +241,24 @@ function TimeDistributionPreview() {
 
 /**
  * Trophy + steps preview for PB Progression widget.
+ * Shows a clear descending staircase with a colored final step.
  */
 function PbProgressionPreview() {
   return (
-    <div className="flex flex-col gap-1 p-2">
-      <div className="flex items-center gap-1">
-        <div className="size-1.5 rounded-full bg-ink-3/30" />
-        <div className="h-1.5 w-12 rounded-sm bg-ink-3/20" />
+    <div className="flex h-full flex-col justify-center gap-[5px] p-3">
+      <div className="flex items-center gap-1.5">
+        <div className="size-2 rounded-full border border-ink-3/30" />
+        <div className="h-[5px] w-[55%] rounded-sm bg-ink-3/25" />
       </div>
-      <div className="flex items-center gap-1">
-        <div className="size-1.5 rounded-full bg-ink-3/30" />
-        <div className="h-1.5 w-10 rounded-sm bg-ink-3/20" />
+      <div className="flex items-center gap-1.5">
+        <div className="size-2 rounded-full border border-ink-3/30" />
+        <div className="h-[5px] w-[42%] rounded-sm bg-ink-3/25" />
       </div>
-      <div className="flex items-center gap-1">
-        <div className="size-1.5 rounded-full bg-ready" />
-        <div className="h-1.5 w-8 rounded-sm bg-ready/40" />
+      <div className="flex items-center gap-1.5">
+        <div className="flex size-[18px] items-center justify-center rounded-full bg-ready-soft">
+          <div className="size-1.5 rounded-full bg-ready" />
+        </div>
+        <div className="h-[5px] w-[32%] rounded-sm bg-ready/45" />
       </div>
     </div>
   );
@@ -258,19 +266,44 @@ function PbProgressionPreview() {
 
 /**
  * Mini phase bar preview for Solve Timeline widget.
+ * Shows a color-coded segmented bar with distinct phases.
  */
 function SolveTimelinePreview() {
-  const phaseColors = ["#4F8CF7", "#22C55E", "#F59E0B", "#EF4444"];
-  const widths = [30, 40, 15, 15];
+  const phases = [
+    { color: '#4F8CF7', w: 28 },
+    { color: '#22C55E', w: 35 },
+    { color: '#F59E0B', w: 18 },
+    { color: '#EF4444', w: 19 },
+  ];
   return (
-    <div className="flex h-full items-center gap-0.5 p-2">
-      {phaseColors.map((c, i) => (
-        <div
-          key={i}
-          className="h-[60%] rounded-sm"
-          style={{ width: `${widths[i]}%`, backgroundColor: c, opacity: 0.7 }}
-        />
-      ))}
+    <div className="flex h-full flex-col justify-center gap-2 p-2.5">
+      {/* Color bar */}
+      <div className="flex h-[14px] w-full overflow-hidden rounded-[3px]">
+        {phases.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              width: `${p.w}%`,
+              backgroundColor: p.color,
+              opacity: 0.85,
+            }}
+          />
+        ))}
+      </div>
+      {/* Legend dots */}
+      <div className="flex items-center gap-2">
+        {['Cross', 'F2L', 'OLL', 'PLL'].map((name, i) => (
+          <div key={name} className="flex items-center gap-1">
+            <span
+              className="size-1.5 rounded-[2px]"
+              style={{ backgroundColor: phases[i].color, opacity: 0.7 }}
+            />
+            <span className="text-[0.35rem] font-medium uppercase tracking-wider text-ink-3/60">
+              {name}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
