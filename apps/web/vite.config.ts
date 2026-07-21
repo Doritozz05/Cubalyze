@@ -10,7 +10,13 @@ export default defineConfig({
     // Cross-origin isolation headers REQUIRED for OPFS (persistent SQLite).
     // Without these, SharedArrayBuffer is unavailable and the DB falls back
     // to in-memory storage — losing all data on page reload.
-    // credentialless = safe for dev (allows cross-origin images/fonts).
+    //
+    // IMPORTANT: Use 'credentialless' in dev, NOT 'require-corp'.
+    // 'require-corp' blocks cross-origin resources (HMR, React DevTools,
+    // images, fonts, etc.) that don't send explicit CORP headers, which
+    // breaks cross-origin isolation and makes OPFS/SharedArrayBuffer
+    // unavailable. 'credentialless' allows these resources to load (without
+    // cookies) while still enabling SharedArrayBuffer and OPFS.
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'credentialless',
@@ -21,6 +27,16 @@ export default defineConfig({
       protocol: 'wss',
       host: 'localhost',
       port: 5173,
+    },
+  },
+  preview: {
+    host: true,
+    // For production preview, 'require-corp' is safer because all bundled
+    // assets are same-origin. 'credentialless' also works here but strips
+    // credentials from cross-origin requests.
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
     },
   },
   optimizeDeps: {
