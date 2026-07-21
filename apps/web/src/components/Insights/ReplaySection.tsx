@@ -301,6 +301,7 @@ export function ReplaySection({
     return () => {
       cancelled = true;
       teardownWorker();
+      canvasGenRef.current = -1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, canvasKey]);
