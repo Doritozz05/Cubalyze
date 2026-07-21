@@ -18,7 +18,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
-import { orientationStore } from "@cubeforge/state";
+import { orientationStore, connectionStore } from "@cubeforge/state";
 
 // Global singleton adapter to keep connection alive across re-renders.
 // Imported by useSolveSession, useScrambleValidator and Cube3DPanel —
@@ -39,6 +39,24 @@ globalCubeAdapter.onHardwareInfo = ({ gyroSupported }) => {
     }
   }
 };
+
+// Sync global connectionStore with BLE adapter observables
+globalCubeAdapter.connectionStatus$?.subscribe((status) => {
+  if (status === "connected") {
+    connectionStore.getState().setConnected(globalCubeAdapter.vendor, globalCubeAdapter.model);
+    globalCubeAdapter.requestBattery().catch(() => {});
+  } else if (status === "connecting") {
+    connectionStore.getState().setConnecting();
+  } else if (status === "reconnecting") {
+    connectionStore.getState().setReconnecting();
+  } else if (status === "disconnected") {
+    connectionStore.getState().setDisconnected();
+  }
+});
+
+globalCubeAdapter.battery$?.subscribe((level) => {
+  connectionStore.getState().setBatteryLevel(level);
+});
 
 export interface CubeConnectorProps {
   className?: string;

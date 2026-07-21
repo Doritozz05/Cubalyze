@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
+import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu, Battery, BatteryLow, BatteryMedium, BatteryFull } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
+import { useStore } from "zustand";
+import { connectionStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +47,19 @@ const CATEGORIES: PuzzleCategory[] = [
   "Pyraminx",
   "Skewb",
 ];
+
+function renderBatteryIcon(level: number | null) {
+  if (level === null) {
+    return <Battery className="size-3.5 text-ink-3" />;
+  }
+  if (level <= 20) {
+    return <BatteryLow className="size-3.5 text-rose-500" />;
+  }
+  if (level <= 60) {
+    return <BatteryMedium className="size-3.5 text-amber-500" />;
+  }
+  return <BatteryFull className="size-3.5 text-emerald-500" />;
+}
 
 export interface HeaderProps {
   pb?: number | null;
@@ -94,6 +109,11 @@ export function Header({
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
 
+  const connectionStatus = useStore(connectionStore, (s) => s.status);
+  const batteryLevel = useStore(connectionStore, (s) => s.batteryLevel);
+  const deviceName = useStore(connectionStore, (s) => s.deviceName);
+  const isCubeConnected = connectionStatus === "connected";
+
   const active = sessions?.find((s) => s.id === activeSessionId) ?? null;
 
   const startRename = (s: SessionMeta) => {
@@ -116,7 +136,7 @@ export function Header({
       )}
     >
       <div className="mx-auto flex h-full w-full items-center justify-between px-4 sm:px-6">
-        {/* Left: mobile nav trigger only */}
+        {/* Left: mobile nav trigger + Smart Cube battery indicator */}
         <div className="flex items-center gap-2.5">
           {onToggleMobileNav && (
             <Button
@@ -128,6 +148,23 @@ export function Header({
             >
               <Menu className="size-4" />
             </Button>
+          )}
+
+          {/* Battery % chip — only shown when a Smart Cube is connected */}
+          {isCubeConnected && (
+            <div
+              className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs text-ink cursor-default select-none"
+              title={
+                batteryLevel !== null
+                  ? `Smart Cube (${deviceName ?? "Connected"}): ${batteryLevel}% battery`
+                  : `Smart Cube (${deviceName ?? "Connected"})`
+              }
+            >
+              {renderBatteryIcon(batteryLevel)}
+              <span className="nums font-medium text-ink">
+                {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
+              </span>
+            </div>
           )}
         </div>
 

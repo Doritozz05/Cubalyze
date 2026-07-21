@@ -326,9 +326,9 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
                         padding: "4px 8px",
                         boxShadow: "none",
                       }}
-                      formatter={(v: number, name: string) => [
-                        `${Math.round(v * 100)}%`,
-                        name,
+                      formatter={(v: any, name: any) => [
+                        `${Math.round(Number(v ?? 0) * 100)}%`,
+                        String(name ?? ""),
                       ]}
                     />
                   </PieChart>

@@ -90,8 +90,9 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
     this.reconnectAttempts = 0;
     this.setupEventsSubscription();
-    // Request hardware info to populate model name and gyroSupported flag
+    // Request hardware info to populate model name and gyroSupported flag, and request battery level
     this.requestHardware().catch(() => {});
+    this.requestBattery().catch(() => {});
     this.onConnectionChange?.('connected');
     this.connectionStatusSubject.next('connected');
   }
@@ -104,6 +105,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   // serialises the actual writeValue calls.
   private faceletsRequestPromise: Promise<void> | null = null;
   private hardwareRequestPromise: Promise<void> | null = null;
+  private batteryRequestPromise: Promise<void> | null = null;
 
   public async requestFacelets(): Promise<void> {
     if (!this.connection) return;
@@ -125,6 +127,18 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.hardwareRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_HARDWARE" })
       .finally(() => { this.hardwareRequestPromise = null; });
     return this.hardwareRequestPromise;
+  }
+
+  /**
+   * Request battery level from the cube.
+   * The BATTERY event response will emit to `battery$`.
+   */
+  public async requestBattery(): Promise<void> {
+    if (!this.connection) return;
+    if (this.batteryRequestPromise) return this.batteryRequestPromise;
+    this.batteryRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_BATTERY" })
+      .finally(() => { this.batteryRequestPromise = null; });
+    return this.batteryRequestPromise;
   }
 
   async disconnect(): Promise<void> {
