@@ -21,6 +21,8 @@ import { SettingToggle } from '../components/SettingToggle';
 export function TimerSection() {
   const inspection = useStore(preferencesStore, (s) => s.inspection);
   const setInspection = useStore(preferencesStore, (s) => s.setInspection);
+  const focusMode = useStore(preferencesStore, (s) => s.focusMode);
+  const setFocusMode = useStore(preferencesStore, (s) => s.setFocusMode);
 
   const scrambleVerification = useStore(
     preferencesStore,
@@ -55,6 +57,13 @@ export function TimerSection() {
         description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
         checked={scrambleVerification}
         onCheckedChange={setScrambleVerification}
+      />
+
+      <SettingToggle
+        title="Focus Mode"
+        description="Hide all UI elements (scramble, stats, sidebar) when the timer is ready and running to eliminate distractions."
+        checked={focusMode}
+        onCheckedChange={setFocusMode}
       />
     </div>
   );

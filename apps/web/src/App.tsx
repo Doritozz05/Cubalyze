@@ -40,6 +40,7 @@ export default function App() {
   } = usePersistentSession();
 
   const methodPref = useStore(preferencesStore, (s) => s.method);
+  const focusMode = useStore(preferencesStore, (s) => s.focusMode);
 
   const [scrambleIndex, setScrambleIndex] = useState(0);
   // Single source of truth for what the main stage shows. Replaces the old
@@ -325,6 +326,10 @@ export default function App() {
   const timerRunning =
     timerStateRefValue === "running" || timerStateRefValue === "ready";
 
+  const isFocused =
+    focusMode &&
+    (timerPhase === "running" || (timerPhase === "ready" && !smartCubeConnected));
+
   const scrollToTimer = useCallback(() => {
     document.getElementById("timer-section")?.scrollIntoView({
       behavior: "smooth",
@@ -424,7 +429,7 @@ export default function App() {
     // timer
     return (
       <>
-        {scrambleVerification && (
+        {scrambleVerification && !isFocused && (
           <ScrambleDisplay
             scramble={currentScramble}
             displayScramble={displayScramble}
@@ -459,10 +464,12 @@ export default function App() {
           className="mt-1 flex-1"
         />
 
-        <SessionStats
-          solves={solves}
-          onExpand={() => setActiveView("insights")}
-        />
+        {!isFocused && (
+          <SessionStats
+            solves={solves}
+            onExpand={() => setActiveView("insights")}
+          />
+        )}
       </>
     );
   };
@@ -491,6 +498,7 @@ export default function App() {
               onMobileOpenChange={setMobileNavOpen}
             />
           }
+          isFocused={isFocused}
           onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
           onAddManual={() => setManualOpen(true)}
           main={renderMain()}
@@ -508,7 +516,7 @@ export default function App() {
         />
         {/* Floating solve log — draggable, minimizable, doesn't affect layout.
             Only rendered on the Timer stage; Stats/Analysis take over the stage. */}
-        {activeView === "timer" && (
+        {activeView === "timer" && !isFocused && (
           <FloatingTimesPanel
             solves={solves}
             onUpdate={handleUpdate}
@@ -521,7 +529,7 @@ export default function App() {
 
         {/* Floating cube button — only on the Timer stage, when connected and
             the panel is closed. Stats/Analysis don't host the split. */}
-        {activeView === "timer" && smartCubeConnected && !cubePanelOpen && (
+        {activeView === "timer" && smartCubeConnected && !cubePanelOpen && !isFocused && (
           <FloatingCubeButton onClick={handleOpenCube} />
         )}
 

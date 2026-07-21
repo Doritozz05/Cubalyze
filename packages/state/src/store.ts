@@ -38,6 +38,10 @@ export interface PreferencesState {
   /** Solving method for phase detection and metrics. */
   method: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
   setMethod: (value: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus') => void;
+
+  /** Focus mode: hide everything except timer when ready or running. */
+  focusMode: boolean;
+  setFocusMode: (value: boolean) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -63,6 +67,9 @@ export const createPreferencesStore = () => {
 
         method: 'CFOP',
         setMethod: (value) => set({ method: value }),
+
+        focusMode: false,
+        setFocusMode: (value) => set({ focusMode: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -72,6 +79,7 @@ export const createPreferencesStore = () => {
           inspection: state.inspection,
           scrambleVerification: state.scrambleVerification,
           method: state.method,
+          focusMode: state.focusMode,
         }),
         version: 1,
       },

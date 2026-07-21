@@ -56,6 +56,8 @@ export interface MainLayoutProps {
   onRenameSession?: (id: string, name: string) => void;
   /** Delete a session entirely. */
   onDeleteSession?: (id: string) => void;
+  /** Whether focus mode is active. */
+  isFocused?: boolean;
   className?: string;
 }
 
@@ -86,6 +88,7 @@ export function MainLayout({
   onNewSession,
   onRenameSession,
   onDeleteSession,
+  isFocused,
   className,
 }: MainLayoutProps) {
   // Defer useIsMobile to post-mount to avoid SSR/hydration flash.
@@ -116,7 +119,7 @@ export function MainLayout({
     };
   }, []);
 
-  const cubeShown = !!cube3DActive;
+  const cubeShown = !!cube3DActive && !isFocused;
   const rightVisible = cubeShown;
   // Keep the panel mounted after the first cube activation so the worker
   // (and its OffscreenCanvas transfer) survives subsequent toggles.
@@ -136,11 +139,12 @@ export function MainLayout({
         className,
       )}
     >
-      {leftSidebar}
+      {!isFocused && leftSidebar}
 
-      <div className="flex flex-1 flex-col pt-14 md:pl-14">
-        <Header
-          pb={pb}
+      <div className={cn("flex flex-1 flex-col", !isFocused && "pt-14 md:pl-14")}>
+        {!isFocused && (
+          <Header
+            pb={pb}
           sessionCount={sessionCount}
           sessions={sessions}
           activeSessionId={activeSessionId}
@@ -151,11 +155,18 @@ export function MainLayout({
           onToggleMobileNav={onToggleMobileNav}
           onAddManual={onAddManual}
         />
+        )}
 
-        <main className="mx-auto flex w-full flex-1 flex-col lg:h-[calc(100dvh-3.5rem)] lg:flex-row lg:overflow-hidden">
+        <main className={cn(
+          "mx-auto flex w-full flex-1 flex-col lg:flex-row lg:overflow-hidden",
+          !isFocused && "lg:h-[calc(100dvh-3.5rem)]"
+        )}>
           <section
             id="timer-section"
-            className="flex min-h-0 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 lg:min-w-0 lg:flex-1 lg:overflow-hidden"
+            className={cn(
+              "flex min-h-0 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8 lg:min-w-0 lg:flex-1 lg:overflow-hidden",
+              isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : "gap-6"
+            )}
           >
             {main}
           </section>
@@ -175,8 +186,8 @@ export function MainLayout({
               style={{ overflow: "hidden" }}
               className={cn(
                 "flex shrink-0 flex-col bg-surface",
-                "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
-                "border-line max-lg:border-t max-lg:border-l-0 lg:border-l lg:border-t-0",
+                !isFocused && "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
+                !isFocused && "border-line max-lg:border-t max-lg:border-l-0 lg:border-l lg:border-t-0",
                 cubeShown && "min-h-[50vh] lg:min-h-0",
                 !rightVisible && "pointer-events-none",
               )}
