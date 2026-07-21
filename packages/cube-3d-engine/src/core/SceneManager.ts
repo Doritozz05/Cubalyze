@@ -7,6 +7,7 @@ import {
   Vector3,
   Group,
   Mesh,
+  Spherical,
 } from 'three';
 
 export type OnRenderCallback = () => void;
@@ -75,51 +76,20 @@ export class SceneManager {
     this.renderer.setSize(width, height, false);
   }
 
-  /**
-   * Rotates the camera orbit using screen-space-aligned quaternion rotations.
-   *
-   * - `dx` (horizontal drag) rotates around world Y — the cube orbits
-   *   horizontally regardless of current tilt.
-   * - `dy` (vertical drag) rotates around the camera's local RIGHT axis
-   *   (= screen horizontal in world space), tilting the view up/down.
-   *
-   * Vertical tilt is clamped BEFORE applying to avoid distorting azimuth.
-   */
   public rotateCamera(dx: number, dy: number): void {
     const SPEED = 0.005;
-    const MAX_ELEVATION = Math.PI / 2 - 0.1;
+    const MIN_PHI = 0.1;
+    const MAX_PHI = Math.PI - 0.1;
 
-    // ── 1. Horizontal orbit around world Y ────────────────────────────
-    this.camera.position.applyAxisAngle(new Vector3(0, 1, 0), -dx * SPEED);
+    const spherical = new Spherical().setFromVector3(this.camera.position);
 
-    // ── 2. Compute camera's right axis in world space ─────────────────
-    const toOrigin = new Vector3()
-      .copy(this.camera.position)
-      .multiplyScalar(-1)
-      .normalize();
-    const right = new Vector3()
-      .crossVectors(toOrigin, new Vector3(0, 1, 0))
-      .normalize();
+    spherical.theta -= dx * SPEED;
+    spherical.phi -= dy * SPEED; 
 
-    if (right.lengthSq() > 0.001) {
-      // ── 3. Clamp vertical rotation before applying ──────────────────
-      const currentElevation = Math.asin(
-        Math.max(-1, Math.min(1, this.camera.position.y / this.orbitRadius)),
-      );
-      let vertAngle = -dy * SPEED;
-      const desired = currentElevation + vertAngle;
-      if (desired > MAX_ELEVATION) {
-        vertAngle = MAX_ELEVATION - currentElevation;
-      } else if (desired < -MAX_ELEVATION) {
-        vertAngle = -MAX_ELEVATION - currentElevation;
-      }
-      this.camera.position.applyAxisAngle(right, vertAngle);
-    }
+    spherical.phi = Math.max(MIN_PHI, Math.min(MAX_PHI, spherical.phi));
+    spherical.radius = this.orbitRadius;
 
-    // ── 4. Maintain orbit radius ─────────────────────────────────────
-    this.camera.position.normalize().multiplyScalar(this.orbitRadius);
-
-    // ── 5. Re-aim at origin ──────────────────────────────────────────
+    this.camera.position.setFromSpherical(spherical);
     this.camera.lookAt(0, 0, 0);
   }
 
