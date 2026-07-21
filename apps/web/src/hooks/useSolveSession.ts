@@ -216,7 +216,7 @@ function logSolveDiagnostic(args: {
   initialStateProvided: boolean;
 }): void {
   if (!isCFOPDebugEnabled()) return;
-  const { moves, scramble, method, timeline, metrics, initialStateProvided } = args;
+  const { moves, scramble, method, timeline, metrics, initialStateProvided: _initialStateProvided } = args;
   const first = moves[0];
   const last = moves[moves.length - 1];
   const durationMs =

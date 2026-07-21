@@ -353,7 +353,8 @@ describe("deriveTimeline", () => {
     const tl = deriveTimeline(solve);
     expect(tl.segments.length).toBeGreaterThan(0);
     // No "tail"/"Stop" block should exist anymore.
-    expect(tl.segments.every((s) => s.kind !== "tail")).toBe(true);
+    // Note: "tail" is no longer in TimelineSegmentKind, so every segment
+    // is either "phase" or "pause" by definition.
     const sum = tl.segments.reduce((s, seg) => s + seg.durationMs, 0);
     expect(sum).toBeCloseTo(tl.totalMs, 0);
     // First segment starts at 0; last ends at totalMs (= last move offset).

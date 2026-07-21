@@ -112,21 +112,50 @@ export function usePersistentSession(): UsePersistentSessionResult {
                 name: "Main Session",
                 puzzleType: "3x3",
                 createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               };
               await sessionsRepo.insert(defaultSession);
+              console.log('[usePersistentSession] Created default session:', defaultSession.id);
             }
             // Seed demo data if DB is empty and flag is set
             await seedDemoDataIfEmpty(sessionsRepo, solvesRepo);
-          })();
+          })().catch((err) => {
+            // Clear poisoned cache so next mount can retry
+            console.error('[usePersistentSession] seedPromise failed, clearing cache:', err);
+            seedPromise = null;
+            throw err;
+          });
         }
-        await seedPromise;
+        try {
+          await seedPromise;
+        } catch (err) {
+          console.error('[usePersistentSession] Seed failed, continuing without seed:', err);
+          // Don't rethrow — continue with empty DB
+        }
 
-        const allSessions = await sessionsRepo.findAll();
+        let allSessions = await sessionsRepo.findAll();
         
         let lastActive = localStorage.getItem("cubeforge:activeSessionId");
         if (!lastActive || !allSessions.find(s => s.id === lastActive)) {
-          lastActive = allSessions[0].id;
-          localStorage.setItem("cubeforge:activeSessionId", lastActive);
+          lastActive = allSessions[0]?.id ?? null;
+          if (lastActive) {
+            localStorage.setItem("cubeforge:activeSessionId", lastActive);
+          } else {
+            console.warn('[usePersistentSession] No sessions found even after seeding! Creating emergency session.');
+            const emergencyId = uuidv4();
+            const now = new Date().toISOString();
+            await sessionsRepo.insert({
+              id: emergencyId,
+              name: "Main Session",
+              puzzleType: "3x3",
+              createdAt: now,
+              updatedAt: now,
+            });
+            lastActive = emergencyId;
+            localStorage.setItem("cubeforge:activeSessionId", lastActive);
+            // Re-fetch allSessions so the rest of load() uses fresh data
+            allSessions = await sessionsRepo.findAll();
+          }
         }
 
         if (!isMounted) return;
@@ -174,7 +203,15 @@ export function usePersistentSession(): UsePersistentSessionResult {
     analysis?: SolveMetrics;
     orientationTimeline?: OrientationTimeline;
   }): Promise<string | null> => {
-    if (!session || !reposRef.current) return null;
+    if (!session || !reposRef.current) {
+      console.error(
+        '%c[addSolve] DROPPED — session=%o, reposRef=%o',
+        'color:#f87171;font-weight:bold',
+        session,
+        reposRef.current ? 'set' : 'null',
+      );
+      return null;
+    }
     const { solves: solvesRepo } = reposRef.current;
     
     const solveId = uuidv4();
@@ -193,7 +230,19 @@ export function usePersistentSession(): UsePersistentSessionResult {
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
     };
     
-    await solvesRepo.insert(dbSolve);
+    try {
+      await solvesRepo.insert(dbSolve);
+      console.log(
+        '%c[addSolve] ✓ Saved solve %s · %dms · session=%s',
+        'color:#4ade80;font-weight:bold',
+        solveId.slice(0, 8),
+        input.time,
+        session.id.slice(0, 8),
+      );
+    } catch (err) {
+      console.error('%c[addSolve] DB write FAILED:', 'color:#f87171;font-weight:bold', err);
+      return null;
+    }
     
     const uiSolve: UISolve = {
       ...toUISolve(dbSolve),

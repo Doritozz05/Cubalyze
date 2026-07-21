@@ -48,7 +48,7 @@ export function MetricRing({
   max,
   label,
   sub,
-  benchmark,
+  benchmark: _benchmark,
   size = 72,
   strokeWidth = 5,
   color = "ink",

@@ -8,7 +8,7 @@
  * Persisted to IndexedDB (SQLite) so data survives hard reloads.
  */
 
-import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
+import type { CubeFace, CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { v4 as uuidv4 } from "uuid";
 import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
 
@@ -156,7 +156,7 @@ function solveMovesFromScramble(
 
     // Parse the token into face + direction
     const token = tokens[i];
-    const face = token[0];
+    const face = token[0] as CubeFace;
     const suffix = token.length > 1 ? token[1] : "";
     const direction: 1 | -1 | 2 =
       suffix === "2" ? 2 : suffix === "'" ? -1 : 1;

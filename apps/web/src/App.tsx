@@ -103,21 +103,21 @@ export default function App() {
         source: capturedSource,
       })
         .then((solveId) => {
+          if (!solveId) {
+            console.warn('[handleComplete] addSolve returned null — solve NOT saved to DB!');
+            toast.error('Solve not saved — database not ready. Try again.');
+            return;
+          }
           pendingSolveIdRef.current = solveId;
-
-          // NOTE: moves + orientationTimeline are NOT persisted here.
-          // pendingMovesRef is populated by the analysis useEffect which
-          // runs AFTER this callback (React useEffect fires after commit).
-          // So pendingMovesRef.current is still null at this point.
-          // Moves are persisted in the analysis effect via updateSolve.
-          // See the useEffect below for the actual moves persistence.
-
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
         })
-        .catch(() => toast.error("Couldn't save solve"));
+        .catch((err) => {
+          console.error('[handleComplete] addSolve threw:', err);
+          toast.error("Couldn't save solve — check console for details");
+        });
     },
-    [addSolve, currentScramble, methodPref, updateSolve],
+    [addSolve, currentScramble, methodPref],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────

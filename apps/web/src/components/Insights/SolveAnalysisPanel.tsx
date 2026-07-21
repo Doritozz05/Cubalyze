@@ -86,11 +86,11 @@ export function SolveAnalysisPanel({
 
   // ── Replay state ──────────────────────────────────────────────────────────
   const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
-  const [replaying, setReplaying] = useState(false);
+  const [, setReplaying] = useState(false);
 
   // Stable solve object for the ReplaySection (avoids unnecessary re-creates).
   const replaySolve = useMemo(
-    () => (solve.analysis ? solve : { ...solve, analysis: m }),
+    () => (solve.analysis ? solve : { ...solve, analysis: m ?? undefined }),
     [solve, m],
   );
 
