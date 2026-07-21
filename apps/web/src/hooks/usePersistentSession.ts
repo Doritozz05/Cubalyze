@@ -248,8 +248,11 @@ export function usePersistentSession(): UsePersistentSessionResult {
       ...toUISolve(dbSolve),
       method: (input.method as UISolve['method']) || undefined,
       source: input.source ?? "manual",
-      moves: input.moves,
-      analysis: input.analysis,
+      // Only override when explicitly provided — preserves defaults from toUISolve.
+      // moves defaults to `[]` from the DB row; analysis stays undefined until
+      // the async analysis pipeline completes and calls updateSolve.
+      ...(input.moves !== undefined ? { moves: input.moves } : {}),
+      ...(input.analysis !== undefined ? { analysis: input.analysis } : {}),
     };
     setSolves(prev => [uiSolve, ...prev]);
     setSessions(prev => prev.map(s => 
@@ -259,31 +262,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
   }, [session]);
 
   const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; source?: SolveSource; moves?: CubeMoveEvent[]; analysis?: SolveMetrics; orientationTimeline?: OrientationTimeline }) => {
-    if (!session || !reposRef.current) return;
-    const { solves: solvesRepo } = reposRef.current;
-    
-    const existing = await solvesRepo.findById(id);
-    if (!existing) return;
-    
-    existing.penalty = (updates.penalty?.toLowerCase() ?? existing.penalty) as DBSolve['penalty'];
-    if (updates.note !== undefined) {
-       existing.method = updates.note === null ? undefined : updates.note;
-    }
-    if (updates.source !== undefined) {
-       existing.source = updates.source;
-    }
-    if (updates.moves !== undefined) {
-       existing.moves = updates.moves;
-    }
-    if (updates.analysis !== undefined) {
-       existing.analysis = JSON.stringify(updates.analysis);
-    }
-    if (updates.orientationTimeline !== undefined) {
-       existing.orientationTimeline = updates.orientationTimeline;
-    }
-    
-    await solvesRepo.update(existing);
-    
+    // ── Always update React state first so the UI reflects changes ────────
+    // even if the DB operation fails. This prevents the "Live" badge
+    // sticking around forever when the solve already has analysis.
     setSolves(prev => prev.map(s => {
       if (s.id === id) {
          return {
@@ -298,6 +279,62 @@ export function usePersistentSession(): UsePersistentSessionResult {
       }
       return s;
     }));
+
+    // ── Persist to DB ────────────────────────────────────────────────────
+    if (!session || !reposRef.current) {
+      console.warn(
+        '%c[updateSolve] DB skipped (no session/repos) — state-only patch for solve=%s',
+        'color:#facc15',
+        id.slice(0, 8),
+      );
+      return;
+    }
+    const { solves: solvesRepo } = reposRef.current;
+
+    try {
+      const existing = await solvesRepo.findById(id);
+      if (!existing) {
+        console.warn(
+          '%c[updateSolve] Solve %s not found in DB — state patch is live-only',
+          'color:#facc15',
+          id.slice(0, 8),
+        );
+        return;
+      }
+
+      existing.penalty = (updates.penalty?.toLowerCase() ?? existing.penalty) as DBSolve['penalty'];
+      if (updates.note !== undefined) {
+         existing.method = updates.note === null ? undefined : updates.note;
+      }
+      if (updates.source !== undefined) {
+         existing.source = updates.source;
+      }
+      if (updates.moves !== undefined) {
+         existing.moves = updates.moves;
+      }
+      if (updates.analysis !== undefined) {
+         existing.analysis = JSON.stringify(updates.analysis);
+      }
+      if (updates.orientationTimeline !== undefined) {
+         existing.orientationTimeline = updates.orientationTimeline;
+      }
+
+      await solvesRepo.update(existing);
+      console.log(
+        '%c[updateSolve] ✓ Persisted solve %s · moves=%d · analysis=%s',
+        'color:#4ade80;font-weight:bold',
+        id.slice(0, 8),
+        updates.moves?.length ?? -1,
+        updates.analysis ? 'yes' : 'no',
+      );
+    } catch (err) {
+      console.error(
+        '%c[updateSolve] DB persist FAILED for solve %s (state already patched):',
+        'color:#f87171;font-weight:bold',
+        id.slice(0, 8),
+        err,
+      );
+    }
   }, [session]);
 
   const deleteSolve = useCallback(async (id: string) => {

@@ -160,6 +160,13 @@ export default function App() {
       const m = methodAtSolveRef.current;
 
       if (moves.length > 0) {
+        const pendingId = pendingSolveIdRef.current;
+        console.log(
+          '%c[App] Analysis queued · %d moves · solveId=%s',
+          'color:#38bdf8',
+          moves.length,
+          pendingId ? pendingId.slice(0, 8) : 'null (waiting for addSolve)',
+        );
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
           runAnalysis(moves, scr, m, lastSolveOrientations).then((analysis) => {
@@ -174,6 +181,12 @@ export default function App() {
               // from lastSolveMoves (captured at solve-stop time).
               const solveId = pendingSolveIdRef.current;
               if (solveId) {
+                console.log(
+                  '%c[App] Persisting moves+analysis to solve %s · %d moves',
+                  'color:#38bdf8',
+                  solveId.slice(0, 8),
+                  moves.length,
+                );
                 updateSolve(solveId, {
                   moves,
                   orientationTimeline: lastSolveOrientationTimeline,
@@ -182,6 +195,11 @@ export default function App() {
                   console.warn("Failed to persist moves + analysis"),
                 );
                 pendingSolveIdRef.current = null;
+              } else {
+                console.warn(
+                  '%c[App] solveId is null — moves+analysis NOT persisted. addSolve may have failed or not completed yet.',
+                  'color:#facc15',
+                );
               }
             }
           });

@@ -36,24 +36,6 @@ export const DBWorker = {
     if (db) return true;
 
     try {
-      // IMPORTANT: Configure file resolution BEFORE sqlite3InitModule() so
-      // the OPFS VFS can find its async proxy worker and the .wasm binary.
-      // In Vite's dev mode, worker bundles change import.meta.url, breaking
-      // the default relative-path resolution that sqlite-wasm relies on.
-      // By copying these files to public/ and setting emscriptenLocateFile,
-      // we ensure they are always served at stable top-level paths.
-      //
-      // sqlite3InitModuleState is consumed internally by the Emscripten
-      // glue code in sqlite-wasm to override locateFile behavior.
-      const sIMS = (globalThis as any).sqlite3InitModuleState ??= {};
-      sIMS.emscriptenLocateFile = (path: string, prefix: string) => {
-        // Force all sqlite-wasm assets to load from root (public/)
-        if (path.endsWith('.wasm') || path.includes('sqlite3-opfs-async-proxy')) {
-          return '/' + path;
-        }
-        return prefix + path;
-      };
-
       const sqlite3 = await sqlite3InitModule();
 
       // NOTE: sqlite-wasm 3.53.0 DELETES sqlite3.opfs during internal

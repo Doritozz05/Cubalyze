@@ -941,6 +941,18 @@ export function useSolveSession(
         // has already consumed every scramble move to set isScrambled=true) —
         // is captured by the READY_FOR_MOVE branch of the move wiring below.
         engine.arm();
+      } else if (
+        // Mode 1 (smart cube + scramble verification + inspection):
+        // Auto-start inspection so the user does NOT need to press Space.
+        // Without this path, the engine stays in IDLE and the
+        // scramble-leak guard in the move subscriber (IDLE + isScrambledRef)
+        // drops ALL solve moves — the timer never starts.
+        smartCubeConnected &&
+        scrambleVerificationPref &&
+        inspectionPref &&
+        engine.getState() === EngineState.IDLE
+      ) {
+        engine.startInspection();
       }
     }
   }, [

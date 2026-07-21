@@ -78,6 +78,15 @@ export function ReplaySection({
    *  called on it (a one-way operation). */
   const canvasGenRef = useRef(-1);
 
+  /**
+   * Always-current solve ref — used inside effects that must NOT depend on
+   * the `solve` object reference to avoid infinite re-init loops.
+   * The identity effect `[solve.id]` handles teardown when a different solve
+   * is selected, and increments canvasKey so the init effect re-runs fresh.
+   */
+  const solveRef = useRef(solve);
+  solveRef.current = solve;
+
   // ── Reset state when solve changes ────────────────────────────────────────
   // This runs BEFORE the init effect, resetting display state so the user
   // never sees stale move count / time from the previous solve.
@@ -101,12 +110,14 @@ export function ReplaySection({
 
   // Use solve.time as the authoritative total (matches the timeline).
   // Falls back to move span only when solve.time is unavailable.
+  // Depend on primitive/value properties only (not the whole `solve` object)
+  // to avoid recomputing on every prop-reference change.
   const totalMs = useMemo(() => {
     if (solve.time > 0) return solve.time;
     const moves = solve.moves ?? [];
     if (moves.length < 2) return solve.time;
     return moves[moves.length - 1].hostTimestamp - moves[0].hostTimestamp;
-  }, [solve]);
+  }, [solve.time, solve.moves?.length, solve.moves?.[0]?.hostTimestamp, solve.moves?.[solve.moves?.length - 1]?.hostTimestamp]);
 
   const hasMoves = (solve.moves?.length ?? 0) >= 2;
   const totalMoves = solve.moves?.length ?? 0;
@@ -219,9 +230,10 @@ export function ReplaySection({
         await proxy.setIsometricView();
 
         // Set up the replay engine
-        const moves = solve.moves ?? [];
+        const latest = solveRef.current;
+        const moves = latest.moves ?? [];
         if (moves.length >= 2) {
-          const orientationTimeline = solve.orientationTimeline;
+          const orientationTimeline = latest.orientationTimeline;
           const engine = new ReplayEngine(moves, {
             resetCube: () => proxy.resetCube(),
             rotateLayers: (
@@ -234,15 +246,15 @@ export function ReplaySection({
             setOrientation: orientationTimeline
               ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
-          }, solve.time, orientationTimeline);
+          }, latest.time, orientationTimeline);
           engine.moveAnimationDurationMs = 70;
           engineRef.current = engine;
 
           // Apply the scramble so the cube starts in the scrambled
           // state at position 0, then solve moves take it to solved.
-          if (solve.scramble) {
+          if (latest.scramble) {
             try {
-              await engine.applyInitialScramble(solve.scramble);
+              await engine.applyInitialScramble(latest.scramble);
             } catch (e) {
               console.warn("[Replay] Scramble apply failed:", e);
             }
@@ -278,7 +290,7 @@ export function ReplaySection({
       setCanvasKey((k) => k + 1);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, solve, canvasKey]);
+  }, [expanded, canvasKey]);
 
   // ── Cleanup on unmount ──────────────────────────────────────────────────
   useEffect(() => {
