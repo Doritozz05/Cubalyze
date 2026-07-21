@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu, Battery, BatteryLow, BatteryMedium, BatteryFull } from "lucide-react";
+import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
@@ -48,17 +48,48 @@ const CATEGORIES: PuzzleCategory[] = [
   "Skewb",
 ];
 
-function renderBatteryIcon(level: number | null) {
+/**
+ * Sleek custom SVG Battery icon supporting multi-phase fill & color gradients.
+ */
+function BatteryIcon({ level }: { level: number | null }) {
   if (level === null) {
-    return <Battery className="size-3.5 text-ink-3" />;
+    return (
+      <svg className="size-4 text-ink-3" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M21 4.5V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      </svg>
+    );
   }
-  if (level <= 20) {
-    return <BatteryLow className="size-3.5 text-rose-500" />;
+
+  // Clamp level between 0 and 100
+  const pct = Math.max(0, Math.min(100, level));
+
+  // Determine fill color & status phase
+  let colorClass = "text-emerald-500 fill-emerald-500";
+  if (pct <= 15) {
+    colorClass = "text-rose-500 fill-rose-500";
+  } else if (pct <= 35) {
+    colorClass = "text-amber-500 fill-amber-500";
+  } else if (pct <= 65) {
+    colorClass = "text-yellow-400 fill-yellow-400";
+  } else if (pct <= 85) {
+    colorClass = "text-emerald-400 fill-emerald-400";
   }
-  if (level <= 60) {
-    return <BatteryMedium className="size-3.5 text-amber-500" />;
-  }
-  return <BatteryFull className="size-3.5 text-emerald-500" />;
+
+  // Inner fill width (max inner width is 14px, starting at x=3)
+  const fillWidth = Math.max(1.5, (pct / 100) * 14);
+
+  return (
+    <svg className={cn("size-4 transition-colors duration-300", colorClass)} viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Outer shell */}
+      <rect x="1" y="1" width="18" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+      {/* Battery terminal nub */}
+      <path d="M21 4.5V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Dynamic inner charge fill */}
+      <rect x="3" y="3" width={fillWidth} height="6" rx="1.2" fill="currentColor" />
+    </svg>
+  );
 }
 
 export interface HeaderProps {
@@ -160,7 +191,7 @@ export function Header({
                   : `Smart Cube (${deviceName ?? "Connected"})`
               }
             >
-              {renderBatteryIcon(batteryLevel)}
+              <BatteryIcon level={batteryLevel} />
               <span className="nums font-medium text-ink">
                 {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
               </span>
