@@ -46,11 +46,11 @@ function Cube2DSVG({
 }: {
   parsedFacelets: Record<string, string[]> | null;
 }) {
-  const S = 22;      // sticker size (increased from 14 for much better visibility)
+  const S = 22;      // sticker size
   const G = 1.8;     // gap between stickers within a face
-  const FG = 10;     // gap between faces (increased from 5 for clear face separation)
+  const FG = 10;     // gap between faces
   const BORDER = 1.8; // dark frame thickness around each face
-  const PAD = BORDER + 2; // extra padding around full net so borders don't clip
+  const PAD = BORDER + 8; // generous padding around full net so borders have plenty of space
 
   // Face dimensions
   const FACE = 3 * S + 2 * G;
@@ -71,7 +71,7 @@ function Cube2DSVG({
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      className="w-full h-auto max-w-[320px] select-none"
+      className="w-full h-auto max-w-[340px] select-none"
     >
       {Object.entries(FACE_POS).map(([face, [fx, fy]]) => {
         const stickers = parsedFacelets?.[face];
