@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Box, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
-import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
 
 const STORAGE_KEY = "cubeforge:cube2dPanelPos";
@@ -144,30 +143,13 @@ export interface FloatingCube2DPanelProps {
 export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanelProps) {
   const [mounted, setMounted] = useState(false);
   const [minimized, setMinimized] = useState(true);
-  const [liveFacelets, setLiveFacelets] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    
-    // Subscribe to live facelets updates from smart cube if connected
-    const sub = globalCubeAdapter.facelets$?.subscribe((f) => {
-      setLiveFacelets(f);
-    });
-
-    return () => {
-      sub?.unsubscribe();
-    };
   }, []);
 
-  // Compute effective facelets string:
-  // 1. Live facelets if connected
-  // 2. Scrambled facelets if scramble present
-  // 3. Fallback: Solved cube default
+  // Compute effective facelets string exclusively from the active scramble
   const displayFacelets = useMemo(() => {
-    if (globalCubeAdapter.isConnected && liveFacelets) {
-      return liveFacelets;
-    }
-
     if (scramble && scramble.trim()) {
       try {
         const state = new CubeState();
@@ -179,7 +161,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
     }
 
     return null;
-  }, [liveFacelets, scramble]);
+  }, [scramble]);
 
   const [defaultPos] = useState(getDefaultPos);
   const drag = useDraggable<HTMLDivElement>(defaultPos, {
@@ -211,7 +193,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
         )}
       >
         <Box className="size-4 text-ink-3" />
-        <span className="text-xs font-medium text-ink">Scramble 2D</span>
+        <span className="text-xs font-medium text-ink">Scramble</span>
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
@@ -257,7 +239,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
       >
         <div className="flex items-center gap-2">
           <Box className="size-3.5 text-ink-3" />
-          <span className="text-xs font-medium text-ink">Scramble 2D</span>
+          <span className="text-xs font-medium text-ink">Scramble</span>
         </div>
         <button
           onPointerDown={(e) => e.stopPropagation()}
