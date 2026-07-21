@@ -19,45 +19,105 @@ function getDefaultPos(): Position {
   };
 }
 
-// Clean Rubik's color palette (sharp flat colors)
-const FACE_COLOR_MAP: Record<string, string> = {
-  U: "#ffffff", // White (Arriba)
-  L: "#ff5800", // Orange (Izquierda)
-  F: "#009b48", // Green (Front / Medio)
-  R: "#b71234", // Red (Derecha)
-  B: "#0046ad", // Blue (Back)
-  D: "#ffd500", // Yellow (Abajo)
+// csTimer classic speedcube colors — WCA standard scheme
+const CSTIMER_COLOR_MAP: Record<string, string> = {
+  U: "#ffffff", // White
+  R: "#dc2626", // Red
+  F: "#16a34a", // Green
+  D: "#eab308", // Yellow
+  L: "#f97316", // Orange
+  B: "#2563eb", // Blue
 };
 
-interface FaceGridProps {
-  faceKey: string;
-  stickers?: string[]; // 9 stickers for this face
-  defaultColor: string;
-}
+/**
+ * csTimer-style 2D Rubik's cube flat net SVG.
+ *
+ * Layout (cross-shaped net):
+ *         ┌───┐
+ *         │ U │
+ *   ┌───┬─┴───┴─┬───┬───┐
+ *   │ L │   F   │ R │ B │
+ *   └───┬─┬───┬─┴───┴───┘
+ *         │ D │
+ *         └───┘
+ */
+function Cube2DSVG({
+  parsedFacelets,
+}: {
+  parsedFacelets: Record<string, string[]> | null;
+}) {
+  const S = 22;      // sticker size (increased from 14 for much better visibility)
+  const G = 1.8;     // gap between stickers within a face
+  const FG = 10;     // gap between faces (increased from 5 for clear face separation)
+  const BORDER = 1.8; // dark frame thickness around each face
+  const PAD = BORDER + 2; // extra padding around full net so borders don't clip
 
-function FaceGrid({ stickers, defaultColor }: FaceGridProps) {
+  // Face dimensions
+  const FACE = 3 * S + 2 * G;
+
+  // Face top-left positions (col, row) offset by PAD
+  const FACE_POS: Record<string, [number, number]> = {
+    U: [PAD + FACE + FG, PAD + 0],
+    L: [PAD + 0, PAD + FACE + FG],
+    F: [PAD + FACE + FG, PAD + FACE + FG],
+    R: [PAD + 2 * FACE + 2 * FG, PAD + FACE + FG],
+    B: [PAD + 3 * FACE + 3 * FG, PAD + FACE + FG],
+    D: [PAD + FACE + FG, PAD + 2 * FACE + 2 * FG],
+  };
+
+  const W = 4 * FACE + 3 * FG + PAD * 2;
+  const H = 3 * FACE + 2 * FG + PAD * 2;
+
   return (
-    <div className="grid grid-cols-3 gap-px bg-neutral-900 p-px shadow-sm rounded-sm">
-      {Array.from({ length: 9 }).map((_, i) => {
-        const colorKey = stickers?.[i];
-        const bg = colorKey && FACE_COLOR_MAP[colorKey] ? FACE_COLOR_MAP[colorKey] : defaultColor;
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full h-auto max-w-[320px] select-none"
+    >
+      {Object.entries(FACE_POS).map(([face, [fx, fy]]) => {
+        const stickers = parsedFacelets?.[face];
+        const defaultColor = CSTIMER_COLOR_MAP[face];
+
         return (
-          <div
-            key={i}
-            className="size-3.5 sm:size-4 transition-colors rounded-[1px]"
-            style={{ backgroundColor: bg }}
-          />
+          <g key={face}>
+            {/* Subtle dark frame behind the face */}
+            <rect
+              x={fx - BORDER}
+              y={fy - BORDER}
+              width={FACE + BORDER * 2}
+              height={FACE + BORDER * 2}
+              fill="#111111"
+              rx={2}
+            />
+            {/* 3×3 stickers */}
+            {Array.from({ length: 9 }).map((_, i) => {
+              const sr = Math.floor(i / 3);
+              const sc = i % 3;
+              const x = fx + sc * (S + G);
+              const y = fy + sr * (S + G);
+
+              const colorKey = stickers?.[i];
+              const fill =
+                colorKey && CSTIMER_COLOR_MAP[colorKey]
+                  ? CSTIMER_COLOR_MAP[colorKey]
+                  : defaultColor;
+
+              return (
+                <rect
+                  key={i}
+                  x={x}
+                  y={y}
+                  width={S}
+                  height={S}
+                  fill={fill}
+                  rx={1.5}
+                />
+              );
+            })}
+          </g>
         );
       })}
-    </div>
+    </svg>
   );
-}
-
-/**
- * Empty 3x3 slot helper to maintain 4-column symmetrical alignment
- */
-function EmptySlot() {
-  return <div className="size-11 sm:size-12.5" />;
 }
 
 /**
@@ -151,7 +211,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
         )}
       >
         <Box className="size-4 text-ink-3" />
-        <span className="text-xs font-medium text-ink">Scramble</span>
+        <span className="text-xs font-medium text-ink">Scramble 2D</span>
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
@@ -180,7 +240,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
         top: drag.position.y,
       }}
       className={cn(
-        "fixed z-45 flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
+        "fixed z-45 flex flex-col touch-none select-none rounded-lg border border-line bg-surface shadow-xl",
         drag.isDragging && "shadow-2xl",
         className
       )}
@@ -197,7 +257,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
       >
         <div className="flex items-center gap-2">
           <Box className="size-3.5 text-ink-3" />
-          <span className="text-xs font-medium text-ink">Scramble</span>
+          <span className="text-xs font-medium text-ink">Scramble 2D</span>
         </div>
         <button
           onPointerDown={(e) => e.stopPropagation()}
@@ -212,27 +272,9 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
         </button>
       </div>
 
-      {/* Symmetrical Net Grid Body */}
-      <div className="p-3">
-        <div className="grid grid-cols-4 gap-1.5 justify-items-center">
-          {/* Row 1: U aligned over F */}
-          <EmptySlot />
-          <FaceGrid faceKey="U" stickers={parsed?.U} defaultColor={FACE_COLOR_MAP.U} />
-          <EmptySlot />
-          <EmptySlot />
-
-          {/* Row 2: L, F, R, B */}
-          <FaceGrid faceKey="L" stickers={parsed?.L} defaultColor={FACE_COLOR_MAP.L} />
-          <FaceGrid faceKey="F" stickers={parsed?.F} defaultColor={FACE_COLOR_MAP.F} />
-          <FaceGrid faceKey="R" stickers={parsed?.R} defaultColor={FACE_COLOR_MAP.R} />
-          <FaceGrid faceKey="B" stickers={parsed?.B} defaultColor={FACE_COLOR_MAP.B} />
-
-          {/* Row 3: D aligned under F */}
-          <EmptySlot />
-          <FaceGrid faceKey="D" stickers={parsed?.D} defaultColor={FACE_COLOR_MAP.D} />
-          <EmptySlot />
-          <EmptySlot />
-        </div>
+      {/* csTimer Style SVG Net Body */}
+      <div className="p-2.5 flex justify-center items-center overflow-visible">
+        <Cube2DSVG parsedFacelets={parsed} />
       </div>
     </motion.div>,
     document.body,
