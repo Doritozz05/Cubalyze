@@ -281,17 +281,17 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               isAnimationActive={false}
             />
 
-            {/* ── PB history step line (dashed, only when data exists) ── */}
+            {/* ── PB history connecting line (dashed, straight between PB points) ── */}
             {hasPbHistory && (
               <Line
-                type="stepAfter"
+                type="linear"
                 dataKey="pbHistory"
                 stroke="#FBBF24"
                 strokeWidth={1.5}
                 strokeDasharray="5 3"
                 dot={false}
                 activeDot={false}
-                connectNulls={false}
+                connectNulls
                 name="pbHistory"
                 isAnimationActive={false}
               />
