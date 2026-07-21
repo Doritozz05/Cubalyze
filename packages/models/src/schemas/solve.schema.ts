@@ -14,7 +14,7 @@ export const SolveSchema = z.object({
   timeMs: z.number().int().nonnegative(),
   date: z.string().datetime(),
   scramble: z.string(),
-  penalty: z.enum(['none', '+2', 'dnf']).default('none'),
+  penalty: z.enum(['none', '+2', 'dnf', 'DNF']).default('none'),
   method: z.string().optional(),
   /** How the solve was recorded: "smart" (cube hardware) or "manual". */
   source: z.enum(['smart', 'manual']).default('manual'),

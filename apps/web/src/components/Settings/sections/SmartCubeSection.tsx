@@ -86,7 +86,7 @@ export function SmartCubeSection() {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5",
-        "text-[0.7rem] font-medium uppercase tracking-[0.1em]",
+        "text-[0.7rem] font-medium uppercase tracking-widest",
         isConnected && "border-line/60 bg-surface text-ink-2",
         !isConnected && !isTransitioning && "border-line/40 bg-surface-2/60 text-ink-3",
         isTransitioning && "border-line/60 bg-surface text-ink-2",

@@ -136,7 +136,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
         onPointerMove={drag.onPointerMove}
         onPointerUp={drag.onPointerUp}
         className={cn(
-          "fixed z-[45] flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
+          "fixed z-45 flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
           drag.isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab",
           "transition-colors hover:border-ink-2/40",
         )}
@@ -174,7 +174,7 @@ export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
         width: PANEL_WIDTH,
       }}
       className={cn(
-        "fixed z-[45] flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
+        "fixed z-45 flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
         drag.isDragging && "shadow-2xl",
       )}
     >

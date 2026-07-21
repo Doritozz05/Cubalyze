@@ -253,7 +253,7 @@ export const SolveListPanel = memo(function SolveListPanel({
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-ink-3" />
             <Input
-              placeholder="Search scramble or notes…"
+              placeholder="Search time, scramble, DNF, notes…"
               value={filters.search}
               onChange={(e) => setFilters({ search: e.target.value })}
               className="h-7 pl-7 pr-2 text-[0.72rem]"

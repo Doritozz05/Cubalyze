@@ -65,7 +65,7 @@ export function useStatsFilters(
       if (filters.dateTo != null && s.timestamp > filters.dateTo)
         return false;
       const normalizedPen = normalizePenalty(s.penalty);
-      if (filters.penalties.size > 0 && !filters.penalties.has(normalizedPen)) return false;
+      if (!filters.penalties.has(normalizedPen)) return false;
       if (
         s.method &&
         filters.methods.size > 0 &&
