@@ -39,6 +39,15 @@ export interface Solve {
   orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
 }
 
+/** Normalize penalty input (handles case mismatches like "dnf" -> "DNF"). */
+export function normalizePenalty(raw: string | null | undefined): Penalty {
+  if (!raw) return "none";
+  const u = raw.toUpperCase().trim();
+  if (u === "DNF") return "DNF";
+  if (u === "+2" || u === "PLUS2" || u === "PLUS_TWO") return "+2";
+  return "none";
+}
+
 /**
  * Effective time of a solve after applying penalties.
  * - `none` -> raw time
@@ -46,7 +55,8 @@ export interface Solve {
  * - `DNF`  -> Infinity (sentinel for "did not finish")
  */
 export function effectiveTime(solve: Solve): number {
-  switch (solve.penalty) {
+  const p = normalizePenalty(solve.penalty);
+  switch (p) {
     case "+2":
       return solve.time + 2000;
     case "DNF":

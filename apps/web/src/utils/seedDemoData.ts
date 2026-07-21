@@ -442,7 +442,7 @@ export async function seedDemoDataIfEmpty(
       timeMs: totalTimeMs,
       date: ts.toISOString(),
       scramble,
-      penalty: (Math.random() < 0.1 ? "+2" : "none") as "none" | "+2" | "dnf",
+      penalty: (Math.random() < 0.1 ? "+2" : "none") as "none" | "+2" | "DNF",
       method: "CFOP" as const,
       source: "smart" as const,
       moves,

@@ -20,6 +20,7 @@ import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine"
 import { ThemeProvider } from "@/components/theme-provider";
 import { v4 as uuidv4 } from "uuid";
 import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
+import { normalizePenalty, effectiveTime } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import "@/index.css";
@@ -313,13 +314,11 @@ export default function App() {
     document.title = `cubeforge — ${solves.length} solves`;
   }, [solves.length]);
 
-  const validSolves = solves.filter((s) => s.penalty !== "DNF");
+  const validSolves = solves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const currentPB =
     validSolves.length > 0
       ? Math.min(
-          ...validSolves.map((s) =>
-            s.time + (s.penalty === "+2" ? 2000 : 0),
-          ),
+          ...validSolves.map((s) => effectiveTime(s)),
         )
       : null;
 

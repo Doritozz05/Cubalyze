@@ -65,13 +65,16 @@ export function TimerDisplay({
     formattedTime = formatTime(displayTime);
   }
 
+  const isDnf = formattedTime === "DNF";
+  const textColor = isDnf ? "text-dnf" : STATE_COLOR[state];
+
   return (
     <div className="flex select-none flex-col items-center justify-center gap-7">
       <div
         className={cn(
           "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
           "text-[clamp(3.75rem,15vw,9.5rem)]",
-          STATE_COLOR[state],
+          textColor,
           STATE_SCALE[state],
         )}
         aria-live="polite"

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import type { Solve as UISolve, Penalty, SolveSource } from "@/types";
+import { normalizePenalty } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
@@ -66,7 +67,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
   return {
     id: dbSolve.id,
     time: dbSolve.timeMs,
-    penalty: (dbSolve.penalty || "none") as Penalty,
+    penalty: normalizePenalty(dbSolve.penalty),
     scramble: dbSolve.scramble,
     timestamp: new Date(dbSolve.date).getTime(),
     note: dbSolve.method,
@@ -224,7 +225,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       timeMs: input.time,
       date: new Date().toISOString(),
       scramble: input.scramble,
-      penalty: (input.penalty?.toLowerCase() || "none") as DBSolve['penalty'],
+      penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
       method: input.method,
       source: input.source ?? "manual",
       moves: input.moves || [],
@@ -272,7 +273,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       if (s.id === id) {
          return {
            ...s,
-           penalty: updates.penalty ?? s.penalty,
+           penalty: updates.penalty ? normalizePenalty(updates.penalty) : s.penalty,
            note: updates.note === null ? undefined : (updates.note ?? s.note),
            source: updates.source ?? s.source,
            moves: updates.moves ?? s.moves,
@@ -305,7 +306,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
         return;
       }
 
-      existing.penalty = (updates.penalty?.toLowerCase() ?? existing.penalty) as DBSolve['penalty'];
+      existing.penalty = (updates.penalty ? normalizePenalty(updates.penalty) : normalizePenalty(existing.penalty)) as DBSolve['penalty'];
       if (updates.note !== undefined) {
          existing.method = updates.note === null ? undefined : updates.note;
       }

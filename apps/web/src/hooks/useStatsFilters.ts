@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useCallback } from "react";
 import type { Solve, Penalty, SolveMethod } from "@/types";
+import { effectiveTime, normalizePenalty } from "@/types";
+import { formatTime } from "@/utils/formatTime";
 
 /** Sort orders for the solves list. */
 export type SortOrder =
@@ -33,22 +35,6 @@ export const DEFAULT_FILTERS: StatsFilters = {
 };
 
 /**
- * Effective time after applying penalty. DNF = +Infinity sentinel.
- * Mirrors the helper in `@/types` but is inlined to keep this hook
- * dependency-free and easy to test.
- */
-function effectiveTime(s: Solve): number {
-  switch (s.penalty) {
-    case "+2":
-      return s.time + 2000;
-    case "DNF":
-      return Number.POSITIVE_INFINITY;
-    default:
-      return s.time;
-  }
-}
-
-/**
  * Filter + sort solves in-memory. Hook returns memoised `filtered` plus
  * the active filter state + setters. Reset clears everything to defaults.
  *
@@ -78,7 +64,8 @@ export function useStatsFilters(
         return false;
       if (filters.dateTo != null && s.timestamp > filters.dateTo)
         return false;
-      if (filters.penalties.size > 0 && !filters.penalties.has(s.penalty)) return false;
+      const normalizedPen = normalizePenalty(s.penalty);
+      if (filters.penalties.size > 0 && !filters.penalties.has(normalizedPen)) return false;
       if (
         s.method &&
         filters.methods.size > 0 &&
@@ -89,7 +76,9 @@ export function useStatsFilters(
         const q = filters.search.trim().toLowerCase();
         const noteOk = s.note?.toLowerCase().includes(q) ?? false;
         const scrOk = s.scramble.toLowerCase().includes(q);
-        if (!noteOk && !scrOk) return false;
+        const penOk = normalizedPen.toLowerCase().includes(q);
+        const timeOk = formatTime(effectiveTime(s)).toLowerCase().includes(q);
+        if (!noteOk && !scrOk && !penOk && !timeOk) return false;
       }
       if (filters.smartCubeOnly && s.source !== "smart") return false;
       return true;
@@ -120,7 +109,7 @@ export function useStatsFilters(
         arr.sort((a, b) => effectiveTime(b) - effectiveTime(a));
         break;
       case "pbDelta": {
-        const valid = solves.filter((s) => s.penalty !== "DNF");
+        const valid = solves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
         if (valid.length === 0) {
           arr.sort((a, b) => b.timestamp - a.timestamp);
           break;

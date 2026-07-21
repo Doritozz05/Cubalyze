@@ -3,7 +3,7 @@
 import { memo, useMemo } from "react";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { effectiveTime } from "@/types";
+import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import { deriveSparkline } from "@/utils/insights";
 import type { Solve, Penalty } from "@/types";
@@ -115,9 +115,10 @@ export const SolveListPanel = memo(function SolveListPanel({
   const chipCounts = useMemo(() => {
     let clean = 0, plus2 = 0, dnf = 0, smart = 0;
     for (const s of allSolves) {
-      if (s.penalty === "none") clean++;
-      else if (s.penalty === "+2") plus2++;
-      else if (s.penalty === "DNF") dnf++;
+      const pen = normalizePenalty(s.penalty);
+      if (pen === "none") clean++;
+      else if (pen === "+2") plus2++;
+      else if (pen === "DNF") dnf++;
       if (s.source === "smart") smart++;
     }
     return { clean, plus2, dnf, smart };
