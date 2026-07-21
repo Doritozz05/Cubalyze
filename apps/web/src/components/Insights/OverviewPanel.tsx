@@ -25,6 +25,7 @@ import {
 import type { Solve } from "@/types";
 import { MetricTile } from "../Stats/atoms/MetricTile";
 import { TrendChart } from "../Stats/TrendChart";
+import { SolveProgressionChart } from "../Stats/SolveProgressionChart";
 import {
   SectionHeader,
   AnimatedNumber,
@@ -146,6 +147,9 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
           sub={`${stats.count} solves`}
         />
       </div>
+
+      {/* ── Solve Progression (scatter) ─────────────────────────────── */}
+      <SolveProgressionChart solves={solves} />
 
       {/* ── Trend (Ao-N rolling) ───────────────────────────────────────── */}
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
