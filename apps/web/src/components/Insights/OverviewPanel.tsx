@@ -11,7 +11,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
   Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
@@ -65,7 +64,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
   const histogram = useMemo(() => deriveHistogram(solves, 500), [solves]);
   // Pre-compute: which bins are the modal (highest count), and which bin
   // label contains the session mean (for the reference line).
-  const { isModal, meanBinLabel } = useMemo(() => {
+  const { isModal } = useMemo(() => {
     if (histogram.length === 0) return { isModal: [] as boolean[], meanBinLabel: null as string | null };
     const maxCount = Math.max(...histogram.map((b) => b.count));
     const modal = histogram.map((b) => b.count === maxCount && maxCount > 0);
@@ -165,11 +164,11 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
           className="mb-3"
         />
         {analysedCount < 2 ? (
-          <div className="flex h-[100px] items-center justify-center text-[0.7rem] text-ink-3">
+          <div className="flex h-25 items-center justify-center text-[0.7rem] text-ink-3">
             Need at least 2 Smart Cube solves with analysis
           </div>
         ) : (
-          <div className="h-[100px] w-full">
+          <div className="h-25 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={tpsSeries}
@@ -221,11 +220,11 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
         <SectionHeader title="Time distribution" eyebrow="0.5s bins" className="mb-3" />
         {histogram.length === 0 ? (
-          <div className="flex h-[80px] items-center justify-center text-[0.7rem] text-ink-3">
+          <div className="flex h-20 items-center justify-center text-[0.7rem] text-ink-3">
             No valid times to display
           </div>
         ) : (
-          <div className="h-[80px] w-full">
+          <div className="h-20 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={histogram}
@@ -289,7 +288,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
             className="mb-3"
           />
           {phaseDist.length === 0 ? (
-            <div className="flex h-[88px] items-center justify-center text-center text-[0.7rem] text-ink-3">
+            <div className="flex h-22 items-center justify-center text-center text-[0.7rem] text-ink-3">
               <span className="flex flex-col items-center gap-1.5">
                 <Layers className="size-4 text-ink-3/50" />
                 Complete solves with a Smart Cube

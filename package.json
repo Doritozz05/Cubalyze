@@ -20,6 +20,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "turbo run typecheck",
     "typecheck:all": "tsc --noEmit -p tsconfig.json",
+    "typecheck:watch": "tsc --noEmit -p tsconfig.json --watch",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "release": "pnpm build && changeset publish"
   },

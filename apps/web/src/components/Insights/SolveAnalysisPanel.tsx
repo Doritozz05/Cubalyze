@@ -1256,7 +1256,7 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
         {hasMoves ? (
           <AlgorithmNotation notation={solve.scramble} size="sm" />
         ) : (
-          <p className="font-mono text-[0.78rem] text-ink break-words">
+          <p className="font-mono text-[0.78rem] text-ink wrap-break-word">
             {solve.scramble}
           </p>
         )}

@@ -74,6 +74,7 @@ function generateYTicks(maxMs: number, targetTicks = 5): number[] {
 // ─── Custom dot renderers ───────────────────────────────────────────────────
 
 /** PB solve dot (yellow glow + solid centre) — receives cx/cy from Recharts. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function PbDotShape(props: any) {
   const { cx, cy } = props;
   if (cx == null || cy == null) return null;
@@ -87,6 +88,7 @@ function PbDotShape(props: any) {
 }
 
 /** Single marker dot for best Ao5 or Ao12 — receives cx/cy from Recharts. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MarkerDotShape(props: any) {
   const { cx, cy, color } = props;
   if (cx == null || cy == null) return null;
@@ -394,6 +396,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
 
 // ─── Custom tooltip ─────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ScatterTooltip({ active, payload }: any) {
   if (!active || !payload || payload.length === 0) return null;
 

@@ -63,6 +63,7 @@ export function ReplaySection({
   // Refs for the mini-cube worker
   const workerRef = useRef<Worker | null>(null);
   /** Comlink.Remote<EngineWorkerAPI> but typed loosely due to dynamic import. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const workerProxyRef = useRef<any>(null);
   const cubeReadyRef = useRef(false);
 
@@ -212,7 +213,9 @@ export function ReplaySection({
         if (cancelled) return;
 
         const EngineWorker = mod.default;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const worker = new (EngineWorker as any)();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const proxy = Comlink.wrap<any>(worker);
 
         workerRef.current = worker;

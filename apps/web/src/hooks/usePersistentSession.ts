@@ -74,7 +74,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     source: (dbSolve.source as SolveSource) ?? "manual",
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
-    orientationTimeline: dbSolve.orientationTimeline,
+    orientationTimeline: dbSolve.orientationTimeline as UISolve['orientationTimeline'],
   };
 }
 
