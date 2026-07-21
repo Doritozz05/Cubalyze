@@ -8,13 +8,14 @@ import {
   Material,
   Shape,
   ShapeGeometry,
+  DoubleSide,
 } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
 import type { CubeFace } from '@cubeforge/types';
 
 export interface CubeStyleOptions {
-  /** Visual strategy: classic stickers, solid colored plastic, or floating panels */
-  skinType?: 'stickered' | 'stickerless' | 'coreless';
+  /** Visual strategy: classic, solid plastic, floating panels, or see-through */
+  skinType?: 'stickered' | 'stickerless' | 'coreless' | 'translucent';
   /** Core body color (used in stickered mode and as fallback) */
   coreColor: string;
   /** Core opacity — < 1 enables transparency */
@@ -29,7 +30,7 @@ export interface CubeStyleOptions {
    * Scale factor for cubie core in stickerless mode (default 0.97).
    * A value < 1 creates subtle physical gaps between pieces,
    * mimicking the tactile separation of real speedcube pieces.
-   * Ignored in stickered and coreless modes (always 1.0).
+   * Ignored in stickered, coreless, and translucent modes (always 1.0).
    */
   cubieSize?: number;
   /** Width/height of sticker panels (default 0.84) */
@@ -69,13 +70,19 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
  * Each cubie is a `Group` containing:
  * - **Core mesh**: a `RoundedBoxGeometry` that represents the physical body.
  *   Its material strategy depends on `skinType`:
- *   - `stickered`:   single black/dark `MeshStandardMaterial`
- *   - `stickerless`: array of 6 `MeshStandardMaterial` — exposed faces get
- *                    the colored plastic material, internal faces get `seamColor`
- *   - `coreless`:    single material, but the mesh is hidden
+ *   - `stickered`:    single black/dark `MeshStandardMaterial`
+ *   - `stickerless`:  array of 6 `MeshBasicMaterial` — exposed faces get
+ *                     the colored material, internal faces get `seamColor`
+ *   - `coreless`:     single material, mesh hidden
+ *   - `translucent`:  single material, transparent, depthWrite:false
  *
  * - **Sticker meshes** (0–3 per cubie): flat rounded-rect `ShapeGeometry` panels
- *   on exposed faces. Visible in `stickered` and `coreless`, hidden in `stickerless`.
+ *   on exposed faces.
+ *   - `stickered` / `coreless`: normal `MeshBasicMaterial` (FrontSide, depthWrite)
+ *   - `stickerless`:           hidden
+ *   - `translucent`:           `MeshBasicMaterial` with `DoubleSide` +
+ *                              `depthWrite:false` → back stickers visible
+ *                              through the transparent core
  *
  * ### Stickerless visual gaps
  *
@@ -83,18 +90,25 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
  * cubies no longer touch — the round edges combine with the `seamColor` internal
  * faces to create natural-looking seams, exactly like a premium speedcube.
  *
- * ### Coreless
+ * ### Translucent
  *
- * Core mesh hidden, stickers visible → floating colored panels (digital cube aesthetic).
+ * Core visible but transparent (opacity 0.0). Stickers use DoubleSide +
+ * depthWrite:false so stickers on the far side of the cube are visible through
+ * the front. Three.js automatically sorts transparent objects back-to-front.
  */
 export class CubeMeshFactory {
   private coreGeometry: BoxGeometry;
   private stickerGeometry: ShapeGeometry;
   private coreMaterial!: MeshStandardMaterial;
   private seamMaterial!: MeshStandardMaterial;
+  /** Normal sticker panels — stickered + coreless (FrontSide, opaque) */
   private stickerMaterials: Record<string, MeshBasicMaterial> = {};
-  private stickerlessFaceMaterials: Record<string, MeshStandardMaterial> = {};
-  private stickerMeshes: Mesh[] = [];
+  /** Stickerless exposed faces — unlit flat color, same as default stickers */
+  private stickerlessFaceMaterials: Record<string, MeshBasicMaterial> = {};
+  /** Translucent sticker panels — DoubleSide, depthWrite:false for see-through */
+  private translucentStickerMaterials: Record<string, MeshBasicMaterial> = {};
+  /** Track all sticker meshes with their face for runtime material swaps */
+  private stickerMeshes: { mesh: Mesh; face: string }[] = [];
   /** Track all core meshes so we can update material/scale/visibility at runtime */
   private coreMeshes: { mesh: Mesh; x: number; y: number; z: number }[] = [];
   private style: CubeStyleOptions;
@@ -156,6 +170,7 @@ export class CubeMeshFactory {
       metalness: 0.0,
       transparent: isTransparent,
       opacity: this.style.coreOpacity,
+      depthWrite: !isTransparent,
     });
 
     // Seam material: dark internal faces for stickerless gaps
@@ -166,16 +181,23 @@ export class CubeMeshFactory {
     });
 
     for (const face of ['U', 'D', 'F', 'B', 'R', 'L'] as const) {
-      // Sticker panels (stickered + coreless) — unlit for pure color
+      // Normal sticker panels (stickered + coreless) — unlit, opaque
       this.stickerMaterials[face] = new MeshBasicMaterial({
         color: new Color(this.style.stickerColors[face]),
       });
 
-      // Colored plastic faces (stickerless exposed faces) — lit for depth
-      this.stickerlessFaceMaterials[face] = new MeshStandardMaterial({
+      // Stickerless exposed faces — unlit flat color (matches default look)
+      this.stickerlessFaceMaterials[face] = new MeshBasicMaterial({
         color: new Color(this.style.stickerColors[face]),
-        roughness: 0.55,
-        metalness: 0.08,
+      });
+
+      // Translucent sticker panels — DoubleSide + no depth write
+      // so back-face stickers are visible through the transparent core
+      this.translucentStickerMaterials[face] = new MeshBasicMaterial({
+        color: new Color(this.style.stickerColors[face]),
+        side: DoubleSide,
+        depthWrite: false,
+        transparent: true,
       });
     }
   }
@@ -183,7 +205,7 @@ export class CubeMeshFactory {
   /**
    * Returns the material(s) for a cubie core at position (x, y, z).
    *
-   * - `stickered` / `coreless` → single `coreMaterial` (black / hidden)
+   * - `stickered` / `coreless` / `translucent` → single `coreMaterial`
    * - `stickerless` → 6-material array:
    *   Exposed faces get the colored `stickerlessFaceMaterials`,
    *   internal faces get `seamMaterial` for natural gaps.
@@ -194,11 +216,12 @@ export class CubeMeshFactory {
   private getCoreMaterialArray(x: number, y: number, z: number): Material | Material[] {
     const skinType = this.style.skinType ?? 'stickered';
 
-    if (skinType === 'stickered' || skinType === 'coreless') {
+    // stickered / coreless / translucent all use the single core material
+    if (skinType !== 'stickerless') {
       return this.coreMaterial;
     }
 
-    // stickerless: per-face colored plastic
+    // stickerless: per-face colored plastic (unlit, flat color)
     return [
       x === 1 ? this.stickerlessFaceMaterials['R'] : this.seamMaterial, //  0: +x (Right)
       x === -1 ? this.stickerlessFaceMaterials['L'] : this.seamMaterial, // 1: -x (Left)
@@ -207,6 +230,17 @@ export class CubeMeshFactory {
       z === 1 ? this.stickerlessFaceMaterials['F'] : this.seamMaterial, //  4: +z (Front)
       z === -1 ? this.stickerlessFaceMaterials['B'] : this.seamMaterial, // 5: -z (Back)
     ];
+  }
+
+  /**
+   * Returns the sticker material pool to use for the current skin type.
+   * - `translucent` → DoubleSide + depthWrite:false materials
+   * - everything else → normal opaque materials
+   */
+  private getActiveStickerMaterials(): Record<string, MeshBasicMaterial> {
+    return this.style.skinType === 'translucent'
+      ? this.translucentStickerMaterials
+      : this.stickerMaterials;
   }
 
   // ───────────────────────────────────────────────────────────────────────
@@ -234,7 +268,7 @@ export class CubeMeshFactory {
       coreMesh.scale.setScalar(cubieSize);
     }
 
-    // Coreless: hide the body entirely
+    // Coreless: hide the body entirely. Translucent + stickered: visible.
     coreMesh.visible = skinType !== 'coreless';
 
     group.add(coreMesh);
@@ -242,58 +276,27 @@ export class CubeMeshFactory {
 
     // ── 2. Sticker meshes on exposed faces ────────────────────────────
     // Offset = half unit + epsilon to sit flush on the core surface.
-    // This is correct because core mesh center is at (0,0,0) within the group
-    // and core mesh scale does not affect sticker world position.
     const offset = 0.5001;
     const stickerVisible = skinType !== 'stickerless';
+    const activeMaterials = this.getActiveStickerMaterials();
 
-    if (x === 1) {
-      const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['R']);
-      sticker.position.set(offset, 0, 0);
-      sticker.rotation.y = Math.PI / 2;
+    // Helper to create a sticker and track it
+    const addSticker = (face: string, px: number, py: number, pz: number, rx?: number, ry?: number) => {
+      const sticker = new Mesh(this.stickerGeometry, activeMaterials[face]);
+      sticker.position.set(px, py, pz);
+      if (rx !== undefined) sticker.rotation.x = rx;
+      if (ry !== undefined) sticker.rotation.y = ry;
       sticker.visible = stickerVisible;
       group.add(sticker);
-      this.stickerMeshes.push(sticker);
-    }
-    if (x === -1) {
-      const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['L']);
-      sticker.position.set(-offset, 0, 0);
-      sticker.rotation.y = -Math.PI / 2;
-      sticker.visible = stickerVisible;
-      group.add(sticker);
-      this.stickerMeshes.push(sticker);
-    }
-    if (y === 1) {
-      const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['U']);
-      sticker.position.set(0, offset, 0);
-      sticker.rotation.x = -Math.PI / 2;
-      sticker.visible = stickerVisible;
-      group.add(sticker);
-      this.stickerMeshes.push(sticker);
-    }
-    if (y === -1) {
-      const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['D']);
-      sticker.position.set(0, -offset, 0);
-      sticker.rotation.x = Math.PI / 2;
-      sticker.visible = stickerVisible;
-      group.add(sticker);
-      this.stickerMeshes.push(sticker);
-    }
-    if (z === 1) {
-      const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['F']);
-      sticker.position.set(0, 0, offset);
-      sticker.visible = stickerVisible;
-      group.add(sticker);
-      this.stickerMeshes.push(sticker);
-    }
-    if (z === -1) {
-      const sticker = new Mesh(this.stickerGeometry, this.stickerMaterials['B']);
-      sticker.position.set(0, 0, -offset);
-      sticker.rotation.y = Math.PI;
-      sticker.visible = stickerVisible;
-      group.add(sticker);
-      this.stickerMeshes.push(sticker);
-    }
+      this.stickerMeshes.push({ mesh: sticker, face });
+    };
+
+    if (x === 1) addSticker('R', offset, 0, 0, undefined, Math.PI / 2);
+    if (x === -1) addSticker('L', -offset, 0, 0, undefined, -Math.PI / 2);
+    if (y === 1) addSticker('U', 0, offset, 0, -Math.PI / 2);
+    if (y === -1) addSticker('D', 0, -offset, 0, Math.PI / 2);
+    if (z === 1) addSticker('F', 0, 0, offset);
+    if (z === -1) addSticker('B', 0, 0, -offset, undefined, Math.PI);
 
     return group;
   }
@@ -304,23 +307,23 @@ export class CubeMeshFactory {
 
   /**
    * Update a single face color at runtime.
-   * Propagates to both sticker materials AND stickerless plastic materials.
+   * Propagates to all three sticker material pools.
    */
   public setFaceColor(face: CubeFace | 'Inner', color: string): void {
     if (face === 'Inner') {
       this.coreMaterial.color.set(color);
       this.coreMaterial.needsUpdate = true;
     } else {
-      const stickerMat = this.stickerMaterials[face];
-      if (stickerMat) {
-        stickerMat.color.set(color);
-        stickerMat.needsUpdate = true;
-      }
-      const plasticMat = this.stickerlessFaceMaterials[face];
-      if (plasticMat) {
-        plasticMat.color.set(color);
-        plasticMat.needsUpdate = true;
-      }
+      // Update all three material pools so color stays consistent
+      // regardless of which skin type is currently active
+      const mat1 = this.stickerMaterials[face];
+      if (mat1) { mat1.color.set(color); mat1.needsUpdate = true; }
+
+      const mat2 = this.stickerlessFaceMaterials[face];
+      if (mat2) { mat2.color.set(color); mat2.needsUpdate = true; }
+
+      const mat3 = this.translucentStickerMaterials[face];
+      if (mat3) { mat3.color.set(color); mat3.needsUpdate = true; }
     }
   }
 
@@ -328,10 +331,10 @@ export class CubeMeshFactory {
    * Apply partial style updates at runtime.
    *
    * Handles:
-   * - `skinType` changes → visibility + core material array + core scale
+   * - `skinType` changes → visibility + core material + sticker material pool + core scale
    * - `coreColor` / `coreOpacity` → core material updates
    * - `seamColor` → seam material color
-   * - `stickerColors` → updates both sticker and stickerless materials
+   * - `stickerColors` → updates all sticker material pools
    * - `stickerSize` / `stickerRadius` → rebuild sticker geometry
    * - `cubieSize` → rescale core meshes (stickerless only)
    */
@@ -360,6 +363,7 @@ export class CubeMeshFactory {
       this.style.coreOpacity = newStyle.coreOpacity;
       this.coreMaterial.opacity = newStyle.coreOpacity;
       this.coreMaterial.transparent = newStyle.coreOpacity < 1.0;
+      this.coreMaterial.depthWrite = !(newStyle.coreOpacity < 1.0);
       this.coreMaterial.needsUpdate = true;
     }
 
@@ -370,7 +374,7 @@ export class CubeMeshFactory {
       this.seamMaterial.needsUpdate = true;
     }
 
-    // ── Sticker colors (propagate to both material pools) ─────────────
+    // ── Sticker colors (propagate to all three material pools) ────────
     if (newStyle.stickerColors) {
       for (const [face, color] of Object.entries(newStyle.stickerColors)) {
         this.setFaceColor(face as CubeFace, color);
@@ -378,7 +382,7 @@ export class CubeMeshFactory {
       this.style.stickerColors = { ...this.style.stickerColors, ...newStyle.stickerColors };
     }
 
-    // ── Skin type / cubie size change → rebuild core appearance ───────
+    // ── Skin type / cubie size change → rebuild core + sticker appearance ──
     if (skinTypeChanged || cubieSizeChanged) {
       const newSkinType = this.style.skinType ?? 'stickered';
       const stickerVisible = newSkinType !== 'stickerless';
@@ -387,9 +391,13 @@ export class CubeMeshFactory {
         ? (this.style.cubieSize ?? 0.97)
         : 1.0;
 
-      // Update all sticker meshes
-      for (const sm of this.stickerMeshes) {
-        sm.visible = stickerVisible;
+      // Determine which sticker material pool to use
+      const activePool = this.getActiveStickerMaterials();
+
+      // Update all sticker meshes: visibility + material pool
+      for (const { mesh, face } of this.stickerMeshes) {
+        mesh.visible = stickerVisible;
+        mesh.material = activePool[face];
       }
 
       // Update all core meshes: material array, visibility, scale
@@ -417,7 +425,7 @@ export class CubeMeshFactory {
       const radius = this.style.stickerRadius ?? 0.06;
       this.stickerGeometry = this.createRoundedStickerGeometry(size, size, radius);
 
-      for (const mesh of this.stickerMeshes) {
+      for (const { mesh } of this.stickerMeshes) {
         mesh.geometry = this.stickerGeometry;
       }
     }
@@ -454,6 +462,7 @@ export class CubeMeshFactory {
     this.seamMaterial.dispose();
     Object.values(this.stickerMaterials).forEach((mat) => mat.dispose());
     Object.values(this.stickerlessFaceMaterials).forEach((mat) => mat.dispose());
+    Object.values(this.translucentStickerMaterials).forEach((mat) => mat.dispose());
     this.stickerMeshes = [];
     this.coreMeshes = [];
   }

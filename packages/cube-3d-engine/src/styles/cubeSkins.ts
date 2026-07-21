@@ -70,12 +70,12 @@ export const CUBE_SKINS: CubeSkin[] = [
       seamColor: '#2a2a2a',
       cubieSize: 0.97,
       stickerColors: {
-        U: '#f5f2ed', // crisp white
-        D: '#ffe712', // vibrant yellow
-        F: '#00a650', // rich green
-        B: '#0051ba', // deep blue
-        R: '#c41e3a', // bold red
-        L: '#ff6d00', // vivid orange
+        U: '#ece8e2', // white
+        D: '#ffe62a', // yellow
+        F: '#1abe57', // green
+        B: '#3d7ce0', // blue
+        R: '#eb4242', // red
+        L: '#ff801f', // orange
       },
     },
   },
@@ -90,6 +90,27 @@ export const CUBE_SKINS: CubeSkin[] = [
       skinType: 'coreless',
       coreColor: '#1a1a1a',
       coreOpacity: 1.0,
+      stickerColors: {
+        U: '#ece8e2', // white
+        D: '#ffe62a', // yellow
+        F: '#1abe57', // green
+        B: '#3d7ce0', // blue
+        R: '#eb4242', // red
+        L: '#ff801f', // orange
+      },
+    },
+  },
+
+  // ── Translucent (ghost cube — see-through core) ─────────────────────
+  {
+    id: 'translucent',
+    label: 'Translucent',
+    description:
+      'Ghostly see-through body. Back-face stickers render through the transparent core — you can see all faces at once. Ethereal look.',
+    style: {
+      skinType: 'translucent',
+      coreColor: '#1a1a1a',
+      coreOpacity: 0.0,
       stickerColors: {
         U: '#ece8e2', // white
         D: '#ffe62a', // yellow
