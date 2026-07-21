@@ -23,6 +23,8 @@ export interface UsePersistentSessionResult {
   solves: UISolve[];
   loading: boolean;
   addSolve: (input: {
+    /** Pre-generated solve ID. If omitted, one is generated internally. */
+    id?: string;
     time: number;
     penalty?: Penalty;
     scramble: string;
@@ -194,6 +196,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
   const session = sessions.find(s => s.id === activeSessionId) || null;
 
   const addSolve = useCallback(async (input: {
+    id?: string;
     time: number;
     penalty?: Penalty;
     scramble: string;
@@ -214,7 +217,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     }
     const { solves: solvesRepo } = reposRef.current;
     
-    const solveId = uuidv4();
+    const solveId = input.id ?? uuidv4();
     const dbSolve: DBSolve = {
       id: solveId,
       sessionId: session.id,

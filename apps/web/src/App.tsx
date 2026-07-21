@@ -18,6 +18,7 @@ import { useOrientation } from "@/hooks/useOrientation";
 import { preferencesStore } from "@cubeforge/state";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { ThemeProvider } from "@/components/theme-provider";
+import { v4 as uuidv4 } from "uuid";
 import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
@@ -95,20 +96,28 @@ export default function App() {
       // declared before `useSolveSession` provides it (it's passed as `onSolve`).
       const capturedSource: SolveSource = smartCubeConnectedRef.current ? "smart" : "manual";
 
+      // Generate the solve ID synchronously BEFORE calling addSolve so that
+      // pendingSolveIdRef is already set when the analysis useEffect fires
+      // (triggered by setLastTime in the stop$ subscription). Without this,
+      // the effect reads null because addSolve's .then() hasn't resolved yet.
+      const solveId = uuidv4();
+      pendingSolveIdRef.current = solveId;
+
       addSolve({
+        id: solveId,
         time,
         scramble: currentScramble,
         penalty,
         method: methodPref,
         source: capturedSource,
       })
-        .then((solveId) => {
-          if (!solveId) {
+        .then((returnedId) => {
+          if (!returnedId) {
             console.warn('[handleComplete] addSolve returned null — solve NOT saved to DB!');
             toast.error('Solve not saved — database not ready. Try again.');
+            pendingSolveIdRef.current = null;
             return;
           }
-          pendingSolveIdRef.current = solveId;
           setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
           setScrambleIndex((i) => i + 1);
         })
