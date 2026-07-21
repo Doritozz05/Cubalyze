@@ -78,7 +78,7 @@ export function useStatsFilters(
         return false;
       if (filters.dateTo != null && s.timestamp > filters.dateTo)
         return false;
-      if (!filters.penalties.has(s.penalty)) return false;
+      if (filters.penalties.size > 0 && !filters.penalties.has(s.penalty)) return false;
       if (
         s.method &&
         filters.methods.size > 0 &&
