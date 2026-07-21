@@ -28,6 +28,13 @@ export interface CubeSkin {
  *    There is no inheritance – skins are explicit declarations.
  * 4. The first entry is the default. The preferences store defaults to
  *    `appearance3d: 'default'`.
+ *
+ * ── Skin type overview ───────────────────────────────────────────────────
+ * - `stickered`:   Classic black core + colored sticker panels.
+ * - `stickerless`: Solid colored plastic pieces with subtle seams.
+ *                  Each cubie is a complete colored body; no stickers.
+ * - `coreless`:    Only the colored face panels are visible — no body.
+ *                  Clean digital cube aesthetic.
  */
 export const CUBE_SKINS: CubeSkin[] = [
   // ── Default (stickered) ──────────────────────────────────────────────
@@ -36,6 +43,7 @@ export const CUBE_SKINS: CubeSkin[] = [
     label: 'Default',
     description: 'Classic stickered look with standard WCA color scheme.',
     style: {
+      skinType: 'stickered',
       coreColor: '#1a1a1a',
       coreOpacity: 1.0,
       stickerColors: {
@@ -49,18 +57,39 @@ export const CUBE_SKINS: CubeSkin[] = [
     },
   },
 
-  // ── Stickerless ─────────────────────────────────────────────────────
+  // ── Stickerless (professional speedcube look) ────────────────────────
   {
     id: 'stickerless',
     label: 'Stickerless',
     description:
-      'Simulates the look of a stickerless speed cube where the plastic itself is coloured. More saturated tones with tighter visual integration between face and body.',
+      'Professional stickerless look. Each piece is solid colored plastic with subtle seams between cubies — just like a premium speedcube.',
     style: {
       skinType: 'stickerless',
       coreColor: '#1a1a1a',
       coreOpacity: 1.0,
-      stickerSize: 0,
-      stickerRadius: 0,
+      seamColor: '#2a2a2a',
+      cubieSize: 0.97,
+      stickerColors: {
+        U: '#f5f2ed', // crisp white
+        D: '#ffe712', // vibrant yellow
+        F: '#00a650', // rich green
+        B: '#0051ba', // deep blue
+        R: '#c41e3a', // bold red
+        L: '#ff6d00', // vivid orange
+      },
+    },
+  },
+
+  // ── Coreless (digital cube — floating panels only) ───────────────────
+  {
+    id: 'coreless',
+    label: 'Coreless',
+    description:
+      'Modern digital cube aesthetic. Only the colored face panels float in space — no visible body. Clean, minimalist look.',
+    style: {
+      skinType: 'coreless',
+      coreColor: '#1a1a1a',
+      coreOpacity: 1.0,
       stickerColors: {
         U: '#ece8e2', // white
         D: '#ffe62a', // yellow
