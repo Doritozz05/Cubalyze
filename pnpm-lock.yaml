@@ -31,6 +31,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@cubeforge/algorithm-db':
+        specifier: workspace:*
+        version: link:../../packages/algorithm-db
       '@cubeforge/analysis-engine':
         specifier: workspace:*
         version: link:../../packages/analysis-engine
@@ -271,6 +274,34 @@ importers:
         version: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)
 
   packages/ai-core: {}
+
+  packages/algorithm-db:
+    dependencies:
+      '@cubeforge/models':
+        specifier: workspace:*
+        version: link:../models
+      '@cubeforge/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@cubeforge/config-eslint':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      eslint:
+        specifier: ^10.7.0
+        version: 10.7.0(jiti@2.7.0)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)
 
   packages/analysis-engine:
     dependencies:

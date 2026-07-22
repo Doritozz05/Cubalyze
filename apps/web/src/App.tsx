@@ -6,6 +6,7 @@ import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
+import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
@@ -391,7 +392,7 @@ export default function App() {
     (view: ViewId) => {
       setActiveView(view);
       // Close the 3D cube panel when leaving the timer stage — the split
-      // only makes sense alongside the timer, not Stats/Analysis.
+      // only makes sense alongside the timer, not Stats/Analysis/Practice.
       if (view !== "timer") setCubePanelOpen(false);
       if (view === "timer") scrollToTimer();
     },
@@ -461,6 +462,8 @@ export default function App() {
   // selecting Cube 3D additionally splits the stage with the 3D aside.
   // Insights takes over the stage fully (sidebar of solves + overview /
   // per-solve analysis) and owns its own scroll per panel.
+  // Practice takes over the stage fully (method tree + algorithm grid +
+  // detail panel).
   const renderMain = () => {
     if (activeView === "insights") {
       return (
@@ -474,6 +477,10 @@ export default function App() {
           onDeleteSolve={handleDelete}
         />
       );
+    }
+
+    if (activeView === "practice") {
+      return <PracticeDashboard />;
     }
 
     // timer
