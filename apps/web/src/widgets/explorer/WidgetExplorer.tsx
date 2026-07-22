@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Search, Puzzle, Plus } from "lucide-react";
+import { Search, Puzzle, Plus, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { WidgetRegistry } from "@/widgets/WidgetRegistry";
 import { validateWidgetPlugin, sanitizeWidgetId } from "@/widgets/loader";
@@ -11,8 +11,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { WidgetExplorerSidebar } from "./WidgetExplorerSidebar";
 import { WidgetCard } from "./WidgetCard";
 import { getAllWidgets } from "@/widgets/registry";
@@ -47,6 +52,10 @@ export interface WidgetExplorerProps {
 export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
   const [activeCategory, setActiveCategory] = useState<WidgetCategoryId>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importStatus, setImportStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [importMessage, setImportMessage] = useState("");
 
   // Reset to "all" + clear search on open
   useEffect(() => {
@@ -89,49 +98,67 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
     setActiveCategory(id);
   }, []);
 
-  const handleImportWidget = useCallback(() => {
-    const url = prompt("Enter the URL of the widget module:");
-    if (!url?.trim()) return;
-
-    // Dynamic import for custom widget
-    import(/* @vite-ignore */ url.trim())
-      .then((module) => {
-        const plugin = (module.default ?? module) as WidgetPlugin;
-        const validation = validateWidgetPlugin(plugin);
-        if (!validation.valid) {
-          alert(`Invalid widget:\n${validation.errors.join("\n")}`);
-          return;
-        }
-
-        // Register the custom widget
-        const safeId = sanitizeWidgetId(plugin.id || plugin.definition?.id);
-        if (!safeId) {
-          alert("Widget must have a valid id");
-          return;
-        }
-
-        const definition = {
-          ...plugin.definition,
-          id: safeId,
-          source: "custom" as const,
-          icon: plugin.definition.icon as never,
-        };
-
-        widgetStore.getState().registerCustomWidget(definition);
-        WidgetRegistry.register(safeId, {
-          component: plugin.component as unknown as React.ComponentType<Record<string, unknown>>,
-          preview: plugin.preview ?? (() => null),
-          mapProps: () => ({}),
-        });
-
-        alert(`Widget "${definition.name}" imported successfully!`);
-      })
-      .catch((err) => {
-        alert(`Failed to load widget: ${err}`);
-      });
+  const handleOpenImportDialog = useCallback(() => {
+    setImportUrl("");
+    setImportStatus("idle");
+    setImportMessage("");
+    setImportDialogOpen(true);
   }, []);
 
+  const handleConfirmImport = useCallback(async () => {
+    const url = importUrl.trim();
+    if (!url) return;
+
+    setImportStatus("loading");
+    setImportMessage("");
+
+    try {
+      const module = await import(/* @vite-ignore */ url);
+      const plugin = (module.default ?? module) as WidgetPlugin;
+      const validation = validateWidgetPlugin(plugin);
+      if (!validation.valid) {
+        setImportStatus("error");
+        setImportMessage(`Invalid widget:\n${validation.errors.join("\n")}`);
+        return;
+      }
+
+      const safeId = sanitizeWidgetId(plugin.id || plugin.definition?.id);
+      if (!safeId) {
+        setImportStatus("error");
+        setImportMessage("Widget must have a valid id");
+        return;
+      }
+
+      const definition = {
+        ...plugin.definition,
+        id: safeId,
+        source: "custom" as const,
+        icon: plugin.definition.icon as never,
+      };
+
+      widgetStore.getState().registerCustomWidget(definition);
+      WidgetRegistry.register(safeId, {
+        component: plugin.component as unknown as React.ComponentType<Record<string, unknown>>,
+        preview: plugin.preview ?? (() => null),
+        mapProps: () => ({}),
+      });
+
+      setImportStatus("success");
+      setImportMessage(`Widget "${definition.name}" imported successfully!`);
+
+      // Close dialog after brief success display
+      setTimeout(() => {
+        setImportDialogOpen(false);
+        setImportStatus("idle");
+      }, 1500);
+    } catch (err) {
+      setImportStatus("error");
+      setImportMessage(`Failed to load widget: ${err}`);
+    }
+  }, [importUrl]);
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={`${EXPLORER_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0`}
@@ -165,14 +192,18 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
 
                 <div className="flex items-center gap-2">
                   {/* Import custom widget */}
-                  <button
-                    onClick={handleImportWidget}
-                    className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[0.7rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-                    title="Import a custom widget from a URL"
-                  >
-                    <Plus className="size-3" />
-                    Import
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleOpenImportDialog}
+                        className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[0.7rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                      >
+                        <Plus className="size-3" />
+                        Import
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end">Import a custom widget from a URL</TooltipContent>
+                  </Tooltip>
                   {/* Count */}
                   <span className="nums shrink-0 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[0.7rem] text-ink-3">
                     {filteredWidgets.length}
@@ -221,5 +252,89 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
         </div>
       </DialogContent>
     </Dialog>
+
+      {/* Import widget dialog — reemplaza el prompt() nativo del navegador */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setImportDialogOpen(false);
+          setImportStatus("idle");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="size-4 text-ink-3" />
+              Import widget
+            </DialogTitle>
+            <DialogDescription>
+              Enter the URL of a widget module to import it into Cubeforge.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3 py-2">
+            <Input
+              value={importUrl}
+              onChange={(e) => setImportUrl(e.target.value)}
+              placeholder="https://example.com/my-widget.js"
+              className="h-9 text-sm"
+              disabled={importStatus === "loading"}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && importUrl.trim() && importStatus !== "loading") {
+                  handleConfirmImport();
+                }
+              }}
+              autoFocus
+            />
+
+            {importStatus === "error" && (
+              <div className="flex items-start gap-2 rounded-md bg-dnf-soft px-3 py-2 text-xs text-dnf">
+                <AlertCircle className="mt-0.5 size-3 shrink-0" />
+                <span className="whitespace-pre-wrap">{importMessage}</span>
+              </div>
+            )}
+
+            {importStatus === "success" && (
+              <div className="flex items-center gap-2 rounded-md bg-ready-soft px-3 py-2 text-xs text-ready">
+                <CheckCircle2 className="size-3 shrink-0" />
+                <span>{importMessage}</span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setImportDialogOpen(false);
+                setImportStatus("idle");
+              }}
+              disabled={importStatus === "loading"}
+              className="h-8 text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConfirmImport}
+              disabled={!importUrl.trim() || importStatus === "loading"}
+              className="h-8 gap-1.5 text-xs"
+            >
+              {importStatus === "loading" ? (
+                <>
+                  <Loader2 className="size-3 animate-spin" />
+                  Importing…
+                </>
+              ) : (
+                <>
+                  <Plus className="size-3" />
+                  Import
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

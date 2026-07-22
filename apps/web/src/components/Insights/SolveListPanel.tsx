@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
 import type { StatsFilters, SortOrder } from "@/hooks/useStatsFilters";
 
@@ -339,10 +340,12 @@ export const SolveListPanel = memo(function SolveListPanel({
                     <div className="flex items-center gap-2.5">
                       <span className="flex w-7 shrink-0 items-center justify-end gap-1.5">
                         {isBest ? (
-                          <span
-                            className="size-1.5 shrink-0 rounded-full bg-ready"
-                            title="Session best"
-                          />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="size-1.5 shrink-0 rounded-full bg-ready" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Session best</TooltipContent>
+                          </Tooltip>
                         ) : (
                           <span className="size-1.5 shrink-0" />
                         )}

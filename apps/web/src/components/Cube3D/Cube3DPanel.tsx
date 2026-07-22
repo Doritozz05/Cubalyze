@@ -11,6 +11,7 @@ import type { Subscription } from "rxjs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore, preferencesStore } from "@cubeforge/state";
 import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
@@ -332,39 +333,51 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
 
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetCube}
-            disabled={!is3DReady}
-            className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
-            title="Reset cube pieces to solved state"
-          >
-            <RotateCcw className="size-3" />
-            Reset
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={calibrateGyro}
-            disabled={!is3DReady}
-            className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
-            title="Calibrate gyroscope orientation"
-          >
-            <RefreshCw className="size-3" />
-            Calibrate
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetCube}
+                disabled={!is3DReady}
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+              >
+                <RotateCcw className="size-3" />
+                Reset
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Reset cube pieces to solved state</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={calibrateGyro}
+                disabled={!is3DReady}
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+              >
+                <RefreshCw className="size-3" />
+                Calibrate
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Calibrate gyroscope orientation</TooltipContent>
+          </Tooltip>
           {onClose && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
-              title="Close 3D view"
-              aria-label="Close 3D view"
-            >
-              <X className="size-3" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+                  aria-label="Close 3D view"
+                >
+                  <X className="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close 3D view</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

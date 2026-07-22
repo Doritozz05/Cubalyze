@@ -10,6 +10,7 @@ import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/h
 import type { Penalty, Solve } from "@/types";
 import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics } from "@cubeforge/types";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   SectionHeader,
@@ -112,20 +113,24 @@ export function SolveAnalysisPanel({
             {formatTimestampFull(solve.timestamp)}
           </span>
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={cyclePenalty}
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide transition-colors hover:opacity-80",
-                solve.penalty === "DNF"
-                  ? "bg-dnf-soft text-dnf"
-                  : solve.penalty === "+2"
-                    ? "bg-plus2-soft text-plus2"
-                    : "bg-surface-2 text-ink-3",
-              )}
-              title="Click to cycle penalty"
-            >
-              {solve.penalty === "none" ? "Clean" : solve.penalty}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={cyclePenalty}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide transition-colors hover:opacity-80",
+                    solve.penalty === "DNF"
+                      ? "bg-dnf-soft text-dnf"
+                      : solve.penalty === "+2"
+                        ? "bg-plus2-soft text-plus2"
+                        : "bg-surface-2 text-ink-3",
+                  )}
+                >
+                  {solve.penalty === "none" ? "Clean" : solve.penalty}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Click to cycle penalty</TooltipContent>
+            </Tooltip>
             {solve.method ? (
               <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-ink-2">
                 {solve.method}
@@ -997,10 +1002,20 @@ function PhaseBreakdownSection({
               </div>
               <div className="flex items-center gap-3 nums text-xs text-ink-3">
                 <span>{p.moveCount}m</span>
-                <span title={`${phasePct}% of phase total`}>{formatTime(p.durationMs)}</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>{formatTime(p.durationMs)}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{phasePct}% of phase total</TooltipContent>
+                </Tooltip>
                 <span className="font-medium text-ink">{p.tps.toFixed(1)} tps</span>
                 {p.pauseCount > 0 && (
-                  <span className="text-caution/70" title={`${p.pauseCount} pause${p.pauseCount !== 1 ? "s" : ""} in this phase`}>{p.pauseCount}p</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-caution/70">{p.pauseCount}p</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{p.pauseCount} pause{p.pauseCount !== 1 ? "s" : ""} in this phase</TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>
@@ -1094,16 +1109,21 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
               </div>
               <div className="flex items-center gap-3 nums text-ink-3">
                 {colors && (
-                  <span className="flex items-center gap-0.5" title={pair.slotId ?? undefined}>
-                    <span
-                      className="inline-block size-2.5 rounded-sm border border-white/20"
-                      style={{ background: colors[0] }}
-                    />
-                    <span
-                      className="inline-block size-2.5 rounded-sm border border-white/20"
-                      style={{ background: colors[1] }}
-                    />
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-0.5">
+                        <span
+                          className="inline-block size-2.5 rounded-sm border border-white/20"
+                          style={{ background: colors[0] }}
+                        />
+                        <span
+                          className="inline-block size-2.5 rounded-sm border border-white/20"
+                          style={{ background: colors[1] }}
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{pair.slotId}</TooltipContent>
+                  </Tooltip>
                 )}
                 <span>{pair.moves}m</span>
                 <span>{formatTime(pair.timeMs)}</span>
@@ -1280,14 +1300,18 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
           </p>
         )}
       </div>
-      <button
-        onClick={onCopy}
-        className="grid size-7 shrink-0 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-        aria-label="Copy scramble"
-        title="Copy scramble"
-      >
-        {copied ? <ClipboardCheck className="size-3.5" /> : <Clipboard className="size-3.5" />}
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onCopy}
+            className="grid size-7 shrink-0 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
+            aria-label="Copy scramble"
+          >
+            {copied ? <ClipboardCheck className="size-3.5" /> : <Clipboard className="size-3.5" />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="left">Copy scramble</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { connectionStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
 import { WidgetDock } from "@/widgets/dock";
 import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -189,19 +190,23 @@ export function Header({
 
           {/* Battery % chip — only shown when a Smart Cube is connected */}
           {isCubeConnected && (
-            <div
-              className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs text-ink cursor-default select-none"
-              title={
-                batteryLevel !== null
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs text-ink cursor-default select-none"
+                >
+                  <BatteryIcon level={batteryLevel} />
+                  <span className="nums font-medium text-ink">
+                    {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {batteryLevel !== null
                   ? `Smart Cube (${deviceName ?? "Connected"}): ${batteryLevel}% battery`
-                  : `Smart Cube (${deviceName ?? "Connected"})`
-              }
-            >
-              <BatteryIcon level={batteryLevel} />
-              <span className="nums font-medium text-ink">
-                {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
-              </span>
-            </div>
+                  : `Smart Cube (${deviceName ?? "Connected"})`}
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
 
@@ -213,16 +218,20 @@ export function Header({
         {/* Right: PB + session + manual + puzzle grouped together */}
         <div className="flex items-center gap-2">
           {onAddManual ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onAddManual}
-              className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
-              aria-label="Add manual solve"
-              title="Add manual solve"
-            >
-              <Plus className="size-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onAddManual}
+                  className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
+                  aria-label="Add manual solve"
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Add manual solve</TooltipContent>
+            </Tooltip>
           ) : null}
           {pb != null && Number.isFinite(pb) ? (
             <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">

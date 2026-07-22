@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { computeStats, statLabel } from "@/utils/formatTime";
 import type { Solve } from "@/types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface SessionStatsProps {
   solves: Solve[];
@@ -39,7 +40,7 @@ export function SessionStats({ solves, className, onExpand }: SessionStatsProps)
 
   const interactive = !!onExpand;
 
-  return (
+  const statsDiv = (
     <div
       className={cn(
         "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
@@ -60,7 +61,6 @@ export function SessionStats({ solves, className, onExpand }: SessionStatsProps)
       }
       role={interactive ? "button" : undefined}
       tabIndex={interactive ? 0 : undefined}
-      title={interactive ? "View full stats" : undefined}
     >
       {cells.map((c, i) => (
         <div
@@ -85,5 +85,16 @@ export function SessionStats({ solves, className, onExpand }: SessionStatsProps)
         </div>
       ))}
     </div>
+  );
+
+  if (!interactive) return statsDiv;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {statsDiv}
+      </TooltipTrigger>
+      <TooltipContent side="bottom">View full stats</TooltipContent>
+    </Tooltip>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface ActivityHeatmapProps {
   /**
@@ -70,14 +71,19 @@ export function ActivityHeatmap({
             {week.map((count, di) => {
               const lvl = intensity(count, max);
               return (
-                <div
-                  key={di}
-                  className={cn(
-                    "size-[10px] rounded-[2px]",
-                    INTENSITY_BG[lvl],
-                  )}
-                  title={count > 0 ? `${count} solve${count > 1 ? "s" : ""}` : "No solves"}
-                />
+                <Tooltip key={di}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={cn(
+                        "size-[10px] rounded-[2px]",
+                        INTENSITY_BG[lvl],
+                      )}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-[0.55rem]">
+                    {count > 0 ? `${count} solve${count > 1 ? "s" : ""}` : "No solves"}
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
           </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
 import { ReplayEngine, type ReplayState, getSkinStyle } from "@cubeforge/cube-3d-engine";
@@ -502,61 +503,77 @@ export function ReplaySection({
                 {/* Bottom row: transport controls */}
                 <div className="flex items-center gap-1.5">
                   {/* Restart */}
-                  <button
-                    onClick={handleRestart}
-                    disabled={!canPlay}
-                    className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                    title="Restart"
-                    aria-label="Restart replay"
-                  >
-                    <RotateCcw className="size-3.5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleRestart}
+                        disabled={!canPlay}
+                        className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        aria-label="Restart replay"
+                      >
+                        <RotateCcw className="size-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Restart</TooltipContent>
+                  </Tooltip>
 
                   {/* Step backward */}
-                  <button
-                    onClick={handleSeekBackward}
-                    disabled={!canPlay}
-                    className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                    title="Step backward"
-                    aria-label="Step backward one move"
-                  >
-                    <SkipBack className="size-3.5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleSeekBackward}
+                        disabled={!canPlay}
+                        className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        aria-label="Step backward one move"
+                      >
+                        <SkipBack className="size-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Step backward</TooltipContent>
+                  </Tooltip>
 
                   {/* Play / Pause */}
-                  <button
-                    onClick={handlePlayPause}
-                    disabled={!canPlay}
-                    className={cn(
-                      "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
-                      replayState === "playing"
-                        ? "bg-ink text-background hover:bg-ink/80 hover:scale-105"
-                        : "bg-blue-500 text-white hover:bg-blue-600 hover:scale-105",
-                    )}
-                    title={
-                      replayState === "playing" ? "Pause" : "Play"
-                    }
-                    aria-label={
-                      replayState === "playing" ? "Pause" : "Play"
-                    }
-                  >
-                    {replayState === "playing" ? (
-                      <Pause className="size-4" />
-                    ) : (
-                      <Play className="size-4 pl-0.5" />
-                    )}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handlePlayPause}
+                        disabled={!canPlay}
+                        className={cn(
+                          "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
+                          replayState === "playing"
+                            ? "bg-ink text-background hover:bg-ink/80 hover:scale-105"
+                            : "bg-blue-500 text-white hover:bg-blue-600 hover:scale-105",
+                        )}
+                        aria-label={
+                          replayState === "playing" ? "Pause" : "Play"
+                        }
+                      >
+                        {replayState === "playing" ? (
+                          <Pause className="size-4" />
+                        ) : (
+                          <Play className="size-4 pl-0.5" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {replayState === "playing" ? "Pause" : "Play"}
+                    </TooltipContent>
+                  </Tooltip>
 
                   {/* Step forward */}
-                  <button
-                    onClick={handleSeekForward}
-                    disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
-                    className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                    title="Step forward"
-                    aria-label="Step forward one move"
-                  >
-                    <SkipForward className="size-3.5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleSeekForward}
+                        disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
+                        className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        aria-label="Step forward one move"
+                      >
+                        <SkipForward className="size-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Step forward</TooltipContent>
+                  </Tooltip>
 
                   {/* Spacer */}
                   <span className="flex-1" />
@@ -564,19 +581,22 @@ export function ReplaySection({
                   {/* Speed selector */}
                   <div className="flex items-center gap-0.5 rounded-md border border-line/60 p-0.5">
                     {SPEEDS.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => handleSetSpeed(s)}
-                        className={cn(
-                          "rounded px-2 py-1 text-[0.62rem] font-medium uppercase tracking-wider transition-all duration-150",
-                          speed === s
-                            ? "bg-ink text-background"
-                            : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                        )}
-                        title={`${s}x speed`}
-                      >
-                        {s}x
-                      </button>
+                      <Tooltip key={s}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleSetSpeed(s)}
+                            className={cn(
+                              "rounded px-2 py-1 text-[0.62rem] font-medium uppercase tracking-wider transition-all duration-150",
+                              speed === s
+                                ? "bg-ink text-background"
+                                : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                            )}
+                          >
+                            {s}x
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">{s}x speed</TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>

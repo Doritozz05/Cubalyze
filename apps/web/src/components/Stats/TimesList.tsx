@@ -18,6 +18,7 @@ import {
 import {
   ScrollArea,
 } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimesListProps {
   solves: Solve[];
@@ -94,10 +95,12 @@ export const TimesList = memo(function TimesList({
                   {/* Index + best marker */}
                   <span className="flex w-8 shrink-0 items-center justify-end gap-1">
                     {isBest ? (
-                      <span
-                        className="size-1.5 shrink-0 rounded-full bg-ready"
-                        title="Session best"
-                      />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="size-1.5 shrink-0 rounded-full bg-ready" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right">Session best</TooltipContent>
+                      </Tooltip>
                     ) : (
                       <span className="size-1.5 shrink-0" />
                     )}
@@ -119,16 +122,20 @@ export const TimesList = memo(function TimesList({
                   <PenaltyBadge penalty={solve.penalty} />
 
                   {onAnalyze && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onAnalyze(solve)}
-                      className="size-7 text-ink-3 hover:text-ink"
-                      aria-label="Analyze solve"
-                      title="Analysis"
-                    >
-                      <Activity className="size-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onAnalyze(solve)}
+                          className="size-7 text-ink-3 hover:text-ink"
+                          aria-label="Analyze solve"
+                        >
+                          <Activity className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">Analysis</TooltipContent>
+                    </Tooltip>
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

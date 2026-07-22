@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Box } from "lucide-react";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function getDefaultPos(): Position {
   if (typeof window === "undefined") return { x: 100, y: 100 };
@@ -71,26 +72,30 @@ export function FloatingCubeButton({
   };
 
   return createPortal(
-    <motion.button
-      ref={drag.elementRef}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring", stiffness: 380, damping: 28 }}
-      onPointerDown={drag.onPointerDown}
-      onPointerMove={drag.onPointerMove}
-      onPointerUp={handlePointerUp}
-      style={{ left: drag.position.x, top: drag.position.y }}
-      className={
-        "fixed z-[45] grid size-12 touch-none select-none place-items-center " +
-        "rounded-full border border-line bg-surface shadow-lg " +
-        "transition-colors hover:border-ink-2/40 " +
-        (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
-      }
-      aria-label="Open 3D cube view"
-      title="Open 3D cube"
-    >
-      <Box className="size-5 text-ink-2" />
-    </motion.button>,
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <motion.button
+          ref={drag.elementRef}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          onPointerDown={drag.onPointerDown}
+          onPointerMove={drag.onPointerMove}
+          onPointerUp={handlePointerUp}
+          style={{ left: drag.position.x, top: drag.position.y }}
+          className={
+            "fixed z-[45] grid size-12 touch-none select-none place-items-center " +
+            "rounded-full border border-line bg-surface shadow-lg " +
+            "transition-colors hover:border-ink-2/40 " +
+            (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
+          }
+          aria-label="Open 3D cube view"
+        >
+          <Box className="size-5 text-ink-2" />
+        </motion.button>
+      </TooltipTrigger>
+      <TooltipContent side="left">Open 3D cube</TooltipContent>
+    </Tooltip>,
     document.body,
   );
 }

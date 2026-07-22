@@ -279,7 +279,7 @@ function SidebarNavItem({
   badge?: React.ReactNode;
   onClick?: () => void;
 }) {
-  return (
+  const button = (
     <button
       onClick={onClick}
       className={cn(
@@ -288,7 +288,6 @@ function SidebarNavItem({
           ? "text-sidebar-accent-foreground"
           : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
       )}
-      title={!labelVisible ? label : undefined}
     >
       {isActive && (
         <motion.div
@@ -313,6 +312,8 @@ function SidebarNavItem({
       </motion.span>
     </button>
   );
+
+  return button;
 }
 
 function SidebarFooterItem({
@@ -326,10 +327,9 @@ function SidebarFooterItem({
   labelVisible: boolean;
   onClick?: () => void;
 }) {
-  return (
+  const button = (
     <button
       onClick={onClick}
-      title={!labelVisible ? label : undefined}
       className="flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
     >
       <div className="flex size-5 shrink-0 items-center justify-center">
@@ -345,4 +345,6 @@ function SidebarFooterItem({
       </motion.span>
     </button>
   );
+
+  return button;
 }

@@ -16,6 +16,7 @@ import {
   Pie,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { computeStats, formatTime, formatDuration, statLabel } from "@/utils/formatTime";
 import {
   deriveTpsSeries,
@@ -386,25 +387,37 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
       {/* Stacked Bar */}
       <div className="mt-4 mb-3 flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
         {ok > 0 && (
-          <div 
-            className="h-full bg-ready transition-all" 
-            style={{ width: `${pctNum(ok)}%` }} 
-            title={`Clean: ${ok} solves`}
-          />
+          <UiTooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="h-full bg-ready transition-all" 
+                style={{ width: `${pctNum(ok)}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top">Clean: {ok} solves</TooltipContent>
+          </UiTooltip>
         )}
         {plus2 > 0 && (
-          <div 
-            className="h-full bg-plus2 transition-all" 
-            style={{ width: `${pctNum(plus2)}%` }} 
-            title={`+2: ${plus2} solves`}
-          />
+          <UiTooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="h-full bg-plus2 transition-all" 
+                style={{ width: `${pctNum(plus2)}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top">+2: {plus2} solves</TooltipContent>
+          </UiTooltip>
         )}
         {dnf > 0 && (
-          <div 
-            className="h-full bg-dnf transition-all" 
-            style={{ width: `${pctNum(dnf)}%` }} 
-            title={`DNF: ${dnf} solves`}
-          />
+          <UiTooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="h-full bg-dnf transition-all" 
+                style={{ width: `${pctNum(dnf)}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top">DNF: {dnf} solves</TooltipContent>
+          </UiTooltip>
         )}
       </div>
 

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { orientationStore, connectionStore } from "@cubeforge/state";
 
@@ -155,53 +156,65 @@ export function CubeConnector({
     ? "edge://flags/#enable-experimental-web-platform-features"
     : "chrome://flags/#enable-experimental-web-platform-features";
 
-  const trigger =
-    variant === "rail" ? (
-      <button
-        type="button"
-        className={cn(
-          "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors",
-          "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-          status === "connected" && "text-blue-500",
-          className,
-        )}
-        title={!expanded ? "Smart Cube" : undefined}
-        aria-label="Connect Smart Cube"
-      >
-        <div className="flex size-5 shrink-0 items-center justify-center">
+  const railTrigger = (
+    <Tooltip open={expanded ? false : undefined}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors",
+            "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+            status === "connected" && "text-blue-500",
+            className,
+          )}
+          aria-label="Connect Smart Cube"
+        >
+          <div className="flex size-5 shrink-0 items-center justify-center">
+            {status === "connected" ? (
+              <BluetoothConnected className="size-4" />
+            ) : (
+              <Bluetooth className="size-4" />
+            )}
+          </div>
+          <motion.span
+            initial={false}
+            animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
+            transition={SIDEBAR_MOTION.label}
+            className="overflow-hidden whitespace-nowrap"
+          >
+            Smart Cube
+          </motion.span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">Smart Cube</TooltipContent>
+    </Tooltip>
+  );
+
+  const headerTrigger = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
+            status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
+            className,
+          )}
+          aria-label="Connect Smart Cube"
+        >
           {status === "connected" ? (
             <BluetoothConnected className="size-4" />
           ) : (
             <Bluetooth className="size-4" />
           )}
-        </div>
-        <motion.span
-          initial={false}
-          animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
-          transition={SIDEBAR_MOTION.label}
-          className="overflow-hidden whitespace-nowrap"
-        >
-          Smart Cube
-        </motion.span>
-      </button>
-    ) : (
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
-          status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
-          className,
-        )}
-        aria-label="Connect Smart Cube"
-      >
-        {status === "connected" ? (
-          <BluetoothConnected className="size-4" />
-        ) : (
-          <Bluetooth className="size-4" />
-        )}
-      </Button>
-    );
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Connect Smart Cube</TooltipContent>
+    </Tooltip>
+  );
+
+  const trigger = variant === "rail" ? railTrigger : headerTrigger;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -244,13 +257,17 @@ export function CubeConnector({
                 <code className="rounded bg-ink/5 p-1.5 pr-8 font-mono text-xs text-ink break-all cursor-text select-all">
                   {instructions}
                 </code>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
-                  className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Copy"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
+                      className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Copy</TooltipContent>
+                </Tooltip>
               </div>
               <div className="space-y-1.5 mt-2">
                 <p className="text-ink-2 text-xs">Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>

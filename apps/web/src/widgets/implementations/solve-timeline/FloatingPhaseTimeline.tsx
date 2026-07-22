@@ -6,6 +6,7 @@ import {
   Pause,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline } from "@/utils/insights";
@@ -153,22 +154,25 @@ export function FloatingPhaseTimeline({
               <>
                 <div className="mb-2 flex h-7 w-full overflow-hidden rounded-md">
                   {timelinePhaseEntries.map((entry) => (
-                    <div
-                      key={entry.phaseName}
-                      className="relative flex items-center justify-center text-[0.5rem] font-medium text-white transition-all"
-                      style={{
-                        width: `${Math.max(entry.fraction * 100, 4)}%`,
-                        backgroundColor: entry.color,
-                        opacity: 0.85,
-                      }}
-                      title={`${entry.phaseName}: ${formatTime(entry.durationMs)}`}
-                    >
+                    <Tooltip key={entry.phaseName}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="relative flex items-center justify-center text-[0.5rem] font-medium text-white transition-all"
+                          style={{
+                            width: `${Math.max(entry.fraction * 100, 4)}%`,
+                            backgroundColor: entry.color,
+                            opacity: 0.85,
+                          }}
+                        >
                       {entry.fraction > 0.1 && (
                         <span className="truncate px-0.5 drop-shadow-sm">
                           {entry.phaseName}
                         </span>
                       )}
                     </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{entry.phaseName}: {formatTime(entry.durationMs)}</TooltipContent>
+                  </Tooltip>
                   ))}
                 </div>
 
@@ -192,10 +196,15 @@ export function FloatingPhaseTimeline({
                         <span className="text-ink-2">{entry.tps.toFixed(1)} TPS</span>
                         <span>{entry.moveCount}m</span>
                         {entry.pauseCount > 0 && (
-                          <span className="flex items-center gap-0.5 text-caution/70" title={`${entry.pauseCount} pause${entry.pauseCount > 1 ? "s" : ""}: ${formatTime(entry.pauseDurationMs)}`}>
-                            <Pause className="size-2.5" />
-                            {formatTime(entry.pauseDurationMs)}
-                          </span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-0.5 text-caution/70">
+                                <Pause className="size-2.5" />
+                                {formatTime(entry.pauseDurationMs)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">{entry.pauseCount} pause{entry.pauseCount > 1 ? "s" : ""}: {formatTime(entry.pauseDurationMs)}</TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </div>

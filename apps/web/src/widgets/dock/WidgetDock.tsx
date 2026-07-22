@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   widgetStore,
   useWidgetStore,
@@ -138,27 +139,33 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
   return (
     <>
       {/* The dock pill */}
-      <motion.button
-        layout
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.85 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        className={cn(
-          "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-all duration-150",
-          isVisible
-            ? "border-ink/15 bg-ink/5 text-ink"
-            : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
-        )}
-        title={`${definition.name} — ${isVisible ? "visible" : "hidden"}. Drag down to undock.`}
-        aria-label={`${definition.name} — ${isVisible ? "visible" : "hidden"}`}
-      >
-        <Icon className="size-3.5 shrink-0" />
-        <span className="truncate max-w-28">{definition.name}</span>
-      </motion.button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.button
+            layout
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            className={cn(
+              "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-all duration-150",
+              isVisible
+                ? "border-ink/15 bg-ink/5 text-ink"
+                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
+            )}
+            aria-label={`${definition.name} — ${isVisible ? "visible" : "hidden"}`}
+          >
+            <Icon className="size-3.5 shrink-0" />
+            <span className="truncate max-w-28">{definition.name}</span>
+          </motion.button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {definition.name} — {isVisible ? "visible" : "hidden"}. Drag down to undock.
+        </TooltipContent>
+      </Tooltip>
 
       {/* Ghost pill during undock drag */}
       {isDragging &&
