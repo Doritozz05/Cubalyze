@@ -135,7 +135,7 @@ export function MainLayout({
   return (
     <div
       className={cn(
-        "flex min-h-dvh flex-col bg-canvas text-ink lg:h-dvh lg:overflow-hidden",
+        "flex h-dvh flex-col overflow-hidden bg-canvas text-ink",
         className,
       )}
     >
@@ -158,13 +158,13 @@ export function MainLayout({
         )}
 
         <main className={cn(
-          "mx-auto flex w-full flex-1 flex-col lg:flex-row lg:overflow-hidden",
-          !isFocused && "lg:h-[calc(100dvh-3.5rem)]"
+          "mx-auto flex w-full flex-1 flex-col overflow-hidden lg:flex-row",
+          !isFocused && "h-[calc(100dvh-3.5rem)]"
         )}>
           <section
             id="timer-section"
             className={cn(
-              "flex min-h-0 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8 lg:min-w-0 lg:flex-1 lg:overflow-hidden",
+              "flex min-h-0 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8 min-w-0 flex-1 overflow-hidden",
               isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : "gap-6"
             )}
           >
