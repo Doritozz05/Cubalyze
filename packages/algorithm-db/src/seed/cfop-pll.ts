@@ -1,5 +1,6 @@
 import type { AlgorithmCase, Algorithm } from '../schema';
 
+
 // ─── PLL Cases — 21 cases for CFOP ────────────────────────────────────────
 //
 // Side strips corrected to remove impossible color combinations:

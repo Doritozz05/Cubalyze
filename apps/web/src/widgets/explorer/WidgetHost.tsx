@@ -33,14 +33,7 @@ export function WidgetHost(hostProps: WidgetHostProps) {
         if (state.dockMode === "docked") return null;
 
         const reg = WidgetRegistry.get(id);
-        if (!reg) {
-          if (import.meta.env.DEV) {
-            console.warn(
-              `[WidgetHost] Widget "${id}" is visible but not registered in WidgetRegistry`,
-            );
-          }
-          return null;
-        }
+        if (!reg) return null;
 
         const Component = reg.component;
         const widgetProps = reg.mapProps(hostProps);

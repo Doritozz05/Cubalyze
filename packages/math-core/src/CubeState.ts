@@ -1,4 +1,5 @@
 import { Corner, Edge, Move, StringToMove } from './Constants';
+import { expandWideMoves } from './MoveExpander';
 import {
   createCornerPermAdapter,
   createCornerOrientAdapter,
@@ -311,7 +312,7 @@ export class CubeState implements CubeStateInternal {
   }
 
   public applySequence(moves: string): void {
-    const tokens = moves.trim().split(/\s+/);
+    const tokens = expandWideMoves(moves);
     for (const token of tokens) {
       if (!token) continue;
       const m = StringToMove[token];

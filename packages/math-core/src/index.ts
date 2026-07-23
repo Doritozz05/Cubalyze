@@ -2,6 +2,7 @@ export * from './FaceletParser';
 export * from './Constants';
 export * from './CubeState';
 export * from './FaceletStringConverter';
+export * from './MoveExpander';
 
 // Cube orientation system (dynamic notation)
 export * from './orientation/OrientationTable';

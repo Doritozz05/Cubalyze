@@ -119,7 +119,7 @@ export function CaseDiagram({
   return (
     <svg
       viewBox={`0 0 ${TOTAL} ${TOTAL}`}
-      className={cn("w-full h-auto max-w-[340px] select-none", className)}
+      className={cn("w-full h-auto max-w-85 select-none", className)}
     >
       <rect width={TOTAL} height={TOTAL} fill="transparent" rx={6} />
 

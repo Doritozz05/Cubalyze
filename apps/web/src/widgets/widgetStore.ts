@@ -144,24 +144,42 @@ export const widgetStore = createStore<WidgetStore>()(
     }),
     {
       name: "cubeforge:widgets",
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => {
-        // v0 → v1: Add dockMode + dockOrder to old persisted data
-        if (version === 0) {
-          const raw = persisted as Record<string, unknown>;
-          const instances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
-          for (const id of Object.keys(instances)) {
-            if (!instances[id].dockMode) {
-              instances[id].dockMode = "floating";
-            }
+        const raw = (persisted ?? {}) as Record<string, unknown>;
+        const instances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
+        const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));
+
+        // Filter out obsolete/unregistered widget IDs from localStorage
+        const cleanedInstances: Record<string, Record<string, unknown>> = {};
+        for (const [id, value] of Object.entries(instances)) {
+          const isBuiltIn = validIds.has(id);
+          const isCustom = ((raw.customWidgets ?? []) as WidgetDefinition[]).some((w) => w.id === id);
+          if (isBuiltIn || isCustom) {
+            cleanedInstances[id] = {
+              ...value,
+              dockMode: value.dockMode ?? "floating",
+            };
           }
-          return {
-            ...raw,
-            instances,
-            dockOrder: raw.dockOrder ?? [],
-          } as Record<string, unknown>;
         }
-        return persisted as Record<string, unknown>;
+
+        // Ensure all built-in widgets have instance state
+        for (const w of BUILT_IN_WIDGETS) {
+          if (!cleanedInstances[w.id]) {
+            cleanedInstances[w.id] = {
+              visible: w.defaultActive,
+              minimized: w.defaultMinimized,
+              position: { ...w.defaultPosition },
+              dockMode: "floating",
+            };
+          }
+        }
+
+        return {
+          ...raw,
+          instances: cleanedInstances,
+          dockOrder: ((raw.dockOrder ?? []) as string[]).filter((id) => cleanedInstances[id]),
+        } as Record<string, unknown>;
       },
       partialize: (state) => ({
         instances: state.instances,

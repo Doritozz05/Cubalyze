@@ -1,3 +1,4 @@
+import { expandWideMoves } from '@cubeforge/math-core';
 import type { AlgorithmCase, Algorithm } from '../schema';
 
 const OLL_SUBSET_ID = '00000000-0000-4000-9000-000000000002';
@@ -36,64 +37,6 @@ function algUuid(n: number, variant = 0): string {
   return `40000000-0000-4000-a000-${String(n * 10 + variant).padStart(12, '0')}`;
 }
 
-/**
- * Expand algorithm move tokens into face moves and whole-cube rotations.
- *
- * Wide moves (r, l, f, u, d, b) and slice moves (M, S, E) are expanded using
- * whole-cube rotations (x, y, z) + opposite face turns. This ensures that
- * slice moves do NOT falsely cancel outer-layer face turns when inverted.
- */
-function parseMoves(movesStr: string): string[] {
-  const tokens = movesStr.trim().split(/\s+/).filter(Boolean);
-  const result: string[] = [];
-
-  for (let t of tokens) {
-    t = t.replace(/[()]/g, '').replace(/2'/g, '2');
-    switch (t) {
-      // Wide moves
-      case 'r': result.push('x', "L'"); break;
-      case "r'": result.push("x'", 'L'); break;
-      case 'r2': result.push('x2', 'L2'); break;
-
-      case 'l': result.push("x'", "R'"); break;
-      case "l'": result.push('x', 'R'); break;
-      case 'l2': result.push('x2', 'R2'); break;
-
-      case 'f': result.push('z', "B'"); break;
-      case "f'": result.push("z'", 'B'); break;
-      case 'f2': result.push('z2', 'B2'); break;
-
-      case 'u': result.push('y', "D'"); break;
-      case "u'": result.push("y'", 'D'); break;
-      case 'u2': result.push('y2', 'D2'); break;
-
-      case 'd': result.push("y'", "U'"); break;
-      case "d'": result.push('y', 'U'); break;
-      case 'd2': result.push('y2', 'U2'); break;
-
-      case 'b': result.push("z'", "F'"); break;
-      case "b'": result.push('z', 'F'); break;
-      case 'b2': result.push('z2', 'F2'); break;
-
-      // Slice moves
-      case 'M': result.push("x'", "R'", 'L'); break;
-      case "M'": result.push('x', 'R', "L'"); break;
-      case 'M2': result.push('x2', 'R2', 'L2'); break;
-
-      case 'S': result.push('z', "F'", 'B'); break;
-      case "S'": result.push("z'", 'F', "B'"); break;
-      case 'S2': result.push('z2', 'F2', 'B2'); break;
-
-      case 'E': result.push("y'", 'U', "D'"); break;
-      case "E'": result.push('y', "U'", 'D'); break;
-      case 'E2': result.push('y2', 'U2', 'D2'); break;
-
-      default: result.push(t); break;
-    }
-  }
-  return result;
-}
-
 function makeOllCase(
   n: number,
   category: string,
@@ -103,7 +46,7 @@ function makeOllCase(
   tags: string[] = [],
   notes?: string,
 ): { caseDef: AlgorithmCase; algorithms: Algorithm[] } {
-  const moves = parseMoves(movesStr);
+  const moves = expandWideMoves(movesStr);
   return {
     caseDef: {
       id: caseUuid(n), subsetId: OLL_SUBSET_ID,

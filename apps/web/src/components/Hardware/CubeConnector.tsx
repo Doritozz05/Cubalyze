@@ -156,35 +156,41 @@ export function CubeConnector({
     ? "edge://flags/#enable-experimental-web-platform-features"
     : "chrome://flags/#enable-experimental-web-platform-features";
 
-  const railTrigger = (
-    <Tooltip open={expanded ? false : undefined}>
+  const railButton = (
+    <button
+      type="button"
+      className={cn(
+        "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors cursor-pointer",
+        "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+        status === "connected" && "text-blue-500",
+        className,
+      )}
+      aria-label="Connect Smart Cube"
+    >
+      <div className="flex size-5 shrink-0 items-center justify-center">
+        {status === "connected" ? (
+          <BluetoothConnected className="size-4" />
+        ) : (
+          <Bluetooth className="size-4" />
+        )}
+      </div>
+      <motion.span
+        initial={false}
+        animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
+        transition={SIDEBAR_MOTION.label}
+        className="overflow-hidden whitespace-nowrap"
+      >
+        Smart Cube
+      </motion.span>
+    </button>
+  );
+
+  const railTrigger = expanded ? (
+    <DialogTrigger asChild>{railButton}</DialogTrigger>
+  ) : (
+    <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors",
-            "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-            status === "connected" && "text-blue-500",
-            className,
-          )}
-          aria-label="Connect Smart Cube"
-        >
-          <div className="flex size-5 shrink-0 items-center justify-center">
-            {status === "connected" ? (
-              <BluetoothConnected className="size-4" />
-            ) : (
-              <Bluetooth className="size-4" />
-            )}
-          </div>
-          <motion.span
-            initial={false}
-            animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
-            transition={SIDEBAR_MOTION.label}
-            className="overflow-hidden whitespace-nowrap"
-          >
-            Smart Cube
-          </motion.span>
-        </button>
+        <DialogTrigger asChild>{railButton}</DialogTrigger>
       </TooltipTrigger>
       <TooltipContent side="right">Smart Cube</TooltipContent>
     </Tooltip>
@@ -193,22 +199,24 @@ export function CubeConnector({
   const headerTrigger = (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
-            status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
-            className,
-          )}
-          aria-label="Connect Smart Cube"
-        >
-          {status === "connected" ? (
-            <BluetoothConnected className="size-4" />
-          ) : (
-            <Bluetooth className="size-4" />
-          )}
-        </Button>
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
+              status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
+              className,
+            )}
+            aria-label="Connect Smart Cube"
+          >
+            {status === "connected" ? (
+              <BluetoothConnected className="size-4" />
+            ) : (
+              <Bluetooth className="size-4" />
+            )}
+          </Button>
+        </DialogTrigger>
       </TooltipTrigger>
       <TooltipContent side="bottom">Connect Smart Cube</TooltipContent>
     </Tooltip>
@@ -218,7 +226,7 @@ export function CubeConnector({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {variant === "rail" && expanded ? trigger : <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Connect Smart Cube</DialogTitle>
