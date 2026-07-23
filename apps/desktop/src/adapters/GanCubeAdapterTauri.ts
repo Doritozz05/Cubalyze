@@ -7,10 +7,16 @@
  *
  * Reuses ALL existing protocol drivers, encrypters, and parsers from
  * @cubeforge/gan-protocol. The Rust backend handles ONLY BLE transport.
+ *
+ * FUNCTIONAL PARITY with web GanCubeAdapter:
+ *   - ClockDriftReconciler for accurate move timestamps
+ *   - invalidMoves$ subject for unrecognized move tracking
+ *   - FACELETS validation (54-character standard 3x3 cube)
+ *   - Same reconnection parameters (3 attempts, 1000ms base)
  */
 
 import { Subject, ReplaySubject, BehaviorSubject } from 'rxjs';
-import { SmartCubeAdapter } from '@cubeforge/hardware-hal';
+import { SmartCubeAdapter, ClockDriftReconciler } from '@cubeforge/hardware-hal';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
@@ -34,10 +40,10 @@ import {
   GAN_ENCRYPTION_KEYS,
 } from '@cubeforge/gan-protocol';
 
-// ── Reconnection Constants ──────────────────────────────────────────────────
+// ── Reconnection Constants (matched to web adapter) ───────────────────────
 
-const MAX_RECONNECT_ATTEMPTS = 5;
-const RECONNECT_BASE_DELAY_MS = 800;
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_BASE_DELAY_MS = 1000;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -101,11 +107,12 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
   private unlistenData: UnlistenFn | null = null;
   private unlistenStatus: UnlistenFn | null = null;
 
-  // Stable subjects — NEVER recreated across disconnect/reconnect cycles
+  // ── RxJS Subjects (stable, never recreated — matches web adapter) ────
   private movesSubject = new ReplaySubject<CubeMoveEvent>(1);
   private faceletsSubject = new ReplaySubject<string>(1);
   private batterySubject = new Subject<number>();
   private gyroSubject = new Subject<GyroEvent>();
+  private invalidMovesSubject = new Subject<string>();
   private connectionStatusSubject = new BehaviorSubject<
     'connecting' | 'connected' | 'disconnected' | 'reconnecting'
   >('disconnected');
@@ -114,13 +121,17 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
   public facelets$ = this.faceletsSubject.asObservable();
   public battery$ = this.batterySubject.asObservable();
   public gyro$ = this.gyroSubject.asObservable();
+  public invalidMoves$ = this.invalidMovesSubject.asObservable();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
-  // Protocol objects — created on connect, cleaned on disconnect
+  // ── Protocol objects ───────────────────────────────────────────────────
   private driver: GanProtocolDriver | null = null;
   private encrypter: GanGen2CubeEncrypter | null = null;
   private rawConn: TauriRawConnection | null = null;
   private macAddress: string = '';
+
+  // ── Clock drift correction (matches web adapter) ───────────────────────
+  private clockReconciler = new ClockDriftReconciler();
 
   // ── Reconnection state ──────────────────────────────────────────────────
   private isUserDisconnect = false;
@@ -200,6 +211,9 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
 
     this.rawConn = new TauriRawConnection();
 
+    // Reset clock drift reconciler on (re)connect — cube clock may have reset
+    this.clockReconciler = new ClockDriftReconciler();
+
     // Tear down any previous listeners before setting up new ones
     this.unlistenData?.();
     this.unlistenStatus?.();
@@ -264,6 +278,7 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     if (this.reconnectTimer !== null) return;
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts = 0;
+      this.macAddress = '';
       this.connectionStatusSubject.next('disconnected');
       this.onConnectionChange?.('disconnected');
       return;
@@ -310,8 +325,6 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     this._connected = false;
     this.macAddress = '';
 
-    // Fire-and-forget — the Rust disconnect will complete asynchronously.
-    // We've already torn down listeners so we don't need the response.
     invoke('disconnect_gan_cube').catch(() => {});
   }
 
@@ -336,20 +349,39 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
   private emitEvent(evt: GanCubeEvent): void {
     switch (evt.type) {
       case 'MOVE': {
-        const parsed = parseMoveNotation(evt.move);
-        if (parsed) {
-          this.movesSubject.next({
-            face: parsed.face,
-            direction: parsed.direction,
-            cubeTimestamp: evt.cubeTimestamp ?? evt.timestamp,
-            hostTimestamp: evt.localTimestamp ?? evt.timestamp,
-          });
+        const hostNow = performance.now();
+        const cubeTs = evt.cubeTimestamp ?? hostNow;
+
+        if (evt.cubeTimestamp != null) {
+          this.clockReconciler.addDataPoint(evt.cubeTimestamp, hostNow);
         }
+        const correctedHostTs = evt.cubeTimestamp != null
+          ? this.clockReconciler.reconcile(evt.cubeTimestamp)
+          : hostNow;
+
+        const parsed = parseMoveNotation(evt.move);
+        if (!parsed) {
+          console.warn('[GanCubeAdapterTauri] Unrecognized move:', evt.move);
+          this.invalidMovesSubject.next(evt.move);
+          return;
+        }
+
+        this.movesSubject.next({
+          face: parsed.face,
+          direction: parsed.direction,
+          cubeTimestamp: cubeTs,
+          hostTimestamp: correctedHostTs,
+        });
         break;
       }
       case 'FACELETS':
-        this.faceletsSubject.next(evt.facelets);
-        this.onFacelets?.(evt.facelets);
+        // Validate: standard 3x3 cube facelets are exactly 54 characters
+        if (typeof evt.facelets === 'string' && evt.facelets.length === 54) {
+          this.faceletsSubject.next(evt.facelets);
+          this.onFacelets?.(evt.facelets);
+        } else {
+          console.warn('[GanCubeAdapterTauri] Invalid FACELETS state received:', evt.facelets);
+        }
         break;
       case 'BATTERY':
         this.batterySubject.next(evt.batteryLevel);
@@ -375,10 +407,13 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
       case 'HARDWARE':
         if (evt.hardwareName) this.model = evt.hardwareName;
         if (typeof evt.gyroSupported === 'boolean') this.gyroSupported = evt.gyroSupported;
-        this.onHardwareInfo?.({
-          model: this.model,
-          gyroSupported: this.gyroSupported,
-        });
+        // Only notify if something actually changed (matches web adapter guard)
+        if (typeof evt.gyroSupported === 'boolean' || evt.hardwareName) {
+          this.onHardwareInfo?.({
+            model: this.model,
+            gyroSupported: this.gyroSupported,
+          });
+        }
         break;
     }
   }
@@ -393,7 +428,6 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
 
   async requestFacelets(): Promise<void> {
     if (!this.driver) return;
-    // Dedup: reuse in-flight promise
     if (this.faceletsRequestPromise) return this.faceletsRequestPromise;
     const msg = this.driver.createCommandMessage({ type: 'REQUEST_FACELETS' });
     if (!msg) return;
