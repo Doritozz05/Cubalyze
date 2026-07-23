@@ -7,6 +7,7 @@ import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
+import { TrainingDashboard } from "@/views/Training/TrainingDashboard";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
@@ -481,6 +482,10 @@ export default function App() {
 
     if (activeView === "practice") {
       return <PracticeDashboard />;
+    }
+
+    if (activeView === "training") {
+      return <TrainingDashboard />;
     }
 
     // timer

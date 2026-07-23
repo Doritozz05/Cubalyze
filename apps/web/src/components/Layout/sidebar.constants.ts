@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Dumbbell } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -25,7 +25,7 @@ export const ACTIVE_PILL_SPRING = {
 };
 
 /** Views the main stage can show. Driven by the LeftSidebar nav. */
-export type ViewId = "timer" | "insights" | "practice";
+export type ViewId = "timer" | "insights" | "practice" | "training";
 
 /**
  * A nav item that maps to a stage view (ViewId) or triggers a dialog
@@ -59,6 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Training",
     items: [
+      { id: "training", label: "Training", icon: Dumbbell },
       { id: "practice", label: "Algorithms", icon: BookOpen },
     ],
   },
