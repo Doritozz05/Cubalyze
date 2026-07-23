@@ -58,6 +58,21 @@ function algUuid(n: number, variant = 0): string {
   return `40000000-0000-4000-a000-${String(n * 10 + variant).padStart(12, '0')}`;
 }
 
+/**
+ * Returns the real probability of each OLL case based on its rotational symmetry:
+ *   1/216  — OLL 20  (4-fold / 90° symmetry: appears identical from every AUF)
+ *   1/108  — OLL 1, 21, 55, 56, 57  (2-fold / 180° symmetry)
+ *   1/54   — all other 51 cases (no rotational symmetry)
+ *
+ * Verification: 1×(1/216) + 5×(1/108) + 51×(1/54)
+ *             = 1/216 + 10/216 + 204/216 = 215/216  ✓  (remaining 1/216 = OLL skip)
+ */
+function ollProbability(n: number): string {
+  if (n === 20) return '1/216';
+  if ([1, 21, 55, 56, 57].includes(n)) return '1/108';
+  return '1/54';
+}
+
 function makeOllCase(
   n: number,
   category: string,
@@ -80,8 +95,8 @@ function makeOllCase(
       recognitionPatterns: [],
       setupScramble,
       diagramType: '2d-top',
-      diagram2D: { highlightedPieces: [] },
-      probability: '1/54', difficulty, category, tags, puzzleType: '3x3x3',
+      diagram2D: {},
+      probability: ollProbability(n), difficulty, category, tags, puzzleType: '3x3x3',
     },
     algorithms: [alg(algUuid(n), caseUuid(n), moves, true, difficulty, [], notes, metrics)],
   };
