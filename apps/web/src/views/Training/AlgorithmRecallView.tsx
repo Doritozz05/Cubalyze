@@ -8,7 +8,7 @@ import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
   ArrowLeft, Eye, EyeOff, Check, X, Zap, Cpu, Hand,
-  Lightbulb, RotateCcw, Flame, ChevronRight, Target, Brain,
+  Lightbulb, RotateCcw, Flame, ChevronRight, Target, Brain, Lock,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -780,7 +780,7 @@ function AlgorithmPanel({
       {isVisible ? (
         <p className="nums text-[0.78rem] font-medium text-ink leading-relaxed">{algoText || "No algorithm available"}</p>
       ) : (
-        <p className="nums text-[0.78rem] text-ink-3/40 italic select-none">Algorithm hidden 🔒</p>
+        <p className="nums text-[0.78rem] text-ink-3/40 italic select-none flex items-center gap-1.5"><Lock className="size-3" /> Algorithm hidden</p>
       )}
     </div>
   );

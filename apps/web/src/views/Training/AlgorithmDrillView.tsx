@@ -21,6 +21,7 @@ import {
   Hand,
   Flame,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -306,7 +307,7 @@ export function AlgorithmDrillView({
                   {showAlgorithm ? (
                     <p className="nums text-[0.78rem] font-medium text-ink leading-relaxed">{algoText || "No algorithm available"}</p>
                   ) : (
-                    <p className="nums text-[0.78rem] text-ink-3/40 italic select-none">Algorithm hidden 🔒</p>
+                    <p className="nums text-[0.78rem] text-ink-3/40 italic select-none flex items-center gap-1.5"><Lock className="size-3" /> Algorithm hidden</p>
                   )}
                 </div>
 
