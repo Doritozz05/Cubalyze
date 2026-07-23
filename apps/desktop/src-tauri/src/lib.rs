@@ -3,6 +3,8 @@ mod ble;
 mod state;
 
 use state::AppState;
+use tauri::Manager;
+use btleplug::api::Peripheral as _;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -24,9 +26,37 @@ pub fn run() {
             ble::timer::disconnect_gan_timer,
         ])
         .setup(|app| {
+            // ── Clean disconnect on window close ────────────────────────────
+            // Without this, the BLE connection stays open when the user closes
+            // the window (the WebView is destroyed but Rust never calls
+            // peripheral.disconnect()). Windows BLE stack eventually times out,
+            // but that takes seconds to minutes.
+            let handle = app.handle().clone();
+            if let Some(window) = app.get_webview_window("main") {
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { .. } = event {
+                        let state = handle.state::<crate::state::AppState>();
+                        // Take the peripheral out before blocking, so the
+                        // MutexGuard is dropped and no borrow conflicts arise.
+                        let peripheral = state.connected_cube.lock().take();
+                        state.cube_command_char.lock().take();
+                        state.cube_state_char.lock().take();
+                        drop(state);
+
+                        if let Some(p) = peripheral {
+                            eprintln!("[BLE] Window closing — disconnecting cube...");
+                            // Block synchronously here because the app is exiting.
+                            // Tauri runs on Tokio, so a runtime handle is available.
+                            if let Ok(rt) = tokio::runtime::Handle::try_current() {
+                                let _ = rt.block_on(p.disconnect());
+                                eprintln!("[BLE] Cube disconnected on window close");
+                            }
+                        }
+                    }
+                });
+            }
+
             // Start BLE background auto-scan when the app opens.
-            // The scan runs asynchronously and emits events to the frontend
-            // via app.emit() when a cube is detected or connected.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = ble::cube::start_auto_scan(handle).await {
