@@ -14,9 +14,9 @@
 4. [Modo 2: Cross Trainer](#4-modo-2-cross-trainer)
 5. [Modo 3: F2L Trainer](#5-modo-3-f2l-trainer)
 6. [Modo 4: Full Solve Modular](#6-modo-4-full-solve-modular)
-7. [Modo 5: Recall & Memorization](#7-modo-5-recall--memorization)
-8. [Modo 6: Challenges & Gamification](#8-modo-6-challenges--gamification)
-9. [Progress Tracking & SRS](#9-progress-tracking--srs)
+7. [Modo 5: Recall &amp; Memorization](#7-modo-5-recall--memorization)
+8. [Modo 6: Challenges &amp; Gamification](#8-modo-6-challenges--gamification)
+9. [Progress Tracking &amp; SRS](#9-progress-tracking--srs)
 10. [UI/UX del Training Tab](#10-uiux-del-training-tab)
 11. [Integración con el ecosistema](#11-integración-con-el-ecosistema)
 12. [Plan de Implementación](#12-plan-de-implementación)
@@ -37,12 +37,12 @@ El sistema de entrenamiento es el **core value proposition** de CubeForge según
 
 ### Entry points
 
-| Desde | Acción | Resultado |
-|---|---|---|
-| **Algorithms tab** | Click en cualquier caso → "Practice This" | Training tab abierto con ese caso preset |
-| **Training tab** | Navegación directa | Dashboard completo con métodos y progreso |
-| **Insights** | Click en "Improve this phase" | Training mode específico para fase débil |
-| **AI Coach** | Recomendación automática | Training plan personalizado |
+| Desde                    | Acción                                    | Resultado                                  |
+| ------------------------ | ------------------------------------------ | ------------------------------------------ |
+| **Algorithms tab** | Click en cualquier caso → "Practice This" | Training tab abierto con ese caso preset   |
+| **Training tab**   | Navegación directa                        | Dashboard completo con métodos y progreso |
+| **Insights**       | Click en "Improve this phase"              | Training mode específico para fase débil |
+| **AI Coach**       | Recomendación automática                 | Training plan personalizado                |
 
 ---
 
@@ -132,16 +132,19 @@ interface TrainingSession {
 ## 3. Modo 1: Algorithm Drill
 
 ### Descripción
+
 El equivalente a csTimer trainer, pero con verificación automática, tracking de progreso, y múltiples variantes.
 
 ### Sub-modos
 
-| Sub-modo | Descripción | Métricas clave |
-|---|---|---|
-| **Single** | Practica un caso específico hasta dominarlo | Tiempo, TPS, accuracy, tendencia |
-| **Random** | Saca casos aleatorios del subset | Media, desviación, tasa de fallo |
-| **Sequential** | Recorre todos los casos del subset en orden | Cobertura, progreso |
-| **Weakness** | Prioriza casos con peor tiempo/highest fail rate | Mejora vs baseline |
+| Sub-modo             | Descripción                                     | Métricas clave                   |
+| -------------------- | ------------------------------------------------ | --------------------------------- |
+| **Single**     | Practica un caso específico hasta dominarlo     | Tiempo, TPS, accuracy, tendencia  |
+| **Random**     | Saca casos aleatorios del subset                 | Media, desviación, tasa de fallo |
+| **Sequential** | Recorre todos los casos del subset en orden      | Cobertura, progreso               |
+| **Weakness**   | Prioriza casos con peor tiempo/highest fail rate | Mejora vs baseline                |
+
+SELECION DE ALGS tambien.
 
 ### Flujo
 
@@ -204,7 +207,7 @@ class CaseVerifier {
   ): VerificationResult {
     const result = initialState.clone();
     result.applySequence(userMoves.join(' '));
-    
+  
     return {
       solved: result.isSolved(),
       remaining: result,  // Qué estado quedó si no está resuelto
@@ -222,23 +225,27 @@ class CaseVerifier {
 ## 4. Modo 2: Cross Trainer
 
 ### Descripción
+
 La cruz es la fase más infravalorada y donde más tiempo se puede ganar. Múltiples sub-modos enfocados en dominio de cross.
 
 ### 4a. Plain Cross
 
 **Flujo:**
+
 1. Scramble completo
 2. Timer corre mientras resuelves solo la cruz
 3. Sistema detecta automáticamente cuándo la cruz está completa (PhaseSplitter)
 4. Mide: tiempo, movimientos, eficiencia vs óptimo
 
 **Métricas:**
+
 - Movimientos vs óptimo (Min2Phase resuelve solo la cruz)
 - Tiempo de inspección (primer movimiento)
 - TPS durante cross
 - Eficiencia: `(optimalMoves / actualMoves) * 100`
 
 **Características:**
+
 - 🔍 **Show Optimal**: calcula con Min2Phase la mejor cruz posible
 - 💡 **AI Hint**: "Intenta poner la arista BL con R' F' en vez de L' B" (detecta redundancia)
 - ✅ **Objetivo**: ≤ 8 movimientos, < 2s
@@ -246,11 +253,13 @@ La cruz es la fase más infravalorada y donde más tiempo se puede ganar. Múlti
 ### 4b. X-Cross (Cross + 1 F2L Pair)
 
 **Flujo:**
+
 1. Scramble completo
 2. Resolver cruz + un par F2L simultáneamente
 3. Sistema detecta cuándo se completó cruz + 1 slot
 
 **Métricas:**
+
 - Tiempo total
 - Movimientos extra vs cross plain
 - Relación tiempo extra vs ahorro en F2L
@@ -258,11 +267,13 @@ La cruz es la fase más infravalorada y donde más tiempo se puede ganar. Múlti
 ### 4c. Color-Neutral (CN) Cross
 
 **Flujo:**
+
 1. Scramble mostrado SIN indicar cross face
 2. Usuario elige qué cara usar
 3. Sistema evalúa: ¿era la óptima? ¿tiempo de decisión?
 
 **Métricas:**
+
 - Tiempo de reconocimiento (scramble → primer turn)
 - Cross face elegida vs optimal
 - Precisión de la decisión
@@ -270,6 +281,7 @@ La cruz es la fase más infravalorada y donde más tiempo se puede ganar. Múlti
 ### 4d. Cross + Transition
 
 **Flujo:**
+
 1. Scramble completo
 2. Resolver cruz
 3. Sistema cronometra: cross → **pausa hasta primer par F2L**
@@ -280,12 +292,14 @@ La cruz es la fase más infravalorada y donde más tiempo se puede ganar. Múlti
 ### 4e. Blind Cross
 
 **Flujo:**
+
 1. 15s de inspección (WCA-style)
 2. Usuario cierra los ojos / aparta la vista
 3. Resuelve la cruz sin mirar
 4. Sistema mide precisión + correcciones necesarias
 
 **Métricas:**
+
 - ¿Cruz completada correctamente?
 - Número de correcciones
 - Tiempo vs regular cross
@@ -321,17 +335,20 @@ La cruz es la fase más infravalorada y donde más tiempo se puede ganar. Múlti
 ## 5. Modo 3: F2L Trainer
 
 ### Descripción
+
 F2L = 60% del tiempo total. Múltiples dimensiones de entrenamiento.
 
 ### 5a. Slot Drills
 
 **Sub-modos:**
+
 - **Single slot**: practica un slot específico (FR, FL, BR, BL)
 - **Front slots**: solo FR + FL
 - **Back slots**: solo BR + BL (los más difíciles)
 - **Random slot**: slot aleatorio cada vez
 
 **Métricas:**
+
 - Reconocimiento: tiempo hasta primer move del par
 - Ejecución: tiempo del par completo
 - Eficiencia: movimientos del par vs óptimo
@@ -340,6 +357,7 @@ F2L = 60% del tiempo total. Múltiples dimensiones de entrenamiento.
 ### 5b. F2L Case Recognition
 
 **Flujo:**
+
 1. Se muestra el estado del cubo (o diagrama 2D)
 2. Usuario debe identificar qué caso F2L es
 3. Timer de reconocimiento (no de ejecución)
@@ -352,6 +370,7 @@ F2L = 60% del tiempo total. Múltiples dimensiones de entrenamiento.
 Ningún entrenador actual hace esto bien.
 
 #### Metronome Mode
+
 - Metrónomo a X BPM (ej: 120 BPM = 2 turns/second)
 - El usuario debe girar AL RITMO del metrónomo
 - Si gira fuera de ritmo → feedback visual (rojo) + contador de misses
@@ -359,18 +378,21 @@ Ningún entrenador actual hace esto bien.
 - Progresión: 120 BPM → 150 BPM → 180 BPM → 210 BPM
 
 #### Slow-Mo Mode
+
 - Sistema limita TPS máximo a 2.0 (advertencia si excede)
 - Mide: pausas totales, tiempo de "mirar"
 - **Paradoja**: yendo más lento, aprendes a no pausar
 - Métrica: pause ratio = tiempo pausado / tiempo total
 
 #### Blind Pair
+
 - Scramble → inspeccionas 5s
 - Resuelves 1 par F2L SIN mirar el cubo
 - Feedback: ¿acertaste? ¿tiempo? ¿eficiencia?
 - Tracking de: pares correctos, correcciones necesarias
 
 #### Transition Zone
+
 - Mide el gap entre cross→F2L y entre cada par F2L
 - **Heatmap** de dónde pierdes tiempo en las transiciones
 - Objetivo: < 0.3s entre cada par
@@ -407,6 +429,7 @@ Ningún entrenador actual hace esto bien.
 ## 6. Modo 4: Full Solve Modular
 
 ### Descripción
+
 Solve completo pero con objetivos configurables por fase.
 
 ### 6a. Phase Targeting
@@ -420,12 +443,14 @@ Selecciona objetivos por fase:
 ```
 
 **Flujo:**
+
 1. Usuario configura targets por fase
 2. Scramble → solve completo
 3. Sistema descompone: Cross ✅ / F2L ❌ / OLL ✅ / PLL ❌
 4. Muestra dónde se falló el target
 
 **Visualización:**
+
 - Verde: fase dentro del target
 - Rojo: fase fuera del target
 - Barra de tiempo total vs objetivo
@@ -455,6 +480,7 @@ Selecciona objetivos por fase:
 ## 7. Modo 5: Recall & Memorization
 
 ### Descripción
+
 Enfocado en aprender algoritmos NUEVOS, no en speed.
 
 ### 5a. Learn Mode (4 steps)
@@ -505,6 +531,7 @@ Step 4 ── Verify ──────────────────
 ### 5b. Spaced Repetition (SM-2 adaptado)
 
 **Factores de scheduling:**
+
 - Tiempo del último intento
 - Accuracy (correcto/incorrecto)
 - TPS relativo a tu media
@@ -512,6 +539,7 @@ Step 4 ── Verify ──────────────────
 - Número de recalls exitosos consecutivos
 
 **Fórmula de prioridad:**
+
 ```
 priority = (1 - mastery) * 0.4 
          + (1 - daysSinceLastReview / 30) * 0.3 
@@ -520,6 +548,7 @@ priority = (1 - mastery) * 0.4
 ```
 
 **Daily Queue:**
+
 ```
 📋 Today's Training Queue
 ┌──────────────────────────────────────┐
@@ -567,6 +596,7 @@ type ChallengeType =
 ```
 
 **Ejemplos:**
+
 ```
 🏆 "PLL Gauntlet" — 21 PLLs seguidos
    Oro: < 45s  |  Plata: < 55s  |  Bronce: < 70s
@@ -626,6 +656,7 @@ class WeaknessDetector {
 ```
 
 **Training Plan generado:**
+
 ```
 📋 TU PLAN DE ENTRENAMIENTO (generado por análisis de datos reales)
 Semana 1: Cross eficiencia (8 solves/día)
@@ -696,6 +727,7 @@ class SpacedRepetition {
 ```
 
 **Adaptaciones SM-2 para speedcubing:**
+
 - Calificación no es 0-5 subjetiva, sino basada en datos reales (tiempo, accuracy, TPS)
 - "Acierto" = cubo resuelto + algoritmo correcto
 - Factor extra: consistencia (desviación estándar de tiempos recientes)
@@ -810,6 +842,7 @@ Cuando entras a un modo específico desde los tabs, se muestra:
 ### 10.3 Navigation desde Algorithms
 
 Cuando estás en el **Algorithms tab**:
+
 1. Ves un caso en la grid
 2. Haces click → se abre el detail panel
 3. El detail panel tiene un botón **"Practice This Case"**
@@ -854,6 +887,7 @@ Análisis (Epic 5)                      Training (Epic 6)
 
 Los solves de training se guardan como solves normales con un tag `source: 'training'`.
 Esto permite:
+
 - Ver estadísticas de entrenamiento separadas
 - Incluirlas en análisis general si el usuario quiere
 - Tracking de progreso en el tiempo (no solo drilling aislado)
@@ -861,6 +895,7 @@ Esto permite:
 ### 11.4 AI Coach (Epic 8)
 
 El AI Coach consumirá:
+
 - WeaknessReport para generar recomendaciones en lenguaje natural
 - ProgressTracker para personalizar planes semanales
 - DailyQueue para sugerir qué practicar hoy
@@ -871,61 +906,61 @@ El AI Coach consumirá:
 
 ### Fase 1: Core Engine (2-3 semanas)
 
-| Componente | Descripción | Dependencias |
-|---|---|---|
-| `TrainingEngine` | Clase headless que orquesta modos | algorithm-db, math-core |
-| `TrainingSession` | Manejo de sesiones de entrenamiento | TrainingEngine |
-| `CaseVerifier` | Verificación de casos resueltos | math-core (CubeState) |
-| `SetupGenerator` | Generación de scrambles para casos | algorithm-db, solver-engine |
+| Componente          | Descripción                        | Dependencias                |
+| ------------------- | ----------------------------------- | --------------------------- |
+| `TrainingEngine`  | Clase headless que orquesta modos   | algorithm-db, math-core     |
+| `TrainingSession` | Manejo de sesiones de entrenamiento | TrainingEngine              |
+| `CaseVerifier`    | Verificación de casos resueltos    | math-core (CubeState)       |
+| `SetupGenerator`  | Generación de scrambles para casos | algorithm-db, solver-engine |
 
 ### Fase 2: Algorithm Drill (1-2 semanas)
 
-| Componente | Descripción |
-|---|---|
-| `AlgorithmDrill.ts` | Modo 1 completo |
-| `DrillUI` | Componente React con timer + diagrama + feedback |
-| Integración con Practice Dashboard | Botón "Practice This" + flujo completo |
+| Componente                          | Descripción                                     |
+| ----------------------------------- | ------------------------------------------------ |
+| `AlgorithmDrill.ts`               | Modo 1 completo                                  |
+| `DrillUI`                         | Componente React con timer + diagrama + feedback |
+| Integración con Practice Dashboard | Botón "Practice This" + flujo completo          |
 
 ### Fase 3: Progress Tracking (1 semana)
 
-| Componente | Descripción |
-|---|---|
-| `ProgressTracker.ts` | Registro y consulta de progreso |
+| Componente                 | Descripción                            |
+| -------------------------- | --------------------------------------- |
+| `ProgressTracker.ts`     | Registro y consulta de progreso         |
 | Schema en database package | Tablas IndexedDB para training progress |
-| `AlgorithmProgress` hook | React hook para leer/escribir progreso |
+| `AlgorithmProgress` hook | React hook para leer/escribir progreso  |
 
 ### Fase 4: Cross Trainer (1 semana)
 
-| Componente | Descripción |
-|---|---|
-| `CrossTrainer.ts` | Modo 2 (todos los sub-modos) |
-| Cross detection | Usar PhaseSplitter para detectar cuándo cross está completo |
-| Optimal cross solver | Min2Phase para calcular cross óptimo |
+| Componente           | Descripción                                                  |
+| -------------------- | ------------------------------------------------------------- |
+| `CrossTrainer.ts`  | Modo 2 (todos los sub-modos)                                  |
+| Cross detection      | Usar PhaseSplitter para detectar cuándo cross está completo |
+| Optimal cross solver | Min2Phase para calcular cross óptimo                         |
 
 ### Fase 5: F2L Trainer (1-2 semanas)
 
-| Componente | Descripción |
-|---|---|
-| `F2LTrainer.ts` | Modo 3 (slots, look-ahead, metronome) |
-| Metronome engine | Sistema de beats + validación de timing |
-| Pair detection | Detectar cuándo un par F2L está completo |
+| Componente        | Descripción                               |
+| ----------------- | ------------------------------------------ |
+| `F2LTrainer.ts` | Modo 3 (slots, look-ahead, metronome)      |
+| Metronome engine  | Sistema de beats + validación de timing   |
+| Pair detection    | Detectar cuándo un par F2L está completo |
 
 ### Fase 6: SRS + Full Solve (1 semana)
 
-| Componente | Descripción |
-|---|---|
-| `SpacedRepetition.ts` | SM-2 adaptado |
+| Componente              | Descripción                       |
+| ----------------------- | ---------------------------------- |
+| `SpacedRepetition.ts` | SM-2 adaptado                      |
 | `FullSolveTrainer.ts` | Modo 4 (phase targets, move limit) |
-| `RecallTrainer.ts` | Modo 5 (learn, recall, flash) |
+| `RecallTrainer.ts`    | Modo 5 (learn, recall, flash)      |
 
 ### Fase 7: Challenges + UI final (1-2 semanas)
 
-| Componente | Descripción |
-|---|---|
-| `ChallengeGenerator.ts` | Modo 6 |
-| `WeaknessDetector.ts` | Análisis automático de solves reales |
-| Training Dashboard UI | Vista completa con todos los tabs |
-| Integración Algorithms↔Training | Navegación bidireccional |
+| Componente                        | Descripción                           |
+| --------------------------------- | -------------------------------------- |
+| `ChallengeGenerator.ts`         | Modo 6                                 |
+| `WeaknessDetector.ts`           | Análisis automático de solves reales |
+| Training Dashboard UI             | Vista completa con todos los tabs      |
+| Integración Algorithms↔Training | Navegación bidireccional              |
 
 ### Total estimado: 8-12 semanas
 
