@@ -185,16 +185,7 @@ export function CubeConnector({
     </button>
   );
 
-  const railTrigger = expanded ? (
-    <DialogTrigger asChild>{railButton}</DialogTrigger>
-  ) : (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <DialogTrigger asChild>{railButton}</DialogTrigger>
-      </TooltipTrigger>
-      <TooltipContent side="right">Smart Cube</TooltipContent>
-    </Tooltip>
-  );
+  const railTrigger = <DialogTrigger asChild>{railButton}</DialogTrigger>;
 
   const headerTrigger = (
     <Tooltip>
@@ -226,7 +217,7 @@ export function CubeConnector({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {variant === "rail" && expanded ? trigger : <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Connect Smart Cube</DialogTitle>
