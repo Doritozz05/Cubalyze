@@ -8,6 +8,8 @@ import type { AlgorithmMethod } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { PhaseTrainerView } from "./PhaseTrainerView";
 import { AlgorithmRecallView } from "./AlgorithmRecallView";
+import { PhaseStatsView } from "./PhaseStatsView";
+import { FullSolveView } from "./FullSolveView";
 import {
   Box,
   Layers,
@@ -254,10 +256,7 @@ function Level1MethodGrid({ onSelect }: { onSelect: (methodId: string) => void }
           ))}
         </div>
       </section>
-      <section className="shrink-0 flex flex-wrap gap-2">
-        <button className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-[0.75rem] font-medium text-ink hover:border-ink/15 hover:bg-surface-2 transition-colors"><Zap className="size-3.5 text-ink-2" />Quick Drill</button>
-        <button className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.75rem] font-medium text-surface hover:bg-ink/90 transition-colors"><Target className="size-3.5" />Start Full Solve</button>
-      </section>
+
       <QueueSection items={MOCK_QUEUE} title="Today's Queue" />
     </>
   );
@@ -270,14 +269,17 @@ function Level1MethodGrid({ onSelect }: { onSelect: (methodId: string) => void }
 function Level2MethodPhase({
   method,
   onBack,    onDrillPhase,
-  onTrainPhase,
-  onRecallPhase,
+  onTrainPhase,    onRecallPhase,
+  onStatsPhase,
+  onFullSolve,
 }: {
   method: AlgorithmMethod;
   onBack: () => void;
   onDrillPhase: (phaseId: string, subsetId: string) => void;
   onTrainPhase: (phaseId: string, phaseName: string) => void;
   onRecallPhase: (phaseId: string, subsetId: string) => void;
+  onStatsPhase: (phaseId: string, phaseName: string) => void;
+  onFullSolve: () => void;
 }) {
   const phases = METHOD_PHASES[method.name] ?? [];
   const methodQueue = useMemo(() => MOCK_QUEUE.filter((q) => q.method === method.name), [method.name]);
@@ -318,6 +320,7 @@ function Level2MethodPhase({
                 const sid = findSubsetId(method.id, phase.id);
                 if (sid) onRecallPhase(phase.id, sid);
               }}
+              onStats={() => onStatsPhase(phase.id, phase.name)}
             />
           ))}
         </div>
@@ -346,7 +349,7 @@ function Level2MethodPhase({
         <div className="mt-4 flex items-center gap-4 pt-3 border-t border-line">
           <div className="flex items-center gap-2"><span className="text-[0.62rem] text-ink-3">Total target</span><span className="nums text-[0.72rem] font-semibold text-ink">{computePhaseTotals(method.name, phases).totalTarget.toFixed(1)}s</span></div>
           <div className="flex items-center gap-2"><span className="text-[0.62rem] text-ink-3">Actual</span><span className="nums text-[0.72rem] font-semibold text-ink">{computePhaseTotals(method.name, phases).totalActual.toFixed(1)}s</span></div>
-          <button className="ml-auto inline-flex items-center gap-2 rounded-lg bg-ink px-3.5 py-2 text-[0.7rem] font-medium text-surface hover:bg-ink/90 transition-colors"><Target className="size-3.5" />Start Full Solve</button>
+          <button onClick={onFullSolve} className="ml-auto inline-flex items-center gap-2 rounded-lg bg-ink px-3.5 py-2 text-[0.7rem] font-medium text-surface hover:bg-ink/90 transition-colors"><Target className="size-3.5" />Start Full Solve</button>
         </div>
       </section>
 
@@ -361,9 +364,9 @@ function Level2MethodPhase({
    ─────────────────────────────────────────────────────────────────────── */
 
 function PhaseCard({
-  phase, methodName, accent, onDrill, onTrain, onRecall,
+  phase, methodName, accent, onDrill, onTrain, onRecall, onStats,
 }: {
-  phase: PhaseDef; methodName: string; accent: string; onDrill: () => void; onTrain: () => void; onRecall: () => void;
+  phase: PhaseDef; methodName: string; accent: string; onDrill: () => void; onTrain: () => void; onRecall: () => void; onStats: () => void;
 }) {
   const data = MOCK_PHASE_DATA[`${methodName.toLowerCase()}/${phase.id}`] ?? { mastery: 0, avgTime: "--" };
   const Icon = phase.icon;
@@ -392,9 +395,10 @@ function PhaseCard({
               className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Recall
             </button>
-            <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
+            <button onClick={onStats}
+              className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Stats
-            </span>
+            </button>
           </>
         ) : (
           <>
@@ -402,9 +406,10 @@ function PhaseCard({
               className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Train
             </button>
-            <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
+            <button onClick={onStats}
+              className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Stats
-            </span>
+            </button>
           </>
         )}
       </div>
@@ -434,6 +439,16 @@ interface RecallViewState {
   subsetId: string;
 }
 
+interface StatsViewState {
+  methodId: string;
+  phaseId: string;
+  phaseName: string;
+}
+
+interface FullSolveViewState {
+  methodId: string;
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
    Top-level dashboard (L1 → L2 → L3 routing)
    ─────────────────────────────────────────────────────────────────────── */
@@ -443,6 +458,8 @@ export function TrainingDashboard() {
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
   const [trainView, setTrainView] = useState<TrainViewState | null>(null);
   const [recallView, setRecallView] = useState<RecallViewState | null>(null);
+  const [statsView, setStatsView] = useState<StatsViewState | null>(null);
+  const [fullSolveView, setFullSolveView] = useState<FullSolveViewState | null>(null);
 
   const selectedMethod = useMemo(
     () => (selectedMethodId ? METHODS.find((m) => m.id === selectedMethodId) ?? null : null),
@@ -462,6 +479,16 @@ export function TrainingDashboard() {
   const handleRecallPhase = (phaseId: string, subsetId: string) => {
     if (!selectedMethodId) return;
     setRecallView({ methodId: selectedMethodId, phaseId, subsetId });
+  };
+
+  const handleStatsPhase = (phaseId: string, phaseName: string) => {
+    if (!selectedMethodId) return;
+    setStatsView({ methodId: selectedMethodId, phaseId, phaseName });
+  };
+
+  const handleFullSolve = () => {
+    if (!selectedMethodId) return;
+    setFullSolveView({ methodId: selectedMethodId });
   };
 
   // L3: Algorithm Drill View
@@ -496,6 +523,36 @@ export function TrainingDashboard() {
     );
   }
 
+  // L3: Phase Stats View
+  if (statsView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <PhaseStatsView
+            methodId={statsView.methodId}
+            phaseId={statsView.phaseId}
+            phaseName={statsView.phaseName}
+            onBack={() => setStatsView(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // L3: Full Solve View
+  if (fullSolveView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <FullSolveView
+            methodId={fullSolveView.methodId}
+            onBack={() => setFullSolveView(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // L3: Phase Trainer View (Cross, F2L, First Block, LSE, EO, etc.)
   if (trainView) {
     return (
@@ -522,6 +579,8 @@ export function TrainingDashboard() {
             onDrillPhase={handleDrillPhase}
             onTrainPhase={handleTrainPhase}
             onRecallPhase={handleRecallPhase}
+            onStatsPhase={handleStatsPhase}
+            onFullSolve={handleFullSolve}
           />
         ) : (
           <Level1MethodGrid onSelect={setSelectedMethodId} />
