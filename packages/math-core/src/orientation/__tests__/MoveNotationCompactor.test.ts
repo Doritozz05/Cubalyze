@@ -214,66 +214,26 @@ describe('MoveNotationCompactor', () => {
     });
   });
 
-  describe('wide move pair combining (BLE hardware sensor decomposition)', () => {
-    it('combines [L, x] → r', () => {
-      expect(compactMoveNotation(['L', 'x'])).toEqual(['r']);
+  describe('wide move pair non-combining (wide moves disabled in UI)', () => {
+    it('keeps [L, x] as separate tokens', () => {
+      expect(compactMoveNotation(['L', 'x'])).toEqual(['L', 'x']);
     });
 
-    it('combines [x, L] → r', () => {
-      expect(compactMoveNotation(['x', 'L'])).toEqual(['r']);
+    it("keeps [L', x'] as separate tokens", () => {
+      expect(compactMoveNotation(["L'", "x'"])).toEqual(["L'", "x'"]);
     });
 
-    it("combines [L', x'] → r'", () => {
-      expect(compactMoveNotation(["L'", "x'"])).toEqual(["r'"]);
+    it("keeps [R, x'] as separate tokens", () => {
+      expect(compactMoveNotation(['R', "x'"])).toEqual(['R', "x'"]);
     });
 
-    it("combines [x', L'] → r'", () => {
-      expect(compactMoveNotation(["x'", "L'"])).toEqual(["r'"]);
+    it("keeps [D, y] as separate tokens", () => {
+      expect(compactMoveNotation(['D', 'y'])).toEqual(['D', 'y']);
     });
 
-    it("combines [R, x'] → l", () => {
-      expect(compactMoveNotation(['R', "x'"])).toEqual(['l']);
-    });
-
-    it("combines [R', x] → l'", () => {
-      expect(compactMoveNotation(["R'", 'x'])).toEqual(["l'"]);
-    });
-
-    it('combines [D, y] → u', () => {
-      expect(compactMoveNotation(['D', 'y'])).toEqual(['u']);
-    });
-
-    it("combines [D', y'] → u'", () => {
-      expect(compactMoveNotation(["D'", "y'"])).toEqual(["u'"]);
-    });
-
-    it("combines [U, y'] → d", () => {
-      expect(compactMoveNotation(['U', "y'"])).toEqual(['d']);
-    });
-
-    it("combines [U', y] → d'", () => {
-      expect(compactMoveNotation(["U'", 'y'])).toEqual(["d'"]);
-    });
-
-    it('combines [B, z] → f', () => {
-      expect(compactMoveNotation(['B', 'z'])).toEqual(['f']);
-    });
-
-    it("combines [B', z'] → f'", () => {
-      expect(compactMoveNotation(["B'", "z'"])).toEqual(["f'"]);
-    });
-
-    it("combines [F, z'] → b", () => {
-      expect(compactMoveNotation(['F', "z'"])).toEqual(['b']);
-    });
-
-    it("combines [F', z] → b'", () => {
-      expect(compactMoveNotation(["F'", 'z'])).toEqual(["b'"]);
-    });
-
-    it("combines in a sequence: R U L' x' U L x → R U r' U r", () => {
+    it("keeps sequence R U L' x' U L x as separate tokens", () => {
       expect(compactMoveNotation(['R', 'U', "L'", "x'", 'U', 'L', 'x'])).toEqual([
-        'R', 'U', "r'", 'U', 'r',
+        'R', 'U', "L'", "x'", 'U', 'L', 'x',
       ]);
     });
   });

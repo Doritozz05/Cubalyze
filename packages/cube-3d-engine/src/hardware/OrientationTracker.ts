@@ -98,7 +98,7 @@ export class OrientationTracker {
     if (this._current !== OrientationTable.IDENTITY) {
       const prev = this._current;
       this._current = OrientationTable.IDENTITY;
-      this.emitOrientationChange(prev, this._current);
+      this.emitOrientationChange(prev, this._current, false);
     }
   }
 
@@ -146,7 +146,7 @@ export class OrientationTracker {
     if (this._current !== OrientationTable.IDENTITY) {
       const prev = this._current;
       this._current = OrientationTable.IDENTITY;
-      this.emitOrientationChange(prev, this._current);
+      this.emitOrientationChange(prev, this._current, false);
     }
   }
 
@@ -172,13 +172,15 @@ export class OrientationTracker {
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 
-  private emitOrientationChange(from: OrientationEntry, to: OrientationEntry): void {
+  private emitOrientationChange(from: OrientationEntry, to: OrientationEntry, emitRotation = true): void {
     // Emit the new orientation
     this.orientationSubject.next({
       quaternion: { x: to.quaternion.x, y: to.quaternion.y, z: to.quaternion.z, w: to.quaternion.w },
       faceMap: to.faceMap,
       label: to.label,
     });
+
+    if (!emitRotation) return;
 
     // Emit a rotation event if we can find the base rotation between from and to
     const rotation = OrientationTable.findRotationBetween(from, to);

@@ -35,10 +35,7 @@
 export function compactMoveNotation(tokens: string[]): string[] {
   if (tokens.length === 0) return [];
 
-  // Pass 1: Combine adjacent face-move + rotation pairs into wide moves (e.g. L' x' → r', R x → r)
-  const combinedTokens = combineWideMovePairs(tokens);
-
-  const parsed = combinedTokens.map(parseToken);
+  const parsed = tokens.map(parseToken);
   const result: string[] = [];
 
   let i = 0;
@@ -47,7 +44,7 @@ export function compactMoveNotation(tokens: string[]): string[] {
 
     // Non-compactable tokens pass through unchanged
     if (current === null) {
-      result.push(combinedTokens[i]);
+      result.push(tokens[i]);
       i++;
       continue;
     }
@@ -78,57 +75,6 @@ export function compactMoveNotation(tokens: string[]): string[] {
   return result;
 }
 
-const WIDE_PAIR_MAP: Record<string, string> = {
-  // r moves (Stationary face: L, Gyro: x)
-  "L+x": "r",     "x+L": "r",
-  "L'+x'": "r'",  "x'+L'": "r'",
-  "L2+x2": "r2",  "x2+L2": "r2",
-
-  // l moves (Stationary face: R, Gyro: x')
-  "R+x'": "l",   "x'+R": "l",
-  "R'+x": "l'",   "x+R'": "l'",
-  "R2+x2": "l2",  "x2+R2": "l2",
-
-  // u moves (Stationary face: D, Gyro: y)
-  "D+y": "u",     "y+D": "u",
-  "D'+y'": "u'",  "y'+D'": "u'",
-  "D2+y2": "u2",  "y2+D2": "u2",
-
-  // d moves (Stationary face: U, Gyro: y')
-  "U+y'": "d",    "y'+U": "d",
-  "U'+y": "d'",   "y+U'": "d'",
-  "U2+y2": "d2",  "y2+U2": "d2",
-
-  // f moves (Stationary face: B, Gyro: z)
-  "B+z": "f",     "z+B": "f",
-  "B'+z'": "f'",  "z'+B'": "f'",
-  "B2+z2": "f2",  "z2+B2": "f2",
-
-  // b moves (Stationary face: F, Gyro: z')
-  "F+z'": "b",    "z'+F": "b",
-  "F'+z": "b'",   "z+F'": "b'",
-  "F2+z2": "b2",  "z2+F2": "b2",
-};
-
-function combineWideMovePairs(tokens: string[]): string[] {
-  const result: string[] = [];
-  let i = 0;
-  while (i < tokens.length) {
-    if (i < tokens.length - 1) {
-      const pairKey = `${tokens[i]}+${tokens[i + 1]}`;
-      const wideMatch = WIDE_PAIR_MAP[pairKey];
-      if (wideMatch) {
-        result.push(wideMatch);
-        i += 2;
-        continue;
-      }
-    }
-    result.push(tokens[i]);
-    i++;
-  }
-  return result;
-}
-
 // ─── Internals ──────────────────────────────────────────────────────────────
 
 interface ParsedToken {
@@ -140,8 +86,6 @@ interface ParsedToken {
 
 const COMPACTABLE_BASES = new Set([
   'F', 'R', 'U', 'L', 'D', 'B', // face moves
-  'M', 'E', 'S',                // slice moves
-  'r', 'l', 'f', 'u', 'd', 'b', // wide moves
   'x', 'y', 'z',                // rotations
 ]);
 

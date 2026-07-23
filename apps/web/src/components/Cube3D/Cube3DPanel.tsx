@@ -303,6 +303,7 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
     if (workerProxy.current) {
       workerProxy.current.resetCube();
     }
+    setRecentMoves([]);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
