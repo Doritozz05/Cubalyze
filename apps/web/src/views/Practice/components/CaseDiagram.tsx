@@ -32,7 +32,7 @@ const COLOR_MAP: Record<string, string> = {
   Y: "#eab308",
   O: "#f97316",
   B: "#2563eb",
-  "#": "#2a2a2a",
+  "#": "#505050",
 };
 
 export interface CaseDiagramProps {
@@ -112,7 +112,7 @@ export function CaseDiagram({
 
   function stickerColor(faceletIdx: number, defaultColor: string): string {
     const c = faceletColors[faceletIdx];
-    if (!c || c === "#") return showGray ? COLOR_MAP["#"] : "#1a1a1a";
+    if (!c || c === "#") return showGray ? COLOR_MAP["#"] : "#262626";
     return COLOR_MAP[c] ?? defaultColor;
   }
 
@@ -145,7 +145,7 @@ export function CaseDiagram({
             height={S}
             fill={stickerColor(idx, COLOR_MAP.W)}
             rx={2.5}
-            opacity={faceletColors[idx] === "#" ? 0.35 : 1}
+            opacity={faceletColors[idx] === "#" ? 0.75 : 1}
           />
         );
       })}
@@ -185,7 +185,7 @@ export function CaseDiagram({
                       height={SH}
                       fill={stickerColor(idx, defaultColor)}
                       rx={1.5}
-                      opacity={isGray ? 0.3 : 1}
+                      opacity={isGray ? 0.75 : 1}
                     />
                   );
                 })}
@@ -215,7 +215,7 @@ export function CaseDiagram({
                     height={S}
                     fill={stickerColor(idx, defaultColor)}
                     rx={1.5}
-                    opacity={isGray ? 0.3 : 1}
+                    opacity={isGray ? 0.75 : 1}
                   />
                 );
               })}
