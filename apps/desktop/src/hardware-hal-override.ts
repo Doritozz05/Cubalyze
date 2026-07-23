@@ -18,3 +18,4 @@
 export * from '../../../packages/hardware-hal/src/index';
 
 export { GanCubeAdapterTauri as GanCubeAdapter } from './adapters/GanCubeAdapterTauri';
+export { GanTimerAdapterTauri as GanTimerAdapter } from './adapters/GanTimerAdapterTauri';

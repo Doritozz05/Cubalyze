@@ -39,3 +39,19 @@ pub const GAN_GEN4_STATE: &str = "0000fff6-0000-1000-8000-00805f9b34fb";
 
 /// Device name prefixes used to identify GAN cubes during BLE scanning
 pub const GAN_CUBE_NAME_PREFIXES: &[&str] = &["GAN", "MG", "AiCube"];
+
+// ── GAN Smart Timer BLE Service UUIDs ─────────────────────────────────────
+// Source: packages/gan-protocol/src/gan-smart-timer.ts
+
+/// GAN Timer primary service
+#[allow(dead_code)]
+pub const GAN_TIMER_SERVICE: &str = "0000fff0-0000-1000-8000-00805f9b34fb";
+/// GAN Timer time characteristic (read) — returns 4 recorded times
+#[allow(dead_code)]
+pub const GAN_TIMER_TIME_CHAR: &str = "0000fff2-0000-1000-8000-00805f9b34fb";
+/// GAN Timer state characteristic (notify) — emits state change events
+#[allow(dead_code)]
+pub const GAN_TIMER_STATE_CHAR: &str = "0000fff5-0000-1000-8000-00805f9b34fb";
+
+/// Device name prefixes used to identify GAN timers during BLE scanning
+pub const GAN_TIMER_NAME_PREFIXES: &[&str] = &["GAN", "gan", "Gan"];

@@ -25,6 +25,7 @@ pub fn run() {
             ble::cube::send_cube_command,
             ble::timer::connect_gan_timer,
             ble::timer::disconnect_gan_timer,
+            ble::timer::get_timer_recorded_times,
         ])
         .setup(|app| {
             // ── Clean disconnect on window close ────────────────────────────
@@ -37,20 +38,26 @@ pub fn run() {
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { .. } = event {
                         let state = handle.state::<crate::state::AppState>();
-                        // Take the peripheral out before blocking, so the
-                        // MutexGuard is dropped and no borrow conflicts arise.
-                        let peripheral = state.connected_cube.lock().take();
+                        // Take the peripherals out before blocking, so the
+                        // MutexGuards are dropped and no borrow conflicts arise.
+                        let cube = state.connected_cube.lock().take();
                         state.cube_command_char.lock().take();
                         state.cube_state_char.lock().take();
+                        let timer = state.connected_timer.lock().take();
+                        state.timer_state_char.lock().take();
+                        state.timer_time_char.lock().take();
                         drop(state);
 
-                        if let Some(p) = peripheral {
-                            eprintln!("[BLE] Window closing — disconnecting cube...");
-                            // Block synchronously here because the app is exiting.
-                            // Tauri runs on Tokio, so a runtime handle is available.
-                            if let Ok(rt) = tokio::runtime::Handle::try_current() {
+                        if let Ok(rt) = tokio::runtime::Handle::try_current() {
+                            if let Some(p) = cube {
+                                eprintln!("[BLE] Window closing — disconnecting cube...");
                                 let _ = rt.block_on(p.disconnect());
-                                eprintln!("[BLE] Cube disconnected on window close");
+                                eprintln!("[BLE] Cube disconnected");
+                            }
+                            if let Some(p) = timer {
+                                eprintln!("[BLE] Window closing — disconnecting timer...");
+                                let _ = rt.block_on(p.disconnect());
+                                eprintln!("[BLE] Timer disconnected");
                             }
                         }
                     }

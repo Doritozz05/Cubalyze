@@ -14,16 +14,17 @@ pub struct AppState {
     /// The MAC address of the last connected cube — used for auto-reconnect.
     pub last_cube_mac: Mutex<Option<String>>,
     /// The command characteristic of the connected cube (write).
-    /// Set after service discovery so send_cube_command knows where to write.
     #[allow(dead_code)]
     pub cube_command_char: Mutex<Option<Characteristic>>,
     /// The state characteristic of the connected cube (notify).
     #[allow(dead_code)]
     pub cube_state_char: Mutex<Option<Characteristic>>,
     /// The currently connected timer peripheral (if any).
-    /// Reserved for future GAN Timer BLE support.
-    #[allow(dead_code)]
     pub connected_timer: Mutex<Option<Peripheral>>,
+    /// The state characteristic of the connected timer (notify) — emits timer events.
+    pub timer_state_char: Mutex<Option<Characteristic>>,
+    /// The time characteristic of the connected timer (read) — stores recorded times.
+    pub timer_time_char: Mutex<Option<Characteristic>>,
 }
 
 impl AppState {
@@ -35,6 +36,8 @@ impl AppState {
             cube_command_char: Mutex::new(None),
             cube_state_char: Mutex::new(None),
             connected_timer: Mutex::new(None),
+            timer_state_char: Mutex::new(None),
+            timer_time_char: Mutex::new(None),
         }
     }
 }
