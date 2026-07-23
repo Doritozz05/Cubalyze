@@ -151,7 +151,7 @@ export class CaseStateGenerator {
       const face = faceletString[i];
       const color = FACE_TO_COLOR[face] ?? '#';
       if (style === 'yellow-gray') {
-        result[i] = i < 9 ? color : '#';
+        result[i] = color === 'Y' ? 'Y' : '#';
       } else {
         result[i] = color;
       }

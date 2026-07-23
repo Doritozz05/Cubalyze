@@ -62,8 +62,7 @@ describe('CubeState — External Oracle (min2phase)', () => {
   // ── Cross-check: state integrity through facelet string ─────────────────
 
   it('scramble then solve via external min2phase returns to solved', async () => {
-    // Dynamic import to avoid top-level dependency
-    const min2phase = await import('min2phase.js');
+    const min2phase: any = await import('min2phase.js');
     min2phase.initFull();
 
     const state = new CubeState();

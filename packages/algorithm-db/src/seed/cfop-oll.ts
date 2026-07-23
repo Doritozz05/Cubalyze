@@ -16,18 +16,19 @@ function computeMetric(moves: string[], metric: 'htm' | 'qtm' | 'stm'): number {
   return count;
 }
 
-function alg(id: string, caseId: string, moves: string[], isDefault = true,
+function alg(
+  id: string, caseId: string, moves: string[], isDefault = true,
   difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate',
   triggers: string[] = [], notes?: string,
 ): Algorithm {
-  return { id, caseId, moves,
+  return {
+    id, caseId, moves,
     moveCount: { htm: computeMetric(moves,'htm'), qtm: computeMetric(moves,'qtm'), stm: computeMetric(moves,'stm') },
     isDefault, source: 'SpeedCubeDB', difficulty, triggers, notes,
     isMirror: false, isInverse: false,
   };
 }
 
-// Helper: case number string → UUID v4 deterministic
 function caseUuid(n: number): string {
   return `30000000-0000-4000-a000-${String(n).padStart(12, '0')}`;
 }
@@ -35,110 +36,146 @@ function algUuid(n: number, variant = 0): string {
   return `40000000-0000-4000-a000-${String(n * 10 + variant).padStart(12, '0')}`;
 }
 
-function makeOllCase(n: number, name: string, setupScramble: string, moves: string[],
+/**
+ * Expand algorithm move tokens into face moves and whole-cube rotations.
+ *
+ * Wide moves (r, l, f, u, d, b) and slice moves (M, S, E) are expanded using
+ * whole-cube rotations (x, y, z) + opposite face turns. This ensures that
+ * slice moves do NOT falsely cancel outer-layer face turns when inverted.
+ */
+function parseMoves(movesStr: string): string[] {
+  const tokens = movesStr.trim().split(/\s+/).filter(Boolean);
+  const result: string[] = [];
+
+  for (let t of tokens) {
+    t = t.replace(/[()]/g, '').replace(/2'/g, '2');
+    switch (t) {
+      // Wide moves
+      case 'r': result.push('x', "L'"); break;
+      case "r'": result.push("x'", 'L'); break;
+      case 'r2': result.push('x2', 'L2'); break;
+
+      case 'l': result.push("x'", "R'"); break;
+      case "l'": result.push('x', 'R'); break;
+      case 'l2': result.push('x2', 'R2'); break;
+
+      case 'f': result.push('z', "B'"); break;
+      case "f'": result.push("z'", 'B'); break;
+      case 'f2': result.push('z2', 'B2'); break;
+
+      case 'u': result.push('y', "D'"); break;
+      case "u'": result.push("y'", 'D'); break;
+      case 'u2': result.push('y2', 'D2'); break;
+
+      case 'd': result.push("y'", "U'"); break;
+      case "d'": result.push('y', 'U'); break;
+      case 'd2': result.push('y2', 'U2'); break;
+
+      case 'b': result.push("z'", "F'"); break;
+      case "b'": result.push('z', 'F'); break;
+      case 'b2': result.push('z2', 'F2'); break;
+
+      // Slice moves
+      case 'M': result.push("x'", "R'", 'L'); break;
+      case "M'": result.push('x', 'R', "L'"); break;
+      case 'M2': result.push('x2', 'R2', 'L2'); break;
+
+      case 'S': result.push('z', "F'", 'B'); break;
+      case "S'": result.push("z'", 'F', "B'"); break;
+      case 'S2': result.push('z2', 'F2', 'B2'); break;
+
+      case 'E': result.push("y'", 'U', "D'"); break;
+      case "E'": result.push('y', "U'", 'D'); break;
+      case 'E2': result.push('y2', 'U2', 'D2'); break;
+
+      default: result.push(t); break;
+    }
+  }
+  return result;
+}
+
+function makeOllCase(
+  n: number,
+  category: string,
+  setupScramble: string,
+  movesStr: string,
   difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate',
-  tags: string[] = [], notes?: string,
+  tags: string[] = [],
+  notes?: string,
 ): { caseDef: AlgorithmCase; algorithms: Algorithm[] } {
+  const moves = parseMoves(movesStr);
   return {
     caseDef: {
       id: caseUuid(n), subsetId: OLL_SUBSET_ID,
-      caseNumber: `OLL ${n}`, name,
+      caseNumber: `OLL ${n}`, name: `OLL ${n}`,
       recognitionPatterns: [],
       setupScramble,
       diagramType: '2d-top',
       diagram2D: { highlightedPieces: [] },
-      probability: '1/54', difficulty, category: '', tags, puzzleType: '3x3x3',
+      probability: '1/54', difficulty, category, tags, puzzleType: '3x3x3',
     },
     algorithms: [alg(algUuid(n), caseUuid(n), moves, true, difficulty, [], notes)],
   };
 }
 
-// NOTE: Wide moves (r, r', l, l') are expanded to face+slice equivalents:
-//   r  = R M'    r' = R' M
-//   r2 = R2 M2   (rarely used)
-// This is mathematically equivalent and supported by CubeState (Fase 0).
+// ─── All 57 Verified SpeedCubeDB OLL Cases ──────────────────────────────────
 
 export const OLL_CASES = [
-  // ── OCLL (All Edges Oriented) — 7 cases ───────────────────────────
-  makeOllCase(1,'Sune',"R U R' U R U2 R'",['R','U',"R'",'U','R','U2',"R'"],'beginner',['ocll','sune']),
-  makeOllCase(2,'Anti-Sune',"R' U' R U' R' U2 R",["R'","U'",'R',"U'","R'",'U2','R'],'beginner',['ocll','antisune']),
-  makeOllCase(3,'Sune (lefty)',"L' U' L U' L' U2 L",["L'","U'",'L',"U'","L'",'U2','L'],'beginner',['ocll']),
-  makeOllCase(4,'Anti-Sune (lefty)',"L U L' U L U2 L'",['L','U',"L'",'U','L','U2',"L'"],'beginner',['ocll']),
-  makeOllCase(5,'Superman',"R2 D R' U2 R D' R' U2 R'",['R2','D',"R'",'U2','R',"D'","R'",'U2',"R'"],'intermediate',['ocll']),
-  makeOllCase(6,'Headlights',"R U2 R2 U' R2 U' R2 U2 R",['R','U2','R2',"U'",'R2',"U'",'R2','U2','R'],'intermediate',['ocll']),
-  makeOllCase(7,'Chameleon',"r U R' U R U2 r'",['R',"M'",'U',"R'",'U','R','U2',"R'",'M'],'intermediate',['ocll']),
-
-  // ── T Shapes — 2 cases ──────────────────────────────────────────
-  makeOllCase(8,'T shape',"F R U R' U' F'",['F','R','U',"R'","U'","F'"],'beginner',['t']),
-  makeOllCase(9,'T shape (inverse)',"F U R U' R' F'",['F','U','R',"U'","R'","F'"],'beginner',['t']),
-
-  // ── Squares / P Shapes — 4 cases ─────────────────────────────────
-  makeOllCase(10,'P shape',"R U R' U' R' F R F'",['R','U',"R'","U'","R'",'F','R',"F'"],'beginner',['p']),
-  makeOllCase(11,'P shape (mirror)',"L' U' L U L F' L' F",["L'","U'",'L','U','L',"F'","L'",'F'],'beginner',['p']),
-  makeOllCase(12,'Square',"F' U' L' U L F",["F'","U'","L'",'U','L','F'],'beginner',['square']),
-  makeOllCase(13,'Square (mirror)',"F U R U' R' F'",['F','U','R',"U'","R'","F'"],'beginner',['square']),
-
-  // ── Lightning Bolts — 6 cases ────────────────────────────────────
-  makeOllCase(14,'Lightning bolt',"R U R2 F R F' U2 R' F R F'",['R','U','R2','F','R',"F'",'U2',"R'",'F','R',"F'"],'intermediate',['lightning']),
-  makeOllCase(15,'Lightning bolt',"r' U' R U' R' U R U' R' U2 r",["R'",'M',"U'",'R',"U'","R'",'U','R',"U'","R'",'U2','R',"M'"],'intermediate',['lightning']),
-  makeOllCase(16,'Lightning bolt',"r U R' U R U2 r'",['R',"M'",'U',"R'",'U','R','U2',"R'",'M'],'intermediate',['lightning']),
-  makeOllCase(17,'Lightning bolt',"r' U' R U' R' U2 r",["R'",'M',"U'",'R',"U'","R'",'U2','R',"M'"],'intermediate',['lightning']),
-  makeOllCase(18,'Lightning bolt',"R U2 R2 F R F' U2 R' F R F'",['R','U2','R2','F','R',"F'",'U2',"R'",'F','R',"F'"],'intermediate',['lightning']),
-  makeOllCase(19,'Lightning bolt',"R2 D' R U2 R' D R U2 R",['R2',"D'",'R','U2',"R'",'D','R','U2','R'],'intermediate',['lightning']),
-
-  // ── Fish Shapes — 4 cases ───────────────────────────────────────
-  makeOllCase(20,'Fish',"R U2 R' U' R U R' U' R U' R'",['R','U2',"R'","U'",'R','U',"R'","U'",'R',"U'","R'"],'intermediate',['fish']),
-  makeOllCase(21,'Fish',"R U R' U R U2 R'",['R','U',"R'",'U','R','U2',"R'"],'intermediate',['fish']),
-  makeOllCase(22,'Fish',"R U2 R' U' R U' R'",['R','U2',"R'","U'",'R',"U'","R'"],'intermediate',['fish']),
-  makeOllCase(23,'Fish',"R U R' U R U2 R'",['R','U',"R'",'U','R','U2',"R'"],'intermediate',['fish']),
-
-  // ── Knight Moves — 4 cases ──────────────────────────────────────
-  makeOllCase(24,'Knight move',"r U R' U' r' F R F'",['R',"M'",'U',"R'","U'","R'",'M','F','R',"F'"],'intermediate',['knight']),
-  makeOllCase(25,'Knight move',"r' U' R U r B' R' B",["R'",'M',"U'",'R','U','R',"M'","B'","R'",'B'],'intermediate',['knight']),
-  makeOllCase(26,'Knight move',"F R' F' R U R U' R'",['F',"R'","F'",'R','U','R',"U'","R'"],'intermediate',['knight']),
-  makeOllCase(27,'Knight move',"R' U' F U R U' R' F' R",["R'","U'",'F','U','R',"U'","R'","F'",'R'],'intermediate',['knight']),
-
-  // ── C Shapes — 2 cases ──────────────────────────────────────────
-  makeOllCase(28,'C shape',"R U R' U' R' F R2 U' R' U' R U R' F'",['R','U',"R'","U'","R'",'F','R2',"U'","R'","U'",'R','U',"R'","F'"],'intermediate',['c']),
-  makeOllCase(29,'C shape',"R' U' R U R B' R' B",["R'","U'",'R','U','R',"B'","R'",'B'],'intermediate',['c']),
-
-  // ── W Shapes — 2 cases ──────────────────────────────────────────
-  makeOllCase(30,'W shape',"R U R' U R U' R' U' R' F R F'",['R','U',"R'",'U','R',"U'","R'","U'","R'",'F','R',"F'"],'intermediate',['w']),
-  makeOllCase(31,'W shape',"R' U' R U' R' U R U R B' R' B",["R'","U'",'R',"U'","R'",'U','R','U','R',"B'","R'",'B'],'intermediate',['w']),
-
-  // ── I Shapes — 4 cases ──────────────────────────────────────────
-  makeOllCase(32,'I shape',"R U R' U' R' F R F'",['R','U',"R'","U'","R'",'F','R',"F'"],'beginner',['i']),
-  makeOllCase(33,'I shape',"R U R' U' R' F R2 U' R' U' R U R' F'",['R','U',"R'","U'","R'",'F','R2',"U'","R'","U'",'R','U',"R'","F'"],'advanced',['i']),
-  makeOllCase(34,'I shape',"F R U R' U' F'",['F','R','U',"R'","U'","F'"],'beginner',['i']),
-  makeOllCase(35,'I shape',"R U R' U R U' R' U' R' F R F'",['R','U',"R'",'U','R',"U'","R'","U'","R'",'F','R',"F'"],'intermediate',['i']),
-
-  // ── Awkward Shapes — 4 cases ────────────────────────────────────
-  makeOllCase(36,'Awkward',"R U R' U R U2 R'",['R','U',"R'",'U','R','U2',"R'"],'beginner',['awkward']),
-  makeOllCase(37,'Awkward',"R U2 R' U' R U' R'",['R','U2',"R'","U'",'R',"U'","R'"],'beginner',['awkward']),
-  makeOllCase(38,'Awkward',"L' U' L U' L' U2 L",["L'","U'",'L',"U'","L'",'U2','L'],'beginner',['awkward']),
-  makeOllCase(39,'Awkward',"L U L' U L U2 L'",['L','U',"L'",'U','L','U2',"L'"],'beginner',['awkward']),
-
-  // ── Small L / Bowtie — 6 cases ──────────────────────────────────
-  makeOllCase(40,'Small L',"R' F R U R' F' R F U' F'",["R'",'F','R','U',"R'","F'",'R','F',"U'","F'"],'intermediate',['small-l']),
-  makeOllCase(41,'Small L',"R U R' U R U2 R'",['R','U',"R'",'U','R','U2',"R'"],'beginner',['small-l']),
-  makeOllCase(42,'Small L',"R' U' R U' R' U2 R",["R'","U'",'R',"U'","R'",'U2','R'],'beginner',['small-l']),
-  makeOllCase(43,'Small L',"F' U' L' U L F",["F'","U'","L'",'U','L','F'],'beginner',['small-l']),
-  makeOllCase(44,'Small L',"F U R U' R' F'",['F','U','R',"U'","R'","F'"],'beginner',['small-l']),
-  makeOllCase(45,'Small L',"R U R' U' R' F R F'",['R','U',"R'","U'","R'",'F','R',"F'"],'beginner',['small-l']),
-
-  // ── Big L — 3 cases ─────────────────────────────────────────────
-  makeOllCase(46,'Big L',"R' U' R' F R F' U R",["R'","U'","R'",'F','R',"F'",'U','R'],'intermediate',['big-l']),
-  makeOllCase(47,'Big L',"R U R' U' R' F R2 U R' U' F'",['R','U',"R'","U'","R'",'F','R2','U',"R'","U'","F'"],'intermediate',['big-l']),
-  makeOllCase(48,'Big L',"F R U R' U' R U R' U' F'",['F','R','U',"R'","U'",'R','U',"R'","U'","F'"],'intermediate',['big-l']),
-
-  // ── No edges oriented / Dot — 9 cases ────────────────────────────
-  makeOllCase(49,'Dot',"R U2 R2 F R F' U2 R' F R F'",['R','U2','R2','F','R',"F'",'U2',"R'",'F','R',"F'"],'intermediate',['dot']),
-  makeOllCase(50,'Dot',"R U R' U R U2 R'",['R','U',"R'",'U','R','U2',"R'"],'beginner',['dot']),
-  makeOllCase(51,'Dot',"R' U' R U' R' U2 R",["R'","U'",'R',"U'","R'",'U2','R'],'beginner',['dot']),
-  makeOllCase(52,'Dot',"R U R' U' R' F R F'",['R','U',"R'","U'","R'",'F','R',"F'"],'beginner',['dot']),
-  makeOllCase(53,'Dot',"r' U2 R U R' U r",["R'",'M','U2','R','U',"R'",'U','R',"M'"],'intermediate',['dot']),
-  makeOllCase(54,'Dot',"r U2 R' U' R U' r'",['R',"M'",'U2',"R'","U'",'R',"U'","R'",'M'],'intermediate',['dot']),
-  makeOllCase(55,'Dot',"R' F R U R' F' R F U' F'",["R'",'F','R','U',"R'","F'",'R','F',"U'","F'"],'intermediate',['dot']),
-  makeOllCase(56,'Dot',"r' U' r U' R' U R U' R' U R U' r' U r",["R'",'M',"U'",'R',"M'","U'","R'",'U','R',"U'","R'",'U','R',"U'","R'",'M','U','R',"M'"],'advanced',['dot']),
-  makeOllCase(57,'Dot',"R U R' U' M' U R U' r'",['R','U',"R'","U'","M'",'U','R',"U'","R'",'M'],'intermediate',['dot']),
+  makeOllCase(1, "Dot Case", "F R' F' R U2' F R' F' R2' U2' R'", "R U2 R2 F R F' U2 R' F R F'", 'intermediate', ['dot']),
+  makeOllCase(2, "Dot Case", "f U R U' R' f' F U R U' R' F'", "F R U R' U' F' f R U R' U' f'", 'intermediate', ['dot']),
+  makeOllCase(3, "Dot Case", "F U R U' R' F' U f U R U' R' f' y", "y' f R U R' U' f' U' F R U R' U' F'", 'intermediate', ['dot']),
+  makeOllCase(4, "Dot Case", "F U R U' R' F' U' f U R U' R' f' y", "y' f R U R' U' f' U F R U R' U' F'", 'intermediate', ['dot']),
+  makeOllCase(5, "Square Shapes", "r' U' R U' R' U2' r", "r' U2 R U R' U r", 'intermediate', ['square']),
+  makeOllCase(6, "Square Shapes", "r U R' U R U2' r'", "r U2 R' U' R U' r'", 'intermediate', ['square']),
+  makeOllCase(7, "Lightning Shapes", "r U2' R' U' R U' r'", "r U R' U R U2 r'", 'intermediate', ['lightning']),
+  makeOllCase(8, "Lightning Shapes", "r' U2' R U R' U r y2'", "y2 r' U' R U' R' U2 r", 'intermediate', ['lightning']),
+  makeOllCase(9, "Fish Shapes", "F U R U' R2' F' R U R U' R' y'", "y R U R' U' R' F R2 U R' U' F'", 'intermediate', ['fish']),
+  makeOllCase(10, "Fish Shapes", "R U2' R' F R' F' R U' R U' R'", "R U R' U R' F R F' R U2 R'", 'intermediate', ['fish']),
+  makeOllCase(11, "Lightning Shapes", "M U' R U2' R' U' R U' R2' r", "r' R2 U R' U R U2 R' U M'", 'intermediate', ['lightning']),
+  makeOllCase(12, "Lightning Shapes", "F U R U' R' F' U' F U R U' R' F'", "F R U R' U' F' U F R U R' U' F'", 'intermediate', ['lightning']),
+  makeOllCase(13, "Knight Move Shapes", "F' U' F r U' r' U r U r'", "r U' r' U' r U r' F' U F", 'intermediate', ['knight']),
+  makeOllCase(14, "Knight Move Shapes", "F U F' R' F R U' R' F' R", "R' F R U R' F' R F U' F'", 'intermediate', ['knight']),
+  makeOllCase(15, "Knight Move Shapes", "r' U' r U' R' U R r' U r", "r' U' r R' U' R U r' U r", 'intermediate', ['knight']),
+  makeOllCase(16, "Knight Move Shapes", "r U r' U R U' R' r U' r'", "r U r' R U R' U' r U' r'", 'intermediate', ['knight']),
+  makeOllCase(17, "Dot Case", "F R' F' R U2' F R' F' R U' R U' R'", "R U R' U R' F R F' U2 R' F R F'", 'intermediate', ['dot']),
+  makeOllCase(18, "Dot Case", "r' U2' R U R' U r2' U2' R' U' R U' r'", "y R U2 R2 F R F' U2 M' U R U' r'", 'intermediate', ['dot']),
+  makeOllCase(19, "Dot Case", "F R' F' R M U R U' R' U' M'", "M U R U R' U' M' R' F R F'", 'intermediate', ['dot']),
+  makeOllCase(20, "Dot Case", "r U R' U' M2' U R U' R' U' M'", "r U R' U' M2 U R U' R' U' M'", 'intermediate', ['dot']),
+  makeOllCase(21, "OCLL", "R U R' U R U' R' U R U2' R' y'", "R U R' U R U' R' U R U2 R'", 'beginner', ['ocll']),
+  makeOllCase(22, "OCLL", "R' U2' R2' U R2' U R2' U2' R'", "R U2 R2 U' R2 U' R2 U2 R", 'beginner', ['ocll']),
+  makeOllCase(23, "OCLL", "R U2' R D R' U2' R D' R2'", "R2 D R' U2 R D' R' U2 R'", 'beginner', ['ocll']),
+  makeOllCase(24, "OCLL", "F R' F' r U R U' r'", "r U R' U' r' F R F'", 'beginner', ['ocll']),
+  makeOllCase(25, "OCLL", "R' F' r U R U' r' F y'", "y F' r U R' U' r' F R", 'beginner', ['ocll']),
+  makeOllCase(26, "OCLL", "R U R' U R U2' R' y'", "y R U2 R' U' R U' R'", 'beginner', ['ocll','antisune']),
+  makeOllCase(27, "OCLL", "R U2' R' U' R U' R'", "R U R' U R U2 R'", 'beginner', ['ocll','sune']),
+  makeOllCase(28, "All Corners Oriented", "R U R' U' M' U R U' r'", "r U R' U' M U R U' R'", 'intermediate', ['corners-oriented']),
+  makeOllCase(29, "Awkward Shapes", "M F R' F' R U R U' R' U' M'", "y R U R' U' R U' R' F' U' F R U R'", 'intermediate', ['awkward']),
+  makeOllCase(30, "Awkward Shapes", "F U R U2' R' U R U2' R' U' F' y2'", "y2 F U R U2 R' U' R U2 R' U' F'", 'intermediate', ['awkward']),
+  makeOllCase(31, "P Shapes", "R' F R U R' U' F' U R", "R' U' F U R U' R' F' R", 'beginner', ['p']),
+  makeOllCase(32, "P Shapes", "f R' F' R U R U' R' S'", "S R U R' U' R' F R f'", 'beginner', ['p']),
+  makeOllCase(33, "T Shapes", "F R' F' R U R U' R'", "R U R' U' R' F R F'", 'beginner', ['t']),
+  makeOllCase(34, "C Shapes", "F U R' U' R' F' R U R2' U' R' y2'", "y2 R U R2 U' R' F R U R U' F'", 'intermediate', ['c']),
+  makeOllCase(35, "Fish Shapes", "R U2' R' F R' F' R2' U2' R'", "R U2 R2 F R F' R U2 R'", 'intermediate', ['fish']),
+  makeOllCase(36, "W Shapes", "F' L F L' U' L' U' L U L' U L y2'", "y2 L' U' L U' L' U L U L F' L' F", 'intermediate', ['w']),
+  makeOllCase(37, "Fish Shapes", "F R U' R' U R U R' F'", "F R' F' R U R U' R'", 'intermediate', ['fish']),
+  makeOllCase(38, "W Shapes", "F R' F' R U R U R' U' R U' R'", "R U R' U R U' R' U' R' F R F'", 'intermediate', ['w']),
+  makeOllCase(39, "Lightning Shapes", "L U F' U' L' U L F L' y'", "y L F' L' U' L U F U' L'", 'intermediate', ['lightning']),
+  makeOllCase(40, "Lightning Shapes", "R' U' F U R U' R' F' R y'", "y R' F R U R' U' F' U R", 'intermediate', ['lightning']),
+  makeOllCase(41, "Awkward Shapes", "F U R U' R' F' R U2' R' U' R U' R' y2'", "y2 R U R' U R U2 R' F R U R' U' F'", 'intermediate', ['awkward']),
+  makeOllCase(42, "Awkward Shapes", "F U R U' R' F' R' U2' R U R' U R", "R' U' R U' R' U2 R F R U R' U' F'", 'intermediate', ['awkward']),
+  makeOllCase(43, "P Shapes", "f' U' L' U L f", "f' L' U' L U f", 'beginner', ['p']),
+  makeOllCase(44, "P Shapes", "f U R U' R' f'", "f R U R' U' f'", 'beginner', ['p']),
+  makeOllCase(45, "T Shapes", "F U R U' R' F'", "F R U R' U' F'", 'beginner', ['t']),
+  makeOllCase(46, "C Shapes", "R' U' F R' F' R U R", "R' U' R' F R F' U R", 'intermediate', ['c']),
+  makeOllCase(47, "L Shapes", "F' U' L' U L U' L' U L F", "F' L' U' L U L' U' L U F", 'intermediate', ['l']),
+  makeOllCase(48, "L Shapes", "F U R U' R' U R U' R' F'", "F R U R' U' R U R' U' F'", 'intermediate', ['l']),
+  makeOllCase(49, "L Shapes", "r' U r2' U' r2' U' r2' U r' y2'", "y2 r U' r2 U r2 U r2 U' r", 'intermediate', ['l']),
+  makeOllCase(50, "L Shapes", "r U' r2' U r2' U r2' U' r", "r' U r2 U' r2 U' r2 U r'", 'intermediate', ['l']),
+  makeOllCase(51, "Line Shapes", "f U R U' R' U R U' R' f'", "f R U R' U' R U R' U' f'", 'intermediate', ['line']),
+  makeOllCase(52, "Line Shapes", "F R U R' d R' U' R U' R'", "R U R' U R d' R U' R' F'", 'intermediate', ['line']),
+  makeOllCase(53, "L Shapes", "r' U2' R U R' U' R U R' U r", "r' U' R U' R' U R U' R' U2 r", 'intermediate', ['l']),
+  makeOllCase(54, "L Shapes", "r U2' R' U' R U R' U' R U' r'", "r U R' U R U' R' U R U2 r'", 'intermediate', ['l']),
+  makeOllCase(55, "Line Shapes", "F R' F' U2' R U R' U R2' U2' R'", "R U2 R2 U' R U' R' U2 F R F'", 'intermediate', ['line']),
+  makeOllCase(56, "Line Shapes", "r U r' R U R' U' R U R' U' r U' r'", "r U r' U R U' R' U R U' R' r U' r'", 'intermediate', ['line']),
+  makeOllCase(57, "All Corners Oriented", "r U R' U' M U R U' R'", "R U R' U' M' U R U' r'", 'intermediate', ['corners-oriented']),
 ];

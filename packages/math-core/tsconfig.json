@@ -1,6 +1,7 @@
 {
   "extends": "@cubeforge/config-typescript/tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2023",
     "outDir": "dist"
   },
   "include": ["src"],

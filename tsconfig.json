@@ -22,6 +22,7 @@
     "jsx": "react-jsx",
 
     "paths": {
+      "@/*": ["./packages/ui/src/*"],
       "@cubeforge/types": ["./packages/types/src/index.ts"],
       "@cubeforge/math-core": ["./packages/math-core/src/index.ts"],
       "@cubeforge/cube-3d-engine": ["./packages/cube-3d-engine/src/index.ts"],
@@ -35,6 +36,6 @@
       "@cubeforge/solver-engine": ["./packages/solver-engine/src/index.ts"]
     }
   },
-  "include": ["packages/*/src/**/*"],
+  "include": ["packages/*/src/**/*", "*.ts"],
   "exclude": ["**/node_modules", "**/dist", "**/.turbo", "**/build", "**/coverage"]
 }

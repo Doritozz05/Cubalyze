@@ -168,18 +168,19 @@ describe('CaseStateGenerator', () => {
       expect(colors[45]).toBe('B'); // B → Blue
     });
 
-    it('yellow-gray style grays out side faces (OLL visualization)', () => {
-      const solved = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
-      const colors = CaseStateGenerator.faceletStringToDiagramColors(solved, 'yellow-gray');
-      // U face (0-8) keeps color
+    it('yellow-gray style shows ONLY yellow (Y) and grays out non-yellow facelets (#)', () => {
+      const faceletString = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+      const colors = CaseStateGenerator.faceletStringToDiagramColors(faceletString, 'yellow-gray');
+      // Yellow facelets stay 'Y'
       expect(colors[0]).toBe('Y');
       expect(colors[4]).toBe('Y');
-      // Side faces (9+) are grayed out
-      expect(colors[9]).toBe('#');
-      expect(colors[18]).toBe('#');
-      expect(colors[27]).toBe('#');
-      expect(colors[36]).toBe('#');
-      expect(colors[45]).toBe('#');
+      // Non-yellow facelets (R, G, W, O, B) become '#'
+      expect(colors[9]).toBe('#');  // R -> #
+      expect(colors[18]).toBe('#'); // G -> #
+      expect(colors[27]).toBe('#'); // W -> #
+      expect(colors[36]).toBe('#'); // O -> #
+      expect(colors[45]).toBe('#'); // B -> #
+      expect(colors.every(c => c === 'Y' || c === '#')).toBe(true);
     });
   });
 
