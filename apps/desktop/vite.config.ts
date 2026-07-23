@@ -44,6 +44,15 @@ export default defineConfig({
         __dirname,
         './src/hardware-hal-override.ts',
       ),
+
+      // Replace sqlite-wasm + OPFS with tauri-plugin-sql (native SQLite).
+      // The Tauri custom protocol cannot send the COOP/COEP headers required
+      // for OPFS, so the web database falls back to in-memory storage.
+      // This alias makes the desktop app use a native .db file in AppData.
+      '@cubeforge/database': path.resolve(
+        __dirname,
+        './src/database-override.ts',
+      ),
     },
   },
 

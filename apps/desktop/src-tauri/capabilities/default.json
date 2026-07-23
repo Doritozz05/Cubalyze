@@ -1,25 +1,15 @@
 {
   "identifier": "default",
-  "description": "Default capabilities for the CubeForge main window",
+  "description": "Default capabilities for CubeForge desktop",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "shell:allow-open",
-    "core:window:allow-close",
-    "core:window:allow-minimize",
-    "core:window:allow-maximize",
-    "core:window:allow-unmaximize",
-    "core:window:allow-toggle-maximize",
-    "core:window:allow-set-size",
-    "core:window:allow-set-position",
-    "core:window:allow-set-title",
-    "clipboard-manager:allow-write-text",
-    "clipboard-manager:allow-read-text",
-    "dialog:allow-open",
-    "dialog:allow-save",
+    "clipboard-manager:default",
+    "dialog:default",
     "notification:default",
     "updater:default",
-    "updater:allow-check",
-    "updater:allow-download-and-install"
+    "sql:default",
+    "sql:allow-execute"
   ]
 }
