@@ -3,17 +3,37 @@ import type { AlgorithmCase, Algorithm } from '../schema';
 
 const OLL_SUBSET_ID = '00000000-0000-4000-9000-000000000002';
 
-function computeMetric(moves: string[], metric: 'htm' | 'qtm' | 'stm'): number {
+/**
+ * Compute move-count metrics from the ORIGINAL string notation (before
+ * expansion into face + slice tokens).  Counting from the original
+ * representation avoids double-counting wide moves — a wide move like `r`
+ * counts as 1 HTM, whereas its expansion `R M'` would naively count as 2.
+ */
+function computeMetricFromString(movesStr: string, metric: 'htm' | 'qtm' | 'stm'): number {
+  const tokens = movesStr.trim().split(/\s+/).filter(Boolean);
   let count = 0;
-  for (const m of moves) {
-    const base = m[0];
-    const isSlice = base === 'M' || base === 'S' || base === 'E';
-    if (metric === 'stm') { if (isSlice) count++; continue; }
-    if (isSlice) { if (metric === 'htm') count++; continue; }
-    if (base === 'x' || base === 'y' || base === 'z') continue;
-    if (metric === 'htm') count++;
-    else count += m.includes('2') ? 2 : 1;
+
+  for (let t of tokens) {
+    t = t.replace(/[()]/g, '').replace(/2'/g, '2');
+    const base = t[0];
+    const isRotation = base === 'x' || base === 'y' || base === 'z';
+
+    if (metric === 'stm') {
+      if (isRotation) continue;
+      count++;
+      continue;
+    }
+
+    if (isRotation) continue;
+
+    if (metric === 'htm') {
+      count++;
+    } else {
+      // QTM: half-turns count as 2, everything else 1
+      count += t.includes('2') ? 2 : 1;
+    }
   }
+
   return count;
 }
 
@@ -21,10 +41,11 @@ function alg(
   id: string, caseId: string, moves: string[], isDefault = true,
   difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate',
   triggers: string[] = [], notes?: string,
+  moveCount?: { htm: number; qtm: number; stm: number },
 ): Algorithm {
   return {
     id, caseId, moves,
-    moveCount: { htm: computeMetric(moves,'htm'), qtm: computeMetric(moves,'qtm'), stm: computeMetric(moves,'stm') },
+    moveCount: moveCount ?? { htm: 0, qtm: 0, stm: 0 },
     isDefault, source: 'SpeedCubeDB', difficulty, triggers, notes,
     isMirror: false, isInverse: false,
   };
@@ -47,6 +68,11 @@ function makeOllCase(
   notes?: string,
 ): { caseDef: AlgorithmCase; algorithms: Algorithm[] } {
   const moves = expandWideMoves(movesStr);
+  const metrics = {
+    htm: computeMetricFromString(movesStr, 'htm'),
+    qtm: computeMetricFromString(movesStr, 'qtm'),
+    stm: computeMetricFromString(movesStr, 'stm'),
+  };
   return {
     caseDef: {
       id: caseUuid(n), subsetId: OLL_SUBSET_ID,
@@ -57,7 +83,7 @@ function makeOllCase(
       diagram2D: { highlightedPieces: [] },
       probability: '1/54', difficulty, category, tags, puzzleType: '3x3x3',
     },
-    algorithms: [alg(algUuid(n), caseUuid(n), moves, true, difficulty, [], notes)],
+    algorithms: [alg(algUuid(n), caseUuid(n), moves, true, difficulty, [], notes, metrics)],
   };
 }
 

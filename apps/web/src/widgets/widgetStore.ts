@@ -145,7 +145,7 @@ export const widgetStore = createStore<WidgetStore>()(
     {
       name: "cubeforge:widgets",
       version: 2,
-      migrate: (persisted, version) => {
+      migrate: (persisted, _version) => {
         const raw = (persisted ?? {}) as Record<string, unknown>;
         const instances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
         const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));

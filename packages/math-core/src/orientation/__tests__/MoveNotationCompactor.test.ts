@@ -213,4 +213,68 @@ describe('MoveNotationCompactor', () => {
       ]);
     });
   });
+
+  describe('wide move pair combining (BLE hardware sensor decomposition)', () => {
+    it('combines [L, x] → r', () => {
+      expect(compactMoveNotation(['L', 'x'])).toEqual(['r']);
+    });
+
+    it('combines [x, L] → r', () => {
+      expect(compactMoveNotation(['x', 'L'])).toEqual(['r']);
+    });
+
+    it("combines [L', x'] → r'", () => {
+      expect(compactMoveNotation(["L'", "x'"])).toEqual(["r'"]);
+    });
+
+    it("combines [x', L'] → r'", () => {
+      expect(compactMoveNotation(["x'", "L'"])).toEqual(["r'"]);
+    });
+
+    it("combines [R, x'] → l", () => {
+      expect(compactMoveNotation(['R', "x'"])).toEqual(['l']);
+    });
+
+    it("combines [R', x] → l'", () => {
+      expect(compactMoveNotation(["R'", 'x'])).toEqual(["l'"]);
+    });
+
+    it('combines [D, y] → u', () => {
+      expect(compactMoveNotation(['D', 'y'])).toEqual(['u']);
+    });
+
+    it("combines [D', y'] → u'", () => {
+      expect(compactMoveNotation(["D'", "y'"])).toEqual(["u'"]);
+    });
+
+    it("combines [U, y'] → d", () => {
+      expect(compactMoveNotation(['U', "y'"])).toEqual(['d']);
+    });
+
+    it("combines [U', y] → d'", () => {
+      expect(compactMoveNotation(["U'", 'y'])).toEqual(["d'"]);
+    });
+
+    it('combines [B, z] → f', () => {
+      expect(compactMoveNotation(['B', 'z'])).toEqual(['f']);
+    });
+
+    it("combines [B', z'] → f'", () => {
+      expect(compactMoveNotation(["B'", "z'"])).toEqual(["f'"]);
+    });
+
+    it("combines [F, z'] → b", () => {
+      expect(compactMoveNotation(['F', "z'"])).toEqual(['b']);
+    });
+
+    it("combines [F', z] → b'", () => {
+      expect(compactMoveNotation(["F'", 'z'])).toEqual(["b'"]);
+    });
+
+    it("combines in a sequence: R U L' x' U L x → R U r' U r", () => {
+      expect(compactMoveNotation(['R', 'U', "L'", "x'", 'U', 'L', 'x'])).toEqual([
+        'R', 'U', "r'", 'U', 'r',
+      ]);
+    });
+  });
 });

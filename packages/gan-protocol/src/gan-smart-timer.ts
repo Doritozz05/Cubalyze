@@ -1,4 +1,6 @@
 
+/// <reference types="web-bluetooth" />
+
 import { Observable, Subject } from 'rxjs';
 
 // GAN Smart Timer bluetooth service and characteristic UUIDs

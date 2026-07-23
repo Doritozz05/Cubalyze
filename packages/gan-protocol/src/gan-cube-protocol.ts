@@ -1,4 +1,6 @@
 
+/// <reference types="web-bluetooth" />
+
 import { now, toKociembaFacelets } from './utils';
 import { GanCubeEncrypter } from './gan-cube-encrypter';
 import { Observable, ReplaySubject } from 'rxjs';
