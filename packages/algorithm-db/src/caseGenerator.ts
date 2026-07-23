@@ -61,19 +61,27 @@ export function invertMoveArray(moves: string[]): string[] {
  * where faceMap[position] = original and invMap[original] = position.
  */
 
-/** y (CW): facelet 'F' → 'R', 'L' → 'F', 'B' → 'L', 'R' → 'B' */
-const Y_INV_MAP: Record<string, string> = {
-  U: 'U', D: 'D', F: 'R', L: 'F', B: 'L', R: 'B',
-};
+// ─── Facelet rotation maps for all 3 axes (x, y, z) ────────────────────────
+//
+// These map each FACE LABEL (U/R/F/D/L/B) to the face label that SHOULD appear
+// in the standard U/F reference frame when the cube state was generated from
+// a rotated reference frame.
 
-/** y' (CCW): facelet 'F' → 'L', 'R' → 'F', 'B' → 'R', 'L' → 'B' */
-const Yi_INV_MAP: Record<string, string> = {
-  U: 'U', D: 'D', F: 'L', R: 'F', B: 'R', L: 'B',
-};
+const ROT_MAPS: Record<string, Record<string, string>> = {
+  // y rotations (around U/D axis)
+  y: { U: 'U', D: 'D', F: 'R', L: 'F', B: 'L', R: 'B' },
+  "y'": { U: 'U', D: 'D', F: 'L', R: 'F', B: 'R', L: 'B' },
+  y2: { U: 'U', D: 'D', R: 'L', L: 'R', F: 'B', B: 'F' },
 
-/** y2 (180°): facelet 'R'↔'L', 'F'↔'B' */
-const Y2_INV_MAP: Record<string, string> = {
-  U: 'U', D: 'D', R: 'L', L: 'R', F: 'B', B: 'F',
+  // x rotations (around R/L axis)
+  x: { R: 'R', L: 'L', F: 'U', D: 'F', B: 'D', U: 'B' },
+  "x'": { R: 'R', L: 'L', B: 'U', D: 'B', F: 'D', U: 'F' },
+  x2: { R: 'R', L: 'L', U: 'D', D: 'U', F: 'B', B: 'F' },
+
+  // z rotations (around F/B axis)
+  z: { F: 'F', B: 'B', R: 'U', D: 'R', L: 'D', U: 'L' },
+  "z'": { F: 'F', B: 'B', L: 'U', D: 'L', R: 'D', U: 'R' },
+  z2: { F: 'F', B: 'B', U: 'D', D: 'U', R: 'L', L: 'R' },
 };
 
 // ─── Parity helper ──────────────────────────────────────────────────────────
@@ -156,32 +164,19 @@ export class CaseStateGenerator {
   /**
    * Compute the net rotation face permutation from algorithm moves.
    *
-   * Counts y/y'/y2 rotations and composes them into a single inverse face
-   * map suitable for remapping facelet characters via {@link remapFaceletString}.
+   * Counts whole-cube rotations (x, y, z, x', y', z', x2, y2, z2) and composes
+   * them into a single inverse face map for remapping facelets.
    *
-   * This is the same principle as MoveTransformer.remapScrambleString:
-   * if the algorithm has a `y` rotation, the generated state is effectively
-   * y-rotated relative to the standard U/F diagram frame. We "un-rotate"
-   * the facelet letters so the diagram matches the standard reference frame.
+   * Un-rotates the facelet letters so the diagram matches the standard U/F
+   * reference frame regardless of whole-cube rotations in the algorithm.
    *
-   * **Limitation:** Only y-axis rotations are handled. x and z rotations are
-   * silently ignored because in CFOP PLL/OLL algorithms they always appear
-   * as self-canceling pairs (x ... x', z ... z'). If an algorithm has an
-   * unpaired x/z rotation, this method returns null (no remapping) and the
-   * diagram may show a rotated view.
-   *
-   * @returns The inverse face map, or null if no net rotation or unsupported.
+   * @returns The inverse face map, or null if no net rotation.
    */
   static getNetRotationPermutation(moves: string[]): Record<string, string> | null {
     let net: Record<string, string> | null = null;
 
     for (const token of moves) {
-      let rotMap: Record<string, string> | null = null;
-      if (token === 'y') rotMap = Y_INV_MAP;
-      else if (token === "y'") rotMap = Yi_INV_MAP;
-      else if (token === 'y2') rotMap = Y2_INV_MAP;
-      // x and z rotations: intentionally not handled — they always appear
-      // as self-canceling pairs (x ... x') in CFOP algorithms.
+      const rotMap = ROT_MAPS[token];
 
       if (rotMap) {
         if (net) {

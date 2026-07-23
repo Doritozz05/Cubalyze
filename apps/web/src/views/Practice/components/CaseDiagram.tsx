@@ -22,7 +22,7 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
-import type { VisualizationStyle } from "@cubeforge/algorithm-db";
+import type { VisualizationStyle, ArrowDef } from "@cubeforge/algorithm-db";
 
 // WCA standard color map
 const COLOR_MAP: Record<string, string> = {
@@ -42,7 +42,7 @@ export interface CaseDiagramProps {
   moves?: string[];
   /** Visualization style for dynamic generation (default: 'full-color'). */
   style?: VisualizationStyle;
-  arrows?: { from: [number, number]; to: [number, number]; color?: string }[];
+  arrows?: ArrowDef[];
   showGray?: boolean;
   className?: string;
 }
@@ -70,11 +70,11 @@ const layout: Record<string, { x: number; y: number }> = {
 
 const TOTAL = PAD * 2 + SH + G + FACE_W + G + SH;
 
-const faceStart: Record<string, number> = {
-  R: 9,
-  F: 18,
-  L: 36,
-  B: 45,
+const faceIndices: Record<string, number[]> = {
+  B: [47, 46, 45], // top horizontal (left to right: ULB, UB, UBR)
+  L: [36, 37, 38], // left vertical (top to bottom: ULB, UL, UFL)
+  R: [11, 10, 9],  // right vertical (top to bottom: UBR, UR, URF)
+  F: [18, 19, 20], // bottom horizontal (left to right: UFL, UF, URF)
 };
 
 /**
@@ -160,7 +160,7 @@ export function CaseDiagram({
             : face === "B" ? COLOR_MAP.B
             : COLOR_MAP.R;
 
-          const startIdx = faceStart[face];
+          const indices = faceIndices[face];
 
           if (isHorizontal) {
             return (
@@ -174,7 +174,7 @@ export function CaseDiagram({
                   rx={2}
                 />
                 {[0, 1, 2].map((col) => {
-                  const idx = startIdx + col;
+                  const idx = indices[col];
                   const isGray = faceletColors[idx] === "#";
                   return (
                     <rect
@@ -204,7 +204,7 @@ export function CaseDiagram({
                 rx={2}
               />
               {[0, 1, 2].map((row) => {
-                const idx = startIdx + row;
+                const idx = indices[row];
                 const isGray = faceletColors[idx] === "#";
                 return (
                   <rect

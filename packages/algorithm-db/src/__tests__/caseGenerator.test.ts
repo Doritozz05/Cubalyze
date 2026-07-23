@@ -214,4 +214,28 @@ describe('CaseStateGenerator', () => {
       }
     });
   });
+
+  // ── Rotation remapping for x, y, z axes ────────────────────────────
+
+  describe('getNetRotationPermutation for x, y, z axes', () => {
+    it('handles y rotations', () => {
+      const net = CaseStateGenerator.getNetRotationPermutation(['y']);
+      expect(net).toEqual({ U: 'U', D: 'D', F: 'R', L: 'F', B: 'L', R: 'B' });
+    });
+
+    it('handles x rotations', () => {
+      const net = CaseStateGenerator.getNetRotationPermutation(['x']);
+      expect(net).toEqual({ R: 'R', L: 'L', F: 'U', D: 'F', B: 'D', U: 'B' });
+    });
+
+    it('handles z rotations', () => {
+      const net = CaseStateGenerator.getNetRotationPermutation(['z']);
+      expect(net).toEqual({ F: 'F', B: 'B', R: 'U', D: 'R', L: 'D', U: 'L' });
+    });
+
+    it('cancels opposite rotations (x and x\')', () => {
+      const net = CaseStateGenerator.getNetRotationPermutation(['x', "R'", 'U', 'R', "x'"]);
+      expect(net).toEqual({ R: 'R', L: 'L', F: 'F', D: 'D', B: 'B', U: 'U' });
+    });
+  });
 });
