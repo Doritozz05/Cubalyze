@@ -462,7 +462,6 @@ export interface TrainingDashboardProps {
 
 export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboardProps = {}) {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
-  const [drillView, setDrillView] = useState<DrillViewState | null>(null);
   const [trainView, setTrainView] = useState<TrainViewState | null>(null);
   const [recallView, setRecallView] = useState<RecallViewState | null>(null);
   const [statsView, setStatsView] = useState<StatsViewState | null>(null);
@@ -498,17 +497,34 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     setFullSolveView({ methodId: selectedMethodId });
   };
 
-  // ── Algorithms → Training bridge: auto-navigate on preset ────────────
-  useEffect(() => {
-    if (!preset?.subsetId || !preset?.caseId) return;
+  // ── Algorithms → Training bridge: capture from prop ONCE before it's consumed ──
+  const [drillPresetCaseId, setDrillPresetCaseId] = useState<string | null>(
+    () => preset?.caseId ?? null,
+  );
+  // If preset changes to a new value, update the captured caseId
+  if (preset?.caseId && preset.caseId !== drillPresetCaseId) {
+    setDrillPresetCaseId(preset.caseId);
+  }
+
+  // Init drillView directly from the preset prop (synchronous, no extra render)
+  const initialDrillView = useMemo(() => {
+    if (!preset?.subsetId) return null;
     const subset = SUBSETS.find((s) => s.id === preset.subsetId);
-    if (!subset) return;
-    setSelectedMethodId(subset.methodId);
-    setDrillView({ methodId: subset.methodId, phaseId: "", subsetId: preset.subsetId });
-    // Signal parent that preset was consumed
-    onPresetConsumed?.();
+    if (!subset) return null;
+    return { methodId: subset.methodId, phaseId: "", subsetId: preset.subsetId };
+  }, []);
+
+  const [drillView, setDrillView] = useState<DrillViewState | null>(initialDrillView);
+
+  // Consume the preset on mount + sync selectedMethodId
+  useEffect(() => {
+    if (preset?.subsetId) {
+      const subset = SUBSETS.find((s) => s.id === preset.subsetId);
+      if (subset) setSelectedMethodId(subset.methodId);
+      onPresetConsumed?.();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preset]);
+  }, []);
 
   // L3: Algorithm Drill View
   if (drillView) {
@@ -520,7 +536,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
             phaseId={drillView.phaseId}
             subsetId={drillView.subsetId}
             onBack={() => setDrillView(null)}
-            preselectedCaseId={preset?.caseId ?? null}
+            preselectedCaseId={drillPresetCaseId}
           />
         </div>
       </div>
