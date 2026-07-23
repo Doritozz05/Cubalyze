@@ -1,5 +1,5 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// DEBUG: Show console window for BLE debugging
+// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
     cubeforge_lib::run()

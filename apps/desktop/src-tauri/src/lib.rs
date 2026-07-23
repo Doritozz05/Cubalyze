@@ -14,7 +14,9 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
+            ble::cube::debug_ble_status,
             ble::cube::connect_gan_cube,
+            ble::cube::reconnect_gan_cube,
             ble::cube::disconnect_gan_cube,
             ble::cube::is_cube_connected,
             ble::cube::send_cube_command,

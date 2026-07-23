@@ -34,6 +34,11 @@ import {
   GAN_ENCRYPTION_KEYS,
 } from '@cubeforge/gan-protocol';
 
+// ── Reconnection Constants ──────────────────────────────────────────────────
+
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_BASE_DELAY_MS = 800;
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
@@ -57,7 +62,7 @@ function macToSalt(mac: string): Uint8Array {
 }
 
 // ── Local GanCubeRawConnection interface ──────────────────────────────────
-// (Not exported from @cubeforge/gan-protocol — defined here to avoid touching packages/)
+
 interface GanCubeRawConnection {
   sendCommandMessage(message: Uint8Array): Promise<void>;
   disconnect(): Promise<void>;
@@ -65,10 +70,6 @@ interface GanCubeRawConnection {
 
 // ── Tauri RawConnection adapter ─────────────────────────────────────────────
 
-/**
- * Implements GanCubeRawConnection using Tauri invoke instead of Web Bluetooth.
- * This lets us reuse GanGen2ProtocolDriver (etc.) unchanged.
- */
 class TauriRawConnection implements GanCubeRawConnection {
   async sendCommandMessage(message: Uint8Array): Promise<void> {
     await invoke('send_cube_command', { data: Array.from(message) });
@@ -121,7 +122,21 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
   private rawConn: TauriRawConnection | null = null;
   private macAddress: string = '';
 
+  // ── Reconnection state ──────────────────────────────────────────────────
+  private isUserDisconnect = false;
+  private reconnectAttempts = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // ── Deduplication promises (same pattern as web adapter) ────────────────
+  private faceletsRequestPromise: Promise<void> | null = null;
+  private hardwareRequestPromise: Promise<void> | null = null;
+  private batteryRequestPromise: Promise<void> | null = null;
+
   async connect(manualMac?: string): Promise<void> {
+    this.isUserDisconnect = false;
+    this.reconnectAttempts = 0;
+    this.cancelReconnect();
+
     this.connectionStatusSubject.next('connecting');
     this.onConnectionChange?.('connecting');
 
@@ -130,67 +145,7 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
         mac: manualMac ?? null,
       })) as { status: string; name: string; mac: string; generation: string };
 
-      this._connected = true;
-      this.model = result?.name ?? 'SmartCube';
-      this.macAddress = result?.mac ?? '';
-
-      // Determine cube generation from the service UUID returned by Rust
-      const genService = result.generation.toLowerCase();
-      const salt = macToSalt(this.macAddress);
-
-      let key: { key: number[]; iv: number[] };
-
-      if (genService === GAN_GEN2_SERVICE) {
-        key = result.name?.startsWith('AiCube') ? GAN_ENCRYPTION_KEYS[1] : GAN_ENCRYPTION_KEYS[0];
-        this.encrypter = new GanGen2CubeEncrypter(
-          new Uint8Array(key.key),
-          new Uint8Array(key.iv),
-          salt,
-        );
-        this.driver = new GanGen2ProtocolDriver();
-      } else if (genService === GAN_GEN3_SERVICE) {
-        key = GAN_ENCRYPTION_KEYS[0];
-        this.encrypter = new GanGen3CubeEncrypter(
-          new Uint8Array(key.key),
-          new Uint8Array(key.iv),
-          salt,
-        );
-        this.driver = new GanGen3ProtocolDriver();
-      } else if (genService === GAN_GEN4_SERVICE) {
-        key = GAN_ENCRYPTION_KEYS[0];
-        this.encrypter = new GanGen4CubeEncrypter(
-          new Uint8Array(key.key),
-          new Uint8Array(key.iv),
-          salt,
-        );
-        this.driver = new GanGen4ProtocolDriver();
-      } else {
-        throw new Error(`Unsupported cube generation: ${genService}`);
-      }
-
-      this.rawConn = new TauriRawConnection();
-
-      // Listen for raw BLE data forwarded from Rust
-      this.unlistenData = await listen<{ value: number[] }>('ble:data', (event) => {
-        this.handleDataEvent(event.payload.value);
-      });
-
-      // Listen for disconnection events from Rust
-      this.unlistenStatus = await listen<{ status: string; message?: string }>(
-        'ble:status',
-        (event) => {
-          if (event.payload.status === 'disconnected') {
-            this.handleDisconnect();
-          }
-        },
-      );
-
-      this.connectionStatusSubject.next('connected');
-      this.onConnectionChange?.('connected');
-
-      // Request initial state
-      this.requestHardware().catch(() => {});
-      this.requestBattery().catch(() => {});
+      await this.setupProtocol(result);
     } catch (error) {
       this._connected = false;
       this.connectionStatusSubject.next('disconnected');
@@ -199,41 +154,169 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     }
   }
 
+  /** Setup protocol stack after a successful GATT connection (shared by connect + reconnect). */
+  private async setupProtocol(result: {
+    status: string;
+    name: string;
+    mac: string;
+    generation: string;
+  }): Promise<void> {
+    this._connected = true;
+    this.model = result?.name ?? 'SmartCube';
+    this.macAddress = result?.mac ?? '';
+
+    const genService = result.generation.toLowerCase();
+    const salt = macToSalt(this.macAddress);
+
+    let key: { key: number[]; iv: number[] };
+
+    if (genService === GAN_GEN2_SERVICE) {
+      key = result.name?.startsWith('AiCube') ? GAN_ENCRYPTION_KEYS[1] : GAN_ENCRYPTION_KEYS[0];
+      this.encrypter = new GanGen2CubeEncrypter(
+        new Uint8Array(key.key),
+        new Uint8Array(key.iv),
+        salt,
+      );
+      this.driver = new GanGen2ProtocolDriver();
+    } else if (genService === GAN_GEN3_SERVICE) {
+      key = GAN_ENCRYPTION_KEYS[0];
+      this.encrypter = new GanGen3CubeEncrypter(
+        new Uint8Array(key.key),
+        new Uint8Array(key.iv),
+        salt,
+      );
+      this.driver = new GanGen3ProtocolDriver();
+    } else if (genService === GAN_GEN4_SERVICE) {
+      key = GAN_ENCRYPTION_KEYS[0];
+      this.encrypter = new GanGen4CubeEncrypter(
+        new Uint8Array(key.key),
+        new Uint8Array(key.iv),
+        salt,
+      );
+      this.driver = new GanGen4ProtocolDriver();
+    } else {
+      throw new Error(`Unsupported cube generation: ${genService}`);
+    }
+
+    this.rawConn = new TauriRawConnection();
+
+    // Tear down any previous listeners before setting up new ones
+    this.unlistenData?.();
+    this.unlistenStatus?.();
+
+    this.unlistenData = await listen<{ value: number[] }>('ble:data', (event) => {
+      this.handleDataEvent(event.payload.value);
+    });
+
+    this.unlistenStatus = await listen<{ status: string; message?: string }>(
+      'ble:status',
+      (event) => {
+        if (event.payload.status === 'disconnected') {
+          this.handleDisconnect();
+        }
+      },
+    );
+
+    this.reconnectAttempts = 0;
+
+    this.connectionStatusSubject.next('connected');
+    this.onConnectionChange?.('connected');
+
+    // Request initial state — errors are non-fatal (cube may not support all commands)
+    this.requestHardware().catch(() => {});
+    this.requestBattery().catch(() => {});
+  }
+
   async disconnect(): Promise<void> {
+    this.isUserDisconnect = true;
+    this.cancelReconnect();
+    this.cleanupProtocol();
+
+    // Emit disconnected state — cleanupProtocol tears down the
+    // listeners that would normally catch the Rust disconnect event,
+    // so we must set the status explicitly here.
+    this.connectionStatusSubject.next('disconnected');
+    this.onConnectionChange?.('disconnected');
+  }
+
+  // ── Reconnection Logic ────────────────────────────────────────────────────
+
+  private handleDisconnect(): void {
     this.unlistenData?.();
     this.unlistenData = null;
     this.unlistenStatus?.();
     this.unlistenStatus = null;
 
-    try {
-      await invoke('disconnect_gan_cube');
-    } catch {
-      // Already disconnected
-    }
-
-    this.cleanupProtocol();
-  }
-
-  private handleDisconnect(): void {
-    this.unlistenData?.();
-    this.unlistenData = null;
-    this.cleanupProtocol();
-    this._connected = false;
-    this.connectionStatusSubject.next('disconnected');
-    this.onConnectionChange?.('disconnected');
-  }
-
-  private cleanupProtocol(): void {
     this.driver = null;
     this.encrypter = null;
     this.rawConn = null;
     this._connected = false;
+
+    if (!this.isUserDisconnect && this.macAddress) {
+      this.attemptReconnect();
+    } else {
+      this.connectionStatusSubject.next('disconnected');
+      this.onConnectionChange?.('disconnected');
+    }
   }
 
-  /**
-   * Process raw BLE notification data from Rust:
-   * decrypt → parse with protocol driver → emit to RxJS subjects.
-   */
+  private attemptReconnect(): void {
+    if (this.reconnectTimer !== null) return;
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      this.reconnectAttempts = 0;
+      this.connectionStatusSubject.next('disconnected');
+      this.onConnectionChange?.('disconnected');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    const delay = RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1);
+    this.connectionStatusSubject.next('reconnecting');
+    this.onConnectionChange?.('reconnecting');
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      try {
+        const result = (await invoke('reconnect_gan_cube')) as {
+          status: string;
+          name: string;
+          mac: string;
+          generation: string;
+        };
+        await this.setupProtocol(result);
+      } catch {
+        this.attemptReconnect();
+      }
+    }, delay);
+  }
+
+  private cancelReconnect(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempts = 0;
+  }
+
+  private cleanupProtocol(): void {
+    this.unlistenData?.();
+    this.unlistenData = null;
+    this.unlistenStatus?.();
+    this.unlistenStatus = null;
+
+    this.driver = null;
+    this.encrypter = null;
+    this.rawConn = null;
+    this._connected = false;
+    this.macAddress = '';
+
+    // Fire-and-forget — the Rust disconnect will complete asynchronously.
+    // We've already torn down listeners so we don't need the response.
+    invoke('disconnect_gan_cube').catch(() => {});
+  }
+
+  // ── Data Processing ─────────────────────────────────────────────────────
+
   private async handleDataEvent(rawBytes: number[]): Promise<void> {
     if (!this.encrypter || !this.driver || !this.rawConn) return;
 
@@ -310,19 +393,35 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
 
   async requestFacelets(): Promise<void> {
     if (!this.driver) return;
+    // Dedup: reuse in-flight promise
+    if (this.faceletsRequestPromise) return this.faceletsRequestPromise;
     const msg = this.driver.createCommandMessage({ type: 'REQUEST_FACELETS' });
-    if (msg) await this.sendEncryptedCommand(msg);
+    if (!msg) return;
+    this.faceletsRequestPromise = this.sendEncryptedCommand(msg).finally(() => {
+      this.faceletsRequestPromise = null;
+    });
+    return this.faceletsRequestPromise;
   }
 
   async requestHardware(): Promise<void> {
     if (!this.driver) return;
+    if (this.hardwareRequestPromise) return this.hardwareRequestPromise;
     const msg = this.driver.createCommandMessage({ type: 'REQUEST_HARDWARE' });
-    if (msg) await this.sendEncryptedCommand(msg);
+    if (!msg) return;
+    this.hardwareRequestPromise = this.sendEncryptedCommand(msg).finally(() => {
+      this.hardwareRequestPromise = null;
+    });
+    return this.hardwareRequestPromise;
   }
 
   async requestBattery(): Promise<void> {
     if (!this.driver) return;
+    if (this.batteryRequestPromise) return this.batteryRequestPromise;
     const msg = this.driver.createCommandMessage({ type: 'REQUEST_BATTERY' });
-    if (msg) await this.sendEncryptedCommand(msg);
+    if (!msg) return;
+    this.batteryRequestPromise = this.sendEncryptedCommand(msg).finally(() => {
+      this.batteryRequestPromise = null;
+    });
+    return this.batteryRequestPromise;
   }
 }
