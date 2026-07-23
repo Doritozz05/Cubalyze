@@ -7,6 +7,7 @@ import { METHODS, SUBSETS, getSubsetsForMethod } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { PhaseTrainerView } from "./PhaseTrainerView";
+import { AlgorithmRecallView } from "./AlgorithmRecallView";
 import {
   Box,
   Layers,
@@ -268,14 +269,15 @@ function Level1MethodGrid({ onSelect }: { onSelect: (methodId: string) => void }
 
 function Level2MethodPhase({
   method,
-  onBack,
-  onDrillPhase,
+  onBack,    onDrillPhase,
   onTrainPhase,
+  onRecallPhase,
 }: {
   method: AlgorithmMethod;
   onBack: () => void;
   onDrillPhase: (phaseId: string, subsetId: string) => void;
   onTrainPhase: (phaseId: string, phaseName: string) => void;
+  onRecallPhase: (phaseId: string, subsetId: string) => void;
 }) {
   const phases = METHOD_PHASES[method.name] ?? [];
   const methodQueue = useMemo(() => MOCK_QUEUE.filter((q) => q.method === method.name), [method.name]);
@@ -312,6 +314,10 @@ function Level2MethodPhase({
                 if (sid) onDrillPhase(phase.id, sid);
               }}
               onTrain={() => onTrainPhase(phase.id, phase.name)}
+              onRecall={() => {
+                const sid = findSubsetId(method.id, phase.id);
+                if (sid) onRecallPhase(phase.id, sid);
+              }}
             />
           ))}
         </div>
@@ -355,9 +361,9 @@ function Level2MethodPhase({
    ─────────────────────────────────────────────────────────────────────── */
 
 function PhaseCard({
-  phase, methodName, accent, onDrill, onTrain,
+  phase, methodName, accent, onDrill, onTrain, onRecall,
 }: {
-  phase: PhaseDef; methodName: string; accent: string; onDrill: () => void; onTrain: () => void;
+  phase: PhaseDef; methodName: string; accent: string; onDrill: () => void; onTrain: () => void; onRecall: () => void;
 }) {
   const data = MOCK_PHASE_DATA[`${methodName.toLowerCase()}/${phase.id}`] ?? { mastery: 0, avgTime: "--" };
   const Icon = phase.icon;
@@ -382,9 +388,10 @@ function PhaseCard({
               className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Drill
             </button>
-            <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
+            <button onClick={onRecall}
+              className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Recall
-            </span>
+            </button>
             <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
               Stats
             </span>
@@ -421,6 +428,12 @@ interface TrainViewState {
   phaseName: string;
 }
 
+interface RecallViewState {
+  methodId: string;
+  phaseId: string;
+  subsetId: string;
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
    Top-level dashboard (L1 → L2 → L3 routing)
    ─────────────────────────────────────────────────────────────────────── */
@@ -429,6 +442,7 @@ export function TrainingDashboard() {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
   const [trainView, setTrainView] = useState<TrainViewState | null>(null);
+  const [recallView, setRecallView] = useState<RecallViewState | null>(null);
 
   const selectedMethod = useMemo(
     () => (selectedMethodId ? METHODS.find((m) => m.id === selectedMethodId) ?? null : null),
@@ -445,6 +459,11 @@ export function TrainingDashboard() {
     setTrainView({ methodId: selectedMethodId, phaseId, phaseName });
   };
 
+  const handleRecallPhase = (phaseId: string, subsetId: string) => {
+    if (!selectedMethodId) return;
+    setRecallView({ methodId: selectedMethodId, phaseId, subsetId });
+  };
+
   // L3: Algorithm Drill View
   if (drillView) {
     return (
@@ -455,6 +474,22 @@ export function TrainingDashboard() {
             phaseId={drillView.phaseId}
             subsetId={drillView.subsetId}
             onBack={() => setDrillView(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // L3: Algorithm Recall View (Show → Drill → Recall → Verify wizard + Flash)
+  if (recallView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <AlgorithmRecallView
+            methodId={recallView.methodId}
+            phaseId={recallView.phaseId}
+            subsetId={recallView.subsetId}
+            onBack={() => setRecallView(null)}
           />
         </div>
       </div>
@@ -486,6 +521,7 @@ export function TrainingDashboard() {
             onBack={() => setSelectedMethodId(null)}
             onDrillPhase={handleDrillPhase}
             onTrainPhase={handleTrainPhase}
+            onRecallPhase={handleRecallPhase}
           />
         ) : (
           <Level1MethodGrid onSelect={setSelectedMethodId} />
