@@ -8,7 +8,11 @@ import { MethodTree } from "./components/MethodTree";
 import { CaseGrid } from "./components/CaseGrid";
 import { CaseDetailPanel } from "./components/CaseDetailPanel";
 
-export function PracticeDashboard() {
+export interface PracticeDashboardProps {
+  onPracticeCase?: (subsetId: string, caseId: string) => void;
+}
+
+export function PracticeDashboard({ onPracticeCase }: PracticeDashboardProps = {}) {
   const [selectedSubsetId, setSelectedSubsetId] = useState<string | null>(
     () => SUBSETS.find((s) => s.name === "PLL")?.id ?? null,
   );
@@ -127,6 +131,7 @@ export function PracticeDashboard() {
                   algorithms={selectedAlgorithms}
                   onClose={() => setSelectedCaseId(null)}
                   visualizationStyle={visualizationStyle}
+                  onPracticeCase={onPracticeCase}
                 />
               </div>
             )}

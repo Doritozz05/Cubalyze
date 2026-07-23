@@ -62,6 +62,13 @@ export default function App() {
   // Single source of truth for what the main stage shows. Replaces the old
   // cube3DActive + sidebarActive pair.
   const [activeView, setActiveView] = useState<ViewId>("timer");
+  // Training preset for Algorithms → Training bridge: when user clicks
+  // "Practice This Case" from Algorithms view, we navigate to Training
+  // with the case already loaded in AlgorithmDrillView.
+  const [trainingPreset, setTrainingPreset] = useState<{
+    subsetId: string;
+    caseId: string;
+  } | null>(null);
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -481,11 +488,23 @@ export default function App() {
     }
 
     if (activeView === "practice") {
-      return <PracticeDashboard />;
+      return (
+        <PracticeDashboard
+          onPracticeCase={(subsetId, caseId) => {
+            setTrainingPreset({ subsetId, caseId });
+            setActiveView("training");
+          }}
+        />
+      );
     }
 
     if (activeView === "training") {
-      return <TrainingDashboard />;
+      return (
+        <TrainingDashboard
+          preset={trainingPreset}
+          onPresetConsumed={() => setTrainingPreset(null)}
+        />
+      );
     }
 
     // timer

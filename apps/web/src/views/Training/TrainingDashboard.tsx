@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSubsetsForMethod } from "@cubeforge/algorithm-db";
@@ -453,7 +453,14 @@ interface FullSolveViewState {
    Top-level dashboard (L1 → L2 → L3 routing)
    ─────────────────────────────────────────────────────────────────────── */
 
-export function TrainingDashboard() {
+export interface TrainingDashboardProps {
+  /** When set from Algorithms → Training bridge, auto-navigates to Drill with case preselected. */
+  preset?: { subsetId: string; caseId: string } | null;
+  /** Called after the preset has been consumed so the parent can clear it. */
+  onPresetConsumed?: () => void;
+}
+
+export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboardProps = {}) {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
   const [trainView, setTrainView] = useState<TrainViewState | null>(null);
@@ -491,6 +498,18 @@ export function TrainingDashboard() {
     setFullSolveView({ methodId: selectedMethodId });
   };
 
+  // ── Algorithms → Training bridge: auto-navigate on preset ────────────
+  useEffect(() => {
+    if (!preset?.subsetId || !preset?.caseId) return;
+    const subset = SUBSETS.find((s) => s.id === preset.subsetId);
+    if (!subset) return;
+    setSelectedMethodId(subset.methodId);
+    setDrillView({ methodId: subset.methodId, phaseId: "", subsetId: preset.subsetId });
+    // Signal parent that preset was consumed
+    onPresetConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset]);
+
   // L3: Algorithm Drill View
   if (drillView) {
     return (
@@ -501,6 +520,7 @@ export function TrainingDashboard() {
             phaseId={drillView.phaseId}
             subsetId={drillView.subsetId}
             onBack={() => setDrillView(null)}
+            preselectedCaseId={preset?.caseId ?? null}
           />
         </div>
       </div>

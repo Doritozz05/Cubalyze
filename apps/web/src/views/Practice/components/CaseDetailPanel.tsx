@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { X, Check, ExternalLink } from "lucide-react";
+import { X, Check, ExternalLink, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
@@ -10,8 +10,10 @@ export interface CaseDetailPanelProps {
   caseData: AlgorithmCase;
   algorithms: Algorithm[];
   onClose: () => void;
-  /** Visualization style for dynamic diagram generation (default: 'full-color'). */
+  /** Visualisation style for dynamic diagram generation (default: 'full-color'). */
   visualizationStyle?: VisualizationStyle;
+  /** Called when the user wants to practice this case in the Training tab. */
+  onPracticeCase?: (subsetId: string, caseId: string) => void;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   algorithms,
   onClose,
   visualizationStyle,
+  onPracticeCase,
   className,
 }: CaseDetailPanelProps) {
   const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
@@ -139,6 +142,17 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             ))}
           </div>
         </div>
+
+        {/* Practice this case button — navigates to Training */}
+        {onPracticeCase && (
+          <button
+            onClick={() => onPracticeCase(caseData.subsetId, caseData.id)}
+            className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
+          >
+            <Play className="size-3.5" />
+            Practice This Case
+          </button>
+        )}
 
         {/* Setup scramble */}
         {caseData.setupScramble && (
