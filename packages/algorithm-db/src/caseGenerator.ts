@@ -252,7 +252,41 @@ export class CaseStateGenerator {
     return { state: cleanState, faceletString, diagramColors };
   }
 
-  /** Generate visualization from case metadata. */
+  /**
+   * Generate visualization from a setup scramble string.
+   *
+   * This is the CANONICAL pipeline for case diagrams: it applies the
+   * setupScramble directly to a solved cube, then creates a clean state
+   * (co=0, eo=0) and converts to facelets. No rotation remapping is
+   * needed because the scramble already produces the correct visual
+   * orientation (it is designed to match the reference diagram).
+   *
+   * This matches the verified SpeedCubeDB comparison test exactly.
+   */
+  static generateFromScrambleVisualization(
+    scramble: string,
+    style: VisualizationStyle = 'full-color',
+  ): {
+    state: CubeState;
+    faceletString: string;
+    diagramColors: string[];
+  } {
+    const rawState = this.generateFromScramble(scramble);
+    const cleanState = style === 'full-color'
+      ? this.createCleanState(rawState)
+      : rawState;
+    const faceletString = this.toFaceletString(cleanState);
+    const diagramColors = this.faceletStringToDiagramColors(faceletString, style);
+    return { state: cleanState, faceletString, diagramColors };
+  }
+
+  /**
+   * Generate visualization from case metadata.
+   *
+   * Prefers `setupScramble` as the canonical source (matches SpeedCubeDB
+   * visuals exactly). Falls back to the algorithm-inverse pipeline only
+   * when no setupScramble is available.
+   */
   static generateFromCase(
     caseData: AlgorithmCase,
     algorithms: Algorithm[],
@@ -263,6 +297,14 @@ export class CaseStateGenerator {
     diagramColors: string[];
   } {
     const visStyle = style ?? SUBSET_VISUALIZATION[caseData.category ?? 'PLL']?.style ?? 'full-color';
+
+    // Prefer setupScramble — it is the canonical source that matches
+    // the reference visual (verified against SpeedCubeDB for all 21 PLLs).
+    if (caseData.setupScramble) {
+      return this.generateFromScrambleVisualization(caseData.setupScramble, visStyle);
+    }
+
+    // Fallback: algorithm-inverse pipeline (with rotation remapping).
     const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
     if (!defaultAlg) {
       throw new Error(`No algorithm found for case ${caseData.caseNumber}`);

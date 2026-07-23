@@ -90,6 +90,44 @@ describe("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
     expect(pllCases.length).toBe(21);
   });
 
+  /** Compare a 54-char facelet string against SpeedCubeDB jcube data. */
+  function compareFacelets(
+    caseName: string,
+    jcube: JcubeData,
+    cf: string,
+  ): { allOk: boolean; details: string } {
+    // Cubeforge strips
+    const cfF = [18, 19, 20].map((i) => cf[i]).join("");
+    const cfR = [11, 10, 9].map((i) => cf[i]).join("");
+    const cfL = [38, 37, 36].map((i) => cf[i]).join("");
+    const cfB = [47, 46, 45].map((i) => cf[i]).join("");
+
+    // SpeedCubeDB strips — try both orientations, pick best
+    const scdbFd = getScdbStrip(jcube, "F", "direct");
+    const scdbFr = getScdbStrip(jcube, "F", "reversed");
+    const scdbRd = getScdbStrip(jcube, "R", "direct");
+    const scdbRr = getScdbStrip(jcube, "R", "reversed");
+    const scdbLd = getScdbStrip(jcube, "L", "direct");
+    const scdbLr = getScdbStrip(jcube, "L", "reversed");
+    const scdbBd = getScdbStrip(jcube, "B", "direct");
+    const scdbBr = getScdbStrip(jcube, "B", "reversed");
+
+    const scdbF = cfF === scdbFd ? scdbFd : cfF === scdbFr ? scdbFr : "?";
+    const scdbR = cfR === scdbRd ? scdbRd : cfR === scdbRr ? scdbRr : "?";
+    const scdbL = cfL === scdbLd ? scdbLd : cfL === scdbLr ? scdbLr : "?";
+    const scdbB = cfB === scdbBd ? scdbBd : cfB === scdbBr ? scdbBr : "?";
+
+    const fOk = cfF === scdbF;
+    const rOk = cfR === scdbR;
+    const lOk = cfL === scdbL;
+    const bOk = cfB === scdbB;
+    const allOk = fOk && rOk && lOk && bOk;
+
+    const icon = (ok: boolean) => (ok ? "✓" : "✗");
+    const details = `✓ | ${icon(fOk)}  | ${icon(rOk)}  | ${icon(lOk)}  | ${icon(bOk)}  | ${allOk ? "✅" : "❌"}`;
+    return { allOk, details };
+  }
+
   describe("1-to-1 comparison (using setupScramble)", () => {
     it("compares all 21 cases", () => {
       console.log("\n=== PLL Facelet Comparison: Cubeforge vs SpeedCubeDB ===\n");
@@ -111,38 +149,41 @@ describe("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
         const cleanState = CaseStateGenerator.createCleanState(state);
         const cf = FaceletStringConverter.toFaceletString(cleanState);
 
-        // Cubeforge strips
-        const cfF = [18, 19, 20].map((i) => cf[i]).join("");
-        const cfR = [11, 10, 9].map((i) => cf[i]).join("");
-        const cfL = [38, 37, 36].map((i) => cf[i]).join("");
-        const cfB = [47, 46, 45].map((i) => cf[i]).join("");
-
-        // SpeedCubeDB strips — try both orientations, pick best
-        const scdbFd = getScdbStrip(jcube, "F", "direct");
-        const scdbFr = getScdbStrip(jcube, "F", "reversed");
-        const scdbRd = getScdbStrip(jcube, "R", "direct");
-        const scdbRr = getScdbStrip(jcube, "R", "reversed");
-        const scdbLd = getScdbStrip(jcube, "L", "direct");
-        const scdbLr = getScdbStrip(jcube, "L", "reversed");
-        const scdbBd = getScdbStrip(jcube, "B", "direct");
-        const scdbBr = getScdbStrip(jcube, "B", "reversed");
-
-        const scdbF = cfF === scdbFd ? scdbFd : cfF === scdbFr ? scdbFr : "?";
-        const scdbR = cfR === scdbRd ? scdbRd : cfR === scdbRr ? scdbRr : "?";
-        const scdbL = cfL === scdbLd ? scdbLd : cfL === scdbLr ? scdbLr : "?";
-        const scdbB = cfB === scdbBd ? scdbBd : cfB === scdbBr ? scdbBr : "?";
-
-        const fOk = cfF === scdbF;
-        const rOk = cfR === scdbR;
-        const lOk = cfL === scdbL;
-        const bOk = cfB === scdbB;
-        const allOk = fOk && rOk && lOk && bOk;
+        const { allOk, details } = compareFacelets(caseName, jcube, cf);
         if (allOk) matchCount++;
 
-        const icon = (ok: boolean) => (ok ? "✓" : "✗");
-        console.log(
-          `${caseName.padEnd(4)} | ✓ | ${icon(fOk)}  | ${icon(rOk)}  | ${icon(lOk)}  | ${icon(bOk)}  | ${allOk ? "✅" : "❌"}`,
+        console.log(`${caseName.padEnd(4)} | ${details}`);
+      }
+
+      console.log(`\nMatches: ${matchCount}/21`);
+      expect(matchCount).toBe(21);
+    });
+  });
+
+  describe("Web pipeline comparison (generateFromCase — what the UI actually renders)", () => {
+    it("compares all 21 cases via generateFromCase", () => {
+      console.log("\n=== PLL Web Pipeline: generateFromCase vs SpeedCubeDB ===\n");
+      console.log("Case | U | F  | R  | L  | B  | Match?");
+      console.log("-----|---|----|----|----|----|--------");
+
+      let matchCount = 0;
+
+      for (const caseData of pllCases) {
+        const caseName = caseData.caseNumber;
+        const jcube = scdbMap.get(caseName);
+        if (!jcube) continue;
+
+        // Generate facelet via the same pipeline the web uses
+        const { faceletString: cf } = CaseStateGenerator.generateFromCase(
+          caseData,
+          algorithms,
+          "full-color",
         );
+
+        const { allOk, details } = compareFacelets(caseName, jcube, cf);
+        if (allOk) matchCount++;
+
+        console.log(`${caseName.padEnd(4)} | ${details}`);
       }
 
       console.log(`\nMatches: ${matchCount}/21`);

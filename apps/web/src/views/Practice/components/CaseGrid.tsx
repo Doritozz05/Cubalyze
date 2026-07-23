@@ -91,6 +91,7 @@ function CaseCard({
         {caseData.diagramType === "2d-top" && caseData.diagram2D ? (
           <CaseDiagram
             arrows={caseData.diagram2D.arrows}
+            setupScramble={caseData.setupScramble}
             moves={algorithm?.moves}
             style={visualizationStyle ?? "full-color"}
             className="w-24"

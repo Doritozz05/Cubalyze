@@ -50,6 +50,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
           <div className="flex justify-center">
             <CaseDiagram
               arrows={caseData.diagram2D.arrows}
+              setupScramble={caseData.setupScramble}
               moves={defaultAlg?.moves}
               style={visualizationStyle ?? "full-color"}
               className="w-48"

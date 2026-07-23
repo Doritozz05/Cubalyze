@@ -36,9 +36,11 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export interface CaseDiagramProps {
-  /** Pre-computed facelet colors (54 elements). Takes priority over moves. */
+  /** Pre-computed facelet colors (54 elements). Takes priority over everything. */
   faceletColors?: string[];
-  /** Algorithm moves for dynamic facelet generation (alternative to faceletColors). */
+  /** Setup scramble string — canonical source for diagram generation. */
+  setupScramble?: string;
+  /** Algorithm moves for dynamic facelet generation (fallback when no setupScramble). */
   moves?: string[];
   /** Visualization style for dynamic generation (default: 'full-color'). */
   style?: VisualizationStyle;
@@ -86,15 +88,37 @@ const faceIndices: Record<string, number[]> = {
  */
 export function CaseDiagram({
   faceletColors: faceletColorsProp,
+  setupScramble,
   moves,
   style = "full-color",
   arrows = [],
   showGray = true,
   className,
 }: CaseDiagramProps) {
-  // Dynamic facelet generation when moves are provided without faceletColors
+  // Dynamic facelet generation:
+  //   Priority 1: faceletColors (pre-computed)
+  //   Priority 2: setupScramble (canonical — matches SpeedCubeDB visuals)
+  //   Priority 3: moves (algorithm-inverse — fallback, may differ from canonical)
   const faceletColors = useMemo(() => {
     if (faceletColorsProp) return faceletColorsProp;
+    if (setupScramble) {
+      try {
+        const { diagramColors } =
+          CaseStateGenerator.generateFromScrambleVisualization(
+            setupScramble,
+            style,
+          );
+        return diagramColors;
+      } catch (e) {
+        // setupScramble is the canonical source — if it fails, warn loudly
+        // so the bug is visible. Fall back to moves as last resort.
+        console.warn(
+          `[CaseDiagram] setupScramble failed for case, falling back to moves:`,
+          setupScramble,
+          e,
+        );
+      }
+    }
     if (moves && moves.length > 0) {
       try {
         const { diagramColors } = CaseStateGenerator.generateCaseVisualization(
@@ -108,7 +132,7 @@ export function CaseDiagram({
       }
     }
     return [];
-  }, [faceletColorsProp, moves, style]);
+  }, [faceletColorsProp, setupScramble, moves, style]);
 
   function stickerColor(faceletIdx: number, defaultColor: string): string {
     const c = faceletColors[faceletIdx];
