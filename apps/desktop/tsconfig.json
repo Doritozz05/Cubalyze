@@ -16,11 +16,9 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["./src/*", "../web/src/*"]
+      "@/*": ["./src/*", "../web/src/*"],
+      "@cubeforge/hardware-hal": ["./src/hardware-hal-override.ts"]
     }
   },
-  "include": ["src"],
-  "references": [
-    { "path": "../web/tsconfig.app.json" }
-  ]
+  "include": ["src", "../web/src"]
 }

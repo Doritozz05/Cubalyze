@@ -11,11 +11,13 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
             ble::cube::connect_gan_cube,
             ble::cube::disconnect_gan_cube,
             ble::cube::is_cube_connected,
+            ble::cube::send_cube_command,
             ble::timer::connect_gan_timer,
             ble::timer::disconnect_gan_timer,
         ])
