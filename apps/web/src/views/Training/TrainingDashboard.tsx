@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSubsetsForMethod } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
+import { PhaseTrainerView } from "./PhaseTrainerView";
 import {
   Box,
   Layers,
@@ -85,7 +86,6 @@ function findSubsetId(methodId: string, phaseId: string): string | null {
   };
   const subsetName = phaseToSubsetName[phaseId];
   if (!subsetName) return null;
-  // First try method-specific, then fall back to any method
   const subset = SUBSETS.find((s) => s.methodId === methodId && s.name === subsetName)
     ?? SUBSETS.find((s) => s.name === subsetName);
   return subset?.id ?? null;
@@ -270,10 +270,12 @@ function Level2MethodPhase({
   method,
   onBack,
   onDrillPhase,
+  onTrainPhase,
 }: {
   method: AlgorithmMethod;
   onBack: () => void;
   onDrillPhase: (phaseId: string, subsetId: string) => void;
+  onTrainPhase: (phaseId: string, phaseName: string) => void;
 }) {
   const phases = METHOD_PHASES[method.name] ?? [];
   const methodQueue = useMemo(() => MOCK_QUEUE.filter((q) => q.method === method.name), [method.name]);
@@ -308,7 +310,9 @@ function Level2MethodPhase({
               onDrill={() => {
                 const sid = findSubsetId(method.id, phase.id);
                 if (sid) onDrillPhase(phase.id, sid);
-              }} />
+              }}
+              onTrain={() => onTrainPhase(phase.id, phase.name)}
+            />
           ))}
         </div>
       </section>
@@ -351,13 +355,12 @@ function Level2MethodPhase({
    ─────────────────────────────────────────────────────────────────────── */
 
 function PhaseCard({
-  phase, methodName, accent, onDrill,
+  phase, methodName, accent, onDrill, onTrain,
 }: {
-  phase: PhaseDef; methodName: string; accent: string; onDrill: () => void;
+  phase: PhaseDef; methodName: string; accent: string; onDrill: () => void; onTrain: () => void;
 }) {
   const data = MOCK_PHASE_DATA[`${methodName.toLowerCase()}/${phase.id}`] ?? { mastery: 0, avgTime: "--" };
   const Icon = phase.icon;
-  const modeButtons = phase.hasAlgorithms ? (["Drill", "Recall", "Stats"] as const) : (["Train", "Stats"] as const);
 
   return (
     <div className="group flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:border-ink/12 hover:bg-surface-2/60 hover:shadow-sm">
@@ -373,31 +376,37 @@ function PhaseCard({
         </div>
       </div>
       <div className="flex gap-1.5 pt-1 border-t border-line">
-        {modeButtons.map((label) => {
-          const isDrill = label === "Drill";
-          const isTrain = label === "Train";
-          if (isDrill) {
-            return (
-              <button key={label} onClick={onDrill}
-                className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
-                {label}
-              </button>
-            );
-          }
-          return (
-            <span key={label} className={cn("rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default",
-              isTrain ? "bg-surface-2 text-ink-2 group-hover:bg-line group-hover:text-ink" : "text-ink-3 group-hover:text-ink-2")}>
-              {label}
+        {phase.hasAlgorithms ? (
+          <>
+            <button onClick={onDrill}
+              className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
+              Drill
+            </button>
+            <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
+              Recall
             </span>
-          );
-        })}
+            <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
+              Stats
+            </span>
+          </>
+        ) : (
+          <>
+            <button onClick={onTrain}
+              className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
+              Train
+            </button>
+            <span className="rounded-md px-2.5 py-1 text-[0.6rem] font-medium transition-colors cursor-default text-ink-3 group-hover:text-ink-2">
+              Stats
+            </span>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Top-level dashboard (L1 → L2 → L3 routing)
+   L3 sub-view state types
    ─────────────────────────────────────────────────────────────────────── */
 
 interface DrillViewState {
@@ -406,9 +415,20 @@ interface DrillViewState {
   subsetId: string;
 }
 
+interface TrainViewState {
+  methodId: string;
+  phaseId: string;
+  phaseName: string;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Top-level dashboard (L1 → L2 → L3 routing)
+   ─────────────────────────────────────────────────────────────────────── */
+
 export function TrainingDashboard() {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
+  const [trainView, setTrainView] = useState<TrainViewState | null>(null);
 
   const selectedMethod = useMemo(
     () => (selectedMethodId ? METHODS.find((m) => m.id === selectedMethodId) ?? null : null),
@@ -418,6 +438,11 @@ export function TrainingDashboard() {
   const handleDrillPhase = (phaseId: string, subsetId: string) => {
     if (!selectedMethodId) return;
     setDrillView({ methodId: selectedMethodId, phaseId, subsetId });
+  };
+
+  const handleTrainPhase = (phaseId: string, phaseName: string) => {
+    if (!selectedMethodId) return;
+    setTrainView({ methodId: selectedMethodId, phaseId, phaseName });
   };
 
   // L3: Algorithm Drill View
@@ -436,6 +461,22 @@ export function TrainingDashboard() {
     );
   }
 
+  // L3: Phase Trainer View (Cross, F2L, First Block, LSE, EO, etc.)
+  if (trainView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <PhaseTrainerView
+            methodId={trainView.methodId}
+            phaseId={trainView.phaseId}
+            phaseName={trainView.phaseName}
+            onBack={() => setTrainView(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex-1 min-h-0 w-full">
       <div className="absolute inset-0 flex flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -444,6 +485,7 @@ export function TrainingDashboard() {
             method={selectedMethod}
             onBack={() => setSelectedMethodId(null)}
             onDrillPhase={handleDrillPhase}
+            onTrainPhase={handleTrainPhase}
           />
         ) : (
           <Level1MethodGrid onSelect={setSelectedMethodId} />
