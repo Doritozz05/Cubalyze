@@ -11,8 +11,10 @@ export const ArrowDefSchema = z.object({
 
 export const Diagram2DSchema = z.object({
   /** 54 facelet colors: U(0-8), R(9-17), F(18-26), D(27-35), L(36-44), B(45-53).
-   *  '#' = gray (hidden/irrelevant piece). */
-  faceletColors: z.array(z.string()),
+   *  '#' = gray (hidden/irrelevant piece).
+   *  Optional — when omitted, the CaseDiagram component generates colors
+   *  dynamically from the algorithm moves via CaseStateGenerator. */
+  faceletColors: z.array(z.string()).optional(),
   /** Indices of pieces that are highlighted (bright). */
   highlightedPieces: z.array(z.number()).optional(),
   /** Permutation arrows for PLL-style diagrams. */

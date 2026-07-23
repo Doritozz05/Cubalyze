@@ -46,6 +46,39 @@ const baseB = {
   eo: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1]
 };
 
+// ── Slice move base definitions ────────────────────────────────────────────
+//
+// M = middle slice (x=0), turned like L (CW from -X).
+//   Cycles edges: UF→DF→DB→UB→UF. No corners affected. No edge flips.
+// E = equatorial slice (y=0), turned like D (CW from -Y).
+//   Cycles edges: FR→BR→BL→FL→FR. No corners affected. No edge flips.
+// S = standing slice (z=0), turned like F (CW from +Z).
+//   Cycles edges: UR→DR→DL→UL→UR. No corners affected. All 4 edges flipped.
+//
+// Verified by hand against the existing L/D/F base move conventions:
+//   L cycles UL→FL→DL→BL, M cycles UF→DF→DB→UB (same rotation direction)
+//   D cycles DR→DB→DL→DF, E cycles FR→BR→BL→FL (same rotation direction)
+//   F cycles UF→FR→DF→FL (flips all), S cycles UR→DR→DL→UL (flips all)
+
+const baseM = {
+  cp: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
+  co: [0, 0, 0, 0, 0, 0, 0, 0],
+  ep: [Edge.UR, Edge.UB, Edge.UL, Edge.DB, Edge.DR, Edge.UF, Edge.DL, Edge.DF, Edge.FR, Edge.FL, Edge.BL, Edge.BR],
+  eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+};
+const baseE = {
+  cp: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
+  co: [0, 0, 0, 0, 0, 0, 0, 0],
+  ep: [Edge.UR, Edge.UF, Edge.UL, Edge.UB, Edge.DR, Edge.DF, Edge.DL, Edge.DB, Edge.FL, Edge.BL, Edge.BR, Edge.FR],
+  eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+};
+const baseS = {
+  cp: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
+  co: [0, 0, 0, 0, 0, 0, 0, 0],
+  ep: [Edge.UL, Edge.UF, Edge.DL, Edge.UB, Edge.UR, Edge.DF, Edge.DR, Edge.DB, Edge.FR, Edge.FL, Edge.BL, Edge.BR],
+  eo: [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0]
+};
+
 // ── Bit-level constants ────────────────────────────────────────────────────
 
 const BITS = 5n;
@@ -349,17 +382,25 @@ export class CubeState implements CubeStateInternal {
   public static initTables(): void {
     if (CubeState.isInitialized) return;
 
+    // ── Build base states for all 9 elementary moves (6 faces + 3 slices) ──
     const U = new CubeState(baseU.cp, baseU.co, baseU.ep, baseU.eo);
     const R = new CubeState(baseR.cp, baseR.co, baseR.ep, baseR.eo);
     const F = new CubeState(baseF.cp, baseF.co, baseF.ep, baseF.eo);
     const D = new CubeState(baseD.cp, baseD.co, baseD.ep, baseD.eo);
     const L = new CubeState(baseL.cp, baseL.co, baseL.ep, baseL.eo);
     const B = new CubeState(baseB.cp, baseB.co, baseB.ep, baseB.eo);
+    const M = new CubeState(baseM.cp, baseM.co, baseM.ep, baseM.eo);
+    const E = new CubeState(baseE.cp, baseE.co, baseE.ep, baseE.eo);
+    const S = new CubeState(baseS.cp, baseS.co, baseS.ep, baseS.eo);
 
-    const bases = [U, R, F, D, L, B];
+    const elementaryBases = [U, R, F, D, L, B, M, E, S];
 
-    for (let i = 0; i < 6; i++) {
-      const move1 = bases[i].clone();
+    // ── Build turns 1, 2, 3 for each elementary move ──────────────────────
+    // Enum layout: [U1-3][R1-3][F1-3][D1-3][L1-3][B1-3][M1-3][E1-3][S1-3]
+    // = 9 groups × 3 turns = 27 MoveBitTables (indices 0–26)
+    const inverses: CubeState[] = []; // turn-3 states, reused for rotation composites
+    for (let i = 0; i < 9; i++) {
+      const move1 = elementaryBases[i].clone();
       const move2 = move1.clone();
       move2.multiply(move1);
       const move3 = move2.clone();
@@ -368,7 +409,52 @@ export class CubeState implements CubeStateInternal {
       CubeState.moveBitTables[i * 3 + 0] = extractBitTable(move1);
       CubeState.moveBitTables[i * 3 + 1] = extractBitTable(move2);
       CubeState.moveBitTables[i * 3 + 2] = extractBitTable(move3);
+      inverses.push(move3);
     }
+    // inverses indices: [0]=U' [1]=R' [2]=F' [3]=D' [4]=L' [5]=B' [6]=M' [7]=E' [8]=S'
+
+    // ── Build whole-cube rotations as composites ─────────────────────────
+    // x = R · L' · M'  (all X layers rotated like R, CW from +X)
+    // y = U · D' · E'  (all Y layers rotated like U, CW from +Y)
+    // z = F · B' · S'  (all Z layers rotated like F, CW from +Z)
+    //
+    // Components affect non-overlapping layers → they commute, so order
+    // doesn't matter. The composition via multiply() produces the correct
+    // cubie permutation + orientation for the entire-cube rotation.
+    //
+    // Enum layout: [X1-3][Y1-3][Z1-3] = indices 27–35
+    const ROT_BASE = 27;
+
+    // x = R * L' * M'
+    const x1 = R.clone();
+    x1.multiply(inverses[4]); // R * L'
+    x1.multiply(inverses[6]); // R * L' * M'
+    const x2 = x1.clone(); x2.multiply(x1.clone());
+    const x3 = x2.clone(); x3.multiply(x1.clone());
+
+    // y = U * D' * E'
+    const y1 = U.clone();
+    y1.multiply(inverses[3]); // U * D'
+    y1.multiply(inverses[7]); // U * D' * E'
+    const y2 = y1.clone(); y2.multiply(y1.clone());
+    const y3 = y2.clone(); y3.multiply(y1.clone());
+
+    // z = F * B' * S'
+    const z1 = F.clone();
+    z1.multiply(inverses[5]); // F * B'
+    z1.multiply(inverses[8]); // F * B' * S'
+    const z2 = z1.clone(); z2.multiply(z1.clone());
+    const z3 = z2.clone(); z3.multiply(z1.clone());
+
+    CubeState.moveBitTables[ROT_BASE + 0] = extractBitTable(x1);
+    CubeState.moveBitTables[ROT_BASE + 1] = extractBitTable(x2);
+    CubeState.moveBitTables[ROT_BASE + 2] = extractBitTable(x3);
+    CubeState.moveBitTables[ROT_BASE + 3] = extractBitTable(y1);
+    CubeState.moveBitTables[ROT_BASE + 4] = extractBitTable(y2);
+    CubeState.moveBitTables[ROT_BASE + 5] = extractBitTable(y3);
+    CubeState.moveBitTables[ROT_BASE + 6] = extractBitTable(z1);
+    CubeState.moveBitTables[ROT_BASE + 7] = extractBitTable(z2);
+    CubeState.moveBitTables[ROT_BASE + 8] = extractBitTable(z3);
 
     CubeState.isInitialized = true;
   }

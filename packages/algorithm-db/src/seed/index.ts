@@ -1,4 +1,5 @@
 import { PLL_CASES } from './cfop-pll';
+import { OLL_CASES } from './cfop-oll';
 import type { AlgorithmCase, Algorithm } from '../schema';
 
 /** All seed cases from all methods/subsets. */
@@ -20,7 +21,15 @@ export function getSeedData(): SeedData {
     }
   }
 
-  // Future: CFOP → OLL, CFOP → F2L, Roux → CMLL, etc.
+  // ─── CFOP → OLL ────────────────────────────────────────────────────
+  for (const oll of OLL_CASES) {
+    cases.push(oll.caseDef);
+    for (const a of oll.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // Future: CFOP → F2L, Roux → CMLL, etc.
 
   return { cases, algorithms };
 }

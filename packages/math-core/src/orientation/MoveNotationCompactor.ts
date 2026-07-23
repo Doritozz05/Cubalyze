@@ -86,6 +86,7 @@ interface ParsedToken {
 
 const COMPACTABLE_BASES = new Set([
   'F', 'R', 'U', 'L', 'D', 'B', // face moves
+  'M', 'E', 'S',                // slice moves
   'x', 'y', 'z',                // rotations
 ]);
 

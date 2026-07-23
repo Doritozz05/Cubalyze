@@ -277,9 +277,15 @@ importers:
 
   packages/algorithm-db:
     dependencies:
+      '@cubeforge/math-core':
+        specifier: workspace:*
+        version: link:../math-core
       '@cubeforge/models':
         specifier: workspace:*
         version: link:../models
+      '@cubeforge/solver-engine':
+        specifier: workspace:*
+        version: link:../solver-engine
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../types
@@ -384,6 +390,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@cubeforge/algorithm-db':
+        specifier: workspace:*
+        version: link:../algorithm-db
       '@cubeforge/models':
         specifier: workspace:*
         version: link:../models
@@ -511,6 +520,9 @@ importers:
 
   packages/models:
     dependencies:
+      '@cubeforge/algorithm-db':
+        specifier: workspace:*
+        version: link:../algorithm-db
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../types

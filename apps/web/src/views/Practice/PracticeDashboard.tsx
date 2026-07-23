@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { getSeedData, SUBSETS } from "@cubeforge/algorithm-db";
+import { getSeedData, SUBSETS, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import type { VisualizationStyle } from "@cubeforge/algorithm-db";
 import { MethodTree } from "./components/MethodTree";
 import { CaseGrid } from "./components/CaseGrid";
 import { CaseDetailPanel } from "./components/CaseDetailPanel";
@@ -60,6 +61,14 @@ export function PracticeDashboard() {
     setSelectedCaseId((prev) => (prev === caseId ? null : caseId));
   }, []);
 
+  // ── Visualization style based on selected subset ────────────────────
+  const visualizationStyle: VisualizationStyle = useMemo(() => {
+    if (!selectedSubsetId) return "full-color";
+    const subset = SUBSETS.find((s) => s.id === selectedSubsetId);
+    if (!subset) return "full-color";
+    return SUBSET_VISUALIZATION[subset.name]?.style ?? "full-color";
+  }, [selectedSubsetId]);
+
   // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="relative flex-1 min-h-0 w-full">
@@ -101,6 +110,7 @@ export function PracticeDashboard() {
                 algorithms={filteredAlgorithms}
                 selectedCaseId={selectedCaseId}
                 onSelectCase={handleSelectCase}
+                visualizationStyle={visualizationStyle}
               />
             </div>
 
@@ -116,6 +126,7 @@ export function PracticeDashboard() {
                   caseData={selectedCase}
                   algorithms={selectedAlgorithms}
                   onClose={() => setSelectedCaseId(null)}
+                  visualizationStyle={visualizationStyle}
                 />
               </div>
             )}

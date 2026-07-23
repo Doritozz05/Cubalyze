@@ -3,13 +3,15 @@
 import { memo } from "react";
 import { X, Check, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PLLDiagram } from "./PLLDiagram";
-import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
+import { CaseDiagram } from "./CaseDiagram";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
 export interface CaseDetailPanelProps {
   caseData: AlgorithmCase;
   algorithms: Algorithm[];
   onClose: () => void;
+  /** Visualization style for dynamic diagram generation (default: 'full-color'). */
+  visualizationStyle?: VisualizationStyle;
   className?: string;
 }
 
@@ -17,8 +19,11 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   caseData,
   algorithms,
   onClose,
+  visualizationStyle,
   className,
 }: CaseDetailPanelProps) {
+  const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
+
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
       {/* Header */}
@@ -43,9 +48,10 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
         {/* Diagram */}
         {caseData.diagramType === "2d-top" && caseData.diagram2D && (
           <div className="flex justify-center">
-            <PLLDiagram
-              faceletColors={caseData.diagram2D.faceletColors}
+            <CaseDiagram
               arrows={caseData.diagram2D.arrows}
+              moves={defaultAlg?.moves}
+              style={visualizationStyle ?? "full-color"}
               className="w-48"
             />
           </div>

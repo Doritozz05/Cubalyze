@@ -2,14 +2,16 @@
 
 import { memo } from "react";
 import { cn } from "@/lib/utils";
-import { PLLDiagram } from "./PLLDiagram";
-import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
+import { CaseDiagram } from "./CaseDiagram";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
 export interface CaseGridProps {
   cases: AlgorithmCase[];
   algorithms: Algorithm[];
   selectedCaseId: string | null;
   onSelectCase: (caseId: string) => void;
+  /** Visualization style for dynamic diagram generation (default: 'full-color'). */
+  visualizationStyle?: VisualizationStyle;
   className?: string;
 }
 
@@ -18,6 +20,7 @@ export const CaseGrid = memo(function CaseGrid({
   algorithms,
   selectedCaseId,
   onSelectCase,
+  visualizationStyle,
   className,
 }: CaseGridProps) {
   if (cases.length === 0) {
@@ -50,6 +53,7 @@ export const CaseGrid = memo(function CaseGrid({
             algorithm={defaultAlg}
             isSelected={isSelected}
             onClick={() => onSelectCase(c.id)}
+            visualizationStyle={visualizationStyle}
           />
         );
       })}
@@ -62,11 +66,13 @@ function CaseCard({
   algorithm,
   isSelected,
   onClick,
+  visualizationStyle,
 }: {
   caseData: AlgorithmCase;
   algorithm?: Algorithm;
   isSelected: boolean;
   onClick: () => void;
+  visualizationStyle?: VisualizationStyle;
 }) {
   return (
     <button
@@ -83,9 +89,10 @@ function CaseCard({
       {/* Diagram */}
       <div className="flex items-center justify-center w-full pt-1">
         {caseData.diagramType === "2d-top" && caseData.diagram2D ? (
-          <PLLDiagram
-            faceletColors={caseData.diagram2D.faceletColors}
+          <CaseDiagram
             arrows={caseData.diagram2D.arrows}
+            moves={algorithm?.moves}
+            style={visualizationStyle ?? "full-color"}
             className="w-24"
           />
         ) : (
@@ -95,19 +102,21 @@ function CaseCard({
         )}
       </div>
 
-      {/* Case info */}
+      {/* Case info — algorithm is the main element */}
       <div className="flex flex-col items-center gap-0.5 w-full">
-        <span className="text-[0.72rem] font-semibold text-ink leading-tight">
-          {caseData.caseNumber}
-        </span>
-        <span className="text-[0.6rem] text-ink-3 leading-tight text-center">
-          {caseData.name}
-        </span>
+        {/* Algorithm moves — primary visual element, large & prominent */}
         {algorithm && (
-          <span className="nums text-[0.55rem] text-ink-3/50 truncate w-full text-center mt-0.5">
+          <span className="nums text-[0.68rem] font-semibold text-ink leading-tight text-center px-1">
             {algorithm.moves.join(" ")}
           </span>
         )}
+        {/* Case identifier — secondary */}
+        <span className="text-[0.62rem] font-medium text-ink-2 leading-tight">
+          {caseData.caseNumber}
+        </span>
+        <span className="text-[0.55rem] text-ink-3 leading-tight text-center">
+          {caseData.name}
+        </span>
       </div>
     </button>
   );

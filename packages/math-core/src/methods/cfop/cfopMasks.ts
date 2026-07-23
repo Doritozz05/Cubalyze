@@ -54,7 +54,35 @@ export const OLLMask: PhaseMask = {
   ],
 };
 
-// 4. PLL
+// 4. PLL — detects the PLL state (OLL done, U-layer needs permutation).
+// Unlike the "fully solved" check, this mask verifies that:
+//   • F2L + Cross pieces are in exact solved positions
+//   • U-layer pieces are ORIENTED correctly (co=0, eo=0)
+//   • U-layer pieces may be in ANY permutation (positions 0-3)
+//
+// This is the mask to use for Smart Cube PLL detection and Trainer mode.
+// For PhaseSplitter, this detects the START of the PLL phase.
+export const PLLStateMask: PhaseMask = {
+  name: "PLL",
+  edges: F2LMask.edges,
+  corners: F2LMask.corners,
+  edgePositions: [
+    { pos: Edge.UR, requiredEo: 0 },
+    { pos: Edge.UF, requiredEo: 0 },
+    { pos: Edge.UL, requiredEo: 0 },
+    { pos: Edge.UB, requiredEo: 0 },
+  ],
+  cornerPositions: [
+    { pos: Corner.URF, requiredCo: 0 },
+    { pos: Corner.UFL, requiredCo: 0 },
+    { pos: Corner.ULB, requiredCo: 0 },
+    { pos: Corner.UBR, requiredCo: 0 },
+  ],
+};
+
+// 4b. PLL (fully solved) — all pieces in exact solved positions.
+// This is the original PLL mask renamed for clarity: it detects the
+// COMPLETION of the PLL phase (cube fully solved).
 export const PLLMask: PhaseMask = {
   name: "PLL",
   edges: [
@@ -205,6 +233,37 @@ function makeOLLMask(face: string): PhaseMask {
     FACE_LAYERS[face];
   return {
     name: "OLL",
+    edges: [...crossEdges, ...f2lEdges].map((e) => ({
+      id: e,
+      requiredEp: e,
+      requiredEo: 0,
+    })),
+    corners: f2lCorners.map((c) => ({
+      id: c,
+      requiredCp: c,
+      requiredCo: 0,
+    })),
+    edgePositions: lastLayerEdges.map((e) => ({
+      pos: e,
+      requiredEo: 0,
+    })),
+    cornerPositions: lastLayerCorners.map((c) => ({
+      pos: c,
+      requiredCo: 0,
+    })),
+  };
+}
+
+/**
+ * Build a PLL state mask for a specific face.
+ * Detects when OLL is done on the last layer (F2L+Cross solved,
+ * U-layer pieces oriented but possibly in wrong permutation).
+ */
+function makePLLStateMask(face: string): PhaseMask {
+  const { crossEdges, f2lEdges, f2lCorners, lastLayerEdges, lastLayerCorners } =
+    FACE_LAYERS[face];
+  return {
+    name: "PLL",
     edges: [...crossEdges, ...f2lEdges].map((e) => ({
       id: e,
       requiredEp: e,

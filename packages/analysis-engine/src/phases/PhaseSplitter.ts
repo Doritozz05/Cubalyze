@@ -127,6 +127,44 @@ export class PhaseSplitter {
         currentPhaseIdx++;
         phaseStartIndex = i + 1;
 
+        // ── Handle simultaneous phase completions ────────────────────
+        // When two masks match at the same entry (e.g., OLL and PLL both
+        // complete at the last move), the current entry satisfies both.
+        // Without this loop, the last phase would be skipped entirely
+        // because there are no more entries to check.
+        // We create zero-duration segments for any additional phases
+        // that also match at this same entry.
+        while (currentPhaseIdx < method.phases.length) {
+          const nextMask = method.phases[currentPhaseIdx];
+          let nextMatched = false;
+
+          if (useColorNeutral && faceMasks) {
+            const faceMask = faceMasks.masks[currentPhaseIdx];
+            if (faceMask) {
+              nextMatched = StateMatcher.matchesMask(state, faceMask);
+            }
+          }
+          if (!nextMatched) {
+            nextMatched = StateMatcher.matchesMask(state, nextMask);
+          }
+
+          if (nextMatched) {
+            // This phase also completes at this entry → zero-move segment
+            phases.push({
+              phaseName: nextMask.name,
+              startIndex: i,
+              endIndex: i,
+              startTimestamp: endTs,
+              endTimestamp: endTs,
+              durationMs: 0,
+              moveCount: 0,
+            });
+            currentPhaseIdx++;
+          } else {
+            break;
+          }
+        }
+
         // If we've completed all phases, extend the last phase to cover
         // any remaining moves and exit
         if (currentPhaseIdx >= method.phases.length) {
@@ -234,17 +272,16 @@ export class PhaseSplitter {
 
     for (let i = 0; i < timeline.entries.length; i++) {
       const entry = timeline.entries[i];
-
       const state = TimelineBuilder.fromSnapshot(entry.state);
 
-      // Check if we're at a phase boundary
-      if (phaseIdx < phases.length && i === phases[phaseIdx].endIndex) {
+      // Handle ALL phase boundaries at this entry (including zero-duration
+      // phases created by the while loop in split()).
+      while (phaseIdx < phases.length && i === phases[phaseIdx].endIndex) {
         let mask: PhaseMask;
 
         if (useColorNeutral && faceMasks) {
           mask = faceMasks.masks[phaseIdx];
         } else if (useColorNeutral && phaseIdx === 0) {
-          // Try to detect cross face
           const result = PhaseSplitter.detectCrossFace(state);
           if (result) {
             faceMasks = result;

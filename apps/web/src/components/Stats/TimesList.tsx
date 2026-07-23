@@ -5,7 +5,7 @@ import { MoreHorizontal, Plus, Skull, Eraser, Trash2, Activity, RotateCcw } from
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
-import type { Solve, Penalty } from "@/types";
+import type { Solve } from "@/types";
 import { PenaltyBadge } from "@/components/Insights/atoms";
 import { Button } from "@/components/ui/button";
 import {
