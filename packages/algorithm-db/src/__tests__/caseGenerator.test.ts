@@ -161,10 +161,10 @@ describe('CaseStateGenerator', () => {
       const solved = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
       const colors = CaseStateGenerator.faceletStringToDiagramColors(solved, 'full-color');
       expect(colors[0]).toBe('Y'); // U → Yellow
-      expect(colors[9]).toBe('R'); // R → Red
+      expect(colors[9]).toBe('O'); // R → Orange (with Yellow Top, Green Front)
       expect(colors[18]).toBe('G'); // F → Green
       expect(colors[27]).toBe('W'); // D → White
-      expect(colors[36]).toBe('O'); // L → Orange
+      expect(colors[36]).toBe('R'); // L → Red (with Yellow Top, Green Front)
       expect(colors[45]).toBe('B'); // B → Blue
     });
 

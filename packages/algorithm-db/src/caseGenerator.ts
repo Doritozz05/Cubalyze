@@ -23,7 +23,7 @@ export const SUBSET_VISUALIZATION: Record<string, VisualizationConfig> = {
 // ─── Color mapping ──────────────────────────────────────────────────────────
 
 const FACE_TO_COLOR: Record<string, string> = {
-  U: 'Y', R: 'R', F: 'G', D: 'W', L: 'O', B: 'B',
+  U: 'Y', R: 'O', F: 'G', D: 'W', L: 'R', B: 'B',
 };
 
 // ─── Notation utilities ─────────────────────────────────────────────────────
