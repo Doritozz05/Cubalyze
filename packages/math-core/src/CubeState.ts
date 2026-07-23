@@ -50,28 +50,42 @@ const baseB = {
 // ── Slice move base definitions ────────────────────────────────────────────
 //
 // M = middle slice (x=0), turned like L (CW from -X).
-//   Cycles edges: UF→DF→DB→UB→UF. No corners affected. No edge flips.
+//   Cycles edges: UF→DF→DB→UB→UF. No corners affected.
+//   Flips the 4 cycled edges (UF, UB, DF, DB): each piece's U/D color rotates
+//   onto the F/B face, which under Kociemba's eo convention is a flip.
 // E = equatorial slice (y=0), turned like D (CW from -Y).
-//   Cycles edges: FR→BR→BL→FL→FR. No corners affected. No edge flips.
+//   Cycles edges: FR→BR→BL→FL→FR. No corners affected.
+//   Flips the 4 cycled edges (FR, FL, BL, BR): each piece's F/B color rotates
+//   onto the U/D face, which under Kociemba's eo convention is a flip.
 // S = standing slice (z=0), turned like F (CW from +Z).
-//   Cycles edges: UR→DR→DL→UL→UR. No corners affected. All 4 edges flipped.
+//   Cycles edges: UR→DR→DL→UL→UR. No corners affected. Flips all 4 edges.
 //
-// Verified by hand against the existing L/D/F base move conventions:
+// Verified empirically against the existing L/D/F base move conventions:
 //   L cycles UL→FL→DL→BL, M cycles UF→DF→DB→UB (same rotation direction)
 //   D cycles DR→DB→DL→DF, E cycles FR→BR→BL→FL (same rotation direction)
 //   F cycles UF→FR→DF→FL (flips all), S cycles UR→DR→DL→UL (flips all)
+//
+// NOTE (2026-07): M and E previously had `eo = [0,…,0]` which silently dropped
+// the orientation flip, corrupting visualisations for any algorithm containing
+// r/l/u/d wide moves (e.g. all 57 OLL cases). Fixed by adding flip masks at the
+// 4 destinations they affect. baseS already had this convention. Empirically
+// validated against SpeedCubeDB jcube data via `oll-speedcubedb-comparison.test.ts`.
 
 const baseM = {
   cp: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
   co: [0, 0, 0, 0, 0, 0, 0, 0],
   ep: [Edge.UR, Edge.UB, Edge.UL, Edge.DB, Edge.DR, Edge.UF, Edge.DL, Edge.DF, Edge.FR, Edge.FL, Edge.BL, Edge.BR],
-  eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  // M slice FLIPS the 4 cycled edges (UF, UB, DF, DB): each edge's U/D color
+  // rotates onto the F/B face, which under Kociemba's eo convention is a flip.
+  eo: [0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0]
 };
 const baseE = {
   cp: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
   co: [0, 0, 0, 0, 0, 0, 0, 0],
   ep: [Edge.UR, Edge.UF, Edge.UL, Edge.UB, Edge.DR, Edge.DF, Edge.DL, Edge.DB, Edge.FL, Edge.BL, Edge.BR, Edge.FR],
-  eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  // E slice FLIPS the 4 cycled edges (FR, FL, BL, BR): each edge's F/B color
+  // rotates onto the U/D face, which under Kociemba's eo convention is a flip.
+  eo: [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
 };
 const baseS = {
   cp: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],

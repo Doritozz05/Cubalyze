@@ -142,9 +142,30 @@ describe('CubeState — Extended Moves (M, E, S, x, y, z)', () => {
     }
   });
 
-  it('M does not flip edges', () => {
+  it('M flips the 4 cycled edges (UF, UB, DF, DB) — the rest unchanged', () => {
     const c = new CubeState();
     c.applyMove(Move.M1);
+    // M rotates the M-slice 90°; for each cycled edge, its U/D color rotates
+    // onto the F/B face, which under Kociemba's eo convention = flip (eo=1).
+    expect(c.eo[1]).toBe(1);  // UF flipped
+    expect(c.eo[3]).toBe(1);  // UB flipped
+    expect(c.eo[5]).toBe(1);  // DF flipped
+    expect(c.eo[7]).toBe(1);  // DB flipped
+    // Other edges not affected by M
+    expect(c.eo[0]).toBe(0);  // UR
+    expect(c.eo[2]).toBe(0);  // UL
+    expect(c.eo[4]).toBe(0);  // DR
+    expect(c.eo[6]).toBe(0);  // DL
+    expect(c.eo[8]).toBe(0);  // FR
+    expect(c.eo[9]).toBe(0);  // FL
+    expect(c.eo[10]).toBe(0); // BL
+    expect(c.eo[11]).toBe(0); // BR
+  });
+
+  it('M2 flips every cycled edge twice — net eo=0 for those 4 slots', () => {
+    const c = new CubeState();
+    c.applyMove(Move.M2);
+    // M2 = M * M: each cycled edge flips twice → back to oriented.
     for (let i = 0; i < 12; i++) {
       expect(c.eo[i]).toBe(0);
     }
@@ -161,6 +182,26 @@ describe('CubeState — Extended Moves (M, E, S, x, y, z)', () => {
     expect(c.ep[9]).toBe(Edge.BL);   // FL position ← BL piece
     expect(c.ep[10]).toBe(Edge.BR);  // BL position ← BR piece
     expect(c.ep[11]).toBe(Edge.FR);  // BR position ← FR piece
+  });
+
+  it('E flips the 4 cycled edges (FR, FL, BL, BR) — the rest unchanged', () => {
+    const c = new CubeState();
+    c.applyMove(Move.E1);
+    // E rotates the E-slice 90°; each cycled edge's F/B color rotates onto
+    // the U/D face = eo flip under Kociemba convention.
+    expect(c.eo[8]).toBe(1);  // FR flipped
+    expect(c.eo[9]).toBe(1);  // FL flipped
+    expect(c.eo[10]).toBe(1); // BL flipped
+    expect(c.eo[11]).toBe(1); // BR flipped
+    // Other edges not affected by E
+    expect(c.eo[0]).toBe(0);  // UR
+    expect(c.eo[1]).toBe(0);  // UF
+    expect(c.eo[2]).toBe(0);  // UL
+    expect(c.eo[3]).toBe(0);  // UB
+    expect(c.eo[4]).toBe(0);  // DR
+    expect(c.eo[5]).toBe(0);  // DF
+    expect(c.eo[6]).toBe(0);  // DL
+    expect(c.eo[7]).toBe(0);  // DB
   });
 
   // ── S-slice permutation correctness ────────────────────────────────
@@ -206,6 +247,21 @@ describe('CubeState — Extended Moves (M, E, S, x, y, z)', () => {
     for (let i = 0; i < 12; i++) {
       expect(viaRotation.ep[i]).toBe(viaComposite.ep[i]);
       expect(viaRotation.eo[i]).toBe(viaComposite.eo[i]);
+    }
+  });
+
+  it('x4 = x * x * x * x returns to solved (including eo=0 for every edge)', () => {
+    // Regression guard against silent eo drift in the rotation composite.
+    // Even though M' in isolation flips 4 edges, the composite `x = R L' M'`
+    // is applied 4 times here, so each cycled edge flips XOR 4 times = 0.
+    // Uses only the public API: `isSolved()` (which compares against the
+    // internal `SOLVED_EDGES`/`SOLVED_CORNERS` constants) plus a per-edge
+    // `eo[i] === 0` loop to catch partial regressions.
+    const c = new CubeState();
+    c.applySequence('x x x x');
+    expect(c.isSolved()).toBe(true);
+    for (let i = 0; i < 12; i++) {
+      expect(c.eo[i], `edge ${i} should have eo=0 after x4`).toBe(0);
     }
   });
 
