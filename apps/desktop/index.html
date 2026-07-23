@@ -3,6 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Cross-Origin Isolation headers — REQUIRED for SharedArrayBuffer.
+         Without these, OPFS (persistent SQLite storage) is unavailable and
+         the database falls back to in-memory (data lost on app close).
+         Chromium supports these as <meta http-equiv> since Chrome 88/93. -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless" />
+
     <title>CubeForge</title>
   </head>
   <body>
