@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
+import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { generateRandomSetup } from "@/lib/training/setupGenerator";
 import {
   ArrowLeft,
@@ -111,14 +113,19 @@ export function AlgorithmDrillView({
   const [showAlgorithm, setShowAlgorithm] = useState(false);
   const [revealIfFail, setRevealIfFail] = useState(false);
   const [attempts, setAttempts] = useState<DrillAttempt[]>([]);
-  const [smartCubeMode, setSmartCubeMode] = useState(false);
   const [seqIndex, setSeqIndex] = useState(0);
   const [currentSetup, setCurrentSetup] = useState("");
   const [showVerdict, setShowVerdict] = useState(false);
   const [setupVersion, setSetupVersion] = useState(0);
 
   // ── Drill timer (hold-to-arm, space key) ───────────────────────────────
-  const { phase, time, stoppedTime, press, release, reset } = useDrillTimer();
+  const { phase, time, stoppedTime, press, release, reset, engine } = useDrillTimer();
+
+  // ── Smart Cube wiring (BLE + scramble validation + auto-arm) ───────────
+  const drillSmartCube = useDrillSmartCube({
+    engine,
+    setupScramble: currentSetup,
+  });
 
   // Show verdict overlay when timer stops, hide when engine leaves stopped
   useEffect(() => {
@@ -136,12 +143,13 @@ export function AlgorithmDrillView({
   }, [subset]);
 
   // ── Timer hint context (controls TimerDisplay hint text) ─────────────
+  const hasSmartCube = drillSmartCube.smartCubeConnected;
   const drillHintCtx = useMemo<HintContext>(() => ({
-    smartCube: smartCubeMode,
-    scrambleVerif: false,
+    smartCube: hasSmartCube,
+    scrambleVerif: hasSmartCube,
     inspection: false,
-    isScrambled: false,
-  }), [smartCubeMode]);
+    isScrambled: drillSmartCube.validation.isScrambled,
+  }), [hasSmartCube, drillSmartCube.validation.isScrambled]);
 
   // ── Derived data ─────────────────────────────────────────────────────
   const selectedCase = useMemo(
@@ -257,8 +265,7 @@ export function AlgorithmDrillView({
           masteredCount={subsetCases.filter((c) => mockCaseProgress(c.caseNumber).mastery >= 90).length}
           totalCount={subsetCases.length}
           onBack={onBack}
-          smartCubeMode={smartCubeMode}
-          onToggleSmartCube={() => setSmartCubeMode((v) => !v)}
+          smartCubeConnected={drillSmartCube.smartCubeConnected}
         />
 
         {/* Body */}
@@ -290,20 +297,21 @@ export function AlgorithmDrillView({
                 )}
               </div>
 
-              {/* Right: Setup scramble (main visual element) */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
-                <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup Scramble</span>
+              {/* Right: Setup scramble with ScrambleDisplay (same component as practice timer, compact) */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
                 {currentSetup ? (
-                  <>
-                    <p className="nums text-[clamp(1rem,3vw,1.6rem)] font-bold text-ink leading-relaxed tracking-tight break-words">
-                      {currentSetup}
-                    </p>
-                    <span className="nums text-[0.58rem] text-ink-3/50">
-                      {currentSetup.trim().split(/\s+/).filter(Boolean).length} moves
-                    </span>
-                  </>
+                  <ScrambleDisplay
+                    scramble={currentSetup}
+                    states={hasSmartCube ? drillSmartCube.validation.states : undefined}
+                    currentIndex={hasSmartCube ? drillSmartCube.validation.currentIndex : 0}
+                    errorMoves={hasSmartCube ? drillSmartCube.validation.errorMoves : []}
+                    pendingHalfDouble={hasSmartCube ? drillSmartCube.validation.pendingHalfDouble : false}
+                    isScrambled={hasSmartCube ? drillSmartCube.validation.isScrambled : false}
+                    needsReset={hasSmartCube ? drillSmartCube.validation.needsReset : false}
+                    awaitingSolve={hasSmartCube ? drillSmartCube.validation.awaitingSolve : false}
+                  />
                 ) : (
-                  <p className="nums text-[0.85rem] text-ink-3/40 italic">Select a case to generate setup</p>
+                  <p className="nums text-[0.85rem] text-ink-3/40 italic px-1">Select a case to generate setup</p>
                 )}
               </div>
             </div>
@@ -428,10 +436,10 @@ export function AlgorithmDrillView({
    ─────────────────────────────────────────────────────────────────────── */
 
 function DrillHeader({
-  methodName, subsetName, drillMode, onModeChange, masteredCount, totalCount, onBack, smartCubeMode, onToggleSmartCube,
+  methodName, subsetName, drillMode, onModeChange, masteredCount, totalCount, onBack, smartCubeConnected,
 }: {
   methodName: string; subsetName: string; drillMode: DrillMode; onModeChange: (m: DrillMode) => void;
-  masteredCount: number; totalCount: number; onBack: () => void; smartCubeMode: boolean; onToggleSmartCube: () => void;
+  masteredCount: number; totalCount: number; onBack: () => void; smartCubeConnected: boolean;
 }) {
   return (
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
@@ -444,11 +452,11 @@ function DrillHeader({
         <span className="text-[0.6rem] text-ink-3/50">›</span>
         <span className="text-[0.72rem] font-semibold text-ink">Drill</span>
         <span className="nums text-[0.62rem] text-ink-3 ml-auto">{masteredCount}/{totalCount} mastered</span>
-        <button onClick={onToggleSmartCube}
-          className={cn("shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors border",
-            smartCubeMode ? "border-ink/20 bg-ink text-surface" : "border-line bg-surface text-ink-3 hover:text-ink hover:border-ink/15")}>
-          {smartCubeMode ? "Smart Cube" : "Manual"}
-        </button>
+        {smartCubeConnected && (
+          <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">
+            Smart Cube
+          </span>
+        )}
       </div>
       <div className="flex gap-1">
         {DRILL_MODES.map((mode) => (

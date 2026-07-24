@@ -51,6 +51,8 @@ export interface UseDrillTimerResult {
   release: () => void;
   /** Reset timer to idle + clear stopped time. */
   reset: () => void;
+  /** Underlying TimerEngine — exposed for Smart Cube integration. */
+  engine: TimerEngine;
 }
 
 /**
@@ -150,5 +152,5 @@ export function useDrillTimer(options: UseDrillTimerOptions = {}): UseDrillTimer
     };
   }, [press, release, enabled]);
 
-  return { phase, time, stoppedTime, press, release, reset };
+  return { phase, time, stoppedTime, press, release, reset, engine };
 }
