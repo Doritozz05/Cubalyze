@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
@@ -11,23 +11,74 @@ interface UltraSkillTreeViewProps {
 }
 
 const CATEGORY_ITEMS = [
-  { id: "all", label: "All Nodes" },
-  { id: "inspection", label: "Inspection & Cross" },
+  { id: "all", label: "Todas las Skills" },
+  { id: "inspection", label: "Inspección & Cross" },
   { id: "f2l", label: "Advanced F2L" },
-  { id: "edge-control", label: "Edge Control" },
+  { id: "edge-control", label: "Control de Aristas" },
   { id: "coll", label: "COLL & LL" },
   { id: "zbll", label: "ZBLL Sets" },
-  { id: "ergonomics", label: "Ergonomics & 3-Style" },
+  { id: "ergonomics", label: "Ergonomía & 3-Style" },
 ];
 
+const LOCAL_STORAGE_KEY = "cubeforge_completed_skills_v2";
+
 export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
-  const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
+  // Set of completed skill IDs
+  const [completedIds, setCompletedIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {
+      // Fallback
+    }
+    // Default initial completed skill
+    return ["cross-plus-one"];
+  });
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Save to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(completedIds));
+    } catch {
+      // Ignore
+    }
+  }, [completedIds]);
+
+  // Compute dynamic nodes with calculated statuses (completed, unlocked/accessible, locked)
+  const skillNodes = useMemo(() => {
+    const completedSet = new Set(completedIds);
+
+    return ALL_SKILL_NODES.map((node) => {
+      if (completedSet.has(node.id)) {
+        return { ...node, status: "completed" as const, masteryPercentage: 100 };
+      }
+
+      // Check if ALL prerequisites are satisfied
+      const allPrereqsMet =
+        node.prerequisites.length === 0 ||
+        node.prerequisites.every((req) => completedSet.has(req));
+
+      if (allPrereqsMet) {
+        return { ...node, status: "unlocked" as const, masteryPercentage: 0 };
+      }
+
+      return { ...node, status: "locked" as const, masteryPercentage: 0 };
+    });
+  }, [completedIds]);
+
+  const selectedNode = useMemo(() => {
+    return skillNodes.find((n) => n.id === selectedNodeId) || null;
+  }, [skillNodes, selectedNodeId]);
+
   const filteredNodes = useMemo(() => {
-    return ALL_SKILL_NODES.filter((node) => {
+    return skillNodes.filter((node) => {
       const matchesCategory =
         filterCategory === "all" || node.category === filterCategory;
       const matchesSearch =
@@ -37,19 +88,35 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         node.tier.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [filterCategory, searchQuery]);
+  }, [skillNodes, filterCategory, searchQuery]);
 
   const stats = useMemo(() => {
-    const unlocked = ALL_SKILL_NODES.filter((n) => n.status === "unlocked").length;
-    const inProgress = ALL_SKILL_NODES.filter((n) => n.status === "in-progress").length;
-    const total = ALL_SKILL_NODES.length;
-    const percent = Math.round((unlocked / total) * 100);
-    return { unlocked, inProgress, total, percent };
-  }, []);
+    const completed = skillNodes.filter((n) => n.status === "completed").length;
+    const accessible = skillNodes.filter((n) => n.status === "unlocked").length;
+    const total = skillNodes.length;
+    const percent = Math.round((completed / total) * 100);
+    return { completed, accessible, total, percent };
+  }, [skillNodes]);
 
   const handleSelectNode = (node: SkillNode) => {
-    setSelectedNode(node);
+    setSelectedNodeId(node.id);
     setModalOpen(true);
+  };
+
+  const handleToggleComplete = (nodeId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    // Verify node is accessible or already completed
+    const targetNode = skillNodes.find((n) => n.id === nodeId);
+    if (!targetNode || targetNode.status === "locked") return;
+
+    setCompletedIds((prev) => {
+      if (prev.includes(nodeId)) {
+        return prev.filter((id) => id !== nodeId);
+      } else {
+        return [...prev, nodeId];
+      }
+    });
   };
 
   const handleStartDrill = (_node: SkillNode) => {
@@ -63,11 +130,12 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Title & Description */}
           <div>
-            <h1 className="text-lg font-bold text-foreground tracking-tight">
-              Speedcubing Skills
+            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-foreground" />
+              Árbol de Habilidades Speedcubing
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Technique progression graph: from inspection and F2L to COLL, ZBLL sets, and 3-Style.
+              Completa habilidades para desbloquear las siguientes ramas técnicas de CFOP & 3BLD.
             </p>
           </div>
 
@@ -77,7 +145,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search technique or tier..."
+                placeholder="Buscar técnica..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8 pl-8 text-xs bg-muted/40 border-border/70 focus-visible:ring-1 focus-visible:ring-primary"
@@ -85,12 +153,12 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
             </div>
 
             {/* Progress Badge */}
-            <div className="px-3 py-1 rounded-md bg-muted/50 border border-border text-xs flex items-center gap-1.5 shrink-0">
-              <span className="text-muted-foreground font-medium">Progress:</span>
+            <div className="px-3 py-1 rounded-lg bg-muted/50 border border-border text-xs flex items-center gap-1.5 shrink-0">
+              <span className="text-muted-foreground font-medium">Completado:</span>
               <span className="text-foreground font-bold">
-                {stats.unlocked}/{stats.total}
+                {stats.completed}/{stats.total}
               </span>
-              <span className="text-emerald-500 font-semibold">({stats.percent}%)</span>
+              <span className="text-foreground font-mono font-semibold">({stats.percent}%)</span>
             </div>
           </div>
         </div>
@@ -98,7 +166,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         {/* Category Pills Bar */}
         <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-border/50 scrollbar-none">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
-            <SlidersHorizontal className="w-3 h-3" /> Branch:
+            <SlidersHorizontal className="w-3 h-3" /> Rama:
           </span>
           {CATEGORY_ITEMS.map((cat) => {
             const isActive = filterCategory === cat.id;
@@ -125,6 +193,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
       <SkillGraphCanvas
         nodes={filteredNodes}
         onSelectNode={handleSelectNode}
+        onToggleComplete={handleToggleComplete}
       />
 
       {/* Skill Node Detail Modal */}
@@ -133,9 +202,12 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         open={modalOpen}
         onOpenChange={setModalOpen}
         onStartDrill={handleStartDrill}
+        onToggleComplete={handleToggleComplete}
       />
     </div>
   );
 }
+
+
 
 

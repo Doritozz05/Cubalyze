@@ -260,7 +260,7 @@ export function CubeforgeCommandPalette({
   );
 
   // Dynamic Algorithm Database Items
-  const algorithmCommands: CommandItemData[] = useMemo(() => {
+  const algorithmCommands = useMemo(() => {
     const algMap = new Map<string, string>();
     seedData.algorithms.forEach((a) => {
       if (a.caseId && (!algMap.has(a.caseId) || a.isDefault)) {
@@ -268,13 +268,14 @@ export function CubeforgeCommandPalette({
       }
     });
 
-    return seedData.cases.map((c) => {
-      if (!c.id) return null;
+    const items: CommandItemData[] = [];
+    seedData.cases.forEach((c) => {
+      if (!c.id) return;
       const moves = algMap.get(c.id) || "";
       const subsetLabel = (c.subsetId || "").toUpperCase();
-      return {
+      items.push({
         id: `alg-${c.id}`,
-        category: "algorithms" as const,
+        category: "algorithms",
         label: `${c.name || "Case"} (${subsetLabel})`,
         description: moves ? `Alg: ${moves}` : `${subsetLabel} Case`,
         icon: BookOpen,
@@ -286,8 +287,9 @@ export function CubeforgeCommandPalette({
             onNavigate("practice");
           }
         },
-      };
-    }).filter((cmd): cmd is CommandItemData => cmd !== null);
+      });
+    });
+    return items;
   }, [onNavigate, onSelectAlgorithmCase]);
 
   // Combine static and algorithm commands

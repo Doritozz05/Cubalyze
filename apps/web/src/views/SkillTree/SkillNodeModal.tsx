@@ -12,6 +12,9 @@ import {
   Target,
   ArrowRight,
   Code2,
+  Check,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SkillNode } from "./skillTreeData";
@@ -21,6 +24,7 @@ interface SkillNodeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStartDrill?: (node: SkillNode) => void;
+  onToggleComplete?: (nodeId: string) => void;
 }
 
 export function SkillNodeModal({
@@ -28,21 +32,25 @@ export function SkillNodeModal({
   open,
   onOpenChange,
   onStartDrill,
+  onToggleComplete,
 }: SkillNodeModalProps) {
   if (!node) return null;
 
+  const isCompleted = node.status === "completed";
+  const isLocked = node.status === "locked";
+
   const statusBadges: Record<SkillNode["status"], { label: string; style: string }> = {
-    unlocked: {
-      label: "Mastered",
-      style: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
+    completed: {
+      label: "Completado ✓",
+      style: "bg-foreground text-background font-bold border-foreground",
     },
-    "in-progress": {
-      label: "In Progress",
-      style: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+    unlocked: {
+      label: "Accesible",
+      style: "bg-muted/80 text-foreground border-border font-semibold",
     },
     locked: {
-      label: "Locked",
-      style: "bg-muted text-muted-foreground border-border/60",
+      label: "Bloqueado",
+      style: "bg-muted/40 text-muted-foreground/70 border-border/40",
     },
   };
 
@@ -62,7 +70,7 @@ export function SkillNodeModal({
             </span>
             <span
               className={cn(
-                "px-2 py-0.5 text-xs font-medium border rounded-md",
+                "px-2.5 py-0.5 text-xs border rounded-md transition-colors",
                 badge.style
               )}
             >
@@ -70,49 +78,36 @@ export function SkillNodeModal({
             </span>
           </div>
 
-          <DialogTitle className="text-xl font-bold text-foreground tracking-tight">
-            {node.title}
+          <DialogTitle className="text-xl font-bold text-foreground tracking-tight flex items-center justify-between">
+            <span>{node.title}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             {node.subtitle}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Technical Mastery Bar */}
-        <div className="space-y-1.5 p-3 rounded-lg bg-card border border-border/80">
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className="text-muted-foreground">Technical Mastery</span>
-            <span className="text-foreground font-mono font-bold">{node.masteryPercentage}%</span>
-          </div>
-          <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-foreground transition-all duration-300 rounded-full"
-              style={{ width: `${node.masteryPercentage}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-            <span>Reward: +{node.xpReward} XP</span>
-            <span>Target: 100% execution consistency</span>
-          </div>
-        </div>
-
-        {/* Speedcubing Theory */}
+        {/* Speedcubing Theory Explanation */}
         <div className="space-y-1.5">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5" /> Speedcubing Theory
+            <BookOpen className="w-3.5 h-3.5 text-foreground" /> Teoría & Concepto Clave
           </h4>
-          <p className="text-xs text-foreground/90 leading-relaxed bg-muted/20 p-3 rounded-md border border-border/60">
+          <p className="text-xs text-foreground/90 leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/60">
             {node.theory}
           </p>
+        </div>
+
+        {/* Full Description */}
+        <div className="text-xs text-muted-foreground leading-relaxed px-1">
+          {node.description}
         </div>
 
         {/* Model Formula / Insertion */}
         {node.exampleFormula && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Code2 className="w-3.5 h-3.5 text-primary" /> Model Sequence / Insertion
+              <Code2 className="w-3.5 h-3.5 text-foreground" /> Fórmula / Secuencia de Ejemplo
             </h4>
-            <div className="p-3 bg-card border border-border rounded-md font-mono text-xs text-foreground font-semibold text-center tracking-wide select-all">
+            <div className="p-3 bg-card border border-border rounded-lg font-mono text-xs text-foreground font-semibold text-center tracking-wide select-all shadow-inner">
               {node.exampleFormula}
             </div>
           </div>
@@ -122,15 +117,15 @@ export function SkillNodeModal({
         {node.prerequisites.length > 0 && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Prerequisites
+              Prerrequisitos
             </h4>
             <div className="flex flex-wrap gap-2">
               {node.prerequisites.map((req) => (
                 <span
                   key={req}
-                  className="px-2 py-1 text-xs bg-muted/40 border border-border rounded text-muted-foreground flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs bg-muted/40 border border-border rounded-md text-muted-foreground flex items-center gap-1.5"
                 >
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {req}
+                  <CheckCircle2 className="w-3.5 h-3.5 text-foreground" /> {req}
                 </span>
               ))}
             </div>
@@ -141,15 +136,15 @@ export function SkillNodeModal({
         {node.recommendedDrills.length > 0 && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5" /> Recommended Practice Drills
+              <Target className="w-3.5 h-3.5 text-foreground" /> Ejercicios Recomendados
             </h4>
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {node.recommendedDrills.map((drill) => (
                 <li
                   key={drill}
-                  className="text-xs text-foreground/80 flex items-center gap-2 p-2 rounded bg-card/60 border border-border/50"
+                  className="text-xs text-foreground/90 flex items-center gap-2 p-2.5 rounded-lg bg-card/60 border border-border/60"
                 >
-                  <ArrowRight className="w-3 h-3 text-primary shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-foreground shrink-0" />
                   <span>{drill}</span>
                 </li>
               ))}
@@ -158,23 +153,61 @@ export function SkillNodeModal({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-2 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="text-xs">
-            Close
-          </Button>
-          <Button
-            size="sm"
-            className="text-xs font-semibold"
-            onClick={() => {
-              onStartDrill?.(node);
-              onOpenChange(false);
-            }}
-          >
-            Practice Skill
-          </Button>
+        <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+          {/* Toggle Complete Button */}
+          {!isLocked ? (
+            <Button
+              variant={isCompleted ? "outline" : "default"}
+              size="sm"
+              onClick={() => onToggleComplete?.(node.id)}
+              className={cn(
+                "text-xs font-semibold gap-1.5 transition-all",
+                isCompleted
+                  ? "border-foreground/40 text-foreground hover:bg-muted"
+                  : "bg-foreground text-background hover:bg-foreground/90 font-bold shadow-md"
+              )}
+            >
+              {isCompleted ? (
+                <>
+                  <RotateCcw className="w-3.5 h-3.5" /> Marcar como no completado
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3 stroke-[3]" /> Completado ✓
+                </>
+              )}
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+              <Lock className="w-3.5 h-3.5" /> Bloqueado: requiere completar prerrequisitos
+            </span>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="text-xs"
+            >
+              Cerrar
+            </Button>
+            <Button
+              size="sm"
+              disabled={isLocked}
+              className="text-xs font-semibold gap-1"
+              onClick={() => {
+                onStartDrill?.(node);
+                onOpenChange(false);
+              }}
+            >
+              Practicar Skill
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
 
