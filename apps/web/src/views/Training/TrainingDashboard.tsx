@@ -7,7 +7,7 @@ import { METHODS, SUBSETS, getSubsetsForMethod } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { PhaseTrainerView } from "./PhaseTrainerView";
-import { AlgorithmRecallView } from "./AlgorithmRecallView";
+import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
 import { TrainingCalendar } from "./TrainingCalendar";
@@ -285,7 +285,7 @@ function Level1MethodGrid({ onSelect }: { onSelect: (methodId: string) => void }
 function Level2MethodPhase({
   method,
   onBack,    onDrillPhase,
-  onTrainPhase,    onRecallPhase,
+  onTrainPhase,    onRecognizePhase,
   onStatsPhase,
   onFullSolve,
 }: {
@@ -293,7 +293,7 @@ function Level2MethodPhase({
   onBack: () => void;
   onDrillPhase: (phaseId: string, subsetId: string) => void;
   onTrainPhase: (phaseId: string, phaseName: string) => void;
-  onRecallPhase: (phaseId: string, subsetId: string) => void;
+  onRecognizePhase: (phaseId: string, subsetId: string) => void;
   onStatsPhase: (phaseId: string, phaseName: string) => void;
   onFullSolve: () => void;
 }) {
@@ -334,7 +334,7 @@ function Level2MethodPhase({
               onTrain={() => onTrainPhase(phase.id, phase.name)}
               onRecall={() => {
                 const sid = findSubsetId(method.id, phase.id);
-                if (sid) onRecallPhase(phase.id, sid);
+                if (sid) onRecognizePhase(phase.id, sid);
               }}
               onStats={() => onStatsPhase(phase.id, phase.name)}
             />
@@ -423,7 +423,7 @@ function PhaseCard({
             </button>
             <button onClick={onRecall}
               className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
-              Recall
+              Recognize
             </button>
             <button onClick={onStats}
               className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto">
@@ -463,7 +463,7 @@ interface TrainViewState {
   phaseName: string;
 }
 
-interface RecallViewState {
+interface RecognizeViewState {
   methodId: string;
   phaseId: string;
   subsetId: string;
@@ -493,7 +493,7 @@ export interface TrainingDashboardProps {
 export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboardProps = {}) {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [trainView, setTrainView] = useState<TrainViewState | null>(null);
-  const [recallView, setRecallView] = useState<RecallViewState | null>(null);
+  const [recognizeView, setRecognizeView] = useState<RecognizeViewState | null>(null);
   const [statsView, setStatsView] = useState<StatsViewState | null>(null);
   const [fullSolveView, setFullSolveView] = useState<FullSolveViewState | null>(null);
 
@@ -540,7 +540,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
 
   const handleRecallPhase = (phaseId: string, subsetId: string) => {
     if (!selectedMethodId) return;
-    setRecallView({ methodId: selectedMethodId, phaseId, subsetId });
+    setRecognizeView({ methodId: selectedMethodId, phaseId, subsetId });
   };
 
   const handleStatsPhase = (phaseId: string, phaseName: string) => {
@@ -570,16 +570,16 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     );
   }
 
-  // L3: Algorithm Recall View
-  if (recallView) {
+  // L3: Algorithm Recognize View
+  if (recognizeView) {
     return (
       <div className="relative flex-1 min-h-0 w-full">
         <div className="absolute inset-0 flex flex-col">
-          <AlgorithmRecallView
-            methodId={recallView.methodId}
-            phaseId={recallView.phaseId}
-            subsetId={recallView.subsetId}
-            onBack={() => setRecallView(null)}
+          <AlgorithmRecognizeView
+            methodId={recognizeView.methodId}
+            phaseId={recognizeView.phaseId}
+            subsetId={recognizeView.subsetId}
+            onBack={() => setRecognizeView(null)}
           />
         </div>
       </div>
@@ -641,7 +641,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
             onBack={() => setSelectedMethodId(null)}
             onDrillPhase={handleDrillPhase}
             onTrainPhase={handleTrainPhase}
-            onRecallPhase={handleRecallPhase}
+            onRecognizePhase={handleRecallPhase}
             onStatsPhase={handleStatsPhase}
             onFullSolve={handleFullSolve}
           />
