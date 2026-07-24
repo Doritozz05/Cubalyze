@@ -19,15 +19,39 @@ import { Min2PhaseSolver } from '@cubeforge/solver-engine';
  * @returns A scramble string that creates the case state from solved
  */
 const Z2_MOVE_MAP: Record<string, string> = {
+  // Standard face moves
   U: 'D', "U'": "D'", U2: 'D2',
   D: 'U', "D'": "U'", D2: 'U2',
   R: 'L', "R'": "L'", R2: 'L2',
   L: 'R', "L'": "R'", L2: 'R2',
   F: 'F', "F'": "F'", F2: 'F2',
   B: 'B', "B'": "B'", B2: 'B2',
+
+  // Wide moves (standard notation)
+  Rw: 'Lw', "Rw'": "Lw'", Rw2: 'Lw2', "Rw2'": 'Lw2',
+  Lw: 'Rw', "Lw'": "Rw'", Lw2: 'Rw2', "Lw2'": 'Rw2',
+  Uw: 'Dw', "Uw'": "Dw'", Uw2: 'Dw2', "Uw2'": 'Dw2',
+  Dw: 'Uw', "Dw'": "Uw'", Dw2: 'Uw2', "Dw2'": 'Uw2',
+  Fw: 'Fw', "Fw'": "Fw'", Fw2: 'Fw2', "Fw2'": 'Fw2',
+  Bw: 'Bw', "Bw'": "Bw'", Bw2: 'Bw2',
+
+  // Wide moves (lowercase notation)
+  r: 'l', "r'": "l'", r2: 'l2', "r2'": 'l2',
+  l: 'r', "l'": "r'", l2: 'r2', "l2'": 'r2',
+  u: 'd', "u'": "d'", u2: 'd2', "u2'": 'd2',
+  d: 'u', "d'": "u'", d2: 'u2', "d2'": 'u2',
+  f: 'f', "f'": "f'", f2: 'f2', "f2'": 'f2',
+  b: 'b', "b'": "b'", b2: 'b2', "b2'": 'b2',
+
+  // Slice moves
   M: "M'", "M'": 'M', M2: 'M2',
   E: "E'", "E'": 'E', E2: 'E2',
   S: 'S', "S'": "S'", S2: 'S2',
+
+  // Rotations
+  x: "x'", "x'": 'x', x2: 'x2',
+  y: "y'", "y'": 'y', y2: 'y2',
+  z: 'z', "z'": "z'", z2: 'z2',
 };
 
 function transformMovesZ2(moves: string[]): string[] {
@@ -72,15 +96,14 @@ export function generateRandomSetup(moves: string[], targetFace: 'Y' | 'W' = 'Y'
     const solver = new Min2PhaseSolver();
     const solution = solver.solve(caseState);
 
-    if (!solution || solution.trim().length === 0) {
-      console.warn('[generateRandomSetup] Min2Phase returned empty solution, retrying...');
-      // Retry once without AUF as fallback
-      const fallbackState = CaseStateGenerator.generateCaseState(effectiveMoves);
-      const fallbackSolution = solver.solve(fallbackState);
-      if (!fallbackSolution) return '';
-      const fallbackMoves = fallbackSolution.trim().split(/\s+/).filter(Boolean);
-      const invertedFallback = invertMoves(fallbackMoves);
-      return targetFace === 'Y' ? transformMovesZ2(invertedFallback).join(' ') : invertedFallback.join(' ');
+    if (!solution || solution.trim().length === 0 || solution.includes('Error')) {
+      console.warn('[generateRandomSetup] Min2Phase returned empty or error solution:', solution);
+      // Fallback: generate setup scramble directly from inverse moves + random AUF
+      const fallbackMoves = invertMoves(effectiveMoves);
+      if (randomAuf) {
+        fallbackMoves.push(randomAuf);
+      }
+      return fallbackMoves.join(' ');
     }
 
     // 5. Invert solution to get setup scramble
@@ -97,19 +120,19 @@ export function generateRandomSetup(moves: string[], targetFace: 'Y' | 'W' = 'Y'
 /**
  * Inverts a sequence of moves (reverse order + invert each move).
  * R U R' → R U' R'
+ * Rw U2 Rw' → Rw U2 Rw'
  */
 function invertMoves(moves: string[]): string[] {
   const inverted: string[] = [];
   for (let i = moves.length - 1; i >= 0; i--) {
     const move = moves[i];
-    if (move.endsWith("'") || move.endsWith('3')) {
-      // R' → R, R3 → R
-      inverted.push(move.charAt(0));
-    } else if (move.endsWith('2')) {
-      // R2 → R2
-      inverted.push(move);
+    if (move.endsWith("'")) {
+      inverted.push(move.slice(0, -1));
+    } else if (move.endsWith('2') || move.endsWith("2'")) {
+      inverted.push(move.endsWith("'") ? move.slice(0, -1) : move);
+    } else if (move.endsWith('3')) {
+      inverted.push(move.slice(0, -1));
     } else {
-      // R → R'
       inverted.push(move + "'");
     }
   }

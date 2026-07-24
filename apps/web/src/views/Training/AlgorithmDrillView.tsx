@@ -193,7 +193,7 @@ export function AlgorithmDrillView({
     return valid.reduce((sum, a) => sum + a.timeMs, 0) / valid.length;
   }, [attempts]);
 
-  // ── Case navigation ──────────────────────────────────────────────────
+  // ── Case navigation & mode change ─────────────────────────────────────
   const selectNextCase = useCallback(() => {
     if (subsetCases.length === 0) return;
     if (drillMode === "sequential") {
@@ -208,6 +208,36 @@ export function AlgorithmDrillView({
     }
     // single: keep same case
   }, [drillMode, subsetCases, seqIndex, weaknessOrdered]);
+
+  const handleModeChange = useCallback(
+    (newMode: DrillMode) => {
+      setDrillMode(newMode);
+      if (subsetCases.length > 0) {
+        if (newMode === "random") {
+          const idx = Math.floor(Math.random() * subsetCases.length);
+          setSelectedCaseId(subsetCases[idx].id);
+        } else if (newMode === "sequential") {
+          setSeqIndex(0);
+          setSelectedCaseId(subsetCases[0].id);
+        } else if (newMode === "weakness" && weaknessOrdered.length > 0) {
+          setSelectedCaseId(weaknessOrdered[0].id);
+        }
+      }
+    },
+    [subsetCases, weaknessOrdered],
+  );
+
+  // Auto-select initial case on load or when drillMode is random and nothing is selected
+  useEffect(() => {
+    if (!selectedCaseId && subsetCases.length > 0) {
+      if (drillMode === "random") {
+        const idx = Math.floor(Math.random() * subsetCases.length);
+        setSelectedCaseId(subsetCases[idx].id);
+      } else {
+        setSelectedCaseId(subsetCases[0].id);
+      }
+    }
+  }, [selectedCaseId, subsetCases, drillMode]);
 
   // ── Random setup generation (when case or setupVersion changes) ──────
   useEffect(() => {
@@ -278,7 +308,7 @@ export function AlgorithmDrillView({
           methodName={method?.name ?? "?"}
           subsetName={subset?.name ?? "?"}
           drillMode={drillMode}
-          onModeChange={setDrillMode}
+          onModeChange={handleModeChange}
           masteredCount={subsetCases.filter((c) => mockCaseProgress(c.caseNumber).mastery >= 90).length}
           totalCount={subsetCases.length}
           onBack={onBack}
@@ -437,7 +467,7 @@ export function AlgorithmDrillView({
           </div>
 
           {/* Right: Sidebar */}
-          <aside className="flex min-h-0 flex-col gap-4 lg:w-72 lg:shrink-0 overflow-hidden">
+          <aside className="flex min-h-0 flex-col gap-4 lg:w-80 lg:shrink-0 overflow-hidden">
             {/* Mini 3D Cube Panel — only when smart cube is connected */}
             {hasSmartCube && (
               <MiniCube3DPanel className="shrink-0" />
@@ -459,7 +489,6 @@ export function AlgorithmDrillView({
             </div>
 
             <SessionStatsPanel totalAttempts={attempts.length} correctCount={correctAttempts.length} streak={streak} avgTime={avgTime} />
-            <RecentAttemptsPanel attempts={attempts.slice(0, 20)} />
           </aside>
         </div>
       </div>
@@ -516,21 +545,27 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: 
   cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
 }) {
   return (
-    <div className="p-3">
-      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1">Select Case</h4>
-      <div className="grid grid-cols-2 gap-1.5">
+    <div className="p-3.5 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
+        <h4 className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-ink-3">Select Case</h4>
+        <span className="nums text-[0.62rem] text-ink-3/70 font-medium">{cases.length} cases</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-0.5">
         {cases.map((c) => {
           const isSelected = c.id === selectedCaseId;
           const progress = mockCaseProgress(c.caseNumber);
           const caseAlg = algorithms.find((a) => a.caseId === c.id && a.isDefault) ?? algorithms.find((a) => a.caseId === c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
-              className={cn("flex flex-col gap-1 rounded-lg border p-2 text-left transition-all duration-150",
-                isSelected ? "border-ink/30 bg-surface-2 ring-1 ring-ink/15" : "border-line bg-surface hover:border-ink/12 hover:bg-surface-2/60")}>
-              <div className="flex items-center justify-between"><span className="nums text-[0.65rem] font-semibold text-ink">{c.caseNumber}</span><span className="nums text-[0.55rem] text-ink-3">{progress.mastery}%</span></div>
-              {caseAlg && <span className="nums text-[0.52rem] text-ink-2/70 truncate leading-tight">{caseAlg.moves.join(" ")}</span>}
-              <div className="h-1 rounded-full bg-surface-2 overflow-hidden">
-                <div className={cn("h-full rounded-full", progress.mastery >= 90 ? "bg-ready" : progress.mastery >= 60 ? "bg-caution" : "bg-hold")} style={{ width: `${progress.mastery}%` }} />
+              className={cn("flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-all duration-150 shadow-xs",
+                isSelected ? "border-ink/40 bg-surface-2 ring-2 ring-ink/15 shadow-sm" : "border-line bg-surface hover:border-ink/20 hover:bg-surface-2/60")}>
+              <div className="flex items-center justify-between">
+                <span className="nums text-[0.78rem] font-bold text-ink">{c.caseNumber}</span>
+                <span className="nums text-[0.6rem] font-semibold text-ink-3">{progress.mastery}%</span>
+              </div>
+              {caseAlg && <span className="nums text-[0.58rem] font-medium text-ink-2/80 truncate leading-tight">{caseAlg.moves.join(" ")}</span>}
+              <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden mt-0.5">
+                <div className={cn("h-full rounded-full transition-all duration-300", progress.mastery >= 90 ? "bg-ready" : progress.mastery >= 60 ? "bg-caution" : "bg-hold")} style={{ width: `${progress.mastery}%` }} />
               </div>
             </button>
           );
@@ -658,32 +693,6 @@ function StatChip({ icon: Icon, label, value }: { icon: React.ElementType; label
     <div className="flex flex-col gap-0.5 p-2 rounded-lg bg-surface-2">
       <span className="flex items-center gap-1 text-[0.55rem] text-ink-3"><Icon className="size-2.5" />{label}</span>
       <span className="nums text-[0.75rem] font-semibold text-ink">{value}</span>
-    </div>
-  );
-}
-
-function RecentAttemptsPanel({ attempts }: { attempts: DrillAttempt[] }) {
-  if (attempts.length === 0) {
-    return (
-      <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
-        <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2">Recent Attempts</h4>
-        <p className="text-[0.6rem] text-ink-3/50 text-center py-4">Complete a drill to see results here</p>
-      </div>
-    );
-  }
-  return (
-    <div className="shrink-0 rounded-xl border border-line bg-surface flex flex-col min-h-0 max-h-48">
-      <div className="shrink-0 p-3 pb-2"><h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3">Recent Attempts</h4></div>
-      <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5">
-        {attempts.map((a) => (
-          <div key={a.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 bg-surface-2/50">
-            {a.correct ? <Check className="size-3 text-ready shrink-0" /> : <X className="size-3 text-hold shrink-0" />}
-            <span className="text-[0.62rem] text-ink font-medium">{a.caseLabel}</span>
-            <span className="nums text-[0.62rem] text-ink-2 ml-auto">{formatTime(a.timeMs)}</span>
-            <span className="nums text-[0.55rem] text-ink-3">TPS {calculateTps(a.algorithm, a.timeMs)}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

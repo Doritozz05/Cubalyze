@@ -26,29 +26,29 @@ export function expandWideMoves(movesInput: string | string[]): string[] {
     t = t.replace(/[()]/g, '').replace(/2'/g, '2');
     switch (t) {
       // Wide moves → face + slice (preserves reference frame)
-      case 'r': result.push('R', "M'"); break;
-      case "r'": result.push("R'", 'M'); break;
-      case 'r2': result.push('R2', 'M2'); break;
+      case 'r': case 'Rw': result.push('R', "M'"); break;
+      case "r'": case "Rw'": result.push("R'", 'M'); break;
+      case 'r2': case 'Rw2': result.push('R2', 'M2'); break;
 
-      case 'l': result.push('L', 'M'); break;
-      case "l'": result.push("L'", "M'"); break;
-      case 'l2': result.push('L2', 'M2'); break;
+      case 'l': case 'Lw': result.push('L', 'M'); break;
+      case "l'": case "Lw'": result.push("L'", "M'"); break;
+      case 'l2': case 'L2w': case 'Lw2': result.push('L2', 'M2'); break;
 
-      case 'f': result.push('F', 'S'); break;
-      case "f'": result.push("F'", "S'"); break;
-      case 'f2': result.push('F2', 'S2'); break;
+      case 'f': case 'Fw': result.push('F', 'S'); break;
+      case "f'": case "Fw'": result.push("F'", "S'"); break;
+      case 'f2': case 'Fw2': result.push('F2', 'S2'); break;
 
-      case 'u': result.push('U', "E'"); break;
-      case "u'": result.push("U'", 'E'); break;
-      case 'u2': result.push('U2', 'E2'); break;
+      case 'u': case 'Uw': result.push('U', "E'"); break;
+      case "u'": case "Uw'": result.push("U'", 'E'); break;
+      case 'u2': case 'Uw2': result.push('U2', 'E2'); break;
 
-      case 'd': result.push('D', 'E'); break;
-      case "d'": result.push("D'", "E'"); break;
-      case 'd2': result.push('D2', 'E2'); break;
+      case 'd': case 'Dw': result.push('D', 'E'); break;
+      case "d'": case "Dw'": result.push("D'", "E'"); break;
+      case 'd2': case 'Dw2': result.push('D2', 'E2'); break;
 
-      case 'b': result.push('B', "S'"); break;
-      case "b'": result.push("B'", 'S'); break;
-      case 'b2': result.push('B2', 'S2'); break;
+      case 'b': case 'Bw': result.push('B', "S'"); break;
+      case "b'": case "Bw'": result.push("B'", 'S'); break;
+      case 'b2': case 'Bw2': result.push('B2', 'S2'); break;
 
       default:
         result.push(t);

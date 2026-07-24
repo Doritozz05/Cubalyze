@@ -26,4 +26,12 @@ describe('setupGenerator', () => {
     // Under z2 (Yellow on top), executing the setup scramble alters the top face (Yellow)
     expect(topFacelets).not.toBe('DDDDDDDDD');
   });
+
+  it('handles wide move algorithms like OLL 5 without Error in scramble', () => {
+    const oll5Moves = ['Rw', 'U2', "R'", "U'", 'R', "U'", "Rw'"];
+    const setup = generateRandomSetup(oll5Moves, 'Y');
+    expect(setup).toBeTruthy();
+    expect(setup).not.toContain('Error');
+    expect(setup).not.toContain("6'");
+  });
 });
