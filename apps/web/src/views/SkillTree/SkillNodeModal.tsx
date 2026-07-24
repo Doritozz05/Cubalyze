@@ -12,7 +12,6 @@ import {
   Target,
   ArrowRight,
   Code2,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SkillNode } from "./skillTreeData";

@@ -88,8 +88,16 @@ export function AlgorithmRecognizeView({
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
   const subsetCases = useMemo(
-    () => allCases.filter((c) => c.subsetId === subsetId).sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })),
-    [allCases, subsetId],
+    () =>
+      allCases
+        .filter(
+          (c): c is typeof c & { id: string } =>
+            Boolean(c.id && c.subsetId === subsetId)
+        )
+        .sort((a, b) =>
+          a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })
+        ),
+    [allCases, subsetId]
   );
 
   // Weakest cases first (sorted by ascending mastery)

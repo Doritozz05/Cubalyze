@@ -145,7 +145,7 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </Button>
-        <div className="w-[1px] h-4 bg-border" />
+        <div className="w-px h-4 bg-border" />
         <Button
           variant="ghost"
           size="icon"
