@@ -353,7 +353,7 @@ export function AlgorithmDrillView({
                 <div className="flex items-center gap-2">
                   <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3">Algorithm</span>
                   {showAlgorithm && (
-                    <span className="nums text-[0.65rem] text-ink-2/80 truncate max-w-[300px]">
+                    <span className="nums text-[0.65rem] text-ink-2/80 truncate max-w-75">
                       {algoText || "No algorithm available"}
                     </span>
                   )}
@@ -381,7 +381,7 @@ export function AlgorithmDrillView({
             </div>
 
             {/* Timer area (BIG) with verdict overlay */}
-            <div className="flex-1 min-h-[200px] rounded-xl border border-line bg-surface relative overflow-hidden">
+            <div className="flex-1 min-h-50 rounded-xl border border-line bg-surface relative overflow-hidden">
               {/* Verdict overlay */}
               <AnimatePresence>
                 {showVerdict && (
@@ -561,7 +561,7 @@ function RandomModePanel({ cases, selectedCaseId, onSelectCase }: {
         className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-4 py-2 text-[0.7rem] font-medium text-ink hover:border-ink/15 hover:bg-surface-2 transition-colors">
         <SkipForward className="size-3.5" />Next Random Case
       </button>
-      <p className="text-[0.58rem] text-ink-3/60 text-center max-w-[200px]">
+      <p className="text-[0.58rem] text-ink-3/60 text-center max-w-50">
         A random case from the {cases.length} {cases.length === 21 ? "PLL" : ""} cases will be selected each time.
       </p>
     </div>

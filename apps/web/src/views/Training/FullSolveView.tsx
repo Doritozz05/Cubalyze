@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
 import {
   ArrowLeft, Target, Flame, X, Check, Trophy,
-  Cpu, Hand, RotateCcw, Eye,
+  Cpu, Hand, RotateCcw,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -99,7 +99,6 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
     phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" as const })),
   );
   const [activeSplitIdx, setActiveSplitIdx] = useState(-1);
-  const [currentSplitStart, setCurrentSplitStart] = useState(0);
   const [smartCubeMode, setSmartCubeMode] = useState(false);
   const [lastSolve, setLastSolve] = useState<SolveResult | null>(null);
 
@@ -108,7 +107,6 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const splitStartRef = useRef<number>(0);
 
   const activeSplit = splits[activeSplitIdx];
-  const allSplitsDone = activeSplitIdx >= phaseTargets.length - 1 && activeSplit?.status === "done";
   const totalTarget = phaseTargets.reduce((s, pt) => s + pt.targetS, 0);
   const totalActual = splits.reduce((s, sp) => s + sp.actualMs / 1000, 0);
 
@@ -249,7 +247,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
         <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden px-4 sm:px-6 lg:px-8 pb-6 lg:pb-8">
           {/* Phase progress bar */}
           <div className="shrink-0 flex items-center gap-1">
-            {splits.map((split, idx) => {
+            {splits.map((split) => {
               const isDone = split.status === "done";
               const isActive = split.status === "active";
               const pct = split.targetS > 0 ? Math.min(100, Math.round((split.actualMs / 1000 / split.targetS) * 100)) : 0;
@@ -285,7 +283,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
           {/* Main area: timer + result */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
             {/* Timer / Result area */}
-            <div className="flex-1 min-h-[280px] flex flex-col items-center justify-center rounded-xl border border-line bg-surface relative overflow-hidden">
+            <div className="flex-1 min-h-70 flex flex-col items-center justify-center rounded-xl border border-line bg-surface relative overflow-hidden">
               {/* Inspection overlay */}
               <AnimatePresence>
                 {timerPhase === "inspection" && (
@@ -309,7 +307,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                     </div>
 
                     <div className="space-y-2 w-full max-w-sm mx-auto">
-                      {lastSolve.splits.map((split, idx) => {
+                      {lastSolve.splits.map((split) => {
                         const overTarget = split.actualMs / 1000 > split.targetS;
                         return (
                           <div key={split.phaseId} className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2">

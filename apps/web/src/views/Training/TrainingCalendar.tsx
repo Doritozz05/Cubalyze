@@ -300,7 +300,7 @@ export function TrainingCalendar() {
             <button onClick={prevMonth} className="rounded p-1 text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors">
               <ChevronLeft className="size-3.5" />
             </button>
-            <span className="text-[0.7rem] font-semibold text-ink min-w-[100px] text-center select-none">
+            <span className="text-[0.7rem] font-semibold text-ink min-w-25 text-center select-none">
               {format(currentMonth, "MMMM yyyy")}
             </span>
             <button onClick={nextMonth} className="rounded p-1 text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors">
@@ -338,7 +338,7 @@ export function TrainingCalendar() {
                 onClick={() => inMonth && handleSelectDay(day)}
                 disabled={!inMonth}
                 className={cn(
-                  "relative flex flex-col items-center justify-center min-h-[50px] px-0.5 py-0.5 transition-colors group",
+                  "relative flex flex-col items-center justify-center min-h-12.5 px-0.5 py-0.5 transition-colors group",
                   !inMonth && "cursor-default",
                   inMonth && "cursor-pointer",
                 )}
@@ -386,7 +386,7 @@ export function TrainingCalendar() {
                 {/* Hover tooltip */}
                 {dayTasks && dayTasks.length > 0 && (
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30">
-                    <div className="bg-canvas border border-line rounded-lg shadow-lg py-1.5 px-2.5 min-w-[140px]">
+                    <div className="bg-canvas border border-line rounded-lg shadow-lg py-1.5 px-2.5 min-w-35">
                       <div className="text-[0.55rem] font-medium text-ink-3/60 mb-1 pb-1 border-b border-line">
                         {format(day, "MMM d")} — {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
                       </div>
@@ -394,7 +394,7 @@ export function TrainingCalendar() {
                         {dayTasks.map((task) => (
                           <div key={task.id} className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: COLOR_HEX[task.color] }} />
-                            <span className="text-[0.6rem] text-ink font-medium truncate max-w-[130px]">{task.title}</span>
+                            <span className="text-[0.6rem] text-ink font-medium truncate max-w-32.5">{task.title}</span>
                           </div>
                         ))}
                       </div>
@@ -460,7 +460,7 @@ export function TrainingCalendar() {
                     <div className="grid size-12 place-items-center rounded-full bg-surface-2">
                       <CalendarDays className="size-5 text-ink-3/50" />
                     </div>
-                    <p className="text-[0.7rem] text-ink-3/60 text-center max-w-[200px]">
+                    <p className="text-[0.7rem] text-ink-3/60 text-center max-w-50">
                       No tasks for this day.
                     </p>
                   </div>
@@ -538,7 +538,7 @@ export function TrainingCalendar() {
                       value={draft.description}
                       onChange={(e) => updateDraft("description", e.target.value)}
                       placeholder="e.g. Focus on recognition and finger tricks"
-                      className="min-h-[64px] w-full resize-none rounded-lg border border-line bg-canvas px-3 py-2 text-[0.65rem] text-ink placeholder:text-ink-3/40 outline-none focus:border-ink/30 transition-colors"
+                      className="min-h-16 w-full resize-none rounded-lg border border-line bg-canvas px-3 py-2 text-[0.65rem] text-ink placeholder:text-ink-3/40 outline-none focus:border-ink/30 transition-colors"
                     />
                   </div>
 

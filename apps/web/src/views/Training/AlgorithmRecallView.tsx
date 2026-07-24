@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
   ArrowLeft, Eye, EyeOff, Check, X, Zap, Cpu, Hand,
@@ -198,7 +198,7 @@ export function AlgorithmRecallView({
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
   const subsetCases = useMemo(
-    () => allCases.filter((c) => c.subsetId === subsetId).sort((a, b) => a.sortOrder - b.sortOrder),
+    () => allCases.filter((c) => c.subsetId === subsetId).sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })),
     [allCases, subsetId],
   );
 
@@ -403,7 +403,7 @@ export function AlgorithmRecallView({
             </div>
 
             {/* Step-specific content area */}
-            <div className="flex-1 min-h-[160px] flex flex-col items-center justify-center rounded-xl border border-line bg-surface relative overflow-hidden p-6">
+            <div className="flex-1 min-h-40 flex flex-col items-center justify-center rounded-xl border border-line bg-surface relative overflow-hidden p-6">
               {recallState.step === "show" && <ShowStepContent algoText={algoText} onReady={advanceStep} />}
               {recallState.step === "drill" && (
                 <DrillStepContent
@@ -541,7 +541,7 @@ function ShowStepContent({ algoText, onReady }: { algoText: string; onReady: () 
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-surface-2 min-w-[240px]">
+      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-surface-2 min-w-60">
         <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3">Algorithm to learn</span>
         <p className="nums text-[0.95rem] font-bold text-ink leading-relaxed tracking-tight">{algoText || "No algorithm"}</p>
         <div className="flex gap-2 text-[0.58rem] text-ink-3/60">
@@ -564,6 +564,7 @@ function DrillStepContent({
 }: {
   algoText: string; drillCount: number; onDrill: () => void; onReady: () => void;
 }) {
+  void algoText;
   const enoughDrills = drillCount >= 3;
   return (
     <div className="flex flex-col items-center gap-5 text-center">
@@ -575,7 +576,7 @@ function DrillStepContent({
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-surface-2 min-w-[200px]">
+      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-surface-2 min-w-50">
         <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3">Repetitions</span>
         <div className="flex gap-2">
           {[1, 2, 3].map((n) => (
@@ -626,7 +627,7 @@ function RecallStepContent({
       {/* Timer button */}
       <button onClick={onTimerTap}
         className={cn(
-          "w-full max-w-[300px] flex flex-col items-center justify-center gap-3 py-10 rounded-xl border select-none outline-none transition-all duration-150",
+          "w-full max-w-75 flex flex-col items-center justify-center gap-3 py-10 rounded-xl border select-none outline-none transition-all duration-150",
           timerPhase === "idle" && "border-line bg-surface hover:bg-surface-2/50 cursor-pointer",
           timerPhase === "running" && "border-ink/10 bg-surface cursor-pointer",
           timerPhase === "stopped" && "border-ready/30 bg-ready-soft/20",
@@ -704,7 +705,7 @@ function VerifyStepContent({
       </div>
 
       {/* Time and details */}
-      <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-2 min-w-[200px]">
+      <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-2 min-w-50">
         <span className="nums text-[1.5rem] font-bold text-ink">{formatTime(timeMs)}</span>
         <span className="text-[0.58rem] text-ink-3">Recall time</span>
         {revealedInRecall && (

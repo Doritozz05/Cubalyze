@@ -54,12 +54,6 @@ function formatTime(ms: number): string {
   return s < 10 ? s.toFixed(2) : `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
 }
 
-function masteryLabel(pct: number): string {
-  if (pct >= 90) return "Mastered";
-  if (pct >= 60) return "Learning";
-  if (pct > 0) return "Beginner";
-  return "New";
-}
 
 /* ──────────────────────────────────────────────────────────────────────────
    Main Component
@@ -87,7 +81,7 @@ export function PhaseStatsView({
 
   const subsetCases = useMemo(() => {
     if (!subset) return [];
-    return allCases.filter((c) => c.subsetId === subset.id).sort((a, b) => a.sortOrder - b.sortOrder);
+    return allCases.filter((c) => c.subsetId === subset.id).sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true }));
   }, [allCases, subset]);
 
   const hasAlgorithms = subsetCases.length > 0;
@@ -341,7 +335,7 @@ function CasesTab({ caseStats }: { caseStats: { case: AlgorithmCase; mastery: nu
       </div>
 
       <div className="rounded-xl border border-line bg-surface overflow-hidden">
-        <div className="max-h-[500px] overflow-y-auto">
+        <div className="max-h-125 overflow-y-auto">
           {sorted.map((sc, idx) => (
             <div key={sc.case.id}
               className={cn("flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/50",

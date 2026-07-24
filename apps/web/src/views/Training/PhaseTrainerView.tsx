@@ -2,9 +2,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
-import type { AlgorithmMethod } from "@cubeforge/algorithm-db";
 import {
   ArrowLeft, Target, Clock, Cpu, Hand, Flame, RotateCcw,
   Eye, Lightbulb, ChevronRight,
@@ -199,7 +197,7 @@ export function PhaseTrainerView({
             </div>
 
             {/* 3D Cube placeholder — highlight pieces concept */}
-            <div className="flex-1 min-h-[200px] rounded-xl border border-line bg-surface flex items-center justify-center relative overflow-hidden">
+            <div className="flex-1 min-h-50 rounded-xl border border-line bg-surface flex items-center justify-center relative overflow-hidden">
               <div className="flex flex-col items-center gap-3 text-center px-4">
                 {/* Simplified cross face diagram */}
                 <div className="grid grid-cols-3 gap-1.5 w-32">
@@ -224,7 +222,7 @@ export function PhaseTrainerView({
                 </div>
                 <div className="space-y-1">
                   <p className="text-[0.72rem] font-medium text-ink">3D Cube View</p>
-                  <p className="text-[0.6rem] text-ink-3 max-w-[220px]">
+                  <p className="text-[0.6rem] text-ink-3 max-w-55">
                     Cross edges highlighted in color.
                     Remaining pieces shown semi-transparent.
                   </p>
@@ -250,7 +248,7 @@ export function PhaseTrainerView({
           {/* Right: Timer + Metrics */}
           <div className="flex min-h-0 flex-col gap-4 lg:w-80 lg:shrink-0 overflow-hidden">
             {/* Timer */}
-            <div className="shrink-0 rounded-xl border border-line bg-surface relative overflow-hidden min-h-[180px] flex flex-col items-center justify-center">
+            <div className="shrink-0 rounded-xl border border-line bg-surface relative overflow-hidden min-h-45 flex flex-col items-center justify-center">
               <AnimatePresence>
                 {timerPhase === "verdict" && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
