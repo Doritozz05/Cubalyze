@@ -1,13 +1,13 @@
 import { useState, useRef, useMemo } from "react";
 import {
-  Lock,
-  CheckCircle2,
-  Flame,
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Sparkles,
-  ArrowRight,
+  ArrowUpRight,
+  CheckCircle2,
+  Flame,
+  Lock,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 40, y: 30 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0, pX: 0, pY: 0 });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,14 +66,14 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
     setIsDragging(true);
-    setDragStart({ eX: e.clientX, eY: e.clientY, pX: pan.x, pY: pan.y });
+    setDragStart({ x: e.clientX, y: e.clientY, pX: pan.x, pY: pan.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    const dx = e.clientX - (dragStart as any).eX;
-    const dy = e.clientY - (dragStart as any).eY;
-    setPan({ x: (dragStart as any).pX + dx, y: (dragStart as any).pY + dy });
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    setPan({ x: dragStart.pX + dx, y: dragStart.pY + dy });
   };
 
   const handleMouseUp = () => {
@@ -97,15 +97,15 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       className={cn(
-        "relative w-full h-[620px] overflow-hidden rounded-xl border border-border/70",
+        "relative w-full flex-1 min-h-0 overflow-hidden rounded-xl border border-border/80",
         "bg-background/95 select-none cursor-grab active:cursor-grabbing shadow-inner",
       )}
     >
-      {/* Subtle Graph Grid Pattern Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
+      {/* Subtle Grid Pattern Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:20px_20px] opacity-30 pointer-events-none" />
 
-      {/* Floating Canvas Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-card/80 border border-border/80 shadow-md backdrop-blur-md">
+      {/* Floating Viewport Controls */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-card border border-border shadow-sm text-xs font-mono">
         <Button
           variant="ghost"
           size="icon"
@@ -134,7 +134,7 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </Button>
-        <span className="px-2 text-[10px] font-mono text-muted-foreground">
+        <span className="px-2 text-[10px] text-muted-foreground font-semibold">
           {Math.round(zoom * 100)}%
         </span>
       </div>
@@ -146,51 +146,40 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
         }}
       >
-        {/* SVG Edges Layer */}
+        {/* SVG Tech Edges Layer */}
         <svg className="absolute inset-0 w-[1600px] h-[1000px] pointer-events-none overflow-visible">
-          <defs>
-            <linearGradient id="edge-gradient-unlocked" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
-            </linearGradient>
-            <linearGradient id="edge-gradient-active" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.9" />
-            </linearGradient>
-          </defs>
-
           {connections.map((c) => {
-            // Node card center offset: width ~210px, height ~100px
-            const x1 = c.from.x + 105;
-            const y1 = c.from.y + 50;
-            const x2 = c.to.x + 105;
-            const y2 = c.to.y + 50;
+            // Node center calculation based on compact node: width ~195px, height ~86px
+            const x1 = c.from.x + 97.5;
+            const y1 = c.from.y + 43;
+            const x2 = c.to.x + 97.5;
+            const y2 = c.to.y + 43;
 
             const dx = Math.abs(x2 - x1) * 0.5;
             const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 
             return (
               <g key={c.id}>
-                {/* Background Shadow line */}
+                {/* Outer halo / background line */}
                 <path
                   d={pathD}
                   fill="none"
-                  stroke={c.isActive ? "rgba(99, 102, 241, 0.4)" : "var(--border)"}
-                  strokeWidth={c.isActive ? 4 : 2}
-                  strokeDasharray={c.to.status === "locked" ? "6,6" : undefined}
+                  stroke={c.isActive ? "rgba(148, 163, 184, 0.4)" : "var(--border)"}
+                  strokeWidth={c.isActive ? 3 : 1.5}
+                  strokeDasharray={c.to.status === "locked" ? "4,4" : undefined}
                 />
-                {/* Active Flow Line */}
+                {/* Active line */}
                 <path
                   d={pathD}
                   fill="none"
                   stroke={
                     c.isActive
-                      ? "url(#edge-gradient-active)"
+                      ? "rgba(56, 189, 248, 0.9)"
                       : c.from.status === "unlocked"
-                      ? "url(#edge-gradient-unlocked)"
-                      : "rgba(100, 116, 139, 0.25)"
+                      ? "rgba(100, 116, 139, 0.5)"
+                      : "rgba(100, 116, 139, 0.2)"
                   }
-                  strokeWidth={c.isActive ? 3 : 2}
+                  strokeWidth={c.isActive ? 2 : 1.25}
                   className="transition-all duration-300"
                 />
               </g>
@@ -216,31 +205,18 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
                   top: `${node.y}px`,
                 }}
                 className={cn(
-                  "absolute w-[210px] p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer group shadow-sm",
+                  "absolute w-[195px] p-3 rounded-lg border text-left transition-all duration-200 cursor-pointer group shadow-sm bg-card",
                   isUnlocked
-                    ? "bg-card border-emerald-500/30 hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/5"
+                    ? "border-border/80 hover:border-foreground/50 hover:shadow-md"
                     : isInProgress
-                    ? "bg-card border-amber-500/40 hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/5"
-                    : "bg-muted/30 border-border/60 opacity-80 hover:opacity-100 hover:border-border",
-                  isHovered && "scale-[1.03] z-10",
+                    ? "border-amber-500/50 hover:border-amber-500/80"
+                    : "border-border/50 text-muted-foreground hover:border-border",
+                  isHovered && "scale-[1.02] z-10 border-primary/60 shadow-md",
                 )}
               >
-                {/* Top Badge & Status */}
-                <div className="flex items-center justify-between gap-1 mb-2">
-                  <span
-                    className={cn(
-                      "px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded border",
-                      node.tier === "Master"
-                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30"
-                        : node.tier === "Elite"
-                        ? "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/30"
-                        : node.tier === "Pro"
-                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                        : node.tier === "Advanced"
-                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30"
-                        : "bg-muted text-muted-foreground border-border",
-                    )}
-                  >
+                {/* Node Top Bar: Tier Tag & Status Icon */}
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {node.tier}
                   </span>
 
@@ -248,38 +224,38 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
                     {isUnlocked ? (
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     ) : isInProgress ? (
-                      <span className="flex items-center gap-0.5 text-[10px] font-mono text-amber-500 font-semibold">
+                      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-amber-500">
                         <Flame className="w-3 h-3" /> {node.masteryPercentage}%
                       </span>
                     ) : (
-                      <Lock className="w-3 h-3 text-muted-foreground" />
+                      <Lock className="w-3 h-3 text-muted-foreground/60" />
                     )}
                   </div>
                 </div>
 
                 {/* Node Title & Subtitle */}
-                <div className="space-y-1 mb-3">
+                <div className="space-y-0.5 mb-2.5">
                   <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors flex items-center justify-between leading-snug">
                     <span className="truncate">{node.title}</span>
-                    <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
+                    <ArrowUpRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
                   </h4>
-                  <p className="text-[10px] text-muted-foreground line-clamp-2 leading-snug">
+                  <p className="text-[10px] text-muted-foreground line-clamp-1 leading-tight">
                     {node.subtitle}
                   </p>
                 </div>
 
-                {/* Mastery Progress Line */}
-                <div className="space-y-1 pt-1.5 border-t border-border/50">
-                  <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground">
+                {/* Mastery Bar */}
+                <div className="space-y-1 pt-1 border-t border-border/40">
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground font-mono">
                     <span>+{node.xpReward} XP</span>
                     <span>{node.masteryPercentage}%</span>
                   </div>
-                  <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                  <div className="w-full h-1 bg-muted/60 rounded-full overflow-hidden">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-300",
                         isUnlocked
-                          ? "bg-emerald-500"
+                          ? "bg-foreground"
                           : isInProgress
                           ? "bg-amber-500"
                           : "bg-muted-foreground/30",
@@ -294,11 +270,13 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
         </div>
       </div>
 
-      {/* Footer Info Hint */}
-      <div className="absolute bottom-3 left-4 z-20 flex items-center gap-2 text-[11px] text-muted-foreground bg-card/70 backdrop-blur-md px-2.5 py-1 rounded-md border border-border/60">
-        <Sparkles className="w-3.5 h-3.5 text-primary" />
-        <span>Drag to pan canvas • Scroll or click buttons to zoom • Click node to view speedcubing theory</span>
+      {/* Footer Info Legend */}
+      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-muted-foreground bg-card px-2.5 py-1 rounded-md border border-border shadow-sm">
+        <Info className="w-3.5 h-3.5 text-primary shrink-0" />
+        <span>Drag to pan canvas • Scroll to zoom • Click node for details</span>
       </div>
     </div>
   );
 }
+
+

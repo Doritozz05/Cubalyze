@@ -1,31 +1,51 @@
 import { useState, useMemo } from "react";
-import {
-  Crosshair,
-  Sparkles,
-  Grid3x3,
-  Flame,
-  Eye,
-  Layers,
-  Award,
-} from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
 import { SkillNodeModal } from "./SkillNodeModal";
-import { SKILL_BRANCHES, ALL_SKILL_NODES, type SkillNode } from "./skillTreeData";
+import { ALL_SKILL_NODES, type SkillNode } from "./skillTreeData";
 
 interface UltraSkillTreeViewProps {
   onNavigate?: (view: string) => void;
 }
 
+const CATEGORY_ITEMS = [
+  { id: "all", label: "All Nodes" },
+  { id: "inspection", label: "Inspection & Cross" },
+  { id: "f2l", label: "Advanced F2L" },
+  { id: "edge-control", label: "Edge Control" },
+  { id: "coll", label: "COLL & LL" },
+  { id: "zbll", label: "ZBLL Sets" },
+  { id: "ergonomics", label: "Ergonomics & 3-Style" },
+];
+
 export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const filteredNodes = useMemo(() => {
-    if (filterCategory === "all") return ALL_SKILL_NODES;
-    return ALL_SKILL_NODES.filter((n) => n.category === filterCategory);
-  }, [filterCategory]);
+    return ALL_SKILL_NODES.filter((node) => {
+      const matchesCategory =
+        filterCategory === "all" || node.category === filterCategory;
+      const matchesSearch =
+        searchQuery.trim() === "" ||
+        node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.tier.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [filterCategory, searchQuery]);
+
+  const stats = useMemo(() => {
+    const unlocked = ALL_SKILL_NODES.filter((n) => n.status === "unlocked").length;
+    const inProgress = ALL_SKILL_NODES.filter((n) => n.status === "in-progress").length;
+    const total = ALL_SKILL_NODES.length;
+    const percent = Math.round((unlocked / total) * 100);
+    return { unlocked, inProgress, total, percent };
+  }, []);
 
   const handleSelectNode = (node: SkillNode) => {
     setSelectedNode(node);
@@ -37,105 +57,67 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="p-6 rounded-xl bg-card border border-border space-y-4 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="w-full max-w-7xl mx-auto h-full flex flex-col min-h-0 space-y-3">
+      {/* Clean Toolbar Header */}
+      <div className="p-3 sm:p-4 rounded-xl bg-card border border-border shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Title & Description */}
           <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider bg-primary/10 text-primary rounded">
-                Speedcubing Skill Tree
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                CubeForge Progression v2.4
-              </span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-foreground mt-1 tracking-tight">
-              Elite Progression Graph
+            <h1 className="text-lg font-bold text-foreground tracking-tight">
+              Speedcubing Skills
             </h1>
-            <p className="text-sm text-muted-foreground max-w-2xl mt-0.5">
-              Explore and master advanced competitive speedcubing techniques: from XCross planning and edge control to COLL, ZBLL sets, and 3-Style commutators.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Technique progression graph: from inspection and F2L to COLL, ZBLL sets, and 3-Style.
             </p>
           </div>
 
-          {/* User Progress Card */}
-          <div className="p-4 rounded-lg bg-muted/40 border border-border shrink-0 min-w-[220px] space-y-2 text-right">
-            <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
-              <span className="flex items-center gap-1 text-primary">
-                <Award className="w-3.5 h-3.5" /> Rank
+          {/* Search Bar & Progress Ratio */}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 sm:w-60">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search technique or tier..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs bg-muted/40 border-border/70 focus-visible:ring-1 focus-visible:ring-primary"
+              />
+            </div>
+
+            {/* Progress Badge */}
+            <div className="px-3 py-1 rounded-md bg-muted/50 border border-border text-xs flex items-center gap-1.5 shrink-0">
+              <span className="text-muted-foreground font-medium">Progress:</span>
+              <span className="text-foreground font-bold">
+                {stats.unlocked}/{stats.total}
               </span>
-              <span className="text-foreground font-bold font-mono">Level 42</span>
-            </div>
-            <div className="text-sm font-bold text-foreground font-mono">
-              Grandmaster Architect
-            </div>
-            <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
-              <div className="bg-primary h-full w-[71%] rounded-full" />
-            </div>
-            <div className="text-[10px] text-muted-foreground font-mono">
-              14,250 / 20,000 XP to Level 43
+              <span className="text-emerald-500 font-semibold">({stats.percent}%)</span>
             </div>
           </div>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="pt-3 flex flex-wrap gap-2 border-t border-border/60">
-          <Button
-            size="sm"
-            variant={filterCategory === "all" ? "default" : "outline"}
-            onClick={() => setFilterCategory("all")}
-            className="text-xs gap-1.5"
-          >
-            <Layers className="w-3.5 h-3.5" /> All Branches ({ALL_SKILL_NODES.length})
-          </Button>
-          <Button
-            size="sm"
-            variant={filterCategory === "inspection" ? "default" : "outline"}
-            onClick={() => setFilterCategory("inspection")}
-            className="text-xs gap-1.5"
-          >
-            <Crosshair className="w-3.5 h-3.5 text-blue-500" /> Inspection & Cross
-          </Button>
-          <Button
-            size="sm"
-            variant={filterCategory === "f2l" ? "default" : "outline"}
-            onClick={() => setFilterCategory("f2l")}
-            className="text-xs gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> Advanced F2L
-          </Button>
-          <Button
-            size="sm"
-            variant={filterCategory === "edge-control" ? "default" : "outline"}
-            onClick={() => setFilterCategory("edge-control")}
-            className="text-xs gap-1.5"
-          >
-            <Flame className="w-3.5 h-3.5 text-amber-500" /> Edge Control & Pre-LL
-          </Button>
-          <Button
-            size="sm"
-            variant={filterCategory === "coll" ? "default" : "outline"}
-            onClick={() => setFilterCategory("coll")}
-            className="text-xs gap-1.5"
-          >
-            <Grid3x3 className="w-3.5 h-3.5 text-purple-500" /> COLL & Last Layer
-          </Button>
-          <Button
-            size="sm"
-            variant={filterCategory === "zbll" ? "default" : "outline"}
-            onClick={() => setFilterCategory("zbll")}
-            className="text-xs gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-pink-500" /> ZBLL & Master Sets
-          </Button>
-          <Button
-            size="sm"
-            variant={filterCategory === "ergonomics" ? "default" : "outline"}
-            onClick={() => setFilterCategory("ergonomics")}
-            className="text-xs gap-1.5"
-          >
-            <Eye className="w-3.5 h-3.5 text-emerald-500" /> Ergonomics & 3-Style
-          </Button>
+        {/* Category Pills Bar */}
+        <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-border/50 scrollbar-none">
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
+            <SlidersHorizontal className="w-3 h-3" /> Branch:
+          </span>
+          {CATEGORY_ITEMS.map((cat) => {
+            const isActive = filterCategory === cat.id;
+            return (
+              <Button
+                key={cat.id}
+                size="sm"
+                variant="ghost"
+                onClick={() => setFilterCategory(cat.id)}
+                className={`h-7 text-xs px-2.5 py-0 rounded-md border transition-all ${
+                  isActive
+                    ? "bg-foreground text-background font-semibold border-foreground shadow-sm"
+                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                }`}
+              >
+                {cat.label}
+              </Button>
+            );
+          })}
         </div>
       </div>
 
@@ -155,3 +137,5 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
     </div>
   );
 }
+
+

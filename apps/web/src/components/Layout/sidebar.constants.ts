@@ -61,7 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "training", label: "Training", icon: Dumbbell },
       { id: "practice", label: "Algorithms", icon: BookOpen },
-      { id: "skill-tree", label: "Skill Tree", icon: Network },
+      { id: "skill-tree", label: "Skills", icon: Network },
     ],
   },
   {

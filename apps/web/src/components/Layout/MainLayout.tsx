@@ -58,6 +58,8 @@ export interface MainLayoutProps {
   onDeleteSession?: (id: string) => void;
   /** Whether focus mode is active. */
   isFocused?: boolean;
+  /** Whether to hide top header (e.g. for Skills view). */
+  hideHeader?: boolean;
   className?: string;
 }
 
@@ -89,6 +91,7 @@ export function MainLayout({
   onRenameSession,
   onDeleteSession,
   isFocused,
+  hideHeader,
   className,
 }: MainLayoutProps) {
   // Defer useIsMobile to post-mount to avoid SSR/hydration flash.
@@ -141,31 +144,34 @@ export function MainLayout({
     >
       {!isFocused && leftSidebar}
 
-      <div className={cn("flex flex-1 flex-col", !isFocused && "pt-14 md:pl-14")}>
-        {!isFocused && (
+      <div className={cn("flex flex-1 flex-col", !isFocused && !hideHeader && "pt-14", !isFocused && "md:pl-14")}>
+        {!isFocused && !hideHeader && (
           <Header
             pb={pb}
-          sessionCount={sessionCount}
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          onSwitchSession={onSwitchSession}
-          onNewSession={onNewSession}
-          onRenameSession={onRenameSession}
-          onDeleteSession={onDeleteSession}
-          onToggleMobileNav={onToggleMobileNav}
-          onAddManual={onAddManual}
-        />
+            sessionCount={sessionCount}
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onSwitchSession={onSwitchSession}
+            onNewSession={onNewSession}
+            onRenameSession={onRenameSession}
+            onDeleteSession={onDeleteSession}
+            onToggleMobileNav={onToggleMobileNav}
+            onAddManual={onAddManual}
+          />
         )}
 
         <main className={cn(
           "mx-auto flex w-full flex-1 flex-col overflow-hidden lg:flex-row",
-          !isFocused && "h-[calc(100dvh-3.5rem)]"
+          !isFocused && !hideHeader && "h-[calc(100dvh-3.5rem)]",
+          !isFocused && hideHeader && "h-dvh"
         )}>
           <section
             id="timer-section"
             className={cn(
-              "flex min-h-0 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8 min-w-0 flex-1 overflow-hidden",
-              isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : "gap-6"
+              "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden",
+              !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
+              hideHeader && "p-3 sm:p-4 gap-3 h-full",
+              isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : ""
             )}
           >
             {main}

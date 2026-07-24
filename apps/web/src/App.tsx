@@ -585,6 +585,7 @@ export default function App() {
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={session?.id ?? null}
+          hideHeader={activeView === "skill-tree"}
           onSwitchSession={handleSwitchSession}
           onNewSession={handleNewSession}
           onRenameSession={renameSession}

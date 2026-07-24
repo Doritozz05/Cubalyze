@@ -147,7 +147,7 @@ export function CubeforgeCommandPalette({
       {
         id: "nav-skill-tree",
         category: "nav",
-        label: "Speedcubing Skill Tree",
+        label: "Skills",
         description: "Interactive skill graph & technique progression path",
         icon: Network,
         shortcut: "G K",
