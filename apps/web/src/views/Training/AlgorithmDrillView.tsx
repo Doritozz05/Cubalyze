@@ -11,6 +11,7 @@ import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
+import { useOrientation } from "@/hooks/useOrientation";
 import { generateRandomSetup } from "@/lib/training/setupGenerator";
 import {
   ArrowLeft,
@@ -81,6 +82,11 @@ const DRILL_MODES: { id: DrillMode; label: string; description: string }[] = [
   { id: "weakness", label: "Weakness", description: "Prioritize your worst cases" },
 ];
 
+/** Face letter → color name for orientation indicator. */
+const FACE_COLOR_NAMES: Record<string, string> = {
+  U: 'Yellow', R: 'Orange', F: 'Green', D: 'White', L: 'Red', B: 'Blue',
+};
+
 /* ──────────────────────────────────────────────────────────────────────────
    Main Component
    ─────────────────────────────────────────────────────────────────────── */
@@ -117,6 +123,9 @@ export function AlgorithmDrillView({
   const [currentSetup, setCurrentSetup] = useState("");
   const [showVerdict, setShowVerdict] = useState(false);
   const [setupVersion, setSetupVersion] = useState(0);
+
+  // ── Orientation (remaps scramble display to match cube orientation) ──
+  const { remapScramble, orientation } = useOrientation();
 
   // ── Drill timer (hold-to-arm, space key) ───────────────────────────────
   const { phase, time, stoppedTime, press, release, reset, engine } = useDrillTimer();
@@ -249,6 +258,13 @@ export function AlgorithmDrillView({
     selectNextCase();
   }, [reset, selectNextCase]);
 
+  // ── Orientation-adapted display scramble (matches user's cube) ─────────
+  const displaySetup = remapScramble(currentSetup);
+
+  // ── Orientation indicator: which color is on U (top) and F (front) ────
+  const topColor = FACE_COLOR_NAMES[orientation.faceMap['U']] ?? '?';
+  const frontColor = FACE_COLOR_NAMES[orientation.faceMap['F']] ?? '?';
+
   // ── Algorithm text ────────────────────────────────────────────────────
   const algoText = defaultAlgorithm?.moves.join(" ") ?? "";
 
@@ -276,6 +292,19 @@ export function AlgorithmDrillView({
             <div className="shrink-0 flex items-center gap-3 px-1">
               <span className="nums text-[0.85rem] font-semibold text-ink">{selectedCase?.caseNumber ?? "--"}</span>
               <span className="text-[0.7rem] text-ink-2">{selectedCase?.name ?? "Select a case"}</span>
+              {hasSmartCube && (
+                <span className="text-[0.55rem] text-ink-3/60 ml-auto flex items-center gap-1.5">
+                  <span className="flex items-center gap-0.5">
+                    <span className="size-1.5 rounded-full bg-yellow-400" />
+                    {topColor}
+                  </span>
+                  <span className="text-ink-3/30">·</span>
+                  <span className="flex items-center gap-0.5">
+                    <span className="size-1.5 rounded-full bg-green-400" />
+                    {frontColor}
+                  </span>
+                </span>
+              )}
             </div>
 
             {/* Row: Case diagram (left) + Setup scramble (right) */}
@@ -302,6 +331,7 @@ export function AlgorithmDrillView({
                 {currentSetup ? (
                   <ScrambleDisplay
                     scramble={currentSetup}
+                    displayScramble={displaySetup}
                     states={hasSmartCube ? drillSmartCube.validation.states : undefined}
                     currentIndex={hasSmartCube ? drillSmartCube.validation.currentIndex : 0}
                     errorMoves={hasSmartCube ? drillSmartCube.validation.errorMoves : []}
