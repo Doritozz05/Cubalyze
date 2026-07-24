@@ -12,12 +12,22 @@ interface UltraSkillTreeViewProps {
 
 const CATEGORY_ITEMS = [
   { id: "all", label: "All Skills" },
-  { id: "inspection", label: "Inspection & Cross" },
-  { id: "f2l", label: "Advanced F2L" },
-  { id: "edge-control", label: "Edge Control" },
-  { id: "coll", label: "COLL & LL" },
-  { id: "zbll", label: "ZBLL Sets" },
-  { id: "ergonomics", label: "Ergonomics & 3-Style" },
+  { id: "fundamentals", label: "Fundamentals" },
+  { id: "cross", label: "Cross" },
+  { id: "f2l", label: "F2L" },
+  { id: "last-layer", label: "Last Layer" },
+  { id: "lookahead", label: "Lookahead" },
+  { id: "finger-tricks", label: "Finger Tricks" },
+  { id: "inspection", label: "Inspection" },
+  { id: "color-neutrality", label: "Color Neutrality" },
+  { id: "hardware", label: "Hardware" },
+  { id: "psychology", label: "Psychology" },
+  { id: "training", label: "Training" },
+  { id: "roux", label: "Roux" },
+  { id: "zz", label: "ZZ" },
+  { id: "blindfold", label: "Blindfold" },
+  { id: "fmc", label: "FMC" },
+  { id: "theory", label: "Theory" },
 ];
 
 const LOCAL_STORAGE_KEY = "cubeforge_completed_skills_v2";
@@ -33,8 +43,8 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
     } catch {
       // Fallback
     }
-    // Default initial completed skill
-    return ["cross-plus-one"];
+    // Default initial completed skills — first 3 fundamental nodes
+    return ["cube-anatomy", "standard-notation", "first-cross"];
   });
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -135,7 +145,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
               Speedcubing Skill Tree
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Complete skills to unlock downstream technical branches of CFOP & 3BLD.
+              A complete progression from absolute beginner to world-class elite — mastering every dimension of speedcubing.
             </p>
           </div>
 
@@ -164,9 +174,8 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         </div>
 
         {/* Category Pills Bar */}
-        <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-border/50 scrollbar-none">
-          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
-            <SlidersHorizontal className="w-3 h-3" /> Branch:
+        <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-border/50 scrollbar-none">            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
+            <SlidersHorizontal className="w-3 h-3" /> Branch ({CATEGORY_ITEMS.length - 1}):
           </span>
           {CATEGORY_ITEMS.map((cat) => {
             const isActive = filterCategory === cat.id;
