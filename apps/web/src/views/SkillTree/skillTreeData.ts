@@ -1,3 +1,5 @@
+import { calculateAutoLayout } from "./skillTreeLayout";
+
 export interface SkillNode {
   id: string;
   title: string;
@@ -26,12 +28,11 @@ export interface SkillBranch {
 }
 
 // ─── Coordinate system ───────────────────────────────────────────
-// X: branches spaced 170px apart starting at 50
-// Y: tiers spaced 250px apart. Multiple nodes in same tier: ±50 (2) / ±80 (3)
-//     Fundamentals uses linear 60px spacing for its 7 Beginner nodes
-// Total canvas: ~2750×1900
+// Dynamically calculated using calculateAutoLayout (Industry Standard Layered DAG)
+// Spacing: X (230px per branch), Y (190px per tier with topological offset)
 
-export const SKILL_BRANCHES: SkillBranch[] = [
+const RAW_SKILL_BRANCHES: SkillBranch[] = [
+
   // ═══════════════════════════════════════════════════════════════
   // BRANCH 1: FUNDAMENTALS
   // ═══════════════════════════════════════════════════════════════
@@ -291,4 +292,8 @@ export const SKILL_BRANCHES: SkillBranch[] = [
   },
 ];
 
-export const ALL_SKILL_NODES: SkillNode[] = SKILL_BRANCHES.flatMap((b) => b.nodes);
+const layoutOutput = calculateAutoLayout(RAW_SKILL_BRANCHES);
+
+export const SKILL_BRANCHES: SkillBranch[] = layoutOutput.branches;
+export const ALL_SKILL_NODES: SkillNode[] = layoutOutput.allNodes;
+

@@ -458,7 +458,7 @@ export function SkillGraphCanvas({
         }}
       >
         {/* SVG Tree Bezier Connectors Layer */}
-        <svg className="absolute inset-0 w-[2800px] h-[1950px] pointer-events-none overflow-visible">
+        <svg className="absolute inset-0 w-[7200px] h-[3400px] pointer-events-none overflow-visible">
           {connections.map((c) => {
             const x1 = c.from.x + 34;
             const y1 = c.from.y + 34;
@@ -504,7 +504,7 @@ export function SkillGraphCanvas({
         </svg>
 
         {/* Round Nodes Layer */}
-        <div className="absolute inset-0 w-[2800px] h-[1950px]">
+        <div className="absolute inset-0 w-[7200px] h-[3400px]">
           {nodes.map((node) => {
             const isCompleted = node.status === "completed";
             const isUnlocked = node.status === "unlocked";
