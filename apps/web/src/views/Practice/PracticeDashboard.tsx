@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getSeedData, SUBSETS, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
 import type { VisualizationStyle } from "@cubeforge/algorithm-db";

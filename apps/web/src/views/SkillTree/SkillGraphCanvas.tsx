@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import {
   ZoomIn,
   ZoomOut,
@@ -26,6 +26,7 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   // Quick lookup map for nodes
   const nodeMap = useMemo(() => {
@@ -62,22 +63,45 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
     return lines;
   }, [nodes, nodeMap, hoveredNodeId]);
 
+  // Smooth window drag listeners with RAF batching
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      rafIdRef.current = requestAnimationFrame(() => {
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+        setPan({ x: dragStart.pX + dx, y: dragStart.pY + dy });
+      });
+    };
+
+    const handleWindowMouseUp = () => {
+      setIsDragging(false);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    window.addEventListener("mouseup", handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, [isDragging, dragStart]);
+
   // Pan controls
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY, pX: pan.x, pY: pan.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-    setPan({ x: dragStart.pX + dx, y: dragStart.pY + dy });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
   };
 
   const handleZoom = (delta: number) => {
@@ -93,9 +117,6 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
     <div
       ref={containerRef}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       className={cn(
         "relative w-full flex-1 min-h-0 overflow-hidden rounded-xl border border-border/80",
         "bg-background/95 select-none cursor-grab active:cursor-grabbing shadow-inner",
@@ -139,11 +160,11 @@ export function SkillGraphCanvas({ nodes, onSelectNode }: SkillGraphCanvasProps)
         </span>
       </div>
 
-      {/* Canvas Viewport */}
+      {/* Canvas Viewport (No CSS transition delay during drag + translate3d for GPU) */}
       <div
-        className="absolute inset-0 transition-transform duration-75 origin-top-left"
+        className="absolute inset-0 origin-top-left will-change-transform"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transform: `translate3d(${pan.x}px, ${pan.y}px, 0px) scale(${zoom})`,
         }}
       >
         {/* SVG Tech Edges Layer */}

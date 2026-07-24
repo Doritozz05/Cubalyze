@@ -263,31 +263,32 @@ export function CubeforgeCommandPalette({
   const algorithmCommands: CommandItemData[] = useMemo(() => {
     const algMap = new Map<string, string>();
     seedData.algorithms.forEach((a) => {
-      if (!algMap.has(a.caseId) || a.isPrimary) {
-        algMap.set(a.caseId, a.moves);
+      if (a.caseId && (!algMap.has(a.caseId) || a.isDefault)) {
+        algMap.set(a.caseId, Array.isArray(a.moves) ? a.moves.join(" ") : (a.moves ?? ""));
       }
     });
 
     return seedData.cases.map((c) => {
+      if (!c.id) return null;
       const moves = algMap.get(c.id) || "";
-      const subsetLabel = c.subsetId.toUpperCase();
+      const subsetLabel = (c.subsetId || "").toUpperCase();
       return {
         id: `alg-${c.id}`,
         category: "algorithms" as const,
-        label: `${c.name} (${subsetLabel})`,
-        description: moves ? `Alg: ${moves}` : c.description || `${subsetLabel} Case`,
+        label: `${c.name || "Case"} (${subsetLabel})`,
+        description: moves ? `Alg: ${moves}` : `${subsetLabel} Case`,
         icon: BookOpen,
         badge: subsetLabel,
         action: () => {
-          if (onSelectAlgorithmCase) {
+          if (onSelectAlgorithmCase && c.subsetId && c.id) {
             onSelectAlgorithmCase(c.subsetId, c.id);
           } else {
             onNavigate("practice");
           }
         },
       };
-    });
-  }, [seedData, onNavigate, onSelectAlgorithmCase]);
+    }).filter((cmd): cmd is CommandItemData => cmd !== null);
+  }, [onNavigate, onSelectAlgorithmCase]);
 
   // Combine static and algorithm commands
   const allCommands = useMemo(
