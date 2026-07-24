@@ -11,13 +11,13 @@ interface UltraSkillTreeViewProps {
 }
 
 const CATEGORY_ITEMS = [
-  { id: "all", label: "Todas las Skills" },
-  { id: "inspection", label: "Inspección & Cross" },
+  { id: "all", label: "All Skills" },
+  { id: "inspection", label: "Inspection & Cross" },
   { id: "f2l", label: "Advanced F2L" },
-  { id: "edge-control", label: "Control de Aristas" },
+  { id: "edge-control", label: "Edge Control" },
   { id: "coll", label: "COLL & LL" },
   { id: "zbll", label: "ZBLL Sets" },
-  { id: "ergonomics", label: "Ergonomía & 3-Style" },
+  { id: "ergonomics", label: "Ergonomics & 3-Style" },
 ];
 
 const LOCAL_STORAGE_KEY = "cubeforge_completed_skills_v2";
@@ -132,10 +132,10 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
           <div>
             <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-foreground" />
-              Árbol de Habilidades Speedcubing
+              Speedcubing Skill Tree
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Completa habilidades para desbloquear las siguientes ramas técnicas de CFOP & 3BLD.
+              Complete skills to unlock downstream technical branches of CFOP & 3BLD.
             </p>
           </div>
 
@@ -145,7 +145,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Buscar técnica..."
+                placeholder="Search technique..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8 pl-8 text-xs bg-muted/40 border-border/70 focus-visible:ring-1 focus-visible:ring-primary"
@@ -154,7 +154,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
 
             {/* Progress Badge */}
             <div className="px-3 py-1 rounded-lg bg-muted/50 border border-border text-xs flex items-center gap-1.5 shrink-0">
-              <span className="text-muted-foreground font-medium">Completado:</span>
+              <span className="text-muted-foreground font-medium">Completed:</span>
               <span className="text-foreground font-bold">
                 {stats.completed}/{stats.total}
               </span>
@@ -166,7 +166,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         {/* Category Pills Bar */}
         <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-border/50 scrollbar-none">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
-            <SlidersHorizontal className="w-3 h-3" /> Rama:
+            <SlidersHorizontal className="w-3 h-3" /> Branch:
           </span>
           {CATEGORY_ITEMS.map((cat) => {
             const isActive = filterCategory === cat.id;

@@ -41,15 +41,15 @@ export function SkillNodeModal({
 
   const statusBadges: Record<SkillNode["status"], { label: string; style: string }> = {
     completed: {
-      label: "Completado ✓",
+      label: "Completed",
       style: "bg-foreground text-background font-bold border-foreground",
     },
     unlocked: {
-      label: "Accesible",
+      label: "Accessible",
       style: "bg-muted/80 text-foreground border-border font-semibold",
     },
     locked: {
-      label: "Bloqueado",
+      label: "Locked",
       style: "bg-muted/40 text-muted-foreground/70 border-border/40",
     },
   };
@@ -89,7 +89,7 @@ export function SkillNodeModal({
         {/* Speedcubing Theory Explanation */}
         <div className="space-y-1.5">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-foreground" /> Teoría & Concepto Clave
+            <BookOpen className="w-3.5 h-3.5 text-foreground" /> Speedcubing Theory & Key Concept
           </h4>
           <p className="text-xs text-foreground/90 leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/60">
             {node.theory}
@@ -105,7 +105,7 @@ export function SkillNodeModal({
         {node.exampleFormula && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Code2 className="w-3.5 h-3.5 text-foreground" /> Fórmula / Secuencia de Ejemplo
+              <Code2 className="w-3.5 h-3.5 text-foreground" /> Model Formula / Example Sequence
             </h4>
             <div className="p-3 bg-card border border-border rounded-lg font-mono text-xs text-foreground font-semibold text-center tracking-wide select-all shadow-inner">
               {node.exampleFormula}
@@ -117,7 +117,7 @@ export function SkillNodeModal({
         {node.prerequisites.length > 0 && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Prerrequisitos
+              Prerequisites
             </h4>
             <div className="flex flex-wrap gap-2">
               {node.prerequisites.map((req) => (
@@ -136,7 +136,7 @@ export function SkillNodeModal({
         {node.recommendedDrills.length > 0 && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-foreground" /> Ejercicios Recomendados
+              <Target className="w-3.5 h-3.5 text-foreground" /> Recommended Practice Drills
             </h4>
             <ul className="space-y-1.5">
               {node.recommendedDrills.map((drill) => (
@@ -169,17 +169,17 @@ export function SkillNodeModal({
             >
               {isCompleted ? (
                 <>
-                  <RotateCcw className="w-3.5 h-3.5" /> Marcar como no completado
+                  <RotateCcw className="w-3.5 h-3.5" /> Mark as Incomplete
                 </>
               ) : (
                 <>
-                  <Check className="w-3.5 h-3 stroke-[3]" /> Completado ✓
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" /> Mark as Completed
                 </>
               )}
             </Button>
           ) : (
             <span className="text-xs text-muted-foreground italic flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5" /> Bloqueado: requiere completar prerrequisitos
+              <Lock className="w-3.5 h-3.5" /> Locked: complete prerequisites to unlock
             </span>
           )}
 
@@ -190,7 +190,7 @@ export function SkillNodeModal({
               onClick={() => onOpenChange(false)}
               className="text-xs"
             >
-              Cerrar
+              Close
             </Button>
             <Button
               size="sm"
@@ -201,7 +201,7 @@ export function SkillNodeModal({
                 onOpenChange(false);
               }}
             >
-              Practicar Skill
+              Practice Skill
             </Button>
           </div>
         </div>

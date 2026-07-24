@@ -410,7 +410,7 @@ export function SkillGraphCanvas({
                   {onToggleComplete && !isLocked && (
                     <button
                       onClick={(e) => onToggleComplete(node.id, e)}
-                      title={isCompleted ? "Marcar como accesible" : "Marcar como completado"}
+                      title={isCompleted ? "Mark as accessible" : "Mark as completed"}
                       className={cn(
                         "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-card border border-foreground/40 flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-foreground hover:text-background shadow-md",
                       )}
@@ -447,7 +447,7 @@ export function SkillGraphCanvas({
       {/* Footer Info Legend */}
       <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border shadow-sm">
         <Info className="w-3.5 h-3.5 text-foreground shrink-0" />
-        <span>Haz clic en un nodo accesible para ver explicaciones o marcarlo como completado</span>
+        <span>Click an accessible node for full explanations or to mark as completed</span>
       </div>
     </div>
   );
