@@ -83,7 +83,7 @@ export function AlgorithmRecognizeView({
   void _phaseId;
 
   // ── Data ─────────────────────────────────────────────────────────────
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(() => getSeedData(), []);
+  const { cases: allCases } = useMemo(() => getSeedData(), []);
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
@@ -111,12 +111,7 @@ export function AlgorithmRecognizeView({
   const [round, setRound] = useState<QuizRound | null>(null);
   const roundIndexRef = useRef(0); // for weakest mode ordering
 
-  // ── Get algorithm for a case ─────────────────────────────────────────
-  const getDefaultAlgorithm = useCallback((caseId: string) => {
-    const caseAlgos = allAlgorithms.filter((a) => a.caseId === caseId);
-    const def = caseAlgos.find((a) => a.isDefault) ?? caseAlgos[0];
-    return def;
-  }, [allAlgorithms]);
+
 
   // ── Generate a new round ─────────────────────────────────────────────
   const generateRound = useCallback(() => {
@@ -182,10 +177,7 @@ export function AlgorithmRecognizeView({
     [subsetCases, round],
   );
 
-  const currentAlgo = useMemo(
-    () => (currentCase ? getDefaultAlgorithm(currentCase.id) : null),
-    [currentCase, getDefaultAlgorithm],
-  );
+
 
   const accuracy = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
 
@@ -213,7 +205,6 @@ export function AlgorithmRecognizeView({
               <QuizPanel
                 round={round}
                 currentCase={currentCase}
-                currentAlgo={currentAlgo}
                 visualizationStyle={visualizationStyle}
                 subsetCases={subsetCases}
                 onSelect={handleSelect}
@@ -325,7 +316,6 @@ function RecognizeHeader({
 interface QuizPanelProps {
   round: QuizRound;
   currentCase: AlgorithmCase;
-  currentAlgo: { moves: string[] } | null | undefined;
   visualizationStyle: VisualizationStyle;
   subsetCases: AlgorithmCase[];
   onSelect: (id: string) => void;
@@ -333,12 +323,11 @@ interface QuizPanelProps {
 }
 
 function QuizPanel({
-  round, currentCase, currentAlgo, visualizationStyle,
+  round, currentCase, visualizationStyle,
   subsetCases, onSelect, onNext,
 }: QuizPanelProps) {
   const correctCase = subsetCases.find((c) => c.id === round.caseId);
   const isCorrect = round.answered && round.selectedId === round.caseId;
-  const isWrong = round.answered && round.selectedId !== round.caseId;
 
   return (
     <div className="flex-1 flex flex-col rounded-xl border border-line bg-surface overflow-hidden">

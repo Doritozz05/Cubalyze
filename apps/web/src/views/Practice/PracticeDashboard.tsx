@@ -10,13 +10,30 @@ import { CaseDetailPanel } from "./components/CaseDetailPanel";
 
 export interface PracticeDashboardProps {
   onPracticeCase?: (subsetId: string, caseId: string) => void;
+  initialSubsetId?: string | null;
+  initialCaseId?: string | null;
 }
 
-export function PracticeDashboard({ onPracticeCase }: PracticeDashboardProps = {}) {
+export function PracticeDashboard({
+  onPracticeCase,
+  initialSubsetId,
+  initialCaseId,
+}: PracticeDashboardProps = {}) {
   const [selectedSubsetId, setSelectedSubsetId] = useState<string | null>(
-    () => SUBSETS.find((s) => s.name === "PLL")?.id ?? null,
+    () => initialSubsetId ?? SUBSETS.find((s) => s.name === "PLL")?.id ?? null,
   );
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(
+    () => initialCaseId ?? null,
+  );
+
+  useEffect(() => {
+    if (initialSubsetId) {
+      setSelectedSubsetId(initialSubsetId);
+    }
+    if (initialCaseId !== undefined) {
+      setSelectedCaseId(initialCaseId);
+    }
+  }, [initialSubsetId, initialCaseId]);
 
   // ── Get seed data (in-memory for now; database integration later) ────
   const { cases: allCases, algorithms: allAlgorithms } = useMemo(

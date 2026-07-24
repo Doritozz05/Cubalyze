@@ -7,6 +7,7 @@ import {
   ArrowLeft, Target, Clock, Cpu, Hand, Flame, RotateCcw,
   Eye, Lightbulb, ChevronRight,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Types
