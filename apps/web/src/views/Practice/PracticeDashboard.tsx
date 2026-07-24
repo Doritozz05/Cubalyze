@@ -101,7 +101,7 @@ export function PracticeDashboard({ onPracticeCase }: PracticeDashboardProps = {
                 <div>
                   <h3 className="text-[0.78rem] font-semibold text-ink">
                     {selectedSubsetId
-                      ? "PLL Cases"
+                      ? `${SUBSETS.find((s) => s.id === selectedSubsetId)?.name ?? "?"} Cases`
                       : "Select a subset"}
                   </h3>
                   <p className="text-[0.62rem] text-ink-3 mt-0.5">
