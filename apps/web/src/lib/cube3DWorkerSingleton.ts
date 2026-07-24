@@ -1,6 +1,6 @@
 "use client";
 
-import type { Comlink } from "comlink";
+import type * as Comlink from "comlink";
 import type { SyncBridge, EngineWorkerAPI } from "@cubeforge/cube-3d-engine";
 
 /**

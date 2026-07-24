@@ -122,18 +122,10 @@ export class SceneManager {
   }
 
   public dispose(): void {
-
-    this.scene.traverse((obj) => {
-      if (obj instanceof Mesh) {
-        obj.geometry.dispose();
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach((m) => m.dispose());
-        } else {
-          obj.material.dispose();
-        }
-      }
-    });
-
+    // Only dispose the WebGL renderer.
+    // Do NOT traverse this.scene and dispose geometries/materials of external
+    // meshes (like CubeModel.root), as they are owned by CubeMeshFactory and
+    // must survive canvas reconnects when reopening 3D panels.
     this.renderer.dispose();
   }
 }

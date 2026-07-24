@@ -41,6 +41,8 @@ export interface UseCube3DWorkerResult {
   calibrate: () => void;
   /** Reset cube pieces to solved state. */
   reset: () => void;
+  /** Rotate camera view by delta X and delta Y (for orbit controls). */
+  rotateCamera: (dx: number, dy: number) => void;
 }
 
 /**
@@ -119,14 +121,30 @@ export function useCube3DWorker(
     const existingSingleton = getWorkerSingleton();
 
     if (existingSingleton) {
-      // ── Re-mount: canvas still in DOM, OffscreenCanvas still linked ──
+      // ── Re-mount: reconnect canvas rendering to existing worker ──
       workerInstance.current = existingSingleton.worker;
       workerProxy.current = existingSingleton.proxy;
       syncBridge.current = existingSingleton.syncBridge;
 
+      if (canvasRef.current && workerProxy.current) {
+        try {
+          const offscreen = canvasRef.current.transferControlToOffscreen();
+          const width = canvasRef.current.clientWidth || 300;
+          const height = canvasRef.current.clientHeight || 300;
+          workerProxy.current.reconnect(
+            Comlink.transfer(offscreen, [offscreen]),
+            width,
+            height,
+            window.devicePixelRatio,
+          );
+        } catch {
+          // Canvas already transferred for this DOM element (e.g. Strict Mode remount)
+        }
+      }
+
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect && rect.width > 0 && rect.height > 0) {
-        workerProxy.current.resize(rect.width, rect.height);
+        workerProxy.current?.resize(rect.width, rect.height);
       }
 
       if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
@@ -136,9 +154,9 @@ export function useCube3DWorker(
         );
       }
 
-      workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
+      workerProxy.current?.setGyroSupported(globalCubeAdapter.gyroSupported);
 
-      if (!callbacksRegistered.current) {
+      if (!callbacksRegistered.current && workerProxy.current) {
         callbacksRegistered.current = true;
         registerOrientationCallbacks(
           workerProxy.current,
@@ -154,7 +172,7 @@ export function useCube3DWorker(
       const reSkin = getSkinStyle(
         preferencesStore.getState().appearance3d,
       );
-      workerProxy.current.updateStyle(reSkin).catch(console.error);
+      workerProxy.current?.updateStyle(reSkin).catch(console.error);
 
       setIsReady(true);
     } else {
@@ -287,6 +305,10 @@ export function useCube3DWorker(
     setRecentMoves([]);
   }, []);
 
+  const rotateCamera = useCallback((dx: number, dy: number) => {
+    workerProxy.current?.rotateCamera(dx, dy);
+  }, []);
+
   return {
     canvasRef,
     containerRef,
@@ -294,6 +316,7 @@ export function useCube3DWorker(
     recentMoves,
     calibrate,
     reset,
+    rotateCamera,
   };
 }
 

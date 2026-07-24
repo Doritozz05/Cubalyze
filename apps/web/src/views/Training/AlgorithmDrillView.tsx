@@ -83,9 +83,9 @@ const DRILL_MODES: { id: DrillMode; label: string; description: string }[] = [
   { id: "weakness", label: "Weakness", description: "Prioritize your worst cases" },
 ];
 
-/** Face letter → color name for orientation indicator. */
+/** Face letter → color name for orientation indicator (WCA standard). */
 const FACE_COLOR_NAMES: Record<string, string> = {
-  U: 'Yellow', R: 'Orange', F: 'Green', D: 'White', L: 'Red', B: 'Blue',
+  U: 'White', R: 'Red', F: 'Green', D: 'Yellow', L: 'Orange', B: 'Blue',
 };
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ export function AlgorithmDrillView({
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
   const subsetCases = useMemo(
-    () => allCases.filter((c) => c.subsetId === subsetId).sort((a, b) => a.sortOrder - b.sortOrder),
+    () => allCases.filter((c) => c.subsetId === subsetId).sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })),
     [allCases, subsetId],
   );
 
@@ -335,7 +335,7 @@ export function AlgorithmDrillView({
                     displayScramble={displaySetup}
                     states={hasSmartCube ? drillSmartCube.validation.states : undefined}
                     currentIndex={hasSmartCube ? drillSmartCube.validation.currentIndex : 0}
-                    errorMoves={hasSmartCube ? drillSmartCube.validation.errorMoves : []}
+                    errorMoves={hasSmartCube ? drillSmartCube.validation.displayErrorMoves : []}
                     pendingHalfDouble={hasSmartCube ? drillSmartCube.validation.pendingHalfDouble : false}
                     isScrambled={hasSmartCube ? drillSmartCube.validation.isScrambled : false}
                     needsReset={hasSmartCube ? drillSmartCube.validation.needsReset : false}
