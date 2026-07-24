@@ -530,16 +530,16 @@ export function SkillGraphCanvas({
                   onClick={() => onSelectNode(node)}
                   className={cn(
                     "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
-                    // 1. ACCESIBLE (unlocked, not completed): White background, dark text/icon, crisp border, NO completed badge
+                    // 1. ACCESIBLE (unlocked, not completed): Solid background, dark text/icon, crisp border
                     isUnlocked &&
-                      "bg-card text-foreground border-2 border-foreground/40 hover:border-foreground hover:scale-110 hover:shadow-lg hover:shadow-foreground/10",
-                    // 2. COMPLETADO (completed): High contrast black & white style (like XCross)
+                      "bg-card text-foreground border-2 border-foreground hover:border-foreground hover:scale-110 hover:shadow-lg",
+                    // 2. COMPLETADO (completed): Solid high contrast style
                     isCompleted &&
-                      "bg-foreground text-background font-bold border-2 border-foreground shadow-lg shadow-foreground/20 group-hover:scale-110",
-                    // 3. INACCESIBLE (locked): Muted dark background with lock icon
+                      "bg-foreground text-background font-bold border-2 border-foreground shadow-lg group-hover:scale-110",
+                    // 3. INACCESIBLE (locked): Solid muted background with lock icon
                     isLocked &&
-                      "bg-muted/30 border-2 border-border/50 text-muted-foreground/40 opacity-40 group-hover:opacity-75 group-hover:border-border group-hover:scale-105",
-                    isHovered && "z-10 ring-4 ring-foreground/15",
+                      "bg-muted border-2 border-border text-muted-foreground group-hover:border-foreground group-hover:scale-105",
+                    isHovered && "z-10 ring-4 ring-foreground",
                   )}
                 >
                   {/* Icon */}
@@ -564,7 +564,7 @@ export function SkillGraphCanvas({
                       onClick={(e) => onToggleComplete(node.id, e)}
                       title={isCompleted ? "Mark as accessible" : "Mark as completed"}
                       className={cn(
-                        "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-card border border-foreground/40 flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-foreground hover:text-background shadow-md",
+                        "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-card border border-foreground flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-foreground hover:text-background shadow-md",
                       )}
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
@@ -581,12 +581,12 @@ export function SkillGraphCanvas({
                         ? "text-foreground font-semibold"
                         : isUnlocked
                         ? "text-foreground group-hover:text-primary"
-                        : "text-muted-foreground/60",
+                        : "text-muted-foreground",
                     )}
                   >
                     {node.title}
                   </h4>
-                  <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">
+                  <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground block">
                     {node.tier}
                   </span>
                 </div>

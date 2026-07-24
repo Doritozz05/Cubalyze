@@ -46,11 +46,11 @@ export function SkillNodeModal({
     },
     unlocked: {
       label: "Accessible",
-      style: "bg-muted/80 text-foreground border-border font-semibold",
+      style: "bg-muted text-foreground border-border font-semibold",
     },
     locked: {
       label: "Locked",
-      style: "bg-muted/40 text-muted-foreground/70 border-border/40",
+      style: "bg-muted text-muted-foreground border-border",
     },
   };
 
