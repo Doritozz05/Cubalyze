@@ -312,6 +312,47 @@ export function useScrambleValidator(
         return;
       }
 
+      // ── Facelet sync: handle whole-cube rotations ──────────────────
+      // Whole-cube rotations (x, y, z) change the facelet string but do
+      // NOT emit MOVE events. This causes currentState (accumulated from
+      // moves only) to desync from the real cube. After a rotation,
+      // subsequent move validation would fail because the base state is
+      // wrong.
+      //
+      // Fix: when facelets diverge from currentState AND we're in the
+      // middle of a scramble, find the real facelet state in
+      // expectedFacelets and sync both currentState and currentIndex.
+      if (
+        s.startedFromSolved &&
+        !s.needsReset &&
+        !s.scrambleCompleted &&
+        !isSolved &&
+        s.moves.length > 0 &&
+        s.currentIndex > 0 &&
+        s.currentIndex < s.moves.length
+      ) {
+        const currentFacelets = FaceletStringConverter.toFaceletString(s.currentState);
+        if (f !== currentFacelets) {
+          const matchedIdx = s.expectedFacelets.findIndex((ef) => ef === f);
+          if (matchedIdx !== -1) {
+            try {
+              const realState = FaceletStringConverter.fromFaceletString(f);
+              s.currentState = realState;
+              s.currentIndex = matchedIdx + 1;
+              s.isError = false;
+              s.consecutiveErrors = 0;
+              s.activeErrorMoves = [];
+              s.pendingHalfFace = null;
+              s.pendingHalfTokenIndex = -1;
+              updateUI();
+            } catch {
+              // Parse error — let move handler deal with it
+            }
+          }
+        }
+        return;
+      }
+
       if (isSolved) {
         s.startedFromSolved = true;
         if (s.needsReset) {

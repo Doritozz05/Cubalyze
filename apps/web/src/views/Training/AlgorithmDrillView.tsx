@@ -13,6 +13,7 @@ import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import { generateRandomSetup } from "@/lib/training/setupGenerator";
+import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import {
   ArrowLeft,
   Eye,
@@ -437,6 +438,11 @@ export function AlgorithmDrillView({
 
           {/* Right: Sidebar */}
           <aside className="flex min-h-0 flex-col gap-4 lg:w-72 lg:shrink-0 overflow-hidden">
+            {/* Mini 3D Cube Panel — only when smart cube is connected */}
+            {hasSmartCube && (
+              <MiniCube3DPanel className="shrink-0" />
+            )}
+
             <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-line bg-surface">
               {drillMode === "single" && (
                 <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />

@@ -16,20 +16,15 @@ import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore, preferencesStore } from "@cubeforge/state";
 import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
 import type { CubeMoveEvent, CubeOrientation, RotationEvent } from "@cubeforge/types";
+import {
+  getWorkerSingleton,
+  setWorkerSingleton,
+} from "@/lib/cube3DWorkerSingleton";
 
 export interface Cube3DPanelProps {
   className?: string;
   onClose?: () => void;
 }
-
-interface WorkerSingleton {
-  worker: Worker;
-  proxy: Comlink.Remote<EngineWorkerAPI>;
-  syncBridge: SyncBridge;
-}
-
-/** Survives Strict Mode unmount/remount so OffscreenCanvas isn't re-transferred */
-let workerSingleton: WorkerSingleton | null = null;
 
 export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,12 +81,14 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
       });
     }
 
-    if (workerSingleton) {
+    const existingSingleton = getWorkerSingleton();
+
+    if (existingSingleton) {
       // Re-mount: canvas still in DOM, OffscreenCanvas still linked.
       // Just resize — no new WebGL context.
-      workerInstance.current = workerSingleton.worker;
-      workerProxy.current = workerSingleton.proxy;
-      syncBridge.current = workerSingleton.syncBridge;
+      workerInstance.current = existingSingleton.worker;
+      workerProxy.current = existingSingleton.proxy;
+      syncBridge.current = existingSingleton.syncBridge;
 
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect && rect.width > 0 && rect.height > 0) {
@@ -215,11 +212,11 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
         const initSkin = getSkinStyle(preferencesStore.getState().appearance3d);
         workerProxy.current.updateStyle(initSkin).catch(console.error);
 
-        workerSingleton = {
+        setWorkerSingleton({
           worker: workerInstance.current,
           proxy: workerProxy.current,
           syncBridge: syncBridge.current,
-        };
+        });
         setIs3DReady(true);
       } catch {
         console.warn("Canvas already transferred — 3D rendering unavailable");
