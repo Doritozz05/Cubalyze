@@ -10,6 +10,7 @@ import { PhaseTrainerView } from "./PhaseTrainerView";
 import { AlgorithmRecallView } from "./AlgorithmRecallView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
+import { TrainingCalendar } from "./TrainingCalendar";
 import {
   Box,
   Layers,
@@ -257,7 +258,7 @@ function Level1MethodGrid({ onSelect }: { onSelect: (methodId: string) => void }
         </div>
       </section>
 
-      {/* Compact summary — replaces the heavy queue that was here */}
+      {/* Compact summary */}
       <section className="shrink-0 rounded-xl border border-line bg-surface p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="size-3.5 text-ink-2" />
@@ -270,6 +271,9 @@ function Level1MethodGrid({ onSelect }: { onSelect: (methodId: string) => void }
           <span className="flex items-center gap-1.5"><TrendingUp className="size-3.5 text-caution" /> Focus: ZZ EOLine (40%)</span>
         </div>
       </section>
+
+      {/* Training Schedule Calendar */}
+      <TrainingCalendar />
     </>
   );
 }
