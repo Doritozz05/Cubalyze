@@ -104,6 +104,13 @@ export default function App() {
   // dependency. Synced via the effect below.
   const smartCubeConnectedRef = useRef(false);
 
+  // Disable practice-timer keyboard shortcuts when training view is active
+  // (the training drill has its own timer + space handler via useDrillTimer).
+  const trainingActiveRef = useRef(false);
+  useEffect(() => {
+    trainingActiveRef.current = activeView === "training";
+  }, [activeView]);
+
   // Capture scramble & method at solve stop time to avoid stale closure race.
   // These refs are populated by handleComplete (synchronous callback from
   // engine.stop$) BEFORE setCurrentScramble regenerates. The analysis effect
@@ -178,7 +185,7 @@ export default function App() {
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
-  const session$ = useSolveSession(currentScramble, { onSolve: handleComplete });
+  const session$ = useSolveSession(currentScramble, { onSolve: handleComplete, keyboardDisabledRef: trainingActiveRef });
   const {
     phase: timerPhase,
     time: timerTime,

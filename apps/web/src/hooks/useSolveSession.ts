@@ -73,6 +73,12 @@ export interface UseSolveSessionOptions {
     orientations: (CubeOrientation | undefined)[],
     orientationTimeline: OrientationTimeline | undefined,
   ) => void;
+  /**
+   * Optional ref that disables global keyboard shortcuts (space key)
+   * when its current value is true. Used to prevent the practice timer
+   * from interfering with training views that have their own timer.
+   */
+  keyboardDisabledRef?: React.MutableRefObject<boolean>;
 }
 
 export interface UseSolveSessionResult {
@@ -1244,6 +1250,7 @@ export function useSolveSession(
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (options.keyboardDisabledRef?.current) return;
       if (e.code !== "Space") return;
       const target = e.target as HTMLElement | null;
       if (target) {
@@ -1257,6 +1264,7 @@ export function useSolveSession(
       if (!e.repeat) press();
     };
     const onKeyUp = (e: KeyboardEvent) => {
+      if (options.keyboardDisabledRef?.current) return;
       if (e.code !== "Space") return;
       const target = e.target as HTMLElement | null;
       if (target) {
@@ -1275,7 +1283,7 @@ export function useSolveSession(
       window.removeEventListener("keydown", onKeyDown, { capture: true });
       window.removeEventListener("keyup", onKeyUp, { capture: true });
     };
-  }, [press, release]);
+  }, [press, release, options.keyboardDisabledRef]);
 
   return {
     phase,

@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { TimerContainer } from "@/components/Timer/TimerContainer";
+import type { HintContext } from "@/components/Timer/hintFor";
+import { useDrillTimer } from "@/hooks/useDrillTimer";
+import { generateRandomSetup } from "@/lib/training/setupGenerator";
 import {
   ArrowLeft,
   Eye,
@@ -15,10 +19,7 @@ import {
   SkipForward,
   Shuffle,
   Target,
-  TrendingUp,
   Clock,
-  Cpu,
-  Hand,
   Flame,
   RotateCcw,
   Lock,
@@ -107,22 +108,40 @@ export function AlgorithmDrillView({
   // ── State ─────────────────────────────────────────────────────────────
   const [drillMode, setDrillMode] = useState<DrillMode>("single");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(preselectedCaseId ?? null);
-  const [showAlgorithm, setShowAlgorithm] = useState(true);
+  const [showAlgorithm, setShowAlgorithm] = useState(false);
   const [revealIfFail, setRevealIfFail] = useState(false);
-  const [timerPhase, setTimerPhase] = useState<"idle" | "running" | "verdict">("idle");
-  const [currentTime, setCurrentTime] = useState(0);
   const [attempts, setAttempts] = useState<DrillAttempt[]>([]);
   const [smartCubeMode, setSmartCubeMode] = useState(false);
   const [seqIndex, setSeqIndex] = useState(0);
+  const [currentSetup, setCurrentSetup] = useState("");
+  const [showVerdict, setShowVerdict] = useState(false);
+  const [setupVersion, setSetupVersion] = useState(0);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number>(0);
+  // ── Drill timer (hold-to-arm, space key) ───────────────────────────────
+  const { phase, time, stoppedTime, press, release, reset } = useDrillTimer();
+
+  // Show verdict overlay when timer stops, hide when engine leaves stopped
+  useEffect(() => {
+    if (phase === "stopped" && stoppedTime > 0) {
+      setShowVerdict(true);
+    } else if (phase !== "stopped") {
+      setShowVerdict(false);
+    }
+  }, [phase, stoppedTime]);
 
   // ── Visualization style (yellow-gray for OLL, full-color for PLL, etc.) ─
   const visualizationStyle = useMemo<VisualizationStyle>(() => {
     const config = subset?.name ? SUBSET_VISUALIZATION[subset.name] : undefined;
     return config?.style ?? 'full-color';
   }, [subset]);
+
+  // ── Timer hint context (controls TimerDisplay hint text) ─────────────
+  const drillHintCtx = useMemo<HintContext>(() => ({
+    smartCube: smartCubeMode,
+    scrambleVerif: false,
+    inspection: false,
+    isScrambled: false,
+  }), [smartCubeMode]);
 
   // ── Derived data ─────────────────────────────────────────────────────
   const selectedCase = useMemo(
@@ -172,82 +191,55 @@ export function AlgorithmDrillView({
     // single: keep same case
   }, [drillMode, subsetCases, seqIndex, weaknessOrdered]);
 
-  // ── Timer logic ──────────────────────────────────────────────────────
-  const startTimer = useCallback(() => {
-    if (timerPhase !== "idle") return;
-    setTimerPhase("running");
-    setCurrentTime(0);
-    startTimeRef.current = Date.now();
-    timerRef.current = setInterval(() => {
-      setCurrentTime(Date.now() - startTimeRef.current);
-    }, 10);
-  }, [timerPhase]);
-
-  const stopTimer = useCallback(() => {
-    if (timerPhase !== "running") return;
-    setTimerPhase("verdict");
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+  // ── Random setup generation (when case or setupVersion changes) ──────
+  useEffect(() => {
+    if (defaultAlgorithm?.moves) {
+      const setup = generateRandomSetup(defaultAlgorithm.moves);
+      setCurrentSetup(setup || selectedCase?.setupScramble || "");
+    } else {
+      setCurrentSetup("");
     }
-    setCurrentTime(Date.now() - startTimeRef.current);
-  }, [timerPhase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCaseId, defaultAlgorithm?.id, setupVersion]);
 
+  // ── Verdict handlers ──────────────────────────────────────────────────
   const recordAttempt = useCallback(
     (correct: boolean) => {
-      const elapsed = Date.now() - startTimeRef.current;
       if (!selectedCase || !defaultAlgorithm) return;
       const attempt: DrillAttempt = {
         id: nextAttemptId(),
         caseId: selectedCase.id,
         caseLabel: selectedCase.caseNumber,
         algorithm: defaultAlgorithm.moves,
-        timeMs: elapsed,
+        timeMs: stoppedTime,
         correct,
         timestamp: Date.now(),
       };
       setAttempts((prev) => [attempt, ...prev]);
       if (!correct && revealIfFail) setShowAlgorithm(true);
     },
-    [selectedCase, defaultAlgorithm, revealIfFail],
+    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime],
   );
 
   const handleMarkCorrect = useCallback(() => {
     recordAttempt(true);
-    setTimerPhase("idle");
+    reset();
+    setSetupVersion((v) => v + 1);
     selectNextCase();
-  }, [recordAttempt, selectNextCase]);
+  }, [recordAttempt, reset, selectNextCase]);
 
   const handleMarkIncorrect = useCallback(() => {
     recordAttempt(false);
-    setTimerPhase("idle");
+    reset();
+    setSetupVersion((v) => v + 1);
     selectNextCase();
-  }, [recordAttempt, selectNextCase]);
+  }, [recordAttempt, reset, selectNextCase]);
 
   const handleSkip = useCallback(() => {
-    if (timerPhase === "running") {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setTimerPhase("idle");
-    setCurrentTime(0);
+    reset();
+    setSetupVersion((v) => v + 1);
     selectNextCase();
-  }, [timerPhase, selectNextCase]);
-
-  useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
-
-  // ── Timer tap ────────────────────────────────────────────────────────
-  const handleTimerTap = useCallback(() => {
-    if (timerPhase === "idle") startTimer();
-    else if (timerPhase === "running") stopTimer();
-    // "verdict": tapping restarts
-    else if (timerPhase === "verdict") {
-      setTimerPhase("idle");
-      setCurrentTime(0);
-    }
-  }, [timerPhase, startTimer, stopTimer]);
+  }, [reset, selectNextCase]);
 
   // ── Algorithm text ────────────────────────────────────────────────────
   const algoText = defaultAlgorithm?.moves.join(" ") ?? "";
@@ -273,75 +265,98 @@ export function AlgorithmDrillView({
         <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden lg:flex-row">
           {/* Left: Active drill area */}
           <div className="flex min-h-0 flex-1 flex-col gap-4 min-w-0">
-            {/* Case diagram + algorithm */}
-            <div className="shrink-0 flex items-start gap-4 p-4 rounded-xl border border-line bg-surface">
-              <div className="shrink-0">
+            {/* Case info bar (compact) */}
+            <div className="shrink-0 flex items-center gap-3 px-1">
+              <span className="nums text-[0.85rem] font-semibold text-ink">{selectedCase?.caseNumber ?? "--"}</span>
+              <span className="text-[0.7rem] text-ink-2">{selectedCase?.name ?? "Select a case"}</span>
+            </div>
+
+            {/* Row: Case diagram (left) + Setup scramble (right) */}
+            <div className="shrink-0 flex items-stretch gap-4 rounded-xl border border-line bg-surface p-4">
+              {/* Left: Case diagram */}
+              <div className="shrink-0 flex items-center justify-center">
                 {selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
                   <CaseDiagram
                     arrows={selectedCase.diagram2D.arrows}
                     setupScramble={selectedCase.setupScramble}
                     moves={defaultAlgorithm?.moves}
                     style={visualizationStyle}
-                    className="w-32 sm:w-40"
+                    className="w-28 sm:w-36"
                   />
                 ) : (
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center rounded-lg bg-surface-2">
+                  <div className="w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center rounded-lg bg-surface-2">
                     <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex-1 min-w-0 space-y-3">
-                <div>
-                  <span className="nums text-[0.85rem] font-semibold text-ink">{selectedCase?.caseNumber ?? "--"}</span>
-                  <span className="text-[0.7rem] text-ink-2 ml-2">{selectedCase?.name ?? "Select a case"}</span>
-                </div>
-
-                <div className={cn("rounded-lg border p-3 transition-all duration-200", showAlgorithm ? "border-line bg-surface-2" : "border-line/50 bg-surface-2/50")}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3">Algorithm</span>
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-1.5 text-[0.58rem] text-ink-3 cursor-pointer select-none">
-                        <input type="checkbox" checked={revealIfFail} onChange={(e) => setRevealIfFail(e.target.checked)} className="size-3 rounded border-line accent-ink" />
-                        Reveal if fail
-                      </label>
-                      <button onClick={() => setShowAlgorithm((v) => !v)} className="rounded p-0.5 text-ink-3 hover:text-ink transition-colors" title={showAlgorithm ? "Hide algorithm" : "Show algorithm"}>
-                        {showAlgorithm ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-                  {showAlgorithm ? (
-                    <p className="nums text-[0.78rem] font-medium text-ink leading-relaxed">{algoText || "No algorithm available"}</p>
-                  ) : (
-                    <p className="nums text-[0.78rem] text-ink-3/40 italic select-none flex items-center gap-1.5"><Lock className="size-3" /> Algorithm hidden</p>
-                  )}
-                </div>
-
-                {selectedCase?.setupScramble && (
-                  <div>
-                    <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
-                    <p className="nums text-[0.65rem] text-ink-2/70 mt-0.5">{selectedCase.setupScramble}</p>
-                  </div>
+              {/* Right: Setup scramble (main visual element) */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
+                <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup Scramble</span>
+                {currentSetup ? (
+                  <>
+                    <p className="nums text-[clamp(1rem,3vw,1.6rem)] font-bold text-ink leading-relaxed tracking-tight break-words">
+                      {currentSetup}
+                    </p>
+                    <span className="nums text-[0.58rem] text-ink-3/50">
+                      {currentSetup.trim().split(/\s+/).filter(Boolean).length} moves
+                    </span>
+                  </>
+                ) : (
+                  <p className="nums text-[0.85rem] text-ink-3/40 italic">Select a case to generate setup</p>
                 )}
               </div>
             </div>
 
-            {/* Timer area */}
-            <div className="flex-1 min-h-[240px] flex flex-col items-center justify-center rounded-xl border border-line bg-surface relative overflow-hidden">
-              {/* Verdict overlay: mark correct / incorrect */}
+            {/* Algorithm section — hidden by default, compact */}
+            <div className="shrink-0 rounded-xl border border-line/60 bg-surface-2/40 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3">Algorithm</span>
+                  {showAlgorithm && (
+                    <span className="nums text-[0.65rem] text-ink-2/80 truncate max-w-[300px]">
+                      {algoText || "No algorithm available"}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 text-[0.58rem] text-ink-3 cursor-pointer select-none">
+                    <input type="checkbox" checked={revealIfFail} onChange={(e) => setRevealIfFail(e.target.checked)} className="size-3 rounded border-line accent-ink" />
+                    Reveal if fail
+                  </label>
+                  <button
+                    onClick={() => setShowAlgorithm((v) => !v)}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-3 hover:text-ink hover:bg-line"
+                    title={showAlgorithm ? "Hide algorithm" : "Show algorithm"}
+                  >
+                    {showAlgorithm ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                    {showAlgorithm ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+              {!showAlgorithm && (
+                <p className="text-[0.6rem] text-ink-3/40 italic flex items-center gap-1.5 mt-1">
+                  <Lock className="size-3" /> Algorithm hidden — reveal after attempting
+                </p>
+              )}
+            </div>
+
+            {/* Timer area (BIG) with verdict overlay */}
+            <div className="flex-1 min-h-[200px] rounded-xl border border-line bg-surface relative overflow-hidden">
+              {/* Verdict overlay */}
               <AnimatePresence>
-                {timerPhase === "verdict" && (
+                {showVerdict && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 rounded-xl bg-surface/95"
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 rounded-xl bg-surface/98"
                   >
-                    <span className="nums text-[2.8rem] sm:text-[3.5rem] font-bold text-ink tracking-tight">
-                      {formatTime(currentTime)}
+                    <span className="nums text-[2.5rem] sm:text-[3rem] font-bold text-ink tracking-tight">
+                      {formatTime(stoppedTime)}
                     </span>
-                    <span className="nums text-[0.8rem] text-ink-3">
-                      TPS {calculateTps(defaultAlgorithm?.moves ?? [], currentTime)}
+                    <span className="nums text-[0.75rem] text-ink-3">
+                      TPS {calculateTps(defaultAlgorithm?.moves ?? [], stoppedTime)}
                     </span>
                     <div className="flex gap-3 mt-2">
                       <button
@@ -369,27 +384,16 @@ export function AlgorithmDrillView({
                 )}
               </AnimatePresence>
 
-              {/* Timer display */}
-              <button
-                onClick={handleTimerTap}
-                className={cn(
-                  "w-full h-full flex flex-col items-center justify-center gap-3 select-none outline-none transition-colors duration-150",
-                  timerPhase !== "verdict" && "cursor-pointer hover:bg-surface-2/50",
-                )}
-              >
-                <span className={cn(
-                  "nums text-[2.5rem] sm:text-[3.5rem] font-bold tracking-tight tabular-nums transition-colors",
-                  timerPhase === "running" ? "text-ink" : timerPhase === "idle" ? "text-ink-2" : "text-ink-3/30",
-                )}>
-                  {timerPhase === "idle" ? "0.00" : formatTime(currentTime)}
-                </span>
-                <span className="text-[0.65rem] text-ink-3">
-                  {timerPhase === "idle" ? "Tap to start" : timerPhase === "running" ? "Tap to stop" : "Review result"}
-                </span>
-                <span className="flex items-center gap-1.5 text-[0.58rem] text-ink-3/70">
-                  {smartCubeMode ? (<><Cpu className="size-3" /> Smart Cube</>) : (<><Hand className="size-3" /> Manual Timer</>)}
-                </span>
-              </button>
+              {/* TimerContainer — BIG, fills the space */}
+              <TimerContainer
+                phase={phase}
+                time={time}
+                lastTime={null}
+                hintCtx={drillHintCtx}
+                onPress={press}
+                onRelease={release}
+                className="h-full"
+              />
             </div>
           </div>
 

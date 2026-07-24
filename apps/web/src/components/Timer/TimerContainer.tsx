@@ -29,6 +29,8 @@ export interface TimerContainerProps {
   cancelRef?: React.MutableRefObject<(() => void) | null>;
   /** Optional explicit cancel handler. */
   onCancel?: () => void;
+  /** Optional className override for the time display text size. */
+  timerClassName?: string;
   className?: string;
 }
 
@@ -49,6 +51,7 @@ export function TimerContainer({
   stateRef,
   cancelRef,
   onCancel,
+  timerClassName,
   className,
 }: TimerContainerProps) {
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
@@ -134,6 +137,7 @@ export function TimerContainer({
         pb={pb}
         showPbDelta={showPbDelta}
         hintCtx={hintCtx}
+        className={timerClassName}
       />
     </div>
   );

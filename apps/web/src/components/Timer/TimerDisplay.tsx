@@ -17,6 +17,8 @@ export interface TimerDisplayProps {
   showPbDelta?: boolean;
   /** Context required to compute the hint. */
   hintCtx: HintContext;
+  /** Optional className override for the time display text size. */
+  className?: string;
 }
 
 const STATE_COLOR: Record<TimerState, string> = {
@@ -53,6 +55,7 @@ export function TimerDisplay({
   pb,
   showPbDelta = false,
   hintCtx,
+  className,
 }: TimerDisplayProps) {
   const hint = hintFor(state, hasLast, hintCtx);
 
@@ -89,7 +92,7 @@ export function TimerDisplay({
         <div
           className={cn(
             "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
-            "text-[clamp(3.75rem,15vw,9.5rem)]",
+            className ?? "text-[clamp(3.75rem,15vw,9.5rem)]",
             textColor,
             STATE_SCALE[state],
           )}
