@@ -3,8 +3,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
   ArrowLeft, Eye, EyeOff, Check, X, Zap, Cpu, Hand,
@@ -57,9 +57,9 @@ const RECALL_STEPS: { id: RecallStep; label: string; num: number; desc: string }
    ─────────────────────────────────────────────────────────────────────── */
 
 function FlashRecognitionPanel({
-  cases, onClose,
+  cases, onClose, visualizationStyle,
 }: {
-  cases: AlgorithmCase[]; onClose: () => void;
+  cases: AlgorithmCase[]; onClose: () => void; visualizationStyle: VisualizationStyle;
 }) {
   const [phase, setPhase] = useState<"idle" | "showing" | "guessing" | "result">("idle");
   const [currentCase, setCurrentCase] = useState<AlgorithmCase | null>(null);
@@ -121,7 +121,7 @@ function FlashRecognitionPanel({
         <AnimatePresence mode="wait">
           {phase === "showing" && currentCase?.diagramType === "2d-top" && currentCase.diagram2D ? (
             <motion.div key="flash" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <CaseDiagram arrows={currentCase.diagram2D.arrows} moves={[]} style="full-color" className="w-36" />
+              <CaseDiagram arrows={currentCase.diagram2D.arrows} moves={[]} style={visualizationStyle} className="w-36" />
             </motion.div>
           ) : phase === "guessing" ? (
             <motion.div key="hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-2">
@@ -227,6 +227,12 @@ export function AlgorithmRecallView({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // ── Visualization style (yellow-gray for OLL, full-color for PLL, etc.) ─
+  const visualizationStyle = useMemo<VisualizationStyle>(() => {
+    const config = subset?.name ? SUBSET_VISUALIZATION[subset.name] : undefined;
+    return config?.style ?? 'full-color';
+  }, [subset]);
+
   // ── Derived ──────────────────────────────────────────────────────────
   const currentCase = useMemo(
     () => subsetCases.find((c) => c.id === recallState.caseId) ?? null,
@@ -326,8 +332,7 @@ export function AlgorithmRecallView({
           <header className="shrink-0 flex items-center gap-3 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
             <span className="text-[0.72rem] font-semibold text-ink">{method?.name} › {subset?.name} › Flash</span>
           </header>
-          <div className="flex-1 min-h-0">
-            <FlashRecognitionPanel cases={subsetCases} onClose={() => setFlashMode(false)} />
+          <div className="flex-1 min-h-0">              <FlashRecognitionPanel cases={subsetCases} onClose={() => setFlashMode(false)} visualizationStyle={visualizationStyle} />
           </div>
         </div>
       </div>
@@ -362,7 +367,7 @@ export function AlgorithmRecallView({
                   <CaseDiagram
                     arrows={currentCase.diagram2D.arrows}
                     moves={defaultAlgorithm?.moves}
-                    style="full-color"
+                    style={visualizationStyle}
                     className="w-32 sm:w-40"
                   />
                 ) : (

@@ -3,8 +3,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
   ArrowLeft,
@@ -117,6 +117,12 @@ export function AlgorithmDrillView({
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  // ── Visualization style (yellow-gray for OLL, full-color for PLL, etc.) ─
+  const visualizationStyle = useMemo<VisualizationStyle>(() => {
+    const config = subset?.name ? SUBSET_VISUALIZATION[subset.name] : undefined;
+    return config?.style ?? 'full-color';
+  }, [subset]);
 
   // ── Derived data ─────────────────────────────────────────────────────
   const selectedCase = useMemo(
@@ -275,7 +281,7 @@ export function AlgorithmDrillView({
                     arrows={selectedCase.diagram2D.arrows}
                     setupScramble={selectedCase.setupScramble}
                     moves={defaultAlgorithm?.moves}
-                    style="full-color"
+                    style={visualizationStyle}
                     className="w-32 sm:w-40"
                   />
                 ) : (
