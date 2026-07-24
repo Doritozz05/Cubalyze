@@ -5,6 +5,7 @@ export * from './constants/faceRotation';
 export * from './core/SceneManager';
 export * from './core/CubeMeshFactory';
 export * from './core/CubeModel';
+export * from './core/Cube3DEngine';
 
 // Styles (skins / appearances)
 export * from './styles/cubeSkins';

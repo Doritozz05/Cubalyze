@@ -10,21 +10,22 @@ describe('setupGenerator', () => {
     expect(setup.length).toBeGreaterThan(0);
   });
 
-  it('targetFace="Y" generates a setup that when executed with Yellow on top (z2 state) alters the Yellow face', () => {
+  it('targetFace="Y" generates a setup that alters the Down (Yellow) face when executed from standard White-top orientation', () => {
     // Sune (OLL 27): R U R' U R U2 R'
     const sune = ['R', 'U', "R'", 'U', 'R', 'U2', "R'"];
     const setup = generateRandomSetup(sune, 'Y');
 
-    // Create a cube state with Yellow on Top (z2 rotated: U=Yellow, D=White)
+    // Create a solved cube state (U=White, D=Yellow)
     const state = new CubeState();
-    state.applySequence('z2');
     state.applySequence(setup);
 
     const facelets = FaceletStringConverter.toFaceletString(state);
-    const topFacelets = facelets.substring(0, 9); // Top face (Yellow under z2)
+    const topFacelets = facelets.substring(0, 9);   // U face (White)
+    const downFacelets = facelets.substring(9, 18); // D face (Yellow)
 
-    // Under z2 (Yellow on top), executing the setup scramble alters the top face (Yellow)
-    expect(topFacelets).not.toBe('DDDDDDDDD');
+    // Setup scramble must leave U (White) solved and alter D (Yellow)
+    expect(topFacelets).toBe('UUUUUUUUU');
+    expect(downFacelets).not.toBe('DDDDDDDDD');
   });
 
   it('handles wide move algorithms like OLL 5 without Error in scramble', () => {

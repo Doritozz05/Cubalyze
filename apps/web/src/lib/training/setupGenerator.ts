@@ -106,11 +106,12 @@ export function generateRandomSetup(moves: string[], targetFace: 'Y' | 'W' = 'Y'
       return fallbackMoves.join(' ');
     }
 
-    // 5. Invert solution to get setup scramble
+    // 5. Invert solution to get setup scramble.
+    // Note: effectiveMoves was already z2-transformed at step 1 for targetFace === 'Y',
+    // so invertedSolution is ALREADY the setup scramble that acts on the Yellow face (D layer).
     const solutionMoves = solution.trim().split(/\s+/).filter(Boolean);
     const invertedSolution = invertMoves(solutionMoves);
-    const finalSetupMoves = targetFace === 'Y' ? transformMovesZ2(invertedSolution) : invertedSolution;
-    return finalSetupMoves.join(' ');
+    return invertedSolution.join(' ');
   } catch (err) {
     console.error('[generateRandomSetup] Failed:', err);
     return '';

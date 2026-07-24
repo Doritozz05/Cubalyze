@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useCube3DWorker } from "@/hooks/useCube3DWorker";
+import { useCube3D } from "@/hooks/useCube3D";
 
 export interface MiniCube3DPanelProps {
   className?: string;
@@ -14,7 +14,7 @@ export interface MiniCube3DPanelProps {
  * Compact 3D cube preview panel for the drill view.
  *
  * Shows a small 3D cube canvas with Calibrate and Reset buttons.
- * Uses the same worker singleton as the full Cube3DPanel — when this
+ * Uses its own isolated Cube3DEngine instance via useCube3D — when this
  * component mounts, it starts the orientation tracker, which enables
  * dynamic scramble remapping and display-notation moves throughout
  * the drill view via the Zustand orientationStore.
@@ -24,7 +24,7 @@ export interface MiniCube3DPanelProps {
  */
 export function MiniCube3DPanel({ className }: MiniCube3DPanelProps) {
   const { canvasRef, containerRef, isReady, recentMoves, calibrate, reset } =
-    useCube3DWorker({ maxRecentMoves: 8 });
+    useCube3D({ maxRecentMoves: 8 });
 
   return (
     <div

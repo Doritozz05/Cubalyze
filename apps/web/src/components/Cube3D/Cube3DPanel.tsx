@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useCube3DWorker } from "@/hooks/useCube3DWorker";
+import { useCube3D } from "@/hooks/useCube3D";
 
 export interface Cube3DPanelProps {
   className?: string;
@@ -21,7 +21,7 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
     calibrate,
     reset,
     rotateCamera,
-  } = useCube3DWorker({ maxRecentMoves: 15 });
+  } = useCube3D({ maxRecentMoves: 15 });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
