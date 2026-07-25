@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
   ArrowLeft, Check, X, ChevronRight, Target, Brain,
@@ -26,6 +26,8 @@ interface QuizRound {
   selectedId: string | null;
   /** Whether the round has been answered */
   answered: boolean;
+  /** Random rotation applied to the diagram (in degrees: 0, 90, 180, 270) */
+  rotation: number;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -56,6 +58,12 @@ function pickRandom<T extends { id: string }>(arr: T[], count: number, excludeId
   return result;
 }
 
+/** Pick a random rotation from [0, 90, 180, 270] */
+function randomRotation(): number {
+  const rotations = [0, 90, 180, 270];
+  return rotations[Math.floor(Math.random() * rotations.length)];
+}
+
 /** Shuffle an array (Fisher-Yates) */
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -83,7 +91,7 @@ export function AlgorithmRecognizeView({
   void _phaseId;
 
   // ── Data ─────────────────────────────────────────────────────────────
-  const { cases: allCases } = useMemo(() => getSeedData(), []);
+  const { cases: allCases, algorithms: allAlgorithms } = useMemo(() => getSeedData(), []);
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
@@ -149,6 +157,7 @@ export function AlgorithmRecognizeView({
       options,
       selectedId: null,
       answered: false,
+      rotation: randomRotation(),
     });
   }, [mode, subsetCases, weaknessOrdered]);
 
@@ -185,6 +194,15 @@ export function AlgorithmRecognizeView({
     [subsetCases, round],
   );
 
+  const currentAlgorithm = useMemo(() => {
+    if (!currentCase) return null;
+    return (
+      allAlgorithms.find((a) => a.caseId === currentCase.id && a.isDefault) ??
+      allAlgorithms.find((a) => a.caseId === currentCase.id) ??
+      null
+    );
+  }, [allAlgorithms, currentCase]);
+
 
 
   const accuracy = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
@@ -213,6 +231,7 @@ export function AlgorithmRecognizeView({
               <QuizPanel
                 round={round}
                 currentCase={currentCase}
+                algorithm={currentAlgorithm}
                 visualizationStyle={visualizationStyle}
                 subsetCases={subsetCases}
                 onSelect={handleSelect}
@@ -324,6 +343,7 @@ function RecognizeHeader({
 interface QuizPanelProps {
   round: QuizRound;
   currentCase: AlgorithmCase;
+  algorithm: Algorithm | null;
   visualizationStyle: VisualizationStyle;
   subsetCases: AlgorithmCase[];
   onSelect: (id: string) => void;
@@ -331,9 +351,10 @@ interface QuizPanelProps {
 }
 
 function QuizPanel({
-  round, currentCase, visualizationStyle,
+  round, currentCase, algorithm, visualizationStyle,
   subsetCases, onSelect, onNext,
 }: QuizPanelProps) {
+  const diagramRotation = round.answered ? 0 : round.rotation;
   const correctCase = subsetCases.find((c) => c.id === round.caseId);
   const isCorrect = round.answered && round.selectedId === round.caseId;
 
@@ -351,7 +372,7 @@ function QuizPanel({
             transition={{ duration: 0.2 }}
             className="flex flex-col items-center gap-4"
           >
-            <div className="relative">
+            <div className="relative" style={{ transform: `rotate(${diagramRotation}deg)`, transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               {currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
                 <CaseDiagram
                   arrows={currentCase.diagram2D.arrows}
@@ -384,13 +405,28 @@ function QuizPanel({
               )}
             </div>
 
-            {/* Scramble */}
-            {currentCase.setupScramble && (
-              <div className="text-center">
-                <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
-                <p className="nums text-[0.72rem] text-ink-2/80 mt-0.5 leading-relaxed">{currentCase.setupScramble}</p>
-              </div>
-            )}
+            {/* Solution & Setup */}
+            <div className="flex flex-col items-center gap-2.5 text-center">
+              {round.answered && algorithm && algorithm.moves.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center"
+                >
+                  <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Solution</span>
+                  <p className="nums text-[0.78rem] font-semibold text-ink mt-0.5 leading-relaxed">
+                    {algorithm.moves.join(" ")}
+                  </p>
+                </motion.div>
+              )}
+
+              {currentCase.setupScramble && (
+                <div className="text-center">
+                  <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
+                  <p className="nums text-[0.72rem] text-ink-2/80 mt-0.5 leading-relaxed">{currentCase.setupScramble}</p>
+                </div>
+              )}
+            </div>
           </motion.div>
         </AnimatePresence>
 
