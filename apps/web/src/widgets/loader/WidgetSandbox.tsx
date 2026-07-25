@@ -144,7 +144,7 @@ export function WidgetSandbox({
         src={blobUrl}
         sandbox="allow-scripts"
         style={{ width, height, border: "none" }}
-        title="Widget Sandbox"
+        title="Widget sandbox"
         className="block"
       />
     </div>

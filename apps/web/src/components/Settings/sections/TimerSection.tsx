@@ -56,7 +56,7 @@ export function TimerSection() {
       />
 
       <SettingToggle
-        title="Inspection Audio Cues"
+        title="Inspection audio cues"
         description="Play official voice alerts ('8 seconds' and '12 seconds') during the WCA inspection countdown."
         checked={audioCues}
         onCheckedChange={setAudioCues}
@@ -102,14 +102,14 @@ export function TimerSection() {
       )}
 
       <SettingToggle
-        title="PB Delta"
+        title="PB delta"
         description="Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best."
         checked={showPbDelta}
         onCheckedChange={setShowPbDelta}
       />
 
       <SettingToggle
-        title="Focus Mode"
+        title="Focus mode"
         description="Hide all UI elements (scramble, stats, sidebar) when the timer is ready and running to eliminate distractions."
         checked={focusMode}
         onCheckedChange={setFocusMode}

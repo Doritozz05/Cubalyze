@@ -47,7 +47,7 @@ export function DataSection({ solves, sessionName }: DataSectionProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="size-4 text-ink-2" />
-            <h4 className="text-[0.85rem] font-medium text-ink">CSV Export</h4>
+            <h4 className="text-[0.85rem] font-medium text-ink">CSV export</h4>
           </div>
           <p className="mt-1.5 text-[0.72rem] text-ink-3">
             Spreadsheet format compatible with csTimer, Google Sheets, and Excel.
@@ -70,7 +70,7 @@ export function DataSection({ solves, sessionName }: DataSectionProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <FileJson className="size-4 text-ink-2" />
-            <h4 className="text-[0.85rem] font-medium text-ink">JSON Export</h4>
+            <h4 className="text-[0.85rem] font-medium text-ink">JSON export</h4>
           </div>
           <p className="mt-1.5 text-[0.72rem] text-ink-3">
             Full machine-readable export with all solve metadata.

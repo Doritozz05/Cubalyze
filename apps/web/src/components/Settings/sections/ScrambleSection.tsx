@@ -43,7 +43,7 @@ export function ScrambleSection() {
       />
 
       <SettingToggle
-        title="Scramble Verification"
+        title="Scramble verification"
         description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
         checked={scrambleVerification}
         onCheckedChange={setScrambleVerification}

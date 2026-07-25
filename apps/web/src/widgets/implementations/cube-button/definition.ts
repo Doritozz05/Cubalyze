@@ -3,7 +3,7 @@ import type { WidgetDefinition } from "@/widgets/types";
 
 export const cubeButtonDefinition: WidgetDefinition = {
   id: "cube-button",
-  name: "3D Cube",
+  name: "3D cube",
   description:
     "Floating button to toggle the interactive 3D cube view. Only appears when a smart cube is connected.",
   icon: Cuboid,

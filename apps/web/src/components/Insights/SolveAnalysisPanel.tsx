@@ -1040,18 +1040,18 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="CFOP details" />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
-        <DetailTile label="Cross Eff" value={cfop.crossEfficiency.toFixed(2)} />
+        <DetailTile label="Cross eff" value={cfop.crossEfficiency.toFixed(2)} />
         <DetailTile label="Cross→F2L" value={formatTime(cfop.crossToF2LTransitionMs)} />
-        <DetailTile label="OLL Recog" value={formatTime(cfop.ollRecognitionMs)} />
+        <DetailTile label="OLL recog" value={formatTime(cfop.ollRecognitionMs)} />
         <DetailTile label="OLL TPS" value={cfop.ollTPS.toFixed(2)} />
-        <DetailTile label="PLL Recog" value={formatTime(cfop.pllRecognitionMs)} />
+        <DetailTile label="PLL recog" value={formatTime(cfop.pllRecognitionMs)} />
         <DetailTile label="PLL TPS" value={cfop.pllTPS.toFixed(2)} />
         <DetailTile
           label="Lookahead"
           value={cfop.f2lLookaheadScore.toFixed(2)}
           accent={cfop.f2lLookaheadScore > 0.7 ? "ready" : undefined}
         />
-        <DetailTile label="F2L Pairs" value={`${cfop.f2lPairs.length}`} />
+        <DetailTile label="F2L pairs" value={`${cfop.f2lPairs.length}`} />
       </div>
 
       {/* F2L pair breakdown */}
@@ -1084,7 +1084,7 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
   return (
     <div className="mt-3">
       <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
-        F2L Pair Breakdown
+        F2L pair breakdown
       </span>
       <div className="mt-1.5 space-y-0">
         {pairs.map((pair) => {
@@ -1150,10 +1150,10 @@ function RouxDetailsSection({ metrics }: { metrics: SolveMetrics }) {
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="Roux details" />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
-        <DetailTile label="FB Eff" value={roux.firstBlockEfficiency.toFixed(2)} />
+        <DetailTile label="FB eff" value={roux.firstBlockEfficiency.toFixed(2)} />
         <DetailTile label="FB TPS" value={roux.firstBlockTPS.toFixed(2)} />
         <DetailTile label="SB TPS" value={roux.secondBlockTPS.toFixed(2)} />
-        <DetailTile label="CMLL Recog" value={formatTime(roux.cmllRecognitionMs)} />
+        <DetailTile label="CMLL recog" value={formatTime(roux.cmllRecognitionMs)} />
         <DetailTile label="CMLL TPS" value={roux.cmllTPS.toFixed(2)} />
         <DetailTile label="LSE-EO" value={formatTime(roux.lseEOTimeMs)} />
         <DetailTile label="LSE-UL/UR" value={formatTime(roux.lseULURTimeMs)} />
@@ -1183,7 +1183,7 @@ function RotEfficiencySection({ metrics }: { metrics: SolveMetrics }) {
           sub={`x:${rotation.byAxis.x} y:${rotation.byAxis.y} z:${rotation.byAxis.z}`}
         />
         <DetailTile
-          label="Rot Time"
+          label="Rot time"
           value={formatTime(rotation.estimatedRotationTimeMs)}
         />
         <DetailTile

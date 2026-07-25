@@ -65,7 +65,7 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
     <FloatingWidgetWrapper
       widgetId="pb-progression"
       icon={Trophy}
-      label="PB Progression"
+      label="PB progression"
       pillBadge={currentPb ? formatTime(currentPb.time) : undefined}
       pillBadge2={pbCount > 0 ? `${pbCount} PB${pbCount !== 1 ? "s" : ""}` : undefined}
       panelWidth={300}

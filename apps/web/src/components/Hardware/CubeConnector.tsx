@@ -273,7 +273,7 @@ export function CubeConnector({
                 <Input
                   value={manualMac}
                   onChange={(e) => setManualMac(e.target.value)}
-                  placeholder="MAC Address"
+                  placeholder="MAC address"
                   className="h-8"
                 />
               </div>

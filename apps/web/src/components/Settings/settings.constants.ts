@@ -35,7 +35,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   },
   {
     id: 'smart-cube',
-    label: 'Smart Cube',
+    label: 'Smart cube',
     icon: Cpu,
     description: 'Bluetooth, gyroscope, and hardware settings.',
   },

@@ -12,9 +12,9 @@ interface ShortcutDef {
 }
 
 const SHORTCUT_DEFS: ShortcutDef[] = [
-  { key: 'newScramble', label: 'New Scramble', description: 'Generate a fresh scramble' },
-  { key: 'copyScramble', label: 'Copy Scramble', description: 'Copy scramble to clipboard' },
-  { key: 'cancelTimer', label: 'Cancel Timer', description: 'Cancel / reset the timer' },
+  { key: 'newScramble', label: 'New scramble', description: 'Generate a fresh scramble' },
+  { key: 'copyScramble', label: 'Copy scramble', description: 'Copy scramble to clipboard' },
+  { key: 'cancelTimer', label: 'Cancel timer', description: 'Cancel / reset the timer' },
 ];
 
 /**
