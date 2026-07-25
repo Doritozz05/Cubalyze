@@ -95,7 +95,7 @@ export function FloatingPhaseTimeline({
     <FloatingWidgetWrapper
       widgetId="solve-timeline"
       icon={Activity}
-      label="Solve Timeline"
+      label="Solve timeline"
       pillBadge={selectedSolve ? formatTime(selectedSolve.time) : undefined}
       pillBadge2={timelinePhaseEntries.length > 0 ? `${timelinePhaseEntries.length} phases` : undefined}
       panelWidth={340}

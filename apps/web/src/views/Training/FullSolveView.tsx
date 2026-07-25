@@ -222,7 +222,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             <button onClick={() => setSmartCubeMode((v) => !v)}
               className={cn("shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors border",
                 smartCubeMode ? "border-ink/20 bg-ink text-surface" : "border-line bg-surface text-ink-3 hover:text-ink hover:border-ink/15")}>
-              {smartCubeMode ? "Smart Cube" : "Manual"}
+              {smartCubeMode ? "Smart cube" : "Manual"}
             </button>
           </div>
 
@@ -371,7 +371,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
               </button>
             )}
                 <span className="flex items-center gap-1.5 text-[0.55rem] text-ink-3/70">
-                  {smartCubeMode ? <><Cpu className="size-3" /> Smart Cube</> : <><Hand className="size-3" /> Manual</>}
+                  {smartCubeMode ? <><Cpu className="size-3" /> Smart cube</> : <><Hand className="size-3" /> Manual</>}
                 </span>
               </button>
             </div>

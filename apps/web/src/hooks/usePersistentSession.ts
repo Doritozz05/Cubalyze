@@ -92,6 +92,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
     solves: SolvesRepository;
   } | null>(null);
 
+  // Keep a ref to avoid stale closure issues in async callbacks
+  const activeSessionIdRef = useRef(activeSessionId);
+  activeSessionIdRef.current = activeSessionId;
+
   // Initialize DB and load data
   useEffect(() => {
     let isMounted = true;
@@ -112,7 +116,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
             if (initialSessions.length === 0) {
               const defaultSession = {
                 id: uuidv4(),
-                name: "Main Session",
+                name: "Main session",
                 puzzleType: "3x3",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -149,7 +153,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
             const now = new Date().toISOString();
             await sessionsRepo.insert({
               id: emergencyId,
-              name: "Main Session",
+              name: "Main session",
               puzzleType: "3x3",
               createdAt: now,
               updatedAt: now,
@@ -428,24 +432,29 @@ export function usePersistentSession(): UsePersistentSessionResult {
     if (!reposRef.current) return;
     const { sessions: sessionsRepo, solves: solvesRepo } = reposRef.current;
     
+    // Delete all solves for this session
     const allSolves = await solvesRepo.findAll(id);
     for (const s of allSolves) {
       await solvesRepo.delete(s.id);
     }
     
+    // Delete the session from DB
     await sessionsRepo.delete(id);
     
+    // Optimistically remove from React state
     setSessions(prev => prev.filter(s => s.id !== id));
 
-    if (id === activeSessionId) {
-      const remaining = sessions.filter(s => s.id !== id);
-      if (remaining.length > 0) {
-        await switchSession(remaining[0].id);
+    // Query DB directly instead of relying on potentially stale closure state
+    const wasActive = id === activeSessionIdRef.current;
+    if (wasActive) {
+      const remainingSessions = await sessionsRepo.findAll();
+      if (remainingSessions.length > 0) {
+        await switchSession(remainingSessions[0].id);
       } else {
         await newSession();
       }
     }
-  }, [sessions, activeSessionId, switchSession, newSession]);
+  }, [switchSession, newSession]);
 
   return {
     session,

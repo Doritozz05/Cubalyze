@@ -681,7 +681,7 @@ function SessionStatsPanel({ totalAttempts, correctCount, streak, avgTime }: {
       <div className="grid grid-cols-2 gap-2">
         <StatChip icon={Target} label="Accuracy" value={`${accuracy}%`} />
         <StatChip icon={Flame} label="Streak" value={`${streak}`} />
-        <StatChip icon={Clock} label="Avg Time" value={avgTime > 0 ? formatTime(avgTime) : "--"} />
+        <StatChip icon={Clock} label="Avg time" value={avgTime > 0 ? formatTime(avgTime) : "--"} />
         <StatChip icon={RotateCcw} label="Attempts" value={`${totalAttempts}`} />
       </div>
     </div>

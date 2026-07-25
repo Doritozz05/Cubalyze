@@ -279,7 +279,7 @@ export function PhaseTrainerView({
                   {timerPhase === "idle" ? "Tap to start" : timerPhase === "running" ? "Tap to stop" : ""}
                 </span>
                 <span className="flex items-center gap-1 text-[0.55rem] text-ink-3/60">
-                  {smartCubeMode ? <><Cpu className="size-3" /> Smart Cube</> : <><Hand className="size-3" /> Manual</>}
+                  {smartCubeMode ? <><Cpu className="size-3" /> Smart cube</> : <><Hand className="size-3" /> Manual</>}
                 </span>
               </button>
             </div>
@@ -372,7 +372,7 @@ function PhaseTrainerHeader({
         <button onClick={onToggleSmartCube}
           className={cn("shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors border",
             smartCubeMode ? "border-ink/20 bg-ink text-surface" : "border-line bg-surface text-ink-3 hover:text-ink hover:border-ink/15")}>
-          {smartCubeMode ? "Smart Cube" : "Manual"}
+          {smartCubeMode ? "Smart cube" : "Manual"}
         </button>
       </div>
       <div className="flex gap-1 flex-wrap">
