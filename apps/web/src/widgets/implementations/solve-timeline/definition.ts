@@ -3,7 +3,7 @@ import type { WidgetDefinition } from "@/widgets/types";
 
 export const solveTimelineDefinition: WidgetDefinition = {
   id: "solve-timeline",
-  name: "Solve Timeline",
+  name: "Solve timeline",
   description:
     "Phase breakdown + pauses of the last solve. Shows the same detailed timeline from Insights right on the timer view without navigating away.",
   icon: Activity,

@@ -5,7 +5,7 @@ export const cubeButtonDefinition: WidgetDefinition = {
   id: "cube-button",
   name: "3D Cube",
   description:
-    "Floating button to toggle the interactive 3D cube view. Only appears when a Smart Cube is connected.",
+    "Floating button to toggle the interactive 3D cube view. Only appears when a smart cube is connected.",
   icon: Cuboid,
   category: "visual",
   author: "cubeforge",

@@ -52,27 +52,27 @@ interface PhaseDef {
 const METHOD_PHASES: Record<string, PhaseDef[]> = {
   CFOP: [
     { id: "cross",   name: "Cross",   icon: Crosshair,    description: "Solve the cross efficiently. Fewer moves, faster solutions.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l",     name: "F2L",     icon: Grid3x3,      description: "First Two Layers — algorithmic pairs for every slot.",   sortOrder: 2, hasAlgorithms: true  },
-    { id: "oll",     name: "OLL",     icon: Palette,       description: "Orient Last Layer — 57 cases to master.",                sortOrder: 3, hasAlgorithms: true  },
-    { id: "pll",     name: "PLL",     icon: Shuffle,       description: "Permute Last Layer — 21 cases for the final step.",      sortOrder: 4, hasAlgorithms: true  },
+    { id: "f2l",     name: "F2L",     icon: Grid3x3,      description: "First two layers — algorithmic pairs for every slot.",   sortOrder: 2, hasAlgorithms: true  },
+    { id: "oll",     name: "OLL",     icon: Palette,       description: "Orient last layer — 57 cases to master.",                sortOrder: 3, hasAlgorithms: true  },
+    { id: "pll",     name: "PLL",     icon: Shuffle,       description: "Permute last layer — 21 cases for the final step.",      sortOrder: 4, hasAlgorithms: true  },
   ],
   Roux: [
-    { id: "first-block",  name: "First Block",  icon: Box,              description: "Build a 1×2×3 block on the left.",         sortOrder: 1, hasAlgorithms: false },
-    { id: "second-block", name: "Second Block", icon: Blocks,           description: "Build the right 1×2×3 block efficiently.", sortOrder: 2, hasAlgorithms: false },
-    { id: "cmll",         name: "CMLL",         icon: Palette,          description: "Corners of Last Layer — 42 cases.",         sortOrder: 3, hasAlgorithms: true  },
-    { id: "lse",          name: "LSE",          icon: ArrowRightLeft,   description: "Last Six Edges — EO, UL/UR, M-slice.",     sortOrder: 4, hasAlgorithms: false },
+    { id: "first-block",  name: "First block",  icon: Box,              description: "Build a 1×2×3 block on the left.",         sortOrder: 1, hasAlgorithms: false },
+    { id: "second-block", name: "Second block", icon: Blocks,           description: "Build the right 1×2×3 block efficiently.", sortOrder: 2, hasAlgorithms: false },
+    { id: "cmll",         name: "CMLL",         icon: Palette,          description: "Corners of last layer — 42 cases.",         sortOrder: 3, hasAlgorithms: true  },
+    { id: "lse",          name: "LSE",          icon: ArrowRightLeft,   description: "Last six edges — EO, UL/UR, M-slice.",     sortOrder: 4, hasAlgorithms: false },
   ],
   ZZ: [
     { id: "eoline", name: "EOLine",    icon: Zap,         description: "Edge Orientation + Line. No rotations needed.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l-zz", name: "F2L (ZZ)",  icon: Grid3x3,     description: "First Two Layers using only R, U, L moves.",   sortOrder: 2, hasAlgorithms: true  },
-    { id: "ll-zz",  name: "Last Layer",icon: Target,       description: "OCLL, COLL, ZZLL — last layer for ZZ.",        sortOrder: 3, hasAlgorithms: true  },
+    { id: "f2l-zz", name: "F2L (ZZ)",  icon: Grid3x3,     description: "First two layers using only R, U, L moves.",   sortOrder: 2, hasAlgorithms: true  },
+    { id: "ll-zz",  name: "Last layer",icon: Target,       description: "OCLL, COLL, ZZLL — last layer for ZZ.",        sortOrder: 3, hasAlgorithms: true  },
   ],
   Petrus: [
-    { id: "block-222",  name: "2×2×2 Block", icon: Grid2x2,    description: "Build the first 2×2×2 block.",                   sortOrder: 1, hasAlgorithms: false },
-    { id: "block-223",  name: "2×2×3 Block", icon: Grid3x3,     description: "Extend to a 2×2×3 block.",                      sortOrder: 2, hasAlgorithms: false },
+    { id: "block-222",  name: "2×2×2 block", icon: Grid2x2,    description: "Build the first 2×2×2 block.",                   sortOrder: 1, hasAlgorithms: false },
+    { id: "block-223",  name: "2×2×3 block", icon: Grid3x3,     description: "Extend to a 2×2×3 block.",                      sortOrder: 2, hasAlgorithms: false },
     { id: "eo-petrus",  name: "EO",          icon: Gauge,       description: "Edge Orientation after blocks.",                 sortOrder: 3, hasAlgorithms: false },
     { id: "f2l-petrus", name: "F2L (Petrus)",icon: MoveHorizontal,description: "Finish F2L after EO.",                         sortOrder: 4, hasAlgorithms: true  },
-    { id: "ll-petrus",  name: "Last Layer",  icon: Target,      description: "COLL + EPLL for Petrus last layer.",             sortOrder: 5, hasAlgorithms: true  },
+    { id: "ll-petrus",  name: "Last layer",  icon: Target,      description: "COLL + EPLL for Petrus last layer.",             sortOrder: 5, hasAlgorithms: true  },
   ],
 };
 

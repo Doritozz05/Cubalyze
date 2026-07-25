@@ -106,7 +106,7 @@ export function CubeConnector({
 
       setStatus("connected");
       setShowMacInput(false);
-      toast.success("Cube Connected!");
+      toast.success("Cube connected!");
 
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
@@ -165,7 +165,7 @@ export function CubeConnector({
         status === "connected" && "text-blue-500",
         className,
       )}
-      aria-label="Connect Smart Cube"
+            aria-label="Connect smart cube"
     >
       <div className="flex size-5 shrink-0 items-center justify-center">
         {status === "connected" ? (
@@ -199,7 +199,7 @@ export function CubeConnector({
               status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
               className,
             )}
-            aria-label="Connect Smart Cube"
+                  aria-label="Connect smart cube"
           >
             {status === "connected" ? (
               <BluetoothConnected className="size-4" />
@@ -209,7 +209,7 @@ export function CubeConnector({
           </Button>
         </DialogTrigger>
       </TooltipTrigger>
-      <TooltipContent side="bottom">Connect Smart Cube</TooltipContent>
+      <TooltipContent side="bottom">Connect smart cube</TooltipContent>
     </Tooltip>
   );
 
@@ -220,7 +220,7 @@ export function CubeConnector({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect Smart Cube</DialogTitle>
+          <DialogTitle>Connect smart cube</DialogTitle>
           <DialogDescription>
             Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
           </DialogDescription>

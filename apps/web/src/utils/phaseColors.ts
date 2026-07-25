@@ -42,7 +42,7 @@ const PHASE_COLOR_BY_NAME: Record<string, string> = {
   "ZZ-F2L": "#22C55E",
   "ZZ-LL": "#F59E0B",
   // Petrus
-  "Petrus Block": "#4F8CF7",
+  "Petrus block": "#4F8CF7",
   "Petrus F2L": "#22C55E",
   "Petrus LL": "#F59E0B",
 };

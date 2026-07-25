@@ -422,7 +422,7 @@ export function SkillGraphCanvas({
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-foreground"
           onClick={() => handleZoom(0.15)}
-          title="Zoom In"
+          title="Zoom in"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </Button>
@@ -431,7 +431,7 @@ export function SkillGraphCanvas({
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-foreground"
           onClick={() => handleZoom(-0.15)}
-          title="Zoom Out"
+          title="Zoom out"
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </Button>
@@ -441,7 +441,7 @@ export function SkillGraphCanvas({
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-foreground"
           onClick={resetView}
-          title="Reset View"
+          title="Reset view"
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </Button>

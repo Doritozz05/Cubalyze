@@ -3,7 +3,7 @@ import type { WidgetDefinition } from "@/widgets/types";
 
 export const timeDistributionDefinition: WidgetDefinition = {
   id: "time-distribution",
-  name: "Time Distribution",
+  name: "Time distribution",
   description:
     "Histogram showing the distribution of your solve times. csTimer-style bins with mean and standard deviation. See your consistency at a glance.",
   icon: BarChart3,

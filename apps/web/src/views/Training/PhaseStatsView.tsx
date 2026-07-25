@@ -183,10 +183,10 @@ function OverviewTab({
     <div className="space-y-5 pb-8">
       {/* Stat chips row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard icon={Target} label="Avg Mastery" value={`${avgMastery}%`}
+        <StatCard icon={Target} label="Avg mastery" value={`${avgMastery}%`}
           color={avgMastery >= 80 ? "text-ready" : avgMastery >= 50 ? "text-caution" : "text-hold"} />
-        <StatCard icon={Clock} label="Best Time" value={bestTime > 0 ? formatTime(bestTime) : "--"} />
-        <StatCard icon={Flame} label="Total Attempts" value={`${totalAttempts}`} />
+        <StatCard icon={Clock} label="Best time" value={bestTime > 0 ? formatTime(bestTime) : "--"} />
+        <StatCard icon={Flame} label="Total attempts" value={`${totalAttempts}`} />
         <StatCard icon={RotateCcw} label="Cases" value={hasAlgorithms ? `${mastered}/${totalCases} mastered` : `${totalAttempts} attempts`} />
       </div>
 

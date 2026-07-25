@@ -142,7 +142,7 @@ export function SolveAnalysisPanel({
                 solve.source === "smart" ? "text-ink-2" : "text-ink-3",
               )}
             >
-              {solve.source === "smart" ? "Smart Cube" : "Manual"}
+              {solve.source === "smart" ? "Smart cube" : "Manual"}
             </span>
           </div>
         </div>
@@ -203,7 +203,7 @@ export function SolveAnalysisPanel({
           description={
             solve.source === "smart"
               ? "The analysis pipeline didn't run. Re-solve this scramble to generate analysis."
-              : "Manual entry. Connect a Smart Cube and solve this scramble to get per-move analysis."
+              : "Manual entry. Connect a smart cube and solve this scramble to get per-move analysis."
           }
           className="py-12"
         />

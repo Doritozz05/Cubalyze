@@ -82,7 +82,7 @@ export function CubeforgeCommandPalette({
       {
         id: "quick-solve",
         category: "actions",
-        label: "Start Live Timer",
+        label: "Start live timer",
         description: "Jump to timer stage and begin timing solves",
         icon: Timer,
         shortcut: "Space",
@@ -91,7 +91,7 @@ export function CubeforgeCommandPalette({
       {
         id: "toggle-3d",
         category: "actions",
-        label: "Toggle Interactive 3D Cube",
+        label: "Toggle interactive 3D cube",
         description: "Open or collapse the interactive 3D virtual cube inspector",
         icon: Box,
         shortcut: "⌘ 3",
@@ -100,7 +100,7 @@ export function CubeforgeCommandPalette({
       {
         id: "open-widgets",
         category: "actions",
-        label: "Widget Explorer",
+        label: "Widget explorer",
         description: "Manage and configure interactive workspace widgets",
         icon: Puzzle,
         shortcut: "⌘ W",
@@ -111,7 +111,7 @@ export function CubeforgeCommandPalette({
       {
         id: "nav-timer",
         category: "nav",
-        label: "Timer Stage",
+        label: "Timer stage",
         description: "Main timing dashboard, live scramble & session list",
         icon: Timer,
         shortcut: "G T",
@@ -120,7 +120,7 @@ export function CubeforgeCommandPalette({
       {
         id: "nav-training",
         category: "nav",
-        label: "Training Suite",
+        label: "Training suite",
         description: "Targeted phase practice (Cross, F2L, OLL, PLL, Drills)",
         icon: Dumbbell,
         shortcut: "G E",
@@ -129,7 +129,7 @@ export function CubeforgeCommandPalette({
       {
         id: "nav-practice",
         category: "nav",
-        label: "Algorithm Library",
+        label: "Algorithm library",
         description: "Explore CFOP cases, triggers & alternative algorithms",
         icon: BookOpen,
         shortcut: "G A",
@@ -138,7 +138,7 @@ export function CubeforgeCommandPalette({
       {
         id: "nav-stats",
         category: "nav",
-        label: "Stats & Analytics",
+        label: "Stats & analytics",
         description: "Advanced performance metrics, trends & solve graphs",
         icon: BarChart3,
         shortcut: "G S",
@@ -157,7 +157,7 @@ export function CubeforgeCommandPalette({
       {
         id: "nav-settings",
         category: "nav",
-        label: "Global Preferences",
+        label: "Global preferences",
         description: "Hardware configuration, themes, inspection & sound",
         icon: Settings,
         shortcut: "G ,",
@@ -168,8 +168,8 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-xcross",
         category: "skills",
-        label: "XCross & Advanced Inspection",
-        description: "Plan Cross + F2L Pair 1 during WCA inspection",
+        label: "XCross & advanced inspection",
+        description: "Plan cross + F2L pair 1 during WCA inspection",
         icon: Crosshair,
         badge: "Elite",
         action: () => onNavigate("skill-tree"),
@@ -177,7 +177,7 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-pseudoslot",
         category: "skills",
-        label: "Pseudo-Slotting & Keyhole",
+        label: "Pseudo-slotting & keyhole",
         description: "Relative block building with offset D-layer",
         icon: SquareStack,
         badge: "Advanced",
@@ -186,7 +186,7 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-eo-f2l",
         category: "skills",
-        label: "Partial Edge Control (EO-F2L)",
+        label: "Partial edge control (EO-F2L)",
         description: "Orient top layer edges during F2L insertion",
         icon: Sparkles,
         badge: "Advanced",
@@ -195,7 +195,7 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-wv-vls",
         category: "skills",
-        label: "Winter Variation & VLS",
+        label: "Winter variation & VLS",
         description: "Orient corners during last slot insertion for OLL Skips",
         icon: Zap,
         badge: "Pro",
@@ -204,7 +204,7 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-zbll",
         category: "skills",
-        label: "ZBLL (472 Full Cases)",
+        label: "ZBLL (472 full cases)",
         description: "1-step Last Layer resolution for oriented edges",
         icon: Grid3x3,
         badge: "Master",
@@ -213,7 +213,7 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-pll-skip",
         category: "skills",
-        label: "Forced PLL Skips (OLLCP)",
+        label: "Forced PLL skips (OLLCP)",
         description: "Corner permutation setups to force 100% PLL skips",
         icon: Flame,
         badge: "Ultra",
@@ -222,7 +222,7 @@ export function CubeforgeCommandPalette({
       {
         id: "skill-3style",
         category: "skills",
-        label: "3-Style Blindfolded Commutators",
+        label: "3-style blindfolded commutators",
         description: "3-cycle corner/edge commutators for 3BLD execution",
         icon: Eye,
         badge: "Pro",
@@ -233,7 +233,7 @@ export function CubeforgeCommandPalette({
       {
         id: "tool-reset",
         category: "tools",
-        label: "Reset Session Solves",
+        label: "Reset session solves",
         description: "Clear active session while keeping personal records",
         icon: RotateCcw,
         action: () => {},
@@ -241,7 +241,7 @@ export function CubeforgeCommandPalette({
       {
         id: "tool-export",
         category: "tools",
-        label: "Export Solve Data (CSV / JSON)",
+        label: "Export solve data (CSV / JSON)",
         description: "Download full solve history and timing telemetry",
         icon: Download,
         action: () => {},
@@ -249,7 +249,7 @@ export function CubeforgeCommandPalette({
       {
         id: "tool-shortcuts",
         category: "tools",
-        label: "Keyboard Shortcuts",
+        label: "Keyboard shortcuts",
         description: "View full list of keyboard shortcuts and hotkeys",
         icon: Keyboard,
         shortcut: "?",
@@ -334,10 +334,10 @@ export function CubeforgeCommandPalette({
   };
 
   const categoryLabels: Record<CommandItemData["category"], string> = {
-    actions: "Quick Actions",
+    actions: "Quick actions",
     nav: "Navigation",
-    algorithms: "Algorithm Database (PLL & OLL)",
-    skills: "Speedcubing Skill Graph",
+    algorithms: "Algorithm database (PLL & OLL)",
+    skills: "Speedcubing skill graph",
     tools: "Tools & Session Controls",
   };
 

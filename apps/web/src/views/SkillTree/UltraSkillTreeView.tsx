@@ -11,15 +11,15 @@ interface UltraSkillTreeViewProps {
 }
 
 const CATEGORY_ITEMS = [
-  { id: "all", label: "All Skills" },
+  { id: "all", label: "All skills" },
   { id: "fundamentals", label: "Fundamentals" },
   { id: "cross", label: "Cross" },
   { id: "f2l", label: "F2L" },
-  { id: "last-layer", label: "Last Layer" },
+  { id: "last-layer", label: "Last layer" },
   { id: "lookahead", label: "Lookahead" },
-  { id: "finger-tricks", label: "Finger Tricks" },
+  { id: "finger-tricks", label: "Finger tricks" },
   { id: "inspection", label: "Inspection" },
-  { id: "color-neutrality", label: "Color Neutrality" },
+  { id: "color-neutrality", label: "Color neutrality" },
   { id: "hardware", label: "Hardware" },
   { id: "psychology", label: "Psychology" },
   { id: "training", label: "Training" },

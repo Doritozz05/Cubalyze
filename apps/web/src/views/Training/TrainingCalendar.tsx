@@ -433,7 +433,7 @@ export function TrainingCalendar() {
                 {selectedDate && (
                   <div className="min-w-0">
                     <span className="block text-sm font-medium text-ink truncate leading-tight">
-                      {panelMode === "add" ? "New Task" : panelMode === "edit" ? "Edit Task" : format(selectedDate, "EEE, MMM d")}
+                      {panelMode === "add" ? "New task" : panelMode === "edit" ? "Edit task" : format(selectedDate, "EEE, MMM d")}
                     </span>
                     {panelMode === "list" && (
                       <span className="block text-[0.6rem] text-ink-3 leading-tight">

@@ -41,22 +41,22 @@ function getPhaseTargets(methodName: string): { phaseId: string; phaseName: stri
       { phaseId: "pll", phaseName: "PLL", targetS: 1.2 },
     ];
     case "Roux": return [
-      { phaseId: "first-block", phaseName: "First Block", targetS: 2.5 },
-      { phaseId: "second-block", phaseName: "Second Block", targetS: 2.0 },
+      { phaseId: "first-block", phaseName: "First block", targetS: 2.5 },
+      { phaseId: "second-block", phaseName: "Second block", targetS: 2.0 },
       { phaseId: "cmll", phaseName: "CMLL", targetS: 1.5 },
       { phaseId: "lse", phaseName: "LSE", targetS: 2.0 },
     ];
     case "ZZ": return [
       { phaseId: "eoline", phaseName: "EOLine", targetS: 3.0 },
       { phaseId: "f2l-zz", phaseName: "F2L (ZZ)", targetS: 6.0 },
-      { phaseId: "ll-zz", phaseName: "Last Layer", targetS: 2.0 },
+      { phaseId: "ll-zz", phaseName: "Last layer", targetS: 2.0 },
     ];
     case "Petrus": return [
       { phaseId: "block-222", phaseName: "2×2×2", targetS: 2.5 },
       { phaseId: "block-223", phaseName: "2×2×3", targetS: 2.8 },
       { phaseId: "eo-petrus", phaseName: "EO", targetS: 1.2 },
       { phaseId: "f2l-petrus", phaseName: "F2L", targetS: 3.5 },
-      { phaseId: "ll-petrus", phaseName: "Last Layer", targetS: 2.5 },
+      { phaseId: "ll-petrus", phaseName: "Last layer", targetS: 2.5 },
     ];
     default: return [];
   }
@@ -73,9 +73,9 @@ function formatTime(ms: number): string {
 }
 
 const SOLVE_MODES: { id: FullSolveMode; label: string; desc: string }[] = [
-  { id: "targets", label: "Phase Targets", desc: "Track each phase vs your target times" },
-  { id: "move-limit", label: "Move Limit", desc: "Solve in ≤ X moves" },
-  { id: "tps-challenge", label: "TPS Challenge", desc: "Maintain TPS above threshold" },
+  { id: "targets", label: "Phase targets", desc: "Track each phase vs your target times" },
+  { id: "move-limit", label: "Move limit", desc: "Solve in ≤ X moves" },
+  { id: "tps-challenge", label: "TPS challenge", desc: "Maintain TPS above threshold" },
   { id: "rotationless", label: "Rotationless", desc: "Zero cube rotations" },
 ];
 

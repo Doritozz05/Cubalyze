@@ -12,7 +12,7 @@ export type { WidgetCategory, WidgetCategoryId } from "./types";
 
 /** Available widget categories for the explorer sidebar. */
 export const WIDGET_CATEGORIES: WidgetCategory[] = [
-  { id: "all", label: "All Widgets" },
+  { id: "all", label: "All widgets" },
   { id: "visual", label: "Visual" },
   { id: "timer", label: "Timer" },
   { id: "analysis", label: "Analysis" },
