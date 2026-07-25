@@ -8,15 +8,18 @@
     "dev:clean": "vite --force",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty",
+    "typecheck:watch": "tsc -b --watch",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cubeforge/algorithm-db": "workspace:*",
     "@cubeforge/analysis-engine": "workspace:*",
     "@cubeforge/cube-3d-engine": "workspace:*",
     "@cubeforge/database": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
     "@cubeforge/math-core": "workspace:*",
+    "@cubeforge/solver-engine": "workspace:*",
     "@cubeforge/state": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
     "@cubeforge/types": "workspace:*",

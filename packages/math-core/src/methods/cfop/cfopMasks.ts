@@ -54,7 +54,35 @@ export const OLLMask: PhaseMask = {
   ],
 };
 
-// 4. PLL
+// 4. PLL — detects the PLL state (OLL done, U-layer needs permutation).
+// Unlike the "fully solved" check, this mask verifies that:
+//   • F2L + Cross pieces are in exact solved positions
+//   • U-layer pieces are ORIENTED correctly (co=0, eo=0)
+//   • U-layer pieces may be in ANY permutation (positions 0-3)
+//
+// This is the mask to use for Smart Cube PLL detection and Trainer mode.
+// For PhaseSplitter, this detects the START of the PLL phase.
+export const PLLStateMask: PhaseMask = {
+  name: "PLL",
+  edges: F2LMask.edges,
+  corners: F2LMask.corners,
+  edgePositions: [
+    { pos: Edge.UR, requiredEo: 0 },
+    { pos: Edge.UF, requiredEo: 0 },
+    { pos: Edge.UL, requiredEo: 0 },
+    { pos: Edge.UB, requiredEo: 0 },
+  ],
+  cornerPositions: [
+    { pos: Corner.URF, requiredCo: 0 },
+    { pos: Corner.UFL, requiredCo: 0 },
+    { pos: Corner.ULB, requiredCo: 0 },
+    { pos: Corner.UBR, requiredCo: 0 },
+  ],
+};
+
+// 4b. PLL (fully solved) — all pieces in exact solved positions.
+// This is the original PLL mask renamed for clarity: it detects the
+// COMPLETION of the PLL phase (cube fully solved).
 export const PLLMask: PhaseMask = {
   name: "PLL",
   edges: [
@@ -90,7 +118,7 @@ export const CFOPDefinition: MethodDefinition = {
  * The "equator" is the set of edges between the cross layer and the
  * opposite layer (solved in F2L).
  */
-interface FaceLayerData {
+export interface FaceLayerData {
   crossEdges: Edge[];
   f2lCorners: Corner[];
   f2lEdges: Edge[];
@@ -105,7 +133,7 @@ interface FaceLayerData {
  *   Edges: UR=0, UF=1, UL=2, UB=3, DR=4, DF=5, DL=6, DB=7, FR=8, FL=9, BL=10, BR=11
  *   Corners: URF=0, UFL=1, ULB=2, UBR=3, DFR=4, DLF=5, DBL=6, DRB=7
  */
-const FACE_LAYERS: Record<string, FaceLayerData> = {
+export const FACE_LAYERS: Record<string, FaceLayerData> = {
   D: {
     crossEdges: [Edge.DF, Edge.DR, Edge.DB, Edge.DL],
     f2lCorners: [Corner.DFR, Corner.DRB, Corner.DBL, Corner.DLF],
@@ -205,6 +233,37 @@ function makeOLLMask(face: string): PhaseMask {
     FACE_LAYERS[face];
   return {
     name: "OLL",
+    edges: [...crossEdges, ...f2lEdges].map((e) => ({
+      id: e,
+      requiredEp: e,
+      requiredEo: 0,
+    })),
+    corners: f2lCorners.map((c) => ({
+      id: c,
+      requiredCp: c,
+      requiredCo: 0,
+    })),
+    edgePositions: lastLayerEdges.map((e) => ({
+      pos: e,
+      requiredEo: 0,
+    })),
+    cornerPositions: lastLayerCorners.map((c) => ({
+      pos: c,
+      requiredCo: 0,
+    })),
+  };
+}
+
+/**
+ * Build a PLL state mask for a specific face.
+ * Detects when OLL is done on the last layer (F2L+Cross solved,
+ * U-layer pieces oriented but possibly in wrong permutation).
+ */
+function makePLLStateMask(face: string): PhaseMask {
+  const { crossEdges, f2lEdges, f2lCorners, lastLayerEdges, lastLayerCorners } =
+    FACE_LAYERS[face];
+  return {
+    name: "PLL",
     edges: [...crossEdges, ...f2lEdges].map((e) => ({
       id: e,
       requiredEp: e,

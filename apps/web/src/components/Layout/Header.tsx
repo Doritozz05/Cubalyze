@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Timer, Plus, History, Pencil, Trash2, Check, X, Box, PanelRight, Menu } from "lucide-react";
+import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
+// `Plus` is reused below for the manual-solve button.
+import { useStore } from "zustand";
+import { connectionStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
+import { WidgetDock } from "@/widgets/dock";
+import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -29,7 +35,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 
@@ -45,6 +50,50 @@ const CATEGORIES: PuzzleCategory[] = [
   "Pyraminx",
   "Skewb",
 ];
+
+/**
+ * Sleek custom SVG Battery icon supporting multi-phase fill & color gradients.
+ */
+function BatteryIcon({ level }: { level: number | null }) {
+  if (level === null) {
+    return (
+      <svg className="size-4 text-ink-3" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M21 4.5V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      </svg>
+    );
+  }
+
+  // Clamp level between 0 and 100
+  const pct = Math.max(0, Math.min(100, level));
+
+  // Determine fill color & status phase
+  let colorClass = "text-emerald-500 fill-emerald-500";
+  if (pct <= 15) {
+    colorClass = "text-rose-500 fill-rose-500";
+  } else if (pct <= 35) {
+    colorClass = "text-amber-500 fill-amber-500";
+  } else if (pct <= 65) {
+    colorClass = "text-yellow-400 fill-yellow-400";
+  } else if (pct <= 85) {
+    colorClass = "text-emerald-400 fill-emerald-400";
+  }
+
+  // Inner fill width (max inner width is 14px, starting at x=3)
+  const fillWidth = Math.max(1.5, (pct / 100) * 14);
+
+  return (
+    <svg className={cn("size-4 transition-colors duration-300", colorClass)} viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Outer shell */}
+      <rect x="1" y="1" width="18" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+      {/* Battery terminal nub */}
+      <path d="M21 4.5V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Dynamic inner charge fill */}
+      <rect x="3" y="3" width={fillWidth} height="6" rx="1.2" fill="currentColor" />
+    </svg>
+  );
+}
 
 export interface HeaderProps {
   pb?: number | null;
@@ -62,22 +111,19 @@ export interface HeaderProps {
   onRenameSession?: (id: string, name: string) => void;
   /** Delete a session entirely. */
   onDeleteSession?: (id: string) => void;
-  /** Whether the 3D cube view is currently active. */
-  cube3DActive?: boolean;
-  /** Toggle the 3D cube view. */
-  onToggleCube3D?: () => void;
-  /** Whether the sidebar is active. */
-  sidebarActive?: boolean;
-  /** Toggle the sidebar view. */
-  onToggleSidebar?: () => void;
   /** Toggle the mobile nav sheet. */
   onToggleMobileNav?: () => void;
+  /** Open the manual solve entry sheet (the "+" button). */
+  onAddManual?: () => void;
   className?: string;
 }
 
 /**
- * Slim, flat top bar. Wordmark left, puzzle selector + settings right.
- * Includes a session switcher dropdown (with rename/delete) + dark-mode toggle.
+ * Slim, flat top bar. Mobile nav trigger left; PB + session switcher + puzzle
+ * selector grouped on the right.
+ *
+ * The session switcher sits next to the puzzle selector so both "what am I
+ * working on" context selectors are visually adjacent.
  */
 export function Header({
   pb,
@@ -88,11 +134,8 @@ export function Header({
   onNewSession,
   onRenameSession,
   onDeleteSession,
-  cube3DActive,
-  onToggleCube3D,
-  sidebarActive,
-  onToggleSidebar,
   onToggleMobileNav,
+  onAddManual,
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -100,7 +143,13 @@ export function Header({
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
 
+  const connectionStatus = useStore(connectionStore, (s) => s.status);
+  const batteryLevel = useStore(connectionStore, (s) => s.batteryLevel);
+  const deviceName = useStore(connectionStore, (s) => s.deviceName);
+  const isCubeConnected = connectionStatus === "connected";
+
   const active = sessions?.find((s) => s.id === activeSessionId) ?? null;
+  const isDockZoneActive = useDockZoneActive();
 
   const startRename = (s: SessionMeta) => {
     setRenamingId(s.id);
@@ -117,13 +166,16 @@ export function Header({
   return (
     <header
       className={cn(
-        "fixed inset-x-0 md:left-14 top-0 z-20 border-b border-line bg-surface",
+        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color] duration-300",
+        isDockZoneActive
+          ? "border-ink/20"
+          : "border-line",
         className,
       )}
     >
-      <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-full w-full items-center justify-between px-4 sm:px-6">
+        {/* Left: mobile nav trigger + Smart Cube battery indicator */}
         <div className="flex items-center gap-2.5">
-          {/* Mobile nav trigger */}
           {onToggleMobileNav && (
             <Button
               variant="ghost"
@@ -135,16 +187,71 @@ export function Header({
               <Menu className="size-4" />
             </Button>
           )}
+
+          {/* Battery % chip — only shown when a Smart Cube is connected */}
+          {isCubeConnected && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs text-ink cursor-default select-none"
+                >
+                  <BatteryIcon level={batteryLevel} />
+                  <span className="nums font-medium text-ink">
+                    {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {batteryLevel !== null
+                  ? `Smart Cube (${deviceName ?? "Connected"}): ${batteryLevel}% battery`
+                  : `Smart Cube (${deviceName ?? "Connected"})`}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
+        {/* Center: Widget dock — dynamic flowing row like Apple menu bar */}
+        <div className="flex flex-1 items-center min-w-0 px-4">
+          <WidgetDock />
+        </div>
+
+        {/* Right: PB + session + manual + puzzle grouped together */}
         <div className="flex items-center gap-2">
-          {/* Session switcher */}
+          {onAddManual ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onAddManual}
+                  className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
+                  aria-label="Add manual solve"
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Add manual solve</TooltipContent>
+            </Tooltip>
+          ) : null}
+          {pb != null && Number.isFinite(pb) ? (
+            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
+              <Timer className="size-3.5 text-ink-3" />
+              <span className="text-[0.62rem] uppercase tracking-[0.16em] text-ink-3">
+                PB
+              </span>
+              <span className="nums text-xs text-ink">
+                {formatPb(pb)}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Session switcher — next to the puzzle selector */}
           {sessions && sessions.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="hidden h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink sm:flex"
+                  className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
                   aria-label="Switch session"
                 >
                   <History className="size-3.5 text-ink-3" />
@@ -243,24 +350,12 @@ export function Header({
             </DropdownMenu>
           ) : null}
 
-          <CubeConnector />
-
-          {pb != null && Number.isFinite(pb) ? (
-            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
-              <Timer className="size-3.5 text-ink-3" />
-              <span className="text-[0.62rem] uppercase tracking-[0.16em] text-ink-3">
-                PB
-              </span>
-              <span className="nums text-xs text-ink">
-                {formatPb(pb)}
-              </span>
-            </div>
-          ) : null}
-
           <Select value={puzzle} onValueChange={(v) => setPuzzle(v as PuzzleCategory)}>
             <SelectTrigger
               size="sm"
-              className="w-30 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink"
+              // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`
+              // so the chip matches the sibling PB / session chips in dark mode.
+              className="w-30 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
               aria-label="Puzzle category"
             >
               <SelectValue />
@@ -273,40 +368,6 @@ export function Header({
               ))}
             </SelectContent>
           </Select>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleCube3D}
-            className={cn(
-              "size-8 rounded-md border",
-              cube3DActive
-              ? "bg-ink text-surface border-transparent"
-              : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
-            )}
-            aria-label={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
-            aria-pressed={cube3DActive}
-            title={cube3DActive ? "Hide 3D cube" : "Show 3D cube"}
-          >
-            <Box className="size-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleSidebar}
-            className={cn(
-              "size-8 rounded-md border",
-              sidebarActive
-              ? "bg-ink text-surface border-transparent"
-              : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
-            )}
-            aria-label={sidebarActive ? "Hide sidebar" : "Show sidebar"}
-            aria-pressed={sidebarActive}
-            title={sidebarActive ? "Hide sidebar" : "Show sidebar"}
-          >
-            <PanelRight className="size-4" />
-          </Button>
         </div>
       </div>
 

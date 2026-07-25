@@ -101,4 +101,96 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE solves ADD COLUMN analysis TEXT;
     `,
   },
+  {
+    id: '006_add_source_column',
+    description: 'Add source column to solves table ("smart" | "manual")',
+    sql: `
+      ALTER TABLE solves ADD COLUMN source TEXT NOT NULL DEFAULT 'manual';
+    `,
+  },
+  {
+    id: '007_add_orientation_timeline',
+    description: 'Add orientation_timeline JSON column for gyro/IMU replay data',
+    sql: `
+      ALTER TABLE solves ADD COLUMN orientation_timeline TEXT;
+    `,
+  },
+  {
+    id: '008_create_algorithm_tables',
+    description: 'Create algorithm_cases, algorithm_records, algorithm_subsets, algorithm_methods tables for new canonical schema',
+    sql: `
+      CREATE TABLE IF NOT EXISTS algorithm_methods (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        puzzle_type TEXT NOT NULL DEFAULT '3x3x3'
+      );
+
+      CREATE TABLE IF NOT EXISTS algorithm_subsets (
+        id TEXT PRIMARY KEY,
+        method_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        puzzle_type TEXT NOT NULL DEFAULT '3x3x3',
+        FOREIGN KEY (method_id) REFERENCES algorithm_methods(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS algorithm_cases (
+        id TEXT PRIMARY KEY,
+        subset_id TEXT NOT NULL,
+        case_number TEXT NOT NULL,
+        name TEXT NOT NULL,
+        recognition_patterns TEXT NOT NULL DEFAULT '[]',
+        setup_scramble TEXT NOT NULL DEFAULT '',
+        setup_algorithm TEXT,
+        diagram_type TEXT NOT NULL DEFAULT '2d-top',
+        diagram_2d TEXT,
+        diagram_3d TEXT,
+        probability TEXT,
+        difficulty TEXT NOT NULL DEFAULT 'intermediate',
+        category TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        puzzle_type TEXT NOT NULL DEFAULT '3x3x3',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (subset_id) REFERENCES algorithm_subsets(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS algorithm_records (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL,
+        moves TEXT NOT NULL DEFAULT '[]',
+        move_count_htm INTEGER NOT NULL DEFAULT 0,
+        move_count_qtm INTEGER NOT NULL DEFAULT 0,
+        move_count_stm INTEGER NOT NULL DEFAULT 0,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        source TEXT,
+        attribution_name TEXT,
+        attribution_url TEXT,
+        difficulty TEXT NOT NULL DEFAULT 'intermediate',
+        triggers TEXT NOT NULL DEFAULT '[]',
+        notes TEXT,
+        is_mirror INTEGER NOT NULL DEFAULT 0,
+        mirror_of TEXT,
+        is_inverse INTEGER NOT NULL DEFAULT 0,
+        votes INTEGER,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (case_id) REFERENCES algorithm_cases(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_algorithm_records_case_id ON algorithm_records(case_id);
+      CREATE INDEX IF NOT EXISTS idx_algorithm_cases_subset_id ON algorithm_cases(subset_id);
+      CREATE INDEX IF NOT EXISTS idx_algorithm_subsets_method_id ON algorithm_subsets(method_id);
+    `,
+  },
+  {
+    id: '009_add_note_column',
+    description: 'Add note column to solves table for user annotations',
+    sql: `
+      ALTER TABLE solves ADD COLUMN note TEXT;
+    `,
+  },
 ];

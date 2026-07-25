@@ -1,3 +1,4 @@
+/// <reference types="web-bluetooth" />
 
 import * as def from './gan-cube-definitions';
 import { GanGen2CubeEncrypter, GanGen3CubeEncrypter, GanGen4CubeEncrypter } from './gan-cube-encrypter';

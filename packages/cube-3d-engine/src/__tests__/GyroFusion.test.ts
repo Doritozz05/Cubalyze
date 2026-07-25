@@ -78,4 +78,19 @@ describe('GyroFusion', () => {
     gyro.resetCalibration();
     expect(gyro.getIsCalibrated()).toBe(false);
   });
+
+  it('calibrates automatically to the first incoming hardware packet when calibrate() is called beforehand', () => {
+    gyro.enable();
+    // Calibrate BEFORE any hardware packet arrives
+    gyro.calibrate();
+
+    // First hardware packet arrives
+    gyro.updateTargetQuaternion(0.5, 0.5, 0.5, 0.5);
+    gyro.update(100);
+
+    // Target should remain close to identity (Green face front) because it auto-calibrated to this packet
+    const q = target.quaternion;
+    expect(Math.abs(q.w)).toBeGreaterThan(0.9);
+    expect(Math.abs(q.x)).toBeLessThan(0.1);
+  });
 });

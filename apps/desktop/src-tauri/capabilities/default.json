@@ -1,0 +1,15 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for CubeForge desktop",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "clipboard-manager:default",
+    "dialog:default",
+    "notification:default",
+    "updater:default",
+    "sql:default",
+    "sql:allow-execute"
+  ]
+}

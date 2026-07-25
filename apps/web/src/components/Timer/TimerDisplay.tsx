@@ -11,14 +11,23 @@ export interface TimerDisplayProps {
   displayTime: number;
   /** Whether a previous solve exists (affects idle hint copy). */
   hasLast: boolean;
+  /** Personal best time in ms. null if no solves yet. */
+  pb?: number | null;
+  /** Show PB delta indicator next to timer. */
+  showPbDelta?: boolean;
   /** Context required to compute the hint. */
   hintCtx: HintContext;
+  /** Optional className override for the time display text size. */
+  className?: string;
 }
 
 const STATE_COLOR: Record<TimerState, string> = {
   idle: "text-ink",
-  inspection: "text-red-500",
-  ready_for_move: "text-blue-500",
+  inspection: "text-caution",
+  // Post-inspection, scramble verified, waiting for first face move.
+  // Neutral ink-2 keeps it visually distinct from `ready` (green) and
+  // `holding` (warm) without introducing a brand-new hue.
+  ready_for_move: "text-ink-2",
   holding: "text-hold",
   ready: "text-ready",
   running: "text-ink",
@@ -35,26 +44,6 @@ const STATE_SCALE: Record<TimerState, string> = {
   stopped: "scale-100",
 };
 
-function dotColor(state: TimerState): string {
-  switch (state) {
-    case "inspection":
-      return "bg-red-500";
-    case "ready_for_move":
-      return "bg-blue-500";
-    case "holding":
-      return "bg-hold";
-    case "ready":
-      return "bg-ready";
-    case "running":
-      return "bg-ink-3";
-    case "stopped":
-      return "bg-ready";
-    case "idle":
-    default:
-      return "bg-ink-3";
-  }
-}
-
 /**
  * Pure visual timer. Renders the monospaced time + a context-aware hint.
  * No interaction logic lives here — see TimerContainer.
@@ -63,7 +52,10 @@ export function TimerDisplay({
   state,
   displayTime,
   hasLast,
+  pb,
+  showPbDelta = false,
   hintCtx,
+  className,
 }: TimerDisplayProps) {
   const hint = hintFor(state, hasLast, hintCtx);
 
@@ -82,28 +74,46 @@ export function TimerDisplay({
     formattedTime = formatTime(displayTime);
   }
 
+  const isDnf = formattedTime === "DNF";
+  const textColor = isDnf ? "text-dnf" : STATE_COLOR[state];
+
+  // Compute PB delta when stopped (brief) or idle (shows last solve time)
+  // and there's a PB. In "idle" the timer displays `lastTime` via TimerContainer,
+  // so the delta should remain visible until the next solve begins.
+  const canShowDelta = state === "stopped" || (state === "idle" && hasLast);
+  const deltaMs =
+    showPbDelta && canShowDelta && pb != null && displayTime > 0 && Number.isFinite(pb)
+      ? displayTime - pb
+      : null;
+
   return (
     <div className="flex select-none flex-col items-center justify-center gap-7">
-      <div
-        className={cn(
-          "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
-          "text-[clamp(3.75rem,15vw,9.5rem)]",
-          STATE_COLOR[state],
-          STATE_SCALE[state],
+      <div className="flex items-baseline justify-center gap-3">
+        <div
+          className={cn(
+            "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
+            className ?? "text-[clamp(3.75rem,15vw,9.5rem)]",
+            textColor,
+            STATE_SCALE[state],
+          )}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {formattedTime}
+        </div>
+        {deltaMs != null && (
+          <span
+            className={cn(
+              "nums text-[clamp(1rem,3vw,1.8rem)] font-medium leading-none",
+              deltaMs <= 0 ? "text-emerald-400" : "text-red-400",
+            )}
+          >
+            {deltaMs <= 0 ? "\u2212" : "+"}{formatTime(Math.abs(deltaMs))}
+          </span>
         )}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {formattedTime}
       </div>
 
-      <div className="flex items-center gap-2.5 text-ink-3">
-        <span
-          className={cn(
-            "inline-block size-1.5 rounded-full transition-colors duration-150",
-            dotColor(state),
-          )}
-        />
+      <div className="flex items-center justify-center text-ink-3">
         <span className="nums text-[0.7rem] uppercase tracking-[0.18em]">
           {hint}
         </span>

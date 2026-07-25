@@ -1,0 +1,33 @@
+# Rust / Cargo
+target/
+.cargo/
+
+# Generated binaries and bundles
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.app
+*.deb
+bundle/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tauri dev
+*.log
+.svelte-kit/

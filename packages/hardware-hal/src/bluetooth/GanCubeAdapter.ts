@@ -28,6 +28,13 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
   public onConnectionChange: ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void) | null = null;
 
+  /**
+   * Callback fired when a HARDWARE event is received from the cube.
+   * Carries the detected model name and gyro support flag so upstream
+   * consumers (orientation store, UI) can react without needing the 3D panel.
+   */
+  public onHardwareInfo: ((info: { model: string; gyroSupported: boolean }) => void) | null = null;
+
   public get isConnected(): boolean {
     return this.connection !== null;
   }
@@ -83,17 +90,22 @@ export class GanCubeAdapter implements SmartCubeAdapter {
 
     this.reconnectAttempts = 0;
     this.setupEventsSubscription();
+    // Request hardware info to populate model name and gyroSupported flag, and request battery level
+    this.requestHardware().catch(() => {});
+    this.requestBattery().catch(() => {});
     this.onConnectionChange?.('connected');
     this.connectionStatusSubject.next('connected');
   }
 
-  // B2 FIX: Track whether a REQUEST_FACELETS is already in-flight to
+  // Track whether a REQUEST_FACELETS is already in-flight to
   // deduplicate concurrent calls. Multiple subscribers (validator,
   // connect flow, Cube3DPanel) may trigger requestFacelets simultaneously
   // — only the first call issues the GATT command; subsequent calls wait
   // for the same promise. The GATT queue in GanCubeClassicConnection
   // serialises the actual writeValue calls.
   private faceletsRequestPromise: Promise<void> | null = null;
+  private hardwareRequestPromise: Promise<void> | null = null;
+  private batteryRequestPromise: Promise<void> | null = null;
 
   public async requestFacelets(): Promise<void> {
     if (!this.connection) return;
@@ -102,6 +114,31 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.faceletsRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_FACELETS" })
       .finally(() => { this.faceletsRequestPromise = null; });
     return this.faceletsRequestPromise;
+  }
+
+  /**
+   * Request hardware info from the cube (model name, gyro support, firmware versions).
+   * The HARDWARE event response will update `this.model` and `this.gyroSupported`.
+   */
+  public async requestHardware(): Promise<void> {
+    if (!this.connection) return;
+    // Dedup: reuse the in-flight promise
+    if (this.hardwareRequestPromise) return this.hardwareRequestPromise;
+    this.hardwareRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_HARDWARE" })
+      .finally(() => { this.hardwareRequestPromise = null; });
+    return this.hardwareRequestPromise;
+  }
+
+  /**
+   * Request battery level from the cube.
+   * The BATTERY event response will emit to `battery$`.
+   */
+  public async requestBattery(): Promise<void> {
+    if (!this.connection) return;
+    if (this.batteryRequestPromise) return this.batteryRequestPromise;
+    this.batteryRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_BATTERY" })
+      .finally(() => { this.batteryRequestPromise = null; });
+    return this.batteryRequestPromise;
   }
 
   async disconnect(): Promise<void> {
@@ -148,6 +185,14 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         }
         if (typeof evt.gyroSupported === 'boolean') {
           this.gyroSupported = evt.gyroSupported;
+        }
+        // Notify upstream consumers (e.g. orientation store) immediately
+        // so the UI shows correct gyro status without needing the 3D panel.
+        if (typeof evt.gyroSupported === 'boolean' || evt.hardwareName) {
+          this.onHardwareInfo?.({
+            model: this.model,
+            gyroSupported: this.gyroSupported,
+          });
         }
       }
     });
@@ -245,6 +290,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.connection = await reconnectGanCube(this.device);
         this.reconnectAttempts = 0;
         this.setupEventsSubscription();
+        // Request hardware info to populate model name and gyroSupported flag
+        this.requestHardware().catch(() => {});
         this.onConnectionChange?.('connected');
         this.connectionStatusSubject.next('connected');
       } catch {

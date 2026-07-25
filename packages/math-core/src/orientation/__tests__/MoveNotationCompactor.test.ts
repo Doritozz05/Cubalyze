@@ -213,4 +213,28 @@ describe('MoveNotationCompactor', () => {
       ]);
     });
   });
+
+  describe('wide move pair non-combining (wide moves disabled in UI)', () => {
+    it('keeps [L, x] as separate tokens', () => {
+      expect(compactMoveNotation(['L', 'x'])).toEqual(['L', 'x']);
+    });
+
+    it("keeps [L', x'] as separate tokens", () => {
+      expect(compactMoveNotation(["L'", "x'"])).toEqual(["L'", "x'"]);
+    });
+
+    it("keeps [R, x'] as separate tokens", () => {
+      expect(compactMoveNotation(['R', "x'"])).toEqual(['R', "x'"]);
+    });
+
+    it("keeps [D, y] as separate tokens", () => {
+      expect(compactMoveNotation(['D', 'y'])).toEqual(['D', 'y']);
+    });
+
+    it("keeps sequence R U L' x' U L x as separate tokens", () => {
+      expect(compactMoveNotation(['R', 'U', "L'", "x'", 'U', 'L', 'x'])).toEqual([
+        'R', 'U', "L'", "x'", 'U', 'L', 'x',
+      ]);
+    });
+  });
 });

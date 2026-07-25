@@ -18,6 +18,8 @@ export class GyroFusion {
   private offsetQuatInverse = new Quaternion(); // Q_offset⁻¹ — applied to every incoming quaternion
 
   private isCalibrated = false;
+  private hasReceivedUpdate = false;
+  private pendingAutoCalibrate = false;
 
   /** Optional callback fired when calibration occurs (for OrientationTracker). */
   public onCalibrate?: (q: { x: number; y: number; z: number; w: number }) => void;
@@ -46,6 +48,12 @@ export class GyroFusion {
     // 2. Invertimos X (o ajustamos signos según el sensor) para corregir la "inversión"
     //    percibida y alinear el movimiento físico con la cámara.
     this.rawTargetQuat.set(x, z, -y, w).normalize();
+
+    this.hasReceivedUpdate = true;
+
+    if (this.pendingAutoCalibrate) {
+      this.calibrate();
+    }
   }
 
   /**
@@ -65,9 +73,14 @@ export class GyroFusion {
    *   Q⁻¹ = (x, y, z, w)⁻¹ = (-x, -y, -z, w)
    */
   public calibrate(): void {
+    this.isCalibrated = true;
+    if (!this.hasReceivedUpdate) {
+      this.pendingAutoCalibrate = true;
+      return;
+    }
+    this.pendingAutoCalibrate = false;
     // Store the inverse of the current raw quaternion
     this.offsetQuatInverse.copy(this.rawTargetQuat).conjugate();
-    this.isCalibrated = true;
     // Notify the OrientationTracker with the current raw quaternion
     this.onCalibrate?.({
       x: this.rawTargetQuat.x,
@@ -83,6 +96,8 @@ export class GyroFusion {
   public resetCalibration(): void {
     this.offsetQuatInverse.identity();
     this.isCalibrated = false;
+    this.hasReceivedUpdate = false;
+    this.pendingAutoCalibrate = false;
   }
 
   public getIsCalibrated(): boolean {

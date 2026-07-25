@@ -13,6 +13,10 @@ export interface TimerContainerProps {
   time: number;
   /** Last finalized time. null until first solve. */
   lastTime: number | null;
+  /** Personal best time in ms. null if no solves yet. */
+  pb?: number | null;
+  /** Show PB delta indicator next to timer. */
+  showPbDelta?: boolean;
   /** Hint context required by `TimerDisplay`. */
   hintCtx: HintContext;
   /** Trigger the smart press logic. */
@@ -25,6 +29,8 @@ export interface TimerContainerProps {
   cancelRef?: React.MutableRefObject<(() => void) | null>;
   /** Optional explicit cancel handler. */
   onCancel?: () => void;
+  /** Optional className override for the time display text size. */
+  timerClassName?: string;
   className?: string;
 }
 
@@ -37,12 +43,15 @@ export function TimerContainer({
   phase,
   time,
   lastTime,
+  pb,
+  showPbDelta,
   hintCtx,
   onPress,
   onRelease,
   stateRef,
   cancelRef,
   onCancel,
+  timerClassName,
   className,
 }: TimerContainerProps) {
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
@@ -110,14 +119,25 @@ export function TimerContainer({
           "pointer-events-none absolute inset-0 rounded-lg transition-colors duration-200",
           phase === "ready" && "bg-ready-soft/60",
           phase === "holding" && "bg-hold-soft/40",
-          phase === "ready_for_move" && "bg-blue-500/10",
+          // `ready_for_move` lives between `inspection` and the first measured
+          // move: scramble verified, thumb released, waiting for the cube to
+          // start. The soft green tint mirrors the other arming halos so the
+          // visual rhythm reads "almost-ready" without screaming.
+          phase === "ready_for_move" && "bg-ready-soft/40",
+        // Countdown: joins the arming-halo family under the caution hue so the
+        // timer area reads as "in warning mode" without the digits themselves
+        // needing additional decoration.
+        phase === "inspection" && "bg-caution-soft/30",
         )}
       />
       <TimerDisplay
         state={phase}
         displayTime={displayTime}
         hasLast={lastTime !== null}
+        pb={pb}
+        showPbDelta={showPbDelta}
         hintCtx={hintCtx}
+        className={timerClassName}
       />
     </div>
   );

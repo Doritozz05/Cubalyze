@@ -1,6 +1,6 @@
 {
   "name": "@cubeforge/timer-engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "dist/index.cjs",
@@ -27,7 +27,7 @@
     "@cubeforge/config-eslint": "workspace:*",
     "@cubeforge/config-typescript": "workspace:*",
     "eslint": "^10.7.0",
-    "typescript": "^5.0.0",
+    "typescript": "^5.7.3",
     "tsup": "^8.0.0",
     "vitest": "^3.0.5"
   }

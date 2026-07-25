@@ -45,3 +45,9 @@ coverage/
 .next/
 out/
 .vite/
+pruebas/
+.freebuff/
+
+# Tauri / Rust desktop
+**/src-tauri/target/
+**/src-tauri/bundle/

@@ -22,6 +22,15 @@ export const initDB = async () => {
       initPromise = null;
       throw new Error('Database worker failed to initialize SQLite (see console for details)');
     }
+
+    // Log storage type in main-thread console so the user can see it
+    const storageType = await db.getStorageType();
+    if (storageType === 'opfs') {
+      console.log('%c[Database]%c Storage: OPFS (persistent) — data survives reloads.', 'color:#4ade80;font-weight:bold', 'color:inherit');
+    } else {
+      console.warn('%c[Database]%c Storage: MEMORY (volatile) — data WILL BE LOST on page reload! %cOPFS not available in this browser/context.', 'color:#f87171;font-weight:bold', 'color:inherit', 'color:#f87171');
+    }
+
     return db;
   })();
 

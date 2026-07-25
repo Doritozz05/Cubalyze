@@ -10,6 +10,7 @@ vi.mock('comlink', () => ({
       if (sql.includes('SELECT')) return [{ key: 'theme', value: 'dark' }];
       return [];
     }),
+    getStorageType: vi.fn().mockResolvedValue('opfs'),
     close: vi.fn().mockResolvedValue(undefined),
     [Symbol.for('comlink.releaseProxy')]: vi.fn(),
   })),
@@ -36,7 +37,7 @@ describe('SolvesRepository', () => {
 
   it('findAll returns mapped solves', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null, moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null, source: 'manual', moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solves = await repo.findAll();
@@ -45,6 +46,7 @@ describe('SolvesRepository', () => {
     expect(solves[0].sessionId).toBe('ses1');
     expect(solves[0].timeMs).toBe(12345);
     expect(solves[0].penalty).toBe('none');
+    expect(solves[0].source).toBe('manual');
   });
 
   it('findAll with sessionId filters by session', async () => {
@@ -64,33 +66,37 @@ describe('SolvesRepository', () => {
 
   it('findById returns mapped solve', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP', moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP', source: 'smart', moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solve = await repo.findById('s1');
     expect(solve).not.toBeNull();
     expect(solve!.method).toBe('CFOP');
     expect(solve!.penalty).toBe('+2');
+    expect(solve!.source).toBe('smart');
   });
 
   it('insert calls INSERT SQL', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none', moves: [],
+      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none', source: 'manual', moves: [],
     });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
     expect(call[0]).toContain('INSERT INTO solves');
+    // source is now part of the INSERT column list
+    expect(call[0]).toContain('source');
   });
 
   it('update calls UPDATE SQL', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
-    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2', moves: [] });
+    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2', source: 'manual', moves: [] });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
     expect(call[0]).toContain('UPDATE solves SET');
+    expect(call[0]).toContain('source');
   });
 
   it('delete calls DELETE SQL', async () => {
@@ -107,14 +113,26 @@ describe('SolvesRepository', () => {
     expect(cnt).toBe(5);
   });
 
+  it('rowToSolve defaults source to manual when column missing', async () => {
+    // Simulates a pre-migration row that has no `source` column value.
+    const db = mockDb([
+      { id: 's9', session_id: 'ses1', time_ms: 9000, date: '2026-01-01', scramble: 'U', penalty: 'none', method: null, moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+    ]);
+    repo = new SolvesRepository(db);
+    const solve = await repo.findById('s9');
+    expect(solve).not.toBeNull();
+    expect(solve!.source).toBe('manual');
+  });
+
   it('insert with method includes method field', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP', moves: [],
+      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [],
     });
     const bind = db.mock.calls[0][1] as unknown[];
-    expect(bind[6]).toBe('CFOP');
+    expect(bind[6]).toBe('CFOP'); // method
+    expect(bind[7]).toBe('smart'); // source (column order: ..., method, source, moves, ...)
   });
 });
 

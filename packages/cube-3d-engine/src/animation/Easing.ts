@@ -6,6 +6,34 @@
  * transformed value in [0, 1].
  */
 
+// ─── Easing function type ────────────────────────────────────────────────
+
+export type EasingFn = (t: number) => number;
+
+// ─── Easing Strategy (for adaptive selection) ────────────────────────────
+
+export type EasingStrategy = 'bounce' | 'smooth' | 'fast' | 'linear';
+
+/**
+ * Selects the appropriate easing function based on animation context.
+ *
+ * - 'bounce': easeOutBack — premium feel for slow/medium moves
+ * - 'smooth': easeOutQuint — smooth deceleration, no bounce, for fast moves
+ * - 'fast':   easeOutCubic — quick deceleration when catching up
+ * - 'linear': linear — instant, for snap/catch-up mode
+ */
+export function getEasing(strategy: EasingStrategy): EasingFn {
+  switch (strategy) {
+    case 'bounce': return easeOutBack;
+    case 'smooth': return easeOutQuint;
+    case 'fast':   return easeOutCubic;
+    case 'linear': return linear;
+    default:       return easeOutBack; // Safety fallback
+  }
+}
+
+// ─── Easing Functions ────────────────────────────────────────────────────
+
 /**
  * Quadratic ease-in-out — smooth acceleration then deceleration.
  * This is the standard easing used by both CubeForge and Sebastian Lague.
@@ -43,4 +71,31 @@ export function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+/**
+ * Ease-out quad — quick deceleration from start, gentle settle.
+ * f(t) = 1 - (1-t)²
+ * Great for fast move sequences where bounce would feel sluggish.
+ */
+export function easeOutQuad(t: number): number {
+  return 1.0 - (1.0 - t) * (1.0 - t);
+}
+
+/**
+ * Ease-out cubic — stronger deceleration than quad.
+ * f(t) = 1 - (1-t)³
+ * Used when the animation is behind and needs to finish quick without bounce.
+ */
+export function easeOutCubic(t: number): number {
+  return 1.0 - Math.pow(1.0 - t, 3);
+}
+
+/**
+ * Ease-out quint — pronounced deceleration for a premium smooth feel.
+ * f(t) = 1 - (1-t)⁵
+ * Best for medium-speed moves: fast start, smooth finish, zero bounce.
+ */
+export function easeOutQuint(t: number): number {
+  return 1.0 - Math.pow(1.0 - t, 5);
 }

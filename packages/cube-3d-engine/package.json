@@ -1,6 +1,6 @@
 {
   "name": "@cubeforge/cube-3d-engine",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Core 3D Engine for CubeForge using Three.js and Web Workers",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@types/three": "^0.185.1",
     "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
+    "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }
 }

@@ -7,6 +7,7 @@ import {
   Vector3,
   Group,
   Mesh,
+  Spherical,
 } from 'three';
 
 export type OnRenderCallback = () => void;
@@ -20,6 +21,8 @@ export class SceneManager {
   private width: number;
   private height: number;
 
+  private readonly orbitRadius: number = 7;
+
   private ambientLight: AmbientLight;
   private directionalLight: DirectionalLight;
 
@@ -32,7 +35,7 @@ export class SceneManager {
     this.scene = new Scene();
 
     this.camera = new PerspectiveCamera(45, this.width / this.height, 0.1, 100);
-    this.camera.position.set(0, 0, 7);
+    this.camera.position.set(0, 0, this.orbitRadius);
     this.camera.lookAt(0, 0, 0);
 
     this.cameraGroup = new Group();
@@ -74,17 +77,43 @@ export class SceneManager {
   }
 
   public rotateCamera(dx: number, dy: number): void {
-    const ROTATION_SPEED = 0.005;
-    this.cameraGroup.rotation.y -= dx * ROTATION_SPEED;
-    this.cameraGroup.rotation.x -= dy * ROTATION_SPEED;
+    const SPEED = 0.005;
+    const MIN_PHI = 0.1;
+    const MAX_PHI = Math.PI - 0.1;
 
-    // Clamp X rotation to avoid flipping upside down
-    const maxPitch = Math.PI / 2 - 0.1;
-    this.cameraGroup.rotation.x = Math.max(-maxPitch, Math.min(maxPitch, this.cameraGroup.rotation.x));
+    const spherical = new Spherical().setFromVector3(this.camera.position);
+
+    spherical.theta -= dx * SPEED;
+    spherical.phi -= dy * SPEED; 
+
+    spherical.phi = Math.max(MIN_PHI, Math.min(MAX_PHI, spherical.phi));
+    spherical.radius = this.orbitRadius;
+
+    this.camera.position.setFromSpherical(spherical);
+    this.camera.lookAt(0, 0, 0);
   }
 
+  /** Resets the camera to the default front-facing position. */
   public resetCamera(): void {
-    this.cameraGroup.rotation.set(0, 0, 0);
+    this.camera.position.set(0, 0, this.orbitRadius);
+    this.camera.lookAt(0, 0, 0);
+  }
+
+  /**
+   * Sets the camera to specific orbit angles (radians).
+   * `theta` = azimuth around Y axis.  `phi` = elevation from horizontal plane.
+   * Elevation is clamped to avoid flipping.
+   */
+  public setOrbitAngles(theta: number, phi: number): void {
+    const MAX_ELEVATION = Math.PI / 2 - 0.1;
+    const clamped = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, phi));
+    const cosPhi = Math.cos(clamped);
+    this.camera.position.set(
+      this.orbitRadius * cosPhi * Math.sin(theta),
+      this.orbitRadius * Math.sin(clamped),
+      this.orbitRadius * cosPhi * Math.cos(theta),
+    );
+    this.camera.lookAt(0, 0, 0);
   }
 
   public render(): void {
@@ -93,18 +122,10 @@ export class SceneManager {
   }
 
   public dispose(): void {
-
-    this.scene.traverse((obj) => {
-      if (obj instanceof Mesh) {
-        obj.geometry.dispose();
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach((m) => m.dispose());
-        } else {
-          obj.material.dispose();
-        }
-      }
-    });
-
+    // Only dispose the WebGL renderer.
+    // Do NOT traverse this.scene and dispose geometries/materials of external
+    // meshes (like CubeModel.root), as they are owned by CubeMeshFactory and
+    // must survive canvas reconnects when reopening 3D panels.
     this.renderer.dispose();
   }
 }

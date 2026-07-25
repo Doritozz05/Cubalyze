@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-export const AlgorithmSchema = z.object({
+// ─── Legacy Algorithm (backward compat for old `algorithms` table) ─────
+
+export const LegacyAlgorithmSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   moves: z.array(z.string()),
@@ -11,4 +13,27 @@ export const AlgorithmSchema = z.object({
   updatedAt: z.string().datetime().optional(),
 });
 
-export type Algorithm = z.infer<typeof AlgorithmSchema>;
+export type LegacyAlgorithm = z.infer<typeof LegacyAlgorithmSchema>;
+
+// Re-export as `Algorithm` for backward compat with database/repositories/types.ts
+export type Algorithm = LegacyAlgorithm;
+
+// ─── New canonical schema (from algorithm-db) ──────────────────────────
+
+export {
+  AlgorithmSchema,
+  AlgorithmCaseSchema,
+  AlgorithmSubsetSchema,
+  AlgorithmMethodSchema,
+} from '@cubeforge/algorithm-db';
+
+export type {
+  ArrowDef,
+  Diagram2D,
+  Diagram3D,
+  AlgorithmCase,
+  AlgorithmSubset,
+  AlgorithmMethod,
+  CaseWithAlgorithms,
+  Algorithm as NewAlgorithm,
+} from '@cubeforge/algorithm-db';

@@ -73,3 +73,26 @@ export interface OrientationCapabilities {
 // Re-export GyroEvent for convenience (it's already exported from index.ts,
 // but consumers of this module may want a single import point).
 export type { GyroEvent };
+
+// ─── Orientation Timeline (Compact Storage) ─────────────────────────────────
+
+/**
+ * Compact representation of cube orientation during a solve.
+ *
+ * Each keyframe is a [moveIndex, orientationIndex] tuple:
+ * - moveIndex: index into the solve's moves array where this orientation starts
+ * - orientationIndex: 0-23 (index into OrientationTable.ENTRIES)
+ *
+ * The first keyframe is always at moveIndex=0 (starting orientation).
+ * Between keyframes, the orientation is assumed constant.
+ *
+ * For a typical CFOP solve with 2-3 whole-cube rotations:
+ * - 3-4 keyframes = 6-8 numbers = ~24-32 bytes
+ * - vs raw quaternions at 30Hz: 450+ samples × 32 bytes = 14KB+
+ *
+ * This is ~500x more compact than storing raw gyro data.
+ *
+ * Use `compactOrientationTimeline()` from @cubeforge/math-core to build
+ * this from per-move CubeOrientation snapshots.
+ */
+export type OrientationTimeline = [number, number][];

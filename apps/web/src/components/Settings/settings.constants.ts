@@ -8,6 +8,9 @@ import {
   GraduationCap,
   Bell,
   Wrench,
+  Shuffle,
+  Keyboard,
+  Download,
 } from 'lucide-react';
 
 export interface SettingsSection {
@@ -32,7 +35,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   },
   {
     id: 'smart-cube',
-    label: 'Smart Cube',
+    label: 'Smart cube',
     icon: Cpu,
     description: 'Bluetooth, gyroscope, and hardware settings.',
   },
@@ -40,7 +43,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     id: 'timer',
     label: 'Timer',
     icon: Clock,
-    description: 'Solve start rules: inspection and scramble verification.',
+    description: 'Solve start rules and inspection.',
+  },
+  {
+    id: 'scramble',
+    label: 'Scramble',
+    icon: Shuffle,
+    description: 'Scramble verification and display options.',
   },
   {
     id: 'analysis',
@@ -59,6 +68,18 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Notifications',
     icon: Bell,
     description: 'Alerts, sound, and timer feedback.',
+  },
+  {
+    id: 'shortcuts',
+    label: 'Shortcuts',
+    icon: Keyboard,
+    description: 'Keyboard shortcuts for the timer and navigation.',
+  },
+  {
+    id: 'data',
+    label: 'Data',
+    icon: Download,
+    description: 'Export and manage your solve data.',
   },
   {
     id: 'advanced',

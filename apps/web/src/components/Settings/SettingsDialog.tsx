@@ -10,14 +10,24 @@ import {
 } from '@/components/ui/dialog';
 import { SettingsSidebar } from './SettingsSidebar';
 import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
+import { GeneralSection } from './sections/GeneralSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { TimerSection } from './sections/TimerSection';
 import { AnalysisSection } from './sections/AnalysisSection';
+import { SmartCubeSection } from './sections/SmartCubeSection';
 import { PlaceholderSection } from './sections/PlaceholderSection';
+import { ScrambleSection } from './sections/ScrambleSection';
+import { ShortcutsSection } from './sections/ShortcutsSection';
+import { DataSection } from './sections/DataSection';
+import type { Solve } from '@/types';
 
 export interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Solves data for the Data/Export section. */
+  solves?: Solve[];
+  /** Current session name for export filenames. */
+  sessionName?: string;
 }
 
 const sectionVariants = {
@@ -44,7 +54,7 @@ const sectionVariants = {
  * - Clean header area with title + description
  * - Modular: each section is a separate component
  */
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, solves, sessionName }: SettingsDialogProps) {
   const [activeSection, setActiveSection] = useState('appearance');
   const prevSection = useRef('appearance');
   // Keep a ref to avoid recreating callbacks on every section change
@@ -72,12 +82,22 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
+      case 'general':
+        return <GeneralSection />;
       case 'appearance':
         return <AppearanceSection />;
       case 'timer':
         return <TimerSection />;
+      case 'scramble':
+        return <ScrambleSection />;
       case 'analysis':
         return <AnalysisSection />;
+      case 'smart-cube':
+        return <SmartCubeSection />;
+      case 'shortcuts':
+        return <ShortcutsSection />;
+      case 'data':
+        return <DataSection solves={solves ?? []} sessionName={sessionName} />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {
@@ -86,25 +106,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return null;
       }
     }
-  }, [activeSection]);
+  }, [activeSection, solves, sessionName]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${SETTINGS_DIALOG_WIDTH} max-h-[85vh] h-[580px] overflow-hidden p-0`}
+        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
 
-        <div className="flex h-full">
+        <div className="flex h-full min-h-0">
           <SettingsSidebar
             activeSection={activeSection}
             onSelectSection={handleSelectSection}
           />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             {/* Section header */}
             <div className="shrink-0 border-b border-line px-8 py-6">
               <h2 className="text-[0.95rem] font-semibold text-ink">
@@ -126,7 +146,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-                  className="h-full"
                 >
                   {renderContent()}
                 </motion.div>

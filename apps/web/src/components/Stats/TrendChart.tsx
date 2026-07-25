@@ -3,12 +3,11 @@
 import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
@@ -31,9 +30,10 @@ interface Point {
 const WINDOWS: Array<5 | 12 | 100> = [5, 12, 100];
 
 /**
- * Flat, single-stroke Ao-N trend chart (recharts) with a window switcher.
+ * Ao-N trend chart (recharts AreaChart) with a window switcher.
  * Renders the rolling average oldest→newest so progress is visible at a
- * glance. DNFs produce gaps. No fill, no grid chrome.
+ * glance. Vertical gradient area fill + horizontal gradient line stroke.
+ * DNFs produce gaps. No grid chrome, no axis labels.
  */
 export function TrendChart({
   solves,
@@ -102,28 +102,22 @@ export function TrendChart({
       </div>
 
       {hasData ? (
-        <div className="h-[72px] w-full">
+        <div className="h-18 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={data}
               margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
             >
               <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="var(--ink-3)" />
-                  <stop offset="100%" stopColor="var(--ready)" />
+
+                <linearGradient id={`${gradId}-fill`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--ready)" stopOpacity={0.12} />
+                  <stop offset="100%" stopColor="var(--ready)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="label" hide domain={["dataMin", "dataMax"]} />
               <YAxis domain={["dataMin - 200", "dataMax + 200"]} hide />
-              {bestAo !== null ? (
-                <ReferenceLine
-                  y={bestAo}
-                  stroke="var(--ready)"
-                  strokeDasharray="2 3"
-                  strokeOpacity={0.4}
-                />
-              ) : null}
+
               <Tooltip
                 cursor={{ stroke: "var(--line-2)", strokeWidth: 1 }}
                 contentStyle={{
@@ -138,20 +132,21 @@ export function TrendChart({
                 labelFormatter={(l) => `Solve ${l}`}
                 formatter={(v) => [formatTime(Number(v)), `Ao${window}`]}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="ao"
-                stroke={`url(#${gradId})`}
+                stroke="var(--ready)"
+                fill={`url(#${gradId}-fill)`}
                 strokeWidth={1.5}
                 dot={false}
                 activeDot={{ r: 2.5, fill: "var(--ready)" }}
                 connectNulls
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-[72px] items-center justify-center text-[0.7rem] text-ink-3">
+        <div className="flex h-18 items-center justify-center text-[0.7rem] text-ink-3">
           Need at least {window} solves
         </div>
       )}

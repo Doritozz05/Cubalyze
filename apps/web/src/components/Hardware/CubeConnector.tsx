@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Bluetooth, BluetoothConnected, Info } from "lucide-react";
 import { GanCubeAdapter } from "@cubeforge/hardware-hal";
 import { toast } from "sonner";
@@ -16,12 +17,67 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
+import { orientationStore, connectionStore } from "@cubeforge/state";
 
-// Global singleton adapter to keep connection alive across re-renders
-// In a full app, this might be in a global store (Zustand/Context).
+// Global singleton adapter to keep connection alive across re-renders.
+// Imported by useSolveSession, useScrambleValidator and Cube3DPanel —
+// DO NOT remove this export.
 export const globalCubeAdapter = new GanCubeAdapter();
 
-export function CubeConnector({ className }: { className?: string }) {
+// Wire hardware info events to the orientation store so the UI (e.g.
+// SmartCubeSection) shows the correct gyro status immediately after
+// connecting, regardless of whether the 3D panel is open.
+globalCubeAdapter.onHardwareInfo = ({ gyroSupported }) => {
+  if (gyroSupported) {
+    const caps = orientationStore.getState().capabilities;
+    if (!caps.gyroSupported) {
+      orientationStore.getState().setCapabilities({
+        hasIMU: true,
+        gyroSupported: true,
+      });
+    }
+  }
+};
+
+// Sync global connectionStore with BLE adapter observables
+globalCubeAdapter.connectionStatus$?.subscribe((status) => {
+  if (status === "connected") {
+    connectionStore.getState().setConnected(globalCubeAdapter.vendor, globalCubeAdapter.model);
+    globalCubeAdapter.requestBattery().catch(() => {});
+  } else if (status === "connecting") {
+    connectionStore.getState().setConnecting();
+  } else if (status === "reconnecting") {
+    connectionStore.getState().setReconnecting();
+  } else if (status === "disconnected") {
+    connectionStore.getState().setDisconnected();
+  }
+});
+
+globalCubeAdapter.battery$?.subscribe((level) => {
+  connectionStore.getState().setBatteryLevel(level);
+});
+
+export interface CubeConnectorProps {
+  className?: string;
+  /**
+   * "header" — bordered icon button (legacy, hidden on small screens).
+   * "rail"   — full-width footer item for the LeftSidebar (icon + animated label).
+   */
+  variant?: "header" | "rail";
+  /** When variant="rail", toggles the text label visibility (sidebar expanded). */
+  expanded?: boolean;
+  /** Callback fired when the dialog opens or closes. */
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function CubeConnector({
+  className,
+  variant = "header",
+  expanded = false,
+  onOpenChange,
+}: CubeConnectorProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">(
     globalCubeAdapter.isConnected ? "connected" : "disconnected"
@@ -32,6 +88,7 @@ export function CubeConnector({ className }: { className?: string }) {
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
+    onOpenChange?.(newOpen);
     if (newOpen) {
       setStatus(globalCubeAdapter.isConnected ? "connected" : "disconnected");
       setErrorMsg("");
@@ -44,26 +101,27 @@ export function CubeConnector({ className }: { className?: string }) {
     try {
       setStatus("connecting");
       setErrorMsg("");
-      
+
       await globalCubeAdapter.connect(showMacInput ? manualMac : undefined);
-      
+
       setStatus("connected");
       setShowMacInput(false);
-      toast.success("Cube Connected!");
-      
+      toast.success("Cube connected!");
+
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
-      
+
       setOpen(false); // Close dialog on success
+      onOpenChange?.(false);
     } catch (e: unknown) {
       console.error(e);
       const errMsg = e instanceof Error ? e.message : String(e);
-      
+
       setStatus("disconnected");
-      
+
       const notSecure = !window.isSecureContext;
       const bluetoothMissing = !("bluetooth" in navigator);
-      
+
       if (notSecure) {
         setErrorMsg("Web Bluetooth requires HTTPS. Open via http://localhost:5173 instead of the LAN IP.");
         setShowMacInput(false);
@@ -71,7 +129,7 @@ export function CubeConnector({ className }: { className?: string }) {
         setErrorMsg("Web Bluetooth is globally disabled in your browser. Open chrome://flags/#enable-web-bluetooth, set to Enabled, and restart your browser.");
         setShowMacInput(false);
       } else if (
-        errMsg === "MAC_REQUIRED" || 
+        errMsg === "MAC_REQUIRED" ||
         errMsg.includes("requestDevice")
       ) {
         setErrorMsg("Browser blocks automatic MAC reading.");
@@ -94,33 +152,75 @@ export function CubeConnector({ className }: { className?: string }) {
     }
   };
 
-  const instructions = /Edg\//i.test(navigator.userAgent) 
+  const instructions = /Edg\//i.test(navigator.userAgent)
     ? "edge://flags/#enable-experimental-web-platform-features"
     : "chrome://flags/#enable-experimental-web-platform-features";
 
+  const railButton = (
+    <button
+      type="button"
+      className={cn(
+        "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors cursor-pointer",
+        "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+        status === "connected" && "text-blue-500",
+        className,
+      )}
+            aria-label="Connect smart cube"
+    >
+      <div className="flex size-5 shrink-0 items-center justify-center">
+        {status === "connected" ? (
+          <BluetoothConnected className="size-4" />
+        ) : (
+          <Bluetooth className="size-4" />
+        )}
+      </div>
+      <motion.span
+        initial={false}
+        animate={{ width: expanded ? "auto" : 0, opacity: expanded ? 1 : 0 }}
+        transition={SIDEBAR_MOTION.label}
+        className="overflow-hidden whitespace-nowrap"
+      >
+        Smart Cube
+      </motion.span>
+    </button>
+  );
+
+  const railTrigger = <DialogTrigger asChild>{railButton}</DialogTrigger>;
+
+  const headerTrigger = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
+              status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
+              className,
+            )}
+                  aria-label="Connect smart cube"
+          >
+            {status === "connected" ? (
+              <BluetoothConnected className="size-4" />
+            ) : (
+              <Bluetooth className="size-4" />
+            )}
+          </Button>
+        </DialogTrigger>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Connect smart cube</TooltipContent>
+    </Tooltip>
+  );
+
+  const trigger = variant === "rail" ? railTrigger : headerTrigger;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
-            status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
-            className
-          )}
-          aria-label="Connect Smart Cube"
-        >
-          {status === "connected" ? (
-            <BluetoothConnected className="size-4" />
-          ) : (
-            <Bluetooth className="size-4" />
-          )}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect Smart Cube</DialogTitle>
+          <DialogTitle>Connect smart cube</DialogTitle>
           <DialogDescription>
             Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
           </DialogDescription>
@@ -156,20 +256,24 @@ export function CubeConnector({ className }: { className?: string }) {
                 <code className="rounded bg-ink/5 p-1.5 pr-8 font-mono text-xs text-ink break-all cursor-text select-all">
                   {instructions}
                 </code>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
-                  className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Copy"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
+                      className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Copy</TooltipContent>
+                </Tooltip>
               </div>
               <div className="space-y-1.5 mt-2">
                 <p className="text-ink-2 text-xs">Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
                 <Input
                   value={manualMac}
                   onChange={(e) => setManualMac(e.target.value)}
-                  placeholder="MAC Address"
+                  placeholder="MAC address"
                   className="h-8"
                 />
               </div>
@@ -177,16 +281,16 @@ export function CubeConnector({ className }: { className?: string }) {
           )}
 
           {status === "connected" ? (
-            <Button 
-              onClick={disconnectCube} 
+            <Button
+              onClick={disconnectCube}
               variant="destructive"
               className="w-full mt-2"
             >
               Disconnect Cube
             </Button>
           ) : (
-            <Button 
-              onClick={connectCube} 
+            <Button
+              onClick={connectCube}
               disabled={status === "connecting" || (showMacInput && !manualMac)}
               className="w-full mt-2"
             >

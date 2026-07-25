@@ -1,258 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import * as Comlink from "comlink";
-import { SyncBridge } from "@cubeforge/cube-3d-engine";
-import type { EngineWorkerAPI } from "@cubeforge/cube-3d-engine";
-import EngineWorker from "@cubeforge/cube-3d-engine/worker?worker";
-import type { Subscription } from "rxjs";
-
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw } from "lucide-react";
-import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
-import { orientationStore } from "@cubeforge/state";
-import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
-import type { CubeMoveEvent, CubeOrientation, RotationEvent } from "@cubeforge/types";
+import { RefreshCw, RotateCcw, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCube3D } from "@/hooks/useCube3D";
 
 export interface Cube3DPanelProps {
   className?: string;
+  onClose?: () => void;
 }
 
-interface WorkerSingleton {
-  worker: Worker;
-  proxy: Comlink.Remote<EngineWorkerAPI>;
-  syncBridge: SyncBridge;
-}
-
-/** Survives Strict Mode unmount/remount so OffscreenCanvas isn't re-transferred */
-let workerSingleton: WorkerSingleton | null = null;
-
-export function Cube3DPanel({ className }: Cube3DPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const workerProxy = useRef<Comlink.Remote<EngineWorkerAPI> | null>(null);
-  const syncBridge = useRef<SyncBridge | null>(null);
-  const workerInstance = useRef<Worker | null>(null);
-  const moveSub = useRef<Subscription | null>(null);
+export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
+  const {
+    canvasRef,
+    containerRef,
+    isReady,
+    recentMoves,
+    calibrate,
+    reset,
+    rotateCamera,
+  } = useCube3D({ maxRecentMoves: 15 });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
-  const [recentMoves, setRecentMoves] = useState<string[]>([]);
-  const [is3DReady, setIs3DReady] = useState(false);
-  // Tracks whether orientation+rotation callbacks have been registered on the singleton worker.
-  // Prevents duplicate registrations across Strict Mode remounts.
-  const callbacksRegistered = useRef(false);
-  // B5 FIX: Force the first facelet sync after mount/remount to happen
-  // regardless of pendingMoves. When the panel is hidden, the SyncBridge
-  // is unbound (losing track of cube moves); on remount, the model may be
-  // desynchronized. This flag ensures the first facelet event corrects it.
-  const needsInitialSyncRef = useRef(true);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    // B5: Reset the initial-sync flag so the first facelet event after
-    // mount/remount corrects any desync from the panel being hidden.
-    needsInitialSyncRef.current = true;
-    moveSub.current?.unsubscribe();
-    if (globalCubeAdapter.moves$) {
-      moveSub.current = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
-        // Use display notation (remapped by current orientation)
-        const orientation = orientationStore.getState().orientation;
-        const notation = MoveTransformer.toDisplayNotation(ev, orientation);
-        setRecentMoves(prev => {
-          const next = compactMoveNotation([...prev, notation]);
-          return next.slice(-15);
-        });
-      });
-    }
-
-    const faceletSub = globalCubeAdapter.facelets$
-      ? globalCubeAdapter.facelets$.subscribe((facelets: string) => {
-          if (!syncBridge.current) return;
-          // B5 FIX: On mount/remount, force-sync the 3D model from the
-          // real cube state regardless of pending moves. The model may
-          // be desynchronized from being hidden (SyncBridge unbound).
-          // After the first sync, resume the normal guard.
-          if (needsInitialSyncRef.current) {
-            needsInitialSyncRef.current = false;
-            workerProxy.current?.syncFacelets(facelets).catch(console.error);
-          } else if (syncBridge.current.pendingMoves === 0) {
-            workerProxy.current?.syncFacelets(facelets).catch(console.error);
-          }
-        })
-      : undefined;
-
-    if (workerSingleton) {
-      // Re-mount: canvas still in DOM, OffscreenCanvas still linked.
-      // Just resize — no new WebGL context.
-      workerInstance.current = workerSingleton.worker;
-      workerProxy.current = workerSingleton.proxy;
-      syncBridge.current = workerSingleton.syncBridge;
-
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (rect) {
-        workerProxy.current.resize(rect.width, rect.height);
-      }        if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
-          syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
-        }
-
-        // Wire orientation tracker: worker → orientation store
-        workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
-
-        // Register callbacks once (worker is a singleton, survives Strict Mode remounts)
-        if (!callbacksRegistered.current) {
-          callbacksRegistered.current = true;
-          workerProxy.current.onOrientationChange(
-            Comlink.proxy((o: CubeOrientation) => {
-              orientationStore.getState().setOrientation(o);
-              // When orientation updates flow, gyro is confirmed working
-              const caps = orientationStore.getState().capabilities;
-              if (!caps.gyroSupported) {
-                orientationStore.getState().setCapabilities({
-                  hasIMU: true,
-                  gyroSupported: true,
-                });
-              }
-            }),
-          );
-          workerProxy.current.onRotationEvent(
-            Comlink.proxy((e: RotationEvent) => {
-              const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
-              setRecentMoves(prev => {
-                const next = compactMoveNotation([...prev, notation]);
-                return next.slice(-15);
-              });
-            }),
-          );
-        }
-        // Set initial capabilities from current adapter state
-        orientationStore.getState().setCapabilities({
-          hasIMU: globalCubeAdapter.gyroSupported,
-          gyroSupported: globalCubeAdapter.gyroSupported,
-        });
-
-        setIs3DReady(true);
-      } else {
-        // First mount: create worker, transfer canvas, init
-        workerInstance.current = new EngineWorker();
-      workerProxy.current = Comlink.wrap<EngineWorkerAPI>(workerInstance.current!);
-      syncBridge.current = new SyncBridge(workerProxy.current);
-
-      try {
-        const offscreen = canvasRef.current.transferControlToOffscreen();
-        workerProxy.current.init(
-          Comlink.transfer(offscreen, [offscreen]),
-          canvasRef.current.clientWidth,
-          canvasRef.current.clientHeight,
-          window.devicePixelRatio
-        );
-
-        if (globalCubeAdapter.moves$ && globalCubeAdapter.gyro$) {
-          syncBridge.current.bindCube(globalCubeAdapter.moves$, globalCubeAdapter.gyro$);
-        }
-
-        // Wire orientation tracker: worker → orientation store
-        workerProxy.current.setGyroSupported(globalCubeAdapter.gyroSupported);
-
-        // Register callbacks once (worker is a singleton, survives Strict Mode remounts)
-        if (!callbacksRegistered.current) {
-          callbacksRegistered.current = true;
-          workerProxy.current.onOrientationChange(
-            Comlink.proxy((o: CubeOrientation) => {
-              orientationStore.getState().setOrientation(o);
-              // When orientation updates flow, gyro is confirmed working
-              const caps = orientationStore.getState().capabilities;
-              if (!caps.gyroSupported) {
-                orientationStore.getState().setCapabilities({
-                  hasIMU: true,
-                  gyroSupported: true,
-                });
-              }
-            }),
-          );
-          workerProxy.current.onRotationEvent(
-            Comlink.proxy((e: RotationEvent) => {
-              const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
-              setRecentMoves(prev => {
-                const next = compactMoveNotation([...prev, notation]);
-                return next.slice(-15);
-              });
-            }),
-          );
-        }
-        // Set initial capabilities from current adapter state
-        orientationStore.getState().setCapabilities({
-          hasIMU: globalCubeAdapter.gyroSupported,
-          gyroSupported: globalCubeAdapter.gyroSupported,
-        });
-
-        workerSingleton = {
-          worker: workerInstance.current,
-          proxy: workerProxy.current,
-          syncBridge: syncBridge.current,
-        };
-        setIs3DReady(true);
-      } catch {
-        console.warn("Canvas already transferred — 3D rendering unavailable");
-      }
-    }
-
-    const connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
-      if (status === 'connected') {
-        globalCubeAdapter.requestFacelets().catch(console.error);
-        if (workerProxy.current) {
-          workerProxy.current.calibrateGyro();
-        }
-      }
-    });
-
-    if (globalCubeAdapter.isConnected) {
-      globalCubeAdapter.requestFacelets().catch(console.error);
-      if (workerProxy.current) {
-        workerProxy.current.calibrateGyro();
-      }
-    }
-
-    // Resize Observer
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentBoxSize) {
-          const width = entry.contentRect.width;
-          const height = entry.contentRect.height;
-          workerProxy.current?.resize(width, height);
-        }
-      }
-    });
-
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-      moveSub.current?.unsubscribe();
-      faceletSub?.unsubscribe();
-      connSub?.unsubscribe();
-      syncBridge.current?.unbind();
-      // DON'T terminate worker — singleton survives for next mount
-      // DON'T null out workerSingleton
-    };
-  }, []);
-
-  const calibrateGyro = () => {
-    if (workerProxy.current) {
-      workerProxy.current.calibrateGyro();
-    }
-  };
-
-  const resetCube = () => {
-    if (workerProxy.current) {
-      workerProxy.current.resetCube();
-    }
-  };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     setIsDragging(true);
@@ -261,11 +33,11 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !workerProxy.current) return;
+    if (!isDragging) return;
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
-    workerProxy.current.rotateCamera(dx, dy).catch(console.error);
+    rotateCamera(dx, dy);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -279,31 +51,54 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
       <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
         <div className="flex items-baseline gap-2">
           <h3 className="text-sm font-medium text-ink">Cube</h3>
-
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetCube}
-            disabled={!is3DReady}
-            className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
-            title="Reset cube pieces to solved state"
-          >
-            <RotateCcw className="size-3" />
-            Reset
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={calibrateGyro}
-            disabled={!is3DReady}
-            className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
-            title="Calibrate gyroscope orientation"
-          >
-            <RefreshCw className="size-3" />
-            Calibrate
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={reset}
+                disabled={!isReady}
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+              >
+                <RotateCcw className="size-3" />
+                Reset
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Reset cube pieces to solved state</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={calibrate}
+                disabled={!isReady}
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+              >
+                <RefreshCw className="size-3" />
+                Calibrate
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Calibrate gyroscope orientation</TooltipContent>
+          </Tooltip>
+          {onClose && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+                  aria-label="Close 3D view"
+                >
+                  <X className="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close 3D view</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -320,6 +115,15 @@ export function Cube3DPanel({ className }: Cube3DPanelProps) {
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
         />
+
+        {/* Loading state overlay */}
+        {!isReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
+            <span className="text-xs text-ink-3/50 animate-pulse">
+              Initializing 3D Cube...
+            </span>
+          </div>
+        )}
 
         {/* Moves overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2">

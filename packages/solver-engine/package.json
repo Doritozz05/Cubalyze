@@ -1,8 +1,34 @@
 {
   "name": "@cubeforge/solver-engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "description": "CubeForge Solver Engine — scramble generation and optimal solving via min2phase WASM",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
-    "typecheck": "echo no sources"
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cubeforge/math-core": "workspace:*",
+    "min2phase.js": "^0.0.4"
+  },
+  "devDependencies": {
+    "@cubeforge/config-typescript": "workspace:*",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
   }
 }

@@ -1,4 +1,6 @@
 
+/// <reference types="web-bluetooth" />
+
 import { now, toKociembaFacelets } from './utils';
 import { GanCubeEncrypter } from './gan-cube-encrypter';
 import { Observable, ReplaySubject } from 'rxjs';
@@ -211,7 +213,7 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         this.encrypter = encrypter;
         this.driver = driver;
         this.events$ = new ReplaySubject<GanCubeEvent>(3);
-        // B2 FIX: Start the GATT command queue as a resolved promise.
+        // Initialise the GATT command queue as a resolved promise.
         // Every sendCommandMessage chains onto this queue so that only
         // one GATT writeValue is in flight at a time, preventing
         // "GATT operation already in progress" errors.
@@ -240,7 +242,7 @@ class GanCubeClassicConnection implements GanCubeConnection, GanCubeRawConnectio
         return this.device.mac || "00:00:00:00:00:00";
     }
 
-    // B2 FIX: Serialised GATT command queue. Web Bluetooth allows only one
+    // Serialised GATT command queue. Web Bluetooth allows only one
     // GATT operation per characteristic at a time. Chaining all writes onto
     // this queue prevents "GATT operation already in progress" errors when
     // multiple callers (validator, adapter, driver) issue commands concurrently.
@@ -411,12 +413,13 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
                     for (let i = diff - 1; i >= 0; i--) {
                         const face = msg.getBitWord(12 + 5 * i, 4);
                         const direction = msg.getBitWord(16 + 5 * i, 1);
-                        const move = "URFDLB".charAt(face) + " '".charAt(direction);
                         let elapsed = msg.getBitWord(47 + 16 * i, 16);
                         if (elapsed == 0) { // In case of 16-bit cube timestamp register overflow
                             elapsed = timestamp - this.lastMoveTimestamp;
                         }
                         this.cubeTimestamp += elapsed;
+
+                        const move = "URFDLB".charAt(face) + " '".charAt(direction);
                         cubeEvents.push({
                             type: "MOVE",
                             serial: (serial - i) & 0xFF,

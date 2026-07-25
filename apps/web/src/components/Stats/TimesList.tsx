@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
-import { MoreHorizontal, Plus, Skull, Eraser, Trash2 } from "lucide-react";
+import { useMemo, memo, useState, useRef, useEffect } from "react";
+import { MoreHorizontal, Plus, Skull, Eraser, Trash2, Activity, RotateCcw, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
-import type { Solve, Penalty } from "@/types";
+import type { Solve } from "@/types";
+import { PenaltyBadge } from "@/components/Insights/atoms";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,44 +18,36 @@ import {
 import {
   ScrollArea,
 } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimesListProps {
   solves: Solve[];
   onUpdate: (id: string, updates: Partial<Solve>) => void;
   onDelete: (id: string) => void;
   onClear?: () => void;
-  onSelect?: (solve: Solve) => void;
+  onAnalyze?: (solve: Solve) => void;
+  onReplay?: (solve: Solve) => void;
+  hideHeader?: boolean;
   className?: string;
-}
-
-function PenaltyBadge({ penalty }: { penalty: Penalty }) {
-  if (penalty === "none") return null;
-  const cls =
-    penalty === "DNF"
-      ? "bg-dnf-soft text-dnf"
-      : "bg-plus2-soft text-plus2";
-  return (
-    <span
-      className={cn(
-        "nums rounded px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide",
-        cls,
-      )}
-    >
-      {penalty}
-    </span>
-  );
 }
 
 /**
  * Vertical solve log. Each row exposes a dropdown with +2 / DNF / clear /
  * delete. Newest first. Highlights the session best (PB) row with a green dot.
+ *
+ * Includes inline note editing — click the note area to type.
+ *
+ * Memoized so dragging a parent floating panel doesn't re-render the whole
+ * list on every pointermove.
  */
-export function TimesList({
+export const TimesList = memo(function TimesList({
   solves,
   onUpdate,
   onDelete,
   onClear,
-  onSelect,
+  onAnalyze,
+  onReplay,
+  hideHeader,
   className,
 }: TimesListProps) {
   const stats = useMemo(() => computeStats(solves), [solves]);
@@ -62,22 +55,24 @@ export function TimesList({
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-sm font-medium text-ink">Solves</h3>
-          <span className="nums text-xs text-ink-3">{solves.length}</span>
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-sm font-medium text-ink">Solves</h3>
+            <span className="nums text-xs text-ink-3">{solves.length}</span>
+          </div>
+          {solves.length > 0 && onClear ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
+            >
+              Clear
+            </Button>
+          ) : null}
         </div>
-        {solves.length > 0 && onClear ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClear}
-            className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
-          >
-            Clear
-          </Button>
-        ) : null}
-      </div>
+      )}
 
       {solves.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
@@ -95,92 +90,17 @@ export function TimesList({
               const isBest =
                 bestTime !== null && eff === bestTime && !isDnf;
               return (
-                <li
+                <SolveRow
                   key={solve.id}
-                  className="group flex items-center gap-2.5 border-b border-line/70 px-1 py-[9px] transition-colors hover:bg-surface-2 last:border-0"
-                  onClick={() => onSelect?.(solve)}
-                >
-                  {/* Index + best marker */}
-                  <span className="flex w-8 shrink-0 items-center justify-end gap-1">
-                    {isBest ? (
-                      <span
-                        className="size-1.5 shrink-0 rounded-full bg-ready"
-                        title="Session best"
-                      />
-                    ) : (
-                      <span className="size-1.5 shrink-0" />
-                    )}
-                    <span className="nums text-right text-xs text-ink-3">
-                      {solves.length - i}
-                    </span>
-                  </span>
-
-                  {/* Time */}
-                  <span
-                    className={cn(
-                      "nums min-w-0 flex-1 text-[0.95rem] tabular-nums",
-                      isDnf ? "text-dnf" : isBest ? "text-ready" : "text-ink",
-                    )}
-                  >
-                    {isDnf ? "DNF" : formatTime(eff)}
-                  </span>
-
-                  <PenaltyBadge penalty={solve.penalty} />
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 text-ink-3 opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
-                        aria-label="Solve actions"
-                      >
-                        <MoreHorizontal className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem
-                        onClick={() =>
-                          onUpdate(solve.id, {
-                            penalty: solve.penalty === "+2" ? "none" : "+2",
-                          })
-                        }
-                      >
-                        <Plus className="size-3.5" />
-                        {solve.penalty === "+2" ? "Remove +2" : "Mark +2"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          onUpdate(solve.id, {
-                            penalty:
-                              solve.penalty === "DNF" ? "none" : "DNF",
-                          })
-                        }
-                      >
-                        <Skull className="size-3.5" />
-                        {solve.penalty === "DNF" ? "Remove DNF" : "Mark DNF"}
-                      </DropdownMenuItem>
-                      {solve.penalty !== "none" ? (
-                        <DropdownMenuItem
-                          onClick={() =>
-                            onUpdate(solve.id, { penalty: "none" })
-                          }
-                        >
-                          <Eraser className="size-3.5" />
-                          Clear penalty
-                        </DropdownMenuItem>
-                      ) : null}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => onDelete(solve.id)}
-                      >
-                        <Trash2 className="size-3.5" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </li>
+                  solve={solve}
+                  index={solves.length - i}
+                  isDnf={isDnf}
+                  isBest={isBest}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  onAnalyze={onAnalyze}
+                  onReplay={onReplay}
+                />
               );
             })}
           </ul>
@@ -188,4 +108,234 @@ export function TimesList({
       )}
     </div>
   );
-}
+});
+
+/** Individual solve row with inline note editing. */
+const SolveRow = memo(function SolveRow({
+  solve,
+  index,
+  isDnf,
+  isBest,
+  onUpdate,
+  onDelete,
+  onAnalyze,
+  onReplay,
+}: {
+  solve: Solve;
+  index: number;
+  isDnf: boolean;
+  isBest: boolean;
+  onUpdate: (id: string, updates: Partial<Solve>) => void;
+  onDelete: (id: string) => void;
+  onAnalyze?: (solve: Solve) => void;
+  onReplay?: (solve: Solve) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(solve.note ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  // Sync draft when solve.note changes externally
+  useEffect(() => {
+    setDraft(solve.note ?? '');
+  }, [solve.note]);
+
+  const saveNote = () => {
+    const trimmed = draft.trim();
+    onUpdate(solve.id, { note: trimmed || undefined });
+    setEditing(false);
+  };
+
+  const cancelNote = () => {
+    setDraft(solve.note ?? "");
+    setEditing(false);
+  };
+
+  const handleNoteClick = () => {
+    setDraft(solve.note ?? "");
+    setEditing(true);
+  };
+
+  const eff = effectiveTime(solve);
+
+  return (
+    <li
+      className="group flex items-center gap-2.5 border-b border-line/70 px-1 py-2.25 transition-colors hover:bg-surface-2 last:border-0"
+    >
+      {/* Index + best marker */}
+      <span className="flex w-8 shrink-0 items-center justify-end gap-1">
+        {isBest ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="size-1.5 shrink-0 rounded-full bg-ready" />
+            </TooltipTrigger>
+            <TooltipContent side="right">Session best</TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="size-1.5 shrink-0" />
+        )}
+        <span className="nums text-right text-xs text-ink-3">
+          {index}
+        </span>
+      </span>
+
+      {/* Time */}
+      <span
+        className={cn(
+          "nums min-w-0 flex-1 text-[0.95rem] tabular-nums",
+          isDnf ? "text-dnf" : isBest ? "text-ready" : "text-ink",
+        )}
+      >
+        {isDnf ? "DNF" : formatTime(eff)}
+      </span>
+
+      <PenaltyBadge penalty={solve.penalty} />
+
+      {/* Note area — click to edit */}
+      {editing ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveNote();
+              if (e.key === "Escape") cancelNote();
+              e.stopPropagation();
+            }}
+            className="h-6 w-24 rounded border border-line bg-surface-2/50 px-1.5 text-[0.68rem] text-ink placeholder:text-ink-3/40 focus:outline-none focus:border-ink/30"
+            placeholder="Note..."
+          />
+          <button
+            onClick={saveNote}
+            className="grid size-5 place-items-center rounded text-ink-3 hover:text-ready"
+          >
+            <Check className="size-3" />
+          </button>
+          <button
+            onClick={cancelNote}
+            className="grid size-5 place-items-center rounded text-ink-3 hover:text-dnf"
+          >
+            <X className="size-3" />
+          </button>
+        </div>
+      ) : solve.note ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleNoteClick}
+              className="max-w-[100px] shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-ink-2 italic hover:bg-surface-2 hover:text-ink transition-colors"
+              title={solve.note}
+            >
+              {solve.note}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">{solve.note}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleNoteClick}
+              className="shrink-0 grid size-7 place-items-center rounded text-ink-3 hover:text-ink transition-colors"
+              aria-label="Add note"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Add note</TooltipContent>
+        </Tooltip>
+      )}
+
+      {onAnalyze && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onAnalyze(solve)}
+              className="size-7 text-ink-3 hover:text-ink"
+              aria-label="Analyze solve"
+            >
+              <Activity className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Analysis</TooltipContent>
+        </Tooltip>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 text-ink-3 hover:text-ink data-[state=open]:text-ink"
+            aria-label="Solve actions"
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem
+            onClick={() =>
+              onUpdate(solve.id, {
+                penalty: solve.penalty === "+2" ? "none" : "+2",
+              })
+            }
+          >
+            <Plus className="size-3.5" />
+            {solve.penalty === "+2" ? "Remove +2" : "Mark +2"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              onUpdate(solve.id, {
+                penalty:
+                  solve.penalty === "DNF" ? "none" : "DNF",
+              })
+            }
+          >
+            <Skull className="size-3.5" />
+            {solve.penalty === "DNF" ? "Remove DNF" : "Mark DNF"}
+          </DropdownMenuItem>
+          {solve.penalty !== "none" ? (
+            <DropdownMenuItem
+              onClick={() =>
+                onUpdate(solve.id, { penalty: "none" })
+              }
+            >
+              <Eraser className="size-3.5" />
+              Clear penalty
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuSeparator />
+          {onAnalyze && (
+            <DropdownMenuItem onClick={() => onAnalyze(solve)}>
+              <Activity className="size-3.5" />
+              Analysis
+            </DropdownMenuItem>
+          )}
+          {onReplay && (
+            <DropdownMenuItem onClick={() => onReplay(solve)}>
+              <RotateCcw className="size-3.5" />
+              Replay
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => onDelete(solve.id)}
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </li>
+  );
+});

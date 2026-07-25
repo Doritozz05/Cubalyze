@@ -10,6 +10,9 @@ export type Penalty = "none" | "+2" | "DNF";
 /** Solving method identifier. */
 export type SolveMethod = 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
 
+/** How the solve was recorded. */
+export type SolveSource = "smart" | "manual";
+
 /** A single recorded solve. */
 export interface Solve {
   /** Stable unique id (used as React key + for mutations). */
@@ -26,10 +29,23 @@ export interface Solve {
   note?: string;
   /** Solving method used for this solve. */
   method?: SolveMethod;
+  /** How the solve was recorded: "smart" (cube hardware) or "manual". */
+  source?: SolveSource;
   /** Raw moves captured from Smart Cube during the solve. */
   moves?: import('@cubeforge/types').CubeMoveEvent[];
   /** Post-solve analysis metrics (computed after solve completes). */
   analysis?: import('@cubeforge/types').SolveMetrics;
+  /** Compact orientation timeline for smart cube solves with IMU. */
+  orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
+}
+
+/** Normalize penalty input (handles case mismatches like "dnf" -> "DNF"). */
+export function normalizePenalty(raw: string | null | undefined): Penalty {
+  if (!raw) return "none";
+  const u = raw.toUpperCase().trim();
+  if (u === "DNF") return "DNF";
+  if (u === "+2" || u === "PLUS2" || u === "PLUS_TWO") return "+2";
+  return "none";
 }
 
 /**
@@ -39,7 +55,8 @@ export interface Solve {
  * - `DNF`  -> Infinity (sentinel for "did not finish")
  */
 export function effectiveTime(solve: Solve): number {
-  switch (solve.penalty) {
+  const p = normalizePenalty(solve.penalty);
+  switch (p) {
     case "+2":
       return solve.time + 2000;
     case "DNF":

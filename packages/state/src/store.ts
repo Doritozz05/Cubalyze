@@ -11,6 +11,10 @@ import { persist } from 'zustand/middleware';
  * - `theme`                 : theme preference.
  * - `scrambleFollowsCube`   : visual preference for the orientation tracking.
  *
+ * Only preferences that have a wired runtime consumer belong here. See the
+ * `useSolveSession` and `useScrambleValidator` hooks for the read paths;
+ * without a consumer, a stored flag is unreachable behaviour.
+ *
  * Persisted in localStorage under `cubeforge-prefs` via zustand/middleware so
  * the state is rehydrated synchronously on cold load. No backend migration
  * is required.
@@ -18,6 +22,10 @@ import { persist } from 'zustand/middleware';
 export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+
+  /** 3D Appearance mode */
+  appearance3d: string;
+  setAppearance3d: (value: string) => void;
 
   /** Whether the scramble display rotates to match cube orientation. */
   scrambleFollowsCube: boolean;
@@ -34,6 +42,41 @@ export interface PreferencesState {
   /** Solving method for phase detection and metrics. */
   method: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
   setMethod: (value: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus') => void;
+
+  /** Focus mode: hide everything except timer when ready or running. */
+  focusMode: boolean;
+  setFocusMode: (value: boolean) => void;
+
+  /** Audio cues during inspection (8s and 12s WCA warnings). */
+  audioCues: boolean;
+  setAudioCues: (value: boolean) => void;
+
+  /** Voice type for inspection audio cues. */
+  voiceType: 'male' | 'female';
+  setVoiceType: (value: 'male' | 'female') => void;
+
+  /** Show PB delta (+/- offset from personal best) next to the timer. */
+  showPbDelta: boolean;
+  setShowPbDelta: (value: boolean) => void;
+
+  /** Custom sticker colors for the 'custom' cube skin. */
+  customStickerColors: {
+    U: string;
+    D: string;
+    F: string;
+    B: string;
+    R: string;
+    L: string;
+  };
+  setCustomStickerColors: (colors: Partial<{ U: string; D: string; F: string; B: string; R: string; L: string }>) => void;
+
+  /** Keyboard shortcuts configuration. */
+  shortcuts: {
+    newScramble: string;
+    copyScramble: string;
+    cancelTimer: string;
+  };
+  setShortcut: (key: 'newScramble' | 'copyScramble' | 'cancelTimer', value: string) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -48,6 +91,9 @@ export const createPreferencesStore = () => {
         theme: 'system',
         setTheme: (theme) => set({ theme }),
 
+        appearance3d: 'default',
+        setAppearance3d: (value) => set({ appearance3d: value }),
+
         scrambleFollowsCube: true,
         setScrambleFollowsCube: (value) => set({ scrambleFollowsCube: value }),
 
@@ -59,15 +105,57 @@ export const createPreferencesStore = () => {
 
         method: 'CFOP',
         setMethod: (value) => set({ method: value }),
+
+        focusMode: false,
+        setFocusMode: (value) => set({ focusMode: value }),
+
+        audioCues: true,
+        setAudioCues: (value) => set({ audioCues: value }),
+
+        voiceType: 'male',
+        setVoiceType: (value) => set({ voiceType: value }),
+
+        showPbDelta: false,
+        setShowPbDelta: (value) => set({ showPbDelta: value }),
+
+        customStickerColors: {
+          U: '#ece8e2',
+          D: '#ffe62a',
+          F: '#1abe57',
+          B: '#3d7ce0',
+          R: '#eb4242',
+          L: '#ff801f',
+        },
+        setCustomStickerColors: (colors) =>
+          set((state) => ({
+            customStickerColors: { ...state.customStickerColors, ...colors },
+          })),
+
+        shortcuts: {
+          newScramble: 'n',
+          copyScramble: 'c',
+          cancelTimer: 'escape',
+        },
+        setShortcut: (key, value) =>
+          set((state) => ({
+            shortcuts: { ...state.shortcuts, [key]: value },
+          })),
       }),
       {
         name: 'cubeforge-prefs',
         partialize: (state) => ({
           theme: state.theme,
+          appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
           inspection: state.inspection,
           scrambleVerification: state.scrambleVerification,
           method: state.method,
+          focusMode: state.focusMode,
+          audioCues: state.audioCues,
+          voiceType: state.voiceType,
+          showPbDelta: state.showPbDelta,
+          customStickerColors: state.customStickerColors,
+          shortcuts: state.shortcuts,
         }),
         version: 1,
       },

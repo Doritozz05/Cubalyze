@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
-import { motion } from "framer-motion";
-import { Timer, Grid3x3, Sun, Moon, Settings } from "lucide-react";
+import { motion, LayoutGroup } from "framer-motion";
+import { Sun, Moon, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -18,32 +18,55 @@ import {
   HOVER_DELAY,
   UNHOVER_DELAY,
   SIDEBAR_MOTION,
+  ACTIVE_PILL_SPRING,
+  NAV_GROUPS,
+  Grid3x3,
+  type ViewId,
 } from "./sidebar.constants";
 import { SettingsDialog } from "@/components/Settings/SettingsDialog";
+import { WidgetExplorer } from "@/widgets/explorer";
+import { CubeConnector } from "@/components/Hardware/CubeConnector";
+import type { Solve } from "@/types";
 
 export interface LeftSidebarProps {
+  /** Currently active view — drives the active-pill highlight. */
+  activeView: ViewId;
+  /** Switch the main stage to a view. */
+  onNavigate: (view: ViewId) => void;
+  /** Whether the timer engine is running/ready — shows a pulse on Timer. */
   timerActive?: boolean;
-  onNavigateTimer?: () => void;
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  /** Solves for the Data/Export settings section. */
+  solves?: Solve[];
+  /** Session name for export. */
+  sessionName?: string;
 }
 
 export function LeftSidebar({
+  activeView,
+  onNavigate,
   timerActive,
-  onNavigateTimer,
   mobileOpen,
   onMobileOpenChange,
+  solves,
+  sessionName,
 }: LeftSidebarProps) {
   const isMobile = useIsMobile();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => setMounted(true), []);
 
   const isDark = mounted && resolvedTheme === "dark";
+  // Labels/titles are visible whenever the rail is expanded: on hover (desktop)
+  // or always (the mobile sheet has a fixed wide width). This also fixes a
+  // pre-existing issue where the mobile sheet showed icon-only items.
+  const labelVisible = isMobile || isHovered;
 
   const handleMouseEnter = useCallback(() => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -55,10 +78,28 @@ export function LeftSidebar({
     hoverTimer.current = setTimeout(() => setIsHovered(false), UNHOVER_DELAY);
   }, []);
 
-  const handleTimerClick = useCallback(() => {
-    onNavigateTimer?.();
-    onMobileOpenChange?.(false);
-  }, [onNavigateTimer, onMobileOpenChange]);
+  const handleNavigateItem = useCallback(
+    (view: ViewId) => {
+      onNavigate?.(view);
+      onMobileOpenChange?.(false);
+    },
+    [onNavigate, onMobileOpenChange],
+  );
+
+  /**
+   * Handle nav-item clicks (both view-navigation and action-items like
+   * "widgets" which open dialogs rather than switching the stage).
+   */
+  const handleNavItemClick = useCallback(
+    (id: string) => {
+      if (id === "widgets") {
+        setWidgetExplorerOpen(true);
+        return;
+      }
+      handleNavigateItem(id as ViewId);
+    },
+    [handleNavigateItem],
+  );
 
   const sidebarContent = (
     <>
@@ -69,7 +110,7 @@ export function LeftSidebar({
             <Grid3x3 className="size-4" />
           </div>
           <motion.span
-            animate={{ opacity: isHovered ? 1 : 0 }}
+            animate={{ opacity: labelVisible ? 1 : 0 }}
             transition={SIDEBAR_MOTION.brand}
             className="nums overflow-hidden text-sm font-semibold tracking-tight text-sidebar-foreground whitespace-nowrap"
           >
@@ -80,35 +121,54 @@ export function LeftSidebar({
 
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <SidebarGroupTitle label="Main" isHovered={isHovered} />
-        <div className="space-y-1">
-          <SidebarNavItem
-            icon={Timer}
-            label="Timer"
-            isHovered={isHovered}
-            isActive={!!timerActive}
-            onClick={handleTimerClick}
-            badge={
-              timerActive ? (
-                <span className="size-1.5 rounded-full bg-ready animate-pulse" />
-              ) : undefined
-            }
-          />
-        </div>
+        <LayoutGroup>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title} className="mb-1">
+              <SidebarGroupTitle label={group.title} labelVisible={labelVisible} />
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <SidebarNavItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    labelVisible={labelVisible}
+                    isActive={activeView === item.id}
+                    onClick={() => handleNavItemClick(item.id)}
+                    badge={
+                      item.id === "timer" && timerActive ? (
+                        <span className="size-1.5 rounded-full bg-ready animate-pulse" />
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </LayoutGroup>
       </nav>
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-2 space-y-1">
+        <CubeConnector 
+          variant="rail" 
+          expanded={labelVisible} 
+          onOpenChange={(open) => {
+            if (!open) {
+              onMobileOpenChange?.(false);
+              setIsHovered(false);
+            }
+          }}
+        />
         <SidebarFooterItem
           icon={Settings}
           label="Settings"
-          isHovered={isHovered}
+          labelVisible={labelVisible}
           onClick={() => setSettingsOpen(true)}
         />
         <SidebarFooterItem
           icon={mounted && isDark ? Sun : Moon}
           label={mounted && isDark ? "Light mode" : "Dark mode"}
-          isHovered={isHovered}
+          labelVisible={labelVisible}
           onClick={() => setTheme(isDark ? "light" : "dark")}
         />
       </div>
@@ -129,7 +189,28 @@ export function LeftSidebar({
             </div>
           </SheetContent>
         </Sheet>
-        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <WidgetExplorer
+          open={widgetExplorerOpen}
+          onOpenChange={(open) => {
+            setWidgetExplorerOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+              setIsHovered(false);
+            }
+          }}
+        />
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={(open) => {
+            setSettingsOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+              setIsHovered(false);
+            }
+          }}
+          solves={solves}
+          sessionName={sessionName}
+        />
       </>
     );
   }
@@ -142,12 +223,27 @@ export function LeftSidebar({
         onMouseLeave={handleMouseLeave}
         animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH }}
         transition={SIDEBAR_MOTION.container}
-        className="fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
+        className="fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
       >
         {sidebarContent}
       </motion.aside>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <WidgetExplorer
+        open={widgetExplorerOpen}
+        onOpenChange={(open) => {
+          setWidgetExplorerOpen(open);
+          if (!open) setIsHovered(false);
+        }}
+      />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={(open) => {
+          setSettingsOpen(open);
+          if (!open) setIsHovered(false);
+        }}
+        solves={solves}
+        sessionName={sessionName}
+      />
     </>
   );
 }
@@ -156,92 +252,103 @@ export function LeftSidebar({
 
 function SidebarGroupTitle({
   label,
-  isHovered,
+  labelVisible,
 }: {
   label: string;
-  isHovered: boolean;
+  labelVisible: boolean;
 }) {
   return (
-    <motion.span
-      animate={{ opacity: isHovered ? 1 : 0 }}
+    <motion.div
+      initial={false}
+      animate={{
+        height: labelVisible ? "auto" : 0,
+        opacity: labelVisible ? 1 : 0,
+        marginBottom: labelVisible ? 4 : 0,
+      }}
       transition={SIDEBAR_MOTION.label}
-      className="block overflow-hidden px-3 pb-1 text-[0.62rem] uppercase tracking-[0.15em] text-sidebar-foreground/40 whitespace-nowrap"
+      className="overflow-hidden"
     >
-      {label}
-    </motion.span>
+      <span className="relative z-20 block px-3 text-[0.62rem] uppercase tracking-[0.15em] text-sidebar-foreground/40 whitespace-nowrap">
+        {label}
+      </span>
+    </motion.div>
   );
 }
 
 function SidebarNavItem({
   icon: Icon,
   label,
-  isHovered,
+  labelVisible,
   isActive,
   badge,
   onClick,
 }: {
   icon: React.ElementType;
   label: string;
-  isHovered: boolean;
+  labelVisible: boolean;
   isActive?: boolean;
   badge?: React.ReactNode;
   onClick?: () => void;
 }) {
-  return (
+  const button = (
     <button
       onClick={onClick}
       className={cn(
         "relative flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors group",
         isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          ? "text-sidebar-accent-foreground"
           : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
       )}
-      title={!isHovered ? label : undefined}
     >
       {isActive && (
         <motion.div
-          layoutId="sidebar-active"
-          className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-ready"
-          transition={SIDEBAR_MOTION.indicator}
+          layoutId="sidebar-active-bg"
+          className="absolute inset-0 rounded-md bg-sidebar-accent"
+          transition={ACTIVE_PILL_SPRING}
         />
       )}
-      <span className="relative inline-flex shrink-0 ml-1">
+      <div className="relative z-10 flex size-5 shrink-0 items-center justify-center">
         <Icon className="size-4" />
         {badge && (
           <span className="absolute -right-0.5 -top-0.5">{badge}</span>
         )}
-      </span>
+      </div>
       <motion.span
-        animate={{ width: isHovered ? "auto" : 0, opacity: isHovered ? 1 : 0 }}
+        initial={false}
+        animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
         transition={SIDEBAR_MOTION.label}
-        className="overflow-hidden whitespace-nowrap"
+        className="relative z-10 overflow-hidden whitespace-nowrap"
       >
         {label}
       </motion.span>
     </button>
   );
+
+  return button;
 }
 
 function SidebarFooterItem({
   icon: Icon,
   label,
-  isHovered,
+  labelVisible,
   onClick,
 }: {
   icon: React.ElementType;
   label: string;
-  isHovered: boolean;
+  labelVisible: boolean;
   onClick?: () => void;
 }) {
-  return (
+  const button = (
     <button
       onClick={onClick}
-      title={!isHovered ? label : undefined}
       className="flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
     >
-      <Icon className="size-4 shrink-0 ml-1" />
+      <div className="flex size-5 shrink-0 items-center justify-center">
+        <Icon className="size-4" />
+      </div>
       <motion.span
-        animate={{ width: isHovered ? "auto" : 0, opacity: isHovered ? 1 : 0 }}
+        initial={false}
+        animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
         transition={SIDEBAR_MOTION.label}
         className="overflow-hidden whitespace-nowrap"
       >
@@ -249,4 +356,6 @@ function SidebarFooterItem({
       </motion.span>
     </button>
   );
+
+  return button;
 }

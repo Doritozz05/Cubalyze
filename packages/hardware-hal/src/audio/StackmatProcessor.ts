@@ -1,3 +1,17 @@
+declare abstract class AudioWorkletProcessor {
+  readonly port: MessagePort;
+  process(
+    inputs: Float32Array[][],
+    outputs: Float32Array[][],
+    parameters: Record<string, Float32Array>
+  ): boolean;
+}
+
+declare function registerProcessor(
+  name: string,
+  processorCtor: new (options?: AudioWorkletNodeOptions) => AudioWorkletProcessor
+): void;
+
 export class StackmatProcessor extends AudioWorkletProcessor {
   private sampleRate: number;
   private samplesPerBit: number;
@@ -14,10 +28,10 @@ export class StackmatProcessor extends AudioWorkletProcessor {
   private startEdgePositiveCount: number = 0;
   private isValidatingStart: boolean = false;
 
-  constructor(options: AudioWorkletNodeOptions) {
+  constructor(options?: AudioWorkletNodeOptions) {
     super();
-    this.sampleRate = options.processorOptions?.sampleRate || 44100;
-    const baudRate = options.processorOptions?.baudRate || 1200;
+    this.sampleRate = options?.processorOptions?.sampleRate || 44100;
+    const baudRate = options?.processorOptions?.baudRate || 1200;
     this.samplesPerBit = this.sampleRate / baudRate;
 
     // Require at least 75% of a bit period of sustained positive signal
