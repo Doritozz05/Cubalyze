@@ -18,6 +18,7 @@ export const SolveSchema = z.object({
   method: z.string().optional(),
   /** How the solve was recorded: "smart" (cube hardware) or "manual". */
   source: z.enum(['smart', 'manual']).default('manual'),
+  note: z.string().nullable().optional(),
   moves: z.array(CubeMoveEventSchema).default([]),
   /**
    * Compact gyro/orientation timeline for smart cube solves with IMU.

@@ -58,6 +58,25 @@ export interface PreferencesState {
   /** Show PB delta (+/- offset from personal best) next to the timer. */
   showPbDelta: boolean;
   setShowPbDelta: (value: boolean) => void;
+
+  /** Custom sticker colors for the 'custom' cube skin. */
+  customStickerColors: {
+    U: string;
+    D: string;
+    F: string;
+    B: string;
+    R: string;
+    L: string;
+  };
+  setCustomStickerColors: (colors: Partial<{ U: string; D: string; F: string; B: string; R: string; L: string }>) => void;
+
+  /** Keyboard shortcuts configuration. */
+  shortcuts: {
+    newScramble: string;
+    copyScramble: string;
+    cancelTimer: string;
+  };
+  setShortcut: (key: 'newScramble' | 'copyScramble' | 'cancelTimer', value: string) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -98,6 +117,29 @@ export const createPreferencesStore = () => {
 
         showPbDelta: false,
         setShowPbDelta: (value) => set({ showPbDelta: value }),
+
+        customStickerColors: {
+          U: '#ece8e2',
+          D: '#ffe62a',
+          F: '#1abe57',
+          B: '#3d7ce0',
+          R: '#eb4242',
+          L: '#ff801f',
+        },
+        setCustomStickerColors: (colors) =>
+          set((state) => ({
+            customStickerColors: { ...state.customStickerColors, ...colors },
+          })),
+
+        shortcuts: {
+          newScramble: 'n',
+          copyScramble: 'c',
+          cancelTimer: 'escape',
+        },
+        setShortcut: (key, value) =>
+          set((state) => ({
+            shortcuts: { ...state.shortcuts, [key]: value },
+          })),
       }),
       {
         name: 'cubeforge-prefs',
@@ -112,6 +154,8 @@ export const createPreferencesStore = () => {
           audioCues: state.audioCues,
           voiceType: state.voiceType,
           showPbDelta: state.showPbDelta,
+          customStickerColors: state.customStickerColors,
+          shortcuts: state.shortcuts,
         }),
         version: 1,
       },

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 
 export interface UseShortcutsOptions {
   /** New scramble. Ignored while the timer is running/stopped. */
@@ -14,9 +16,9 @@ export interface UseShortcutsOptions {
 }
 
 /**
- * Global keyboard shortcuts (N / C / Esc). Space is handled inside
- * `useTimerUI`, so it is explicitly excluded here. Shortcuts that mutate
- * data (new / copy) are disabled while the timer is active.
+ * Global keyboard shortcuts (N / C / Esc by default, customizable via settings).
+ * Space is handled inside `useTimerUI`, so it is explicitly excluded here.
+ * Shortcuts that mutate data (new / copy) are disabled while the timer is active.
  */
 export function useShortcuts({
   onNewScramble,
@@ -24,6 +26,8 @@ export function useShortcuts({
   onCancel,
   timerStateRef,
 }: UseShortcutsOptions) {
+  const shortcuts = useStore(preferencesStore, (s) => s.shortcuts);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       // Never intercept modifier combos or Space (timer owns it).
@@ -41,7 +45,7 @@ export function useShortcuts({
       const st = timerStateRef?.current ?? "idle";
       const timerActive = st === "running" || st === "stopped";
 
-      if (key === "escape") {
+      if (key === shortcuts.cancelTimer.toLowerCase()) {
         if (onCancel) {
           e.preventDefault();
           onCancel();
@@ -50,15 +54,15 @@ export function useShortcuts({
       }
       if (timerActive) return;
 
-      if (key === "n" && onNewScramble) {
+      if (key === shortcuts.newScramble.toLowerCase() && onNewScramble) {
         e.preventDefault();
         onNewScramble();
-      } else if (key === "c" && onCopyScramble) {
+      } else if (key === shortcuts.copyScramble.toLowerCase() && onCopyScramble) {
         e.preventDefault();
         onCopyScramble();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onNewScramble, onCopyScramble, onCancel, timerStateRef]);
+  }, [onNewScramble, onCopyScramble, onCancel, timerStateRef, shortcuts]);
 }

@@ -26,6 +26,7 @@ import {
 import { SettingsDialog } from "@/components/Settings/SettingsDialog";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
+import type { Solve } from "@/types";
 
 export interface LeftSidebarProps {
   /** Currently active view — drives the active-pill highlight. */
@@ -36,6 +37,10 @@ export interface LeftSidebarProps {
   timerActive?: boolean;
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  /** Solves for the Data/Export settings section. */
+  solves?: Solve[];
+  /** Session name for export. */
+  sessionName?: string;
 }
 
 export function LeftSidebar({
@@ -44,6 +49,8 @@ export function LeftSidebar({
   timerActive,
   mobileOpen,
   onMobileOpenChange,
+  solves,
+  sessionName,
 }: LeftSidebarProps) {
   const isMobile = useIsMobile();
   const { resolvedTheme, setTheme } = useTheme();
@@ -200,7 +207,9 @@ export function LeftSidebar({
               onMobileOpenChange?.(false);
               setIsHovered(false);
             }
-          }} 
+          }}
+          solves={solves}
+          sessionName={sessionName}
         />
       </>
     );
@@ -232,6 +241,8 @@ export function LeftSidebar({
           setSettingsOpen(open);
           if (!open) setIsHovered(false);
         }}
+        solves={solves}
+        sessionName={sessionName}
       />
     </>
   );

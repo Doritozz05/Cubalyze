@@ -186,4 +186,11 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_algorithm_subsets_method_id ON algorithm_subsets(method_id);
     `,
   },
+  {
+    id: '009_add_note_column',
+    description: 'Add note column to solves table for user annotations',
+    sql: `
+      ALTER TABLE solves ADD COLUMN note TEXT;
+    `,
+  },
 ];

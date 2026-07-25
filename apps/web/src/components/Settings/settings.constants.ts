@@ -9,6 +9,8 @@ import {
   Bell,
   Wrench,
   Shuffle,
+  Keyboard,
+  Download,
 } from 'lucide-react';
 
 export interface SettingsSection {
@@ -66,6 +68,18 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Notifications',
     icon: Bell,
     description: 'Alerts, sound, and timer feedback.',
+  },
+  {
+    id: 'shortcuts',
+    label: 'Shortcuts',
+    icon: Keyboard,
+    description: 'Keyboard shortcuts for the timer and navigation.',
+  },
+  {
+    id: 'data',
+    label: 'Data',
+    icon: Download,
+    description: 'Export and manage your solve data.',
   },
   {
     id: 'advanced',

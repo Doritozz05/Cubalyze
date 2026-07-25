@@ -59,6 +59,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
   const [recentMoves, setRecentMoves] = useState<string[]>([]);
 
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
+  const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
 
   // Helper to push move notation to state
   const appendRecentMove = useCallback((notation: string) => {
@@ -72,8 +73,12 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
   useEffect(() => {
     if (!engineRef.current) return;
     const style = getSkinStyle(appearance3d);
+    // Override with custom sticker colors when 'custom' skin is active
+    if (appearance3d === 'custom') {
+      style.stickerColors = { ...customStickerColors };
+    }
     engineRef.current.updateStyle(style);
-  }, [appearance3d]);
+  }, [appearance3d, customStickerColors]);
 
   // ── Main initialization & lifecycle effect ──────────────────────────────
   useEffect(() => {

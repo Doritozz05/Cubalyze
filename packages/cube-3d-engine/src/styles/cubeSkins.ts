@@ -122,6 +122,27 @@ export const CUBE_SKINS: CubeSkin[] = [
       },
     },
   },
+
+  // ── Custom (user-editable sticker colors) ─────────────────────────────
+  {
+    id: 'custom',
+    label: 'Custom',
+    description:
+      'Your own color scheme. Pick colors for each face using the color pickers below.',
+    style: {
+      skinType: 'stickered',
+      coreColor: '#1a1a1a',
+      coreOpacity: 1.0,
+      stickerColors: {
+        U: '#ece8e2',
+        D: '#ffe62a',
+        F: '#1abe57',
+        B: '#3d7ce0',
+        R: '#eb4242',
+        L: '#ff801f',
+      },
+    },
+  },
 ];
 
 /** Convenience accessor: get a skin by its id. */

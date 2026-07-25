@@ -600,6 +600,8 @@ export default function App() {
               timerActive={timerRunning}
               mobileOpen={mobileNavOpen}
               onMobileOpenChange={setMobileNavOpen}
+              solves={solves}
+              sessionName={session?.name}
             />
           }
           isFocused={isFocused}

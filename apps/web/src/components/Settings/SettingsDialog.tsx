@@ -17,10 +17,17 @@ import { AnalysisSection } from './sections/AnalysisSection';
 import { SmartCubeSection } from './sections/SmartCubeSection';
 import { PlaceholderSection } from './sections/PlaceholderSection';
 import { ScrambleSection } from './sections/ScrambleSection';
+import { ShortcutsSection } from './sections/ShortcutsSection';
+import { DataSection } from './sections/DataSection';
+import type { Solve } from '@/types';
 
 export interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Solves data for the Data/Export section. */
+  solves?: Solve[];
+  /** Current session name for export filenames. */
+  sessionName?: string;
 }
 
 const sectionVariants = {
@@ -47,7 +54,7 @@ const sectionVariants = {
  * - Clean header area with title + description
  * - Modular: each section is a separate component
  */
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, solves, sessionName }: SettingsDialogProps) {
   const [activeSection, setActiveSection] = useState('appearance');
   const prevSection = useRef('appearance');
   // Keep a ref to avoid recreating callbacks on every section change
@@ -87,6 +94,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return <AnalysisSection />;
       case 'smart-cube':
         return <SmartCubeSection />;
+      case 'shortcuts':
+        return <ShortcutsSection />;
+      case 'data':
+        return <DataSection solves={solves ?? []} sessionName={sessionName} />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {
@@ -95,7 +106,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return null;
       }
     }
-  }, [activeSection]);
+  }, [activeSection, solves, sessionName]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

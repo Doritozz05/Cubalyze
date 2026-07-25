@@ -70,7 +70,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     penalty: normalizePenalty(dbSolve.penalty),
     scramble: dbSolve.scramble,
     timestamp: new Date(dbSolve.date).getTime(),
-    note: dbSolve.method,
+    note: dbSolve.note ?? undefined,
     method: dbSolve.method as UISolve['method'],
     source: (dbSolve.source as SolveSource) ?? "manual",
     moves: dbSolve.moves as UISolve['moves'],
@@ -308,7 +308,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
 
       existing.penalty = (updates.penalty ? normalizePenalty(updates.penalty) : normalizePenalty(existing.penalty)) as DBSolve['penalty'];
       if (updates.note !== undefined) {
-         existing.method = updates.note === null ? undefined : updates.note;
+         existing.note = updates.note === null ? undefined : updates.note;
       }
       if (updates.source !== undefined) {
          existing.source = updates.source;
