@@ -108,7 +108,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
         return null;
       }
     }
-  }, [activeSection, solves, sessionName]);
+  }, [activeSection, solves, sessionName, onImportSolves]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
