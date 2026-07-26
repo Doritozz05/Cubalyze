@@ -16,6 +16,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@/components/ui/*": ["../../packages/ui/src/components/*"],
       "@/*": ["./src/*", "../web/src/*"],
       "@cubeforge/hardware-hal": ["./src/hardware-hal-override.ts"]
     }
