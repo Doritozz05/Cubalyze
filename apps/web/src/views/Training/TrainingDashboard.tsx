@@ -9,10 +9,13 @@ import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
 import { TrainingCalendar } from "./TrainingCalendar";
-import { CrossPracticeView } from "./CrossPracticeView";
-import { BlockPracticeView } from "./BlockPracticeView";
-import { LSEPracticeView } from "./LSEPracticeView";
-import { EOPhasePracticeView } from "./EOPhasePracticeView";
+import { PlainPracticeView } from "./PlainPracticeView";
+import { BlindPracticeView } from "./BlindPracticeView";
+import { CrossOptimalView } from "./CrossOptimalView";
+import { CrossCNView } from "./CrossCNView";
+import { LSESubPhaseView } from "./LSESubPhaseView";
+import { EODetectView } from "./EODetectView";
+import { EOEfficiencyView } from "./EOEfficiencyView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import {
   Box,
@@ -31,6 +34,12 @@ import {
   Gauge,
   MoveHorizontal,
   Grid2x2,
+  Clock,
+  EyeOff,
+  Eye,
+  Layout,
+  ArrowUp,
+  MoveVertical,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -90,6 +99,42 @@ function getPhasePracticeType(phaseId: string): PhasePracticeType | null {
   return null;
 }
 
+/** Exercise modes available per phase type. Each is a direct button in the card. */
+interface PhaseModeDef {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const PHASE_MODES: Record<PhasePracticeType, PhaseModeDef[]> = {
+  cross: [
+    { id: "plain", label: "Plain", icon: Clock },
+    { id: "blind", label: "Blind", icon: EyeOff },
+    { id: "optimal", label: "≤8", icon: MoveHorizontal },
+    { id: "cn", label: "CN", icon: Palette },
+  ],
+  block: [
+    { id: "plain", label: "Plain", icon: Clock },
+    { id: "blind", label: "Blind", icon: EyeOff },
+    { id: "speed-vs-eff", label: "S/E", icon: Gauge },
+  ],
+  lse: [
+    { id: "plain", label: "Full", icon: Layout },
+    { id: "eo", label: "EO", icon: ArrowRightLeft },
+    { id: "ulur", label: "UL/UR", icon: ArrowUp },
+    { id: "mslice", label: "M", icon: MoveVertical },
+  ],
+  eo: [
+    { id: "plain", label: "Plain", icon: Clock },
+    { id: "detect", label: "Detect", icon: Eye },
+    { id: "efficiency", label: "≤mvs", icon: Gauge },
+  ],
+};
+
+function getPhaseModes(phaseType: PhasePracticeType): PhaseModeDef[] {
+  return PHASE_MODES[phaseType] ?? [];
+}
+
 function findSubsetId(methodId: string, phaseId: string): string | null {
   const phaseToSubsetName: Record<string, string> = {
     "oll": "OLL", "pll": "PLL", "f2l": "F2L", "cmll": "CMLL",
@@ -138,7 +183,7 @@ function FlatDashboard({
   methodMasteries,
   onDrill,
   onRecognize,
-  onPractice,
+  onPracticeMode,
   onStats,
   onFullSolve,
   dueCount,
@@ -149,7 +194,7 @@ function FlatDashboard({
   methodMasteries: Record<string, number>;
   onDrill: (methodId: string, phaseId: string, subsetId: string) => void;
   onRecognize: (methodId: string, phaseId: string, subsetId: string) => void;
-  onPractice: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType) => void;
+  onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
   onStats: (methodId: string, phaseId: string, phaseName: string) => void;
   onFullSolve: (methodId: string) => void;
   dueCount: number;
@@ -257,11 +302,16 @@ function FlatDashboard({
                     const sid = findSubsetId(method.id, phase.id);
                     if (sid) onRecognize(method.id, phase.id, sid);
                   }}
-                  onPractice={() => {
+                  onPracticeMode={(modeId) => {
                     const pt = getPhasePracticeType(phase.id);
-                    if (pt) onPractice(method.id, phase.id, phase.name, pt);
+                    if (pt) onPracticeMode(method.id, phase.id, phase.name, pt, modeId);
                   }}
                   onStats={() => onStats(method.id, phase.id, phase.name)}
+                  phaseModes={
+                    !phase.hasAlgorithms
+                      ? (() => { const pt = getPhasePracticeType(phase.id); return pt ? getPhaseModes(pt) : []; })()
+                      : null
+                  }
                 />
               ))}
             </div>
@@ -336,14 +386,16 @@ function ExerciseCard({
   phase,
   onDrill,
   onRecognize,
-  onPractice,
+  onPracticeMode,
   onStats,
+  phaseModes,
 }: {
   phase: PhaseDef;
   onDrill: () => void;
   onRecognize: () => void;
-  onPractice: () => void;
+  onPracticeMode: (modeId: string) => void;
   onStats: () => void;
+  phaseModes: PhaseModeDef[] | null;
 }) {
   const dotColor = PHASE_DOT[phase.id] ?? "bg-ink-3";
   const Icon = phase.icon;
@@ -366,28 +418,40 @@ function ExerciseCard({
         </div>
       </div>
       <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{phase.description}</p>
-      <div className="flex gap-1.5 pt-1 border-t border-line mt-auto">
+      <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap">
         {phase.hasAlgorithms ? (
           <>
-            <button onClick={onDrill} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
+            <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Drill
             </button>
-            <button onClick={onRecognize} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
+            <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
               Recognize
             </button>
-            <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto">
+            <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto">
+              Stats
+            </button>
+          </>
+        ) : phaseModes && phaseModes.length > 0 ? (
+          <>
+            {phaseModes.map((pm) => (
+              <button
+                key={pm.id}
+                onClick={() => onPracticeMode(pm.id)}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer"
+                title={pm.label}
+              >
+                <pm.icon className="size-3" />
+                {pm.label}
+              </button>
+            ))}
+            <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto">
               Stats
             </button>
           </>
         ) : (
-          <>
-            <button onClick={onPractice} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
-              Practice
-            </button>
-            <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto">
-              Stats
-            </button>
-          </>
+          <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
+            Stats
+          </button>
         )}
       </div>
     </motion.div>
@@ -409,6 +473,7 @@ interface PracticeViewState {
   phaseId: string;
   phaseName: string;
   phaseType: PhasePracticeType;
+  modeId: string;
 }
 
 interface RecognizeViewState {
@@ -516,8 +581,8 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     setRecognizeView({ methodId, phaseId, subsetId });
   };
 
-  const handlePractice = (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType) => {
-    setPracticeView({ methodId, phaseId, phaseName, phaseType });
+  const handlePracticeMode = (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => {
+    setPracticeView({ methodId, phaseId, phaseName, phaseType, modeId: mode });
   };
 
   const handleStats = (methodId: string, phaseId: string, phaseName: string) => {
@@ -598,41 +663,31 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
   }
 
   if (practiceView) {
+    const { methodId, phaseId, phaseName, phaseType, modeId } = practiceView;
+    const props = { methodId, phaseId, phaseName, onBack: handleBackFromSubView };
+
     return (
       <div className="relative flex-1 min-h-0 w-full">
         <div className="absolute inset-0 flex flex-col">
-          {practiceView.phaseType === "cross" && (
-            <CrossPracticeView
-              methodId={practiceView.methodId}
-              phaseId={practiceView.phaseId}
-              phaseName={practiceView.phaseName}
-              onBack={handleBackFromSubView}
-            />
+          {/* Generic: plain + speed-vs-eff */}
+          {(modeId === "plain" || modeId === "speed-vs-eff") && (
+            <PlainPracticeView {...props} exerciseLabel={modeId === "speed-vs-eff" ? "Speed vs Efficiency" : undefined} />
           )}
-          {practiceView.phaseType === "block" && (
-            <BlockPracticeView
-              methodId={practiceView.methodId}
-              phaseId={practiceView.phaseId}
-              phaseName={practiceView.phaseName}
-              onBack={handleBackFromSubView}
-            />
+          {/* Generic: blind */}
+          {modeId === "blind" && <BlindPracticeView {...props} />}
+
+          {/* Cross-specific */}
+          {phaseType === "cross" && modeId === "optimal" && <CrossOptimalView {...props} />}
+          {phaseType === "cross" && modeId === "cn" && <CrossCNView {...props} />}
+
+          {/* LSE-specific */}
+          {phaseType === "lse" && (modeId === "eo" || modeId === "ulur" || modeId === "mslice") && (
+            <LSESubPhaseView {...props} subPhase={modeId} />
           )}
-          {practiceView.phaseType === "lse" && (
-            <LSEPracticeView
-              methodId={practiceView.methodId}
-              phaseId={practiceView.phaseId}
-              phaseName={practiceView.phaseName}
-              onBack={handleBackFromSubView}
-            />
-          )}
-          {practiceView.phaseType === "eo" && (
-            <EOPhasePracticeView
-              methodId={practiceView.methodId}
-              phaseId={practiceView.phaseId}
-              phaseName={practiceView.phaseName}
-              onBack={handleBackFromSubView}
-            />
-          )}
+
+          {/* EO-specific */}
+          {phaseType === "eo" && modeId === "detect" && <EODetectView {...props} />}
+          {phaseType === "eo" && modeId === "efficiency" && <EOEfficiencyView {...props} />}
         </div>
       </div>
     );
@@ -649,7 +704,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
           methodMasteries={methodMasteries}
           onDrill={handleDrill}
           onRecognize={handleRecognize}
-          onPractice={handlePractice}
+          onPracticeMode={handlePracticeMode}
           onStats={handleStats}
           onFullSolve={handleFullSolve}
           dueCount={dueCount}
