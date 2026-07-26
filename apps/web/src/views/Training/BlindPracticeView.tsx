@@ -18,11 +18,11 @@ export function BlindPracticeView({ methodId, phaseId, phaseName, onBack }: Blin
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
   const {
-    phase, time, stoppedTime, press, release, reset,
+    phase, time, stoppedTime, press, release,
     displayScramble, hasSmartCube, smartCube, hintCtx,
     showVerdict, attempts, bestTime, avgTime, streak,
     handleCorrect, handleIncorrect, handleSkip,
-    regenerateScramble, currentScramble,
+    currentScramble,
   } = usePracticeSession({ methodId, phaseId, exerciseId: `blind-${phaseId}` });
 
   const [showScramble, setShowScramble] = useState(true);

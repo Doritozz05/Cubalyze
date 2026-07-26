@@ -78,12 +78,12 @@ export function MiniCube3DPanel({ className }: MiniCube3DPanelProps) {
 
       {/* Canvas area */}
       <div
-        ref={containerRef}
+        ref={containerRef as React.RefObject<HTMLDivElement>}
         className="relative w-full"
         style={{ aspectRatio: "1 / 1" }}
       >
         <canvas
-          ref={canvasRef}
+          ref={canvasRef as React.RefObject<HTMLCanvasElement>}
           className="absolute inset-0 h-full w-full outline-none"
         />
 

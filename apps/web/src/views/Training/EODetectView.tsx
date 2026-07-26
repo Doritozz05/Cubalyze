@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";

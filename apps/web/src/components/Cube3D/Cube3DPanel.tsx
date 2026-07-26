@@ -103,9 +103,9 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
       </div>
 
       {/* Canvas Wrapper */}
-      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={containerRef as React.RefObject<HTMLDivElement>} className="relative min-h-0 flex-1 overflow-hidden">
         <canvas
-          ref={canvasRef}
+          ref={canvasRef as React.RefObject<HTMLCanvasElement>}
           className={cn(
             "absolute inset-0 h-full w-full outline-none",
             isDragging ? "cursor-grabbing" : "cursor-grab"

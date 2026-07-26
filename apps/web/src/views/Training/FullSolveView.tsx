@@ -608,7 +608,6 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
               {solveMode === "targets" && (
                 <PhaseTargetsPanel
                   splits={splits}
-                  activeSplitIdx={activeSplitIdx}
                   totalTarget={totalTarget}
                   totalActual={totalActual}
                   onMarkSplit={markSplit}
@@ -656,10 +655,9 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
    ─────────────────────────────────────────────────────────────────────── */
 
 function PhaseTargetsPanel({
-  splits, activeSplitIdx, totalTarget, totalActual, onMarkSplit,
+  splits, totalTarget, totalActual, onMarkSplit,
 }: {
   splits: PhaseSplit[];
-  activeSplitIdx: number;
   totalTarget: number;
   totalActual: number;
   onMarkSplit: () => void;
