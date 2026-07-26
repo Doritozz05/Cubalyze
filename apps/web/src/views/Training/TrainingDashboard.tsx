@@ -144,17 +144,8 @@ function FlatDashboard({
   return (
     <>
       <header className="flex flex-col gap-2 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-[1.05rem] font-semibold tracking-tight text-ink">Training</h1>
-          {dueCount > 0 && (
-            <span className="nums shrink-0 rounded-full bg-caution/15 px-2 py-0.5 text-[0.58rem] font-medium text-caution">
-              {dueCount} due for review
-            </span>
-          )}
-        </div>
-
         {/* Method tabs — flat, no L2 step */}
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex gap-1 flex-wrap items-center">
           {METHODS.map((m) => {
             const MIcon = METHOD_ICONS[m.name] ?? Layers;
             const isActive = m.id === activeMethodId;
@@ -183,6 +174,11 @@ function FlatDashboard({
               </button>
             );
           })}
+          {dueCount > 0 && (
+            <span className="nums shrink-0 rounded-full bg-caution/15 px-2 py-0.5 text-[0.58rem] font-medium text-caution ml-auto">
+              {dueCount} due for review
+            </span>
+          )}
         </div>
       </header>
 
