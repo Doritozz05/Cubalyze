@@ -321,7 +321,8 @@ export class Cube3DEngine {
    *
    * Grays out:
    * 1. All non-target pieces in the U layer (gridY === 1).
-   * 2. All non-target pieces currently inside the FR target slot position (gridX === 1, gridZ === 1, gridY <= 0).
+   * 2. All pieces containing a Yellow sticker (initialGridY === 1) regardless of current position (front, back, middle, bottom).
+   * 3. All non-target pieces currently inside the FR target slot position (gridX === 1, gridZ === 1, gridY <= 0).
    *
    * Keeps colored:
    * 1. The target F2L pair pieces (initial position FR slot: initialGridX === 1, initialGridZ === 1, initialGridY !== 1).
@@ -339,10 +340,11 @@ export class Cube3DEngine {
         cubie.initialGridZ === 1 &&
         cubie.initialGridY !== 1;
 
+      const hasYellowSticker = cubie.initialGridY === 1;
       const isInULayer = cubie.gridY === 1;
       const isInFRSlot = cubie.gridX === 1 && cubie.gridZ === 1 && cubie.gridY <= 0;
 
-      const shouldGray = !isTargetPair && (isInULayer || isInFRSlot);
+      const shouldGray = !isTargetPair && (hasYellowSticker || isInULayer || isInFRSlot);
 
       if (shouldGray) {
         cubie.mesh.children.forEach((child) => {
