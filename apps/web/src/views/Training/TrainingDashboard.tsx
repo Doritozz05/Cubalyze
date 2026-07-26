@@ -28,7 +28,6 @@ import {
   Gauge,
   MoveHorizontal,
   Grid2x2,
-  Dumbbell,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -146,9 +145,6 @@ function FlatDashboard({
     <>
       <header className="flex flex-col gap-2 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="grid size-7 place-items-center rounded-md bg-ink text-surface">
-            <Dumbbell className="size-3.5" />
-          </div>
           <h1 className="text-[1.05rem] font-semibold tracking-tight text-ink">Training</h1>
           {dueCount > 0 && (
             <span className="nums shrink-0 rounded-full bg-caution/15 px-2 py-0.5 text-[0.58rem] font-medium text-caution">

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
@@ -140,8 +140,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Title & Description */}
           <div>
-            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-foreground" />
+            <h1 className="text-lg font-bold text-foreground tracking-tight">
               Speedcubing Skill Tree
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
