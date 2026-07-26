@@ -8,6 +8,12 @@ import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import { preferencesStore, orientationStore } from "@cubeforge/state";
 import {
+  StackmatAdapter,
+  GanTimerAdapter,
+  type HardwareTimerAdapter,
+  type HardwareTimerEvent,
+} from "@cubeforge/hardware-hal";
+import {
   useScrambleValidator,
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
@@ -649,6 +655,7 @@ export function useSolveSession(
   );
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const voiceTypePref = useStore(preferencesStore, (s) => s.voiceType);
+  const hardwareTimerPref = useStore(preferencesStore, (s) => s.hardwareTimer);
 
   const engine = useMemo(
     () => new TimerEngine({ useInspection: inspectionPref }),
@@ -953,6 +960,68 @@ export function useSolveSession(
     });
     return () => connSub?.unsubscribe();
   }, []);
+
+  // ── Hardware timer (Stackmat / GAN Timer) integration ──────────────────
+  // The adapter is created once and kept alive via a ref. On connect, it
+  // subscribes to the adapter's events$ stream; on disconnect it tears
+  // down cleanly. Events are mapped to engine calls:
+  //   hardwareDown → handleDown() (hold to arm / stop)
+  //   hardwareUp   → handleUp()   (start / cancel)
+  //   hardwareReset → reset()
+  const hwTimerRef = useRef<HardwareTimerAdapter | null>(null);
+  const hwTimerSubRef = useRef<import("rxjs").Subscription | null>(null);
+
+  useEffect(() => {
+    // Clean up any existing hardware timer
+    if (hwTimerSubRef.current) {
+      hwTimerSubRef.current.unsubscribe();
+      hwTimerSubRef.current = null;
+    }
+    if (hwTimerRef.current) {
+      void hwTimerRef.current.disconnect();
+      hwTimerRef.current = null;
+    }
+
+    const hwType = hardwareTimerPref;
+    if (hwType === "none") return;
+
+    const adapter: HardwareTimerAdapter =
+      hwType === "stackmat" ? new StackmatAdapter() : new GanTimerAdapter();
+    hwTimerRef.current = adapter;
+
+    void adapter.connect().then(() => {
+      // Subscribe to hardware events
+      hwTimerSubRef.current = adapter.events$.subscribe((evt: HardwareTimerEvent) => {
+        switch (evt.type) {
+          case "hardwareDown":
+            // emulate pressing the timer down
+            engine.handleDown();
+            break;
+          case "hardwareUp":
+            // emulate releasing the timer
+            engine.handleUp();
+            break;
+          case "hardwareReset":
+            engine.reset();
+            setTime(0);
+            break;
+        }
+      });
+    }).catch((err) => {
+      console.warn(`[HardwareTimer] Failed to connect ${hwType}:`, err);
+    });
+
+    return () => {
+      if (hwTimerSubRef.current) {
+        hwTimerSubRef.current.unsubscribe();
+        hwTimerSubRef.current = null;
+      }
+      if (hwTimerRef.current) {
+        void hwTimerRef.current.disconnect();
+        hwTimerRef.current = null;
+      }
+    };
+  }, [hardwareTimerPref, engine]);
 
   // Auto-arm logic
   const wasScrambledRef = useRef(false);

@@ -41,12 +41,22 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
           this.disconnect();
           return;
         case GanTimerState.GET_SET:
+          // Timer is armed — user is holding both hands on the pads.
+          this.eventsSubject.next({
+            type: 'hardwareDown',
+            leftHand: true,
+            rightHand: true,
+            timestamp: performance.now()
+          });
+          break;
         case GanTimerState.STOPPED:
         case GanTimerState.FINISHED:
+          // Hands back on pads → timer stopped. Emit hardwareDown so
+          // the TimerEngine's RUNNING branch stops the clock.
           this.eventsSubject.next({
-            type: 'hardwareUp',
-            leftHand: false,
-            rightHand: false,
+            type: 'hardwareDown',
+            leftHand: true,
+            rightHand: true,
             timestamp: performance.now()
           });
           break;
@@ -67,6 +77,7 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
           });
           break;
         case GanTimerState.HANDS_OFF:
+          // Hands removed → timer starts (READY → RUNNING)
           this.eventsSubject.next({
             type: 'hardwareUp',
             leftHand: false,

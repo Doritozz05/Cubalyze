@@ -28,6 +28,8 @@ export interface SettingsDialogProps {
   solves?: Solve[];
   /** Current session name for export filenames. */
   sessionName?: string;
+  /** Batch import callback for importing solves from files. */
+  onImportSolves?: (solves: ReturnType<typeof import('@/utils/importSolves').toSolveInput>[]) => Promise<void>;
 }
 
 const sectionVariants = {
@@ -54,7 +56,7 @@ const sectionVariants = {
  * - Clean header area with title + description
  * - Modular: each section is a separate component
  */
-export function SettingsDialog({ open, onOpenChange, solves, sessionName }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImportSolves }: SettingsDialogProps) {
   const [activeSection, setActiveSection] = useState('appearance');
   const prevSection = useRef('appearance');
   // Keep a ref to avoid recreating callbacks on every section change
@@ -97,7 +99,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName }: Sett
       case 'shortcuts':
         return <ShortcutsSection />;
       case 'data':
-        return <DataSection solves={solves ?? []} sessionName={sessionName} />;
+        return <DataSection solves={solves ?? []} sessionName={sessionName} onImportSolves={onImportSolves} />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {

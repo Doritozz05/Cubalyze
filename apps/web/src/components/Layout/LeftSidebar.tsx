@@ -41,6 +41,8 @@ export interface LeftSidebarProps {
   solves?: Solve[];
   /** Session name for export. */
   sessionName?: string;
+  /** Batch import callback for importing solves from files. */
+  onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource }>) => Promise<void>;
 }
 
 export function LeftSidebar({
@@ -51,6 +53,7 @@ export function LeftSidebar({
   onMobileOpenChange,
   solves,
   sessionName,
+  onImportSolves,
 }: LeftSidebarProps) {
   const isMobile = useIsMobile();
   const { resolvedTheme, setTheme } = useTheme();
@@ -210,6 +213,7 @@ export function LeftSidebar({
           }}
           solves={solves}
           sessionName={sessionName}
+          onImportSolves={onImportSolves}
         />
       </>
     );
@@ -243,6 +247,7 @@ export function LeftSidebar({
         }}
         solves={solves}
         sessionName={sessionName}
+        onImportSolves={onImportSolves}
       />
     </>
   );

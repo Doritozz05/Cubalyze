@@ -70,6 +70,10 @@ export interface PreferencesState {
   };
   setCustomStickerColors: (colors: Partial<{ U: string; D: string; F: string; B: string; R: string; L: string }>) => void;
 
+  /** Hardware timer type: none, stackmat (audio), or gan (Bluetooth). */
+  hardwareTimer: 'none' | 'stackmat' | 'gan';
+  setHardwareTimer: (value: 'none' | 'stackmat' | 'gan') => void;
+
   /** Keyboard shortcuts configuration. */
   shortcuts: {
     newScramble: string;
@@ -131,6 +135,9 @@ export const createPreferencesStore = () => {
             customStickerColors: { ...state.customStickerColors, ...colors },
           })),
 
+        hardwareTimer: 'none',
+        setHardwareTimer: (value) => set({ hardwareTimer: value }),
+
         shortcuts: {
           newScramble: 'n',
           copyScramble: 'c',
@@ -154,6 +161,7 @@ export const createPreferencesStore = () => {
           audioCues: state.audioCues,
           voiceType: state.voiceType,
           showPbDelta: state.showPbDelta,
+          hardwareTimer: state.hardwareTimer,
           customStickerColors: state.customStickerColors,
           shortcuts: state.shortcuts,
         }),
