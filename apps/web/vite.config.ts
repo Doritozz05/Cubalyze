@@ -43,9 +43,12 @@ export default defineConfig({
     exclude: ['@sqlite.org/sqlite-wasm']
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      // More specific alias must come first: redirect shadcn UI components
+      // to the shared @cubeforge/ui package.
+      { find: '@/components/ui', replacement: path.resolve(__dirname, '../../packages/ui/src/components') },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   plugins: [
     basicSsl(),

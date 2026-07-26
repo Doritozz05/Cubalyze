@@ -20,6 +20,7 @@
     "@cubeforge/hardware-hal": "workspace:*",
     "@cubeforge/math-core": "workspace:*",
     "@cubeforge/solver-engine": "workspace:*",
+    "@cubeforge/statistics": "workspace:*",
     "@cubeforge/state": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
     "@cubeforge/training": "workspace:*",

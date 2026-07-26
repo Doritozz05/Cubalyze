@@ -12,7 +12,7 @@ import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
-import { generateRandomSetup } from "@/lib/training/setupGenerator";
+import { generateRandomSetup } from "@cubeforge/training";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import {
   TrainingBreadcrumb,

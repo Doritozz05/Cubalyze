@@ -7,6 +7,7 @@
  *   2. PhaseSplitter — Automatic phase detection (CFOP, Roux, ZZ, Petrus)
  *   3. Metric Calculators — TPS, pauses, fluidity, efficiency, rotations
  *   4. Telemetry Service — Live metrics streaming during solve
+ *   5. Derived Visualization — Chart-ready data for insights dashboard
  *
  * All components are headless (no UI dependency) and can be used
  * both in real-time (during a solve) and offline (post-solve analysis).
@@ -28,3 +29,6 @@ export { RedundancyDetector } from './metrics/RedundancyDetector';
 export { CFOPMetricsCalculator } from './metrics/CFOPMetricsCalculator';
 export { RouxMetricsCalculator } from './metrics/RouxMetricsCalculator';
 export { MetricsAggregator } from './metrics/MetricsAggregator';
+
+// ─── Derived Visualization Data ──────────────────────────────────────────────
+export * from './derived';

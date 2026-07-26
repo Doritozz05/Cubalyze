@@ -23,6 +23,7 @@
   "dependencies": {
     "@cubeforge/math-core": "workspace:*",
     "@cubeforge/solver-engine": "workspace:*",
+    "@cubeforge/statistics": "workspace:*",
     "@cubeforge/types": "workspace:*"
   },
   "devDependencies": {

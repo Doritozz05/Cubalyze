@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { deriveHistogram } from "@/utils/insights";
 import { formatTime, computeStats } from "@/utils/formatTime";
+import { stdDeviation } from "@cubeforge/statistics";
 import type { Solve } from "@/types";
 
 export interface FloatingTimeDistributionProps {
@@ -106,7 +107,7 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
                 </span>
               </div>
               <span className="nums">
-                σ {computeStdDeviation(solves, stats.mean)}
+                σ {formatStdDeviation(solves, stats.mean)}
               </span>
             </div>
           </>
@@ -116,15 +117,8 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
   );
 }
 
-/** Compute standard deviation of solve times (excluding DNFs). */
-function computeStdDeviation(solves: Solve[], mean: number | null): string {
-  if (mean === null || solves.length < 2) return "—";
-  const valid = solves
-    .filter((s) => s.penalty !== "DNF")
-    .map((s) => s.time)
-    .filter((t) => Number.isFinite(t));
-  if (valid.length < 2) return "—";
-  const sumSq = valid.reduce((acc, t) => acc + (t - mean) ** 2, 0);
-  const stdDev = Math.sqrt(sumSq / valid.length);
-  return formatTime(stdDev);
+/** Standard deviation formatted for display. */
+function formatStdDeviation(solves: Solve[], mean: number | null): string {
+  const sd = stdDeviation(solves, mean);
+  return sd !== null ? formatTime(sd) : "—";
 }
