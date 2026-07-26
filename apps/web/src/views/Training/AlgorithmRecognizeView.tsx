@@ -7,7 +7,10 @@ import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
-  ArrowLeft, Check, X, ChevronRight, Target, Brain,
+  TrainingBreadcrumb,
+} from "./components";
+import {
+  Check, X, ChevronRight, Target, Brain,
   Shuffle, TrendingDown,
 } from "lucide-react";
 
@@ -273,16 +276,11 @@ function RecognizeHeader({
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
       {/* Breadcrumb + mode toggle row */}
       <div className="flex items-center gap-3">
-        <button onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0">
-          <ArrowLeft className="size-3" />Back
-        </button>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{methodName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{subsetName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-semibold text-ink">Recognize</span>
+        <TrainingBreadcrumb onBack={onBack} segments={[
+          { label: methodName },
+          { label: subsetName },
+          { label: "Recognize", isCurrent: true },
+        ]} />
 
         {/* Spacer */}
         <div className="flex-1" />

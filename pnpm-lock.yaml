@@ -308,6 +308,9 @@ importers:
       '@cubeforge/timer-engine':
         specifier: workspace:*
         version: link:../../packages/timer-engine
+      '@cubeforge/training':
+        specifier: workspace:*
+        version: link:../../packages/training
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../../packages/types

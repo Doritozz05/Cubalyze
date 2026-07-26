@@ -15,11 +15,13 @@ import { useOrientation } from "@/hooks/useOrientation";
 import { generateRandomSetup } from "@/lib/training/setupGenerator";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import {
-  ArrowLeft,
+  TrainingBreadcrumb,
+  VerdictOverlay,
+  StatChip,
+} from "./components";
+import {
   Eye,
   EyeOff,
-  Check,
-  X,
   SkipForward,
   Shuffle,
   Target,
@@ -415,41 +417,13 @@ export function AlgorithmDrillView({
               {/* Verdict overlay */}
               <AnimatePresence>
                 {showVerdict && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 rounded-xl bg-surface/98"
-                  >
-                    <span className="nums text-[2.5rem] sm:text-[3rem] font-bold text-ink tracking-tight">
-                      {formatTime(stoppedTime)}
-                    </span>
-                    <span className="nums text-[0.75rem] text-ink-3">
-                      TPS {calculateTps(defaultAlgorithm?.moves ?? [], stoppedTime)}
-                    </span>
-                    <div className="flex gap-3 mt-2">
-                      <button
-                        onClick={handleMarkIncorrect}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-hold/30 bg-hold-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-hold hover:bg-hold-soft/60 hover:border-hold/50 transition-all"
-                      >
-                        <X className="size-5" />
-                        Incorrect
-                      </button>
-                      <button
-                        onClick={handleMarkCorrect}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-ready/30 bg-ready-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-ready hover:bg-ready-soft/60 hover:border-ready/50 transition-all"
-                      >
-                        <Check className="size-5" />
-                        Correct
-                      </button>
-                    </div>
-                    <button
-                      onClick={handleSkip}
-                      className="text-[0.62rem] text-ink-3 hover:text-ink mt-1 transition-colors"
-                    >
-                      Skip without recording
-                    </button>
-                  </motion.div>
+                  <VerdictOverlay
+                    timeDisplay={formatTime(stoppedTime)}
+                    tpsDisplay={calculateTps(defaultAlgorithm?.moves ?? [], stoppedTime)}
+                    onCorrect={handleMarkCorrect}
+                    onIncorrect={handleMarkIncorrect}
+                    onSkip={handleSkip}
+                  />
                 )}
               </AnimatePresence>
 
@@ -509,13 +483,11 @@ function DrillHeader({
   return (
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0"><ArrowLeft className="size-3" />Back</button>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{methodName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{subsetName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-semibold text-ink">Drill</span>
+        <TrainingBreadcrumb onBack={onBack} segments={[
+          { label: methodName },
+          { label: subsetName },
+          { label: "Drill", isCurrent: true },
+        ]} />
         <span className="nums text-[0.62rem] text-ink-3 ml-auto">{masteredCount}/{totalCount} mastered</span>
         {smartCubeConnected && (
           <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">
@@ -688,11 +660,4 @@ function SessionStatsPanel({ totalAttempts, correctCount, streak, avgTime }: {
   );
 }
 
-function StatChip({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 p-2 rounded-lg bg-surface-2">
-      <span className="flex items-center gap-1 text-[0.55rem] text-ink-3"><Icon className="size-2.5" />{label}</span>
-      <span className="nums text-[0.75rem] font-semibold text-ink">{value}</span>
-    </div>
-  );
-}
+
