@@ -320,13 +320,11 @@ export class Cube3DEngine {
    * Applies F2L-specific masking to the 3D cube model.
    *
    * Grays out:
-   * 1. All non-target pieces in the U layer (gridY === 1).
-   * 2. All pieces containing a Yellow sticker (initialGridY === 1) regardless of current position (front, back, middle, bottom).
-   * 3. All non-target pieces currently inside the FR target slot position (gridX === 1, gridZ === 1, gridY <= 0).
+   * 1. All Last-Layer / OLL pieces containing Yellow (initialGridY === 1).
    *
    * Keeps colored:
-   * 1. The target F2L pair pieces (initial position FR slot: initialGridX === 1, initialGridZ === 1, initialGridY !== 1).
-   * 2. All solved cross and slot pieces (FL, BL, BR slots and D-layer cross).
+   * 1. All F2L pair pieces (including trapped pieces in BL, BR, FL, or FR slots & U layer).
+   * 2. All solved cross and slot pieces.
    *
    * @param grayColor CSS color string (default '#808080')
    */
@@ -335,18 +333,14 @@ export class Cube3DEngine {
 
     const cubies = this.model.getLogicalState();
     for (const cubie of cubies) {
-      const isTargetPair =
-        cubie.initialGridX === 1 &&
-        cubie.initialGridZ === 1 &&
-        cubie.initialGridY !== 1;
+      // In F2L (both Basic and Advanced F2L), pieces with initialGridY === 1
+      // belong to the U-layer (Yellow facelets / OLL pieces) in solved state.
+      // Those non-F2L pieces should be grayed out.
+      // All other cubies (initialGridY !== 1, i.e. F2L corner/edge pieces & Cross)
+      // are part of the active F2L setup or solved slots and must stay colored.
+      const isYellowPiece = cubie.initialGridY === 1;
 
-      const hasYellowSticker = cubie.initialGridY === 1;
-      const isInULayer = cubie.gridY === 1;
-      const isInFRSlot = cubie.gridX === 1 && cubie.gridZ === 1 && cubie.gridY <= 0;
-
-      const shouldGray = !isTargetPair && (hasYellowSticker || isInULayer || isInFRSlot);
-
-      if (shouldGray) {
+      if (isYellowPiece) {
         cubie.mesh.children.forEach((child) => {
           const mesh = child as Mesh;
           if (!mesh.isMesh) return;
