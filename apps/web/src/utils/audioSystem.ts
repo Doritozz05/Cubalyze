@@ -157,6 +157,66 @@ export class AudioSystem {
     if (!this.loadingStarted) this.init();
     this.speak("12 seconds");
   }
+
+  /**
+   * Reproduce un chime/fanfarria cristalina y minimalista de victoria al romper un PB.
+   * Utiliza la Web Audio API nativa para síntesis en tiempo real sin latencia.
+   */
+  public playPbFanfare(types: ("Single" | "Ao5" | "Ao12")[] = ["Single"]): void {
+    if (typeof window === "undefined") return;
+
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        // @ts-ignore fallback for legacy webkit
+        window.webkitAudioContext;
+
+      if (!AudioContextClass) return;
+
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+
+      // Frecuencias base en Hz (Arpegio E Major 7th / Bright victory chime)
+      // E5 = 659.25, G#5 = 830.61, B5 = 987.77, D#6 = 1244.51, E6 = 1318.51
+      const isMultiple = types.length > 1;
+      const isAo12 = types.includes("Ao12");
+
+      let freqs = [659.25, 830.61, 987.77, 1318.51];
+      if (isAo12 || isMultiple) {
+        freqs = [523.25, 659.25, 783.99, 987.77, 1046.5]; // C major 7th / Sparkle
+      }
+
+      const noteDuration = 0.12;
+      const stagger = 0.08;
+
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = idx === freqs.length - 1 ? "sine" : "triangle";
+        osc.frequency.setValueAtTime(freq, now + idx * stagger);
+
+        // ADSR Envelope: Atacable, brillante, decaimiento suave
+        const startTime = now + idx * stagger;
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + 0.35);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + noteDuration + 0.4);
+      });
+
+      // Limpieza automática del AudioContext
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 1500);
+    } catch (e) {
+      console.warn("[AudioSystem] Could not play PB fanfare:", e);
+    }
+  }
 }
 
 // Exportamos una instancia singleton para toda la app

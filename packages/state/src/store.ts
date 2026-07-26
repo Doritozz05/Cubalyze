@@ -59,6 +59,14 @@ export interface PreferencesState {
   showPbDelta: boolean;
   setShowPbDelta: (value: boolean) => void;
 
+  /** Play celebratory audio fanfare on Personal Best. */
+  pbCelebrationAudio: boolean;
+  setPbCelebrationAudio: (value: boolean) => void;
+
+  /** Display celebratory animation & banner on Personal Best. */
+  pbCelebrationAnimation: boolean;
+  setPbCelebrationAnimation: (value: boolean) => void;
+
   /** Custom sticker colors for the 'custom' cube skin. */
   customStickerColors: {
     U: string;
@@ -122,6 +130,12 @@ export const createPreferencesStore = () => {
         showPbDelta: false,
         setShowPbDelta: (value) => set({ showPbDelta: value }),
 
+        pbCelebrationAudio: true,
+        setPbCelebrationAudio: (value) => set({ pbCelebrationAudio: value }),
+
+        pbCelebrationAnimation: true,
+        setPbCelebrationAnimation: (value) => set({ pbCelebrationAnimation: value }),
+
         customStickerColors: {
           U: '#ece8e2',
           D: '#ffe62a',
@@ -161,6 +175,8 @@ export const createPreferencesStore = () => {
           audioCues: state.audioCues,
           voiceType: state.voiceType,
           showPbDelta: state.showPbDelta,
+          pbCelebrationAudio: state.pbCelebrationAudio,
+          pbCelebrationAnimation: state.pbCelebrationAnimation,
           hardwareTimer: state.hardwareTimer,
           customStickerColors: state.customStickerColors,
           shortcuts: state.shortcuts,

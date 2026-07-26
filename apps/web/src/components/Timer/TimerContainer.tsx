@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { TimerDisplay } from "./TimerDisplay";
+import { PbCelebrationBanner } from "./PbCelebrationBanner";
+import type { PbMilestoneResult } from "@/utils/pbDetection";
 import type { TimerState } from "@/types";
 import type { HintContext } from "./hintFor";
 
@@ -17,6 +19,10 @@ export interface TimerContainerProps {
   pb?: number | null;
   /** Show PB delta indicator next to timer. */
   showPbDelta?: boolean;
+  /** Active PB milestone result to celebrate (if any). */
+  pbMilestone?: PbMilestoneResult | null;
+  /** Callback to clear PB milestone state on dismissal. */
+  onDismissPbBanner?: () => void;
   /** Hint context required by `TimerDisplay`. */
   hintCtx: HintContext;
   /** Trigger the smart press logic. */
@@ -45,6 +51,8 @@ export function TimerContainer({
   lastTime,
   pb,
   showPbDelta,
+  pbMilestone,
+  onDismissPbBanner,
   hintCtx,
   onPress,
   onRelease,
@@ -94,6 +102,8 @@ export function TimerContainer({
     [onRelease],
   );
 
+  const hasPbActive = pbMilestone != null && pbMilestone.types.length > 0 && (phase === "stopped" || phase === "idle");
+
   return (
     <div
       role="button"
@@ -107,29 +117,39 @@ export function TimerContainer({
       }}
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full cursor-pointer flex-col items-center justify-center rounded-lg",
+        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full cursor-pointer flex-col items-center justify-center rounded-lg transition-all duration-300",
         "outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}
     >
-      {/* Subtle arming halo — only when ready/holding, keeps the look flat. */}
+      {/* Subtle arming halo or PB celebration halo. */}
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-0 rounded-lg transition-colors duration-200",
+          "pointer-events-none absolute inset-0 rounded-lg transition-all duration-300",
           phase === "ready" && "bg-ready-soft/60",
           phase === "holding" && "bg-hold-soft/40",
-          // `ready_for_move` lives between `inspection` and the first measured
-          // move: scramble verified, thumb released, waiting for the cube to
-          // start. The soft green tint mirrors the other arming halos so the
-          // visual rhythm reads "almost-ready" without screaming.
           phase === "ready_for_move" && "bg-ready-soft/40",
-        // Countdown: joins the arming-halo family under the caution hue so the
-        // timer area reads as "in warning mode" without the digits themselves
-        // needing additional decoration.
-        phase === "inspection" && "bg-caution-soft/30",
+          phase === "inspection" && "bg-caution-soft/30",
         )}
       />
+
+      {/* Floating PB Victory Banner */}
+      {hasPbActive && (
+        <div className="absolute top-4 z-20 w-full max-w-sm px-4">
+          <PbCelebrationBanner
+            types={pbMilestone.types}
+            singleTime={pbMilestone.singleTime}
+            ao5Time={pbMilestone.ao5Time}
+            ao12Time={pbMilestone.ao12Time}
+            prevSingleTime={pbMilestone.prevSingleTime}
+            prevAo5Time={pbMilestone.prevAo5Time}
+            prevAo12Time={pbMilestone.prevAo12Time}
+            onClose={onDismissPbBanner}
+          />
+        </div>
+      )}
+
       <TimerDisplay
         state={phase}
         displayTime={displayTime}

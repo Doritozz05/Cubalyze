@@ -19,6 +19,8 @@ import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { preferencesStore } from "@cubeforge/state";
+import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
+import { globalAudioSystem } from "@/utils/audioSystem";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { ThemeProvider } from "@/components/theme-provider";
 import { v4 as uuidv4 } from "uuid";
@@ -54,6 +56,11 @@ export default function App() {
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
+  const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
+  const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
+
+  // ── PB Celebration state ───────────────────────────────────────────────
+  const [activePbMilestone, setActivePbMilestone] = useState<PbMilestoneResult | null>(null);
 
   // ── Refs to avoid stale closures in the lifecycle callback ────────────
   const solvesRef = useRef(solves);
@@ -161,6 +168,17 @@ export default function App() {
       const solveId = uuidv4();
       pendingSolveIdRef.current = solveId;
 
+      // Check for Personal Best milestones (Single, Ao5, Ao12) before adding
+      const pbResult = detectPbMilestones(solvesRef.current, time, penalty);
+      if (pbResult.types.length > 0) {
+        if (pbCelebrationAudio) {
+          globalAudioSystem.playPbFanfare(pbResult.types);
+        }
+        if (pbCelebrationAnimation) {
+          setActivePbMilestone(pbResult);
+        }
+      }
+
       // Save with raw moves immediately so replay/timeline have data
       // from the first render. The analysis effect will overwrite with
       // compacted moves + computed metrics.
@@ -189,7 +207,7 @@ export default function App() {
           toast.error("Couldn't save solve — check console for details");
         });
     },
-    [addSolve, currentScramble, methodPref],
+    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
@@ -562,6 +580,8 @@ export default function App() {
           lastTime={timerLastTime}
           pb={previousPB}
           showPbDelta={showPbDelta}
+          pbMilestone={activePbMilestone}
+          onDismissPbBanner={() => setActivePbMilestone(null)}
           hintCtx={{
             smartCube: smartCubeConnected,
             scrambleVerif: scrambleVerification,
