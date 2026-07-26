@@ -33,7 +33,8 @@
       "@cubeforge/timer-engine": ["./packages/timer-engine/src/index.ts"],
       "@cubeforge/gan-protocol": ["./packages/gan-protocol/src/index.ts"],
       "@cubeforge/models": ["./packages/models/src/index.ts"],
-      "@cubeforge/solver-engine": ["./packages/solver-engine/src/index.ts"]
+      "@cubeforge/solver-engine": ["./packages/solver-engine/src/index.ts"],
+      "@cubeforge/training": ["./packages/training/src/index.ts"]
     }
   },
   "include": ["packages/*/src/**/*", "*.ts"],
