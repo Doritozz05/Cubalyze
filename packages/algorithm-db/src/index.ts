@@ -13,6 +13,7 @@ export {
   METHODS,
   SUBSETS,
   getSubsetsForMethod,
+  getChildSubsets,
   getMethod,
   getSubset,
 } from './methodRegistry';

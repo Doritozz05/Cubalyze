@@ -1,4 +1,4 @@
-import { Quaternion } from 'three';
+import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3 } from 'three';
 import { SceneManager } from './SceneManager';
 import { CubeMeshFactory, type CubeStyleOptions } from './CubeMeshFactory';
 import { CubeModel } from './CubeModel';
@@ -40,6 +40,9 @@ export class Cube3DEngine {
   private lastTime: number = 0;
   private isRunning: boolean = false;
   private animFrameId: number | null = null;
+
+  /** Track grayed-out sticker meshes so we can restore + dispose them. */
+  private grayedStickers: { mesh: Mesh; originalMat: Material }[] = [];
 
   constructor(options: Cube3DEngineOptions) {
     const { canvas, width, height, pixelRatio = 1, gyroSupported = false } = options;
@@ -241,9 +244,76 @@ export class Cube3DEngine {
     }
   }
 
+  /**
+   * Rotate the entire cube model around the Y axis (world-up).
+   * Used to align different F2L slots to the front-right viewing position
+   * without corrupting the facelet state.
+   *
+   * @param radians  Rotation angle in radians around world Y axis.
+   */
+  public rotateModelY(radians: number): void {
+    if (!this.model) return;
+    const q = new Quaternion().setFromAxisAngle(
+      new Vector3(0, 1, 0),
+      radians,
+    );
+    this.model.root.quaternion.copy(q);
+  }
+
   public updateStyle(newStyle: Partial<CubeStyleOptions>): void {
     if (this.factory) {
       this.factory.updateStyle(newStyle);
+    }
+  }
+
+  /**
+   * Restore all previously-grayed sticker materials to their original
+   * colors and dispose the cloned gray materials.
+   */
+  public clearLayerGray(): void {
+    for (const { mesh, originalMat } of this.grayedStickers) {
+      const current = mesh.material;
+      mesh.material = originalMat;
+      // Dispose the cloned gray material to avoid GPU memory leak
+      if (current !== originalMat && !Array.isArray(current)) {
+        current.dispose();
+      }
+    }
+    this.grayedStickers = [];
+  }
+
+  /**
+   * Gray out all sticker meshes on cubies belonging to a specific
+   * layer (face + value). Used for F2L visualization where the
+   * U (yellow) layer should appear gray to focus on the first two layers.
+   *
+   * Call `clearLayerGray()` before re-syncing facelets to restore
+   * original colors.
+   *
+   * @param axis  'x', 'y', or 'z'
+   * @param layerValue  -1, 0, or 1
+   * @param grayColor  CSS color string (default '#808080')
+   */
+  public setLayerStickerGray(
+    axis: 'x' | 'y' | 'z',
+    layerValue: number,
+    grayColor: string = '#808080',
+  ): void {
+    if (!this.model || !this.factory) return;
+
+    const cubies = this.model.getCubiesByFace(axis, layerValue);
+    for (const cubieGroup of cubies) {
+      cubieGroup.children.forEach((child) => {
+        const mesh = child as Mesh;
+        if (!mesh.isMesh) return;
+        const mat = mesh.material;
+        if (Array.isArray(mat)) return; // skip multi-material cores
+        if (!(mat as MeshBasicMaterial).isMeshBasicMaterial) return; // only stickers
+        // Clone the sticker material and set gray
+        this.grayedStickers.push({ mesh, originalMat: mat });
+        mesh.material = (mat as MeshBasicMaterial).clone();
+        (mesh.material as MeshBasicMaterial).color.set(grayColor);
+      });
     }
   }
 

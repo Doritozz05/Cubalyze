@@ -4,6 +4,7 @@ import { memo } from "react";
 import { X, Check, ExternalLink, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
+import { Case3DPanel } from "./Case3DPanel";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
 export interface CaseDetailPanelProps {
@@ -25,6 +26,18 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   onPracticeCase,
   className,
 }: CaseDetailPanelProps) {
+  if (caseData.diagramType === "3d-isometric") {
+    return (
+      <Case3DPanel
+        caseData={caseData}
+        algorithms={algorithms}
+        onClose={onClose}
+        onPracticeCase={onPracticeCase}
+        className={className}
+      />
+    );
+  }
+
   const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
 
   return (

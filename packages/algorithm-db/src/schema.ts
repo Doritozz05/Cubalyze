@@ -76,6 +76,7 @@ export const AlgorithmCaseSchema = z.object({
 export const AlgorithmSubsetSchema = z.object({
   id: z.string().uuid(),
   methodId: z.string().uuid(),
+  parentId: z.string().uuid().optional(),
   name: z.string(),
   description: z.string(),
   sortOrder: z.number().int().default(0),

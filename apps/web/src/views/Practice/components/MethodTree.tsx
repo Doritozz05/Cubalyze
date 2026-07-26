@@ -1,9 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { METHODS, getSubsetsForMethod } from "@cubeforge/algorithm-db";
+import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
 
 export interface MethodTreeProps {
@@ -47,8 +47,11 @@ function MethodNode({
   onSelectSubset: (subsetId: string) => void;
 }) {
   const subsets = getSubsetsForMethod(method.id);
-  // Auto-expand if any child is selected
-  const hasSelected = subsets.some((s) => s.id === selectedSubsetId);
+  const hasSelected = subsets.some((s) => {
+    if (s.id === selectedSubsetId) return true;
+    const children = getChildSubsets(s.id);
+    return children.some((c) => c.id === selectedSubsetId);
+  });
 
   return (
     <div>
@@ -76,8 +79,8 @@ function MethodNode({
             <SubsetItem
               key={subset.id}
               subset={subset}
-              isSelected={subset.id === selectedSubsetId}
-              onClick={() => onSelectSubset(subset.id)}
+              selectedSubsetId={selectedSubsetId}
+              onSelectSubset={onSelectSubset}
             />
           ))}
       </div>
@@ -87,16 +90,65 @@ function MethodNode({
 
 function SubsetItem({
   subset,
-  isSelected,
-  onClick,
+  selectedSubsetId,
+  onSelectSubset,
 }: {
   subset: AlgorithmSubset;
-  isSelected: boolean;
-  onClick: () => void;
+  selectedSubsetId: string | null;
+  onSelectSubset: (subsetId: string) => void;
 }) {
+  const children = getChildSubsets(subset.id);
+  const isParent = children.length > 0;
+  const hasSelectedChild = children.some((c) => c.id === selectedSubsetId);
+  const [expanded, setExpanded] = useState(hasSelectedChild);
+
+  if (isParent) {
+    return (
+      <div className="my-0.5">
+        <div
+          onClick={() => setExpanded(!expanded)}
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 text-[0.7rem] rounded cursor-pointer transition-colors font-medium",
+            hasSelectedChild || subset.id === selectedSubsetId
+              ? "text-ink"
+              : "text-ink-2 hover:text-ink hover:bg-surface-2/50",
+          )}
+        >
+          <ChevronRight
+            className={cn(
+              "size-3 shrink-0 transition-transform text-ink-3",
+              expanded && "rotate-90",
+            )}
+          />
+          <span>{subset.name}</span>
+        </div>
+
+        {expanded && (
+          <div className="ml-3 border-l border-line/40 pl-2.5 space-y-0.5 mt-0.5">
+            {children.map((child) => (
+              <button
+                key={child.id}
+                onClick={() => onSelectSubset(child.id)}
+                className={cn(
+                  "block w-full text-left px-2 py-1 text-[0.68rem] rounded transition-colors",
+                  child.id === selectedSubsetId
+                    ? "bg-surface-2 text-ink font-semibold"
+                    : "text-ink-3 hover:text-ink-2 hover:bg-surface-2/50",
+                )}
+              >
+                {child.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const isSelected = subset.id === selectedSubsetId;
   return (
     <button
-      onClick={onClick}
+      onClick={() => onSelectSubset(subset.id)}
       className={cn(
         "block w-full text-left px-2 py-1 text-[0.7rem] rounded transition-colors",
         isSelected

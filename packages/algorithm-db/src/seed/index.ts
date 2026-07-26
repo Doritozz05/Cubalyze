@@ -1,6 +1,9 @@
 import { PLL_CASES } from './cfop-pll';
 import { OLL_CASES } from './cfop-oll';
+import { ALL_F2L_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES } from './cfop-f2l';
 import type { AlgorithmCase, Algorithm } from '../schema';
+
+export { BASIC_F2L_CASES, ADVANCED_F2L_CASES, ALL_F2L_CASES };
 
 /** All seed cases from all methods/subsets. */
 export interface SeedData {
@@ -29,7 +32,13 @@ export function getSeedData(): SeedData {
     }
   }
 
-  // Future: CFOP → F2L, Roux → CMLL, etc.
+  // ─── CFOP → F2L (Basic & Advanced) ───────────────────────────────────
+  for (const f2l of ALL_F2L_CASES) {
+    cases.push(f2l.caseDef);
+    for (const a of f2l.algorithms) {
+      algorithms.push(a);
+    }
+  }
 
   return { cases, algorithms };
 }
