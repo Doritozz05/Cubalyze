@@ -33,3 +33,7 @@ export { exerciseRegistry } from './exercises';
 // ─── Session ──────────────────────────────────────────────────────────────
 export { TrainingSessionEngine } from './session';
 export type { SessionEvent, SessionStateListener } from './session';
+
+// ─── Progress ─────────────────────────────────────────────────────────────
+export { ProgressTracker } from './progress';
+export type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord } from './progress';

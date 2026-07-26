@@ -9,6 +9,8 @@ import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import {
   TrainingBreadcrumb,
 } from "./components";
+import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import type { AlgorithmProgressRecord } from "@cubeforge/training";
 import {
   Check, X, ChevronRight, Target, Brain,
   Shuffle, TrendingDown,
@@ -31,15 +33,6 @@ interface QuizRound {
   answered: boolean;
   /** Random rotation applied to the diagram (in degrees: 0, 90, 180, 270) */
   rotation: number;
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Mock helpers  (will be replaced with real mastery data later)
-   ─────────────────────────────────────────────────────────────────────── */
-
-function mockCaseMastery(caseNumber: string) {
-  const n = parseInt(caseNumber.replace(/\D/g, ""), 10) || 0;
-  return Math.min(99, 30 + ((n * 17) % 70));
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -111,10 +104,32 @@ export function AlgorithmRecognizeView({
     [allCases, subsetId]
   );
 
-  // Weakest cases first (sorted by ascending mastery)
+  // ── Real progress for weakness ordering ────────────────────────────────
+  const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
+
+  useEffect(() => {
+    if (!ready) return;
+    getSubsetProgress(subsetId).then((records) => {
+      const map = new Map<string, AlgorithmProgressRecord>();
+      for (const r of records) {
+        map.set(r.algorithmId, r);
+      }
+      setProgressMap(map);
+    });
+  }, [ready, subsetId, getSubsetProgress]);
+
+  // Weakest cases first (sorted by ascending mastery from real DB)
   const weaknessOrdered = useMemo(
-    () => [...subsetCases].sort((a, b) => mockCaseMastery(a.caseNumber) - mockCaseMastery(b.caseNumber)),
-    [subsetCases],
+    () => {
+      if (progressMap.size === 0) return [...subsetCases];
+      return [...subsetCases].sort((a, b) => {
+        const ma = progressMap.get(a.id)?.mastery ?? 0;
+        const mb = progressMap.get(b.id)?.mastery ?? 0;
+        return ma - mb;
+      });
+    },
+    [subsetCases, progressMap],
   );
 
   // ── Visualization style ────────────────────────────────────────────────
@@ -136,16 +151,13 @@ export function AlgorithmRecognizeView({
   const generateRound = useCallback(() => {
     if (subsetCases.length < 2) return;
 
-    // Pick the target case
     let targetCase: AlgorithmCase;
 
-    if (mode === "weakest") {
-      // Go through weakest-ordered cases sequentially
+    if (mode === "weakest" && weaknessOrdered.length > 0) {
       const idx = roundIndexRef.current % weaknessOrdered.length;
       targetCase = weaknessOrdered[idx];
       roundIndexRef.current = idx + 1;
     } else {
-      // Random — pick any case
       targetCase = subsetCases[Math.floor(Math.random() * subsetCases.length)];
     }
 
@@ -184,7 +196,21 @@ export function AlgorithmRecognizeView({
       total: prev.total + 1,
     }));
     setSeenCaseIds((prev) => new Set(prev).add(round.caseId));
-  }, [round]);
+
+    // Persist to DB for progress tracking + SRS
+    dbPersistAttempt({
+      exerciseId: `recognize-${subsetId}`,
+      methodId,
+      phaseId: _phaseId as string,
+      caseId: round.caseId,
+      timeMs: 0, // recognition quiz has no timer
+      verdict: isCorrect ? "correct" : "incorrect",
+      playMode: "manual",
+      scramble: "",
+    }).catch((err) => {
+      console.error("[RecognizeView] Failed to persist attempt:", err);
+    });
+  }, [round, dbPersistAttempt, subsetId, methodId, _phaseId]);
 
   // ── Go to next round ────────────────────────────────────────────────
   const handleNext = useCallback(() => {

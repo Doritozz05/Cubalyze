@@ -19,6 +19,8 @@ import {
   VerdictOverlay,
   StatChip,
 } from "./components";
+import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import type { AlgorithmProgressRecord } from "@cubeforge/training";
 import {
   Eye,
   EyeOff,
@@ -45,17 +47,6 @@ interface DrillAttempt {
   timeMs: number;
   correct: boolean;
   timestamp: number;
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Mock data
-   ─────────────────────────────────────────────────────────────────────── */
-
-function mockCaseProgress(caseNumber: string) {
-  const n = parseInt(caseNumber.replace(/\D/g, ""), 10) || 0;
-  const mastery = 30 + ((n * 17) % 70);
-  const bestTime = 800 + ((n * 53) % 2200);
-  return { mastery: Math.min(99, mastery), bestTimeMs: bestTime, attempts: 3 + (n % 15) };
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -163,6 +154,27 @@ export function AlgorithmDrillView({
     isScrambled: drillSmartCube.validation.isScrambled,
   }), [hasSmartCube, drillSmartCube.validation.isScrambled]);
 
+  // ── Real progress from DB ──────────────────────────────────────────────
+  const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
+
+  useEffect(() => {
+    if (!ready) return;
+    getSubsetProgress(subsetId).then((records) => {
+      const map = new Map<string, AlgorithmProgressRecord>();
+      for (const r of records) {
+        map.set(r.algorithmId, r);
+      }
+      setProgressMap(map);
+    });
+  }, [ready, subsetId, getSubsetProgress]);
+
+  // Helper for per-case progress with zero fallback
+  const getProgress = useCallback((caseId: string): { mastery: number; bestTimeMs: number; attempts: number } => {
+    const p = progressMap.get(caseId);
+    return { mastery: p?.mastery ?? 0, bestTimeMs: p?.bestTimeMs ?? 0, attempts: p?.totalAttempts ?? 0 };
+  }, [progressMap]);
+
   // ── Derived data ─────────────────────────────────────────────────────
   const selectedCase = useMemo(
     () => (selectedCaseId ? subsetCases.find((c) => c.id === selectedCaseId) ?? null : null),
@@ -176,9 +188,14 @@ export function AlgorithmDrillView({
 
   const weaknessOrdered = useMemo(() => {
     return [...subsetCases].sort((a, b) => {
-      return mockCaseProgress(a.caseNumber).mastery - mockCaseProgress(b.caseNumber).mastery;
+      return getProgress(a.id).mastery - getProgress(b.id).mastery;
     });
-  }, [subsetCases]);
+  }, [subsetCases, getProgress]);
+
+  const masteredCount = useMemo(
+    () => subsetCases.filter((c) => getProgress(c.id).mastery >= 90).length,
+    [subsetCases, getProgress],
+  );
 
   const correctAttempts = attempts.filter((a) => a.correct);
   const streak = useMemo(() => {
@@ -267,8 +284,22 @@ export function AlgorithmDrillView({
       };
       setAttempts((prev) => [attempt, ...prev]);
       if (!correct && revealIfFail) setShowAlgorithm(true);
+
+      // Persist to DB for progress tracking + SRS
+      dbPersistAttempt({
+        exerciseId: `drill-${subsetId}`,
+        methodId,
+        phaseId: _phaseId as string,
+        caseId: selectedCase.id,
+        timeMs: stoppedTime,
+        verdict: correct ? "correct" : "incorrect",
+        playMode: hasSmartCube ? "smart-cube" : "manual",
+        scramble: currentSetup,
+      }).catch((err) => {
+        console.error("[DrillView] Failed to persist attempt:", err);
+      });
     },
-    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime],
+    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime, dbPersistAttempt, subsetId, methodId, _phaseId, hasSmartCube, currentSetup],
   );
 
   const handleMarkCorrect = useCallback(() => {
@@ -311,7 +342,7 @@ export function AlgorithmDrillView({
           subsetName={subset?.name ?? "?"}
           drillMode={drillMode}
           onModeChange={handleModeChange}
-          masteredCount={subsetCases.filter((c) => mockCaseProgress(c.caseNumber).mastery >= 90).length}
+          masteredCount={masteredCount}
           totalCount={subsetCases.length}
           onBack={onBack}
           smartCubeConnected={drillSmartCube.smartCubeConnected}
@@ -449,16 +480,16 @@ export function AlgorithmDrillView({
 
             <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-line bg-surface">
               {drillMode === "single" && (
-                <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "random" && (
-                <RandomModePanel cases={subsetCases} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <RandomModePanel cases={subsetCases} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "sequential" && (
-                <SequentialModePanel cases={subsetCases} currentIndex={seqIndex} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <SequentialModePanel cases={subsetCases} currentIndex={seqIndex} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "weakness" && (
-                <WeaknessModePanel cases={weaknessOrdered} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <WeaknessModePanel cases={weaknessOrdered} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
             </div>
 
@@ -513,8 +544,10 @@ function DrillHeader({
    Sidebar panels
    ─────────────────────────────────────────────────────────────────────── */
 
-function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+type ProgressHelper = (id: string) => { mastery: number; bestTimeMs: number; attempts: number };
+
+function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3.5 flex flex-col h-full">
@@ -525,7 +558,7 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: 
       <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-0.5">
         {cases.map((c) => {
           const isSelected = c.id === selectedCaseId;
-          const progress = mockCaseProgress(c.caseNumber);
+          const progress = getProgress(c.id);
           const caseAlg = algorithms.find((a) => a.caseId === c.id && a.isDefault) ?? algorithms.find((a) => a.caseId === c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
@@ -547,11 +580,11 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: 
   );
 }
 
-function RandomModePanel({ cases, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+function RandomModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   const selected = cases.find((c) => c.id === selectedCaseId);
-  const progress = selected ? mockCaseProgress(selected.caseNumber) : null;
+  const progress = selected ? getProgress(selected.id) : null;
   return (
     <div className="p-3 flex flex-col items-center gap-4 h-full justify-center">
       <Shuffle className="size-8 text-ink-3/40" />
@@ -575,8 +608,8 @@ function RandomModePanel({ cases, selectedCaseId, onSelectCase }: {
   );
 }
 
-function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; currentIndex: number; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; currentIndex: number; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3">
@@ -594,7 +627,7 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
         {cases.map((c, idx) => {
           const isCurrent = c.id === selectedCaseId;
           const isCompleted = idx < currentIndex;
-          const progress = mockCaseProgress(c.caseNumber);
+          const progress = getProgress(c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
               className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors",
@@ -614,8 +647,8 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
   );
 }
 
-function WeaknessModePanel({ cases, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3">
@@ -623,7 +656,7 @@ function WeaknessModePanel({ cases, selectedCaseId, onSelectCase }: {
       <p className="text-[0.58rem] text-ink-3/60 px-1 mb-2">Prioritized by lowest mastery. Practice your weakest cases to improve overall consistency.</p>
       <div className="space-y-1">
         {cases.slice(0, 10).map((c, idx) => {
-          const progress = mockCaseProgress(c.caseNumber);
+          const progress = getProgress(c.id);
           const isSelected = c.id === selectedCaseId;
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}

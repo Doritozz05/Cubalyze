@@ -193,4 +193,65 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE solves ADD COLUMN note TEXT;
     `,
   },
+  {
+    id: '010_create_training_tables',
+    description: 'Create training_attempts, algorithm_progress, and exercise_progress tables',
+    sql: `
+      CREATE TABLE IF NOT EXISTS training_attempts (
+        id TEXT PRIMARY KEY,
+        exercise_id TEXT NOT NULL,
+        method_id TEXT NOT NULL,
+        phase_id TEXT,
+        subset_id TEXT,
+        case_id TEXT,
+        scramble TEXT NOT NULL DEFAULT '',
+        time_ms INTEGER NOT NULL,
+        verdict TEXT NOT NULL DEFAULT 'correct',
+        play_mode TEXT NOT NULL DEFAULT 'manual',
+        expected_moves TEXT,
+        executed_moves TEXT,
+        tps REAL,
+        move_count INTEGER,
+        rotation_count INTEGER,
+        inspection_ms INTEGER,
+        timestamp INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_exercise ON training_attempts(exercise_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_method ON training_attempts(method_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_case ON training_attempts(case_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_timestamp ON training_attempts(timestamp);
+
+      CREATE TABLE IF NOT EXISTS algorithm_progress (
+        id TEXT PRIMARY KEY,
+        algorithm_id TEXT NOT NULL UNIQUE,
+        mastery INTEGER NOT NULL DEFAULT 0,
+        accuracy REAL NOT NULL DEFAULT 0,
+        best_time_ms INTEGER NOT NULL DEFAULT 0,
+        avg_time_ms INTEGER NOT NULL DEFAULT 0,
+        total_attempts INTEGER NOT NULL DEFAULT 0,
+        correct_streak INTEGER NOT NULL DEFAULT 0,
+        last_practiced_at INTEGER NOT NULL DEFAULT 0,
+        srs_next_review_at INTEGER NOT NULL DEFAULT 0,
+        srs_interval_days INTEGER NOT NULL DEFAULT 0,
+        srs_ease_factor REAL NOT NULL DEFAULT 2.5
+      );
+      CREATE INDEX IF NOT EXISTS idx_algorithm_progress_mastery ON algorithm_progress(mastery);
+      CREATE INDEX IF NOT EXISTS idx_algorithm_progress_srs ON algorithm_progress(srs_next_review_at);
+
+      CREATE TABLE IF NOT EXISTS exercise_progress (
+        id TEXT PRIMARY KEY,
+        exercise_id TEXT NOT NULL,
+        method_id TEXT NOT NULL,
+        phase_id TEXT,
+        total_sessions INTEGER NOT NULL DEFAULT 0,
+        total_attempts INTEGER NOT NULL DEFAULT 0,
+        best_accuracy REAL NOT NULL DEFAULT 0,
+        best_time_ms INTEGER NOT NULL DEFAULT 0,
+        avg_time_ms INTEGER NOT NULL DEFAULT 0,
+        last_practiced_at INTEGER NOT NULL DEFAULT 0,
+        UNIQUE(exercise_id, method_id, phase_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_exercise_progress_method ON exercise_progress(method_id);
+    `,
+  },
 ];
