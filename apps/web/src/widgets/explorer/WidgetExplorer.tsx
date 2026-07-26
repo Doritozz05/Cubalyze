@@ -161,7 +161,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${EXPLORER_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0`}
+        className={`${EXPLORER_DIALOG_WIDTH} h-[580px] max-h-[85vh] overflow-hidden p-0`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
