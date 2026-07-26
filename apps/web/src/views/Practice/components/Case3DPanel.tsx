@@ -58,6 +58,8 @@ function buildF2LSkinStyle() {
       ...base.stickerColors,
       U: base.stickerColors.D, // yellow on top
       D: base.stickerColors.U, // white on bottom
+      R: base.stickerColors.L, // orange on right (when Green is front & Yellow is top)
+      L: base.stickerColors.R, // red on left
     },
   };
 }
