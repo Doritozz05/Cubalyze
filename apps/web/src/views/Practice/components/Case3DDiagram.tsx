@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useCube3D } from "@/hooks/useCube3D";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
 import { getSkinStyle } from "@cubeforge/cube-3d-engine";
+import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 
 const F2L_SUBSET_IDS = new Set([
@@ -35,83 +36,6 @@ function buildF2LSkinStyle() {
   };
 }
 
-// Global snapshot cache to store generated 3D image data URLs
-const SNAPSHOT_CACHE = new Map<string, string>();
-const STORAGE_PREFIX = "cubeforge_snap_3d_";
-
-function getCachedSnapshot(key: string): string | null {
-  if (SNAPSHOT_CACHE.has(key)) return SNAPSHOT_CACHE.get(key)!;
-  if (typeof window !== "undefined") {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_PREFIX + key);
-      if (stored) {
-        SNAPSHOT_CACHE.set(key, stored);
-        return stored;
-      }
-    } catch {
-      // sessionStorage unavailable or access denied
-    }
-  }
-  return null;
-}
-
-function setCachedSnapshot(key: string, dataUrl: string) {
-  SNAPSHOT_CACHE.set(key, dataUrl);
-  if (typeof window !== "undefined") {
-    try {
-      sessionStorage.setItem(STORAGE_PREFIX + key, dataUrl);
-    } catch {
-      // Storage quota exceeded or unavailable
-    }
-  }
-}
-
-// Global Concurrency Queue to prevent WebGL Context Limits & Main Thread Freezes
-type Task = () => void;
-
-class WebGLQueue {
-  private activeCount = 0;
-  private maxConcurrent = 1; // Only 1 WebGL snapshot engine active at any moment
-  private queue: Task[] = [];
-
-  acquire(run: Task): () => void {
-    let cancelled = false;
-
-    const task = () => {
-      if (cancelled) {
-        this.release();
-        return;
-      }
-      this.activeCount++;
-      run();
-    };
-
-    if (this.activeCount < this.maxConcurrent) {
-      task();
-    } else {
-      this.queue.push(task);
-    }
-
-    return () => {
-      cancelled = true;
-      const idx = this.queue.indexOf(task);
-      if (idx !== -1) {
-        this.queue.splice(idx, 1);
-      }
-    };
-  }
-
-  release() {
-    this.activeCount = Math.max(0, this.activeCount - 1);
-    if (this.queue.length > 0) {
-      const next = this.queue.shift();
-      next?.();
-    }
-  }
-}
-
-const renderQueue = new WebGLQueue();
-
 export interface Case3DDiagramProps {
   caseData: AlgorithmCase;
   selectedSlot?: number;
@@ -129,26 +53,21 @@ export function Case3DDiagram({
   interactive = false,
 }: Case3DDiagramProps) {
   const cacheKey = `${caseData.id}_${caseData.setupScramble}_${selectedSlot}`;
+  const service = Global3DSnapshotService.getInstance();
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
-    () => getCachedSnapshot(cacheKey),
+    () => service.getCachedSnapshot(cacheKey),
   );
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // If a snapshot is cached and we don't require an interactive 3D canvas, render static 3D image instantly!
-  if (!interactive && snapshotUrl) {
+  // If interactive mode is requested (e.g. inside detail panel), use live WebGL canvas directly.
+  if (interactive) {
     return (
       <div className="flex flex-col items-center w-full">
-        <div
-          className={cn(
-            "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs flex items-center justify-center p-1",
-            className,
-          )}
-        >
-          <img
-            src={snapshotUrl}
-            alt={caseData.name}
-            className="h-full w-full object-contain pointer-events-none"
-          />
-        </div>
+        <Case3DCanvas
+          caseData={caseData}
+          selectedSlot={selectedSlot}
+          className={className}
+        />
         {showSetup && caseData.setupScramble && (
           <div className="mt-2 text-center text-[0.65rem] text-ink-3">
             <span className="font-semibold text-ink-2">Setup:</span>{" "}
@@ -159,102 +78,73 @@ export function Case3DDiagram({
     );
   }
 
-  return (
-    <Case3DDiagramCore
-      caseData={caseData}
-      selectedSlot={selectedSlot}
-      className={className}
-      showSetup={showSetup}
-      interactive={interactive}
-      onSnapshot={(url) => {
-        setCachedSnapshot(cacheKey, url);
-        setSnapshotUrl(url);
-      }}
-    />
-  );
-}
-
-function Case3DDiagramCore({
-  caseData,
-  selectedSlot,
-  className,
-  showSetup,
-  interactive,
-  onSnapshot,
-}: {
-  caseData: AlgorithmCase;
-  selectedSlot: number;
-  className?: string;
-  showSetup: boolean;
-  interactive: boolean;
-  onSnapshot: (url: string) => void;
-}) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [canRender3D, setCanRender3D] = useState(interactive);
-
+  // Request snapshot when element is visible in/near viewport
   useEffect(() => {
+    if (snapshotUrl) return;
+
+    let isMounted = true;
     const el = wrapperRef.current;
-    if (!el) return;
-    if (!("IntersectionObserver" in window)) {
-      setIsVisible(true);
-      return;
+
+    const fetchSnapshot = () => {
+      service
+        .requestSnapshot(caseData, selectedSlot)
+        .then((url) => {
+          if (isMounted) setSnapshotUrl(url);
+        })
+        .catch(() => {
+          // Fallback handled via UI
+        });
+    };
+
+    if (!el || !("IntersectionObserver" in window)) {
+      fetchSnapshot();
+      return () => {
+        isMounted = false;
+      };
     }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setIsVisible(true);
+            fetchSnapshot();
+            observer.disconnect();
           }
         });
       },
-      { rootMargin: "100px" },
+      { rootMargin: "200px" },
     );
+
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // Queue acquisition when visible and non-interactive
-  useEffect(() => {
-    if (!isVisible || interactive) return;
-
-    const cancel = renderQueue.acquire(() => {
-      setCanRender3D(true);
-    });
 
     return () => {
-      cancel();
+      isMounted = false;
+      observer.disconnect();
     };
-  }, [isVisible, interactive]);
-
-  const handleSnapshot = (url: string) => {
-    if (!interactive) {
-      renderQueue.release();
-    }
-    onSnapshot(url);
-  };
+  }, [caseData, selectedSlot, snapshotUrl, service]);
 
   return (
     <div ref={wrapperRef} className="flex flex-col items-center w-full">
-      {isVisible && canRender3D ? (
-        <Case3DCanvas
-          caseData={caseData}
-          selectedSlot={selectedSlot}
-          className={className}
-          interactive={interactive}
-          onSnapshot={handleSnapshot}
-        />
-      ) : (
-        <div
-          className={cn(
-            "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 animate-pulse flex items-center justify-center",
-            className,
-          )}
-        >
-          <span className="text-[0.6rem] text-ink-3/40 font-mono">3D</span>
-        </div>
-      )}
-
+      <div
+        className={cn(
+          "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs flex items-center justify-center p-1",
+          className,
+        )}
+      >
+        {snapshotUrl ? (
+          <img
+            src={snapshotUrl}
+            alt={caseData.name}
+            className="h-full w-full object-contain pointer-events-none"
+          />
+        ) : (
+          <div className="relative w-full h-full animate-pulse flex items-center justify-center bg-surface-2/20 rounded-lg">
+            <span className="text-[0.6rem] font-medium text-ink-3/40 font-mono">
+              3D
+            </span>
+          </div>
+        )}
+      </div>
       {showSetup && caseData.setupScramble && (
         <div className="mt-2 text-center text-[0.65rem] text-ink-3">
           <span className="font-semibold text-ink-2">Setup:</span>{" "}
@@ -269,14 +159,10 @@ function Case3DCanvas({
   caseData,
   selectedSlot,
   className,
-  interactive,
-  onSnapshot,
 }: {
   caseData: AlgorithmCase;
   selectedSlot: number;
   className?: string;
-  interactive: boolean;
-  onSnapshot: (url: string) => void;
 }) {
   const { canvasRef, containerRef, isReady, engineRef } = useCube3D({
     maxRecentMoves: 0,
@@ -284,18 +170,9 @@ function Case3DCanvas({
 
   const hasSetCameraRef = useRef(false);
   const isF2L = F2L_SUBSET_IDS.has(caseData.subsetId);
-  const hasCapturedRef = useRef(false);
 
   useEffect(() => {
-    return () => {
-      if (!interactive && !hasCapturedRef.current) {
-        renderQueue.release();
-      }
-    };
-  }, [interactive]);
-
-  useEffect(() => {
-    if (!isReady || !engineRef.current || hasCapturedRef.current) return;
+    if (!isReady || !engineRef.current) return;
 
     const engine = engineRef.current;
     const modelYRot = SLOT_LABELS[selectedSlot]?.modelYRot ?? 0;
@@ -329,21 +206,7 @@ function Case3DCanvas({
         engine.setF2LMaskGray(F2L_GRAY);
       }
 
-      // Synchronously trigger 3D scene render
       engine.sceneManager.render();
-
-      // Immediately snapshot canvas to data URL & notify parent to switch to static <img>
-      if (!interactive && canvasRef.current) {
-        hasCapturedRef.current = true;
-        try {
-          const dataUrl = canvasRef.current.toDataURL("image/png");
-          if (dataUrl && dataUrl.length > 100) {
-            onSnapshot(dataUrl);
-          }
-        } catch {
-          // fallback
-        }
-      }
     } catch {
       engine.resetCube();
     }
@@ -354,9 +217,6 @@ function Case3DCanvas({
     caseData.subsetId,
     selectedSlot,
     isF2L,
-    interactive,
-    canvasRef,
-    onSnapshot,
   ]);
 
   useEffect(() => {
