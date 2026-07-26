@@ -26,7 +26,6 @@ function buildF2LSkinStyle() {
       ...base.stickerColors,
       U: base.stickerColors.D, // yellow on top
       D: base.stickerColors.U, // white on bottom
-      R: base.stickerColors.L, // orange on right
       R: base.stickerColors.L, // orange on right (FR slot: Green/Orange)
       L: base.stickerColors.R, // red on left
     },
