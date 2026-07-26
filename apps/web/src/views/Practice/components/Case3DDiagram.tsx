@@ -52,14 +52,6 @@ export function Case3DDiagram({
   showSetup = false,
   interactive = false,
 }: Case3DDiagramProps) {
-  const cacheKey = `${caseData.id}_${caseData.setupScramble}_${selectedSlot}`;
-  const service = Global3DSnapshotService.getInstance();
-  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
-    () => service.getCachedSnapshot(cacheKey),
-  );
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  // If interactive mode is requested (e.g. inside detail panel), use live WebGL canvas directly.
   if (interactive) {
     return (
       <div className="flex flex-col items-center w-full">
@@ -77,6 +69,29 @@ export function Case3DDiagram({
       </div>
     );
   }
+
+  return (
+    <Case3DSnapshotView
+      caseData={caseData}
+      selectedSlot={selectedSlot}
+      className={className}
+      showSetup={showSetup}
+    />
+  );
+}
+
+function Case3DSnapshotView({
+  caseData,
+  selectedSlot = 0,
+  className,
+  showSetup = false,
+}: Omit<Case3DDiagramProps, "interactive">) {
+  const cacheKey = `${caseData.id}_${caseData.setupScramble}_${selectedSlot}`;
+  const service = Global3DSnapshotService.getInstance();
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
+    () => service.getCachedSnapshot(cacheKey),
+  );
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Request snapshot when element is visible in/near viewport
   useEffect(() => {
@@ -220,8 +235,9 @@ function Case3DCanvas({
   ]);
 
   useEffect(() => {
+    const engine = engineRef.current;
     return () => {
-      engineRef.current?.clearLayerGray();
+      engine?.clearLayerGray();
     };
   }, [engineRef]);
 
