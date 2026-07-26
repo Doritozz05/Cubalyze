@@ -123,9 +123,9 @@ export function Case3DPanel({
       // 4. Rotate model root to show target slot in FR position
       engine.rotateModelY(modelYRot);
 
-      // 5. Gray out U-layer (yellow) stickers for F2L visualization
+      // 5. Apply full F2L masking (U-layer + target FR slot gray out, target pair + solved slots colored)
       if (isF2L) {
-        engine.setLayerStickerGray("y", 1, F2L_GRAY);
+        engine.setF2LMaskGray(F2L_GRAY);
       }
     } catch {
       engine.resetCube();

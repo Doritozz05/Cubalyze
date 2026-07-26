@@ -312,8 +312,51 @@ export class Cube3DEngine {
         // Clone the sticker material and set gray
         this.grayedStickers.push({ mesh, originalMat: mat });
         mesh.material = (mat as MeshBasicMaterial).clone();
-        (mesh.material as MeshBasicMaterial).color.set(grayColor);
       });
+    }
+  }
+
+  /**
+   * Applies F2L-specific masking to the 3D cube model.
+   *
+   * Grays out:
+   * 1. All non-target pieces in the U layer (gridY === 1).
+   * 2. All non-target pieces currently inside the FR target slot position (gridX === 1, gridZ === 1, gridY <= 0).
+   *
+   * Keeps colored:
+   * 1. The target F2L pair pieces (initial position FR slot: initialGridX === 1, initialGridZ === 1, initialGridY !== 1).
+   * 2. All solved cross and slot pieces (FL, BL, BR slots and D-layer cross).
+   *
+   * @param grayColor CSS color string (default '#808080')
+   */
+  public setF2LMaskGray(grayColor: string = '#808080'): void {
+    if (!this.model || !this.factory) return;
+
+    const cubies = this.model.getLogicalState();
+    for (const cubie of cubies) {
+      const isTargetPair =
+        cubie.initialGridX === 1 &&
+        cubie.initialGridZ === 1 &&
+        cubie.initialGridY !== 1;
+
+      const isInULayer = cubie.gridY === 1;
+      const isInFRSlot = cubie.gridX === 1 && cubie.gridZ === 1 && cubie.gridY <= 0;
+
+      const shouldGray = !isTargetPair && (isInULayer || isInFRSlot);
+
+      if (shouldGray) {
+        cubie.mesh.children.forEach((child) => {
+          const mesh = child as Mesh;
+          if (!mesh.isMesh) return;
+          const mat = mesh.material;
+          if (Array.isArray(mat)) return;
+          if (!(mat as MeshBasicMaterial).isMeshBasicMaterial) return;
+
+          this.grayedStickers.push({ mesh, originalMat: mat });
+          mesh.material = (mat as MeshBasicMaterial).clone();
+          (mesh.material as MeshBasicMaterial).color.set(grayColor);
+        });
+      }
     }
   }
 
