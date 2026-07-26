@@ -86,7 +86,7 @@ function CaseCard({
       )}
     >
       {/* Diagram — supports 3D isometric & 2D top diagrams */}
-      <div className="flex items-center justify-center w-full min-h-[140px] pt-1">
+      <div className="flex items-center justify-center w-full min-h-35 pt-1">
         {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
           <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
         ) : caseData.diagramType === "2d-top" && caseData.diagram2D ? (
