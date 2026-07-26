@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
+import { Case3DDiagram } from "./Case3DDiagram";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
 export interface CaseGridProps {
@@ -37,7 +38,7 @@ export const CaseGrid = memo(function CaseGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5",
+        "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3.5",
         className,
       )}
     >
@@ -78,44 +79,44 @@ function CaseCard({
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col items-center gap-1.5 rounded-lg border p-2.5 transition-all duration-150",
+        "group relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-all duration-150 text-left w-full",
         isSelected
-          ? "border-ink/30 bg-surface-2 ring-1 ring-ink/20"
+          ? "border-ink/30 bg-surface-2 ring-1 ring-ink/20 shadow-xs"
           : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2/60",
       )}
     >
-
-
-      {/* Diagram */}
-      <div className="flex items-center justify-center w-full pt-1">
-        {caseData.diagramType === "2d-top" && caseData.diagram2D ? (
+      {/* Diagram — supports 3D isometric & 2D top diagrams */}
+      <div className="flex items-center justify-center w-full min-h-[140px] pt-1">
+        {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
+          <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
+        ) : caseData.diagramType === "2d-top" && caseData.diagram2D ? (
           <CaseDiagram
             arrows={caseData.diagram2D.arrows}
             setupScramble={caseData.setupScramble}
             moves={algorithm?.moves}
             style={visualizationStyle ?? "full-color"}
-            className="w-24"
+            className="w-36"
           />
+        ) : caseData.setupScramble ? (
+          <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
         ) : (
-          <div className="w-24 h-24 flex items-center justify-center rounded bg-surface-2">
-            <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>
+          <div className="w-36 h-36 flex items-center justify-center rounded-lg bg-surface-2">
+            <span className="text-ink-3/40 text-[0.65rem]">No diagram</span>
           </div>
         )}
       </div>
 
-      {/* Case info — algorithm is the main element */}
-      <div className="flex flex-col items-center gap-0.5 w-full">
-        {/* Algorithm moves — primary visual element, large & prominent */}
+      {/* Case info — algorithm moves primary, case number & name secondary */}
+      <div className="flex flex-col items-center gap-0.5 w-full mt-1">
         {algorithm && (
-          <span className="nums text-[0.68rem] font-semibold text-ink leading-tight text-center px-1">
+          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1">
             {algorithm.moves.join(" ")}
           </span>
         )}
-        {/* Case identifier — secondary */}
-        <span className="text-[0.62rem] font-medium text-ink-2 leading-tight">
+        <span className="text-[0.65rem] font-medium text-ink-2 leading-tight">
           {caseData.caseNumber}
         </span>
-        <span className="text-[0.55rem] text-ink-3 leading-tight text-center">
+        <span className="text-[0.58rem] text-ink-3 leading-tight text-center">
           {caseData.name}
         </span>
       </div>

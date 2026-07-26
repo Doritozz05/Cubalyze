@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { X, Check, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCube3D } from "@/hooks/useCube3D";
-import { CaseStateGenerator } from "@cubeforge/algorithm-db";
-import { getSkinStyle } from "@cubeforge/cube-3d-engine";
+import { Case3DDiagram } from "./Case3DDiagram";
 import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
 
 export interface Case3DPanelProps {
@@ -16,53 +14,12 @@ export interface Case3DPanelProps {
   className?: string;
 }
 
-/**
- * F2L subset IDs — used to reliably detect F2L cases regardless of
- * the `category` field (Advanced F2L uses categories like "Trapped Corner").
- */
-const F2L_SUBSET_IDS = new Set([
-  "00000000-0000-4000-9000-000000000003", // Basic F2L
-  "00000000-0000-4000-9000-000000000004", // Advanced F2L
-]);
-
-/**
- * Slot labels + Y-axis rotation angles (in radians).
- *
- * The model root is rotated around the world-Y axis so the target slot
- * appears in the front-right (FR = +Z / +X) viewing position.
- *
- * Cubing cube rotations → Three.js Y rotation:
- *   y   = CW from above = -π/2 (negative Y in right-handed coords)
- *   y'  = CCW from above = +π/2
- *   y2  = 180°           = π
- */
 const SLOT_LABELS = [
-  { id: 0, key: "FR", name: "Front Right", modelYRot: 0 },
-  { id: 1, key: "FL", name: "Front Left", modelYRot: Math.PI / 2 },
-  { id: 2, key: "BL", name: "Back Left", modelYRot: Math.PI },
-  { id: 3, key: "BR", name: "Back Right", modelYRot: -Math.PI / 2 },
+  { id: 0, key: "FR", name: "Front Right" },
+  { id: 1, key: "FL", name: "Front Left" },
+  { id: 2, key: "BL", name: "Back Left" },
+  { id: 3, key: "BR", name: "Back Right" },
 ];
-
-/** Gray color used for U-layer stickers in F2L visualization. */
-const F2L_GRAY = "#808080";
-
-/**
- * Build a style that swaps U ↔ D colors so the 3D cube shows yellow on
- * top (standard CFOP solving orientation) while keeping the default skin.
- */
-function buildF2LSkinStyle() {
-  const base = getSkinStyle("default");
-  return {
-    ...base,
-    stickerColors: {
-      ...base.stickerColors,
-      U: base.stickerColors.D, // yellow on top
-      D: base.stickerColors.U, // white on bottom
-      R: base.stickerColors.L, // orange on right (when Green is front & Yellow is top)
-      L: base.stickerColors.R, // red on left
-    },
-  };
-}
 
 export function Case3DPanel({
   caseData,
@@ -72,15 +29,6 @@ export function Case3DPanel({
   className,
 }: Case3DPanelProps) {
   const [selectedSlot, setSelectedSlot] = useState<number>(0);
-  const { canvasRef, containerRef, isReady, engineRef } = useCube3D({
-    maxRecentMoves: 0,
-  });
-
-  // Track whether we've already locked the isometric camera angle
-  const hasSetCameraRef = useRef(false);
-
-  // ── Detect F2L reliably via subsetId (not category) ─────────────────
-  const isF2L = F2L_SUBSET_IDS.has(caseData.subsetId);
 
   // Filter algorithms by selected slot
   const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";
@@ -91,56 +39,6 @@ export function Case3DPanel({
     if (matched.length > 0) return matched;
     return algorithms;
   }, [algorithms, slotKey]);
-
-  // ── Apply setup scramble + slot model rotation + F2L visual style ───
-  useEffect(() => {
-    if (!isReady || !engineRef.current) return;
-
-    const engine = engineRef.current;
-    const modelYRot = SLOT_LABELS[selectedSlot]?.modelYRot ?? 0;
-
-    try {
-      // 1. Force correct skin — swap U/D only for F2L (yellow on top)
-      if (isF2L) {
-        engine.updateStyle(buildF2LSkinStyle());
-      } else {
-        engine.updateStyle(getSkinStyle("default"));
-      }
-
-      // 2. Lock isometric camera angle (only once per mount)
-      if (!hasSetCameraRef.current) {
-        engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
-        hasSetCameraRef.current = true;
-      }
-
-      // 3. Restore previous gray-out, then sync cube state from scramble.
-      //    CRITICAL: use raw state (not createCleanState) to preserve
-      //    corner/edge orientation for F2L cases with twisted/flipped pieces.
-      engine.clearLayerGray();
-      const rawState =
-        CaseStateGenerator.generateFromScramble(caseData.setupScramble);
-      const faceletString = CaseStateGenerator.toFaceletString(rawState);
-      engine.syncFacelets(faceletString);
-
-      // 4. Rotate model root to show target slot in FR position
-      engine.rotateModelY(modelYRot);
-
-      // 5. Apply full F2L masking (U-layer + target FR slot gray out, target pair + solved slots colored)
-      if (isF2L) {
-        engine.setF2LMaskGray(F2L_GRAY);
-      }
-    } catch {
-      engine.resetCube();
-    }
-  }, [isReady, engineRef, caseData.setupScramble, caseData.subsetId, selectedSlot]);
-
-  // ── Cleanup on unmount ───────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      engineRef.current?.clearLayerGray();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
@@ -190,31 +88,14 @@ export function Case3DPanel({
           </div>
         </div>
 
-        {/* 3D Isometric Cube (fixed camera, no drag) */}
-        <div className="flex flex-col items-center">
-          <div
-            ref={containerRef as React.RefObject<HTMLDivElement>}
-            className="relative w-full max-w-60 aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs"
-          >
-            <canvas
-              ref={canvasRef as React.RefObject<HTMLCanvasElement>}
-              className="absolute inset-0 h-full w-full outline-none"
-            />
-            {!isReady && (
-              <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
-                <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
-                  Initializing 3D View...
-                </span>
-              </div>
-            )}
-          </div>
-          {caseData.setupScramble && (
-            <div className="mt-2 text-center text-[0.65rem] text-ink-3">
-              <span className="font-semibold text-ink-2">Setup:</span>{" "}
-              {caseData.setupScramble}
-            </div>
-          )}
-        </div>
+        {/* 3D Isometric Cube Component */}
+        <Case3DDiagram
+          caseData={caseData}
+          selectedSlot={selectedSlot}
+          className="max-w-60"
+          showSetup
+          interactive
+        />
 
         {/* Algorithms */}
         <div>
