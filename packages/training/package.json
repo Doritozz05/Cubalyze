@@ -24,6 +24,8 @@
   },
   "dependencies": {
     "@cubeforge/algorithm-db": "workspace:*",
+    "@cubeforge/math-core": "workspace:*",
+    "@cubeforge/solver-engine": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
     "@cubeforge/types": "workspace:*"
   },

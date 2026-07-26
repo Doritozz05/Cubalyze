@@ -877,6 +877,12 @@ importers:
       '@cubeforge/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
+      '@cubeforge/math-core':
+        specifier: workspace:*
+        version: link:../math-core
+      '@cubeforge/solver-engine':
+        specifier: workspace:*
+        version: link:../solver-engine
       '@cubeforge/timer-engine':
         specifier: workspace:*
         version: link:../timer-engine

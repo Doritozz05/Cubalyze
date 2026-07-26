@@ -4,20 +4,32 @@
  * Core training engine for CubeForge.
  *
  * This package provides:
- * - Type definitions for exercises, sessions, and progress
- * - Exercise registry (catalog of available training exercises)
- * - Session engine (state machine for running training sessions)
- * - Scramble generators (targeted setups for training)
- * - Validators (exercise success detection)
- * - Progress tracker (per-algorithm and per-exercise mastery)
- * - Smart Cube integration for training mode
+ * - Type definitions: exercises, sessions, progress tracking
+ * - Exercise registry: catalog of all available training exercises
+ * - Generators: targeted setup scrambles for algorithm drills
+ * - Session engine: state machine for training sessions (Idle→Setup→Armed→Solving→Verdict)
+ * - Timer factory: drill-configured TimerEngine
  *
  * This package is method-agnostic: it does not contain CFOP,
  * Roux, or any method-specific logic. Methods define their own
  * exercises by implementing ITrainingExercise.
  *
- * UI components live in apps/web — this package is pure logic.
+ * UI components (DrillView, RecognizeView, etc.) live in
+ * apps/web — this package is pure logic.
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────
 export * from './types';
+
+// ─── Generators ───────────────────────────────────────────────────────────
+export { generateRandomSetup } from './generators';
+
+// ─── Engine ───────────────────────────────────────────────────────────────
+export { createTrainingTimer } from './engine';
+
+// ─── Exercises ────────────────────────────────────────────────────────────
+export { exerciseRegistry } from './exercises';
+
+// ─── Session ──────────────────────────────────────────────────────────────
+export { TrainingSessionEngine } from './session';
+export type { SessionEvent, SessionStateListener } from './session';
