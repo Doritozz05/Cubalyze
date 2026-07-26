@@ -130,9 +130,9 @@ export function MainLayout({
 
   const asideWidth = cubeShown
     ? Math.max(
-        CUBE_MIN_WIDTH,
-        Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
-      )
+      CUBE_MIN_WIDTH,
+      Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
+    )
     : 0;
 
   return (

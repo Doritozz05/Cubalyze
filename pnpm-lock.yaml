@@ -533,9 +533,6 @@ importers:
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../math-core
-      '@cubeforge/models':
-        specifier: workspace:*
-        version: link:../models
       '@cubeforge/solver-engine':
         specifier: workspace:*
         version: link:../solver-engine

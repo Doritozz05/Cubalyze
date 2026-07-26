@@ -5,11 +5,14 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
-import { PhaseTargetView } from "./PhaseTargetView";
 import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
 import { TrainingCalendar } from "./TrainingCalendar";
+import { CrossPracticeView } from "./CrossPracticeView";
+import { BlockPracticeView } from "./BlockPracticeView";
+import { LSEPracticeView } from "./LSEPracticeView";
+import { EOPhasePracticeView } from "./EOPhasePracticeView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import {
   Box,
@@ -47,30 +50,45 @@ interface PhaseDef {
 
 const METHOD_PHASES: Record<string, PhaseDef[]> = {
   CFOP: [
-    { id: "cross",   name: "Cross",   icon: Crosshair,    description: "Solve the cross efficiently. Fewer moves, faster solutions.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l",     name: "F2L",     icon: Grid3x3,      description: "First two layers — algorithmic pairs for every slot.",   sortOrder: 2, hasAlgorithms: true  },
-    { id: "oll",     name: "OLL",     icon: Palette,       description: "Orient last layer — 57 cases to master.",                sortOrder: 3, hasAlgorithms: true  },
-    { id: "pll",     name: "PLL",     icon: Shuffle,       description: "Permute last layer — 21 cases for the final step.",      sortOrder: 4, hasAlgorithms: true  },
+    { id: "cross", name: "Cross", icon: Crosshair, description: "Solve the cross efficiently. Fewer moves, faster solutions.", sortOrder: 1, hasAlgorithms: false },
+    { id: "f2l", name: "F2L", icon: Grid3x3, description: "First two layers — algorithmic pairs for every slot.", sortOrder: 2, hasAlgorithms: true },
+    { id: "oll", name: "OLL", icon: Palette, description: "Orient last layer — 57 cases to master.", sortOrder: 3, hasAlgorithms: true },
+    { id: "pll", name: "PLL", icon: Shuffle, description: "Permute last layer — 21 cases for the final step.", sortOrder: 4, hasAlgorithms: true },
   ],
   Roux: [
-    { id: "first-block",  name: "First block",  icon: Box,              description: "Build a 1×2×3 block on the left.",         sortOrder: 1, hasAlgorithms: false },
-    { id: "second-block", name: "Second block", icon: Blocks,           description: "Build the right 1×2×3 block efficiently.", sortOrder: 2, hasAlgorithms: false },
-    { id: "cmll",         name: "CMLL",         icon: Palette,          description: "Corners of last layer — 42 cases.",         sortOrder: 3, hasAlgorithms: true  },
-    { id: "lse",          name: "LSE",          icon: ArrowRightLeft,   description: "Last six edges — EO, UL/UR, M-slice.",     sortOrder: 4, hasAlgorithms: false },
+    { id: "first-block", name: "First block", icon: Box, description: "Build a 1×2×3 block on the left.", sortOrder: 1, hasAlgorithms: false },
+    { id: "second-block", name: "Second block", icon: Blocks, description: "Build the right 1×2×3 block efficiently.", sortOrder: 2, hasAlgorithms: false },
+    { id: "cmll", name: "CMLL", icon: Palette, description: "Corners of last layer — 42 cases.", sortOrder: 3, hasAlgorithms: true },
+    { id: "lse", name: "LSE", icon: ArrowRightLeft, description: "Last six edges — EO, UL/UR, M-slice.", sortOrder: 4, hasAlgorithms: false },
   ],
   ZZ: [
-    { id: "eoline", name: "EOLine",    icon: Zap,         description: "Edge Orientation + Line. No rotations needed.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l-zz", name: "F2L (ZZ)",  icon: Grid3x3,     description: "First two layers using only R, U, L moves.",   sortOrder: 2, hasAlgorithms: true  },
-    { id: "ll-zz",  name: "Last layer",icon: Target,       description: "OCLL, COLL, ZZLL — last layer for ZZ.",        sortOrder: 3, hasAlgorithms: true  },
+    { id: "eoline", name: "EOLine", icon: Zap, description: "Edge Orientation + Line. No rotations needed.", sortOrder: 1, hasAlgorithms: false },
+    { id: "f2l-zz", name: "F2L (ZZ)", icon: Grid3x3, description: "First two layers using only R, U, L moves.", sortOrder: 2, hasAlgorithms: true },
+    { id: "ll-zz", name: "Last layer", icon: Target, description: "OCLL, COLL, ZZLL — last layer for ZZ.", sortOrder: 3, hasAlgorithms: true },
   ],
   Petrus: [
-    { id: "block-222",  name: "2×2×2 block", icon: Grid2x2,    description: "Build the first 2×2×2 block.",                   sortOrder: 1, hasAlgorithms: false },
-    { id: "block-223",  name: "2×2×3 block", icon: Grid3x3,     description: "Extend to a 2×2×3 block.",                      sortOrder: 2, hasAlgorithms: false },
-    { id: "eo-petrus",  name: "EO",          icon: Gauge,       description: "Edge Orientation after blocks.",                 sortOrder: 3, hasAlgorithms: false },
-    { id: "f2l-petrus", name: "F2L (Petrus)",icon: MoveHorizontal,description: "Finish F2L after EO.",                         sortOrder: 4, hasAlgorithms: true  },
-    { id: "ll-petrus",  name: "Last layer",  icon: Target,      description: "COLL + EPLL for Petrus last layer.",             sortOrder: 5, hasAlgorithms: true  },
+    { id: "block-222", name: "2×2×2 block", icon: Grid2x2, description: "Build the first 2×2×2 block.", sortOrder: 1, hasAlgorithms: false },
+    { id: "block-223", name: "2×2×3 block", icon: Grid3x3, description: "Extend to a 2×2×3 block.", sortOrder: 2, hasAlgorithms: false },
+    { id: "eo-petrus", name: "EO", icon: Gauge, description: "Edge Orientation after blocks.", sortOrder: 3, hasAlgorithms: false },
+    { id: "f2l-petrus", name: "F2L (Petrus)", icon: MoveHorizontal, description: "Finish F2L after EO.", sortOrder: 4, hasAlgorithms: true },
+    { id: "ll-petrus", name: "Last layer", icon: Target, description: "COLL + EPLL for Petrus last layer.", sortOrder: 5, hasAlgorithms: true },
   ],
 };
+
+/** Maps a phase ID to its specialized practice type for non-algorithmic phases. */
+type PhasePracticeType = "cross" | "block" | "lse" | "eo";
+
+function getPhasePracticeType(phaseId: string): PhasePracticeType | null {
+  const crossPhases = new Set(["cross", "eoline"]);
+  const blockPhases = new Set(["first-block", "second-block", "block-222", "block-223"]);
+  const lsePhases = new Set(["lse"]);
+  const eoPhases = new Set(["eo-petrus"]);
+  if (crossPhases.has(phaseId)) return "cross";
+  if (blockPhases.has(phaseId)) return "block";
+  if (lsePhases.has(phaseId)) return "lse";
+  if (eoPhases.has(phaseId)) return "eo";
+  return null;
+}
 
 function findSubsetId(methodId: string, phaseId: string): string | null {
   const phaseToSubsetName: Record<string, string> = {
@@ -120,7 +138,7 @@ function FlatDashboard({
   methodMasteries,
   onDrill,
   onRecognize,
-  onTrain,
+  onPractice,
   onStats,
   onFullSolve,
   dueCount,
@@ -131,7 +149,7 @@ function FlatDashboard({
   methodMasteries: Record<string, number>;
   onDrill: (methodId: string, phaseId: string, subsetId: string) => void;
   onRecognize: (methodId: string, phaseId: string, subsetId: string) => void;
-  onTrain: (methodId: string, phaseId: string, phaseName: string) => void;
+  onPractice: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType) => void;
   onStats: (methodId: string, phaseId: string, phaseName: string) => void;
   onFullSolve: (methodId: string) => void;
   dueCount: number;
@@ -239,7 +257,10 @@ function FlatDashboard({
                     const sid = findSubsetId(method.id, phase.id);
                     if (sid) onRecognize(method.id, phase.id, sid);
                   }}
-                  onTrain={() => onTrain(method.id, phase.id, phase.name)}
+                  onPractice={() => {
+                    const pt = getPhasePracticeType(phase.id);
+                    if (pt) onPractice(method.id, phase.id, phase.name, pt);
+                  }}
                   onStats={() => onStats(method.id, phase.id, phase.name)}
                 />
               ))}
@@ -315,13 +336,13 @@ function ExerciseCard({
   phase,
   onDrill,
   onRecognize,
-  onTrain,
+  onPractice,
   onStats,
 }: {
   phase: PhaseDef;
   onDrill: () => void;
   onRecognize: () => void;
-  onTrain: () => void;
+  onPractice: () => void;
   onStats: () => void;
 }) {
   const dotColor = PHASE_DOT[phase.id] ?? "bg-ink-3";
@@ -360,8 +381,8 @@ function ExerciseCard({
           </>
         ) : (
           <>
-            <button onClick={onTrain} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
-              Train
+            <button onClick={onPractice} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer">
+              Practice
             </button>
             <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto">
               Stats
@@ -383,10 +404,11 @@ interface DrillViewState {
   subsetId: string;
 }
 
-interface TrainViewState {
+interface PracticeViewState {
   methodId: string;
   phaseId: string;
   phaseName: string;
+  phaseType: PhasePracticeType;
 }
 
 interface RecognizeViewState {
@@ -419,7 +441,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
 
   // Sub-view routing (direct from exercise cards, no L2)
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
-  const [trainView, setTrainView] = useState<TrainViewState | null>(null);
+  const [practiceView, setPracticeView] = useState<PracticeViewState | null>(null);
   const [recognizeView, setRecognizeView] = useState<RecognizeViewState | null>(null);
   const [statsView, setStatsView] = useState<StatsViewState | null>(null);
   const [fullSolveView, setFullSolveView] = useState<FullSolveViewState | null>(null);
@@ -494,8 +516,8 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     setRecognizeView({ methodId, phaseId, subsetId });
   };
 
-  const handleTrain = (methodId: string, phaseId: string, phaseName: string) => {
-    setTrainView({ methodId, phaseId, phaseName });
+  const handlePractice = (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType) => {
+    setPracticeView({ methodId, phaseId, phaseName, phaseType });
   };
 
   const handleStats = (methodId: string, phaseId: string, phaseName: string) => {
@@ -508,7 +530,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
 
   const handleBackFromSubView = () => {
     setDrillView(null);
-    setTrainView(null);
+    setPracticeView(null);
     setRecognizeView(null);
     setStatsView(null);
     setFullSolveView(null);
@@ -575,16 +597,42 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     );
   }
 
-  if (trainView) {
+  if (practiceView) {
     return (
       <div className="relative flex-1 min-h-0 w-full">
         <div className="absolute inset-0 flex flex-col">
-          <PhaseTargetView
-            methodId={trainView.methodId}
-            phaseId={trainView.phaseId}
-            phaseName={trainView.phaseName}
-            onBack={handleBackFromSubView}
-          />
+          {practiceView.phaseType === "cross" && (
+            <CrossPracticeView
+              methodId={practiceView.methodId}
+              phaseId={practiceView.phaseId}
+              phaseName={practiceView.phaseName}
+              onBack={handleBackFromSubView}
+            />
+          )}
+          {practiceView.phaseType === "block" && (
+            <BlockPracticeView
+              methodId={practiceView.methodId}
+              phaseId={practiceView.phaseId}
+              phaseName={practiceView.phaseName}
+              onBack={handleBackFromSubView}
+            />
+          )}
+          {practiceView.phaseType === "lse" && (
+            <LSEPracticeView
+              methodId={practiceView.methodId}
+              phaseId={practiceView.phaseId}
+              phaseName={practiceView.phaseName}
+              onBack={handleBackFromSubView}
+            />
+          )}
+          {practiceView.phaseType === "eo" && (
+            <EOPhasePracticeView
+              methodId={practiceView.methodId}
+              phaseId={practiceView.phaseId}
+              phaseName={practiceView.phaseName}
+              onBack={handleBackFromSubView}
+            />
+          )}
         </div>
       </div>
     );
@@ -601,7 +649,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
           methodMasteries={methodMasteries}
           onDrill={handleDrill}
           onRecognize={handleRecognize}
-          onTrain={handleTrain}
+          onPractice={handlePractice}
           onStats={handleStats}
           onFullSolve={handleFullSolve}
           dueCount={dueCount}
