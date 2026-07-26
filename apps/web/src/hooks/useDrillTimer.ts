@@ -36,6 +36,8 @@ function mapState(es: EngineState): TimerState {
 export interface UseDrillTimerOptions {
   /** When false, space key handlers are unregistered (e.g. during verdict). Default true. */
   enabled?: boolean;
+  /** Whether to enable WCA-style 15s inspection. Default false. */
+  inspection?: boolean;
 }
 
 export interface UseDrillTimerResult {
@@ -71,10 +73,10 @@ export interface UseDrillTimerResult {
  * or the analysis pipeline — those are practice-mode concerns.
  */
 export function useDrillTimer(options: UseDrillTimerOptions = {}): UseDrillTimerResult {
-  const { enabled = true } = options;
+  const { enabled = true, inspection = false } = options;
   const engine = useMemo(
-    () => new TimerEngine({ useInspection: false }),
-    [],
+    () => new TimerEngine({ useInspection: inspection }),
+    [inspection],
   );
 
   const [phase, setPhase] = useState<TimerState>("idle");

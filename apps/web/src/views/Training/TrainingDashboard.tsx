@@ -11,6 +11,7 @@ import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
 import { TrainingCalendar } from "./TrainingCalendar";
+import { TrainingBreadcrumb } from "./components";
 import {
   Box,
   Layers,
@@ -20,7 +21,6 @@ import {
   TrendingUp,
   Clock,
   Dumbbell,
-  ArrowLeft,
   Crosshair,
   Grid3x3,
   Palette,
@@ -303,7 +303,7 @@ function Level2MethodPhase({
   return (
     <>
       <header className="flex flex-col gap-2 shrink-0">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors w-fit"><ArrowLeft className="size-3" />Back to methods</button>
+        <TrainingBreadcrumb onBack={onBack} segments={[]} backLabel="Back to methods" />
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
             <div className="grid size-8 place-items-center rounded-lg border border-line bg-surface-2">

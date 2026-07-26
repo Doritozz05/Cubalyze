@@ -21,6 +21,7 @@ import {
   X,
   Check,
   Trophy,
+  Eye,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -108,6 +109,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const phaseTargets = useMemo(() => getPhaseTargets(method?.name ?? ""), [method]);
 
   const [solveMode, setSolveMode] = useState<FullSolveMode>("targets");
+  const [useInspection, setUseInspection] = useState(false);
   const [splits, setSplits] = useState<PhaseSplit[]>(() =>
     phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" as const })),
   );
@@ -118,7 +120,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   );
 
   // ── Timer + Smart Cube ──────────────────────────────────────────────
-  const { phase: timerPhase, time, stoppedTime, press, release, reset, engine } = useDrillTimer();
+  const { phase: timerPhase, time, stoppedTime, press, release, reset, engine } = useDrillTimer({ inspection: useInspection });
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);
 
@@ -128,9 +130,9 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const hintCtx = useMemo<HintContext>(() => ({
     smartCube: hasSmartCube,
     scrambleVerif: hasSmartCube,
-    inspection: false,
+    inspection: useInspection,
     isScrambled: smartCube.validation.isScrambled,
-  }), [hasSmartCube, smartCube.validation.isScrambled]);
+  }), [hasSmartCube, smartCube.validation.isScrambled, useInspection]);
 
   // Phase split timing
   const splitStartRef = useRef<number>(0);
@@ -212,6 +214,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
     setActiveSplitIdx(-1);
     setLastSolve(null);
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+    // Reset inspection toggle state is preserved across solves
   }, [reset, phaseTargets]);
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -239,7 +242,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
           </div>
 
           {/* Mode tabs */}
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap items-center">
             {SOLVE_MODES.map((mode) => (
               <button
                 key={mode.id}
@@ -262,6 +265,23 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                 )}
               </button>
             ))}
+            <span className="w-px h-5 bg-line mx-1" />
+            <button
+              onClick={() => setUseInspection((v) => !v)}
+              disabled={timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
+                timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"
+                  ? "opacity-40 cursor-not-allowed"
+                  : useInspection
+                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
+              )}
+              title={useInspection ? "Disable 15s inspection" : "Enable WCA-style 15s inspection"}
+            >
+              <Eye className="size-3" />
+              Inspection{useInspection ? " (15s)" : ""}
+            </button>
           </div>
         </header>
 

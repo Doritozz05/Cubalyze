@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import { TrainingBreadcrumb } from "./components";
 import {
-  ArrowLeft, Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
+  Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
   ChevronRight, Lightbulb,
 } from "lucide-react";
 
@@ -116,17 +117,14 @@ export function PhaseStatsView({
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         {/* Header */}
         <header className="flex flex-col gap-2 shrink-0">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0">
-              <ArrowLeft className="size-3" />Back
-            </button>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-medium text-ink">{method?.name ?? "?"}</span>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-semibold text-ink">{phaseName}</span>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-semibold text-ink">Stats</span>
-          </div>
+          <TrainingBreadcrumb
+            onBack={onBack}
+            segments={[
+              { label: method?.name ?? "?" },
+              { label: phaseName },
+              { label: "Stats", isCurrent: true },
+            ]}
+          />
 
           {/* Tab bar */}
           <div className="flex gap-0.5">

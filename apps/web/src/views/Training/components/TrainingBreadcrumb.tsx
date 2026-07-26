@@ -15,6 +15,8 @@ export interface TrainingBreadcrumbProps {
   onBack: () => void;
   /** Breadcrumb path segments, from method to current view */
   segments: BreadcrumbSegment[];
+  /** Custom label for the back button. Defaults to "Back" */
+  backLabel?: string;
 }
 
 /**
@@ -29,6 +31,7 @@ export interface TrainingBreadcrumbProps {
 export function TrainingBreadcrumb({
   onBack,
   segments,
+  backLabel = "Back",
 }: TrainingBreadcrumbProps) {
   return (
     <div className="flex items-center gap-3">
@@ -37,7 +40,7 @@ export function TrainingBreadcrumb({
         className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0"
       >
         <ArrowLeft className="size-3" />
-        Back
+        {backLabel}
       </button>
       {segments.map((seg, i) => (
         <span key={i} className="flex items-center gap-3">
