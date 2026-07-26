@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSubsetsForMethod } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
-import { PhaseTrainerView } from "./PhaseTrainerView";
+import { PhaseTargetView } from "./PhaseTargetView";
 import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
@@ -621,7 +621,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     return (
       <div className="relative flex-1 min-h-0 w-full">
         <div className="absolute inset-0 flex flex-col">
-          <PhaseTrainerView
+          <PhaseTargetView
             methodId={trainView.methodId}
             phaseId={trainView.phaseId}
             phaseName={trainView.phaseName}
