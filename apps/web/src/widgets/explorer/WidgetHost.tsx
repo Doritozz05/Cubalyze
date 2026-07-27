@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { WidgetRegistry } from "@/widgets/WidgetRegistry";
 import type { WidgetHostProps } from "@/widgets/WidgetHostProps";
@@ -22,24 +22,29 @@ export type { WidgetHostProps };
  * When made visible (via dock pill click), they render here as normal
  * floating panels — positioned just below the header.
  */
+function WidgetInstanceItem({ id, hostProps }: { id: string; hostProps: WidgetHostProps }) {
+  const state = useWidgetStore((s) => s.instances[id]);
+  if (!state?.visible || state.dockMode === "docked") return null;
+
+  const reg = WidgetRegistry.get(id);
+  if (!reg) return null;
+
+  const Component = reg.component;
+  const widgetProps = reg.mapProps(hostProps);
+
+  return <Component key={id} {...widgetProps} />;
+}
+
 export function WidgetHost(hostProps: WidgetHostProps) {
-  const instances = useWidgetStore(useCallback((s) => s.instances, []));
+  const widgetIds = useWidgetStore(
+    useShallow((s) => Object.keys(s.instances)),
+  );
 
   return (
     <>
-      {Object.entries(instances).map(([id, state]) => {
-        if (!state.visible) return null;
-        // Docked widgets render in WidgetDock (header pills), not as floating panels
-        if (state.dockMode === "docked") return null;
-
-        const reg = WidgetRegistry.get(id);
-        if (!reg) return null;
-
-        const Component = reg.component;
-        const widgetProps = reg.mapProps(hostProps);
-
-        return <Component key={id} {...widgetProps} />;
-      })}
+      {widgetIds.map((id) => (
+        <WidgetInstanceItem key={id} id={id} hostProps={hostProps} />
+      ))}
     </>
   );
 }

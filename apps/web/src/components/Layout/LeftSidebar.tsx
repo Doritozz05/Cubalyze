@@ -95,7 +95,9 @@ export function LeftSidebar({
    */
   const handleNavItemClick = useCallback(
     (id: string) => {
+      console.log("[LeftSidebar] handleNavItemClick triggered with id:", id);
       if (id === "widgets") {
+        console.log("[LeftSidebar] Setting widgetExplorerOpen = true");
         setWidgetExplorerOpen(true);
         return;
       }
@@ -198,7 +200,6 @@ export function LeftSidebar({
             setWidgetExplorerOpen(open);
             if (!open) {
               onMobileOpenChange?.(false);
-              setIsHovered(false);
             }
           }}
         />
@@ -208,7 +209,6 @@ export function LeftSidebar({
             setSettingsOpen(open);
             if (!open) {
               onMobileOpenChange?.(false);
-              setIsHovered(false);
             }
           }}
           solves={solves}
@@ -236,14 +236,18 @@ export function LeftSidebar({
         open={widgetExplorerOpen}
         onOpenChange={(open) => {
           setWidgetExplorerOpen(open);
-          if (!open) setIsHovered(false);
+          if (!open) {
+            onMobileOpenChange?.(false);
+          }
         }}
       />
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={(open) => {
           setSettingsOpen(open);
-          if (!open) setIsHovered(false);
+          if (!open) {
+            onMobileOpenChange?.(false);
+          }
         }}
         solves={solves}
         sessionName={sessionName}
@@ -297,6 +301,7 @@ function SidebarNavItem({
 }) {
   const button = (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         "relative flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors group",
@@ -345,6 +350,7 @@ function SidebarFooterItem({
 }) {
   const button = (
     <button
+      type="button"
       onClick={onClick}
       className="flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
     >

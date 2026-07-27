@@ -1,11 +1,11 @@
-import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3 } from 'three';
+import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3, Group } from 'three';
 import { SceneManager } from './SceneManager';
 import { CubeMeshFactory, type CubeStyleOptions } from './CubeMeshFactory';
 import { CubeModel } from './CubeModel';
 import { RotationEngine, type RotationAxis } from '../animation/RotationEngine';
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
-import { OrientationTable } from '@cubeforge/math-core';
+import { OrientationTable, type PhaseMask } from '@cubeforge/math-core';
 import type { CubeOrientation, RotationEvent, CubeFace } from '@cubeforge/types';
 import type { Subscription } from 'rxjs';
 
@@ -266,6 +266,19 @@ export class Cube3DEngine {
     }
   }
 
+  // ── Stickering system ──────────────────────────────────────────────────
+  //
+  // Unified, reusable visualization masking. Three public entry points share
+  // ONE private helper (`grayCubieGroup`) and ONE restore path
+  // (`clearLayerGray`), so there is a single source of truth for sticker
+  // graying across OLL / PLL / F2L / Cross / XCross / EOCross visualizations:
+  //
+  //   setLayerStickerGray(axis, value)   — gray a whole face layer (U-layer)
+  //   setF2LMaskGray(grayColor, adv)     — gray U-layer + AF2L slot pieces
+  //   setPhaseStickering(mask)           — gray every non-target piece (generic)
+  //
+  // All three push into `grayedStickers` and are restored by `clearLayerGray`.
+
   /**
    * Restore all previously-grayed sticker materials to their original
    * colors and dispose the cloned gray materials.
@@ -283,9 +296,36 @@ export class Cube3DEngine {
   }
 
   /**
+   * Gray out all sticker meshes of a single cubie Group.
+   *
+   * This is the shared primitive for the stickering system: it clones each
+   * sticker material, sets it to `grayColor`, records the original for later
+   * restoration via {@link clearLayerGray}, and skips non-sticker meshes
+   * (cores use multi-material / non-MeshBasicMaterial). Kept private so the
+   * three public entry points remain the single, documented API.
+   */
+  private grayCubieGroup(cubieGroup: Group, grayColor: string): void {
+    cubieGroup.children.forEach((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      const mat = mesh.material;
+      if (Array.isArray(mat)) return; // skip multi-material cores
+      if (!(mat as MeshBasicMaterial).isMeshBasicMaterial) return; // only stickers
+      this.grayedStickers.push({ mesh, originalMat: mat });
+      mesh.material = (mat as MeshBasicMaterial).clone();
+      (mesh.material as MeshBasicMaterial).color.set(grayColor);
+    });
+  }
+
+  /**
    * Gray out all sticker meshes on cubies belonging to a specific
    * layer (face + value). Used for F2L visualization where the
    * U (yellow) layer should appear gray to focus on the first two layers.
+   *
+   * NOTE: Prior to the stickering-system unification, this method cloned the
+   * sticker material but never applied `grayColor` (a no-op bug). It now grays
+   * correctly via the shared {@link grayCubieGroup} helper. No callers relied
+   * on the old no-op behavior.
    *
    * Call `clearLayerGray()` before re-syncing facelets to restore
    * original colors.
@@ -300,19 +340,9 @@ export class Cube3DEngine {
     grayColor: string = '#808080',
   ): void {
     if (!this.model || !this.factory) return;
-
     const cubies = this.model.getCubiesByFace(axis, layerValue);
     for (const cubieGroup of cubies) {
-      cubieGroup.children.forEach((child) => {
-        const mesh = child as Mesh;
-        if (!mesh.isMesh) return;
-        const mat = mesh.material;
-        if (Array.isArray(mat)) return; // skip multi-material cores
-        if (!(mat as MeshBasicMaterial).isMeshBasicMaterial) return; // only stickers
-        // Clone the sticker material and set gray
-        this.grayedStickers.push({ mesh, originalMat: mat });
-        mesh.material = (mat as MeshBasicMaterial).clone();
-      });
+      this.grayCubieGroup(cubieGroup, grayColor);
     }
   }
 
@@ -346,18 +376,59 @@ export class Cube3DEngine {
          (cubie.initialGridX === 1 && cubie.initialGridY === 0 && cubie.initialGridZ === 1));
 
       if (isYellowPiece || isAdvancedF2LSlotPiece) {
-        cubie.mesh.children.forEach((child) => {
-          const mesh = child as Mesh;
-          if (!mesh.isMesh) return;
-          const mat = mesh.material;
-          if (Array.isArray(mat)) return;
-          if (!(mat as MeshBasicMaterial).isMeshBasicMaterial) return;
-
-          this.grayedStickers.push({ mesh, originalMat: mat });
-          mesh.material = (mat as MeshBasicMaterial).clone();
-          (mesh.material as MeshBasicMaterial).color.set(grayColor);
-        });
+        this.grayCubieGroup(cubie.mesh, grayColor);
       }
+    }
+  }
+
+  /**
+   * Generic phase stickering — grays out every cubie that does NOT contain a
+   * target piece listed in the {@link PhaseMask}. Reusable for cross, xcross,
+   * xxcross, eocross, EOLine, and any other partial-goal visualization.
+   *
+   * The cubies that hold the mask's target edges/corners (identified by their
+   * home grid position via {@link EDGE_HOME_POSITION} / {@link CORNER_HOME_POSITION})
+   * keep their original colors; all other movable cubie stickers are grayed
+   * out (centers + core stay visible as reference, matching the reference
+   * web's stickering mask where centers stay "regular").
+   * Call {@link clearLayerGray} before re-syncing facelets or changing the mask.
+   *
+   * @param mask      The PhaseMask whose target pieces should stay colored.
+   * @param grayColor CSS color string (default '#808080').
+   */
+  public setPhaseStickering(mask: PhaseMask, grayColor: string = '#808080'): void {
+    if (!this.model || !this.factory) return;
+
+    // Collect the home grid positions of every target piece in the mask.
+    // A cubie's initialGridX/Y/Z identifies which piece it permanently holds;
+    // even after scrambling the cubie still carries that piece.
+    const targetKeys = new Set<string>();
+    if (mask.edges) {
+      for (const rule of mask.edges) {
+        const home = EDGE_HOME_POSITION[rule.id];
+        if (home) targetKeys.add(`${home.x},${home.y},${home.z}`);
+      }
+    }
+    if (mask.corners) {
+      for (const rule of mask.corners) {
+        const home = CORNER_HOME_POSITION[rule.id];
+        if (home) targetKeys.add(`${home.x},${home.y},${home.z}`);
+      }
+    }
+
+    // Gray out every movable piece (edge / corner) whose home position is
+    // NOT in the target set. A piece is movable when at least 2 of its 3
+    // home coordinates are non-zero (edges: 2, corners: 3; centers: 1, core: 0).
+    const cubies = this.model.getLogicalState();
+    for (const cubie of cubies) {
+      const movable =
+        Math.abs(cubie.initialGridX) +
+        Math.abs(cubie.initialGridY) +
+        Math.abs(cubie.initialGridZ) >= 2;
+      if (!movable) continue; // keep centers + core visible
+      const key = `${cubie.initialGridX},${cubie.initialGridY},${cubie.initialGridZ}`;
+      if (targetKeys.has(key)) continue; // keep this cubie colored
+      this.grayCubieGroup(cubie.mesh, grayColor);
     }
   }
 
@@ -404,3 +475,48 @@ export class Cube3DEngine {
     if (this.factory) this.factory.dispose();
   }
 }
+
+// ── Edge / Corner ID → home grid position lookup tables ───────────────────
+//
+// Kociemba coordinate system used by CubeModel:
+//   X = R(+1) / L(-1),  Y = U(+1) / D(-1),  Z = F(+1) / B(-1).
+//
+// The "home position" of a piece is the grid cell where that piece lives in
+// a SOLVED cube. A cubie's `initialGridX/Y/Z` identifies which piece it
+// permanently carries (even after scrambling), so we map the mask's target
+// piece IDs to home positions and keep those cubies colored in
+// {@link Cube3DEngine.setPhaseStickering}.
+
+export interface GridPosition {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** Edge ID → home grid position. Index aligns with the `Edge` enum. */
+export const EDGE_HOME_POSITION: GridPosition[] = [
+  { x: 1, y: 1, z: 0 },   // UR  (0)
+  { x: 0, y: 1, z: 1 },   // UF  (1)
+  { x: -1, y: 1, z: 0 },  // UL  (2)
+  { x: 0, y: 1, z: -1 },  // UB  (3)
+  { x: 1, y: -1, z: 0 },  // DR  (4)
+  { x: 0, y: -1, z: 1 },  // DF  (5)
+  { x: -1, y: -1, z: 0 }, // DL  (6)
+  { x: 0, y: -1, z: -1 }, // DB  (7)
+  { x: 1, y: 0, z: 1 },   // FR  (8)
+  { x: -1, y: 0, z: 1 },  // FL  (9)
+  { x: -1, y: 0, z: -1 }, // BL  (10)
+  { x: 1, y: 0, z: -1 },  // BR  (11)
+];
+
+/** Corner ID → home grid position. Index aligns with the `Corner` enum. */
+export const CORNER_HOME_POSITION: GridPosition[] = [
+  { x: 1, y: 1, z: 1 },    // URF (0)
+  { x: -1, y: 1, z: 1 },   // UFL (1)
+  { x: -1, y: 1, z: -1 },  // ULB (2)
+  { x: 1, y: 1, z: -1 },   // UBR (3)
+  { x: 1, y: -1, z: 1 },   // DFR (4)
+  { x: -1, y: -1, z: 1 },  // DLF (5)
+  { x: -1, y: -1, z: -1 }, // DBL (6)
+  { x: 1, y: -1, z: -1 },  // DRB (7)
+];

@@ -8,8 +8,9 @@
    apps/desktop/ — so its classes in apps/web/src/ would be invisible.
    These directives guarantee every utility class is generated regardless
    of which project triggers the build. */
-@source "../../web/src/**/*.{ts,tsx,js,jsx}";
+@source "./**/*.{ts,tsx,js,jsx}";
 @source "../../desktop/src/**/*.{ts,tsx}";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
 

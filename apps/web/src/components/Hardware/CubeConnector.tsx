@@ -13,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
@@ -87,6 +86,7 @@ export function CubeConnector({
   const [manualMac, setManualMac] = useState("");
 
   const handleOpenChange = (newOpen: boolean) => {
+    console.log("[CubeConnector] handleOpenChange called with newOpen:", newOpen);
     setOpen(newOpen);
     onOpenChange?.(newOpen);
     if (newOpen) {
@@ -159,13 +159,14 @@ export function CubeConnector({
   const railButton = (
     <button
       type="button"
+      onClick={() => handleOpenChange(true)}
       className={cn(
         "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors cursor-pointer",
         "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
         status === "connected" && "text-blue-500",
         className,
       )}
-            aria-label="Connect smart cube"
+      aria-label="Connect smart cube"
     >
       <div className="flex size-5 shrink-0 items-center justify-center">
         {status === "connected" ? (
@@ -185,40 +186,37 @@ export function CubeConnector({
     </button>
   );
 
-  const railTrigger = <DialogTrigger asChild>{railButton}</DialogTrigger>;
-
   const headerTrigger = (
     <Tooltip>
       <TooltipTrigger asChild>
-        <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
-              status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
-              className,
-            )}
-                  aria-label="Connect smart cube"
-          >
-            {status === "connected" ? (
-              <BluetoothConnected className="size-4" />
-            ) : (
-              <Bluetooth className="size-4" />
-            )}
-          </Button>
-        </DialogTrigger>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleOpenChange(true)}
+          className={cn(
+            "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
+            status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
+            className,
+          )}
+          aria-label="Connect smart cube"
+        >
+          {status === "connected" ? (
+            <BluetoothConnected className="size-4" />
+          ) : (
+            <Bluetooth className="size-4" />
+          )}
+        </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">Connect smart cube</TooltipContent>
     </Tooltip>
   );
 
-  const trigger = variant === "rail" ? railTrigger : headerTrigger;
+  const trigger = variant === "rail" ? railButton : headerTrigger;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      {trigger}
+      <DialogContent className="sm:max-w-md bg-surface text-ink border-line">
         <DialogHeader>
           <DialogTitle>Connect smart cube</DialogTitle>
           <DialogDescription>

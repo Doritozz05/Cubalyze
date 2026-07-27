@@ -74,9 +74,7 @@ export function FloatingWidgetWrapper({
   }, []);
 
   // ── Read runtime state from widgetStore ────────────────────────────────
-  const instance = useWidgetStore(
-    useCallback((s) => s.instances[widgetId], [widgetId]),
-  );
+  const instance = useWidgetStore((s) => s.instances[widgetId]);
 
   const storePosition = instance?.position ?? defaultPosition;
   const minimized = instance?.minimized ?? defaultMinimized;

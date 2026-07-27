@@ -11,8 +11,7 @@ import { FullSolveView } from "./FullSolveView";
 import { TrainingCalendar } from "./TrainingCalendar";
 import { PlainPracticeView } from "./PlainPracticeView";
 import { BlindPracticeView } from "./BlindPracticeView";
-import { CrossOptimalView } from "./CrossOptimalView";
-import { CrossCNView } from "./CrossCNView";
+import { CrossTrainerView } from "./CrossTrainerView";
 import { LSESubPhaseView } from "./LSESubPhaseView";
 import { EODetectView } from "./EODetectView";
 import { EOEfficiencyView } from "./EOEfficiencyView";
@@ -677,9 +676,13 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
           {/* Generic: blind */}
           {modeId === "blind" && <BlindPracticeView {...props} />}
 
-          {/* Cross-specific */}
-          {phaseType === "cross" && modeId === "optimal" && <CrossOptimalView {...props} />}
-          {phaseType === "cross" && modeId === "cn" && <CrossCNView {...props} />}
+          {/* Cross-specific — unified trainer (no timer) replaces the old
+              optimal/CN timer views. Routes for both "optimal" (≤8) and
+              "cn" modes; the trainer exposes a depth selector + color-neutral
+              toggle so both exercise intents are covered. */}
+          {phaseType === "cross" && (modeId === "optimal" || modeId === "cn") && (
+            <CrossTrainerView {...props} />
+          )}
 
           {/* LSE-specific */}
           {phaseType === "lse" && (modeId === "eo" || modeId === "ulur" || modeId === "mslice") && (

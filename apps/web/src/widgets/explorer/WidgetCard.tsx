@@ -22,9 +22,7 @@ export interface WidgetCardProps {
  * The card is clickable for quick toggle.
  */
 export function WidgetCard({ widget, className }: WidgetCardProps) {
-  const instance = useWidgetStore(
-    useCallback((s) => s.instances[widget.id], [widget.id]),
-  );
+  const instance = useWidgetStore((s) => s.instances[widget.id]);
   const visible = instance?.visible ?? false;
 
   const handleToggle = useCallback(() => {
