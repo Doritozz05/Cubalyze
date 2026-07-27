@@ -3,9 +3,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import {
   TrainingBreadcrumb,
 } from "./components";
@@ -91,17 +92,22 @@ export function AlgorithmRecognizeView({
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
+  const childSubsetIds = useMemo(() => {
+    const children = getChildSubsets(subsetId);
+    return new Set(children.map((c) => c.id));
+  }, [subsetId]);
+
   const subsetCases = useMemo(
     () =>
       allCases
         .filter(
           (c): c is typeof c & { id: string } =>
-            Boolean(c.id && c.subsetId === subsetId)
+            Boolean(c.id && (c.subsetId === subsetId || childSubsetIds.has(c.subsetId)))
         )
         .sort((a, b) =>
           a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })
         ),
-    [allCases, subsetId]
+    [allCases, subsetId, childSubsetIds]
   );
 
   // ── Real progress for weakness ordering ────────────────────────────────
@@ -397,13 +403,17 @@ function QuizPanel({
             className="flex flex-col items-center gap-4"
           >
             <div className="relative" style={{ transform: `rotate(${diagramRotation}deg)`, transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-              {currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
+              {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" || (!currentCase.diagram2D && currentCase.setupScramble) ? (
+                <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
+              ) : currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
                 <CaseDiagram
                   arrows={currentCase.diagram2D.arrows}
                   setupScramble={currentCase.setupScramble}
                   style={visualizationStyle}
                   className="w-44 sm:w-52 lg:w-60"
                 />
+              ) : currentCase.setupScramble ? (
+                <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
               ) : (
                 <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 flex items-center justify-center rounded-lg bg-surface-2">
                   <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>
