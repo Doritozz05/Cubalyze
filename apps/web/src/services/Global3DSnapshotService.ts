@@ -2,9 +2,10 @@ import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 
+const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
 const F2L_SUBSET_IDS = new Set([
   "00000000-0000-4000-9000-000000000003", // Basic F2L
-  "00000000-0000-4000-9000-000000000004", // Advanced F2L
+  F2L_ADVANCED_SUBSET_ID, // Advanced F2L
 ]);
 
 const SLOT_LABELS = [
@@ -15,7 +16,7 @@ const SLOT_LABELS = [
 ];
 
 const F2L_GRAY = "#808080";
-const STORAGE_PREFIX = "cubeforge_snap_3d_v6_";
+const STORAGE_PREFIX = "cubeforge_snap_3d_v7_";
 const CANV_SIZE = 256;
 
 function buildF2LSkinStyle() {
@@ -196,8 +197,12 @@ export class Global3DSnapshotService {
 
         this.engine.rotateModelY(modelYRot);
 
+        const isAdvancedF2L =
+          caseData.subsetId === F2L_ADVANCED_SUBSET_ID ||
+          Boolean(caseData.tags?.includes("af2l"));
+
         if (isF2L) {
-          this.engine.setF2LMaskGray(F2L_GRAY);
+          this.engine.setF2LMaskGray(F2L_GRAY, isAdvancedF2L);
         }
 
         // Synchronous single-frame render

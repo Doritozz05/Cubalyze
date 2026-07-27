@@ -8,9 +8,10 @@ import { getSkinStyle } from "@cubeforge/cube-3d-engine";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 
+const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
 const F2L_SUBSET_IDS = new Set([
   "00000000-0000-4000-9000-000000000003", // Basic F2L
-  "00000000-0000-4000-9000-000000000004", // Advanced F2L
+  F2L_ADVANCED_SUBSET_ID, // Advanced F2L
 ]);
 
 const SLOT_LABELS = [
@@ -217,8 +218,12 @@ function Case3DCanvas({
 
       engine.rotateModelY(modelYRot);
 
+      const isAdvancedF2L =
+        caseData.subsetId === F2L_ADVANCED_SUBSET_ID ||
+        Boolean(caseData.tags?.includes("af2l"));
+
       if (isF2L) {
-        engine.setF2LMaskGray(F2L_GRAY);
+        engine.setF2LMaskGray(F2L_GRAY, isAdvancedF2L);
       }
 
       engine.sceneManager.render();

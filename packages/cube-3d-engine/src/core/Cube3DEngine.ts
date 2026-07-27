@@ -321,26 +321,31 @@ export class Cube3DEngine {
    *
    * Grays out:
    * 1. All Last-Layer / OLL pieces containing Yellow (initialGridY === 1).
+   * 2. In Advanced F2L (isAdvanced === true): White-Orange-Green corner & Orange-Green edge.
    *
    * Keeps colored:
-   * 1. All F2L pair pieces (including trapped pieces in BL, BR, FL, or FR slots & U layer).
+   * 1. All F2L pair pieces (in Basic F2L) or active AF2L pieces.
    * 2. All solved cross and slot pieces.
    *
    * @param grayColor CSS color string (default '#808080')
+   * @param isAdvanced If true (AF2L), also grays out White-Orange-Green corner & Orange-Green edge
    */
-  public setF2LMaskGray(grayColor: string = '#808080'): void {
+  public setF2LMaskGray(grayColor: string = '#808080', isAdvanced: boolean = false): void {
     if (!this.model || !this.factory) return;
 
     const cubies = this.model.getLogicalState();
     for (const cubie of cubies) {
-      // In F2L (both Basic and Advanced F2L), pieces with initialGridY === 1
-      // belong to the U-layer (Yellow facelets / OLL pieces) in solved state.
-      // Those non-F2L pieces should be grayed out.
-      // All other cubies (initialGridY !== 1, i.e. F2L corner/edge pieces & Cross)
-      // are part of the active F2L setup or solved slots and must stay colored.
+      // In F2L, pieces with initialGridY === 1 belong to the U-layer (Yellow facelets / OLL pieces).
       const isYellowPiece = cubie.initialGridY === 1;
 
-      if (isYellowPiece) {
+      // In Advanced F2L (AF2L), the White-Orange-Green corner (1, -1, 1) and
+      // Orange-Green edge (1, 0, 1) should also be grayed out.
+      const isAdvancedF2LSlotPiece =
+        isAdvanced &&
+        ((cubie.initialGridX === 1 && cubie.initialGridY === -1 && cubie.initialGridZ === 1) ||
+         (cubie.initialGridX === 1 && cubie.initialGridY === 0 && cubie.initialGridZ === 1));
+
+      if (isYellowPiece || isAdvancedF2LSlotPiece) {
         cubie.mesh.children.forEach((child) => {
           const mesh = child as Mesh;
           if (!mesh.isMesh) return;
