@@ -60,9 +60,10 @@ interface PhaseDef {
 const METHOD_PHASES: Record<string, PhaseDef[]> = {
   CFOP: [
     { id: "cross", name: "Cross", icon: Crosshair, description: "Solve the cross efficiently. Fewer moves, faster solutions.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l", name: "F2L", icon: Grid3x3, description: "First two layers — algorithmic pairs for every slot.", sortOrder: 2, hasAlgorithms: true },
-    { id: "oll", name: "OLL", icon: Palette, description: "Orient last layer — 57 cases to master.", sortOrder: 3, hasAlgorithms: true },
-    { id: "pll", name: "PLL", icon: Shuffle, description: "Permute last layer — 21 cases for the final step.", sortOrder: 4, hasAlgorithms: true },
+    { id: "f2l", name: "F2L", icon: Grid3x3, description: "Basic first two layers — 41 algorithmic pairs.", sortOrder: 2, hasAlgorithms: true },
+    { id: "af2l", name: "Advanced F2L", icon: Layers, description: "Advanced first two layers — 54 trapped & keyhole cases.", sortOrder: 3, hasAlgorithms: true },
+    { id: "oll", name: "OLL", icon: Palette, description: "Orient last layer — 57 cases to master.", sortOrder: 4, hasAlgorithms: true },
+    { id: "pll", name: "PLL", icon: Shuffle, description: "Permute last layer — 21 cases for the final step.", sortOrder: 5, hasAlgorithms: true },
   ],
   Roux: [
     { id: "first-block", name: "First block", icon: Box, description: "Build a 1×2×3 block on the left.", sortOrder: 1, hasAlgorithms: false },
@@ -137,8 +138,8 @@ function getPhaseModes(phaseType: PhasePracticeType): PhaseModeDef[] {
 
 function findSubsetId(methodId: string, phaseId: string): string | null {
   const phaseToSubsetName: Record<string, string> = {
-    "oll": "OLL", "pll": "PLL", "f2l": "F2L", "cmll": "CMLL",
-    "f2l-zz": "F2L", "ll-zz": "OCLL", "f2l-petrus": "F2L", "ll-petrus": "COLL",
+    "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
+    "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
   };
   const subsetName = phaseToSubsetName[phaseId];
   if (!subsetName) return null;
@@ -155,7 +156,7 @@ const METHOD_ICONS: Record<string, React.ElementType> = {
 };
 
 const PHASE_DOT: Record<string, string> = {
-  cross: "bg-blue-400", f2l: "bg-emerald-400", oll: "bg-amber-400", pll: "bg-violet-400",
+  cross: "bg-blue-400", f2l: "bg-emerald-400", af2l: "bg-teal-400", oll: "bg-amber-400", pll: "bg-violet-400",
   "first-block": "bg-rose-400", "second-block": "bg-orange-400", cmll: "bg-violet-400", lse: "bg-cyan-400",
   eoline: "bg-sky-400", "f2l-zz": "bg-emerald-400", "ll-zz": "bg-amber-400",
   "block-222": "bg-rose-400", "block-223": "bg-orange-400", "eo-petrus": "bg-cyan-400",

@@ -60,8 +60,8 @@ export function PhaseStatsView({
   // Find subset for this phase
   const subset = useMemo(() => {
     const phaseToName: Record<string, string> = {
-      "oll": "OLL", "pll": "PLL", "f2l": "F2L", "cmll": "CMLL",
-      "f2l-zz": "F2L", "ll-zz": "OCLL", "f2l-petrus": "F2L", "ll-petrus": "COLL",
+      "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
+      "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
     };
     const name = phaseToName[phaseId];
     if (!name) return null;
