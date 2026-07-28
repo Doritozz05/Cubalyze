@@ -308,7 +308,7 @@ function logSolveDiagnostic(args: {
   console.log("%cScramble", labelStyle, scramble || "(empty)");
 
   // Always show the full move list (this is what the user explicitly asked
-  // for: "para ver que ha ocurrido si se han perdido movimientos").
+  // for: "to inspect what happened if moves were lost").
   // ── Per-move detail + duplicate detection ───────────────────────
   // Useful to find the source of inflated move counts (BLE double-send,
   // scramble moves leaking into solve, etc.). Duplicate detection:

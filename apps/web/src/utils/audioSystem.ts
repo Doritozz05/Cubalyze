@@ -1,29 +1,27 @@
 /**
- * Sistema de audio para la inspección WCA.
+ * Audio system for WCA inspection.
  *
- * Utiliza la Web Speech API (nativa del navegador) para sintetizar
- * las alertas de voz durante la inspección. Esto es 100% legal
- * (no copia archivos de terceros) y proporciona acceso a las voces
- * instaladas en el sistema del usuario (masculinas, femeninas, etc.).
+ * Uses the Web Speech API (native to the browser) to synthesize voice
+ * alerts during inspection. This is 100% legal (does not copy third-party
+ * assets) and provides access to voices installed on the user's system.
  *
- * Compatibilidad: >95% de los navegadores modernos (Chrome, Firefox,
- * Safari, Edge) — https://caniuse.com/speech-synthesis
+ * Compatibility: >95% of modern browsers (Chrome, Firefox, Safari, Edge)
+ * — https://caniuse.com/speech-synthesis
  *
- * Las voces disponibles dependen del sistema operativo del usuario:
+ * Available voices depend on the user's operating system:
  *   - Windows 10/11 : Microsoft David (male), Microsoft Zira (female)
- *   - macOS         : Alex (male), Samantha (female), y muchas más
- *   - Android       : varía según el dispositivo y motor TTS instalado
+ *   - macOS         : Alex (male), Samantha (female), and many more
+ *   - Android       : varies by device and installed TTS engine
  */
 
 export type VoiceType = "male" | "female";
 
-// Palabras clave para identificar voces masculinas y femeninas en
-// diferentes sistemas operativos. El sistema busca coincidencias
-// insensibles a mayúsculas/minúsculas.
+// Keywords to identify male and female voices across different operating systems.
+// The system performs case-insensitive matching.
 const MALE_KEYWORDS = ["david", "mark", "alex", "male", "microsoft", "google uk english male", "daniel", "fred"];
 const FEMALE_KEYWORDS = ["zira", "samantha", "susan", "female", "google us english", "karen", "moira", "tessa", "veena"];
 
-// ── Clase AudioSystem (singleton) ─────────────────────────────────────
+// ── AudioSystem Class (singleton) ─────────────────────────────────────
 
 export class AudioSystem {
   private voice: VoiceType = "male";
@@ -32,38 +30,38 @@ export class AudioSystem {
   private loadingStarted = false;
 
   /**
-   * Inicializa el motor de síntesis de voz. Comienza la carga de la lista
-   * de voces disponibles (síncrona y asíncrona vía onvoiceschanged).
+   * Initializes the speech synthesis engine. Begins loading the available
+   * voices list (synchronously and asynchronously via onvoiceschanged).
    *
-   * Debe llamarse después de la primera interacción del usuario para
-   * cumplir con las políticas de autoplay del navegador.
+   * Must be called after the user's first interaction to comply with
+   * browser autoplay policies.
    */
   public init(): void {
     if (this.loadingStarted || typeof window === "undefined") return;
     this.loadingStarted = true;
 
     if (!window.speechSynthesis) {
-      console.warn("[AudioSystem] Web Speech API no está disponible en este navegador.");
+      console.warn("[AudioSystem] Web Speech API is not available in this browser.");
       return;
     }
 
-    // Intento síncrono (funciona en la mayoría de navegadores)
+    // Synchronous attempt (works in most browsers)
     this.voices = window.speechSynthesis.getVoices();
     if (this.voices.length > 0) {
       this.voicesLoaded = true;
     }
 
-    // Carga asíncrona (necesaria en Chrome, donde las voces llegan después)
+    // Asynchronous load (necessary in Chrome, where voices arrive later)
     window.speechSynthesis.onvoiceschanged = () => {
       this.voices = window.speechSynthesis.getVoices();
       if (this.voices.length > 0) {
         this.voicesLoaded = true;
-        window.speechSynthesis.onvoiceschanged = null; // Limpiar después de cargar
+        window.speechSynthesis.onvoiceschanged = null; // Clean up after loading
       }
     };
 
-    // Timeout de seguridad: si después de 3 segundos no se cargaron voces,
-    // marcamos como cargado para no bloquear (se usará la voz por defecto)
+    // Safety timeout: if voices are not loaded after 3 seconds,
+    // mark as loaded to avoid blocking (default voice will be used)
     setTimeout(() => {
       if (!this.voicesLoaded) {
         this.voices = window.speechSynthesis?.getVoices() ?? [];
@@ -73,9 +71,9 @@ export class AudioSystem {
   }
 
   /**
-   * Cambia entre voz masculina y femenina.
-   * La próxima vez que se reproduzca un audio, se usará la voz
-   * correspondiente según las voces disponibles en el sistema.
+   * Switches between male and female voice.
+   * The next time audio is played, the corresponding voice will be used
+   * based on available system voices.
    */
   public setVoice(type: VoiceType): void {
     this.voice = type;
@@ -86,12 +84,12 @@ export class AudioSystem {
   }
 
   /**
-   * Busca la mejor voz disponible para el tipo seleccionado (male/female).
+   * Searches for the best available voice for the selected type (male/female).
    *
-   * Estrategia de búsqueda:
-   *   1. Coincidencia por palabra clave + idioma (en-US, en-GB, en)
-   *   2. Cualquier voz en inglés
-   *   3. Cualquier voz disponible
+   * Search strategy:
+   *   1. Keyword match + preferred language (en-US, en-GB, en)
+   *   2. Any English voice
+   *   3. Any available voice
    */
   private getPreferredVoice(): SpeechSynthesisVoice | null {
     if (!this.voices.length) return null;
@@ -99,7 +97,7 @@ export class AudioSystem {
     const keywords = this.voice === "male" ? MALE_KEYWORDS : FEMALE_KEYWORDS;
     const langPrefs = ["en-US", "en-GB", "en"];
 
-    // Prioridad 1: keyword + idioma preferido
+    // Priority 1: keyword + preferred language
     for (const lang of langPrefs) {
       for (const kw of keywords) {
         const found = this.voices.find(
@@ -109,29 +107,29 @@ export class AudioSystem {
       }
     }
 
-    // Prioridad 2: cualquier voz en inglés
+    // Priority 2: any English voice
     for (const lang of langPrefs) {
       const found = this.voices.find((v) => v.lang.startsWith(lang));
       if (found) return found;
     }
 
-    // Prioridad 3: la primera voz disponible
+    // Priority 3: first available voice
     return this.voices[0] ?? null;
   }
 
   /**
-   * Sintetiza y reproduce un texto usando la voz seleccionada.
-   * Cancela cualquier síntesis previa para evitar superposición.
+   * Synthesizes and speaks text using the selected voice.
+   * Cancels any previous speech synthesis to avoid overlap.
    */
   private speak(text: string): void {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
 
-    // Cancelar speech previo (evita solapamiento)
+    // Cancel previous speech (prevents overlap)
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
-    utterance.rate = 0.88; // Ligeramente más lento para claridad en competición
+    utterance.rate = 0.88; // Slightly slower for clarity in competition
     utterance.volume = 1;
 
     const voice = this.getPreferredVoice();
@@ -143,7 +141,7 @@ export class AudioSystem {
   }
 
   /**
-   * Reproduce la alerta de "8 seconds".
+   * Plays the "8 seconds" alert.
    */
   public play8s(): void {
     if (!this.loadingStarted) this.init();
@@ -151,7 +149,7 @@ export class AudioSystem {
   }
 
   /**
-   * Reproduce la alerta de "12 seconds".
+   * Plays the "12 seconds" alert.
    */
   public play12s(): void {
     if (!this.loadingStarted) this.init();
@@ -159,8 +157,8 @@ export class AudioSystem {
   }
 
   /**
-   * Reproduce un chime/fanfarria cristalina y minimalista de victoria al romper un PB.
-   * Utiliza la Web Audio API nativa para síntesis en tiempo real sin latencia.
+   * Plays a crisp, minimalist victory fanfare chime upon breaking a PB.
+   * Uses native Web Audio API for real-time synthesis without latency.
    */
   public playPbFanfare(types: ("Single" | "Ao5" | "Ao12")[] = ["Single"]): void {
     if (typeof window === "undefined") return;
@@ -176,7 +174,7 @@ export class AudioSystem {
       const ctx = new AudioContextClass();
       const now = ctx.currentTime;
 
-      // Frecuencias base en Hz (Arpegio E Major 7th / Bright victory chime)
+      // Base frequencies in Hz (E Major 7th Arpeggio / Bright victory chime)
       // E5 = 659.25, G#5 = 830.61, B5 = 987.77, D#6 = 1244.51, E6 = 1318.51
       const isMultiple = types.length > 1;
       const isAo12 = types.includes("Ao12");
@@ -196,7 +194,7 @@ export class AudioSystem {
         osc.type = idx === freqs.length - 1 ? "sine" : "triangle";
         osc.frequency.setValueAtTime(freq, now + idx * stagger);
 
-        // ADSR Envelope: Atacable, brillante, decaimiento suave
+        // ADSR Envelope: Punchy, bright, smooth decay
         const startTime = now + idx * stagger;
         gain.gain.setValueAtTime(0.001, startTime);
         gain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.02);
@@ -209,7 +207,7 @@ export class AudioSystem {
         osc.stop(startTime + noteDuration + 0.4);
       });
 
-      // Limpieza automática del AudioContext
+      // Automatic AudioContext cleanup
       setTimeout(() => {
         ctx.close().catch(() => {});
       }, 1500);
@@ -219,5 +217,5 @@ export class AudioSystem {
   }
 }
 
-// Exportamos una instancia singleton para toda la app
+// Export singleton instance for the entire application
 export const globalAudioSystem = new AudioSystem();

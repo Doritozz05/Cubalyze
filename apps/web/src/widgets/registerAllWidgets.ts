@@ -12,6 +12,7 @@ import { FloatingCube2DPanel } from "@/widgets/implementations/scramble-2d/Float
 import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
 import { FloatingMetronomePanel } from "@/widgets/implementations/metronome/FloatingMetronomePanel";
 import { FloatingNotesPanel } from "@/widgets/implementations/notes/FloatingNotesPanel";
+import { FloatingAlgorithmDbPanel } from "@/widgets/implementations/algorithm-db/FloatingAlgorithmDbPanel";
 
 // Previews from implementations/
 import { TimesLogPreview } from "@/widgets/implementations/times-log/TimesLogPreview";
@@ -22,6 +23,7 @@ import { Scramble2DPreview } from "@/widgets/implementations/scramble-2d/Scrambl
 import { Cube3DPreview } from "@/widgets/implementations/cube-button/Cube3DPreview";
 import { MetronomePreview } from "@/widgets/implementations/metronome/MetronomePreview";
 import { NotesPreview } from "@/widgets/implementations/notes/NotesPreview";
+import { AlgorithmDbPreview } from "@/widgets/implementations/algorithm-db/AlgorithmDbPreview";
 
 /**
  * Registers all built-in widgets with the WidgetRegistry.
@@ -99,6 +101,13 @@ export function registerAllWidgets(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: FloatingNotesPanel as any,
     preview: NotesPreview,
+    mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
+  });
+
+  WidgetRegistry.register("algorithm-db", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: FloatingAlgorithmDbPanel as any,
+    preview: AlgorithmDbPreview,
     mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
   });
 }

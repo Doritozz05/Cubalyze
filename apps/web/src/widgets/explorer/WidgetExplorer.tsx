@@ -257,7 +257,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
       </DialogContent>
     </Dialog>
 
-      {/* Import widget dialog — reemplaza el prompt() nativo del navegador */}
+      {/* Import widget dialog — replaces native browser prompt() */}
       <Dialog open={importDialogOpen} onOpenChange={(open) => {
         if (!open) {
           setImportDialogOpen(false);

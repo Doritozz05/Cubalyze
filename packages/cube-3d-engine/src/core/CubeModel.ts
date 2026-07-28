@@ -88,13 +88,13 @@ export class CubeModel {
     if (turns === 0) return;
 
     for (const cubie of this.cubies) {
-      // Usar lógica cíclica Right-Handed para que coincida con el quaternion visual
+      // Use Right-Handed cyclic logic to match the visual quaternion
       if (axis === 'x' && cubie.gridX !== layerValue) continue;
       if (axis === 'y' && cubie.gridY !== layerValue) continue;
       if (axis === 'z' && cubie.gridZ !== layerValue) continue;
 
       let a: number, b: number;
-      // Permutación cíclica estándar para Right-Handed (X: Y->Z, Y: Z->X, Z: X->Y)
+      // Standard cyclic permutation for Right-Handed (X: Y->Z, Y: Z->X, Z: X->Y)
       if (axis === 'x') { a = cubie.gridY; b = cubie.gridZ; }
       else if (axis === 'y') { a = cubie.gridZ; b = cubie.gridX; }
       else { a = cubie.gridX; b = cubie.gridY; }
@@ -111,7 +111,7 @@ export class CubeModel {
         newA = -a; newB = -b;
       }
 
-      // Escribir los resultados
+      // Write results
       if (axis === 'x') { cubie.gridY = newA; cubie.gridZ = newB; }
       else if (axis === 'y') { cubie.gridZ = newA; cubie.gridX = newB; }
       else { cubie.gridX = newA; cubie.gridY = newB; }
@@ -136,7 +136,7 @@ export class CubeModel {
         cubie.gridY * spacing,
         cubie.gridZ * spacing
       );
-      // Normalizar el cuaternión local para prevenir degradación de escala
+      // Normalize local quaternion to prevent scale degradation
       cubie.mesh.quaternion.normalize();
     }
   }
