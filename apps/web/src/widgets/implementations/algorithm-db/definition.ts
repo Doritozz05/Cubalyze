@@ -3,9 +3,9 @@ import type { WidgetDefinition } from "@/widgets/types";
 
 export const algorithmDbDefinition: WidgetDefinition = {
   id: "algorithm-db",
-  name: "algorithms",
+  name: "Algorithms",
   description:
-    "browse speedcubing algorithms by method and subset with 2d/3d visualizations, setup scrambles, and solution breakdown.",
+    "Browse speedcubing algorithms by method and subset with 2D/3D visualizations, setup scrambles, and solution breakdown.",
   icon: BookOpen,
   category: "training",
   author: "cubeforge",
