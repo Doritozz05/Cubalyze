@@ -88,7 +88,7 @@ export function AlgorithmViewerCard({
             moves={activeAlg?.moves}
             style={visStyle}
             arrows={caseData.diagram2D?.arrows}
-            className="w-32 max-h-[120px]"
+            className="w-32 max-h-30"
           />
         ) : (
           <Case3DDiagram
@@ -159,7 +159,7 @@ export function AlgorithmViewerCard({
         </div>
 
         {/* Algorithm moves container */}
-        <div className="font-mono text-xs font-semibold text-accent-cyan bg-surface-1 border border-line rounded p-2 leading-relaxed break-words shadow-inner">
+        <div className="font-mono text-xs font-semibold text-accent-cyan bg-surface-1 border border-line rounded p-2 leading-relaxed wrap-break-word shadow-inner">
           {movesText || "No algorithm available"}
         </div>
 
