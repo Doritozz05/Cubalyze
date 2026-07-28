@@ -1,60 +1,45 @@
 "use client";
 
-import { Activity } from "lucide-react";
-
 /**
  * Clean, minimal preview card for the TPS Metronome in Widget Explorer.
- * Designed to fit inside the size-16 / size-18 preview thumbnail.
+ * Designed to fit cleanly inside preview tiles without text overflow.
  */
 export function MetronomePreview() {
   const bars = [35, 60, 95, 70, 40, 85, 50, 90, 45, 65];
 
   return (
-    <div className="flex size-full flex-col justify-between p-1.5 select-none bg-surface">
-      {/* Top Header */}
+    <div className="flex size-full flex-col justify-between p-2 select-none bg-surface border border-line rounded">
+      {/* TPS & BPM Readout */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-ink">
-          <Activity className="size-2.5 text-ink-3" />
-          <span className="text-[8px] font-semibold tracking-tight uppercase">BPM</span>
-        </div>
-        <span className="rounded bg-surface-2 border border-line px-0.5 font-mono text-[7px] font-medium text-ink-3">
-          TPS
-        </span>
+        <span className="font-mono text-xs font-bold text-accent-cyan">4.0 TPS</span>
+        <span className="font-mono text-[9px] font-semibold text-ink-3">240 BPM</span>
       </div>
 
-      {/* Center Readouts */}
-      <div className="flex items-baseline justify-between my-0.5">
-        <div className="flex items-baseline gap-0.5">
-          <span className="font-mono text-xs font-bold tracking-tight text-ink">4.0</span>
-          <span className="text-[7px] font-semibold text-ink-3 font-mono">TPS</span>
-        </div>
-        <div className="text-[8px] font-mono text-ink-3">240</div>
-      </div>
-
-      {/* Visual Rhythmic Waveform */}
-      <div className="flex h-3 items-end justify-between gap-px">
+      {/* Rhythmic Waveform */}
+      <div className="flex h-5 items-end justify-between gap-0.5 my-1">
         {bars.map((h, i) => (
           <div
             key={i}
             className="w-full rounded-xs"
             style={{
               height: `${h}%`,
-              backgroundColor: i === 2 || i === 7 ? "var(--color-ink, #000)" : "var(--color-line, #e5e7eb)",
-              opacity: i === 2 || i === 7 ? 0.9 : 0.6,
+              backgroundColor: i === 2 || i === 7 ? "var(--color-accent-cyan, #06b6d4)" : "var(--color-line, #e5e7eb)",
+              opacity: i === 2 || i === 7 ? 1 : 0.5,
             }}
           />
         ))}
       </div>
 
-      {/* Beat Dots */}
-      <div className="flex justify-center gap-0.5 pt-0.5">
-        <div className="size-0.5 rounded-full bg-ink" />
-        <div className="size-0.5 rounded-full bg-line" />
-        <div className="size-0.5 rounded-full bg-line" />
-        <div className="size-0.5 rounded-full bg-line" />
+      {/* Pulse Status */}
+      <div className="flex items-center justify-between text-[8px] text-ink-3">
+        <span className="font-mono">Pacing</span>
+        <div className="flex gap-1">
+          <div className="size-1 rounded-full bg-accent-cyan" />
+          <div className="size-1 rounded-full bg-line" />
+          <div className="size-1 rounded-full bg-line" />
+          <div className="size-1 rounded-full bg-line" />
+        </div>
       </div>
     </div>
   );
 }
-
-

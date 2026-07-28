@@ -122,16 +122,16 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
   return (
     <FloatingWidgetWrapper
       widgetId="algorithm-db"
-      label="algoritmos"
+      label="Algorithms"
       icon={BookOpen}
       panelWidth={320}
       headerActions={
         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-2 border border-line text-[10px] text-ink-3 font-mono">
-          <span className="text-accent-cyan font-medium lowercase">
-            {currentMethod?.name.toLowerCase()}
+          <span className="text-accent-cyan font-medium">
+            {currentMethod?.name}
           </span>
           <span>/</span>
-          <span className="lowercase">{currentSubsetName.toLowerCase()}</span>
+          <span>{currentSubsetName}</span>
         </div>
       }
     >
@@ -140,8 +140,8 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
         <div className="grid grid-cols-2 gap-2">
           {/* Method Select */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-medium lowercase text-ink-3 flex items-center gap-1">
-              <Layers className="size-2.5" /> method
+            <label className="text-[10px] font-medium text-ink-3 flex items-center gap-1">
+              <Layers className="size-2.5" /> Method
             </label>
             <Select
               value={selectedMethodId}
@@ -151,13 +151,13 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                 setActiveViewMode("list");
               }}
             >
-              <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line lowercase">
-                <SelectValue placeholder="method" />
+              <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line">
+                <SelectValue placeholder="Method" />
               </SelectTrigger>
               <SelectContent>
                 {METHODS.map((m) => (
-                  <SelectItem key={m.id} value={m.id} className="text-xs lowercase">
-                    {m.name.toLowerCase()}
+                  <SelectItem key={m.id} value={m.id} className="text-xs">
+                    {m.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -166,8 +166,8 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
 
           {/* Submethod Select */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-medium lowercase text-ink-3 flex items-center gap-1">
-              <Filter className="size-2.5" /> submethod
+            <label className="text-[10px] font-medium text-ink-3 flex items-center gap-1">
+              <Filter className="size-2.5" /> Submethod
             </label>
             <Select
               value={effectiveSubsetId}
@@ -177,13 +177,13 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                 setActiveViewMode("list");
               }}
             >
-              <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line lowercase">
-                <SelectValue placeholder="submethod" />
+              <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line">
+                <SelectValue placeholder="Submethod" />
               </SelectTrigger>
               <SelectContent>
                 {availableSubsets.map((s) => (
-                  <SelectItem key={s.id} value={s.id} className="text-xs lowercase">
-                    {s.name.toLowerCase()}
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -193,8 +193,8 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
 
         {/* ── Mode Navigation Bar: List view vs Detail view ── */}
         <div className="flex items-center justify-between border-b border-line pb-1.5 pt-0.5">
-          <span className="text-[10px] font-medium text-ink-3 lowercase">
-            cases ({subsetCases.length})
+          <span className="text-[10px] font-medium text-ink-3">
+            Cases ({subsetCases.length})
           </span>
 
           <div className="flex items-center gap-1">
@@ -203,10 +203,10 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
               variant={activeViewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveViewMode("list")}
-              className="h-5 px-1.5 text-[10px] lowercase gap-1"
+              className="h-5 px-1.5 text-[10px] gap-1"
             >
               <Grid className="size-2.5" />
-              <span>list</span>
+              <span>List</span>
             </Button>
             {activeCase && (
               <Button
@@ -214,15 +214,15 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                 variant={activeViewMode === "detail" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setActiveViewMode("detail")}
-                className="h-5 px-1.5 text-[10px] lowercase gap-1"
+                className="h-5 px-1.5 text-[10px] gap-1"
               >
-                <span>algorithm</span>
+                <span>Algorithm</span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* ── View Mode A: Open Cases List ("salen todos") ── */}
+        {/* ── View Mode A: Open Cases List ── */}
         {activeViewMode === "list" ? (
           <div className="flex flex-col gap-1.5">
             {subsetCases.length > 0 ? (
@@ -251,8 +251,8 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                 </div>
               </ScrollArea>
             ) : (
-              <div className="p-6 text-center text-xs text-ink-3 lowercase">
-                no cases for this submethod
+              <div className="p-6 text-center text-xs text-ink-3">
+                No cases for this submethod
               </div>
             )}
           </div>
@@ -266,10 +266,10 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                 variant="ghost"
                 size="sm"
                 onClick={() => setActiveViewMode("list")}
-                className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1 lowercase"
+                className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
               >
                 <ChevronLeft className="size-3" />
-                <span>all cases</span>
+                <span>All cases</span>
               </Button>
 
               <div className="flex items-center gap-1">
@@ -279,7 +279,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                   size="sm"
                   onClick={handlePrevCase}
                   className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
-                  title="previous case"
+                  title="Previous case"
                 >
                   <ChevronLeft className="size-3" />
                 </Button>
@@ -292,7 +292,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
                   size="sm"
                   onClick={handleNextCase}
                   className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
-                  title="next case"
+                  title="Next case"
                 >
                   <ChevronRight className="size-3" />
                 </Button>
@@ -308,7 +308,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
             ) : (
               <div className="flex flex-col items-center justify-center p-6 bg-surface-2/30 border border-line border-dashed rounded-lg text-center text-ink-3">
                 <BookOpen className="size-6 mb-1 opacity-50" />
-                <span className="text-xs font-medium lowercase">no case selected</span>
+                <span className="text-xs font-medium">No case selected</span>
               </div>
             )}
           </div>

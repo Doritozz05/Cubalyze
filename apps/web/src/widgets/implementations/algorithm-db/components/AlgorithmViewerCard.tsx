@@ -75,7 +75,7 @@ export function AlgorithmViewerCard({
             {caseData.caseNumber}
           </Badge>
           <span className="text-xs font-medium text-ink truncate">
-            {caseData.name.toLowerCase()}
+            {caseData.name}
           </span>
         </div>
       </div>
@@ -103,7 +103,7 @@ export function AlgorithmViewerCard({
       {caseData.setupScramble && (
         <div className="flex flex-col gap-1 bg-surface-2/40 border border-line rounded-md p-2">
           <div className="flex items-center justify-between text-[10px] font-medium text-ink-3">
-            <span>setup scramble</span>
+            <span>Setup scramble</span>
             <Button
               type="button"
               variant="ghost"
@@ -114,12 +114,12 @@ export function AlgorithmViewerCard({
               {copiedSetup ? (
                 <>
                   <Check className="size-3 text-accent-emerald" />
-                  <span className="text-accent-emerald">copied</span>
+                  <span className="text-accent-emerald">Copied</span>
                 </>
               ) : (
                 <>
                   <Copy className="size-3" />
-                  <span>copy</span>
+                  <span>Copy</span>
                 </>
               )}
             </Button>
@@ -134,7 +134,7 @@ export function AlgorithmViewerCard({
       <div className="flex flex-col gap-1.5 bg-surface-2/40 border border-line rounded-md p-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-medium text-ink-3">
-            algorithm
+            Algorithm
           </span>
 
           <Button
@@ -147,12 +147,12 @@ export function AlgorithmViewerCard({
             {copiedAlg ? (
               <>
                 <Check className="size-3 text-accent-emerald" />
-                <span className="text-accent-emerald">copied</span>
+                <span className="text-accent-emerald">Copied</span>
               </>
             ) : (
               <>
                 <Copy className="size-3" />
-                <span>copy</span>
+                <span>Copy</span>
               </>
             )}
           </Button>
@@ -160,14 +160,14 @@ export function AlgorithmViewerCard({
 
         {/* Algorithm moves container */}
         <div className="font-mono text-xs font-semibold text-accent-cyan bg-surface-1 border border-line rounded p-2 leading-relaxed break-words shadow-inner">
-          {movesText || "no algorithm available"}
+          {movesText || "No algorithm available"}
         </div>
 
         {/* Triggers & Badges */}
         {activeAlg?.triggers && activeAlg.triggers.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 pt-0.5">
             <span className="text-[10px] text-ink-3 flex items-center gap-1">
-              <Tag className="size-2.5" /> triggers:
+              <Tag className="size-2.5" /> Triggers:
             </span>
             {activeAlg.triggers.map((trigger, idx) => (
               <Badge
@@ -185,7 +185,7 @@ export function AlgorithmViewerCard({
         {algorithms.length > 1 && (
           <div className="mt-1 pt-1.5 border-t border-line/60">
             <span className="text-[10px] text-ink-3 block mb-1 font-medium">
-              alternative algorithms ({algorithms.length}):
+              Alternative algorithms ({algorithms.length}):
             </span>
             <div className="flex flex-wrap gap-1">
               {algorithms.map((alg, index) => {
@@ -204,7 +204,7 @@ export function AlgorithmViewerCard({
                         : "text-ink-3 hover:text-ink"
                     )}
                   >
-                    alg {index + 1}
+                    Alg {index + 1}
                   </Button>
                 );
               })}
@@ -215,10 +215,10 @@ export function AlgorithmViewerCard({
         {/* Additional Case Info Footer */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/40 text-[10px] text-ink-3">
           {caseData.probability && (
-            <span>probability: <strong className="text-ink-2 font-mono">{caseData.probability}</strong></span>
+            <span>Probability: <strong className="text-ink-2 font-mono">{caseData.probability}</strong></span>
           )}
           {caseData.difficulty && (
-            <span>difficulty: <strong className="text-ink-2">{caseData.difficulty.toLowerCase()}</strong></span>
+            <span>Difficulty: <strong className="text-ink-2">{caseData.difficulty}</strong></span>
           )}
         </div>
       </div>
