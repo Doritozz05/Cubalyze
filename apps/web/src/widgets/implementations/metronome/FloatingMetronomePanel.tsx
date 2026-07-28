@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Activity, Play, Square, Volume2, VolumeX, Minus, Plus, Music } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { BeatIndicator } from "./BeatIndicator";
 import { cn } from "@/lib/utils";
 
 export interface FloatingMetronomePanelProps {
@@ -222,10 +226,11 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
       widgetId="metronome"
       icon={Activity}
       label="Metronome"
+      panelWidth={280}
       defaultPosition={{ x: 72, y: 340 }}
       className={className}
     >
-      <div className="p-3.5 space-y-3.5 w-[270px] select-none text-ink">
+      <div className="p-3.5 space-y-3.5 w-full select-none text-ink">
         {/* Main Display: TPS & BPM */}
         <div className="flex items-center justify-between rounded-lg bg-surface-2 p-3 border border-line">
           <div className="flex flex-col">
@@ -240,13 +245,13 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
             </span>
           </div>
 
-          <button
+          <Button
             onClick={togglePlay}
+            size="icon"
+            variant={isPlaying ? "destructive" : "default"}
             className={cn(
-              "flex size-11 items-center justify-center rounded-full transition-all duration-150 shadow-sm",
-              isPlaying
-                ? "bg-rose-500 text-white hover:bg-rose-600 active:scale-95"
-                : "bg-accent text-white hover:opacity-90 active:scale-95",
+              "size-11 rounded-full shadow-sm transition-all duration-150 active:scale-95",
+              !isPlaying && "bg-accent hover:bg-accent/90 text-white",
             )}
             aria-label={isPlaying ? "Stop metronome" : "Start metronome"}
           >
@@ -255,159 +260,175 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
             ) : (
               <Play className="size-4.5 fill-current ml-0.5" />
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Visual Beat Indicator Dots */}
-        <div className="flex justify-center gap-2 py-0.5">
-          {Array.from({ length: beatsPerBar }).map((_, idx) => {
-            const isActive = isPlaying && currentBeat === idx;
-            const isFirst = idx === 0 && beatsPerBar > 1;
-
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  "size-3 rounded-full transition-all duration-100 border",
-                  isActive
-                    ? isFirst
-                      ? "bg-accent border-accent scale-125 shadow-md shadow-accent/40"
-                      : "bg-emerald-500 border-emerald-500 scale-110"
-                    : "bg-surface-3 border-line opacity-40",
-                )}
-              />
-            );
-          })}
-        </div>
+        <BeatIndicator
+          beatsPerBar={beatsPerBar}
+          currentBeat={currentBeat}
+          isPlaying={isPlaying}
+        />
 
         {/* TPS Slider (2.0 to 15.0 TPS) */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-ink-2">
             <span className="font-semibold text-ink">TPS Target (2 – 15)</span>
             <div className="flex items-center gap-1">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setTps((t) => Math.max(2.0, Math.round((t - 0.5) * 10) / 10))}
-                className="px-1.5 py-0.5 rounded border border-line bg-surface hover:bg-surface-2 text-[10px] font-mono"
+                className="h-6 px-1.5 py-0 text-[10px] font-mono"
               >
                 -0.5
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setTps((t) => Math.max(2.0, Math.round((t - 0.1) * 10) / 10))}
-                className="p-1 rounded border border-line bg-surface hover:bg-surface-2"
+                className="h-6 w-6 p-0"
               >
                 <Minus className="size-3" />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setTps((t) => Math.min(15.0, Math.round((t + 0.1) * 10) / 10))}
-                className="p-1 rounded border border-line bg-surface hover:bg-surface-2"
+                className="h-6 w-6 p-0"
               >
                 <Plus className="size-3" />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setTps((t) => Math.min(15.0, Math.round((t + 0.5) * 10) / 10))}
-                className="px-1.5 py-0.5 rounded border border-line bg-surface hover:bg-surface-2 text-[10px] font-mono"
+                className="h-6 px-1.5 py-0 text-[10px] font-mono"
               >
                 +0.5
-              </button>
+              </Button>
             </div>
           </div>
-          <input
-            type="range"
+          <Slider
             min={2.0}
             max={15.0}
             step={0.1}
-            value={tps}
-            onChange={(e) => setTps(Number(e.target.value))}
-            className="w-full accent-accent h-1.5 bg-surface-3 rounded-lg cursor-pointer"
+            value={[tps]}
+            onValueChange={(val) => val[0] !== undefined && setTps(val[0])}
+            className="w-full py-1"
           />
         </div>
 
         {/* Quick TPS Presets */}
-        <div className="grid grid-cols-6 gap-1">
+        <ToggleGroup
+          type="single"
+          value={tps.toFixed(1)}
+          onValueChange={(val) => val && setTps(parseFloat(val))}
+          className="w-full grid grid-cols-6 gap-1"
+        >
           {QUICK_TPS_PRESETS.map((preset) => (
-            <button
+            <ToggleGroupItem
               key={preset}
-              onClick={() => setTps(preset)}
+              value={preset.toFixed(1)}
+              variant="outline"
+              size="sm"
               className={cn(
-                "py-1 rounded text-[10px] font-mono font-medium border transition-colors text-center",
+                "h-7 px-0 text-[10px] font-mono font-medium transition-colors text-center",
                 Math.abs(tps - preset) < 0.05
                   ? "bg-accent/15 border-accent text-accent font-semibold"
                   : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
               )}
             >
               {preset}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
 
         {/* Sound Preset Selector */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-2">
             <Music className="size-3 text-accent" />
             <span>Sound Mode</span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <ToggleGroup
+            type="single"
+            value={soundMode}
+            onValueChange={(val) => val && setSoundMode(val as SoundMode)}
+            className="w-full grid grid-cols-4 gap-1"
+          >
             {SOUND_MODES.map((mode) => (
-              <button
+              <ToggleGroupItem
                 key={mode.id}
-                onClick={() => setSoundMode(mode.id)}
+                value={mode.id}
+                variant="outline"
+                size="sm"
                 className={cn(
-                  "py-1 px-1 rounded text-[10px] font-medium border transition-colors text-center",
+                  "h-7 px-1 text-[10px] font-medium transition-colors text-center",
                   soundMode === mode.id
                     ? "bg-ink text-surface border-ink font-bold"
                     : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
                 )}
               >
                 {mode.label}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </div>
 
         {/* Beats Per Bar & Volume Row */}
         <div className="pt-2 border-t border-line flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5">
             <span className="text-ink-3 text-[11px]">Accent:</span>
-            <div className="flex gap-1">
+            <ToggleGroup
+              type="single"
+              value={beatsPerBar.toString()}
+              onValueChange={(val) => val && setBeatsPerBar(parseInt(val, 10))}
+              className="flex gap-1"
+            >
               {[1, 2, 3, 4].map((count) => (
-                <button
+                <ToggleGroupItem
                   key={count}
-                  onClick={() => setBeatsPerBar(count)}
+                  value={count.toString()}
+                  variant="outline"
+                  size="sm"
                   className={cn(
-                    "size-5 rounded text-[10px] font-mono flex items-center justify-center border",
+                    "size-6 p-0 text-[10px] font-mono flex items-center justify-center border",
                     beatsPerBar === count
                       ? "bg-accent text-white border-accent font-bold"
                       : "bg-surface text-ink-2 border-line hover:bg-surface-2",
                   )}
                 >
                   {count}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsMuted(!isMuted)}
-              className="text-ink-2 hover:text-ink transition-colors"
+              className="h-6 w-6 p-0 text-ink-2 hover:text-ink transition-colors"
             >
               {isMuted || volume === 0 ? (
                 <VolumeX className="size-3.5 text-rose-500" />
               ) : (
                 <Volume2 className="size-3.5" />
               )}
-            </button>
-            <input
-              type="range"
+            </Button>
+            <Slider
               min={0}
               max={1}
               step={0.05}
-              value={isMuted ? 0 : volume}
-              onChange={(e) => {
-                setVolume(Number(e.target.value));
-                if (isMuted) setIsMuted(false);
+              value={[isMuted ? 0 : volume]}
+              onValueChange={(val) => {
+                if (val[0] !== undefined) {
+                  setVolume(val[0]);
+                  if (isMuted) setIsMuted(false);
+                }
               }}
-              className="w-14 accent-accent h-1 bg-surface-3 rounded cursor-pointer"
+              className="w-16"
             />
           </div>
         </div>
