@@ -3,7 +3,7 @@ import type { WidgetDefinition } from "@/widgets/types";
 
 export const metronomeDefinition: WidgetDefinition = {
   id: "metronome",
-  name: "TPS Metronome",
+  name: "TPS metronome",
   description:
     "High-precision audio metronome with TPS (Turns Per Second) conversion for fluidity & pacing practice.",
   icon: Activity,
@@ -16,3 +16,4 @@ export const metronomeDefinition: WidgetDefinition = {
   defaultMinimized: true,
   tags: ["metronome", "tps", "rhythm", "audio", "timer", "pacing", "fluidity"],
 };
+

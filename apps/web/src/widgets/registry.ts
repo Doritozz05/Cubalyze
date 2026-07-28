@@ -8,6 +8,7 @@ import { timeDistributionDefinition } from "./implementations/time-distribution/
 import { pbProgressionDefinition } from "./implementations/pb-progression/definition";
 import { solveTimelineDefinition } from "./implementations/solve-timeline/definition";
 import { metronomeDefinition } from "./implementations/metronome/definition";
+import { notesDefinition } from "./implementations/notes/definition";
 
 export type { WidgetCategory, WidgetCategoryId } from "./types";
 
@@ -53,6 +54,7 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   pbProgressionDefinition,
   solveTimelineDefinition,
   metronomeDefinition,
+  notesDefinition,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
