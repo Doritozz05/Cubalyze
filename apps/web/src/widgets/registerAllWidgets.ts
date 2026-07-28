@@ -10,6 +10,7 @@ import { FloatingPbProgression } from "@/widgets/implementations/pb-progression/
 import { FloatingPhaseTimeline } from "@/widgets/implementations/solve-timeline/FloatingPhaseTimeline";
 import { FloatingCube2DPanel } from "@/widgets/implementations/scramble-2d/FloatingCube2DPanel";
 import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
+import { FloatingMetronomePanel } from "@/widgets/implementations/metronome/FloatingMetronomePanel";
 
 // Previews from implementations/
 import { TimesLogPreview } from "@/widgets/implementations/times-log/TimesLogPreview";
@@ -18,6 +19,7 @@ import { PbProgressionPreview } from "@/widgets/implementations/pb-progression/P
 import { SolveTimelinePreview } from "@/widgets/implementations/solve-timeline/SolveTimelinePreview";
 import { Scramble2DPreview } from "@/widgets/implementations/scramble-2d/Scramble2DPreview";
 import { Cube3DPreview } from "@/widgets/implementations/cube-button/Cube3DPreview";
+import { MetronomePreview } from "@/widgets/implementations/metronome/MetronomePreview";
 
 /**
  * Registers all built-in widgets with the WidgetRegistry.
@@ -82,5 +84,12 @@ export function registerAllWidgets(): void {
       cubePanelOpen,
       smartCubeConnected,
     }),
+  });
+
+  WidgetRegistry.register("metronome", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: FloatingMetronomePanel as any,
+    preview: MetronomePreview,
+    mapProps: () => ({}),
   });
 }
