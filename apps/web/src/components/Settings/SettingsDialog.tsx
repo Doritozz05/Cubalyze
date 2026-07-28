@@ -113,7 +113,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${SETTINGS_DIALOG_WIDTH} h-[580px] max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line`}
+        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">

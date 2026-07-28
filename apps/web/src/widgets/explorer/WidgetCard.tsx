@@ -102,7 +102,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
       <div className="flex shrink-0 flex-col items-center gap-2">
         <WidgetPreview
           widgetId={widget.id}
-          className="size-16 sm:size-[72px]"
+          className="size-16 sm:size-18"
         />
 
         <div
