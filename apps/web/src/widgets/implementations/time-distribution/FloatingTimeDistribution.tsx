@@ -50,7 +50,7 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
         ) : (
           <>
             {/* Bar chart */}
-            <div className="flex items-end gap-[2px]" style={{ height: BAR_HEIGHT }}>
+            <div className="flex items-end gap-0.5" style={{ height: BAR_HEIGHT }}>
               {histogram.map((bin, i) => {
                 const height = maxCount > 0 ? (bin.count / maxCount) * BAR_HEIGHT : 0;
                 const isModal = bin.count === maxCount && maxCount > 0;
@@ -69,7 +69,7 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
                     />
                     {/* Tooltip on hover */}
                     <div className="pointer-events-none absolute bottom-full mb-1 hidden flex-col items-center group-hover:flex">
-                      <div className="rounded bg-ink px-2 py-1 text-[0.55rem] text-surface whitespace-nowrap shadow-lg">
+                      <div className="rounded border border-line bg-surface px-2 py-1 text-[0.55rem] text-ink whitespace-nowrap shadow-lg">
                         <span className="font-medium">{bin.label}s</span>
                         <span className="ml-1.5 text-ink-3">{bin.count} solves</span>
                       </div>

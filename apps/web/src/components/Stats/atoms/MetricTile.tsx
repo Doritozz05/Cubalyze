@@ -23,7 +23,7 @@ export function MetricTile({
     accent === "ready"
       ? "text-ready"
       : accent === "amber"
-        ? "text-amber-400"
+        ? "text-plus2"
         : accent === "plus2"
           ? "text-plus2"
           : accent === "dnf"
