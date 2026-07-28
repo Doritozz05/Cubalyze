@@ -32,7 +32,7 @@ export function MetronomePreview() {
       </div>
 
       {/* Visual Rhythmic Waveform */}
-      <div className="flex h-3 items-end justify-between gap-[1px]">
+      <div className="flex h-3 items-end justify-between gap-px">
         {bars.map((h, i) => (
           <div
             key={i}

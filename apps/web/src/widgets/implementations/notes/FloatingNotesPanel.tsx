@@ -80,7 +80,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
         </div>
       }
     >
-      <div className="flex h-[320px] w-full flex-col bg-surface text-ink text-xs select-none">
+      <div className="flex h-80 w-full flex-col bg-surface text-ink text-xs select-none">
         {/* Navigation Tabs */}
         <div className="flex items-center justify-between border-b border-line bg-surface-2/60 px-2 py-1 shrink-0">
           <div className="flex items-center gap-1">
