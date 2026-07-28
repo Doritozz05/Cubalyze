@@ -5,7 +5,7 @@ import { Copy, Check, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
-import { SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import { SUBSET_VISUALIZATION, getSubset } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,10 +27,14 @@ export function AlgorithmViewerCard({
   const [copiedAlg, setCopiedAlg] = useState(false);
   const [selectedAlgId, setSelectedAlgId] = useState<string | null>(null);
 
+  // Resolve canonical subset name from prop or from subset ID lookup
+  const targetSubsetName =
+    subsetName || getSubset(caseData.subsetId)?.name || "";
+
   // Determine forced visualization mode based on subset name:
   // - OLL and PLL: 2D view ONLY
   // - F2L and Advanced F2L: 3D view ONLY
-  const lowerSubsetName = subsetName.toLowerCase();
+  const lowerSubsetName = targetSubsetName.toLowerCase();
   const is2DOnly = lowerSubsetName.includes("oll") || lowerSubsetName.includes("pll");
   const is3DOnly = lowerSubsetName.includes("f2l");
 
@@ -40,8 +44,10 @@ export function AlgorithmViewerCard({
   const activeAlg =
     algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
 
+  // Fix: Use targetSubsetName to index SUBSET_VISUALIZATION (OLL -> yellow-gray, PLL -> full-color)
   const visStyle: VisualizationStyle =
-    SUBSET_VISUALIZATION[caseData.subsetId]?.style ?? "full-color";
+    SUBSET_VISUALIZATION[targetSubsetName]?.style ??
+    (lowerSubsetName.includes("oll") ? "yellow-gray" : "full-color");
 
   const handleCopySetup = () => {
     if (!caseData.setupScramble) return;
@@ -72,9 +78,6 @@ export function AlgorithmViewerCard({
             {caseData.name.toLowerCase()}
           </span>
         </div>
-        <Badge variant="secondary" className="text-[10px] font-mono text-ink-3">
-          {activeViewMode === "2d" ? "2d" : "3d"}
-        </Badge>
       </div>
 
       {/* ── Diagram Rendering Area ── */}

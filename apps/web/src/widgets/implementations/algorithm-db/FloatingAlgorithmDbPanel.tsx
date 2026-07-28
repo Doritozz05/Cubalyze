@@ -60,10 +60,10 @@ export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmD
     return result;
   }, [selectedMethodId]);
 
-  // Default subset: PLL or first available subset
+  // Default subset: OLL or first available subset
   const [selectedSubsetId, setSelectedSubsetId] = useState<string>(() => {
-    const pll = SUBSETS.find((s) => s.name === "PLL");
-    return pll?.id ?? availableSubsets[0]?.id ?? "";
+    const defaultSub = SUBSETS.find((s) => s.name === "OLL") ?? SUBSETS.find((s) => s.name === "PLL");
+    return defaultSub?.id ?? availableSubsets[0]?.id ?? "";
   });
 
   // Keep subset valid when method changes
