@@ -656,10 +656,15 @@ export function useSolveSession(
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const voiceTypePref = useStore(preferencesStore, (s) => s.voiceType);
   const hardwareTimerPref = useStore(preferencesStore, (s) => s.hardwareTimer);
+  const spacebarHoldDelayPref = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
 
   const engine = useMemo(
-    () => new TimerEngine({ useInspection: inspectionPref }),
-    [inspectionPref],
+    () =>
+      new TimerEngine({
+        useInspection: inspectionPref,
+        holdToStartDelay: spacebarHoldDelayPref,
+      }),
+    [inspectionPref, spacebarHoldDelayPref],
   );
 
   const validation = useScrambleValidator(scramble, scrambleVerificationPref);

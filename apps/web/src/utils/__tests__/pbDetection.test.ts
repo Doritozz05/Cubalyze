@@ -3,12 +3,11 @@ import { detectPbMilestones } from "../pbDetection";
 import type { MinimalSolve } from "../pbDetection";
 
 describe("pbDetection", () => {
-  it("should detect single PB on first valid solve", () => {
+  it("should NOT detect single PB on first solve (sets baseline)", () => {
     const existing: MinimalSolve[] = [];
     const result = detectPbMilestones(existing, 10000, "none");
-    expect(result.isSinglePB).toBe(true);
-    expect(result.singleTime).toBe(10000);
-    expect(result.types).toContain("Single");
+    expect(result.isSinglePB).toBe(false);
+    expect(result.types).toEqual([]);
   });
 
   it("should detect single PB when new solve is faster than previous best", () => {
@@ -51,13 +50,13 @@ describe("pbDetection", () => {
 
   it("should detect Ao5 PB when rolling average beats prior best Ao5", () => {
     const fasterExisting: MinimalSolve[] = [
-      { time: 9000, penalty: "none" },
-      { time: 9000, penalty: "none" },
-      { time: 9000, penalty: "none" },
-      { time: 9000, penalty: "none" },
-      { time: 9000, penalty: "none" },
+      { time: 7000, penalty: "none" },
+      { time: 10000, penalty: "none" },
+      { time: 10000, penalty: "none" },
+      { time: 10000, penalty: "none" },
+      { time: 10000, penalty: "none" },
     ];
-    const res = detectPbMilestones(fasterExisting, 8000, "none");
+    const res = detectPbMilestones(fasterExisting, 7000, "none");
     expect(res.isAo5PB).toBe(true);
   });
 });

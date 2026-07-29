@@ -89,6 +89,18 @@ export interface PreferencesState {
     cancelTimer: string;
   };
   setShortcut: (key: 'newScramble' | 'copyScramble' | 'cancelTimer', value: string) => void;
+
+  /** Spacebar hold duration in milliseconds before timer is ready to start (e.g. 0, 300, 550, 1000). */
+  spacebarHoldDelay: number;
+  setSpacebarHoldDelay: (value: number) => void;
+
+  /** Show Best/Worst Possible Average (BPA/WPA) in active stats. */
+  showBpaWpa: boolean;
+  setShowBpaWpa: (value: boolean) => void;
+
+  /** Time precision format: centiseconds (0.01s) or milliseconds (0.001s). */
+  timePrecision: 'centiseconds' | 'milliseconds';
+  setTimePrecision: (value: 'centiseconds' | 'milliseconds') => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -161,6 +173,15 @@ export const createPreferencesStore = () => {
           set((state) => ({
             shortcuts: { ...state.shortcuts, [key]: value },
           })),
+
+        spacebarHoldDelay: 300,
+        setSpacebarHoldDelay: (value) => set({ spacebarHoldDelay: value }),
+
+        showBpaWpa: true,
+        setShowBpaWpa: (value) => set({ showBpaWpa: value }),
+
+        timePrecision: 'centiseconds',
+        setTimePrecision: (value) => set({ timePrecision: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -180,6 +201,9 @@ export const createPreferencesStore = () => {
           hardwareTimer: state.hardwareTimer,
           customStickerColors: state.customStickerColors,
           shortcuts: state.shortcuts,
+          spacebarHoldDelay: state.spacebarHoldDelay,
+          showBpaWpa: state.showBpaWpa,
+          timePrecision: state.timePrecision,
         }),
         version: 1,
       },

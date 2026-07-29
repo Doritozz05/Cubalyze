@@ -3,6 +3,7 @@
 import { BarChart3, Check } from 'lucide-react';
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
+import { SettingToggle } from '../components/SettingToggle';
 import type { SolveMethod } from '@/types';
 
 const METHODS: { id: SolveMethod; label: string; desc: string }[] = [
@@ -15,6 +16,8 @@ const METHODS: { id: SolveMethod; label: string; desc: string }[] = [
 export function AnalysisSection() {
   const method = useStore(preferencesStore, (s) => s.method);
   const setMethod = useStore(preferencesStore, (s) => s.setMethod);
+  const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
+  const setShowBpaWpa = useStore(preferencesStore, (s) => s.setShowBpaWpa);
 
   return (
     <div className="flex flex-col gap-5">
@@ -27,6 +30,13 @@ export function AnalysisSection() {
           automatically. Analysis runs when a Smart Cube is connected.
         </p>
       </div>
+
+      <SettingToggle
+        title="Best & Worst Possible Average (BPA / WPA)"
+        description="Show theoretical Best Possible Average (BPA) and Worst Possible Average (WPA) bounds in active stats when 1 solve remains in Ao5/Ao12."
+        checked={showBpaWpa}
+        onCheckedChange={setShowBpaWpa}
+      />
 
       <div className="space-y-3">
         <h3 className="text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-3">

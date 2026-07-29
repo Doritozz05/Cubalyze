@@ -1,5 +1,5 @@
-"use client";
-
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import type { TimerState } from "@/types";
@@ -57,6 +57,7 @@ export function TimerDisplay({
   hintCtx,
   className,
 }: TimerDisplayProps) {
+  const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const hint = hintFor(state, hasLast, hintCtx);
 
   let formattedTime = "";
@@ -71,7 +72,7 @@ export function TimerDisplay({
       formattedTime = "DNF";
     }
   } else {
-    formattedTime = formatTime(displayTime);
+    formattedTime = formatTime(displayTime, timePrecision);
   }
 
   const isDnf = formattedTime === "DNF";

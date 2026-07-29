@@ -41,6 +41,9 @@ export function TimerSection() {
   const hardwareTimer = useStore(preferencesStore, (s) => s.hardwareTimer);
   const setHardwareTimer = useStore(preferencesStore, (s) => s.setHardwareTimer);
 
+  const spacebarHoldDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
+  const setSpacebarHoldDelay = useStore(preferencesStore, (s) => s.setSpacebarHoldDelay);
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3 rounded-xl border border-line/40 bg-surface-2/50 p-4">
@@ -51,6 +54,34 @@ export function TimerSection() {
           Configure how a solve should begin. These settings also apply
           when no Smart Cube is connected.
         </p>
+      </div>
+
+      {/* ── Spacebar Hold Delay ────────────────────────────────────── */}
+      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="min-w-0 flex-1">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            Spacebar hold duration
+          </h4>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            Amount of time required holding the spacebar down before the timer turns green and is ready to start.
+          </p>
+        </div>
+        <div className="mt-0.5 shrink-0">
+          <Select
+            value={String(spacebarHoldDelay)}
+            onValueChange={(val) => setSpacebarHoldDelay(Number(val))}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Select hold time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0 ms (Instant)</SelectItem>
+              <SelectItem value="300">300 ms (Standard)</SelectItem>
+              <SelectItem value="550">550 ms (WCA style)</SelectItem>
+              <SelectItem value="1000">1000 ms (1 second)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* ── Hardware Timer ─────────────────────────────────────────── */}

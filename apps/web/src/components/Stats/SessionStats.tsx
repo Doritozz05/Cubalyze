@@ -1,8 +1,8 @@
-"use client";
-
 import { useMemo } from "react";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
-import { computeStats, statLabel } from "@/utils/formatTime";
+import { computeStats, statLabel, computeBpaWpa, formatTime } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -29,7 +29,20 @@ interface Cell {
  * without pushing the timer down.
  */
 export function SessionStats({ solves, className, onExpand }: SessionStatsProps) {
+  const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
   const stats = useMemo(() => computeStats(solves), [solves]);
+
+  const bpaWpa = useMemo(() => {
+    if (!showBpaWpa || solves.length === 0) return null;
+    const statSolves = solves.map((s) => ({ time: s.time ?? (s as any).timeMs ?? 0, penalty: s.penalty }));
+    if (statSolves.length === 4) {
+      return computeBpaWpa(statSolves, 5);
+    }
+    if (statSolves.length === 11) {
+      return computeBpaWpa(statSolves, 12);
+    }
+    return null;
+  }, [solves, showBpaWpa]);
 
   const cells: Cell[] = [
     { label: "Ao5", value: statLabel(stats.ao5) },
@@ -41,49 +54,63 @@ export function SessionStats({ solves, className, onExpand }: SessionStatsProps)
   const interactive = !!onExpand;
 
   const statsDiv = (
-    <div
-      className={cn(
-        "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
-        interactive &&
-          "cursor-pointer hover:border-ink-2/40 focus-visible:border-ink-2 focus-visible:outline-none",
-        className,
-      )}
-      onClick={interactive ? onExpand : undefined}
-      onKeyDown={
-        interactive
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onExpand();
-              }
-            }
-          : undefined
-      }
-      role={interactive ? "button" : undefined}
-      tabIndex={interactive ? 0 : undefined}
-    >
-      {cells.map((c, i) => (
-        <div
-          key={c.label}
-          className={cn(
-            "flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-3 sm:px-3",
-            i !== 0 && "border-l border-line",
-            c.accent && "bg-ready-soft/40",
-          )}
-        >
-          <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
-            {c.label}
+    <div className="flex flex-col gap-2">
+      {bpaWpa != null && (
+        <div className="flex items-center justify-center gap-3 text-[0.68rem] text-ink-3">
+          <span className="font-mono">
+            Ao{bpaWpa.targetN} BPA: <strong className="text-ready font-semibold">{formatTime(bpaWpa.bpa ?? 0)}</strong>
           </span>
-          <span
-            className={cn(
-              "nums text-sm tabular-nums text-ink sm:text-[0.95rem]",
-              c.accent && "text-ready",
-            )}
-          >
-            {c.value}
+          <span>•</span>
+          <span className="font-mono">
+            WPA: <strong className="text-ink-2 font-semibold">{formatTime(bpaWpa.wpa ?? 0)}</strong>
           </span>
         </div>
-      ))}
+      )}
+
+      <div
+        className={cn(
+          "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
+          interactive &&
+            "cursor-pointer hover:border-ink-2/40 focus-visible:border-ink-2 focus-visible:outline-none",
+          className,
+        )}
+        onClick={interactive ? onExpand : undefined}
+        onKeyDown={
+          interactive
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onExpand();
+                }
+              }
+            : undefined
+        }
+        role={interactive ? "button" : undefined}
+        tabIndex={interactive ? 0 : undefined}
+      >
+        {cells.map((c, i) => (
+          <div
+            key={c.label}
+            className={cn(
+              "flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-3 sm:px-3",
+              i !== 0 && "border-l border-line",
+              c.accent && "bg-ready-soft/40",
+            )}
+          >
+            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+              {c.label}
+            </span>
+            <span
+              className={cn(
+                "nums text-sm tabular-nums text-ink sm:text-[0.95rem]",
+                c.accent && "text-ready",
+              )}
+            >
+              {c.value}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 

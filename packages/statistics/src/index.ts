@@ -136,3 +136,26 @@ export function stdDeviation(solves: StatSolve[], mean: number | null): number |
   const sumSq = valid.reduce((acc, t) => acc + (t - mean) ** 2, 0);
   return Math.sqrt(sumSq / valid.length);
 }
+
+/**
+ * Result of Best Possible Average (BPA) and Worst Possible Average (WPA) calculation.
+ */
+export interface BpaWpaResult {
+  bpa: number | null;
+  wpa: number | null;
+  targetN: number;
+}
+
+/**
+ * Compute Best Possible Average (BPA) and Worst Possible Average (WPA)
+ * for an in-progress average of N (when solves.length === N - 1).
+ */
+export function computeBpaWpa(solves: StatSolve[], n: number): BpaWpaResult | null {
+  if (solves.length !== n - 1) return null;
+  const bestAttempt: StatSolve = { time: 0, penalty: "none" };
+  const worstAttempt: StatSolve = { time: 0, penalty: "DNF" };
+  const bpa = averageOf([bestAttempt, ...solves], n);
+  const wpa = averageOf([worstAttempt, ...solves], n);
+  return { bpa, wpa, targetN: n };
+}
+

@@ -8,19 +8,36 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Re-export statistics functions for backward compatibility.
-export { averageOf, computeStats } from "@cubeforge/statistics";
+export { averageOf, computeStats, computeBpaWpa, type BpaWpaResult } from "@cubeforge/statistics";
 
 const INF = Number.POSITIVE_INFINITY;
 
 /**
  * Format milliseconds as a monospaced-friendly string.
- *  - < 60s  -> "12.34"
- *  - >= 60s -> "1:23.45"
- *  - DNF    -> "DNF"
+ *  - centiseconds: < 60s -> "12.34", >= 60s -> "1:23.45"
+ *  - milliseconds: < 60s -> "12.345", >= 60s -> "1:23.456"
+ *  - DNF -> "DNF"
  */
-export function formatTime(ms: number): string {
+export function formatTime(
+  ms: number,
+  precision: "centiseconds" | "milliseconds" = "centiseconds"
+): string {
   if (ms === INF || !Number.isFinite(ms)) return "DNF";
-  if (ms < 0 || Number.isNaN(ms)) return "0.00";
+  if (ms < 0 || Number.isNaN(ms)) return precision === "milliseconds" ? "0.000" : "0.00";
+
+  if (precision === "milliseconds") {
+    const totalMs = Math.floor(ms);
+    const millis = totalMs % 1000;
+    const totalSeconds = Math.floor(totalMs / 1000);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60);
+
+    const msStr = millis.toString().padStart(3, "0");
+    const secStr = seconds.toString().padStart(2, "0");
+
+    if (minutes > 0) return `${minutes}:${secStr}.${msStr}`;
+    return `${seconds}.${msStr}`;
+  }
 
   const totalCs = Math.floor(ms / 10);
   const cs = totalCs % 100;
