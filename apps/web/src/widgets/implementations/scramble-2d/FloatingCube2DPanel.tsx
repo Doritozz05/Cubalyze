@@ -20,11 +20,20 @@ const CSTIMER_COLOR_MAP: Record<string, string> = {
   B: "#2563eb",
 };
 
-/** Return true when the scramble only uses U, R, F moves → 2×2 scramble. */
+/** Return true when the scramble sequence represents a 2×2 scramble. */
 function isTwoByTwoScramble(scramble: string): boolean {
   const tokens = scramble.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return false;
-  return tokens.every((t) => /^[URF]'?2?$/i.test(t));
+
+  // Pure U, R, F scramble (WCA standard for 2×2)
+  if (tokens.every((t) => /^[URF]'?2?$/i.test(t))) return true;
+
+  // Short scramble (<= 14 moves) without 3×3 slice moves (M, E, S)
+  if (tokens.length <= 14 && !tokens.some((t) => /^[MES]'?2?$/i.test(t))) {
+    return true;
+  }
+
+  return false;
 }
 
 /** Parse a facelet string into per-face stickers. Handles 24-char (2×2) and 54-char (3×3). */

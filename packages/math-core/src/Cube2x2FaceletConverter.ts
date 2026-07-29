@@ -28,8 +28,8 @@
  *    14 = DBL   15 = DRB
  *
  *   L face (viewed from left, U at top, B at left):
- *    16 = UFL   17 = ULB
- *    18 = DLF   19 = DBL
+ *    16 = ULB   17 = UFL
+ *    18 = DBL   19 = DLF
  *
  *   B face (viewed from back, U at top, R at left):
  *    20 = UBR   21 = ULB
@@ -48,12 +48,12 @@ export const SOLVED_FACELETS_2X2 = /^(.)\1{3}(.)\2{3}(.)\3{3}(.)\4{3}(.)\5{3}(.)
 
 const CORNER_FACELET_2X2: number[][] = [
   [3, 4, 9],    // URF: U3, R0, F1
-  [2, 8, 16],   // UFL: U2, F0, L0
-  [0, 17, 21],  // ULB: U0, L1, B1
+  [2, 8, 17],   // UFL: U2, F0, L1
+  [0, 16, 21],  // ULB: U0, L0, B1
   [1, 20, 5],   // UBR: U1, B0, R1
   [13, 11, 6],  // DFR: D1, F3, R2
-  [12, 18, 10], // DLF: D0, L2, F2
-  [14, 23, 19], // DBL: D2, B3, L3
+  [12, 19, 10], // DLF: D0, L3, F2
+  [14, 23, 18], // DBL: D2, B3, L2
   [15, 7, 22],  // DRB: D3, R3, B2
 ];
 
@@ -90,20 +90,25 @@ export class Cube2x2FaceletConverter {
       const c = state.cp[p]; // piece ID at position p
       const o = state.co[p]; // orientation at position p
 
-      // The three facelets for this corner, in order [UD, RL, FB]
-      const [f0, f1, f2] = CORNER_FACELET_2X2[p];
-      const [col0, col1, col2] = CORNER_COLOR_2X2[c];
-
-      // Orientation rotates the color assignment:
-      // o=0: f[facelet[k]] = color[k]
-      // o=1: shifted by 1
-      // o=2: shifted by 2
-      f[f0] = CORNER_COLOR_2X2[c][(0 + o) % 3];
-      f[f1] = CORNER_COLOR_2X2[c][(1 + o) % 3];
-      f[f2] = CORNER_COLOR_2X2[c][(2 + o) % 3];
+      // Orientation rotates the destination facelet position:
+      // o=0: f[facelet[0]] = color[0], f[facelet[1]] = color[1], f[facelet[2]] = color[2]
+      // o=1: f[facelet[1]] = color[0], f[facelet[2]] = color[1], f[facelet[0]] = color[2]
+      // o=2: f[facelet[2]] = color[0], f[facelet[0]] = color[1], f[facelet[1]] = color[2]
+      f[CORNER_FACELET_2X2[p][(0 + o) % 3]] = CORNER_COLOR_2X2[c][0];
+      f[CORNER_FACELET_2X2[p][(1 + o) % 3]] = CORNER_COLOR_2X2[c][1];
+      f[CORNER_FACELET_2X2[p][(2 + o) % 3]] = CORNER_COLOR_2X2[c][2];
     }
 
     return f.join('');
+  }
+
+  /**
+   * Directly convert a scramble string into a 24-character 2×2 facelet string.
+   */
+  public static toFaceletStringFromScramble(scramble: string): string {
+    const state = new Cube2x2State();
+    state.applySequence(scramble);
+    return Cube2x2FaceletConverter.toFaceletString(state);
   }
 
   /**
@@ -140,11 +145,13 @@ export class Cube2x2FaceletConverter {
           CORNER_COLOR_2X2[c].includes(col2)
         ) {
           foundC = c;
-          // col0 = CORNER_COLOR_2X2[c][(0 + o) % 3]
-          // So (0 + o) % 3 = k where CORNER_COLOR_2X2[c][k] === col0
-          // => o = (k - 0 + 3) % 3 = k
+          // col0 is read from cornerFacelet[p][0]
+          // From toFaceletString: f[cornerFacelet[p][(k + o) % 3]] = cornerColor[c][k]
+          // So for the 0th facelet position (k + o) % 3 = 0 => k = (3 - o) % 3
+          // Therefore, cornerColor[c][(3 - o) % 3] === col0
+          // If k = cornerColor[c].indexOf(col0), then (3 - o) % 3 = k => o = (3 - k) % 3
           const k = CORNER_COLOR_2X2[c].indexOf(col0);
-          foundO = k % 3;
+          foundO = (3 - k) % 3;
           break;
         }
       }

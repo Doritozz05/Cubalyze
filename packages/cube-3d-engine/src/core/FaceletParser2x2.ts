@@ -41,18 +41,18 @@ interface CornerSpec {
 const CORNER_SPECS: CornerSpec[] = [
   // URF: x=+1, y=+1, z=+1 — U3, R0, F1
   { x: 1, y: 1, z: 1, facelets: [['U', 3], ['R', 4], ['F', 9]] },
-  // UFL: x=-1, y=+1, z=+1 — U2, F0, L0
-  { x: -1, y: 1, z: 1, facelets: [['U', 2], ['F', 8], ['L', 16]] },
-  // ULB: x=-1, y=+1, z=-1 — U0, L1, B1
-  { x: -1, y: 1, z: -1, facelets: [['U', 0], ['L', 17], ['B', 21]] },
+  // UFL: x=-1, y=+1, z=+1 — U2, F0, L1
+  { x: -1, y: 1, z: 1, facelets: [['U', 2], ['F', 8], ['L', 17]] },
+  // ULB: x=-1, y=+1, z=-1 — U0, L0, B1
+  { x: -1, y: 1, z: -1, facelets: [['U', 0], ['L', 16], ['B', 21]] },
   // UBR: x=+1, y=+1, z=-1 — U1, B0, R1
   { x: 1, y: 1, z: -1, facelets: [['U', 1], ['B', 20], ['R', 5]] },
   // DFR: x=+1, y=-1, z=+1 — D1, F3, R2
   { x: 1, y: -1, z: 1, facelets: [['D', 13], ['F', 11], ['R', 6]] },
-  // DLF: x=-1, y=-1, z=+1 — D0, L2, F2
-  { x: -1, y: -1, z: 1, facelets: [['D', 12], ['L', 18], ['F', 10]] },
-  // DBL: x=-1, y=-1, z=-1 — D2, B3, L3
-  { x: -1, y: -1, z: -1, facelets: [['D', 14], ['B', 23], ['L', 19]] },
+  // DLF: x=-1, y=-1, z=+1 — D0, L3, F2
+  { x: -1, y: -1, z: 1, facelets: [['D', 12], ['L', 19], ['F', 10]] },
+  // DBL: x=-1, y=-1, z=-1 — D2, B3, L2
+  { x: -1, y: -1, z: -1, facelets: [['D', 14], ['B', 23], ['L', 18]] },
   // DRB: x=+1, y=-1, z=-1 — D3, R3, B2
   { x: 1, y: -1, z: -1, facelets: [['D', 15], ['R', 7], ['B', 22]] },
 ];
@@ -88,17 +88,16 @@ export function parseFaceletsToCubies2x2(facelets: string): ParsedCubie2x2[] {
     throw new Error(`Invalid 2×2 facelets string length: ${facelets.length} (expected 24)`);
   }
 
-  // Build a color → face map by reading one facelet per face.
-  // For 2×2, there are no centers, so we use the first sticker of each face
-  // as the representative color. This works because all stickers on a face
-  // share the same "face color" in the solved state.
-  const colorToFace: Record<string, string> = {};
-  // U0, R0, F0, D0, L0, B0
-  const faceStartIdx: Record<string, number> = { U: 0, R: 4, F: 8, D: 12, L: 16, B: 20 };
-  for (const face of ['U', 'R', 'F', 'D', 'L', 'B']) {
-    const color = facelets[faceStartIdx[face]];
-    colorToFace[color] = face;
-  }
+  // For 2×2, facelet strings use standard face color letters ('U', 'R', 'F', 'D', 'L', 'B').
+  // Since 2×2 has no fixed center stickers, we map face color letters directly to their face names.
+  const colorToFace: Record<string, string> = {
+    'U': 'U',
+    'R': 'R',
+    'F': 'F',
+    'D': 'D',
+    'L': 'L',
+    'B': 'B',
+  };
 
   const result: ParsedCubie2x2[] = [];
 

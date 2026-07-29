@@ -63,7 +63,7 @@ export function FloatingCubeButton({
     },
   );
 
-  if (!mounted || cubePanelOpen || !smartCubeConnected) return null;
+  if (!mounted || cubePanelOpen) return null;
 
   const handlePointerUp = (e: React.PointerEvent) => {
     const dragged = drag.wasDrag();

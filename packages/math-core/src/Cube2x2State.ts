@@ -31,6 +31,8 @@
  *   God's number: 11 HTM (half-turn metric)
  */
 
+import { CubeState } from './CubeState';
+
 // ── Corner IDs (identical to the 3×3 Corner enum) ───────────────────────
 
 export const CORNER_URF = 0;
@@ -244,16 +246,30 @@ export class Cube2x2State {
 
   /**
    * Apply a space-separated sequence of 2×2 moves (e.g. "U R' F2").
-   * Only U, R, F moves are valid.
+   * Supports native U, R, F moves and delegates extended moves (D, L, B, x, y, z, etc.)
+   * to full 8-corner 3D transformations for universal scramble support.
    */
   public applySequence(notation: string): void {
     const tokens = notation.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return;
+
+    let hasExtendedMoves = false;
     for (const token of tokens) {
-      const m = StringToMove2x2[token];
-      if (m === undefined) {
-        throw new Error(`Invalid 2×2 move: "${token}" (only U, R, F are valid)`);
+      if (StringToMove2x2[token] === undefined) {
+        hasExtendedMoves = true;
+        break;
       }
-      this.applyMove(m);
+    }
+
+    if (!hasExtendedMoves) {
+      for (const token of tokens) {
+        this.applyMove(StringToMove2x2[token]);
+      }
+    } else {
+      const state3x3 = new CubeState(this.cp, this.co, null, null);
+      state3x3.applySequence(notation);
+      this.cp.set(state3x3.cp);
+      this.co.set(state3x3.co);
     }
   }
 
