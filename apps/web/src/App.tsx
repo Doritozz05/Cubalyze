@@ -62,6 +62,10 @@ export default function App() {
   // ── PB Celebration state ───────────────────────────────────────────────
   const [activePbMilestone, setActivePbMilestone] = useState<PbMilestoneResult | null>(null);
 
+  const handleDismissPbBanner = useCallback(() => {
+    setActivePbMilestone(null);
+  }, []);
+
   // ── Refs to avoid stale closures in the lifecycle callback ────────────
   const solvesRef = useRef(solves);
   solvesRef.current = solves;
@@ -177,6 +181,8 @@ export default function App() {
         if (pbCelebrationAnimation) {
           setActivePbMilestone(pbResult);
         }
+      } else {
+        setActivePbMilestone(null);
       }
 
       // Save with raw moves immediately so replay/timeline have data
@@ -233,6 +239,13 @@ export default function App() {
   useEffect(() => {
     smartCubeConnectedRef.current = smartCubeConnected;
   }, [smartCubeConnected]);
+
+  // Reset PB celebration banner when starting or preparing a new solve
+  useEffect(() => {
+    if (timerPhase !== "idle" && timerPhase !== "stopped") {
+      setActivePbMilestone(null);
+    }
+  }, [timerPhase]);
 
   // ── Run analysis on solve complete ─────────────────────────────────────
   const prevLastTimeRef = useRef<number | null>(null);
@@ -581,7 +594,7 @@ export default function App() {
           pb={previousPB}
           showPbDelta={showPbDelta}
           pbMilestone={activePbMilestone}
-          onDismissPbBanner={() => setActivePbMilestone(null)}
+          onDismissPbBanner={handleDismissPbBanner}
           hintCtx={{
             smartCube: smartCubeConnected,
             scrambleVerif: scrambleVerification,
