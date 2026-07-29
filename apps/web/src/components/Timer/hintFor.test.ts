@@ -65,9 +65,10 @@ describe('hintFor', () => {
     }
   });
 
-  it('stopped phase always reports "solve saved"', () => {
+  it('stopped phase reports the same prompt as idle phase', () => {
     for (const ctx of ctxs) {
-      expect(hintFor('stopped', false, ctx)).toBe('solve saved');
+      expect(hintFor('stopped', false, ctx)).toBe(hintFor('idle', false, ctx));
+      expect(hintFor('stopped', true, ctx)).toBe(hintFor('idle', true, ctx));
     }
   });
 

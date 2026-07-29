@@ -292,7 +292,10 @@ export function useScrambleValidator(
 
       if (!s.initialCheckDone) {
         s.initialCheckDone = true;
-        if (isSolved) {
+        if (s.currentIndex > 0 || s.actualMoves.length > 0) {
+          s.startedFromSolved = true;
+          s.awaitingSolve = false;
+        } else if (isSolved) {
           s.startedFromSolved = true;
           s.awaitingSolve = false;
         } else {
@@ -371,6 +374,9 @@ export function useScrambleValidator(
 
     const moveSub = adapter.moves$.subscribe((ev: CubeMoveEvent) => {
       const s = stateRef.current;
+      if (!s.initialCheckDone && !s.awaitingSolve) {
+        s.initialCheckDone = true;
+      }
 
       const notation = MoveTransformer.moveToNotation(ev.face, ev.direction);
 

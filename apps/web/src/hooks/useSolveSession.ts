@@ -1260,11 +1260,11 @@ export function useSolveSession(
   }, []);
 
   const press = useCallback(() => {
-    const current = engine.getState();
+    let current = engine.getState();
 
     if (current === EngineState.STOPPED) {
       engine.reset();
-      return;
+      current = engine.getState();
     }
 
     if (
