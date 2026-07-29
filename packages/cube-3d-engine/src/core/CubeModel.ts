@@ -46,14 +46,13 @@ export class CubeModel {
     this.gridMax = 1;
     this.gridStep = 1.0;
     this.buildCubies();
-    // Scale the 2×2 to be visually smaller (2/3 of 3×3 size)
-    if (order === 2) {
-      this.root.scale.setScalar(2 / 3);
-    }
   }
 
   private buildCubies(): void {
-    const spacing = 1.0; // Distance between cubie centers
+    // Distance between adjacent cubie centers:
+    // For 3×3: 1.0 (centers at -1, 0, +1 → cubies size 1.0 touch seamlessly)
+    // For 2×2: 0.5 (centers at -0.5, +0.5 → cubies size 1.0 touch seamlessly at 0)
+    const spacing = this.order === 2 ? 0.5 : 1.0;
 
     // Generate grid coordinates based on order.
     // For 3×3: [-1, 0, 1] — outer layers at ±1, middle at 0
@@ -159,7 +158,7 @@ export class CubeModel {
    * we FORCE the position to match the logical grid state. This guarantees zero drift.
    */
   public snapCubiePositions(specificMeshes?: Group[]): void {
-    const spacing = 1.0;
+    const spacing = this.order === 2 ? 0.5 : 1.0;
     const targets = specificMeshes 
       ? this.cubies.filter(c => specificMeshes.includes(c.mesh)) 
       : this.cubies;
