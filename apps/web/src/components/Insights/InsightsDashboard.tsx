@@ -116,6 +116,12 @@ export function InsightsDashboard({
     return specificSessionSolves ?? [];
   }, [selectedSession, allSessionSolves, specificSessionSolves, solves, activeSessionId]);
 
+  const { filters, setFilters, filtered, totalCount, filteredCount, reset } =
+    useStatsFilters(dataPool);
+
+  // Current cube type from filters (always non-null, default "3x3x3")
+  const currentCube = filters.puzzleType ?? "3x3x3";
+
   // Available cube types in the data pool
   const availableCubeTypes = useMemo(() => {
     const types = new Set<string>();
@@ -132,12 +138,6 @@ export function InsightsDashboard({
       setFilters({ puzzleType: availableCubeTypes[0] });
     }
   }, [availableCubeTypes, currentCube, setFilters]);
-
-  const { filters, setFilters, filtered, totalCount, filteredCount, reset } =
-    useStatsFilters(dataPool);
-
-  // Current cube type from filters (always non-null, default "3x3x3")
-  const currentCube = filters.puzzleType ?? "3x3x3";
 
   // ── Selection (synced to ?solve= URL param) ────────────────────────────
   const [selectedId, setSelectedId] = useState<string | null>(null);
