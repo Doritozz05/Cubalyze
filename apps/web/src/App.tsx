@@ -655,7 +655,7 @@ export default function App() {
           onPuzzleChange={handlePuzzleChange}
           cube3DActive={cubePanelOpen}
           cube3DReady={cube3DReady}
-          cube3D={<Cube3DPanel onClose={handleCloseCube} order={puzzleCategoryToOrder(puzzle)} />}
+          cube3D={<Cube3DPanel onClose={handleCloseCube} order={puzzleCategoryToOrder(puzzle)} scramble={currentScramble} />}
           leftSidebar={
             <LeftSidebar
               activeView={activeView}

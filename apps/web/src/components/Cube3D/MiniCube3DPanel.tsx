@@ -2,12 +2,13 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw } from "lucide-react";
+import { Dices, RefreshCw, RotateCcw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 
 export interface MiniCube3DPanelProps {
   className?: string;
+  scramble?: string;
 }
 
 /**
@@ -22,9 +23,9 @@ export interface MiniCube3DPanelProps {
  * Calibrate sets the current orientation as reference (white on top,
  * green front — standard WCA orientation).
  */
-export function MiniCube3DPanel({ className }: MiniCube3DPanelProps) {
-  const { canvasRef, containerRef, isReady, recentMoves, calibrate, reset } =
-    useCube3D({ maxRecentMoves: 8 });
+export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
+  const { canvasRef, containerRef, isReady, recentMoves, calibrate, reset, applyScramble } =
+    useCube3D({ maxRecentMoves: 8, scramble });
 
   return (
     <div
@@ -44,16 +45,16 @@ export function MiniCube3DPanel({ className }: MiniCube3DPanelProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={calibrate}
+                onClick={() => applyScramble(scramble)}
                 disabled={!isReady}
                 className="h-6 gap-1 px-1.5 text-[0.6rem] text-ink-3 hover:text-ink"
               >
-                <RefreshCw className="size-3" />
-                Calibrate
+                <Dices className="size-3" />
+                Scramble
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Calibrate gyroscope (white top, green front)
+              Apply scramble to 3D cube
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -71,6 +72,23 @@ export function MiniCube3DPanel({ className }: MiniCube3DPanelProps) {
             </TooltipTrigger>
             <TooltipContent side="bottom">
               Reset cube pieces to solved state
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={calibrate}
+                disabled={!isReady}
+                className="h-6 gap-1 px-1.5 text-[0.6rem] text-ink-3 hover:text-ink"
+              >
+                <RefreshCw className="size-3" />
+                Calibrate
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Calibrate gyroscope (white top, green front)
             </TooltipContent>
           </Tooltip>
         </div>
