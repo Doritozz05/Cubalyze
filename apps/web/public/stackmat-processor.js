@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * Stackmat Audio Worklet Processor
  *

@@ -111,7 +111,6 @@ export default function App() {
       onNavigate: (view) => setActiveView(view),
     }));
     return disconnect;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Last solve analysis (displayed in the "Analysis" view) ─────────────
@@ -227,7 +226,7 @@ export default function App() {
           toast.error("Couldn't save solve — check console for details");
         });
     },
-    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation],
+    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation, puzzle],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
@@ -428,7 +427,9 @@ export default function App() {
     document.title = `cubeforge — ${solves.length} solves`;
   }, [solves.length]);
 
-  const validSolves = solves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
+  const currentPuzzleType = puzzleCategoryToType(puzzle);
+  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType);
+  const validSolves = puzzleSolves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const currentPB =
     validSolves.length > 0
       ? Math.min(
@@ -437,8 +438,6 @@ export default function App() {
       : null;
 
   // Previous PB (excluding the most recent solve) for accurate PB delta comparison
-  const currentPuzzleType = puzzleCategoryToType(puzzle);
-  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType);
   const previousSolves = puzzleSolves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const previousPB =
     previousSolves.length > 0

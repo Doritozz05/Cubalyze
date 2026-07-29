@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { effectiveTime } from "@/types";
 import { formatTime } from "@/utils/formatTime";
-import type { Solve } from "@/types";
+import type { Solve, PuzzleCategory } from "@/types";
 
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 
@@ -31,7 +31,7 @@ interface PbMilestone {
 export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionProps) {
   const filteredSolves = useMemo(() => {
     if (!puzzle) return solves;
-    const targetType = puzzleCategoryToType(puzzle as any);
+    const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
     return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
   }, [solves, puzzle]);
 
@@ -97,7 +97,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
           </div>
         ) : (
           <div className="relative">
-            <div className="absolute left-[11px] top-2 bottom-2 w-px bg-ink-3/20" />
+            <div className="absolute left-2.75 top-2 bottom-2 w-px bg-ink-3/20" />
 
             {milestones.map((pb, i) => {
               const isFirst = i === 0;
@@ -107,13 +107,13 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
                 <div key={pb.solveId} className="relative flex items-start gap-3 pb-4 last:pb-0">
                   <div className="relative z-10 mt-1">
                     {pb.isCurrent ? (
-                      <div className="flex size-[22px] items-center justify-center rounded-full bg-ready-soft">
+                      <div className="flex size-5.5 items-center justify-center rounded-full bg-ready-soft">
                         <Sparkles className="size-3 text-ready" />
                       </div>
                     ) : (
                       <div
                         className={cn(
-                          "size-[22px] rounded-full border-2 flex items-center justify-center",
+                          "size-5.5 rounded-full border-2 flex items-center justify-center",
                           isFirst
                             ? "border-ink-3/30 bg-surface"
                             : "border-ink-3/20 bg-surface",

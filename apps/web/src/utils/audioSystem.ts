@@ -166,7 +166,7 @@ export class AudioSystem {
     try {
       const AudioContextClass =
         window.AudioContext ||
-        // @ts-ignore fallback for legacy webkit
+        // @ts-expect-error fallback for legacy webkit
         window.webkitAudioContext;
 
       if (!AudioContextClass) return;

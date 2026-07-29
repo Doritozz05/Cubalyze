@@ -42,7 +42,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
 
   const bpaWpa = useMemo(() => {
     if (!showBpaWpa || filtered.length === 0) return null;
-    const statSolves = filtered.map((s) => ({ time: s.time ?? (s as any).timeMs ?? 0, penalty: s.penalty }));
+    const statSolves = filtered.map((s) => ({ time: s.time ?? 0, penalty: s.penalty }));
     if (statSolves.length % 5 === 4) {
       return computeBpaWpa(statSolves.slice(0, 4), 5);
     }

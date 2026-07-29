@@ -94,7 +94,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
     orientationTimeline: dbSolve.orientationTimeline as UISolve['orientationTimeline'],
-    puzzleType: (dbSolve as any).puzzleType ?? (dbSolve as any).puzzle_type ?? '3x3x3',
+    puzzleType: (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzleType ?? (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzle_type ?? '3x3x3',
   };
 }
 

@@ -327,7 +327,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
                         padding: "4px 8px",
                         boxShadow: "none",
                       }}
-                      formatter={(v: any, name: any) => [
+                      formatter={(v: unknown, name: unknown) => [
                         `${Math.round(Number(v ?? 0) * 100)}%`,
                         String(name ?? ""),
                       ]}

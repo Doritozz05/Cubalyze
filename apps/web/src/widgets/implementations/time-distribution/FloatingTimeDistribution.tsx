@@ -7,7 +7,7 @@ import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrappe
 import { deriveHistogram } from "@/utils/insights";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import { stdDeviation } from "@cubeforge/statistics";
-import type { Solve } from "@/types";
+import type { Solve, PuzzleCategory } from "@/types";
 
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 
@@ -25,7 +25,7 @@ export interface FloatingTimeDistributionProps {
 export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistributionProps) {
   const filteredSolves = useMemo(() => {
     if (!puzzle) return solves;
-    const targetType = puzzleCategoryToType(puzzle as any);
+    const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
     return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
   }, [solves, puzzle]);
 

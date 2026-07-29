@@ -86,7 +86,7 @@ function Cube2DSVG({
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      className="w-full h-auto max-w-[340px] select-none"
+      className="w-full h-auto max-w-85 select-none"
     >
       {Object.entries(FACE_POS).map(([face, [fx, fy]]) => {
         const stickers = parsedFacelets?.[face];

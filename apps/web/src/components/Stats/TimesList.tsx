@@ -257,7 +257,7 @@ const SolveRow = memo(function SolveRow({
           <TooltipTrigger asChild>
             <button
               onClick={handleNoteClick}
-              className="max-w-[100px] shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-ink-2 italic hover:bg-surface-2 hover:text-ink transition-colors"
+              className="max-w-25 shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-ink-2 italic hover:bg-surface-2 hover:text-ink transition-colors"
               title={solve.note}
             >
               {solve.note}

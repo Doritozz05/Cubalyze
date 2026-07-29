@@ -44,7 +44,7 @@ import {
   RotateCcw,
   ArrowRightLeft,
   Music,
-  Infinity,
+  Infinity as InfinityIcon,
   Target,
   Play,
   Brain,
@@ -147,7 +147,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   RotateCcw,
   ArrowRightLeft,
   Music,
-  Infinity,
+  Infinity: InfinityIcon,
   Target,
   Play,
   Brain,
@@ -408,12 +408,12 @@ export function SkillGraphCanvas({
       ref={containerRef}
       onMouseDown={handleMouseDown}
       className={cn(
-        "relative w-full flex-1 min-h-[520px] overflow-hidden rounded-xl border border-border/80 touch-none",
+        "relative w-full flex-1 min-h-130 overflow-hidden rounded-xl border border-border/80 touch-none",
         "bg-background/95 select-none cursor-grab active:cursor-grabbing shadow-inner",
       )}
     >
       {/* Subtle Grid Pattern Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:24px_24px] opacity-35 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[24px_24px] opacity-35 pointer-events-none" />
 
       {/* Floating Viewport Controls */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-card/90 backdrop-blur-sm border border-border shadow-sm text-xs font-mono">
@@ -543,12 +543,12 @@ export function SkillGraphCanvas({
                   )}
                 >
                   {/* Icon */}
-                  <NodeIcon className="w-7 h-7 stroke-[2]" />
+                  <NodeIcon className="w-7 h-7 stroke-2" />
 
                   {/* Status Indicator */}
                   {isCompleted && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-background border-2 border-foreground text-foreground flex items-center justify-center text-[10px] font-bold shadow-sm">
-                      <Check className="w-3 h-3 stroke-[3]" />
+                      <Check className="w-3 h-3 stroke-3" />
                     </div>
                   )}
 
@@ -567,7 +567,7 @@ export function SkillGraphCanvas({
                         "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-card border border-foreground flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-foreground hover:text-background shadow-md",
                       )}
                     >
-                      <Check className="w-3 h-3 stroke-[3]" />
+                      <Check className="w-3 h-3 stroke-3" />
                     </button>
                   )}
                 </div>
