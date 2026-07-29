@@ -115,6 +115,10 @@ export interface HeaderProps {
   onToggleMobileNav?: () => void;
   /** Open the manual solve entry sheet (the "+" button). */
   onAddManual?: () => void;
+  /** Currently selected puzzle category. */
+  puzzle?: PuzzleCategory;
+  /** Callback when puzzle selection changes. */
+  onPuzzleChange?: (puzzle: PuzzleCategory) => void;
   className?: string;
 }
 
@@ -136,9 +140,11 @@ export function Header({
   onDeleteSession,
   onToggleMobileNav,
   onAddManual,
+  puzzle: puzzleProp = "3x3",
+  onPuzzleChange,
   className,
 }: HeaderProps) {
-  const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
+  const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
@@ -350,7 +356,11 @@ export function Header({
             </DropdownMenu>
           ) : null}
 
-          <Select value={puzzle} onValueChange={(v) => setPuzzle(v as PuzzleCategory)}>
+          <Select value={puzzle} onValueChange={(v) => {
+            const newPuzzle = v as PuzzleCategory;
+            setPuzzle(newPuzzle);
+            onPuzzleChange?.(newPuzzle);
+          }}>
             <SelectTrigger
               size="sm"
               // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`

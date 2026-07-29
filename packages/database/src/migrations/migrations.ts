@@ -194,6 +194,13 @@ export const MIGRATIONS: Migration[] = [
     `,
   },
   {
+    id: '011_add_puzzle_type_to_solves',
+    description: 'Add puzzle_type column to solves table for multi-puzzle support (2x2, 3x3, etc.)',
+    sql: `
+      ALTER TABLE solves ADD COLUMN puzzle_type TEXT NOT NULL DEFAULT '3x3x3';
+    `,
+  },
+  {
     id: '010_create_training_tables',
     description: 'Create training_attempts, algorithm_progress, and exercise_progress tables',
     sql: `

@@ -38,6 +38,8 @@ export interface UsePersistentSessionResult {
     timestamp?: number;
     /** Optional note (used for imported solves). */
     note?: string;
+    /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+    puzzleType?: string;
   }) => Promise<string | null>;
   updateSolve: (
     id: string,
@@ -66,6 +68,8 @@ export interface UsePersistentSessionResult {
   switchSession: (id: string) => Promise<void>;
   renameSession: (id: string, name: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
+  /** Fetch solves for any session by ID (does not switch active session). */
+  fetchSessionSolves: (sessionId: string) => Promise<UISolve[]>;
 }
 
 // Convert DB solve to UI solve
@@ -90,6 +94,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
     orientationTimeline: dbSolve.orientationTimeline as UISolve['orientationTimeline'],
+    puzzleType: (dbSolve as any).puzzleType ?? (dbSolve as any).puzzle_type ?? '3x3x3',
   };
 }
 
@@ -226,6 +231,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     orientationTimeline?: OrientationTimeline;
     timestamp?: number;
     note?: string;
+    puzzleType?: string;
   }): Promise<string | null> => {
     if (!session || !reposRef.current) {
       console.error(
@@ -254,7 +260,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
       orientationTimeline: input.orientationTimeline,
       analysisEngineVersion: '0.1.0',
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
-    };
+      puzzleType: input.puzzleType ?? '3x3x3',
+    } as DBSolve;
     
     try {
       await solvesRepo.insert(dbSolve);
@@ -409,7 +416,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
         orientationTimeline: undefined,
         analysisEngineVersion: '0.1.0',
         analysis: undefined,
-      };
+        puzzleType: '3x3x3',
+      } as DBSolve;
 
       try {
         await reposRef.current.solves.insert(dbSolve);
@@ -538,6 +546,14 @@ export function usePersistentSession(): UsePersistentSessionResult {
     }
   }, [switchSession, newSession]);
 
+  /** Fetch solves for any session without switching the active session. */
+  const fetchSessionSolves = useCallback(async (sessionId: string): Promise<UISolve[]> => {
+    if (!reposRef.current) return [];
+    const { solves: solvesRepo } = reposRef.current;
+    const rows = await solvesRepo.findAll(sessionId);
+    return rows.map(toUISolve).reverse();
+  }, []);
+
   return {
     session,
     sessions,
@@ -552,5 +568,6 @@ export function usePersistentSession(): UsePersistentSessionResult {
     switchSession,
     renameSession,
     deleteSession,
+    fetchSessionSolves,
   };
 }

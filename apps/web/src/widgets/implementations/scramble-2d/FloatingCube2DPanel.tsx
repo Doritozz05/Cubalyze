@@ -3,7 +3,12 @@
 import { useMemo } from "react";
 import { Grid3x3 } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
-import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import {
+  CubeState,
+  FaceletStringConverter,
+  Cube2x2State,
+  Cube2x2FaceletConverter,
+} from "@cubeforge/math-core";
 
 // csTimer classic speedcube colors — WCA standard scheme
 const CSTIMER_COLOR_MAP: Record<string, string> = {
@@ -15,21 +20,47 @@ const CSTIMER_COLOR_MAP: Record<string, string> = {
   B: "#2563eb",
 };
 
+/** Return true when the scramble only uses U, R, F moves → 2×2 scramble. */
+function isTwoByTwoScramble(scramble: string): boolean {
+  const tokens = scramble.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  return tokens.every((t) => /^[URF]'?2?$/i.test(t));
+}
+
+/** Parse a facelet string into per-face stickers. Handles 24-char (2×2) and 54-char (3×3). */
+function parseFacelets(faceletsStr: string | null, size: number) {
+  if (!faceletsStr) return null;
+  const expected = size * size * 6;
+  if (faceletsStr.length !== expected) return null;
+
+  const faces: Record<string, string[]> = {};
+  const faceOrder = ["U", "R", "F", "D", "L", "B"] as const;
+  const perFace = size * size;
+
+  for (let i = 0; i < 6; i++) {
+    faces[faceOrder[i]] = faceletsStr.slice(i * perFace, (i + 1) * perFace).split("");
+  }
+  return faces;
+}
+
 /**
  * csTimer-style 2D Rubik's cube flat net SVG.
+ * Supports both 2×2 (size=2) and 3×3 (size=3).
  */
 function Cube2DSVG({
   parsedFacelets,
+  size,
 }: {
   parsedFacelets: Record<string, string[]> | null;
+  size: number;
 }) {
-  const S = 22;
+  // Scale sticker size based on cube order
+  const S = size === 2 ? 30 : 22;
   const G = 1.8;
-  const FG = 10;
+  const FG = size === 2 ? 6 : 10;
   const BORDER = 1.8;
   const PAD = BORDER + 8;
-
-  const FACE = 3 * S + 2 * G;
+  const FACE = size * S + (size - 1) * G;
 
   const FACE_POS: Record<string, [number, number]> = {
     U: [PAD + FACE + FG, PAD + 0],
@@ -62,9 +93,9 @@ function Cube2DSVG({
               fill="#111111"
               rx={2}
             />
-            {Array.from({ length: 9 }).map((_, i) => {
-              const sr = Math.floor(i / 3);
-              const sc = i % 3;
+            {Array.from({ length: size * size }).map((_, i) => {
+              const sr = Math.floor(i / size);
+              const sc = i % size;
               const x = fx + sc * (S + G);
               const y = fy + sr * (S + G);
 
@@ -82,7 +113,7 @@ function Cube2DSVG({
                   width={S}
                   height={S}
                   fill={fill}
-                  rx={1.5}
+                  rx={size === 2 ? 2.5 : 1.5}
                 />
               );
             })}
@@ -93,18 +124,6 @@ function Cube2DSVG({
   );
 }
 
-function parseFacelets(faceletsStr: string | null) {
-  if (!faceletsStr || faceletsStr.length !== 54) return null;
-  return {
-    U: faceletsStr.slice(0, 9).split(""),
-    R: faceletsStr.slice(9, 18).split(""),
-    F: faceletsStr.slice(18, 27).split(""),
-    D: faceletsStr.slice(27, 36).split(""),
-    L: faceletsStr.slice(36, 45).split(""),
-    B: faceletsStr.slice(45, 54).split(""),
-  };
-}
-
 export interface FloatingCube2DPanelProps {
   scramble?: string;
   className?: string;
@@ -112,15 +131,29 @@ export interface FloatingCube2DPanelProps {
 
 /**
  * Floating 2D cube net panel showing the current scramble state.
- * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
+ *
+ * Auto-detects 2×2 vs 3×3 from the scramble notation:
+ *   • 2×2: only U/R/F moves → uses Cube2x2State + 24-char facelets
+ *   • 3×3: all move types → uses CubeState + 54-char facelets (original behavior)
  */
 export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanelProps) {
   const displayFacelets = useMemo(() => {
     if (scramble && scramble.trim()) {
       try {
+        if (isTwoByTwoScramble(scramble)) {
+          const state = new Cube2x2State();
+          state.applySequence(scramble.trim());
+          return {
+            facelets: Cube2x2FaceletConverter.toFaceletString(state),
+            size: 2,
+          };
+        }
         const state = new CubeState();
         state.applySequence(scramble.trim());
-        return FaceletStringConverter.toFaceletString(state);
+        return {
+          facelets: FaceletStringConverter.toFaceletString(state),
+          size: 3,
+        };
       } catch (e) {
         console.warn("[FloatingCube2DPanel] Error applying scramble:", e);
       }
@@ -128,7 +161,10 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
     return null;
   }, [scramble]);
 
-  const parsed = parseFacelets(displayFacelets);
+  const parsed = displayFacelets
+    ? parseFacelets(displayFacelets.facelets, displayFacelets.size)
+    : null;
+  const size = displayFacelets?.size ?? 3;
 
   return (
     <FloatingWidgetWrapper
@@ -139,7 +175,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
       className={className}
     >
       <div className="p-2.5 flex justify-center items-center overflow-visible">
-        <Cube2DSVG parsedFacelets={parsed} />
+        <Cube2DSVG parsedFacelets={parsed} size={size} />
       </div>
     </FloatingWidgetWrapper>
   );

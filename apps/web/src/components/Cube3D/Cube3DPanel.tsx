@@ -10,9 +10,11 @@ import { useCube3D } from "@/hooks/useCube3D";
 export interface Cube3DPanelProps {
   className?: string;
   onClose?: () => void;
+  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  order?: number;
 }
 
-export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
+export function Cube3DPanel({ className, onClose, order = 3 }: Cube3DPanelProps) {
   const {
     canvasRef,
     containerRef,
@@ -21,7 +23,7 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
     calibrate,
     reset,
     rotateCamera,
-  } = useCube3D({ maxRecentMoves: 15 });
+  } = useCube3D({ maxRecentMoves: 15, order });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });

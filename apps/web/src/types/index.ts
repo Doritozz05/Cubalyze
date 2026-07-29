@@ -37,6 +37,8 @@ export interface Solve {
   analysis?: import('@cubeforge/types').SolveMetrics;
   /** Compact orientation timeline for smart cube solves with IMU. */
   orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
+  /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+  puzzleType?: string;
 }
 
 /** Normalize penalty input (handles case mismatches like "dnf" -> "DNF"). */

@@ -11,6 +11,8 @@ export interface SessionStatsProps {
   className?: string;
   /** When provided, the row becomes a clickable shortcut to the full Stats view. */
   onExpand?: () => void;
+  /** Filter solves to a specific puzzle type (e.g. '3x3x3', '2x2x2'). */
+  puzzleFilter?: string;
 }
 
 interface Cell {
@@ -28,13 +30,19 @@ interface Cell {
  * full Stats view — a lightweight affordance that "there's more to see"
  * without pushing the timer down.
  */
-export function SessionStats({ solves, className, onExpand }: SessionStatsProps) {
+export function SessionStats({ solves, className, onExpand, puzzleFilter }: SessionStatsProps) {
   const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
-  const stats = useMemo(() => computeStats(solves), [solves]);
+
+  const filtered = useMemo(() => {
+    if (!puzzleFilter) return solves;
+    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === puzzleFilter);
+  }, [solves, puzzleFilter]);
+
+  const stats = useMemo(() => computeStats(filtered), [filtered]);
 
   const bpaWpa = useMemo(() => {
-    if (!showBpaWpa || solves.length === 0) return null;
-    const statSolves = solves.map((s) => ({ time: s.time ?? (s as any).timeMs ?? 0, penalty: s.penalty }));
+    if (!showBpaWpa || filtered.length === 0) return null;
+    const statSolves = filtered.map((s) => ({ time: s.time ?? (s as any).timeMs ?? 0, penalty: s.penalty }));
     if (statSolves.length === 4) {
       return computeBpaWpa(statSolves, 5);
     }

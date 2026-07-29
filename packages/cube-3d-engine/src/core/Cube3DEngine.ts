@@ -15,6 +15,8 @@ export interface Cube3DEngineOptions {
   height: number;
   pixelRatio?: number;
   gyroSupported?: boolean;
+  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  order?: number;
 }
 
 export class Cube3DEngine {
@@ -45,8 +47,8 @@ export class Cube3DEngine {
   private grayedStickers: { mesh: Mesh; originalMat: Material }[] = [];
 
   constructor(options: Cube3DEngineOptions) {
-    const { canvas, width, height, pixelRatio = 1, gyroSupported = false } = options;
-    this.init(canvas, width, height, pixelRatio, gyroSupported);
+    const { canvas, width, height, pixelRatio = 1, gyroSupported = false, order = 3 } = options;
+    this.init(canvas, width, height, pixelRatio, gyroSupported, order);
   }
 
   private init(
@@ -55,11 +57,12 @@ export class Cube3DEngine {
     height: number,
     pixelRatio: number,
     gyroSupported: boolean,
+    order: number,
   ) {
     this.sceneManager = new SceneManager(canvas, width, height, pixelRatio);
 
     this.factory = new CubeMeshFactory();
-    this.model = new CubeModel(this.factory);
+    this.model = new CubeModel(this.factory, order);
     this.sceneManager.scene.add(this.model.root);
 
     this.rotationEngine = new RotationEngine(this.model);

@@ -21,10 +21,14 @@ import { useOrientation } from "@/hooks/useOrientation";
 import { preferencesStore } from "@cubeforge/state";
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { globalAudioSystem } from "@/utils/audioSystem";
-import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
+import {
+  generateScrambleFor,
+  puzzleCategoryToType,
+  puzzleCategoryToOrder,
+} from "@/utils/puzzleUtils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { v4 as uuidv4 } from "uuid";
-import type { Penalty, Solve, SolveMethod, SolveSource } from "@/types";
+import type { Penalty, PuzzleCategory, Solve, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty, effectiveTime } from "@/types";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
@@ -51,6 +55,7 @@ export default function App() {
     switchSession,
     renameSession,
     deleteSession,
+    fetchSessionSolves,
   } = usePersistentSession();
 
   const methodPref = useStore(preferencesStore, (s) => s.method);
@@ -91,8 +96,9 @@ export default function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
   const [currentScramble, setCurrentScramble] = useState(() =>
-    RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
+    generateScrambleFor("3x3"),
   );
 
   // ── Widget lifecycle connection (avoids stale closure via refs) ────────
@@ -138,11 +144,18 @@ export default function App() {
   const scrambleAtSolveRef = useRef<string>("");
   const methodAtSolveRef = useRef<SolveMethod>("CFOP");
 
+  const handlePuzzleChange = useCallback((newPuzzle: PuzzleCategory) => {
+    setPuzzle(newPuzzle);
+    setCurrentScramble(generateScrambleFor(newPuzzle));
+    setScrambleIndex(0);
+    toast.success(`Switched to ${newPuzzle}`);
+  }, []);
+
   const handleRegenerate = useCallback(() => {
-    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+    setCurrentScramble(generateScrambleFor(puzzle));
     setScrambleIndex((i) => i + 1);
     toast.success("New scramble");
-  }, []);
+  }, [puzzle]);
 
   const handleComplete = useCallback(
     (
@@ -197,6 +210,7 @@ export default function App() {
         source: capturedSource,
         moves: rawMoves,
         orientationTimeline: rawOrientationTimeline,
+        puzzleType: puzzleCategoryToType(puzzle),
       })
         .then((returnedId) => {
           if (!returnedId) {
@@ -205,7 +219,7 @@ export default function App() {
             pendingSolveIdRef.current = null;
             return;
           }
-          setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+          setCurrentScramble(generateScrambleFor(puzzle));
           setScrambleIndex((i) => i + 1);
         })
         .catch((err) => {
@@ -387,14 +401,14 @@ export default function App() {
   }, [clearSession]);
 
   const handleNewSession = useCallback(() => {
-    newSession()
+    newSession(undefined, puzzleCategoryToType(puzzle))
       .then(() => {
-        setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+        setCurrentScramble(generateScrambleFor(puzzle));
         setScrambleIndex(0);
         toast.success("New session started");
       })
       .catch(() => toast.error("Couldn't create session"));
-  }, [newSession]);
+  }, [newSession, puzzle]);
 
   const handleSwitchSession = useCallback(
     (id: string) => {
@@ -490,9 +504,10 @@ export default function App() {
         scramble: input.scramble,
         method: input.method,
         source: "manual",
+        puzzleType: puzzleCategoryToType(puzzle),
       });
     },
-    [addSolve],
+    [addSolve, puzzle],
   );
 
   // Clicking "Analysis" on a solve row jumps to Insights AND selects that
@@ -532,6 +547,9 @@ export default function App() {
         <InsightsDashboard
           key={session?.id ?? "none"}
           solves={solves}
+          sessions={sessions}
+          fetchSessionSolves={fetchSessionSolves}
+          activeSessionId={session?.id ?? null}
           pb={currentPB ?? undefined}
           pendingAnalysis={lastAnalysis}
           sessionId={session?.id ?? null}
@@ -613,6 +631,7 @@ export default function App() {
           <SessionStats
             solves={solves}
             onExpand={() => setActiveView("insights")}
+            puzzleFilter={puzzleCategoryToType(puzzle)}
           />
         )}
       </>
@@ -632,9 +651,11 @@ export default function App() {
           onNewSession={handleNewSession}
           onRenameSession={renameSession}
           onDeleteSession={deleteSession}
+          puzzle={puzzle}
+          onPuzzleChange={handlePuzzleChange}
           cube3DActive={cubePanelOpen}
           cube3DReady={cube3DReady}
-          cube3D={<Cube3DPanel onClose={handleCloseCube} />}
+          cube3D={<Cube3DPanel onClose={handleCloseCube} order={puzzleCategoryToOrder(puzzle)} />}
           leftSidebar={
             <LeftSidebar
               activeView={activeView}

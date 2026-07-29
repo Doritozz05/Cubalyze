@@ -1,6 +1,7 @@
 import { Group, Mesh } from 'three';
 import { CubeMeshFactory } from './CubeMeshFactory';
 import { parseFaceletsToCubies } from '@cubeforge/math-core';
+import { parseFaceletsToCubies2x2 } from './FaceletParser2x2';
 
 /**
  * Logical state of one cubie in the 3x3x3 grid.
@@ -23,20 +24,53 @@ export class CubeModel {
   public root: Group;
   private cubies: CubieLogicalState[] = [];
   private factory: CubeMeshFactory;
+  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  public readonly order: number;
+  /** Grid coordinate bounds. Both 2×2 and 3×3 use [-1, 1] — the 2×2 simply
+   *  omits the middle layer (0). The 2×2 root group is scaled to 2/3 size
+   *  for visual proportion. */
+  public readonly gridMin: number;
+  public readonly gridMax: number;
+  public readonly gridStep: number;
 
-  constructor(factory: CubeMeshFactory) {
+  constructor(factory: CubeMeshFactory, order: number = 3) {
     this.root = new Group();
     this.factory = factory;
+    this.order = order;
+    // Both 2×2 and 3×3 use ±1 for outer faces. The 2×2 simply skips the
+    // middle layer (0). This keeps CubeMeshFactory sticker logic (which
+    // checks x===±1, y===±1, z===±1) and FACE_ROTATION_MAP (layerValue ±1)
+    // working unchanged for both orders.
+    // For visual size, the 2×2 root group is scaled down proportionally.
+    this.gridMin = -1;
+    this.gridMax = 1;
+    this.gridStep = 1.0;
     this.buildCubies();
+    // Scale the 2×2 to be visually smaller (2/3 of 3×3 size)
+    if (order === 2) {
+      this.root.scale.setScalar(2 / 3);
+    }
   }
 
   private buildCubies(): void {
     const spacing = 1.0; // Distance between cubie centers
 
-    // Iterate x, y, z from -1 to 1 to build a 3x3x3 grid
-    for (let x = -1; x <= 1; x++) {
-      for (let y = -1; y <= 1; y++) {
-        for (let z = -1; z <= 1; z++) {
+    // Generate grid coordinates based on order.
+    // For 3×3: [-1, 0, 1] — outer layers at ±1, middle at 0
+    // For 2×2: [-1, 1] — only outer layers, no middle (same ±1 as 3×3)
+    const coords: number[] = [];
+    if (this.order === 2) {
+      coords.push(-1, 1);
+    } else {
+      coords.push(-1, 0, 1);
+    }
+
+    for (const x of coords) {
+      for (const y of coords) {
+        for (const z of coords) {
+          // Skip the core (only exists in 3×3, never visible)
+          if (this.order === 3 && x === 0 && y === 0 && z === 0) continue;
+
           const cubie = this.factory.createCubieGroup(x, y, z);
           cubie.position.set(x * spacing, y * spacing, z * spacing);
 
@@ -66,7 +100,7 @@ export class CubeModel {
   public getCubiesByFace(axis: 'x' | 'y' | 'z', targetValue: number): Group[] {
     const gridKey = axis === 'x' ? 'gridX' : axis === 'y' ? 'gridY' : 'gridZ';
     return this.cubies
-      .filter((c) => c[gridKey] === targetValue)
+      .filter((c) => Math.abs(c[gridKey] - targetValue) < 0.01)
       .map((c) => c.mesh);
   }
 
@@ -88,10 +122,10 @@ export class CubeModel {
     if (turns === 0) return;
 
     for (const cubie of this.cubies) {
-      // Use Right-Handed cyclic logic to match the visual quaternion
-      if (axis === 'x' && cubie.gridX !== layerValue) continue;
-      if (axis === 'y' && cubie.gridY !== layerValue) continue;
-      if (axis === 'z' && cubie.gridZ !== layerValue) continue;
+      // Use Right-Handed cyclic logic to match the visual quaternion.
+      if (axis === 'x' && Math.abs(cubie.gridX - layerValue) > 0.01) continue;
+      if (axis === 'y' && Math.abs(cubie.gridY - layerValue) > 0.01) continue;
+      if (axis === 'z' && Math.abs(cubie.gridZ - layerValue) > 0.01) continue;
 
       let a: number, b: number;
       // Standard cyclic permutation for Right-Handed (X: Y->Z, Y: Z->X, Z: X->Y)
@@ -159,16 +193,22 @@ export class CubeModel {
   }
 
   /**
-   * Snaps the 3D cube to a specific physical state using a 54-char facelet string.
+   * Snaps the 3D cube to a specific physical state using a facelet string.
+   *
+   * Supports both 3×3 (54-char) and 2×2 (24-char) facelet strings based on
+   * the string length. The appropriate parser is selected automatically.
    */
   public applyFacelets(facelets: string): void {
     try {
-      const parsed = parseFaceletsToCubies(facelets);
+      const is2x2 = facelets.length === 24;
+      const parsed = is2x2
+        ? parseFaceletsToCubies2x2(facelets)
+        : parseFaceletsToCubies(facelets);
       for (const p of parsed) {
         const cubie = this.cubies.find(c => 
-          c.initialGridX === p.initialX && 
-          c.initialGridY === p.initialY && 
-          c.initialGridZ === p.initialZ
+          Math.abs(c.initialGridX - p.initialX) < 0.01 && 
+          Math.abs(c.initialGridY - p.initialY) < 0.01 && 
+          Math.abs(c.initialGridZ - p.initialZ) < 0.01
         );
         if (cubie) {
           cubie.gridX = p.currX;

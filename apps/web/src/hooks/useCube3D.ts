@@ -17,6 +17,8 @@ import type {
 export interface UseCube3DOptions {
   /** Max number of recent moves to keep. Default 15. */
   maxRecentMoves?: number;
+  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  order?: number;
 }
 
 export interface UseCube3DResult {
@@ -49,7 +51,7 @@ export interface UseCube3DResult {
  * and dynamic mount/unmount cycles without WebGL context loss or blank screen bugs.
  */
 export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
-  const { maxRecentMoves = 15 } = options;
+  const { maxRecentMoves = 15, order = 3 } = options;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,6 +102,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
         height: h,
         pixelRatio: window.devicePixelRatio || 1,
         gyroSupported: globalCubeAdapter.gyroSupported,
+        order,
       });
 
       engineRef.current = engine;
@@ -205,7 +208,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       }
       setIsReady(false);
     };
-  }, [appendRecentMove]);
+  }, [appendRecentMove, order]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {

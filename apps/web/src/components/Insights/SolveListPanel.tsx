@@ -245,6 +245,8 @@ export const SolveListPanel = memo(function SolveListPanel({
             >
               Smart
             </FilterChip>
+
+
           </div>
         )}
 
