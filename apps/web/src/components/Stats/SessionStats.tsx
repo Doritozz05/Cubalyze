@@ -43,11 +43,11 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
   const bpaWpa = useMemo(() => {
     if (!showBpaWpa || filtered.length === 0) return null;
     const statSolves = filtered.map((s) => ({ time: s.time ?? (s as any).timeMs ?? 0, penalty: s.penalty }));
-    if (statSolves.length === 4) {
-      return computeBpaWpa(statSolves, 5);
+    if (statSolves.length % 5 === 4) {
+      return computeBpaWpa(statSolves.slice(0, 4), 5);
     }
-    if (statSolves.length === 11) {
-      return computeBpaWpa(statSolves, 12);
+    if (statSolves.length % 12 === 11) {
+      return computeBpaWpa(statSolves.slice(0, 11), 12);
     }
     return null;
   }, [filtered, showBpaWpa]);

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Dices, RefreshCw, RotateCcw, X } from "lucide-react";
+import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 
@@ -67,7 +67,7 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 disabled={!isReady}
                 className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
               >
-                <Dices className="size-3" />
+                <Shuffle className="size-3" />
                 Scramble
               </Button>
             </TooltipTrigger>

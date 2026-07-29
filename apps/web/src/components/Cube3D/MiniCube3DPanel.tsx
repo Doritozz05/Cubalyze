@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Dices, RefreshCw, RotateCcw } from "lucide-react";
+import { RefreshCw, RotateCcw, Shuffle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 
@@ -49,7 +49,7 @@ export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
                 disabled={!isReady}
                 className="h-6 gap-1 px-1.5 text-[0.6rem] text-ink-3 hover:text-ink"
               >
-                <Dices className="size-3" />
+                <Shuffle className="size-3" />
                 Scramble
               </Button>
             </TooltipTrigger>

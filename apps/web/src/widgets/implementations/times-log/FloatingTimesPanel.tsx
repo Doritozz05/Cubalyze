@@ -46,28 +46,19 @@ function DesktopTimesPanel({
   onClear,
   onAnalyze,
   onReplay,
-  puzzle,
 }: FloatingTimesPanelProps) {
-  const headerActions = (
-    <div className="flex items-center gap-1.5" onPointerDown={(e) => e.stopPropagation()}>
-      {puzzle && (
-        <span className="rounded bg-brand/10 border border-brand/20 px-1.5 py-0.5 text-[0.6rem] font-semibold text-brand tracking-wider">
-          {puzzle}
-        </span>
-      )}
-      {solves.length > 0 && onClear && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClear();
-          }}
-          className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
-        >
-          Clear
-        </button>
-      )}
-    </div>
-  );
+  const headerActions = solves.length > 0 && onClear ? (
+    <button
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClear();
+      }}
+      className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+    >
+      Clear
+    </button>
+  ) : null;
 
   return (
     <FloatingWidgetWrapper
@@ -75,7 +66,6 @@ function DesktopTimesPanel({
       icon={ListOrdered}
       label="Times"
       pillBadge={`${solves.length}`}
-      pillBadge2={puzzle}
       panelWidth={PANEL_WIDTH}
       defaultPosition={{ x: 72, y: 120 }}
       headerActions={headerActions}
@@ -103,7 +93,6 @@ function MobileTimesPanel({
   onClear,
   onAnalyze,
   onReplay,
-  puzzle,
 }: FloatingTimesPanelProps) {
   const [mounted, setMounted] = useState(false);
   const [minimized, setMinimized] = useState(true);
@@ -127,11 +116,6 @@ function MobileTimesPanel({
         <div className="flex items-center gap-2">
           <ListOrdered className="size-3.5 text-ink-3" />
           <span className="text-xs font-medium text-ink">Times</span>
-          {puzzle && (
-            <span className="rounded bg-brand/10 border border-brand/20 px-1.5 py-0.5 text-[0.6rem] font-semibold text-brand tracking-wider">
-              {puzzle}
-            </span>
-          )}
           <span className="nums text-[0.6rem] text-ink-3">{solves.length}</span>
         </div>
         <div className="flex items-center gap-0.5">

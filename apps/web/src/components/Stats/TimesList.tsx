@@ -4,7 +4,7 @@ import { useMemo, memo, useState, useRef, useEffect } from "react";
 import { MoreHorizontal, Plus, Skull, Eraser, Trash2, Activity, RotateCcw, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
-import { formatTime, computeStats } from "@/utils/formatTime";
+import { formatTime } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 import { PenaltyBadge } from "@/components/Insights/atoms";
 import { Button } from "@/components/ui/button";

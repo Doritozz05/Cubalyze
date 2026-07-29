@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Grid3x3 } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import {
   CubeState,
@@ -178,7 +178,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
   return (
     <FloatingWidgetWrapper
       widgetId="scramble-2d"
-      icon={Grid3x3}
+      icon={Shuffle}
       label="Scramble"
       defaultPosition={{ x: 72, y: 520 }}
       className={className}
