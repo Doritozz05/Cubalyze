@@ -9,8 +9,11 @@ import { formatTime, computeStats } from "@/utils/formatTime";
 import { stdDeviation } from "@cubeforge/statistics";
 import type { Solve } from "@/types";
 
+import { puzzleCategoryToType } from "@/utils/puzzleUtils";
+
 export interface FloatingTimeDistributionProps {
   solves: Solve[];
+  puzzle?: string;
 }
 
 /**
@@ -19,12 +22,18 @@ export interface FloatingTimeDistributionProps {
  *
  * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
  */
-export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionProps) {
+export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistributionProps) {
+  const filteredSolves = useMemo(() => {
+    if (!puzzle) return solves;
+    const targetType = puzzleCategoryToType(puzzle as any);
+    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
+  }, [solves, puzzle]);
+
   const { histogram, stats } = useMemo(() => {
-    const h = deriveHistogram(solves, 500);
-    const s = computeStats(solves);
+    const h = deriveHistogram(filteredSolves, 500);
+    const s = computeStats(filteredSolves);
     return { histogram: h, stats: s };
-  }, [solves]);
+  }, [filteredSolves]);
 
   const maxCount = useMemo(
     () => (histogram.length > 0 ? Math.max(...histogram.map((b) => b.count)) : 0),
@@ -33,12 +42,20 @@ export function FloatingTimeDistribution({ solves }: FloatingTimeDistributionPro
 
   const BAR_HEIGHT = 120;
 
+  const headerActions = puzzle ? (
+    <span className="rounded bg-brand/10 border border-brand/20 px-1.5 py-0.5 text-[0.6rem] font-semibold text-brand tracking-wider">
+      {puzzle}
+    </span>
+  ) : null;
+
   return (
     <FloatingWidgetWrapper
       widgetId="time-distribution"
       icon={BarChart3}
       label="Distribution"
       pillBadge={`${stats.count} solves`}
+      pillBadge2={puzzle}
+      headerActions={headerActions}
       panelWidth={340}
       defaultPosition={{ x: 420, y: 120 }}
     >

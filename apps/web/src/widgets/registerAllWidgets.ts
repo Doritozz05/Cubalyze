@@ -41,13 +41,14 @@ export function registerAllWidgets(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: FloatingTimesPanel as any,
     preview: TimesLogPreview,
-    mapProps: ({ solves, onUpdate, onDelete, onClear, onAnalyze, onReplay }: WidgetHostProps) => ({
+    mapProps: ({ solves, onUpdate, onDelete, onClear, onAnalyze, onReplay, puzzle }: WidgetHostProps) => ({
       solves,
       onUpdate,
       onDelete,
       onClear,
       onAnalyze,
       onReplay,
+      puzzle,
     }),
   });
 
@@ -55,14 +56,14 @@ export function registerAllWidgets(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: FloatingTimeDistribution as any,
     preview: TimeDistributionPreview,
-    mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
+    mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
   });
 
   WidgetRegistry.register("pb-progression", {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: FloatingPbProgression as any,
     preview: PbProgressionPreview,
-    mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
+    mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
   });
 
   WidgetRegistry.register("solve-timeline", {

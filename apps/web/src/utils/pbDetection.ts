@@ -21,6 +21,7 @@ export interface MinimalSolve {
   time?: number;
   timeMs?: number;
   penalty?: Penalty | string;
+  puzzleType?: string;
 }
 
 function toStatSolve(s: MinimalSolve): StatSolve {
@@ -58,11 +59,13 @@ export function getBestRollingAverage(solves: StatSolve[], n: number): number | 
  * @param existingSolves Solves prior to the new solve (newest first).
  * @param newTimeMs Time of the new solve in ms.
  * @param newPenalty Penalty of the new solve ("none", "+2", "DNF").
+ * @param currentPuzzleType Optional puzzle type filter (e.g. '3x3x3', '2x2x2').
  */
 export function detectPbMilestones(
   existingSolves: MinimalSolve[],
   newTimeMs: number,
   newPenalty: Penalty = "none",
+  currentPuzzleType?: string,
 ): PbMilestoneResult {
   const newSolve: StatSolve = { time: newTimeMs, penalty: newPenalty };
   const newEffTime = effectiveTime(newSolve);
@@ -83,7 +86,11 @@ export function detectPbMilestones(
     };
   }
 
-  const existingStatSolves = existingSolves.map(toStatSolve);
+  const filteredExisting = currentPuzzleType
+    ? existingSolves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType)
+    : existingSolves;
+
+  const existingStatSolves = filteredExisting.map(toStatSolve);
 
   // 1. Single PB check
   const validExistingSingles = existingStatSolves

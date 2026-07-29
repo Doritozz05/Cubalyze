@@ -50,7 +50,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
       return computeBpaWpa(statSolves, 12);
     }
     return null;
-  }, [solves, showBpaWpa]);
+  }, [filtered, showBpaWpa]);
 
   const cells: Cell[] = [
     { label: "Ao5", value: statLabel(stats.ao5) },

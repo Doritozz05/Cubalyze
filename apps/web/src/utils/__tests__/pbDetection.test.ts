@@ -59,4 +59,15 @@ describe("pbDetection", () => {
     const res = detectPbMilestones(fasterExisting, 7000, "none");
     expect(res.isAo5PB).toBe(true);
   });
+
+  it("should isolate PB detection by puzzleType when puzzleType is specified", () => {
+    const existing: MinimalSolve[] = [
+      { time: 1000, penalty: "none", puzzleType: "2x2x2" },
+      { time: 10000, penalty: "none", puzzleType: "3x3x3" },
+    ];
+    // New 3x3 solve of 8000ms is faster than 10000ms (3x3), even though 1000ms (2x2) is in session
+    const result = detectPbMilestones(existing, 8000, "none", "3x3x3");
+    expect(result.isSinglePB).toBe(true);
+    expect(result.prevSingleTime).toBe(10000);
+  });
 });

@@ -8,8 +8,11 @@ import { effectiveTime } from "@/types";
 import { formatTime } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 
+import { puzzleCategoryToType } from "@/utils/puzzleUtils";
+
 export interface FloatingPbProgressionProps {
   solves: Solve[];
+  puzzle?: string;
 }
 
 interface PbMilestone {
@@ -25,9 +28,15 @@ interface PbMilestone {
  * Floating widget showing Personal Best progression over time.
  * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
  */
-export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
+export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionProps) {
+  const filteredSolves = useMemo(() => {
+    if (!puzzle) return solves;
+    const targetType = puzzleCategoryToType(puzzle as any);
+    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
+  }, [solves, puzzle]);
+
   const milestones = useMemo(() => {
-    const chrono = [...solves].reverse();
+    const chrono = [...filteredSolves].reverse();
     let runningPb = Infinity;
     const pbs: PbMilestone[] = [];
     let previousPb: number | null = null;
@@ -39,7 +48,7 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
       if (t < runningPb) {
         const delta = previousPb !== null ? t - previousPb : null;
         pbs.push({
-          solveNumber: solves.length - i,
+          solveNumber: filteredSolves.length - i,
           timestamp: solve.timestamp,
           time: t,
           delta,
@@ -56,10 +65,16 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
     }
 
     return pbs.reverse();
-  }, [solves]);
+  }, [filteredSolves]);
 
   const currentPb = milestones.find((m) => m.isCurrent);
   const pbCount = milestones.length;
+
+  const headerActions = puzzle ? (
+    <span className="rounded bg-brand/10 border border-brand/20 px-1.5 py-0.5 text-[0.6rem] font-semibold text-brand tracking-wider">
+      {puzzle}
+    </span>
+  ) : null;
 
   return (
     <FloatingWidgetWrapper
@@ -67,7 +82,8 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
       icon={Trophy}
       label="PB progression"
       pillBadge={currentPb ? formatTime(currentPb.time) : undefined}
-      pillBadge2={pbCount > 0 ? `${pbCount} PB${pbCount !== 1 ? "s" : ""}` : undefined}
+      pillBadge2={puzzle ?? (pbCount > 0 ? `${pbCount} PB${pbCount !== 1 ? "s" : ""}` : undefined)}
+      headerActions={headerActions}
       panelWidth={300}
       panelMaxHeight={320}
       defaultPosition={{ x: 420, y: 380 }}

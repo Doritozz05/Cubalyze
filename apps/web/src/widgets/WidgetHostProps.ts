@@ -19,4 +19,6 @@ export interface WidgetHostProps {
   onOpenCube: () => void;
   /** Pending analysis from the just-completed live solve (not yet persisted). */
   lastAnalysis?: SolveMetrics | null;
+  /** Active puzzle category (e.g. '2x2', '3x3', '4x4'). */
+  puzzle?: string;
 }

@@ -186,7 +186,7 @@ export default function App() {
       pendingSolveIdRef.current = solveId;
 
       // Check for Personal Best milestones (Single, Ao5, Ao12) before adding
-      const pbResult = detectPbMilestones(solvesRef.current, time, penalty);
+      const pbResult = detectPbMilestones(solvesRef.current, time, penalty, puzzleCategoryToType(puzzle));
       if (pbResult.types.length > 0) {
         if (pbCelebrationAudio) {
           globalAudioSystem.playPbFanfare(pbResult.types);
@@ -437,7 +437,9 @@ export default function App() {
       : null;
 
   // Previous PB (excluding the most recent solve) for accurate PB delta comparison
-  const previousSolves = solves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
+  const currentPuzzleType = puzzleCategoryToType(puzzle);
+  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType);
+  const previousSolves = puzzleSolves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const previousPB =
     previousSolves.length > 0
       ? Math.min(
@@ -701,6 +703,7 @@ export default function App() {
             cubePanelOpen={cubePanelOpen}
             onOpenCube={handleOpenCube}
             lastAnalysis={lastAnalysis}
+            puzzle={puzzle}
           />
         )}
 
