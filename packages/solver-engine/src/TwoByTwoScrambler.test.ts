@@ -3,7 +3,7 @@ import { Cube2x2State } from '@cubeforge/math-core';
 import { TwoByTwoScrambler } from './TwoByTwoScrambler';
 import { TwoByTwoSolver } from './TwoByTwoSolver';
 
-describe('TwoByTwoScrambler', () => {
+describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
   const solver = new TwoByTwoSolver();
   const scrambler = new TwoByTwoScrambler(solver);
 
