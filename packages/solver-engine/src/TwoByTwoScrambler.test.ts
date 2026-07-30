@@ -3,7 +3,7 @@ import { Cube2x2State } from '@cubeforge/math-core';
 import { TwoByTwoScrambler } from './TwoByTwoScrambler';
 import { TwoByTwoSolver } from './TwoByTwoSolver';
 
-describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
+describe('TwoByTwoScrambler', { timeout: 30000 }, () => {
   const solver = new TwoByTwoSolver();
   const scrambler = new TwoByTwoScrambler(solver);
 
@@ -14,18 +14,18 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
     expect(scramble.length).toBeGreaterThan(0);
   });
 
-  it('generates a scramble using only standard 2x2 face moves (U,R,F,D,L,B)', () => {
+  it('generated scramble uses only U, R, F face moves (DBL fixed)', () => {
     for (let i = 0; i < 5; i++) {
       const scramble = scrambler.generateScramble();
       const tokens = scramble.split(/\s+/);
       for (const token of tokens) {
         const face = token[0];
-        expect(['U', 'R', 'F', 'D', 'L', 'B']).toContain(face);
+        expect(['U', 'R', 'F']).toContain(face);
       }
     }
   });
 
-  it('generated scramble applied to solved cube produces a non-solved state', () => {
+  it('generated scramble applied to solved cube scrambles it', () => {
     for (let i = 0; i < 5; i++) {
       const scramble = scrambler.generateScramble();
       const state = new Cube2x2State();
@@ -44,7 +44,7 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
     }
   });
 
-  it('minLength=2 produces scrambles of at least 2 moves (WCA 4b3 minimum)', () => {
+  it('minLength=2 produces scrambles of at least 2 moves', () => {
     for (let i = 0; i < 5; i++) {
       const scramble = scrambler.generateScramble(2);
       const tokens = scramble.trim().split(/\s+/).filter(Boolean);
@@ -52,7 +52,7 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
     }
   });
 
-  it('minLength=11 produces scrambles of exactly 11 moves (God\'s number)', { timeout: 60000 }, () => {
+  it('minLength=11 produces scrambles of exactly 11 moves (God number)', { timeout: 30000 }, () => {
     for (let i = 0; i < 5; i++) {
       const scramble = scrambler.generateScramble(11);
       if (scramble.length > 0) {
@@ -62,14 +62,14 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
     }
   });
 
-  it('minLength=0 produces scrambles (should still work)', () => {
+  it('minLength=0 produces scrambles (always works)', () => {
     const scramble = scrambler.generateScramble(0);
-    expect(scramble.length).toBeGreaterThanOrEqual(0);
+    expect(typeof scramble).toBe('string');
   });
 
   // ── Scramble + solution consistency ────────────────────────────────
 
-  it('solution + scramble = identity', () => {
+  it('scramble + solve = solved', () => {
     for (let i = 0; i < 5; i++) {
       const state = new Cube2x2State();
       const scramble = scrambler.generateScramble();
@@ -80,7 +80,7 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
     }
   });
 
-  it('scramble always has non-zero length after 20 attempts', () => {
+  it('scramble always has non-zero length (many attempts)', () => {
     for (let i = 0; i < 20; i++) {
       const scramble = scrambler.generateScramble();
       expect(scramble.length).toBeGreaterThan(0);
@@ -89,10 +89,11 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
 
   // ── generateRandomState ────────────────────────────────────────────
 
-  it('generateRandomState never returns solved state', () => {
-    for (let i = 0; i < 100; i++) {
+  it('generateRandomState has DBL corner fixed (cp[6]=6, co[6]=0)', () => {
+    for (let i = 0; i < 20; i++) {
       const state = TwoByTwoScrambler.generateRandomState();
-      expect(state.isSolved()).toBe(false);
+      expect(state.cp[6]).toBe(6);
+      expect(state.co[6]).toBe(0);
     }
   });
 
@@ -115,17 +116,14 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
 
   // ── Batch generation ───────────────────────────────────────────────
 
-  it('generateScrambleBatch returns correct number of scrambles', () => {
+  it('generateScrambleBatch returns correct count', () => {
     const batch = scrambler.generateScrambleBatch(5);
     expect(batch.length).toBe(5);
-    for (const s of batch) {
-      expect(s.length).toBeGreaterThan(0);
-    }
+    for (const s of batch) expect(s.length).toBeGreaterThan(0);
   });
 
   it('generateScrambleBatch with count=0 returns empty array', () => {
-    const batch = scrambler.generateScrambleBatch(0);
-    expect(batch).toEqual([]);
+    expect(scrambler.generateScrambleBatch(0)).toEqual([]);
   });
 
   // ── generateScrambleWithSolution ───────────────────────────────────
@@ -145,33 +143,30 @@ describe('TwoByTwoScrambler', { timeout: 60000 }, () => {
     expect(state.isSolved()).toBe(true);
   });
 
-  it('generateScrambleWithSolution uses only standard 2x2 face moves', () => {
+  it('generateScrambleWithSolution uses only URF moves', () => {
     const result = scrambler.generateScrambleWithSolution();
     const tokens = result.scramble.split(/\s+/);
-    if (tokens.length > 0) {
-      for (const token of tokens) {
-        expect(['U', 'R', 'F', 'D', 'L', 'B']).toContain(token[0]);
-      }
+    for (const token of tokens) {
+      expect(['U', 'R', 'F']).toContain(token[0]);
     }
   });
 
   // ── Edge case: minLength > God's number ────────────────────────────
 
-  it('minLength=20 (above God\'s number) returns empty scramble', { timeout: 30000 }, () => {
+  it('minLength=20 (above God number 11) returns empty scramble', { timeout: 30000 }, () => {
     const scramble = scrambler.generateScramble(20);
-    // Should be empty since no state requires ≥20 moves (God's number = 11)
     expect(scramble.length).toBe(0);
   });
 
   // ── Performance ────────────────────────────────────────────────────
 
-  it('generates 10 scrambles in under 15000ms', () => {
+  it('generates 10 scrambles in under 2000ms (sub-ms solves)', () => {
     const start = performance.now();
     for (let i = 0; i < 10; i++) {
       scrambler.generateScramble();
     }
     const end = performance.now();
-    expect(end - start).toBeLessThan(15000);
+    expect(end - start).toBeLessThan(2000);
   });
 
   // ── No consecutive same-face moves ─────────────────────────────────
