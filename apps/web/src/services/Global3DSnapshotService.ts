@@ -1,6 +1,7 @@
 import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
 import { Cube2x2State, Cube2x2FaceletConverter } from "@cubeforge/math-core";
+import { Quaternion, Vector3 } from "three";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 
 const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
@@ -33,6 +34,7 @@ function buildF2LSkinStyle() {
     },
   };
 }
+
 
 type RenderTask = {
   key: string;
@@ -216,13 +218,12 @@ export class Global3DSnapshotService {
           engine.resetCube();
         }
 
-        if (!is2x2) {
-          engine.rotateModelY(modelYRot);
-        }
-
-        // Rotate 2×2 view by 45° around Y for a nicer 3/4 angle
         if (is2x2) {
-          engine.rotateModelY(Math.PI / 4);
+          // Rotate 180° around Z (z2) so yellow (D) face appears on top
+          const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI);
+          engine.model.root.quaternion.copy(q);
+        } else {
+          engine.rotateModelY(modelYRot);
         }
 
         const isAdvancedF2L =
