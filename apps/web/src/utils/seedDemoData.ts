@@ -11,6 +11,7 @@
 import type { CubeFace, CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { v4 as uuidv4 } from "uuid";
 import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
+import { isLocalhost } from "./env";
 
 // ─── Orientation Timeline Generator ───────────────────────────────────────
 
@@ -393,6 +394,10 @@ export async function seedDemoDataIfEmpty(
   // Production builds keep the opt-in gate so real user DBs are never
   // silently populated with fake solves.
   if (typeof window === "undefined") return;
+
+  // Demo DB injection is ONLY allowed when running on Vite dev server on localhost.
+  // In production (Vercel, Tauri desktop app, custom domains), fake solves are NEVER seeded.
+  if (!isLocalhost()) return;
 
   const isDev = import.meta.env.DEV;
   const flag = window.localStorage.getItem("cubeforge:seed-demo");
