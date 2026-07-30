@@ -28,6 +28,7 @@
     "@cubeforge/config-typescript": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
+    "@types/three": "^0.185.1",
     "tsup": "^8.0.1",
     "typescript": "^5.7.3",
     "vitest": "^1.2.2"

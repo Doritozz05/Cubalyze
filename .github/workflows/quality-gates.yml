@@ -18,6 +18,8 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        name: Build packages
       - run: pnpm -r exec tsc --noEmit
         name: Typecheck (0 errors required)
 
@@ -32,7 +34,7 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r exec eslint . --max-warnings=0
+      - run: pnpm lint
         name: Lint (0 errors, 0 warnings)
 
   unit-tests:

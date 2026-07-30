@@ -777,6 +777,9 @@ importers:
       '@cubeforge/timer-engine':
         specifier: workspace:*
         version: link:../timer-engine
+      '@types/three':
+        specifier: ^0.185.1
+        version: 0.185.1
       tsup:
         specifier: ^8.0.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)

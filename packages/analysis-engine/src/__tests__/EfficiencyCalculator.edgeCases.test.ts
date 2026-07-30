@@ -10,30 +10,31 @@
  */
 import { describe, it, expect } from 'vitest';
 import { EfficiencyCalculator } from '../metrics/EfficiencyCalculator';
-import type { SolveTimeline, SolveTimelineEntry, CubeMoveEvent } from '@cubeforge/types';
+import type { SolveTimeline, TimelineEntry, CubeMoveEvent } from '@cubeforge/types';
 
 /** Build a minimal SolveTimeline from an array of moves. */
 function makeTimeline(moves: Array<{ face: string; direction: number }>): SolveTimeline {
-  const entries: SolveTimelineEntry[] = moves.map((m, i) => ({
+  const entries: TimelineEntry[] = moves.map((m, i) => ({
     index: i,
-    move: { face: m.face as any, direction: m.direction as 1 | -1 | 2 },
-    timestamp: i * 100,
+    move: { face: m.face as any, direction: m.direction as 1 | -1 | 2, cubeTimestamp: i * 100, hostTimestamp: i * 100 },
+    displayMove: { face: m.face as any, direction: m.direction as 1 | -1 | 2, cubeTimestamp: i * 100, hostTimestamp: i * 100 },
+    hostTimestamp: i * 100,
     state: {
       cp: [0, 1, 2, 3, 4, 5, 6, 7],
       co: [0, 0, 0, 0, 0, 0, 0, 0],
       ep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
       eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    } as any,
-    phaseId: null,
+    },
+    phaseId: 0,
   }));
-  return { entries, solveId: 'test' };
+  return { entries, solveId: 'test', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: moves.length * 100 };
 }
 
 describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
   // ── compute: timeline vacío ────────────────────────────────────────
 
   it('compute con timeline vacío devuelve valores por defecto', async () => {
-    const timeline: SolveTimeline = { entries: [], solveId: 'empty' };
+    const timeline: SolveTimeline = { entries: [], solveId: 'empty', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: 0 };
     const result = await EfficiencyCalculator.compute(timeline, 'R U R\'');
     expect(result).toEqual({
       moveEfficiencyRatio: 1,
@@ -46,7 +47,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
   });
 
   it('compute con timeline vacío y scramble vacío devuelve defaults', async () => {
-    const timeline: SolveTimeline = { entries: [], solveId: 'empty' };
+    const timeline: SolveTimeline = { entries: [], solveId: 'empty', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: 0 };
     const result = await EfficiencyCalculator.compute(timeline, '');
     expect(result.optimalMoveCount).toBe(0);
     expect(result.moveEfficiencyRatio).toBe(1);
@@ -135,7 +136,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
   // ── forwardDrift ───────────────────────────────────────────────────
 
   it('computeForwardDriftFast con timeline vacío devuelve 1', () => {
-    const result = EfficiencyCalculator.computeForwardDriftFast({ entries: [], solveId: 'test' });
+    const result = EfficiencyCalculator.computeForwardDriftFast({ entries: [], solveId: 'test', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: 0 });
     expect(result).toBe(1);
   });
 

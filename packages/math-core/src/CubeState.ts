@@ -198,7 +198,12 @@ export class CubeState implements CubeStateInternal {
   private static isInitialized = false;
 
   constructor();
-  constructor(cp: ArrayLike<number> | null, co: ArrayLike<number> | null, ep: ArrayLike<number> | null, eo: ArrayLike<number> | null);
+  constructor(
+    cp?: ArrayLike<number> | null,
+    co?: ArrayLike<number> | null,
+    ep?: ArrayLike<number> | null,
+    eo?: ArrayLike<number> | null,
+  );
   constructor(
     cp?: ArrayLike<number> | null,
     co?: ArrayLike<number> | null,

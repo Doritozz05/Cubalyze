@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { CaseStateGenerator, invertMove, invertAlgorithm, invertMoveArray } from '../caseGenerator';
+import { CaseStateGenerator, invertMove, invertAlgorithm } from '../caseGenerator';
 import { getSeedData } from '../seed/index';
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState } from '@cubeforge/math-core';
 
 describe('CaseStateGenerator', () => {
   // ── Utility function tests ──────────────────────────────────────────
@@ -123,7 +123,6 @@ describe('CaseStateGenerator', () => {
           // U-layer corner facelet indices (from FaceletStringConverter):
           // URF: [8, 9, 20], UFL: [6, 18, 38], ULB: [0, 36, 47], UBR: [2, 45, 11]
           const cornerIndices = [[8, 9, 20], [6, 18, 38], [0, 36, 47], [2, 45, 11]];
-          const validCorners = ['URF', 'UFL', 'ULB', 'UBR'];
           const validCornerColors = [
             ['U', 'R', 'F'], // URF
             ['U', 'F', 'L'], // UFL

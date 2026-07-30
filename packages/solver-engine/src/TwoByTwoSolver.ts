@@ -186,7 +186,8 @@ let combinedDist: Uint8Array | null = null;
 function ensureInitialized(): void {
   if (combinedDist) return;
 
-  tables = buildMoveTables();
+  const currentTables = buildMoveTables();
+  tables = currentTables;
 
   const dist = new Uint8Array(N_STATES).fill(255);
   dist[0] = 0;
@@ -206,8 +207,8 @@ function ensureInitialized(): void {
     const curPerm = (cur / N_TWIST) | 0;
     const curTwist = cur % N_TWIST;
 
-    const pm = tables.permMove;
-    const tm = tables.twistMove;
+    const pm = currentTables.permMove;
+    const tm = currentTables.twistMove;
 
     for (let m = 0; m < NUM_MOVES; m++) {
       const next = pm[m][curPerm] * N_TWIST + tm[m][curTwist];

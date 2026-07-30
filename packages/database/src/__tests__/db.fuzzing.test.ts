@@ -10,7 +10,7 @@ function mockDb(rows: Record<string, unknown>[] = []) {
   return vi.fn<(...args: unknown[]) => Promise<Record<string, unknown>[]>>().mockResolvedValue(rows);
 }
 
-function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
+function _makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01',
     scramble: "R U R'", penalty: 'none', method: 'CFOP', source: 'smart',

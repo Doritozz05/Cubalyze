@@ -223,8 +223,8 @@ export class Cube2x2State {
   public co: Uint8Array;
 
   constructor();
-  constructor(cp: ArrayLike<number>, co: ArrayLike<number>);
-  constructor(cp?: ArrayLike<number>, co?: ArrayLike<number>) {
+  constructor(cp?: ArrayLike<number> | null, co?: ArrayLike<number> | null);
+  constructor(cp?: ArrayLike<number> | null, co?: ArrayLike<number> | null) {
     this.cp = new Uint8Array(8);
     this.co = new Uint8Array(8);
     if (cp) this.cp.set(cp);

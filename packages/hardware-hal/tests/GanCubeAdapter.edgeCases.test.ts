@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Subject } from 'rxjs';
 import { GanCubeAdapter } from '../src/bluetooth/GanCubeAdapter';
 
 // ────────────────────────────────────────────────────────────────────────
