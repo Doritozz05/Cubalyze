@@ -46,16 +46,23 @@ export class MetricsAggregator {
     const totalMoves = entries.length;
 
     // ─── Phase-level metrics ────────────────────────────────────────────
-    const phasesMetrics: PhaseMetrics[] = phases.map((p) => ({
-      phaseName: p.phaseName,
-      durationMs: p.durationMs,
-      moveCount: p.moveCount,
-      tps: p.durationMs > 0
-        ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
-        : 0,
-      pauseCount: 0, // computed below
-      pauseTimeMs: 0,
-    }));
+    // Filter out zero-move phases — they occur when multiple phase masks
+    // complete simultaneously (e.g., at the solved state at the end of a
+    // solve). Including them would show confusing 0-move, 0-duration phases
+    // in the UI. The phase names are still available via timeline.phases for
+    // method-specific calculators (CFOPMetricsCalculator, etc.).
+    const phasesMetrics: PhaseMetrics[] = phases
+      .filter((p) => p.moveCount > 0)
+      .map((p) => ({
+        phaseName: p.phaseName,
+        durationMs: p.durationMs,
+        moveCount: p.moveCount,
+        tps: p.durationMs > 0
+          ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
+          : 0,
+        pauseCount: 0, // computed below
+        pauseTimeMs: 0,
+      }));
 
     // ─── Core Metrics ───────────────────────────────────────────────────
     // Detect pauses first (TPS needs pauseTimeMs for effective TPS)
@@ -129,16 +136,19 @@ export class MetricsAggregator {
     const fluidity: FluidityMetrics = FluidityCalculator.compute(timeline);
     const rotation: RotationMetrics = RotationCounter.compute(timeline);
 
-    const phasesMetrics: PhaseMetrics[] = phases.map((p) => ({
-      phaseName: p.phaseName,
-      durationMs: p.durationMs,
-      moveCount: p.moveCount,
-      tps: p.durationMs > 0
-        ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
-        : 0,
-      pauseCount: 0,
-      pauseTimeMs: 0,
-    }));
+    // Filter out zero-move phases (same rationale as computeAll)
+    const phasesMetrics: PhaseMetrics[] = phases
+      .filter((p) => p.moveCount > 0)
+      .map((p) => ({
+        phaseName: p.phaseName,
+        durationMs: p.durationMs,
+        moveCount: p.moveCount,
+        tps: p.durationMs > 0
+          ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
+          : 0,
+        pauseCount: 0,
+        pauseTimeMs: 0,
+      }));
 
     for (const p of pauses.pauses) {
       const phaseMetric = phasesMetrics.find((pm) => pm.phaseName === p.phase);

@@ -133,7 +133,9 @@ export class PhaseSplitter {
         // Without this loop, the last phase would be skipped entirely
         // because there are no more entries to check.
         // We create zero-duration segments for any additional phases
-        // that also match at this same entry.
+        // that also match at this same entry. These are filtered out
+        // by MetricsAggregator (which skips 0-move phases) but retained
+        // in timeline.phases for annotation and method-specific metrics.
         while (currentPhaseIdx < method.phases.length) {
           const nextMask = method.phases[currentPhaseIdx];
           let nextMatched = false;
@@ -168,7 +170,7 @@ export class PhaseSplitter {
         // If we've completed all phases, extend the last phase to cover
         // any remaining moves and exit
         if (currentPhaseIdx >= method.phases.length) {
-          if (phaseStartIndex < entries.length) {
+          if (phaseStartIndex < entries.length && phases.length > 0) {
             const lastPhase = phases[phases.length - 1];
             const lastEntry = entries[entries.length - 1];
             lastPhase.endIndex = entries.length - 1;

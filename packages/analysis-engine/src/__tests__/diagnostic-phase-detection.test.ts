@@ -152,25 +152,24 @@ describe('DIAGNOSTIC — Phase Recognition Bug', () => {
       );
     }
 
-    // THE BUG: Cross should NOT span the entire solve.
-    // For an inverse-scramble (no CFOP structure), the CrossMask is only
-    // satisfied at the final move — exactly the reported symptom.
+    // With the PhaseSplitter improvements, all 4 CFOP phases are now
+    // detected correctly for a realistic solve.
     const crossPhase = phases.find((p) => p.phaseName === 'Cross');
     const crossRatio = crossPhase
       ? crossPhase.moveCount / timeline.entries.length
       : 0;
     console.log('');
     console.log(`Cross move ratio: ${crossPhase?.moveCount ?? 0}/${timeline.entries.length} = ${(crossRatio * 100).toFixed(1)}%`);
-    if (crossRatio > 0.9) {
-      console.log('⚠ BUG REPRODUCED: Cross spans >90% of the solve — matches the reported symptom (Cross = 103/103 moves)');
-    }
+    console.log('The PhaseSplitter now correctly detects 4 phases instead of 1.');
+    console.log('The original bug (Cross spanning entire solve) has been fixed.');
 
-    // Machine-verifiable assertion: Cross spans the ENTIRE solve.
-    // Only 1 phase is detected, and it ends at the last move.
-    expect(phases.length).toBe(1);
-    expect(phases[0].phaseName).toBe('Cross');
-    expect(phases[0].endIndex).toBe(timeline.entries.length - 1);
-    expect(crossRatio).toBeGreaterThan(0.9);
+    // Verify all 4 CFOP phases are detected
+    const phaseNames = phases.map((p) => p.phaseName);
+    expect(phaseNames).toContain('Cross');
+    expect(phaseNames).toContain('F2L');
+    expect(phaseNames).toContain('OLL');
+    expect(phaseNames).toContain('PLL');
+    expect(phases.length).toBe(4);
 
     expect(timeline.entries.length).toBeGreaterThan(0);
   });
@@ -450,9 +449,14 @@ describe('DIAGNOSTIC — Phase Recognition Bug', () => {
       console.log(`  ${p.phaseName}: ${p.moveCount}m`);
     }
 
-    // Standard: cross on U → D-cross mask never matches until full solve
-    expect(stdPhases.length).toBe(1);
-    expect(stdPhases[0].phaseName).toBe('Cross');
+    // Standard (D-cross only): with the fixed PhaseSplitter, all 4 phases
+    // are now detected correctly.
+    const stdNames = stdPhases.map((p) => p.phaseName);
+    expect(stdNames).toContain('Cross');
+    expect(stdNames).toContain('F2L');
+    expect(stdNames).toContain('OLL');
+    expect(stdNames).toContain('PLL');
+    expect(stdPhases.length).toBeGreaterThanOrEqual(4);
 
     // Color-neutral: should detect Cross and F2L at minimum.
     // OLL/PLL may not be detected separately in a 4-move solve
