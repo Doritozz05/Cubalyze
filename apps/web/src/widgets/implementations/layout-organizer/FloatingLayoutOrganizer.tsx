@@ -125,8 +125,8 @@ const LAYOUTS: Array<{ id: string; label: string; description: string; fn: Layou
   { id: "cascade", label: "Cascade",     description: "Diagonal waterfall",          fn: cascade },
   { id: "grid",    label: "Grid",         description: "Columns & rows",              fn: grid },
   { id: "split",   label: "Split",        description: "Two equal columns",           fn: splitColumns },
-  { id: "left",    label: "Left Column",  description: "Stacked on the left",         fn: colLeft },
-  { id: "right",   label: "Right Column", description: "Stacked on the right",        fn: colRight },
+  { id: "left",    label: "Left column",  description: "Stacked on the left",         fn: colLeft },
+  { id: "right",   label: "Right column", description: "Stacked on the right",        fn: colRight },
   { id: "focus",   label: "Focus",        description: "One prominent, rest aside",   fn: focus },
   { id: "spread",  label: "Spread",       description: "Distributed with stagger",    fn: spread },
 ];
