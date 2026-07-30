@@ -68,7 +68,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
           <>
             {/* Bar chart */}
             <div className="flex items-end gap-0.5" style={{ height: BAR_HEIGHT }}>
-              {histogram.map((bin, i) => {
+              {histogram.map((bin: { label: string; count: number }, i: number) => {
                 const height = maxCount > 0 ? (bin.count / maxCount) * BAR_HEIGHT : 0;
                 const isModal = bin.count === maxCount && maxCount > 0;
                 return (
