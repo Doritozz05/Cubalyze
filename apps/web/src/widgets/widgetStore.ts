@@ -52,7 +52,9 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
 }
 
 // ── Z-index counter (runtime only, never persisted) ─────────────────────
-let _zCounter = 100;
+// Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
+// Header is z-20, so widgets live in the 21-49 band.
+let _zCounter = 30;
 
 // ── Store ────────────────────────────────────────────────────────────────
 

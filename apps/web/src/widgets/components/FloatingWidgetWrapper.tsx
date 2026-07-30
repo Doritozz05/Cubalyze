@@ -78,8 +78,10 @@ export function FloatingWidgetWrapper({
 
   const storePosition = instance?.position ?? defaultPosition;
   const minimized = instance?.minimized ?? defaultMinimized;
-  // z-index from store — incremented by focusWidget() on pointer-down
-  const zIndex = instance?.zIndex ?? 45;
+  // z-index from store — incremented by focusWidget() on pointer-down.
+  // Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
+  // Header is z-20, so defaults to 25 in the 21-49 band.
+  const zIndex = instance?.zIndex ?? 25;
 
   // ── Drag: sync position back to store on change ────────────────────────
   // Detect dock zone: if dragged near the header (y < DOCK_THRESHOLD),
