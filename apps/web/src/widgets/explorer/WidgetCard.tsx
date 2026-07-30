@@ -125,7 +125,6 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
             checked={visible}
             onCheckedChange={handleToggle}
             aria-label={`Toggle ${widget.name}`}
-            className="data-[state=checked]:bg-accent"
           />
         </div>
       </div>
