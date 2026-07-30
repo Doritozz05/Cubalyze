@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useState, useMemo } from "react";
-import { ChevronRight, ChevronDown, Box } from "lucide-react";
+import { memo, useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
@@ -10,12 +10,14 @@ import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
 
 type PuzzleTypeKey = '3x3x3' | '2x2x2';
 
-const PUZZLE_LABELS: Record<PuzzleTypeKey, { label: string; icon: React.ElementType }> = {
-  '3x3x3': { label: '3×3', icon: Box },
-  '2x2x2': { label: '2×2', icon: Box },
+const PUZZLE_LABELS: Record<PuzzleTypeKey, string> = {
+  '3x3x3': '3×3',
+  '2x2x2': '2×2',
 };
 
 const PUZZLE_ORDER: PuzzleTypeKey[] = ['3x3x3', '2x2x2'];
+
+// ── Public API ─────────────────────────────────────────────────────────────
 
 export interface MethodTreeProps {
   selectedSubsetId: string | null;
@@ -41,10 +43,55 @@ export const MethodTree = memo(function MethodTree({
       .map((pt) => ({ puzzleType: pt, methods: groups.get(pt)! }));
   }, []);
 
-  // Track which puzzle sections are expanded
+  // ── State: which puzzle sections are expanded ──────────────────────────
   const [expandedPuzzles, setExpandedPuzzles] = useState<Set<PuzzleTypeKey>>(
-    () => new Set<PuzzleTypeKey>(['3x3x3'])
+    () => new Set<PuzzleTypeKey>(['3x3x3']),
   );
+
+  // ── State: which methods are expanded (collapsible) ────────────────────
+  const [expandedMethods, setExpandedMethods] = useState<Set<string>>(() => new Set<string>());
+
+  // Auto-expand the method that contains the selected subset
+  const findMethodForSubset = useCallback(
+    (subsetId: string): string | null => {
+      for (const m of METHODS) {
+        const subsets = getSubsetsForMethod(m.id);
+        for (const s of subsets) {
+          if (s.id === subsetId) return m.id;
+          const children = getChildSubsets(s.id);
+          if (children.some((c) => c.id === subsetId)) return m.id;
+        }
+      }
+      return null;
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!selectedSubsetId) return;
+    const methodId = findMethodForSubset(selectedSubsetId);
+    if (methodId) {
+      setExpandedMethods((prev) => {
+        if (prev.has(methodId)) return prev;
+        const next = new Set(prev);
+        next.add(methodId);
+        return next;
+      });
+      // Also expand the puzzle section
+      for (const m of METHODS) {
+        if (m.id === methodId) {
+          const pt = (m.puzzleType as PuzzleTypeKey) ?? '3x3x3';
+          setExpandedPuzzles((prev) => {
+            if (prev.has(pt)) return prev;
+            const next = new Set(prev);
+            next.add(pt);
+            return next;
+          });
+          break;
+        }
+      }
+    }
+  }, [selectedSubsetId, findMethodForSubset]);
 
   const togglePuzzle = (pt: PuzzleTypeKey) => {
     setExpandedPuzzles((prev) => {
@@ -55,24 +102,27 @@ export const MethodTree = memo(function MethodTree({
     });
   };
 
+  const toggleMethod = (methodId: string) => {
+    setExpandedMethods((prev) => {
+      const next = new Set(prev);
+      if (next.has(methodId)) next.delete(methodId);
+      else next.add(methodId);
+      return next;
+    });
+  };
+
   return (
-    <div className={cn("flex flex-col gap-0.5", className)}>
-      <div className="px-3 py-2">
-        <span className="text-[0.62rem] font-medium uppercase tracking-[0.15em] text-ink-3/60">
+    <div className={cn("flex flex-col", className)}>
+      {/* Section label */}
+      <div className="px-3 pt-2.5 pb-1.5">
+        <span className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-ink-3/50">
           Methods
         </span>
       </div>
 
       {puzzleGroups.map(({ puzzleType, methods }) => {
-        const PuzzleIcon = PUZZLE_LABELS[puzzleType]?.icon ?? Box;
         const isExpanded = expandedPuzzles.has(puzzleType);
-        const hasSelected = methods.some((m) => {
-          const subsets = getSubsetsForMethod(m.id);
-          return subsets.some((s) => {
-            if (s.id === selectedSubsetId) return true;
-            return getChildSubsets(s.id).some((c) => c.id === selectedSubsetId);
-          });
-        });
+        const puzzleLabel = PUZZLE_LABELS[puzzleType] ?? puzzleType;
 
         return (
           <div key={puzzleType}>
@@ -81,29 +131,29 @@ export const MethodTree = memo(function MethodTree({
               type="button"
               onClick={() => togglePuzzle(puzzleType)}
               className={cn(
-                "flex w-full items-center gap-2 px-3 py-1.5 text-[0.72rem] font-semibold transition-colors hover:bg-surface-2/50 rounded",
-                hasSelected ? "text-accent-cyan" : "text-ink",
+                "flex w-full items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-medium transition-colors",
+                "hover:bg-surface-2/40 rounded-sm",
+                "text-ink",
               )}
             >
-              {isExpanded ? (
-                <ChevronDown className="size-3.5 shrink-0 text-ink-3" />
-              ) : (
-                <ChevronRight className="size-3.5 shrink-0 text-ink-3" />
-              )}
-              <PuzzleIcon className="size-3.5 shrink-0 text-ink-3" />
-              <span>{PUZZLE_LABELS[puzzleType]?.label ?? puzzleType}</span>
-              <span className="text-[0.6rem] text-ink-4 ml-auto tabular-nums">
-                {methods.length}
-              </span>
+              <ChevronRight
+                className={cn(
+                  "size-3.5 shrink-0 text-ink-3/60 transition-transform duration-150",
+                  isExpanded && "rotate-90",
+                )}
+              />
+              <span>{puzzleLabel}</span>
             </button>
 
             {/* Methods under this puzzle type */}
             {isExpanded && (
-              <div className="ml-2 border-l border-line/40 pl-2">
+              <div className="ml-4">
                 {methods.map((method) => (
-                  <MethodNode
+                  <CollapsibleMethodNode
                     key={method.id}
                     method={method}
+                    isExpanded={expandedMethods.has(method.id)}
+                    onToggle={() => toggleMethod(method.id)}
                     selectedSubsetId={selectedSubsetId}
                     onSelectSubset={onSelectSubset}
                   />
@@ -117,109 +167,132 @@ export const MethodTree = memo(function MethodTree({
   );
 });
 
-// ── Method node (unchanged logic, just wrapped) ────────────────────────────
+// ── Collapsible method node ────────────────────────────────────────────────
 
-function MethodNode({
+function CollapsibleMethodNode({
   method,
+  isExpanded,
+  onToggle,
   selectedSubsetId,
   onSelectSubset,
 }: {
   method: AlgorithmMethod;
+  isExpanded: boolean;
+  onToggle: () => void;
   selectedSubsetId: string | null;
   onSelectSubset: (subsetId: string) => void;
 }) {
   const subsets = getSubsetsForMethod(method.id);
+  const visibleSubsets = subsets.filter((s) => s.sortOrder > 0);
+
+  // Check if any subset (or child of subset) under this method is selected
   const hasSelected = subsets.some((s) => {
     if (s.id === selectedSubsetId) return true;
-    const children = getChildSubsets(s.id);
-    return children.some((c) => c.id === selectedSubsetId);
+    return getChildSubsets(s.id).some((c) => c.id === selectedSubsetId);
   });
 
   return (
     <div>
-      {/* Method header */}
-      <div
+      {/* Method header — collapsible toggle */}
+      <button
+        type="button"
+        onClick={onToggle}
         className={cn(
-          "flex items-center gap-2 px-2 py-1 text-[0.7rem] font-medium transition-colors",
+          "flex w-full items-center gap-1.5 px-2 py-1 text-[0.7rem] font-medium transition-colors",
+          "hover:bg-surface-2/30 rounded-sm",
           hasSelected ? "text-ink" : "text-ink-2",
         )}
       >
         <ChevronRight
           className={cn(
-            "size-3 shrink-0 transition-transform",
-            hasSelected && "rotate-90",
+            "size-3 shrink-0 text-ink-3/50 transition-transform duration-150",
+            isExpanded && "rotate-90",
           )}
         />
-        {method.name}
-      </div>
+        <span>{method.name}</span>
+        {!isExpanded && hasSelected && (
+          <span className="ml-auto text-[0.6rem] text-ink-3/40 truncate max-w-[40%]">
+            {findSelectedSubsetName(method.id, selectedSubsetId)}
+          </span>
+        )}
+      </button>
 
-      {/* Subsets */}
-      <div className="ml-2 border-l border-line/40 pl-2.5">
-        {subsets
-          .filter((s) => s.sortOrder > 0) // Only show subsets with content
-          .map((subset) => (
+      {/* Subsets (only visible when expanded) */}
+      {isExpanded && (
+        <div className="ml-3.5">
+          {visibleSubsets.map((subset) => (
             <SubsetItem
               key={subset.id}
               subset={subset}
               selectedSubsetId={selectedSubsetId}
               onSelectSubset={onSelectSubset}
+              depth={1}
             />
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// ── Subset item (recursive for children) ────────────────────────────────────
 
 function SubsetItem({
   subset,
   selectedSubsetId,
   onSelectSubset,
+  depth,
 }: {
   subset: AlgorithmSubset;
   selectedSubsetId: string | null;
   onSelectSubset: (subsetId: string) => void;
+  depth: number;
 }) {
   const children = getChildSubsets(subset.id);
   const isParent = children.length > 0;
   const hasSelectedChild = children.some((c) => c.id === selectedSubsetId);
-  const [expanded, setExpanded] = useState(hasSelectedChild);
+  const [expanded, setExpanded] = useState(
+    () => hasSelectedChild || (isParent && depth === 0),
+  );
+
+  // Sync: auto-expand when a child is selected externally (command palette, URL)
+  useEffect(() => {
+    if (hasSelectedChild) setExpanded(true);
+  }, [hasSelectedChild]);
 
   if (isParent) {
     return (
-      <div className="my-0.5">
-        <div
+      <div>
+        <button
+          type="button"
           onClick={() => setExpanded(!expanded)}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 text-[0.68rem] rounded cursor-pointer transition-colors font-medium",
+            "flex w-full items-center gap-1 px-2 py-1 text-[0.68rem] font-medium transition-colors rounded-sm",
+            "hover:bg-surface-2/30",
             hasSelectedChild || subset.id === selectedSubsetId
               ? "text-ink"
-              : "text-ink-2 hover:text-ink hover:bg-surface-2/50",
+              : "text-ink-2",
           )}
         >
           <ChevronRight
             className={cn(
-              "size-3 shrink-0 transition-transform text-ink-3",
+              "size-3 shrink-0 text-ink-3/40 transition-transform duration-150",
               expanded && "rotate-90",
             )}
           />
           <span>{subset.name}</span>
-        </div>
+        </button>
 
         {expanded && (
-          <div className="ml-2.5 border-l border-line/30 pl-2 space-y-0.5 mt-0.5">
+          <div className="ml-3">
             {children.map((child) => (
-              <button
+              <SubsetItem
                 key={child.id}
-                onClick={() => onSelectSubset(child.id)}
-                className={cn(
-                  "block w-full text-left px-2 py-1 text-[0.65rem] rounded transition-colors",
-                  child.id === selectedSubsetId
-                    ? "bg-surface-2 text-ink font-semibold"
-                    : "text-ink-3 hover:text-ink-2 hover:bg-surface-2/50",
-                )}
-              >
-                {child.name}
-              </button>
+                subset={child}
+                selectedSubsetId={selectedSubsetId}
+                onSelectSubset={onSelectSubset}
+                depth={depth + 1}
+              />
             ))}
           </div>
         )}
@@ -227,18 +300,38 @@ function SubsetItem({
     );
   }
 
+  // Leaf subset — clickable to select
   const isSelected = subset.id === selectedSubsetId;
   return (
     <button
+      type="button"
       onClick={() => onSelectSubset(subset.id)}
       className={cn(
-        "block w-full text-left px-2 py-1 text-[0.68rem] rounded transition-colors",
+        "block w-full text-left px-2 py-1 text-[0.68rem] rounded-sm transition-colors",
         isSelected
-          ? "bg-surface-2 text-ink font-medium"
-          : "text-ink-3 hover:text-ink-2 hover:bg-surface-2/50",
+          ? "bg-accent-cyan/10 text-accent-cyan font-semibold"
+          : "text-ink-3 hover:text-ink-2 hover:bg-surface-2/30",
       )}
     >
       {subset.name}
     </button>
   );
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Find the name of the selected subset under a given method. */
+function findSelectedSubsetName(
+  methodId: string,
+  selectedSubsetId: string | null,
+): string {
+  if (!selectedSubsetId) return "";
+  const subsets = getSubsetsForMethod(methodId);
+  for (const s of subsets) {
+    if (s.id === selectedSubsetId) return s.name;
+    const children = getChildSubsets(s.id);
+    const match = children.find((c) => c.id === selectedSubsetId);
+    if (match) return `${s.name} · ${match.name}`;
+  }
+  return "";
 }
