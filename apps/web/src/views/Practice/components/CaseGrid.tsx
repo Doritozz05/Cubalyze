@@ -127,9 +127,11 @@ function CaseCard({
         <span className="text-[0.65rem] font-medium text-ink-2 leading-tight">
           {caseData.caseNumber}
         </span>
-        <span className="text-[0.58rem] text-ink-3 leading-tight text-center">
-          {caseData.name}
-        </span>
+        {caseData.name && caseData.name !== caseData.caseNumber && (
+          <span className="text-[0.58rem] text-ink-3 leading-tight text-center">
+            {caseData.name}
+          </span>
+        )}
       </div>
     </button>
   );

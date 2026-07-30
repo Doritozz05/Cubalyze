@@ -86,13 +86,18 @@ function computeOllDiagramColors(movesStr: string): string[] {
 }
 
 /**
- * Compute setup scramble from the default algorithm's inverse.
- * This allows the existing 3D rendering pipeline to work for 2×2 PBL.
+ * Compute setup scramble for 2×2 PBL cases.
+ *
+ * In Ortega: Face → OLL (yellow on top) → PBL is applied with yellow on U.
+ * The default CubeState has WHITE on U. So we prepend `z2` to flip
+ * yellow to the top, then apply the inverse of the PBL algorithm.
+ * This generates a state where the U face has yellow stickers (correct).
  */
 function computeSetupScramble(movesStr: string): string {
   try {
     const moves = expandWideMoves(movesStr);
-    return invertMoveArray(moves).join(' ');
+    // z2 puts yellow on U (Ortega convention), then inverse creates pre-PBL state
+    return 'z2 ' + invertMoveArray(moves).join(' ');
   } catch {
     return '';
   }
@@ -116,8 +121,8 @@ function makeOllCase(
     caseDef: {
       id: caseId,
       subsetId: OLL_SUBSET_ID,
-      caseNumber: `Ortega OLL ${name}`,
-      name: `Ortega OLL — ${name}`,
+      caseNumber: name,
+      name,
       recognitionPatterns: [],
       setupScramble: '',
       diagramType: '2d-top',
@@ -148,7 +153,7 @@ function makeOllCase(
 
 function makePblCase(
   n: number,
-  name: string,
+  shortName: string,
   category: string,
   algorithmsData: AlgInput[],
   difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate',
@@ -162,8 +167,8 @@ function makePblCase(
     caseDef: {
       id: caseId,
       subsetId: PBL_SUBSET_ID,
-      caseNumber: `Ortega PBL ${name}`,
-      name: `Ortega PBL — ${name}`,
+      caseNumber: shortName,
+      name: category,
       recognitionPatterns: [],
       setupScramble,
       diagramType: '3d-isometric',

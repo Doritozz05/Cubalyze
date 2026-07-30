@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Quaternion, Vector3 } from "three";
 import { cn } from "@/lib/utils";
 import { useCube3D } from "@/hooks/useCube3D";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
@@ -231,11 +230,7 @@ function Case3DCanvas({
         engine.resetCube();
       }
 
-      if (is2x2) {
-        // Rotate 180° around Z (z2) so yellow (D) face appears on top
-        const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI);
-        engine.model.root.quaternion.copy(q);
-      } else {
+      if (!is2x2) {
         engine.rotateModelY(modelYRot);
       }
 

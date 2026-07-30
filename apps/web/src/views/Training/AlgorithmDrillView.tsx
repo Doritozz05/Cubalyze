@@ -365,7 +365,9 @@ export function AlgorithmDrillView({
             {/* Case info bar (compact) */}
             <div className="shrink-0 flex items-center gap-3 px-1">
               <span className="nums text-[0.85rem] font-semibold text-ink">{selectedCase?.caseNumber ?? "--"}</span>
-              <span className="text-[0.7rem] text-ink-2">{selectedCase?.name ?? "Select a case"}</span>
+              {selectedCase?.name && selectedCase.name !== selectedCase.caseNumber && (
+                <span className="text-[0.7rem] text-ink-2">{selectedCase.name}</span>
+              )}
               {hasSmartCube && (
                 <span className="text-[0.55rem] text-ink-3/60 ml-auto flex items-center gap-1.5">
                   <span className="flex items-center gap-0.5">
@@ -661,7 +663,7 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
                 {isCompleted ? "✓" : idx + 1}
               </span>
               <span className={cn("text-[0.62rem] truncate flex-1", isCurrent ? "text-ink font-medium" : "text-ink-3")}>
-                {c.caseNumber} {c.name}
+                {c.caseNumber}{c.name && c.name !== c.caseNumber ? ` ${c.name}` : ""}
               </span>
               <span className="nums text-[0.55rem] text-ink-3 shrink-0">{progress.mastery}%</span>
             </button>
@@ -688,7 +690,7 @@ function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }:
               className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors",
                 isSelected && "bg-surface-2 ring-1 ring-ink/10", !isSelected && "hover:bg-surface-2/50")}>
               <span className={cn("nums text-[0.58rem] font-medium shrink-0 w-4", idx < 3 ? "text-hold" : idx < 6 ? "text-caution" : "text-ink-3")}>{idx + 1}</span>
-              <span className="text-[0.62rem] text-ink truncate flex-1">{c.caseNumber} {c.name}</span>
+              <span className="text-[0.62rem] text-ink truncate flex-1">{c.caseNumber}{c.name && c.name !== c.caseNumber ? ` ${c.name}` : ""}</span>
               <span className={cn("nums text-[0.55rem] shrink-0", progress.mastery < 50 ? "text-hold" : progress.mastery < 75 ? "text-caution" : "text-ink-3")}>{progress.mastery}%</span>
             </button>
           );

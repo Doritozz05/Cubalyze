@@ -48,7 +48,9 @@ export function Case3DPanel({
           <span className="nums text-[0.85rem] font-semibold text-ink">
             {caseData.caseNumber}
           </span>
-          <span className="text-[0.75rem] text-ink-2">{caseData.name}</span>
+          {caseData.name && caseData.name !== caseData.caseNumber && (
+            <span className="text-[0.75rem] text-ink-2">{caseData.name}</span>
+          )}
           {caseData.category && (
             <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-3">
               {caseData.category}

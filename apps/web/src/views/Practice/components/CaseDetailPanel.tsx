@@ -49,7 +49,9 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
           <span className="nums text-[0.85rem] font-semibold text-ink">
             {caseData.caseNumber}
           </span>
-          <span className="text-[0.75rem] text-ink-2">{caseData.name}</span>
+          {caseData.name && caseData.name !== caseData.caseNumber && (
+            <span className="text-[0.75rem] text-ink-2">{caseData.name}</span>
+          )}
 
         </div>
         <button

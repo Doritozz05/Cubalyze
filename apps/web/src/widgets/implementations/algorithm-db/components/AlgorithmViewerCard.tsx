@@ -75,9 +75,11 @@ export function AlgorithmViewerCard({
           <Badge variant="outline" className="font-mono text-[11px] font-bold text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10">
             {caseData.caseNumber}
           </Badge>
-          <span className="text-xs font-medium text-ink truncate">
-            {caseData.name}
-          </span>
+          {caseData.name && caseData.name !== caseData.caseNumber && (
+            <span className="text-xs font-medium text-ink truncate">
+              {caseData.name}
+            </span>
+          )}
         </div>
       </div>
 
