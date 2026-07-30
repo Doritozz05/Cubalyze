@@ -1,0 +1,115 @@
+name: Quality Gates (Nivel 3)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r exec tsc --noEmit
+        name: Typecheck (0 errors required)
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r exec eslint . --max-warnings=0
+        name: Lint (0 errors, 0 warnings)
+
+  unit-tests:
+    name: Unit Tests (Nivel 1-3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r exec vitest run
+        name: All tests (100% pass required)
+
+  benchmarks:
+    name: Benchmark Thresholds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @cubeforge/solver-engine exec vitest run src/__tests__/benchmarks.test.ts
+        name: Solver engine benchmarks
+      - run: pnpm --filter @cubeforge/analysis-engine exec vitest run src/__tests__/benchmarks.test.ts
+        name: Analysis engine benchmarks
+
+  coverage:
+    name: Test Coverage (core packages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: |
+          pnpm --filter @cubeforge/math-core exec vitest run --coverage
+          pnpm --filter @cubeforge/solver-engine exec vitest run --coverage
+          pnpm --filter @cubeforge/analysis-engine exec vitest run --coverage
+          pnpm --filter @cubeforge/timer-engine exec vitest run --coverage
+          pnpm --filter @cubeforge/database exec vitest run --coverage
+        name: Coverage (core packages, >80% lines)
+
+  property-based:
+    name: Property-Based Tests (fast-check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @cubeforge/solver-engine exec vitest run src/__tests__/property-based.test.ts
+        name: Property-based tests (0 failures required)

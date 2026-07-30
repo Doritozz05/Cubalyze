@@ -771,6 +771,12 @@ importers:
       '@cubeforge/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
+      '@cubeforge/hardware-hal':
+        specifier: workspace:*
+        version: link:../hardware-hal
+      '@cubeforge/timer-engine':
+        specifier: workspace:*
+        version: link:../timer-engine
       tsup:
         specifier: ^8.0.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)
