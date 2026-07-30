@@ -87,7 +87,7 @@ export function PhaseStatsView({
       }
       setProgressMap(map);
     });
-  }, [ready, subset?.id, getSubsetProgress]);
+  }, [ready, subset, getSubsetProgress]);
 
   // Build case stats from real data
   const caseStats: CaseStat[] = useMemo(() => {

@@ -59,7 +59,6 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   algorithmDbDefinition,
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _getCustomWidgets: (() => WidgetDefinition[]) | null = null;
 
 /** Set a getter for custom widgets (called by widgetStore after initialization). */

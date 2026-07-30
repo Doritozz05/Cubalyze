@@ -237,6 +237,7 @@ function Case3DCanvas({
     caseData.subsetId,
     selectedSlot,
     isF2L,
+    caseData.tags,
   ]);
 
   useEffect(() => {

@@ -69,7 +69,10 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
   // Merge built-in + custom widgets via registry. Subscribes to store for live updates.
   const customWidgets = useWidgetStore((s) => s.customWidgets);
   const allWidgets = useMemo(
-    () => getAllWidgets(),
+    () => {
+      void customWidgets;
+      return getAllWidgets();
+    },
     [customWidgets],
   );
 

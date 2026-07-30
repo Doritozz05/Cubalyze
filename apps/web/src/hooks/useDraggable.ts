@@ -152,7 +152,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       // Fire onDrag callback for real-time feedback
       onDrag?.(newPos);
     },
-    [clickThreshold],
+    [clickThreshold, onDrag],
   );
 
   const onPointerUp = useCallback(

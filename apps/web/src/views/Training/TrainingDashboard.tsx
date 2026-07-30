@@ -549,13 +549,12 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     setDrillPresetCaseId(preset.caseId);
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialDrillView = useMemo(() => {
     if (!preset?.subsetId) return null;
     const subset = SUBSETS.find((s) => s.id === preset.subsetId);
     if (!subset) return null;
     return { methodId: subset.methodId, phaseId: "", subsetId: preset.subsetId };
-  }, []);
+  }, [preset?.subsetId]);
 
   useEffect(() => {
     if (preset?.subsetId) {
@@ -563,13 +562,13 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
       if (subset) setActiveMethodId(subset.methodId);
       onPresetConsumed?.();
     }
-  }, []);
+  }, [preset?.subsetId, onPresetConsumed]);
 
   useEffect(() => {
     if (initialDrillView && !drillView) {
       setDrillView(initialDrillView);
     }
-  }, [initialDrillView]);
+  }, [initialDrillView, drillView]);
 
   // ── Handlers ────────────────────────────────────────────────────────
 

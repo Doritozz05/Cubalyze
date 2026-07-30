@@ -290,7 +290,7 @@ export function CubeforgeCommandPalette({
       });
     });
     return items;
-  }, [onNavigate, onSelectAlgorithmCase]);
+  }, [onNavigate, onSelectAlgorithmCase, seedData.algorithms, seedData.cases]);
 
   // Combine static and algorithm commands
   const allCommands = useMemo(

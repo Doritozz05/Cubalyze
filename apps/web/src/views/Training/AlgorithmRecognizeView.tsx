@@ -188,7 +188,7 @@ export function AlgorithmRecognizeView({
     setScore({ correct: 0, total: 0 });
     setSeenCaseIds(new Set());
     generateRound();
-  }, [mode, subsetId]);
+  }, [mode, subsetId, generateRound]);
 
   // ── Handle answer selection ──────────────────────────────────────────
   const handleSelect = useCallback((selectedId: string) => {

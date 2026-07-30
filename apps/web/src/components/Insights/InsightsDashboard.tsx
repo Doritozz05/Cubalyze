@@ -149,13 +149,13 @@ export function InsightsDashboard({
     if (initial && dataPool.some((s) => s.id === initial)) {
       setSelectedId(initial);
     }
-  }, []);
+  }, [dataPool]);
 
   useEffect(() => {
     if (selectedId && !dataPool.some((s) => s.id === selectedId)) {
       setSelectedId(null);
     }
-  }, [dataPool]);
+  }, [dataPool, selectedId]);
 
   useEffect(() => {
     if (isFirstPush.current) {
