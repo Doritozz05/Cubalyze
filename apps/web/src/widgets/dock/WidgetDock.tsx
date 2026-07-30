@@ -13,19 +13,20 @@ import { getWidget } from "@/widgets/registry";
 import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
+const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
+
 // ── Dock pill ────────────────────────────────────────────────────────────
 
 /**
  * A single docked widget pill in the header dock bar.
  *
- * - **Click**: toggles the widget's floating panel visible/invisible.
- *   If activating, positions the panel just below the header.
- * - **Drag downward**: undocks (transitions back to floating mode).
+ * - **Click**: launches the widget as a floating panel just below the header.
+ * - **Drag downward**: undocks (transitions to floating minimized pill).
  * - **Active state**: highlighted when the floating panel is currently visible.
  */
 function DockPill({ widgetId }: { widgetId: WidgetId }) {
   const definition = getWidget(widgetId);
-  const instance = useWidgetStore((s) => s.instances[widgetId]);
+  const status = useWidgetStore((s) => s.instances[widgetId]?.status);
 
   // ── Drag-to-undock ───────────────────────────────────────────────────
   const dragRef = useRef<{
@@ -37,8 +38,8 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
   const [isDragging, setIsDragging] = useState(false);
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
 
-  const isVisible = instance?.dockMode === "floating";
-  const isDocked = instance?.dockMode === "docked";
+  const isFloating = status === "floating" || status === "minimized";
+  const isDocked = status === "docked";
 
   if (!definition || !isDocked) return null;
 
@@ -49,15 +50,10 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
     const inst = store.instances[widgetId];
     if (!inst) return;
 
-    // Launch: undock and show floating panel at its defined position
-    store.setDockMode(widgetId, "floating");
-    store.setMinimized(widgetId, false);
+    // Launch: show floating panel at its defined position
+    store.setStatus(widgetId, "floating");
     if (!inst.position && definition.defaultPosition) {
       store.setPosition(widgetId, definition.defaultPosition);
-    }
-    const fresh = widgetStore.getState();
-    if (!fresh.instances[widgetId]?.visible) {
-      fresh.toggleWidget(widgetId);
     }
   };
 
@@ -105,18 +101,13 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
     if (state?.active) {
       const totalDy = e.clientY - state.startY;
       if (totalDy > 35) {
-        // Undock: transition to floating at cursor position, show as pill
+        // Undock: transition to floating minimized pill at cursor position
         const store = widgetStore.getState();
-        store.setDockMode(widgetId, "floating");
+        store.setStatus(widgetId, "minimized");
         store.setPosition(widgetId, {
           x: Math.max(0, e.clientX - 80),
           y: Math.max(0, e.clientY - 14),
         });
-        store.setMinimized(widgetId, true);
-        const fresh = widgetStore.getState();
-        if (!fresh.instances[widgetId]?.visible) {
-          fresh.toggleWidget(widgetId);
-        }
       }
     } else {
       // Not a drag → click
@@ -144,13 +135,13 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
             onPointerUp={handlePointerUp}
             className={cn(
               "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-all duration-200 cursor-grab active:cursor-grabbing",
-              isVisible
+              isFloating
                 ? "border-accent/50 bg-accent/15 text-accent font-semibold shadow-sm ring-1 ring-accent/20"
                 : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
             )}
-            aria-label={`${definition.name} — ${isVisible ? "open" : "pinned"}`}
+            aria-label={`${definition.name} — ${isFloating ? "open" : "pinned"}`}
           >
-            {isVisible && (
+            {isFloating && (
               <span className="size-1.5 shrink-0 rounded-full bg-accent animate-pulse" />
             )}
             <Icon className="size-3.5 shrink-0" />
@@ -188,12 +179,12 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
 /**
  * The widget dock — rendered in the header center area.
  *
- * Shows all widgets with `dockMode === 'docked'` as compact pills in a
+ * Shows all widgets with `status === 'docked'` as compact pills in a
  * dynamically-flowing flex row. Each pill takes its natural width
  * (icon + name) — no fixed grid.
  *
- * - **Click pill**: toggles the floating panel on/off just below the header.
- * - **Drag pill down**: undocks it back to free-floating mode.
+ * - **Click pill**: launches the floating panel just below the header.
+ * - **Drag pill down**: undocks it to a free-floating minimized pill.
  * - **Drop floating widget on header**: docks it (detected by FloatingWidgetWrapper).
  */
 export function WidgetDock() {
@@ -201,14 +192,15 @@ export function WidgetDock() {
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
 
-  // Filter to docked widgets that are also active (not toggled off in WidgetExplorer)
+  // Filter to docked widgets (exclude special widgets like cube-button)
   const orderedDocked = dockOrder.filter((id) => {
+    if (EXCLUDED_FROM_DOCK.has(id)) return false;
     const inst = instances[id];
-    return inst && inst.dockMode === "docked" && inst.visible;
+    return inst && inst.status === "docked";
   });
   const orderedSet = new Set(orderedDocked);
   const extraDocked = Object.entries(instances)
-    .filter(([id, inst]) => inst?.dockMode === "docked" && inst?.visible && !orderedSet.has(id))
+    .filter(([id, inst]) => inst?.status === "docked" && !orderedSet.has(id))
     .map(([id]) => id);
 
   const dockedIds = [...orderedDocked, ...extraDocked];

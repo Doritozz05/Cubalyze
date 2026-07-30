@@ -24,8 +24,8 @@ export interface WidgetCardProps {
  * Enabling a widget pins it to the header dock bar automatically.
  */
 export function WidgetCard({ widget, className }: WidgetCardProps) {
-  const instance = useWidgetStore((s) => s.instances[widget.id]);
-  const visible = instance?.visible ?? false;
+  const status = useWidgetStore((s) => s.instances[widget.id]?.status);
+  const active = status !== "inactive";
 
   const handleToggle = useCallback(() => {
     widgetStore.getState().toggleWidget(widget.id);
@@ -48,7 +48,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
         "group relative flex cursor-pointer gap-3 rounded-xl border bg-surface p-4 transition-all duration-200",
         "hover:shadow-sm hover:border-ink-2/30",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        visible
+        active
           ? "border-accent/30 bg-accent/[0.03] shadow-xs"
           : "border-line/60 opacity-70 hover:opacity-100",
         className,
@@ -60,7 +60,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           <div
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200",
-              visible
+              active
                 ? "border-accent/30 bg-accent/10 text-accent"
                 : "border-line bg-surface text-ink-3",
             )}
@@ -71,7 +71,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
             <h4
               className={cn(
                 "truncate text-[0.85rem] font-medium transition-colors duration-200",
-                visible ? "text-ink" : "text-ink-2",
+                active ? "text-ink" : "text-ink-2",
               )}
             >
               {widget.name}
@@ -97,7 +97,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
               <span className="capitalize">{widget.source}</span>
             </>
           )}
-          {visible && (
+          {active && (
             <>
               <span>·</span>
               <span className="flex items-center gap-0.5 text-accent/80 font-medium">
@@ -122,7 +122,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           role="presentation"
         >
           <Switch
-            checked={visible}
+            checked={active}
             onCheckedChange={handleToggle}
             aria-label={`Toggle ${widget.name}`}
           />
@@ -131,4 +131,3 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
     </div>
   );
 }
-

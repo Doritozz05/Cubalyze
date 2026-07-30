@@ -9,8 +9,9 @@ import type { WidgetId } from "@/widgets/types";
 
 /**
  * Tracks active widget plugins and their HostAPI instances.
- * When a widget is toggled ON, its plugin.activate() is called with a fresh HostAPI.
- * When toggled OFF, plugin.deactivate() is called and the API is cleaned up.
+ * When a widget transitions from inactive → any active status,
+ * its plugin.activate() is called with a fresh HostAPI.
+ * When transitioning to inactive, plugin.deactivate() is called.
  */
 class WidgetLifecycleManager {
   private plugins = new Map<WidgetId, WidgetPlugin>();
@@ -56,8 +57,11 @@ export const widgetLifecycle = new WidgetLifecycleManager();
 // ── Integration with widgetStore ─────────────────────────────────────────
 
 /**
- * Subscribe to widget visibility changes and dispatch lifecycle events.
+ * Subscribe to widget status changes and dispatch lifecycle events.
  * Returns an unsubscribe function.
+ *
+ * Activation: when status transitions from "inactive" → any active status.
+ * Deactivation: when status transitions from any active status → "inactive".
  *
  * Uses a ref-based approach to avoid stale closures:
  * the `getDeps` callback is called on each activation to get fresh data.
@@ -65,29 +69,29 @@ export const widgetLifecycle = new WidgetLifecycleManager();
 export function connectWidgetLifecycle(
   getDeps: () => HostAPIDependencies,
 ): () => void {
-  // Track previous visibility to only react to actual changes
-  const prevVisibility: Record<WidgetId, boolean> = {};
+  // Track previous status to only react to actual changes
+  const prevStatus: Record<WidgetId, string | undefined> = {};
 
   // Initialize from current store state
   const initialState = widgetStore.getState();
   for (const [id, instance] of Object.entries(initialState.instances)) {
-    prevVisibility[id] = instance.visible;
+    prevStatus[id] = instance?.status;
   }
 
   const unsubscribe = widgetStore.subscribe((state) => {
     for (const [id, instance] of Object.entries(state.instances)) {
-      const wasVisible = prevVisibility[id] ?? false;
-      const isVisible = instance.visible;
+      const wasInactive = (prevStatus[id] ?? "inactive") === "inactive";
+      const isInactive = (instance?.status ?? "inactive") === "inactive";
 
-      if (isVisible && !wasVisible) {
-        // Visibility toggled ON — create fresh deps each time
+      if (!isInactive && wasInactive) {
+        // Status toggled from inactive → active
         widgetLifecycle.activate(id, getDeps());
-      } else if (!isVisible && wasVisible) {
-        // Visibility toggled OFF
+      } else if (isInactive && !wasInactive) {
+        // Status toggled from active → inactive
         widgetLifecycle.deactivate(id);
       }
 
-      prevVisibility[id] = isVisible;
+      prevStatus[id] = instance?.status ?? "inactive";
     }
   });
 

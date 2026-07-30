@@ -12,19 +12,18 @@ export type { WidgetHostProps };
 /**
  * Renders all active widgets as floating, portaled panels.
  *
- * Reads the widget store to determine which widgets are visible, then
+ * Reads the widget store to determine which widgets are active, then
  * dynamically resolves and mounts each widget's component via WidgetRegistry.
  *
  * Each widget's `mapProps` function translates WidgetHostProps into the
  * specific props that widget needs — no switch-case required.
  *
- * **Dock mode**: Docked widgets appear as pills in the header WidgetDock.
- * When made visible (via dock pill click), they render here as normal
- * floating panels — positioned just below the header.
+ * Renders widgets whose status is `"floating"` or `"minimized"`.
+ * Docked/inactive widgets are handled by WidgetDock or not shown at all.
  */
 function WidgetInstanceItem({ id, hostProps }: { id: string; hostProps: WidgetHostProps }) {
-  const state = useWidgetStore((s) => s.instances[id]);
-  if (!state?.visible || state.dockMode === "docked") return null;
+  const status = useWidgetStore((s) => s.instances[id]?.status);
+  if (status !== "floating" && status !== "minimized") return null;
 
   const reg = WidgetRegistry.get(id);
   if (!reg) return null;

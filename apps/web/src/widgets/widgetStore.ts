@@ -3,8 +3,19 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { persist } from "zustand/middleware";
-import type { WidgetId, WidgetInstanceState, WidgetDefinition } from "./types";
+import type { WidgetId, WidgetInstanceState, WidgetDefinition, WidgetStatus } from "./types";
 import { BUILT_IN_WIDGETS } from "./registry";
+
+// ── Custom Layout ────────────────────────────────────────────────────────
+
+export interface CustomLayout {
+  id: string;
+  name: string;
+  /** Snapshot of positions keyed by widget id. */
+  positions: Record<WidgetId, { x: number; y: number }>;
+  /** Number of floating widgets when this layout was saved. */
+  widgetCount: number;
+}
 
 // ── State shape ──────────────────────────────────────────────────────────
 
@@ -15,15 +26,16 @@ export interface WidgetStoreState {
   customWidgets: WidgetDefinition[];
   /** Ordered list of docked widget IDs (first = leftmost in dock). */
   dockOrder: WidgetId[];
+  /** Saved custom layouts. */
+  customLayouts: CustomLayout[];
 }
 
 export interface WidgetStoreActions {
   toggleWidget: (id: WidgetId) => void;
-  setMinimized: (id: WidgetId, minimized: boolean) => void;
+  /** Set a widget's status directly. Use this instead of the old setDockMode + setMinimized. */
+  setStatus: (id: WidgetId, status: WidgetStatus) => void;
   setPosition: (id: WidgetId, position: { x: number; y: number }) => void;
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
-  /** Dock a widget (anchors it to the header). */
-  setDockMode: (id: WidgetId, mode: WidgetInstanceState["dockMode"]) => void;
   /** Reorder docked widgets. */
   setDockOrder: (order: WidgetId[]) => void;
   /** Bring a widget to the top of the z-stack (like clicking a window in a desktop OS). */
@@ -32,6 +44,10 @@ export interface WidgetStoreActions {
   registerCustomWidget: (def: WidgetDefinition) => void;
   /** Remove a custom widget. */
   removeCustomWidget: (id: WidgetId) => void;
+  /** Save current floating widget positions as a named layout. */
+  saveCustomLayout: (name: string) => void;
+  /** Delete a custom layout by id. */
+  deleteCustomLayout: (layoutId: string) => void;
 }
 
 export type WidgetStore = WidgetStoreState & WidgetStoreActions;
@@ -42,35 +58,47 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
   const map: Record<WidgetId, WidgetInstanceState> = {};
   for (const w of BUILT_IN_WIDGETS) {
     map[w.id] = {
-      visible: w.defaultActive,
-      minimized: w.defaultMinimized,
+      status: w.defaultActive ? "docked" : "inactive",
       position: { ...w.defaultPosition },
-      dockMode: "docked",
     };
   }
   return map;
 }
 
+function statusFromLegacy(
+  visible: boolean,
+  dockMode: string | undefined,
+  minimized: boolean,
+): WidgetStatus {
+  if (!visible) return "inactive";
+  if (dockMode === "floating") return minimized ? "minimized" : "floating";
+  return "docked";
+}
+
 // ── Z-index counter (runtime only, never persisted) ─────────────────────
 // Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
 // Header is z-20, so widgets live in the 21-49 band.
-let _zCounter = 30;
+const Z_MIN = 25;
+const Z_MAX = 49;
+let _zCounter = Z_MIN;
 
 // ── Store ────────────────────────────────────────────────────────────────
 
 export const widgetStore = createStore<WidgetStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       instances: buildDefaultInstances(),
       customWidgets: [],
       dockOrder: BUILT_IN_WIDGETS.map((w) => w.id),
+      customLayouts: [],
 
+      // ── Toggle: inactive ↔ docked ───────────────────────────────────
       toggleWidget: (id) =>
         set((s) => {
           const inst = s.instances[id];
-          const willBeVisible = !inst?.visible;
+          const willBeActive = inst?.status === "inactive";
           let dockOrder = s.dockOrder;
-          if (willBeVisible && !dockOrder.includes(id)) {
+          if (willBeActive && !dockOrder.includes(id)) {
             dockOrder = [...dockOrder, id];
           }
           return {
@@ -79,20 +107,37 @@ export const widgetStore = createStore<WidgetStore>()(
               ...s.instances,
               [id]: {
                 ...inst,
-                visible: willBeVisible,
-                dockMode: willBeVisible ? "docked" : (inst?.dockMode ?? "docked"),
+                status: willBeActive ? "docked" : "inactive",
               },
             },
           };
         }),
 
-      setMinimized: (id, minimized) =>
-        set((s) => ({
-          instances: {
-            ...s.instances,
-            [id]: { ...s.instances[id], minimized },
-          },
-        })),
+      // ── Set status directly ─────────────────────────────────────────
+      setStatus: (id, status) =>
+        set((s) => {
+          const instance = s.instances[id];
+          if (!instance) return s;
+
+          const wasDocked = instance.status === "docked";
+          const willBeDocked = status === "docked";
+
+          let dockOrder = s.dockOrder;
+          if (willBeDocked && !wasDocked) {
+            dockOrder = [...dockOrder.filter((i) => i !== id), id];
+          } else if (!willBeDocked && wasDocked) {
+            // When leaving docked state (to floating/minimized), keep in dockOrder
+            // so the pill can reappear if status goes back to docked
+          }
+
+          return {
+            dockOrder,
+            instances: {
+              ...s.instances,
+              [id]: { ...instance, status },
+            },
+          };
+        }),
 
       setPosition: (id, position) =>
         set((s) => ({
@@ -104,32 +149,6 @@ export const widgetStore = createStore<WidgetStore>()(
 
       setInstances: (instances) => set({ instances }),
 
-      setDockMode: (id, mode) =>
-        set((s) => {
-          const instance = s.instances[id];
-          if (!instance) return s;
-          const wasDocked = instance.dockMode === "docked";
-          const isDocked = mode === "docked";
-
-          // Update dockOrder when docking/undocking
-          let dockOrder = s.dockOrder;
-          if (isDocked && !wasDocked) {
-            // Add to dock order (append to end)
-            dockOrder = [...dockOrder.filter((i) => i !== id), id];
-          } else if (!isDocked && wasDocked) {
-            // Remove from dock order
-            dockOrder = dockOrder.filter((i) => i !== id);
-          }
-
-          return {
-            dockOrder,
-            instances: {
-              ...s.instances,
-              [id]: { ...instance, dockMode: mode },
-            },
-          };
-        }),
-
       setDockOrder: (order) => set({ dockOrder: order }),
 
       focusWidget: (id) =>
@@ -137,17 +156,18 @@ export const widgetStore = createStore<WidgetStore>()(
           const inst = s.instances[id];
           if (!inst) return s;
           _zCounter += 1;
+          // Cap at Z_MAX to prevent widgets from appearing above modals/sidebar
+          const z = Math.min(_zCounter, Z_MAX);
           return {
             instances: {
               ...s.instances,
-              [id]: { ...inst, zIndex: _zCounter },
+              [id]: { ...inst, zIndex: z },
             },
           };
         }),
 
       registerCustomWidget: (def) =>
         set((s) => {
-          // Don't duplicate
           if (s.customWidgets.some((w) => w.id === def.id)) return s;
           return {
             customWidgets: [...s.customWidgets, def],
@@ -155,10 +175,8 @@ export const widgetStore = createStore<WidgetStore>()(
             instances: {
               ...s.instances,
               [def.id]: {
-                visible: def.defaultActive,
-                minimized: def.defaultMinimized,
+                status: def.defaultActive ? "docked" : "inactive",
                 position: { ...def.defaultPosition },
-                dockMode: "docked",
               },
             },
           };
@@ -169,31 +187,87 @@ export const widgetStore = createStore<WidgetStore>()(
           const { [id]: _, ...rest } = s.instances;
           return {
             customWidgets: s.customWidgets.filter((w) => w.id !== id),
+            dockOrder: s.dockOrder.filter((i) => i !== id),
             instances: rest,
           };
         }),
+
+      // ── Custom layouts ──────────────────────────────────────────────
+      saveCustomLayout: (name) => {
+        const state = get();
+        const floatingEntries = Object.entries(state.instances)
+          .filter(([, inst]) => inst?.status === "floating" || inst?.status === "minimized")
+          .filter(([id]) => id !== "layout-organizer");
+
+        if (floatingEntries.length === 0) return;
+
+        const positions: Record<WidgetId, { x: number; y: number }> = {};
+        for (const [id, inst] of floatingEntries) {
+          positions[id] = { ...inst.position };
+        }
+
+        const layout: CustomLayout = {
+          id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: name.trim() || `Layout ${state.customLayouts.length + 1}`,
+          positions,
+          widgetCount: floatingEntries.length,
+        };
+
+        set({ customLayouts: [...state.customLayouts, layout] });
+      },
+
+      deleteCustomLayout: (layoutId) =>
+        set((s) => ({
+          customLayouts: s.customLayouts.filter((l) => l.id !== layoutId),
+        })),
     }),
     {
       name: "cubeforge:widgets",
-      version: 3,
+      version: 4,
       migrate: (persisted, oldVersion) => {
         const raw = (persisted ?? {}) as Record<string, unknown>;
-        const instances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
+        const rawInstances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
         const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));
 
-        // Filter out obsolete/unregistered widget IDs from localStorage
         const cleanedInstances: Record<string, Record<string, unknown>> = {};
-        for (const [id, value] of Object.entries(instances)) {
+
+        for (const [id, value] of Object.entries(rawInstances)) {
           const isBuiltIn = validIds.has(id);
-          const isCustom = ((raw.customWidgets ?? []) as WidgetDefinition[]).some((w) => w.id === id);
-          if (isBuiltIn || isCustom) {
+          const isCustom = ((raw.customWidgets ?? []) as WidgetDefinition[]).some(
+            (w) => w.id === id,
+          );
+          if (!isBuiltIn && !isCustom) continue;
+
+          // Migrate from v3 (visible + dockMode + minimized) → v4 (status)
+          if (oldVersion < 4) {
+            const visible = (value.visible as boolean) ?? false;
+            const dockMode = (value.dockMode as string) ?? "docked";
+            const minimized = (value.minimized as boolean) ?? false;
+            const status = statusFromLegacy(visible, dockMode, minimized);
+
+            // Ensure position is valid — use definition default if missing
             const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
-            // If migrating from version < 3, update default positions & dockMode
-            const forceDefaultDock = oldVersion < 3;
+            const position =
+              value.position &&
+              typeof (value.position as Record<string, unknown>).x === "number" &&
+              typeof (value.position as Record<string, unknown>).y === "number"
+                ? value.position
+                : def
+                  ? { ...def.defaultPosition }
+                  : { x: 100, y: 100 };
+
             cleanedInstances[id] = {
-              ...value,
-              dockMode: forceDefaultDock ? "docked" : (value.dockMode ?? "docked"),
-              position: forceDefaultDock && def ? { ...def.defaultPosition } : (value.position ?? def?.defaultPosition),
+              status,
+              position,
+            };
+          } else {
+            // v4+ — ensure status exists
+            const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
+            cleanedInstances[id] = {
+              status: (value.status as string) ?? (def?.defaultActive ? "docked" : "inactive"),
+              position:
+                value.position ??
+                (def ? { ...def.defaultPosition } : { x: 100, y: 100 }),
             };
           }
         }
@@ -202,24 +276,26 @@ export const widgetStore = createStore<WidgetStore>()(
         for (const w of BUILT_IN_WIDGETS) {
           if (!cleanedInstances[w.id]) {
             cleanedInstances[w.id] = {
-              visible: w.defaultActive,
-              minimized: w.defaultMinimized,
+              status: w.defaultActive ? "docked" : "inactive",
               position: { ...w.defaultPosition },
-              dockMode: "docked",
             };
           }
         }
 
         const builtInOrder = BUILT_IN_WIDGETS.map((w) => w.id as string);
         const existingDockOrder = (raw.dockOrder ?? []) as string[];
-        const combinedOrder = Array.from(new Set([...builtInOrder, ...existingDockOrder])).filter(
-          (id) => cleanedInstances[id],
-        );
+        const combinedOrder = Array.from(
+          new Set([...builtInOrder, ...existingDockOrder]),
+        ).filter((id) => cleanedInstances[id]);
+
+        // Migrate customLayouts if present
+        const customLayouts = (raw.customLayouts as CustomLayout[]) ?? [];
 
         return {
           ...raw,
           instances: cleanedInstances,
           dockOrder: combinedOrder,
+          customLayouts,
         } as Record<string, unknown>;
       },
       partialize: (state) => ({
@@ -232,6 +308,7 @@ export const widgetStore = createStore<WidgetStore>()(
         ),
         customWidgets: state.customWidgets,
         dockOrder: state.dockOrder,
+        customLayouts: state.customLayouts,
       }),
     },
   ),

@@ -35,8 +35,7 @@ export interface FloatingWidgetWrapperProps {
   className?: string;
   /** Fallback default position if widgetStore has no entry. */
   defaultPosition?: { x: number; y: number };
-  /** Fallback minimized state. */
-  defaultMinimized?: boolean;
+
 }
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -45,9 +44,11 @@ export interface FloatingWidgetWrapperProps {
  * Shared wrapper for all floating widgets.
  *
  * Handles: portal, drag, minimize/expand pill+panel, header, animations.
+ * All position and status is synced to the widgetStore.
  *
- * Each widget only needs to provide its body content as children. All
- * position and minimized state is synced to the widgetStore.
+ * Reads `status` from the store:
+ *   - `"minimized"` → renders a small draggable pill
+ *   - `"floating"` → renders the expanded panel with header+body
  */
 export function FloatingWidgetWrapper({
   widgetId,
@@ -61,7 +62,6 @@ export function FloatingWidgetWrapper({
   children,
   className,
   defaultPosition = { x: 100, y: 100 },
-  defaultMinimized = true,
 }: FloatingWidgetWrapperProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -77,16 +77,14 @@ export function FloatingWidgetWrapper({
   const instance = useWidgetStore((s) => s.instances[widgetId]);
 
   const storePosition = instance?.position ?? defaultPosition;
-  const minimized = instance?.minimized ?? defaultMinimized;
+  const status = instance?.status;
+  const minimized = status === "minimized";
   // z-index from store — incremented by focusWidget() on pointer-down.
   // Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
   // Header is z-20, so defaults to 25 in the 21-49 band.
   const zIndex = instance?.zIndex ?? 25;
 
   // ── Drag: sync position back to store on change ────────────────────────
-  // Detect dock zone: if dragged very close to the viewport top edge
-  // (where the header dock bar lives), auto-dock the widget.
-  // Reduced to 30px so it only docks when almost on top of the dock area.
   const DOCK_THRESHOLD = 30; // px from top of viewport
 
   const handlePositionChange = useCallback(
@@ -96,9 +94,8 @@ export function FloatingWidgetWrapper({
       dockZoneState.active = false;
       // Check if widget was dropped near the header → dock it
       if (pos.y < DOCK_THRESHOLD) {
-        store.setDockMode(widgetId, "docked");
-        store.setMinimized(widgetId, true);
-        // Don't toggle visible — docked ≠ disabled. The dock pill always shows.
+        store.setStatus(widgetId, "docked");
+        store.setPosition(widgetId, pos);
       } else {
         store.setPosition(widgetId, pos);
       }
@@ -122,8 +119,12 @@ export function FloatingWidgetWrapper({
 
   // ── Minimize/expand toggle ─────────────────────────────────────────────
   const toggleMinimized = useCallback(() => {
-    widgetStore.getState().setMinimized(widgetId, !minimized);
-  }, [widgetId, minimized]);
+    const store = widgetStore.getState();
+    const inst = store.instances[widgetId];
+    if (!inst) return;
+    const newStatus = inst.status === "minimized" ? "floating" : "minimized";
+    store.setStatus(widgetId, newStatus);
+  }, [widgetId]);
 
   if (!mounted) return null;
 
@@ -164,7 +165,7 @@ export function FloatingWidgetWrapper({
   // ── Minimized pill ─────────────────────────────────────────────────────
   if (minimized) {
     return createPortal(
-    <motion.div
+      <motion.div
         ref={drag.elementRef}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

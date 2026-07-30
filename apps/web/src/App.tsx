@@ -13,6 +13,7 @@ import { CubeforgeCommandPalette } from "@/components/Layout/CubeforgeCommandPal
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
+import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
@@ -36,6 +37,7 @@ import type { ViewId } from "@/components/Layout/sidebar.constants";
 import { migrateWidgetPositions } from "@/widgets/migration";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { connectWidgetLifecycle } from "@/widgets/sdk";
+import { useWidgetStore } from "@/widgets/widgetStore";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.
@@ -693,10 +695,11 @@ export default function App() {
           defaultMethod={methodPref}
           onSubmit={handleAddManual}
         />
-        {/* WidgetHost renders all active floating widgets (Solve Log, Scramble
-            Visualizer, Time Distribution, PB Progression, Solve Timeline, 
-            3D Cube button, etc.) driven by the Widget Store. Only
-            rendered on the Timer stage; Stats/Analysis take over the stage. */}
+        {/* WidgetHost renders all active floating widgets (Solve Log,
+            Scramble Visualizer, Time Distribution, PB Progression, Solve
+            Timeline, Metronome, Notes, etc.) driven by the Widget Store.
+            The 3D cube button is rendered separately below as a circular
+            floating button (not through WidgetHost/dock system). */}
         {activeView === "timer" && !isFocused && (
           <WidgetHost
             solves={solves}
@@ -714,6 +717,17 @@ export default function App() {
           />
         )}
 
+        {/* 3D Cube launcher — circular floating button, always present when
+            cube panel is closed and widget is toggled on. Independent from
+            the dock system but toggleable in the Widget Explorer. */}
+        {activeView === "timer" && !isFocused && (
+          <CubeButtonGate
+            cubePanelOpen={cubePanelOpen}
+            smartCubeConnected={smartCubeConnected}
+            onOpenCube={handleOpenCube}
+          />
+        )}
+
         <CubeforgeCommandPalette
           open={commandPaletteOpen}
           onOpenChange={setCommandPaletteOpen}
@@ -727,5 +741,33 @@ export default function App() {
         <Toaster position="bottom-center" richColors={false} />
       </ThemeProvider>
     </div>
+  );
+}
+
+// ── Cube button gate ────────────────────────────────────────────────────
+
+/**
+ * Reads the cube-button's status from the widget store.
+ * Only renders the FloatingCubeButton if the user has it toggled ON
+ * in the Widget Explorer (status !== "inactive").
+ */
+function CubeButtonGate({
+  cubePanelOpen,
+  smartCubeConnected,
+  onOpenCube,
+}: {
+  cubePanelOpen: boolean;
+  smartCubeConnected: boolean;
+  onOpenCube: () => void;
+}) {
+  const status = useWidgetStore((s) => s.instances["cube-button"]?.status);
+  if (status === "inactive") return null;
+
+  return (
+    <FloatingCubeButton
+      onClick={onOpenCube}
+      cubePanelOpen={cubePanelOpen}
+      smartCubeConnected={smartCubeConnected}
+    />
   );
 }

@@ -37,16 +37,26 @@ export interface WidgetDefinition {
   tags: string[];
 }
 
-/** Widget docking mode. */
-export type WidgetDockMode = "floating" | "docked";
+// ── Widget Status ────────────────────────────────────────────────────────
+
+/**
+ * Single-source-of-truth for a widget's visibility/mode.
+ *
+ * - `"inactive"`  – widget is off. Not in dock, not floating.
+ * - `"docked"`    – widget pill shown in the header dock bar.
+ * - `"floating"`  – widget rendered as an expanded floating panel.
+ * - `"minimized"` – widget rendered as a collapsed floating pill.
+ *
+ * Replaces the old { visible, dockMode, minimized } trio which allowed
+ * contradictory states (e.g., visible=true + dockMode="docked" simultaneously
+ * rendered nowhere, causing "ghost" widgets).
+ */
+export type WidgetStatus = "inactive" | "docked" | "floating" | "minimized";
 
 /** Runtime state for an active widget instance. */
 export interface WidgetInstanceState {
-  visible: boolean;
-  minimized: boolean;
+  status: WidgetStatus;
   position: { x: number; y: number };
-  /** Whether the widget is floating freely or anchored in the header dock. */
-  dockMode: WidgetDockMode;
   /**
    * Runtime z-index for focus management — NOT persisted.
    * Higher value = rendered on top. Updated by `focusWidget()`.

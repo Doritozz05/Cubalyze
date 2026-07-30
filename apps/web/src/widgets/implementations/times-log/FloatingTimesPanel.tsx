@@ -99,13 +99,13 @@ function MobileTimesPanel({
 
   useEffect(() => setMounted(true), []);
 
-  // Read visibility from widgetStore so the toggle in WidgetExplorer works on mobile too
-  const instance = useWidgetStore(
-    useCallback((s) => s.instances["times-log"], []),
+  // Read status from widgetStore — hide if inactive
+  const status = useWidgetStore(
+    useCallback((s) => s.instances["times-log"]?.status, []),
   );
-  const visible = instance?.visible ?? true;
+  const isInactive = status === "inactive";
 
-  if (!mounted || !visible) return null;
+  if (!mounted || isInactive) return null;
 
   return createPortal(
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-surface shadow-xl">

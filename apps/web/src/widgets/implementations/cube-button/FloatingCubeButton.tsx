@@ -26,10 +26,12 @@ export interface FloatingCubeButtonProps {
 }
 
 /**
- * Circular floating button shown when a Smart Cube is connected and the 3D
- * panel is closed. Draggable; click (vs. drag) opens the panel.
+ * Circular floating button to open the 3D cube panel.
  *
- * Position is synced to widgetStore instead of per-widget localStorage.
+ * Special widget — rendered directly in App.tsx, NOT through WidgetHost.
+ * Does NOT participate in the dock system. Can be toggled on/off in the
+ * Widget Explorer. Disappears when the cube panel is open, reappears when
+ * it closes. Position is persisted via widgetStore.
  */
 export function FloatingCubeButton({
   onClick,
@@ -44,8 +46,6 @@ export function FloatingCubeButton({
     useCallback((s) => s.instances["cube-button"], []),
   );
   const storePosition = instance?.position ?? getDefaultPos();
-
-  // Lazy-init default position (used as fallback)
   const [defaultPos] = useState(getDefaultPos);
 
   const handlePositionChange = useCallback(
