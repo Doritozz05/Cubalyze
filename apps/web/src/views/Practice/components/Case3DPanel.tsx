@@ -29,16 +29,22 @@ export function Case3DPanel({
   className,
 }: Case3DPanelProps) {
   const [selectedSlot, setSelectedSlot] = useState<number>(0);
+  const isF2L =
+    caseData.subsetId === "00000000-0000-4000-9000-000000000003" ||
+    caseData.subsetId === "00000000-0000-4000-9000-000000000004" ||
+    caseData.subsetId.toLowerCase().includes("f2l") ||
+    Boolean(caseData.category?.toLowerCase().includes("f2l"));
 
-  // Filter algorithms by selected slot
+  // Filter algorithms by selected slot if F2L
   const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";
   const slotAlgorithms = useMemo(() => {
+    if (!isF2L) return algorithms;
     const matched = algorithms.filter(
       (a) => a.notes && a.notes.includes(`Slot: ${slotKey}`),
     );
     if (matched.length > 0) return matched;
     return algorithms;
-  }, [algorithms, slotKey]);
+  }, [algorithms, slotKey, isF2L]);
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
@@ -67,28 +73,30 @@ export function Case3DPanel({
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {/* Slot Orientation Tabs */}
-        <div>
-          <label className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 block mb-1.5">
-            Slot Orientation
-          </label>
-          <div className="grid grid-cols-4 gap-1 rounded-lg border border-line bg-surface-2/40 p-1">
-            {SLOT_LABELS.map((slot) => (
-              <button
-                key={slot.id}
-                onClick={() => setSelectedSlot(slot.id)}
-                className={cn(
-                  "py-1 text-[0.65rem] font-medium rounded transition-colors text-center",
-                  selectedSlot === slot.id
-                    ? "bg-surface text-ink font-semibold shadow-xs"
-                    : "text-ink-3 hover:text-ink-2",
-                )}
-              >
-                {slot.name}
-              </button>
-            ))}
+        {/* Slot Orientation Tabs (only for F2L / Advanced F2L) */}
+        {isF2L && (
+          <div>
+            <label className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 block mb-1.5">
+              Slot Orientation
+            </label>
+            <div className="grid grid-cols-4 gap-1 rounded-lg border border-line bg-surface-2/40 p-1">
+              {SLOT_LABELS.map((slot) => (
+                <button
+                  key={slot.id}
+                  onClick={() => setSelectedSlot(slot.id)}
+                  className={cn(
+                    "py-1 text-[0.65rem] font-medium rounded transition-colors text-center",
+                    selectedSlot === slot.id
+                      ? "bg-surface text-ink font-semibold shadow-xs"
+                      : "text-ink-3 hover:text-ink-2",
+                  )}
+                >
+                  {slot.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 3D Isometric Cube Component */}
         <Case3DDiagram
@@ -129,15 +137,40 @@ export function Case3DPanel({
                 <div className="flex items-center gap-3 text-[0.58rem] text-ink-3">
                   <span>HTM: {alg.moveCount.htm}</span>
                   <span>QTM: {alg.moveCount.qtm}</span>
-                  {alg.moveCount.stm > 0 && (
+                  {caseData.puzzleType !== "2x2x2" && alg.moveCount.stm > 0 && (
                     <span>STM: {alg.moveCount.stm}</span>
                   )}
-                  {alg.source && (
-                    <span className="flex items-center gap-1">
-                      <ExternalLink className="size-2.5" />
-                      {alg.source}
-                    </span>
-                  )}
+                  {alg.source && (() => {
+                    const sourceUrl = alg.attributionUrl || (
+                      alg.source.startsWith("http")
+                        ? alg.source
+                        : alg.source.toLowerCase().includes("speedcubedb")
+                        ? (caseData.subsetId.toLowerCase().includes("oll")
+                            ? "https://speedcubedb.com/a/3x3/OLL"
+                            : caseData.subsetId.toLowerCase().includes("pll")
+                            ? "https://speedcubedb.com/a/3x3/PLL"
+                            : caseData.subsetId.toLowerCase().includes("f2l")
+                            ? "https://speedcubedb.com/a/3x3/F2L"
+                            : "https://speedcubedb.com")
+                        : undefined
+                    );
+                    return sourceUrl ? (
+                      <a
+                        href={sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 hover:underline hover:text-ink transition-colors"
+                      >
+                        <ExternalLink className="size-2.5" />
+                        {alg.source}
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <ExternalLink className="size-2.5" />
+                        {alg.source}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

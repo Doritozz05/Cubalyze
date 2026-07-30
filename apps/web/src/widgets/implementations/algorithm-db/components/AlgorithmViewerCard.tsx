@@ -32,14 +32,17 @@ export function AlgorithmViewerCard({
   const targetSubsetName =
     subsetName || getSubset(caseData.subsetId)?.name || "";
 
-  // Determine forced visualization mode based on subset name:
-  // - OLL and PLL: 2D view ONLY
-  // - F2L and Advanced F2L: 3D view ONLY
+  // Determine forced visualization mode based on diagram type and subset name:
+  // - OLL and PLL: 2D view
+  // - F2L, PBL, and 3D isometric cases: 3D view
   const lowerSubsetName = targetSubsetName.toLowerCase();
-  const is2DOnly = lowerSubsetName.includes("oll") || lowerSubsetName.includes("pll");
-  const is3DOnly = lowerSubsetName.includes("f2l");
+  const is3DMode =
+    caseData.diagramType === "3d-isometric" ||
+    caseData.diagramType === "3d" ||
+    lowerSubsetName.includes("f2l") ||
+    lowerSubsetName.includes("pbl");
 
-  const activeViewMode: "2d" | "3d" = is2DOnly ? "2d" : is3DOnly ? "3d" : "2d";
+  const activeViewMode: "2d" | "3d" = is3DMode ? "3d" : "2d";
 
   const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
   const activeAlg =

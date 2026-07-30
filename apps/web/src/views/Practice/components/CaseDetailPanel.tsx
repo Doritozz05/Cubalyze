@@ -149,13 +149,38 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                 <div className="flex items-center gap-3 text-[0.58rem] text-ink-3">
                   <span>HTM: {alg.moveCount.htm}</span>
                   <span>QTM: {alg.moveCount.qtm}</span>
-                  {alg.moveCount.stm > 0 && <span>STM: {alg.moveCount.stm}</span>}
-                  {alg.source && (
-                    <span className="flex items-center gap-1">
-                      <ExternalLink className="size-2.5" />
-                      {alg.source}
-                    </span>
-                  )}
+                  {caseData.puzzleType !== '2x2x2' && alg.moveCount.stm > 0 && <span>STM: {alg.moveCount.stm}</span>}
+                  {alg.source && (() => {
+                    const sourceUrl = alg.attributionUrl || (
+                      alg.source.startsWith("http")
+                        ? alg.source
+                        : alg.source.toLowerCase().includes("speedcubedb")
+                        ? (caseData.subsetId.toLowerCase().includes("oll")
+                            ? "https://speedcubedb.com/a/3x3/OLL"
+                            : caseData.subsetId.toLowerCase().includes("pll")
+                            ? "https://speedcubedb.com/a/3x3/PLL"
+                            : caseData.subsetId.toLowerCase().includes("f2l")
+                            ? "https://speedcubedb.com/a/3x3/F2L"
+                            : "https://speedcubedb.com")
+                        : undefined
+                    );
+                    return sourceUrl ? (
+                      <a
+                        href={sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 hover:underline hover:text-ink transition-colors"
+                      >
+                        <ExternalLink className="size-2.5" />
+                        {alg.source}
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <ExternalLink className="size-2.5" />
+                        {alg.source}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Notes */}

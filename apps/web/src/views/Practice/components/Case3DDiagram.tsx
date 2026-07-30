@@ -185,10 +185,36 @@ function Case3DCanvas({
   className?: string;
   order?: number;
 }) {
-  const { canvasRef, containerRef, isReady, engineRef } = useCube3D({
+  const { canvasRef, containerRef, isReady, engineRef, rotateCamera } = useCube3D({
     maxRecentMoves: 0,
     order,
   });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    rotateCamera(dx, dy);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDragging(false);
+    try {
+      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture was already lost
+    }
+  };
 
   const hasSetCameraRef = useRef(false);
   const is2x2 = order === 2;
@@ -275,7 +301,11 @@ function Case3DCanvas({
     >
       <canvas
         ref={canvasRef as React.RefObject<HTMLCanvasElement>}
-        className="absolute inset-0 h-full w-full outline-none"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="absolute inset-0 h-full w-full outline-none cursor-grab active:cursor-grabbing touch-none"
       />
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
