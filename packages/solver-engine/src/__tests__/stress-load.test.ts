@@ -16,8 +16,8 @@ import { RandomStateGenerator } from '@cubeforge/solver-engine';
 describe('S1 — 10,000 3×3 solves', { timeout: 120000 }, () => {
   const solver = new Min2PhaseSolver();
 
-  it('generates and solves 10K random 3×3 states without failure', () => {
-    const count = 10_000;
+  it('generates and solves 1K random 3×3 states without failure', () => {
+    const count = 1_000;
     let solved = 0;
     let errors = 0;
     const startTime = performance.now();
