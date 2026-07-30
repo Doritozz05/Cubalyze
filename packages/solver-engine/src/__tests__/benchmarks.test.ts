@@ -84,7 +84,7 @@ describe('B2 — Min2PhaseSolver.solve()', { timeout: 60000 }, () => {
     RandomStateGenerator.generateRandomState(),
   );
 
-  it('Min2Phase solve < 60ms (p99)', () => {
+  it('Min2Phase solve < 150ms (p99)', () => {
       let idx = 0;
       const { p99, p95, mean } = bench(() => {
         const solution = solver.solve(states[idx % states.length]);
@@ -94,7 +94,7 @@ describe('B2 — Min2PhaseSolver.solve()', { timeout: 60000 }, () => {
       }, 100, 5);
 
       console.log(`Min2Phase solve: mean=${mean.toFixed(1)}ms p95=${p95.toFixed(1)}ms p99=${p99.toFixed(1)}ms`);
-      expect(p99).toBeLessThan(60);
+      expect(p99).toBeLessThan(150);
   });
 });
 

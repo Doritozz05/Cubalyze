@@ -49,6 +49,8 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        name: Build packages
       - run: pnpm -r exec vitest run
         name: All tests (100% pass required)
 
@@ -64,6 +66,8 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        name: Build packages
       - run: pnpm --filter @cubeforge/solver-engine exec vitest run src/__tests__/benchmarks.test.ts
         name: Solver engine benchmarks
       - run: pnpm --filter @cubeforge/analysis-engine exec vitest run src/__tests__/benchmarks.test.ts
@@ -81,6 +85,8 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        name: Build packages
       - run: |
           pnpm --filter @cubeforge/math-core exec vitest run --coverage
           pnpm --filter @cubeforge/solver-engine exec vitest run --coverage
@@ -101,5 +107,7 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        name: Build packages
       - run: pnpm --filter @cubeforge/solver-engine exec vitest run src/__tests__/property-based.test.ts
         name: Property-based tests (0 failures required)
