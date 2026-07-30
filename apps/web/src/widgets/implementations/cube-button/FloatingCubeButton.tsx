@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Box } from "lucide-react";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
+import { CUBE_BUTTON_SENTINEL } from "./definition";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function getDefaultPos(): Position {
@@ -18,7 +19,7 @@ function getDefaultPos(): Position {
 
 /** True if the position is the sentinel value (meaning "use dynamic default"). */
 function isSentinel(pos: Position): boolean {
-  return pos.x === -1 && pos.y === -1;
+  return pos.x === CUBE_BUTTON_SENTINEL.x && pos.y === CUBE_BUTTON_SENTINEL.y;
 }
 
 export interface FloatingCubeButtonProps {

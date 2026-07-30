@@ -114,8 +114,9 @@ const splitColumns: LayoutFn = (ids) => {
   let yL = a.y, yR = a.y;
   ids.forEach((id, i) => {
     const s = getSize(id);
-    if (i < half) { out[id] = { x: a.x, y: yL, w: Math.min(s.w, colW), h: s.h }; yL += s.h + GAP; }
-    else { out[id] = { x: a.x + colW + GAP, y: yR, w: Math.min(s.w, colW), h: s.h }; yR += s.h + GAP; }
+    const w = Math.min(s.w, colW);
+    if (i < half) { out[id] = { x: a.x, y: yL, w, h: s.h }; yL += s.h + GAP; }
+    else { out[id] = { x: a.x + a.w - w, y: yR, w, h: s.h }; yR += s.h + GAP; }
   });
   return out;
 };

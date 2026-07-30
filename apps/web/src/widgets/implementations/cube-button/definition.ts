@@ -1,6 +1,9 @@
 import { Box } from "lucide-react";
 import type { WidgetDefinition } from "@/widgets/types";
 
+/** Sentinel position: cube-button computes its real position dynamically. */
+export const CUBE_BUTTON_SENTINEL = { x: -99999, y: -99999 } as const;
+
 export const cubeButtonDefinition: WidgetDefinition = {
   id: "cube-button",
   name: "3D cube",
@@ -12,8 +15,7 @@ export const cubeButtonDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,
-  defaultPosition: { x: -1, y: -1 }, // sentinel: computed dynamically at runtime
+  defaultPosition: { ...CUBE_BUTTON_SENTINEL },
   defaultMinimized: false,
   tags: ["3d", "launcher", "button", "smart", "cube"],
 };
-

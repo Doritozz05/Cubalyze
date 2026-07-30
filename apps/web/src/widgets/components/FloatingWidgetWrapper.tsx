@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDraggable } from "@/hooks/useDraggable";
+import { useDraggable, type SnapRect } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { dockZoneState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
@@ -35,7 +35,6 @@ export interface FloatingWidgetWrapperProps {
   className?: string;
   /** Fallback default position if widgetStore has no entry. */
   defaultPosition?: { x: number; y: number };
-
 }
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -43,8 +42,8 @@ export interface FloatingWidgetWrapperProps {
 /**
  * Shared wrapper for all floating widgets.
  *
- * Handles: portal, drag, minimize/expand pill+panel, header, animations.
- * All position and status is synced to the widgetStore.
+ * Handles: portal, drag, minimize/expand pill+panel, header, animations,
+ * soft snap to viewport and other widgets.
  *
  * Reads `status` from the store:
  *   - `"minimized"` → renders a small draggable pill
@@ -66,12 +65,12 @@ export function FloatingWidgetWrapper({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Clean up dock zone state on unmount (prevents stale true leak)
+  // Clean up dock zone state on unmount (idempotent per widget id)
   useEffect(() => {
     return () => {
-      dockZoneState.active = false;
+      dockZoneState.leave(widgetId);
     };
-  }, []);
+  }, [widgetId]);
 
   // ── Read runtime state from widgetStore ────────────────────────────────
   const instance = useWidgetStore((s) => s.instances[widgetId]);
@@ -79,10 +78,24 @@ export function FloatingWidgetWrapper({
   const storePosition = instance?.position ?? defaultPosition;
   const status = instance?.status;
   const minimized = status === "minimized";
-  // z-index from store — incremented by focusWidget() on pointer-down.
-  // Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
-  // Header is z-20, so defaults to 25 in the 21-49 band.
   const zIndex = instance?.zIndex ?? 25;
+
+  // ── Snap targets: other floating/minimized widgets ────────────────────
+  const allInstances = useWidgetStore((s) => s.instances);
+  const snapTargets = useMemo<SnapRect[]>(() => {
+    return Object.entries(allInstances)
+      .filter(([id, inst]) => {
+        if (id === widgetId) return false;
+        const s = inst?.status;
+        return s === "floating" || s === "minimized";
+      })
+      .map(([, inst]) => ({
+        x: inst.position.x,
+        y: inst.position.y,
+        w: 280, // approximate; real sizes vary but this gives good snap results
+        h: 200,
+      }));
+  }, [allInstances, widgetId]);
 
   // ── Drag: sync position back to store on change ────────────────────────
   const DOCK_THRESHOLD = 30; // px from top of viewport
@@ -90,9 +103,7 @@ export function FloatingWidgetWrapper({
   const handlePositionChange = useCallback(
     (pos: { x: number; y: number }) => {
       const store = widgetStore.getState();
-      // Reset dock zone indicator on drag end
-      dockZoneState.active = false;
-      // Check if widget was dropped near the header → dock it
+      dockZoneState.leave(widgetId);
       if (pos.y < DOCK_THRESHOLD) {
         store.setStatus(widgetId, "docked");
         store.setPosition(widgetId, pos);
@@ -106,10 +117,12 @@ export function FloatingWidgetWrapper({
   const drag = useDraggable<HTMLDivElement>(storePosition, {
     clickThreshold: 4,
     onPositionChange: handlePositionChange,
-    // Update dock zone state during drag for visual feedback
     onDrag: (pos) => {
-      dockZoneState.active = pos.y < 50;
+      if (pos.y < 50) dockZoneState.enter(widgetId);
+      else dockZoneState.leave(widgetId);
     },
+    snapThreshold: 8,
+    snapTargets,
   });
 
   // Focus handler — brings this widget to the top of the z-stack

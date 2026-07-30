@@ -6,10 +6,11 @@ import { useSyncExternalStore } from "react";
 
 /**
  * Lightweight shared state for dock zone hover detection.
- * FloatingWidgetWrapper sets this during drag; Header reads it
- * to show the dock zone indicator.
+ * Uses a Set of widget IDs so multiple FloatingWidgetWrappers can
+ * report "near dock" independently. Unmount or leave cleans up
+ * only that widget's entry — no race condition.
  */
-let isNearDock = false;
+let _nearIds = new Set<string>();
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -18,13 +19,19 @@ function notify() {
 
 export const dockZoneState = {
   get active() {
-    return isNearDock;
+    return _nearIds.size > 0;
   },
-  set active(v: boolean) {
-    if (isNearDock !== v) {
-      isNearDock = v;
-      notify();
-    }
+  /** A widget entered the dock zone (idempotent per widget id). */
+  enter(id: string) {
+    const wasEmpty = _nearIds.size === 0;
+    _nearIds.add(id);
+    if (wasEmpty) notify();
+  },
+  /** A widget left the dock zone (idempotent per widget id). */
+  leave(id: string) {
+    const hadItems = _nearIds.size > 0;
+    _nearIds.delete(id);
+    if (hadItems && _nearIds.size === 0) notify();
   },
   subscribe(fn: () => void) {
     listeners.add(fn);
@@ -33,11 +40,11 @@ export const dockZoneState = {
     };
   },
   getSnapshot() {
-    return isNearDock;
+    return _nearIds.size > 0;
   },
 };
 
-/** React hook: returns true when a widget is being dragged near the dock zone. */
+/** React hook: returns true when any widget is being dragged near the dock zone. */
 export function useDockZoneActive(): boolean {
   return useSyncExternalStore(
     dockZoneState.subscribe,
