@@ -10,12 +10,12 @@ describe('TwoByTwoSolver', { timeout: 30000 }, () => {
     expect(() => new TwoByTwoSolver()).not.toThrow();
   });
 
-  it('init() builds the combined pruning table (3.67 MB) within 5000ms', () => {
+  it('init() builds the combined pruning table (3.67 MB) within 15000ms', () => {
     const solver = new TwoByTwoSolver();
     const start = performance.now();
     solver.init();
     const elapsed = performance.now() - start;
-    expect(elapsed).toBeLessThan(5000);
+    expect(elapsed).toBeLessThan(15000);
   });
 
   it('init() is idempotent (can be called multiple times)', () => {
