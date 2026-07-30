@@ -225,7 +225,7 @@ export function WidgetDock() {
               animate={{ opacity: 1, width: "2.5rem", scaleX: 1 }}
               exit={{ opacity: 0, width: 0, scaleX: 0.5 }}
               transition={{ type: "spring", stiffness: 500, damping: 32 }}
-              className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/[0.03]"
+              className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/3"
               aria-hidden
             />
           )}

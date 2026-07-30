@@ -49,7 +49,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
         "hover:shadow-sm hover:border-ink-2/30",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         active
-          ? "border-accent/30 bg-accent/[0.03] shadow-xs"
+          ? "border-accent/30 bg-accent/3 shadow-xs"
           : "border-line/60 opacity-70 hover:opacity-100",
         className,
       )}
