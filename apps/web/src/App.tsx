@@ -37,7 +37,7 @@ import type { ViewId } from "@/components/Layout/sidebar.constants";
 import { migrateWidgetPositions } from "@/widgets/migration";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { connectWidgetLifecycle } from "@/widgets/sdk";
-import { useWidgetStore } from "@/widgets/widgetStore";
+import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.
@@ -761,6 +761,15 @@ function CubeButtonGate({
   onOpenCube: () => void;
 }) {
   const status = useWidgetStore((s) => s.instances["cube-button"]?.status);
+
+  // Self-healing: force status back to safe values if corrupted (e.g.
+  // old localStorage migration set it to "floating").
+  useEffect(() => {
+    if (status === "floating" || status === "minimized") {
+      widgetStore.getState().setStatus("cube-button", "docked");
+    }
+  }, [status]);
+
   if (status === "inactive") return null;
 
   return (

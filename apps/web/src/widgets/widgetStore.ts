@@ -75,7 +75,16 @@ function statusFromLegacy(
   return "docked";
 }
 
-// ── Z-index counter (runtime only, never persisted) ─────────────────────
+// Widgets that are NOT part of the dock system. They use their own
+// rendering (e.g., cube-button is a standalone circular launcher).
+const NO_DOCK_WIDGETS = new Set(["cube-button"]);
+
+function clampStatus(id: WidgetId, status: WidgetStatus): WidgetStatus {
+  if (NO_DOCK_WIDGETS.has(id) && (status === "floating" || status === "minimized")) {
+    return "docked";
+  }
+  return status;
+}
 // Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
 // Header is z-20, so widgets live in the 21-49 band.
 const Z_MIN = 25;
@@ -119,8 +128,11 @@ export const widgetStore = createStore<WidgetStore>()(
           const instance = s.instances[id];
           if (!instance) return s;
 
+          // Clamp: no-dock widgets can never be floating/minimized
+          const clamped = clampStatus(id, status);
+
           const wasDocked = instance.status === "docked";
-          const willBeDocked = status === "docked";
+          const willBeDocked = clamped === "docked";
 
           let dockOrder = s.dockOrder;
           if (willBeDocked && !wasDocked) {
@@ -134,7 +146,7 @@ export const widgetStore = createStore<WidgetStore>()(
             dockOrder,
             instances: {
               ...s.instances,
-              [id]: { ...instance, status },
+              [id]: { ...instance, status: clamped },
             },
           };
         }),
@@ -147,7 +159,15 @@ export const widgetStore = createStore<WidgetStore>()(
           },
         })),
 
-      setInstances: (instances) => set({ instances }),
+      setInstances: (instances) =>
+        set({
+          instances: Object.fromEntries(
+            Object.entries(instances).map(([id, inst]) => [
+              id,
+              inst ? { ...inst, status: clampStatus(id, inst.status) } : inst,
+            ]),
+          ),
+        }),
 
       setDockOrder: (order) => set({ dockOrder: order }),
 
@@ -245,6 +265,9 @@ export const widgetStore = createStore<WidgetStore>()(
             const minimized = (value.minimized as boolean) ?? false;
             const status = statusFromLegacy(visible, dockMode, minimized);
 
+            // Clamp no-dock widgets
+            const clamped = clampStatus(id as WidgetId, status as WidgetStatus);
+
             // Ensure position is valid — use definition default if missing
             const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
             const position =
@@ -257,7 +280,7 @@ export const widgetStore = createStore<WidgetStore>()(
                   : { x: 100, y: 100 };
 
             cleanedInstances[id] = {
-              status,
+              status: clamped,
               position,
             };
           } else {

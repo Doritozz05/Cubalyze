@@ -12,7 +12,7 @@ export const cubeButtonDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,
-  defaultPosition: { x: 24, y: 72 },
+  defaultPosition: { x: -1, y: -1 }, // sentinel: computed dynamically at runtime
   defaultMinimized: false,
   tags: ["3d", "launcher", "button", "smart", "cube"],
 };

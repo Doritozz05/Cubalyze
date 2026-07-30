@@ -21,7 +21,11 @@ export type { WidgetHostProps };
  * Renders widgets whose status is `"floating"` or `"minimized"`.
  * Docked/inactive widgets are handled by WidgetDock or not shown at all.
  */
+/** Widgets that are never rendered by WidgetHost (handled elsewhere). */
+const EXCLUDED_FROM_HOST = new Set(["cube-button"]);
+
 function WidgetInstanceItem({ id, hostProps }: { id: string; hostProps: WidgetHostProps }) {
+  if (EXCLUDED_FROM_HOST.has(id)) return null;
   const status = useWidgetStore((s) => s.instances[id]?.status);
   if (status !== "floating" && status !== "minimized") return null;
 

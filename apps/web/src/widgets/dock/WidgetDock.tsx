@@ -200,7 +200,7 @@ export function WidgetDock() {
   });
   const orderedSet = new Set(orderedDocked);
   const extraDocked = Object.entries(instances)
-    .filter(([id, inst]) => inst?.status === "docked" && !orderedSet.has(id))
+    .filter(([id, inst]) => inst?.status === "docked" && !orderedSet.has(id) && !EXCLUDED_FROM_DOCK.has(id))
     .map(([id]) => id);
 
   const dockedIds = [...orderedDocked, ...extraDocked];

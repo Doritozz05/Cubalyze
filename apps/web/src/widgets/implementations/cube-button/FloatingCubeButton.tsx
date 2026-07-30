@@ -16,6 +16,11 @@ function getDefaultPos(): Position {
   };
 }
 
+/** True if the position is the sentinel value (meaning "use dynamic default"). */
+function isSentinel(pos: Position): boolean {
+  return pos.x === -1 && pos.y === -1;
+}
+
 export interface FloatingCubeButtonProps {
   /** Fired on click (pointer-up without drag). */
   onClick: () => void;
@@ -41,11 +46,13 @@ export function FloatingCubeButton({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Read position from widgetStore
+  // Read position from widgetStore. Sentinel (-1, -1) = compute dynamically.
   const instance = useWidgetStore(
     useCallback((s) => s.instances["cube-button"], []),
   );
-  const storePosition = instance?.position ?? getDefaultPos();
+  const rawPosition = instance?.position;
+  const storePosition =
+    rawPosition && !isSentinel(rawPosition) ? rawPosition : getDefaultPos();
   const [defaultPos] = useState(getDefaultPos);
 
   const handlePositionChange = useCallback(
