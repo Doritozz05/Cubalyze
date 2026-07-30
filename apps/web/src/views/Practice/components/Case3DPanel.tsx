@@ -29,6 +29,7 @@ export function Case3DPanel({
   className,
 }: Case3DPanelProps) {
   const [selectedSlot, setSelectedSlot] = useState<number>(0);
+  const [resetCameraTrigger, setResetCameraTrigger] = useState<number>(0);
   const isF2L =
     caseData.subsetId === "00000000-0000-4000-9000-000000000003" ||
     caseData.subsetId === "00000000-0000-4000-9000-000000000004" ||
@@ -73,7 +74,10 @@ export function Case3DPanel({
               {SLOT_LABELS.map((slot) => (
                 <button
                   key={slot.id}
-                  onClick={() => setSelectedSlot(slot.id)}
+                  onClick={() => {
+                    setSelectedSlot(slot.id);
+                    setResetCameraTrigger((prev) => prev + 1);
+                  }}
                   className={cn(
                     "py-1 text-[0.65rem] font-medium rounded transition-colors text-center",
                     selectedSlot === slot.id
@@ -92,6 +96,7 @@ export function Case3DPanel({
         <Case3DDiagram
           caseData={caseData}
           selectedSlot={selectedSlot}
+          resetCameraTrigger={resetCameraTrigger}
           className="max-w-60"
           showSetup
           interactive

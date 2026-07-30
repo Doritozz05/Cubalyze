@@ -41,6 +41,7 @@ function buildF2LSkinStyle() {
 export interface Case3DDiagramProps {
   caseData: AlgorithmCase;
   selectedSlot?: number;
+  resetCameraTrigger?: number;
   className?: string;
   showSetup?: boolean;
   /** If true, keeps live WebGL engine running (for detail view). Default: false (uses 3D image snapshot). */
@@ -50,6 +51,7 @@ export interface Case3DDiagramProps {
 export function Case3DDiagram({
   caseData,
   selectedSlot = 0,
+  resetCameraTrigger,
   className,
   showSetup = false,
   interactive = false,
@@ -61,6 +63,7 @@ export function Case3DDiagram({
         <Case3DCanvas
           caseData={caseData}
           selectedSlot={selectedSlot}
+          resetCameraTrigger={resetCameraTrigger}
           className={className}
           order={is2x2 ? 2 : 3}
         />
@@ -177,11 +180,13 @@ function Case3DSnapshotView({
 function Case3DCanvas({
   caseData,
   selectedSlot,
+  resetCameraTrigger,
   className,
   order = 3,
 }: {
   caseData: AlgorithmCase;
   selectedSlot: number;
+  resetCameraTrigger?: number;
   className?: string;
   order?: number;
 }) {
@@ -216,7 +221,6 @@ function Case3DCanvas({
     }
   };
 
-  const hasSetCameraRef = useRef(false);
   const is2x2 = order === 2;
   const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
 
@@ -233,10 +237,8 @@ function Case3DCanvas({
         engine.updateStyle(getSkinStyle("default"));
       }
 
-      if (!hasSetCameraRef.current) {
-        engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
-        hasSetCameraRef.current = true;
-      }
+      // Reset camera to default isometric view angle
+      engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
 
       engine.clearLayerGray();
       if (caseData.setupScramble) {
@@ -278,6 +280,7 @@ function Case3DCanvas({
     caseData.setupScramble,
     caseData.subsetId,
     selectedSlot,
+    resetCameraTrigger,
     isF2L,
     is2x2,
     caseData.tags,
