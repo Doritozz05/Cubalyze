@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { CaseStateGenerator } from "../caseGenerator";
 import { FaceletStringConverter } from "@cubeforge/math-core";
@@ -21,6 +21,7 @@ import { getSeedData } from "../seed/index";
 // ─── Parse SpeedCubeDB jcube data from the HTML ────────────────────────────
 
 const HTML_PATH = resolve(__dirname, "../../../../pruebas/speedcubedbpll.html");
+const HAS_HTML = existsSync(HTML_PATH);
 
 /** Color mapping: SpeedCubeDB jcube lowercase → Kociemba face labels.
  *  Both Cubeforge and SpeedCubeDB use R=orange, L=red. */
@@ -74,9 +75,9 @@ function getScdbStrip(
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-describe("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
-  const html = readFileSync(HTML_PATH, "utf-8");
-  const scdbData = extractJcubeData(html);
+describe.runIf(HAS_HTML)("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
+  const html = HAS_HTML ? readFileSync(HTML_PATH, "utf-8") : "";
+  const scdbData = HAS_HTML ? extractJcubeData(html) : [];
   const { cases, algorithms } = getSeedData();
   const PLL_SUBSET = "00000000-0000-4000-9000-000000000001";
   const pllCases = cases.filter((c) => c.subsetId === PLL_SUBSET);

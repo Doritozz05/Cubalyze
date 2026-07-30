@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { CaseStateGenerator } from "../caseGenerator";
 import { FaceletStringConverter } from "@cubeforge/math-core";
@@ -27,6 +27,7 @@ import { getSeedData } from "../seed/index";
 // ─── Parse SpeedCubeDB jcube data from the HTML ────────────────────────────
 
 const HTML_PATH = resolve(__dirname, "../../../../pruebas/speedcubedboll.html");
+const HAS_HTML = existsSync(HTML_PATH);
 
 interface JcubeData {
   alg: string;
@@ -159,9 +160,9 @@ function compareStrips(caseName: string, jcube: JcubeData, cf: string): StripCom
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-describe("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
-  const html = readFileSync(HTML_PATH, "utf-8");
-  const scdbData = extractJcubeData(html);
+describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
+  const html = HAS_HTML ? readFileSync(HTML_PATH, "utf-8") : "";
+  const scdbData = HAS_HTML ? extractJcubeData(html) : [];
   const { cases, algorithms } = getSeedData();
   const OLL_SUBSET = "00000000-0000-4000-9000-000000000002";
   const ollCases = cases.filter((c) => c.subsetId === OLL_SUBSET);
