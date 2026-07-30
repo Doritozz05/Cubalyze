@@ -14,10 +14,16 @@ function sid(n: number): string {
 // ─── Methods ───────────────────────────────────────────────────────────────
 
 export const METHODS: AlgorithmMethod[] = [
+  // ── 3×3 ──────────────────────────────────────────────────────────────
   { id: mid(1), name: 'CFOP', description: 'Cross, F2L, OLL, PLL — the most popular speedsolving method.', sortOrder: 1, puzzleType: '3x3x3' },
   { id: mid(2), name: 'Roux', description: 'Blockbuilding method with CMLL and LSE. Very efficient move count.', sortOrder: 2, puzzleType: '3x3x3' },
   { id: mid(3), name: 'ZZ', description: 'Edge orientation first, then blockbuilding. No cube rotations needed.', sortOrder: 3, puzzleType: '3x3x3' },
   { id: mid(4), name: 'Petrus', description: 'Blockbuilding method: 2x2x2 → 2x2x3 → EO → F2L → LL.', sortOrder: 4, puzzleType: '3x3x3' },
+
+  // ── 2×2 ──────────────────────────────────────────────────────────────
+  { id: mid(5), name: 'Ortega', description: 'Most popular 2×2 method: face → OLL → PBL.', sortOrder: 1, puzzleType: '2x2x2' },
+  { id: mid(6), name: 'CLL', description: 'Corners of Last Layer — 42 cases when first layer is solved.', sortOrder: 2, puzzleType: '2x2x2' },
+  { id: mid(7), name: 'EG', description: 'Extended CLL: EG-1 (adjacent swap) and EG-2 (diagonal swap) when first face is solved.', sortOrder: 3, puzzleType: '2x2x2' },
 ];
 
 // ─── Subsets ───────────────────────────────────────────────────────────────
@@ -50,6 +56,19 @@ export const SUBSETS: AlgorithmSubset[] = [
   { id: sid(40), methodId: mid(4), name: '2x2x2 Block', description: 'Building the first 2x2x2 block.', sortOrder: 0, puzzleType: '3x3x3' },
   { id: sid(41), methodId: mid(4), name: '2x2x3 Block', description: 'Extending to a 2x2x3 block.', sortOrder: 1, puzzleType: '3x3x3' },
   { id: sid(42), methodId: mid(4), name: 'EO', description: 'Edge orientation for Petrus.', sortOrder: 2, puzzleType: '3x3x3' },
+
+  // ── 2×2: Ortega ─────────────────────────────────────────────────────
+  { id: sid(50), methodId: mid(5), name: 'Face 1', description: 'Building the first face (not necessarily a layer).', sortOrder: 1, puzzleType: '2x2x2' },
+  { id: sid(51), methodId: mid(5), name: 'OLL', description: 'Orient the last face (7 cases for 2×2).', sortOrder: 2, puzzleType: '2x2x2' },
+  { id: sid(52), methodId: mid(5), name: 'PBL', description: 'Permute Both Layers — solve the cube after OLL.', sortOrder: 3, puzzleType: '2x2x2' },
+
+  // ── 2×2: CLL ────────────────────────────────────────────────────────
+  { id: sid(60), methodId: mid(6), name: 'CLL', description: 'Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.', sortOrder: 1, puzzleType: '2x2x2' },
+
+  // ── 2×2: EG ─────────────────────────────────────────────────────────
+  { id: sid(70), methodId: mid(7), name: 'EG', description: 'Extended CLL — 128 cases total.', sortOrder: 1, puzzleType: '2x2x2' },
+  { id: sid(71), methodId: mid(7), parentId: sid(70), name: 'EG-1', description: 'Bottom layer has adjacent swap. 42 cases.', sortOrder: 1, puzzleType: '2x2x2' },
+  { id: sid(72), methodId: mid(7), parentId: sid(70), name: 'EG-2', description: 'Bottom layer has diagonal swap. 42 cases.', sortOrder: 2, puzzleType: '2x2x2' },
 ];
 
 /** Get top-level subsets for a method (without a parentId). */
