@@ -379,7 +379,7 @@ export function CubeforgeCommandPalette({
         </div>
 
         {/* Command List Body */}
-        <div className="max-h-[400px] overflow-y-auto p-2 space-y-3">
+        <div className="max-h-100 overflow-y-auto p-2 space-y-3">
           {filteredCommands.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
               No results found for &quot;{query}&quot;
