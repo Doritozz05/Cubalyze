@@ -75,13 +75,28 @@ function applySnap(
   if (Math.abs(right - vw) < threshold) x = vw - elW;
   if (Math.abs(bottom - vh) < threshold) y = vh - elH;
 
-  // ── Widget-to-widget (left and top edges only — avoids false
-  //     snaps from mismatched widget widths/heights) ──────────────
+  // ── Widget-to-widget (all edges, using real panelWidth sizes) ───
   for (const t of targets) {
+    const tRight = t.x + t.w;
+    const tBottom = t.y + t.h;
+
     // Left edge → left edge
     if (Math.abs(x - t.x) < threshold) x = t.x;
+    // Right edge → right edge
+    if (Math.abs(right - tRight) < threshold) x = tRight - elW;
+    // Left edge → right edge (adjacent)
+    if (Math.abs(x - tRight) < threshold) x = tRight;
+    // Right edge → left edge (adjacent)
+    if (Math.abs(right - t.x) < threshold) x = t.x - elW;
+
     // Top edge → top edge
     if (Math.abs(y - t.y) < threshold) y = t.y;
+    // Bottom edge → bottom edge
+    if (Math.abs(bottom - tBottom) < threshold) y = tBottom - elH;
+    // Top edge → bottom edge (adjacent)
+    if (Math.abs(y - tBottom) < threshold) y = tBottom;
+    // Bottom edge → top edge (adjacent)
+    if (Math.abs(bottom - t.y) < threshold) y = t.y - elH;
   }
 
   return { x, y };

@@ -35,6 +35,8 @@ export interface WidgetStoreActions {
   /** Set a widget's status directly. Use this instead of the old setDockMode + setMinimized. */
   setStatus: (id: WidgetId, status: WidgetStatus) => void;
   setPosition: (id: WidgetId, position: { x: number; y: number }) => void;
+  /** Set the widget's panel width for accurate snap calculations. */
+  setSize: (id: WidgetId, panelWidth: number) => void;
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
   /** Reorder docked widgets. */
   setDockOrder: (order: WidgetId[]) => void;
@@ -156,6 +158,14 @@ export const widgetStore = createStore<WidgetStore>()(
           instances: {
             ...s.instances,
             [id]: { ...s.instances[id], position },
+          },
+        })),
+
+      setSize: (id, panelWidth) =>
+        set((s) => ({
+          instances: {
+            ...s.instances,
+            [id]: { ...s.instances[id], panelWidth },
           },
         })),
 
@@ -326,7 +336,7 @@ export const widgetStore = createStore<WidgetStore>()(
           Object.entries(state.instances).map(([id, inst]) => [
             id,
             // Strip runtime-only fields before persisting
-            (({ zIndex: _z, ...rest }) => rest)(inst),
+            (({ zIndex: _z, panelWidth: _pw, ...rest }) => rest)(inst),
           ]),
         ),
         customWidgets: state.customWidgets,

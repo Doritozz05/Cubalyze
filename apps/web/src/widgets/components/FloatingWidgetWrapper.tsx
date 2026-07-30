@@ -80,7 +80,12 @@ export function FloatingWidgetWrapper({
   const minimized = status === "minimized";
   const zIndex = instance?.zIndex ?? 25;
 
-  // ── Snap targets: other floating/minimized widgets ────────────────────
+  // Write panelWidth to store on mount so other widgets can use it for snap
+  useEffect(() => {
+    widgetStore.getState().setSize(widgetId, panelWidth);
+  }, [widgetId, panelWidth]);
+
+  // ── Snap targets: other floating/minimized widgets with real sizes ────
   const allInstances = useWidgetStore((s) => s.instances);
   const snapTargets = useMemo<SnapRect[]>(() => {
     return Object.entries(allInstances)
@@ -92,8 +97,8 @@ export function FloatingWidgetWrapper({
       .map(([, inst]) => ({
         x: inst.position.x,
         y: inst.position.y,
-        w: 280, // approximate; real sizes vary but this gives good snap results
-        h: 200,
+        w: inst.panelWidth ?? 340,
+        h: Math.round((inst.panelWidth ?? 340) * 0.85), // reasonable estimate
       }));
   }, [allInstances, widgetId]);
 

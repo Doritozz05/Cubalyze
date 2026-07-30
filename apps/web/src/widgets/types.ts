@@ -62,4 +62,10 @@ export interface WidgetInstanceState {
    * Higher value = rendered on top. Updated by `focusWidget()`.
    */
   zIndex?: number;
+  /**
+   * Panel width in px (runtime only, NOT persisted).
+   * Written by FloatingWidgetWrapper on mount so other widgets
+   * can use accurate sizes for edge snapping.
+   */
+  panelWidth?: number;
 }
