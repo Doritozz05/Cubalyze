@@ -84,9 +84,10 @@ export function FloatingWidgetWrapper({
   const zIndex = instance?.zIndex ?? 25;
 
   // ── Drag: sync position back to store on change ────────────────────────
-  // Detect dock zone: if dragged near the header (y < DOCK_THRESHOLD),
-  // auto-dock the widget instead of saving position.
-  const DOCK_THRESHOLD = 70; // px from top of viewport
+  // Detect dock zone: if dragged very close to the viewport top edge
+  // (where the header dock bar lives), auto-dock the widget.
+  // Reduced to 30px so it only docks when almost on top of the dock area.
+  const DOCK_THRESHOLD = 30; // px from top of viewport
 
   const handlePositionChange = useCallback(
     (pos: { x: number; y: number }) => {
@@ -110,7 +111,7 @@ export function FloatingWidgetWrapper({
     onPositionChange: handlePositionChange,
     // Update dock zone state during drag for visual feedback
     onDrag: (pos) => {
-      dockZoneState.active = pos.y < 100;
+      dockZoneState.active = pos.y < 50;
     },
   });
 
