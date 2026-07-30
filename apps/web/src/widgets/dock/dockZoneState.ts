@@ -101,3 +101,14 @@ export function useDropX(): number {
     () => _dropX,
   );
 }
+
+/**
+ * React hook: returns the ID of the widget currently being dragged over
+ * the dock zone, or null if none.
+ */
+export function useDraggingWidgetId(): string | null {
+  return useSyncExternalStore(
+    dockZoneState.subscribe,
+    () => (_nearIds.size > 0 ? [..._nearIds][0] : null),
+  );
+}
