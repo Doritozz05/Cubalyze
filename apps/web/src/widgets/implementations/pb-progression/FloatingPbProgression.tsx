@@ -86,7 +86,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
       headerActions={headerActions}
       panelWidth={300}
       panelMaxHeight={320}
-      defaultPosition={{ x: 420, y: 380 }}
+      defaultPosition={{ x: 880, y: 440 }}
     >
       <div className="p-3">
         {milestones.length === 0 ? (

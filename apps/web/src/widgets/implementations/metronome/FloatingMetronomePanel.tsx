@@ -227,7 +227,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
       icon={Activity}
       label="Metronome"
       panelWidth={280}
-      defaultPosition={{ x: 72, y: 340 }}
+      defaultPosition={{ x: 920, y: 72 }}
       className={className}
     >
       <div className="p-3.5 space-y-3.5 w-full select-none text-ink">

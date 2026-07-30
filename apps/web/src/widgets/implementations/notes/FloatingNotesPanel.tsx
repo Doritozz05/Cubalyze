@@ -74,6 +74,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
       widgetId="notes"
       label="Notes"
       icon={Notebook}
+      defaultPosition={{ x: 880, y: 440 }}
       headerActions={
         <div className="flex items-center gap-1 rounded bg-surface-2 border border-line px-1.5 py-0.5 text-[10px] text-ink-3 font-mono">
           <span>{notes.length} {notes.length === 1 ? "note" : "notes"}</span>

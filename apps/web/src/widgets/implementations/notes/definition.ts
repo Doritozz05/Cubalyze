@@ -12,7 +12,7 @@ export const notesDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: false,
-  defaultPosition: { x: 72, y: 380 },
+  defaultPosition: { x: 880, y: 440 },
   defaultMinimized: true,
   tags: ["notes", "scratchpad", "todos", "goals", "session", "training", "journal"],
 };

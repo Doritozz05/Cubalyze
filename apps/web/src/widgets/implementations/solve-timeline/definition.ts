@@ -12,7 +12,7 @@ export const solveTimelineDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: false,
-  defaultPosition: { x: 72, y: 120 },
+  defaultPosition: { x: 420, y: 72 },
   defaultMinimized: true,
   tags: ["timeline", "phases", "analysis", "pauses", "last-solve"],
 };

@@ -12,7 +12,7 @@ export const timesLogDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,
-  defaultPosition: { x: 72, y: 120 },
+  defaultPosition: { x: 24, y: 72 },
   defaultMinimized: true,
   tags: ["solves", "history", "times", "log", "list"],
 };

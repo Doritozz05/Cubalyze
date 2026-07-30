@@ -57,7 +57,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
       pillBadge2={puzzle}
       headerActions={headerActions}
       panelWidth={340}
-      defaultPosition={{ x: 420, y: 120 }}
+      defaultPosition={{ x: 880, y: 72 }}
     >
       <div className="p-3">
         {histogram.length === 0 ? (

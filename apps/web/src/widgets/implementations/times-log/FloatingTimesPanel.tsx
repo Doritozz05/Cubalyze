@@ -67,7 +67,7 @@ function DesktopTimesPanel({
       label="Times"
       pillBadge={`${solves.length}`}
       panelWidth={PANEL_WIDTH}
-      defaultPosition={{ x: 72, y: 120 }}
+      defaultPosition={{ x: 24, y: 72 }}
       headerActions={headerActions}
     >
       <div style={{ height: PANEL_HEIGHT }} className="min-h-0">

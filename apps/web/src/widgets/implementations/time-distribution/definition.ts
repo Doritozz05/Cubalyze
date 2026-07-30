@@ -12,7 +12,7 @@ export const timeDistributionDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: false,
-  defaultPosition: { x: 420, y: 120 },
+  defaultPosition: { x: 880, y: 72 },
   defaultMinimized: true,
   tags: ["distribution", "histogram", "stats", "consistency", "bar-chart"],
 };

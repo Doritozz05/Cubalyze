@@ -180,7 +180,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
       widgetId="scramble-2d"
       icon={Shuffle}
       label="Scramble"
-      defaultPosition={{ x: 72, y: 520 }}
+      defaultPosition={{ x: 24, y: 440 }}
       className={className}
     >
       <div className="p-2.5 flex justify-center items-center overflow-visible">

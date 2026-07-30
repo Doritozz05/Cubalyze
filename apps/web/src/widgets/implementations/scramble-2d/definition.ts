@@ -12,7 +12,7 @@ export const scramble2DDefinition: WidgetDefinition = {
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,
-  defaultPosition: { x: 72, y: 520 },
+  defaultPosition: { x: 24, y: 440 },
   defaultMinimized: true,
   tags: ["scramble", "2d", "net", "visualizer", "cube"],
 };

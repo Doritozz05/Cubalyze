@@ -43,7 +43,7 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
       visible: w.defaultActive,
       minimized: w.defaultMinimized,
       position: { ...w.defaultPosition },
-      dockMode: "floating",
+      dockMode: "docked",
     };
   }
   return map;
@@ -56,18 +56,28 @@ export const widgetStore = createStore<WidgetStore>()(
     (set) => ({
       instances: buildDefaultInstances(),
       customWidgets: [],
-      dockOrder: [],
+      dockOrder: BUILT_IN_WIDGETS.map((w) => w.id),
 
       toggleWidget: (id) =>
-        set((s) => ({
-          instances: {
-            ...s.instances,
-            [id]: {
-              ...s.instances[id],
-              visible: !s.instances[id]?.visible,
+        set((s) => {
+          const inst = s.instances[id];
+          const willBeVisible = !inst?.visible;
+          let dockOrder = s.dockOrder;
+          if (willBeVisible && !dockOrder.includes(id)) {
+            dockOrder = [...dockOrder, id];
+          }
+          return {
+            dockOrder,
+            instances: {
+              ...s.instances,
+              [id]: {
+                ...inst,
+                visible: willBeVisible,
+                dockMode: inst?.dockMode ?? "docked",
+              },
             },
-          },
-        })),
+          };
+        }),
 
       setMinimized: (id, minimized) =>
         set((s) => ({
@@ -121,13 +131,14 @@ export const widgetStore = createStore<WidgetStore>()(
           if (s.customWidgets.some((w) => w.id === def.id)) return s;
           return {
             customWidgets: [...s.customWidgets, def],
+            dockOrder: [...s.dockOrder, def.id],
             instances: {
               ...s.instances,
               [def.id]: {
                 visible: def.defaultActive,
                 minimized: def.defaultMinimized,
                 position: { ...def.defaultPosition },
-                dockMode: "floating",
+                dockMode: "docked",
               },
             },
           };
@@ -144,8 +155,8 @@ export const widgetStore = createStore<WidgetStore>()(
     }),
     {
       name: "cubeforge:widgets",
-      version: 2,
-      migrate: (persisted, _version) => {
+      version: 3,
+      migrate: (persisted, oldVersion) => {
         const raw = (persisted ?? {}) as Record<string, unknown>;
         const instances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
         const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));
@@ -156,9 +167,13 @@ export const widgetStore = createStore<WidgetStore>()(
           const isBuiltIn = validIds.has(id);
           const isCustom = ((raw.customWidgets ?? []) as WidgetDefinition[]).some((w) => w.id === id);
           if (isBuiltIn || isCustom) {
+            const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
+            // If migrating from version < 3, update default positions & dockMode
+            const forceDefaultDock = oldVersion < 3;
             cleanedInstances[id] = {
               ...value,
-              dockMode: value.dockMode ?? "floating",
+              dockMode: forceDefaultDock ? "docked" : (value.dockMode ?? "docked"),
+              position: forceDefaultDock && def ? { ...def.defaultPosition } : (value.position ?? def?.defaultPosition),
             };
           }
         }
@@ -170,15 +185,21 @@ export const widgetStore = createStore<WidgetStore>()(
               visible: w.defaultActive,
               minimized: w.defaultMinimized,
               position: { ...w.defaultPosition },
-              dockMode: "floating",
+              dockMode: "docked",
             };
           }
         }
 
+        const builtInOrder = BUILT_IN_WIDGETS.map((w) => w.id as string);
+        const existingDockOrder = (raw.dockOrder ?? []) as string[];
+        const combinedOrder = Array.from(new Set([...builtInOrder, ...existingDockOrder])).filter(
+          (id) => cleanedInstances[id],
+        );
+
         return {
           ...raw,
           instances: cleanedInstances,
-          dockOrder: ((raw.dockOrder ?? []) as string[]).filter((id) => cleanedInstances[id]),
+          dockOrder: combinedOrder,
         } as Record<string, unknown>;
       },
       partialize: (state) => ({

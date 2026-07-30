@@ -176,6 +176,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
       label="Algorithms"
       icon={BookOpen}
       panelWidth={320}
+      defaultPosition={{ x: 380, y: 72 }}
       headerActions={
         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-2 border border-line text-[10px] text-ink-3 font-mono">
           <span className="text-accent-cyan font-medium">

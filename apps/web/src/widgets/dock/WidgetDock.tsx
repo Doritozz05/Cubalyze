@@ -48,22 +48,15 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
     const inst = store.instances[widgetId];
     if (!inst) return;
 
-    // Launch: undock and show floating panel below header
+    // Launch: undock and show floating panel at its defined position
     store.setDockMode(widgetId, "floating");
     store.setMinimized(widgetId, false);
+    if (!inst.position && definition.defaultPosition) {
+      store.setPosition(widgetId, definition.defaultPosition);
+    }
     const fresh = widgetStore.getState();
     if (!fresh.instances[widgetId]?.visible) {
       fresh.toggleWidget(widgetId);
-    }
-    // Only set default position on first launch
-    const hasCustomPosition =
-      inst.position &&
-      (inst.position.x > 10 || inst.position.y > 80);
-    if (!hasCustomPosition) {
-      store.setPosition(widgetId, {
-        x: Math.max(50, (window.innerWidth - 360) / 2),
-        y: 68,
-      });
     }
   };
 
@@ -201,10 +194,16 @@ export function WidgetDock() {
   const instances = useWidgetStore((s) => s.instances);
 
   // Filter to docked widgets that are also active (not toggled off in WidgetExplorer)
-  const dockedIds = dockOrder.filter((id) => {
+  const orderedDocked = dockOrder.filter((id) => {
     const inst = instances[id];
     return inst && inst.dockMode === "docked" && inst.visible;
   });
+  const orderedSet = new Set(orderedDocked);
+  const extraDocked = Object.entries(instances)
+    .filter(([id, inst]) => inst?.dockMode === "docked" && inst?.visible && !orderedSet.has(id))
+    .map(([id]) => id);
+
+  const dockedIds = [...orderedDocked, ...extraDocked];
 
   if (dockedIds.length === 0) return null;
 

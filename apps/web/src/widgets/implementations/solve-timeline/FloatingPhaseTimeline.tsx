@@ -100,7 +100,7 @@ export function FloatingPhaseTimeline({
       pillBadge2={timelinePhaseEntries.length > 0 ? `${timelinePhaseEntries.length} phases` : undefined}
       panelWidth={340}
       panelMaxHeight={360}
-      defaultPosition={{ x: 72, y: 120 }}
+      defaultPosition={{ x: 420, y: 72 }}
     >
       <div className="p-3">
         {/* Solve picker */}
