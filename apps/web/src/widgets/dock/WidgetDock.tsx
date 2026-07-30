@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useCallback, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
-import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
+import { useDockZoneActive, useDropX, dockZoneState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -18,9 +18,15 @@ const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
  *
  * - **Horizontal drag**: reorders within the dock (macOS‑style).
  * - **Vertical drag down**: undocks to a free‑floating minimized pill.
- * - **Click**: launches the widget as a floating panel.
+ * - **Click**: launches the widget as a floating panel at a smart position.
  */
-function DockPill({ widgetId }: { widgetId: WidgetId }) {
+function DockPill({
+  widgetId,
+  onPillRef,
+}: {
+  widgetId: WidgetId;
+  onPillRef?: (id: string, el: HTMLElement | null) => void;
+}) {
   const definition = getWidget(widgetId);
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
   const isDocked = status === "docked";
@@ -38,8 +44,27 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
     if (!inst) return;
 
     store.setStatus(widgetId, "floating");
-    if (!inst.position && definition.defaultPosition) {
-      store.setPosition(widgetId, definition.defaultPosition);
+
+    // Compute a smart launch position if the stored position is unreasonable
+    // (behind sidebar, off-screen, under header, etc.)
+    const pos = inst.position;
+    const panelW = definition.panelWidth ?? 340;
+    const isReasonable =
+      pos &&
+      pos.x >= 72 && // right of left sidebar
+      pos.y >= 60 && // below header
+      pos.x + panelW < window.innerWidth - 16 &&
+      pos.y < window.innerHeight - 60;
+
+    if (!isReasonable) {
+      // Count currently-open floating widgets for a cascade offset
+      const floatingCount = Object.values(store.instances).filter(
+        (i) => i.status === "floating" || i.status === "minimized",
+      ).length;
+      store.setPosition(widgetId, {
+        x: Math.max(72, Math.round((window.innerWidth - panelW) / 2)),
+        y: 72 + floatingCount * 30,
+      });
     }
   };
 
@@ -51,6 +76,7 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
           value={widgetId}
           drag
           layout
+          ref={(el: HTMLElement | null) => onPillRef?.(widgetId, el)}
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.85 }}
@@ -106,12 +132,26 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
  *
  * Shows all widgets with `status === 'docked'` as compact pills in an
  * Apple‑style draggable row. Drag horizontally to reorder, drag down to
- * undock, click to launch.
+ * undock, click to launch. When dragging a floating widget over the dock,
+ * a thin accent bar shows where it will be inserted.
  */
 export function WidgetDock() {
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
+  const dropX = useDropX();
+
+  // ── Pill refs for position calculation ─────────────────────────────────
+  const pillRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const dockRef = useRef<HTMLDivElement>(null);
+
+  const onPillRef = useCallback((id: string, el: HTMLElement | null) => {
+    if (el) pillRefs.current.set(id, el);
+    else pillRefs.current.delete(id);
+  }, []);
+
+  // ── Insertion index calculation ───────────────────────────────────────
+  const [insertIndex, setInsertIndex] = useState(-1);
 
   // Filter to docked widgets (exclude special widgets like cube-button)
   const orderedDocked = dockOrder.filter((id) => {
@@ -131,6 +171,82 @@ export function WidgetDock() {
 
   const dockedIds = [...orderedDocked, ...extraDocked];
 
+  useLayoutEffect(() => {
+    if (!isDockZoneActive || dockedIds.length === 0) {
+      setInsertIndex(-1);
+      dockZoneState.setDropIndex(-1);
+      return;
+    }
+
+    // Sort pill elements by their DOM position (left to right)
+    const sorted = [...pillRefs.current.entries()]
+      .filter(([id]) => dockedIds.includes(id))
+      .sort((a, b) => {
+        const ra = a[1].getBoundingClientRect();
+        const rb = b[1].getBoundingClientRect();
+        return ra.left - rb.left;
+      });
+
+    if (sorted.length === 0) {
+      setInsertIndex(0);
+      dockZoneState.setDropIndex(0);
+      return;
+    }
+
+    // Find where dropX falls among pills: insert before the first pill whose
+    // center is to the right of dropX
+    let idx = sorted.length; // default: append to end
+    for (let i = 0; i < sorted.length; i++) {
+      const rect = sorted[i][1].getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      if (dropX < midX) {
+        idx = i;
+        break;
+      }
+    }
+
+    setInsertIndex(idx);
+    dockZoneState.setDropIndex(idx);
+  }, [dropX, isDockZoneActive, dockedIds]);
+
+  // ── Insertion indicator position ───────────────────────────────────────
+  const [indicatorX, setIndicatorX] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (!isDockZoneActive || insertIndex < 0 || !dockRef.current) {
+      setIndicatorX(null);
+      return;
+    }
+
+    const dockRect = dockRef.current.getBoundingClientRect();
+    const sorted = [...pillRefs.current.entries()]
+      .filter(([id]) => dockedIds.includes(id))
+      .sort((a, b) => {
+        const ra = a[1].getBoundingClientRect();
+        const rb = b[1].getBoundingClientRect();
+        return ra.left - rb.left;
+      });
+
+    let x: number;
+    if (sorted.length === 0) {
+      x = 0;
+    } else if (insertIndex === 0) {
+      // Before first pill
+      x = sorted[0][1].getBoundingClientRect().left - dockRect.left - 5;
+    } else if (insertIndex >= sorted.length) {
+      // After last pill
+      const last = sorted[sorted.length - 1][1].getBoundingClientRect();
+      x = last.right - dockRect.left + 5;
+    } else {
+      // Between two pills
+      const left = sorted[insertIndex - 1][1].getBoundingClientRect();
+      const right = sorted[insertIndex][1].getBoundingClientRect();
+      x = (right.left + left.right) / 2 - dockRect.left;
+    }
+
+    setIndicatorX(x);
+  }, [insertIndex, isDockZoneActive, dockedIds, dropX]);
+
   const handleReorder = (newOrder: WidgetId[]) => {
     // Merge reordered visible pills with invisible (floating) items
     // that were in dockOrder — so they keep their position when re-docked.
@@ -143,34 +259,35 @@ export function WidgetDock() {
   if (dockedIds.length === 0 && !isDockZoneActive) return null;
 
   return (
-    <Reorder.Group
-      as="div"
-      axis="x"
-      values={dockedIds}
-      onReorder={handleReorder}
-      className="flex flex-1 items-center justify-center gap-1.5 px-1"
-      role="toolbar"
-      aria-label="Docked widgets"
-    >
-      <AnimatePresence mode="popLayout">
-        {dockedIds.map((id) => (
-          <DockPill key={id} widgetId={id} />
-        ))}
+    <div ref={dockRef} className="relative flex flex-1 items-center justify-center px-1">
+      <Reorder.Group
+        as="div"
+        axis="x"
+        values={dockedIds}
+        onReorder={handleReorder}
+        className="flex items-center gap-1.5"
+        role="toolbar"
+        aria-label="Docked widgets"
+      >
+        <AnimatePresence mode="popLayout">
+          {dockedIds.map((id) => (
+            <DockPill key={id} widgetId={id} onPillRef={onPillRef} />
+          ))}
+        </AnimatePresence>
+      </Reorder.Group>
 
-        {/* Drop-target indicator: shown when any widget is being dragged near the dock */}
-        {isDockZoneActive && (
-          <motion.div
-            layout
-            key="dock-target-pill"
-            initial={{ opacity: 0, width: 0, scaleX: 0.5 }}
-            animate={{ opacity: 1, width: "2.5rem", scaleX: 1 }}
-            exit={{ opacity: 0, width: 0, scaleX: 0.5 }}
-            transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/3"
-            aria-hidden
-          />
-        )}
-      </AnimatePresence>
-    </Reorder.Group>
+      {/* Insertion indicator: thin accent bar at the calculated drop position */}
+      {isDockZoneActive && indicatorX !== null && (
+        <motion.div
+          initial={{ opacity: 0, scaleY: 0.3 }}
+          animate={{ opacity: 1, scaleY: 1 }}
+          exit={{ opacity: 0, scaleY: 0.3 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          style={{ left: indicatorX }}
+          className="absolute top-1.5 bottom-1.5 w-0.5 rounded-full bg-accent pointer-events-none z-10"
+          aria-hidden
+        />
+      )}
+    </div>
   );
 }

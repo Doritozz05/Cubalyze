@@ -110,7 +110,8 @@ export function FloatingWidgetWrapper({
       const store = widgetStore.getState();
       dockZoneState.leave(widgetId);
       if (pos.y < DOCK_THRESHOLD) {
-        store.setStatus(widgetId, "docked");
+        const index = dockZoneState.dropIndex;
+        store.dockAt(widgetId, index);
         store.setPosition(widgetId, pos);
       } else {
         store.setPosition(widgetId, pos);
@@ -123,8 +124,11 @@ export function FloatingWidgetWrapper({
     clickThreshold: 4,
     onPositionChange: handlePositionChange,
     onDrag: (pos) => {
-      if (pos.y < 50) dockZoneState.enter(widgetId);
-      else dockZoneState.leave(widgetId);
+      if (pos.y < 50) {
+        dockZoneState.enter(widgetId, pos.x);
+      } else {
+        dockZoneState.leave(widgetId);
+      }
     },
     snapThreshold: 8,
     snapTargets,

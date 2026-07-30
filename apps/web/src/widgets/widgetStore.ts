@@ -40,6 +40,8 @@ export interface WidgetStoreActions {
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
   /** Reorder docked widgets. */
   setDockOrder: (order: WidgetId[]) => void;
+  /** Dock a widget at a specific insertion index (-1 = append to end). */
+  dockAt: (id: WidgetId, index: number) => void;
   /** Bring a widget to the top of the z-stack (like clicking a window in a desktop OS). */
   focusWidget: (id: WidgetId) => void;
   /** Register a custom widget. Adds to registry + creates instance state. */
@@ -180,6 +182,27 @@ export const widgetStore = createStore<WidgetStore>()(
         }),
 
       setDockOrder: (order) => set({ dockOrder: order }),
+
+      // ── Dock at specific index ────────────────────────────────────
+      dockAt: (id, index) =>
+        set((s) => {
+          const instance = s.instances[id];
+          if (!instance) return s;
+          const clamped = clampStatus(id, "docked");
+          let dockOrder = [...s.dockOrder.filter((i) => i !== id)];
+          if (index >= 0 && index < dockOrder.length) {
+            dockOrder.splice(index, 0, id);
+          } else {
+            dockOrder.push(id);
+          }
+          return {
+            dockOrder,
+            instances: {
+              ...s.instances,
+              [id]: { ...instance, status: clamped },
+            },
+          };
+        }),
 
       focusWidget: (id) =>
         set((s) => {
