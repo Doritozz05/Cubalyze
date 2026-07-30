@@ -6,14 +6,23 @@ export class Min2PhaseSolver implements ISolver {
   private initialized = false;
 
   constructor() {
-    // We can lazily initialize or initialize here.
-    // min2phase.initFull() takes about ~150-350ms and calculates pruning tables.
+    // Lazy initialization — initFull() is called on first solve() or on explicit init().
+  }
+
+  /**
+   * Pre-initialise the WASM pruning tables.
+   * Call this at app startup to avoid the ~150-350ms delay on the first solve.
+   * Safe to call multiple times (idempotent).
+   */
+  public init(): void {
+    if (this.initialized) return;
+    min2phase.initFull();
+    this.initialized = true;
   }
 
   private ensureInitialized() {
     if (!this.initialized) {
-      min2phase.initFull();
-      this.initialized = true;
+      this.init();
     }
   }
 

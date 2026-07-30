@@ -8,6 +8,13 @@
  *
  * Only 2×2 and 3×3 are fully functional right now; other categories fall
  * back to the 3×3 scramble generator (safe default, no breakage).
+ *
+ * ## Solver initialisation
+ *
+ * Both solvers are initialised lazily on first use, but the 2×2 solver
+ * needs ~800ms to build its combined pruning table, and Min2Phase needs
+ * ~150-350ms for its WASM tables. Call {@link preloadSolvers} at app
+ * startup to front-load this cost and make the first scramble instant.
  */
 
 import type { PuzzleCategory } from "@/types";
@@ -44,21 +51,49 @@ export function puzzleCategoryToOrder(category: PuzzleCategory): number {
   }
 }
 
-// ── Lazy singleton scramblers (tables built once) ────────────────────────
+// ── Singleton solvers / scramblers (tables built once, shared globally) ──
 
 let min2phaseSolver: Min2PhaseSolver | null = null;
 let twoByTwoScrambler: TwoByTwoScrambler | null = null;
+let preloaded = false;
 
-function getMin2PhaseSolver(): Min2PhaseSolver {
+/** Get or create the singleton Min2Phase solver (3×3). */
+export function getMin2PhaseSolver(): Min2PhaseSolver {
   if (!min2phaseSolver) min2phaseSolver = new Min2PhaseSolver();
   return min2phaseSolver;
 }
 
-function getTwoByTwoScrambler(): TwoByTwoScrambler {
+/** Get or create the singleton 2×2 scrambler (includes the combined table). */
+export function getTwoByTwoScrambler(): TwoByTwoScrambler {
   if (!twoByTwoScrambler) {
     twoByTwoScrambler = new TwoByTwoScrambler(new TwoByTwoSolver());
   }
   return twoByTwoScrambler;
+}
+
+/**
+ * Pre-initialise all solvers at app startup.
+ *
+ * Call once from an App-level effect. After this, the first scramble for
+ * either puzzle type is instant (< 1 ms) instead of paying the 150-800 ms
+ * initialisation cost at that moment.
+ *
+ * This is safe to call multiple times (idempotent).
+ */
+export function preloadSolvers(): void {
+  if (preloaded) return;
+  preloaded = true;
+
+  // Warm up the 3×3 Min2Phase WASM tables (~150-350 ms)
+  getMin2PhaseSolver().init();
+
+  // Warm up the 2×2 combined BFS table (~800 ms)
+  // We need to init the solver before wrapping it in the scrambler
+  const solver = new TwoByTwoSolver();
+  solver.init();
+  twoByTwoScrambler = new TwoByTwoScrambler(solver);
+
+  console.log('[puzzleUtils] Solvers preloaded: 3×3 Min2Phase + 2×2 combined table');
 }
 
 /**

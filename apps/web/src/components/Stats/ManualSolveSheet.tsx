@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Penalty, SolveMethod, SolveMethod as _SM } from "@/types";
-import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
+import { RandomStateGenerator } from "@cubeforge/solver-engine";
+import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 import { toast } from "sonner";
 
 export interface ManualSolveSheetProps {
@@ -87,7 +88,7 @@ export function ManualSolveSheet({
     if (open) {
       setScramble(
         initialScramble ??
-          RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
+          RandomStateGenerator.generateScramble(getMin2PhaseSolver()),
       );
       setMethod(defaultMethod);
       setTime("");
@@ -103,7 +104,7 @@ export function ManualSolveSheet({
   const canSubmit = timeValid && scrambleValid && !submitting;
 
   const regenScramble = () => {
-    setScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+    setScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
   };
 
   const submit = async () => {

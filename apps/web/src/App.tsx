@@ -25,6 +25,7 @@ import {
   generateScrambleFor,
   puzzleCategoryToType,
   puzzleCategoryToOrder,
+  preloadSolvers,
 } from "@/utils/puzzleUtils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { v4 as uuidv4 } from "uuid";
@@ -100,6 +101,13 @@ export default function App() {
   const [currentScramble, setCurrentScramble] = useState(() =>
     generateScrambleFor("3x3"),
   );
+
+  // ── Preload solvers at app startup ─────────────────────────────────────
+  // Builds the 2×2 combined table (~800ms) and warms up Min2Phase WASM
+  // (~150-350ms) so the first scramble of either type is instant.
+  useEffect(() => {
+    preloadSolvers();
+  }, []);
 
   // ── Widget lifecycle connection (avoids stale closure via refs) ────────
   useEffect(() => {

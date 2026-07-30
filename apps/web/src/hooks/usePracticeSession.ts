@@ -6,7 +6,8 @@ import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
+import { RandomStateGenerator } from "@cubeforge/solver-engine";
+import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared helpers
@@ -77,7 +78,7 @@ export function usePracticeSession({
 }: PracticeSessionParams): PracticeSessionResult {
   const [attempts, setAttempts] = useState<PracticeAttempt[]>([]);
   const [currentScramble, setCurrentScramble] = useState(
-    () => RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
+    () => RandomStateGenerator.generateScramble(getMin2PhaseSolver()),
   );
 
   // Timer
@@ -125,7 +126,7 @@ export function usePracticeSession({
   }, [stoppedTime, dbPersistAttempt, methodId, phaseId, exerciseId, hasSmartCube, currentScramble]);
 
   const regenerateScramble = useCallback(() => {
-    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+    setCurrentScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
   }, []);
 
   const handleCorrect = useCallback(() => { recordAttempt(true); reset(); regenerateScramble(); }, [recordAttempt, reset, regenerateScramble]);
