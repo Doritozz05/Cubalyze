@@ -35,7 +35,6 @@ export function Case3DPanel({
     caseData.subsetId.toLowerCase().includes("f2l") ||
     Boolean(caseData.category?.toLowerCase().includes("f2l"));
 
-  const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
@@ -105,28 +104,17 @@ export function Case3DPanel({
           </h4>
           <div className="space-y-2">
             {algorithms.map((alg) => {
-              const matchesSlot = isF2L && alg.notes?.includes(`Slot: ${slotKey}`);
               return (
                 <div
                   key={alg.id}
-                  className={cn(
-                    "flex flex-col gap-1 rounded-lg border p-2.5 transition-colors",
-                    matchesSlot || (!isF2L && alg.isDefault)
-                      ? "border-ink/20 bg-surface-2"
-                      : "border-line bg-surface hover:border-ink/10",
-                  )}
+                  className="flex flex-col gap-1 rounded-lg border border-line bg-surface p-2.5 hover:border-ink/10 transition-colors"
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
                     <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
                       {alg.moves.map((move, i) => (
                         <span key={i}>{move}</span>
                       ))}
                     </div>
-                    {alg.notes && (
-                      <span className="rounded bg-surface-3/60 px-1.5 py-0.5 text-[0.58rem] font-medium text-ink-2 shrink-0">
-                        {alg.notes}
-                      </span>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-3 text-[0.58rem] text-ink-3">

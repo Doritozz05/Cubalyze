@@ -126,25 +126,15 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             {algorithms.map((alg) => (
               <div
                 key={alg.id}
-                className={cn(
-                  "flex flex-col gap-1 rounded-lg border p-2.5 transition-colors",
-                  alg.isDefault
-                    ? "border-ink/15 bg-surface-2"
-                    : "border-line bg-surface hover:border-ink/10",
-                )}
+                className="flex flex-col gap-1 rounded-lg border border-line bg-surface p-2.5 hover:border-ink/10 transition-colors"
               >
                 {/* Move display */}
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
                   <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
                     {alg.moves.map((move, i) => (
                       <span key={i}>{move}</span>
                     ))}
                   </div>
-                  {alg.notes && (
-                    <span className="rounded bg-surface-3/60 px-1.5 py-0.5 text-[0.58rem] font-medium text-ink-2 shrink-0">
-                      {alg.notes}
-                    </span>
-                  )}
                 </div>
 
                 {/* Metadata row */}

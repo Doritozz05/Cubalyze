@@ -179,33 +179,21 @@ export function AlgorithmViewerCard({
           {movesText || "No algorithm available"}
         </div>
 
-        {/* Notes & Triggers */}
-        {(activeAlg?.notes || (activeAlg?.triggers && activeAlg.triggers.length > 0)) && (
+        {/* Triggers */}
+        {activeAlg?.triggers && activeAlg.triggers.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {activeAlg?.notes && (
+            <span className="text-[10px] text-ink-3 flex items-center gap-1">
+              <Tag className="size-2.5" /> Triggers:
+            </span>
+            {activeAlg.triggers.map((trigger, idx) => (
               <Badge
-                variant="outline"
-                className="text-[9px] font-mono text-ink-2 bg-surface-2/60 border-line/80 px-1.5 py-0"
+                key={idx}
+                variant="secondary"
+                className="text-[9px] font-mono text-ink-2 px-1 py-0"
               >
-                {activeAlg.notes}
+                {trigger}
               </Badge>
-            )}
-            {activeAlg?.triggers && activeAlg.triggers.length > 0 && (
-              <>
-                <span className="text-[10px] text-ink-3 flex items-center gap-1">
-                  <Tag className="size-2.5" /> Triggers:
-                </span>
-                {activeAlg.triggers.map((trigger, idx) => (
-                  <Badge
-                    key={idx}
-                    variant="secondary"
-                    className="text-[9px] font-mono text-ink-2 px-1 py-0"
-                  >
-                    {trigger}
-                  </Badge>
-                ))}
-              </>
-            )}
+            ))}
           </div>
         )}
 
@@ -218,8 +206,6 @@ export function AlgorithmViewerCard({
             <div className="flex flex-wrap gap-1">
               {algorithms.map((alg, index) => {
                 const isActive = activeAlg?.id === alg.id;
-                const slotMatch = alg.notes?.match(/Slot:\s*([A-Z]+)/i);
-                const label = slotMatch ? slotMatch[1] : alg.notes ? alg.notes : `Alg ${index + 1}`;
                 return (
                   <Button
                     key={alg.id}
@@ -234,7 +220,7 @@ export function AlgorithmViewerCard({
                         : "text-ink-3 hover:text-ink"
                     )}
                   >
-                    {label}
+                    Alg {index + 1}
                   </Button>
                 );
               })}
