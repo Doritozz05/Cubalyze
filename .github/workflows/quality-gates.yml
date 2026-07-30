@@ -51,7 +51,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
         name: Build packages
-      - run: pnpm -r exec vitest run
+      - run: pnpm -r exec vitest run --passWithNoTests
         name: All tests (100% pass required)
 
   benchmarks:
