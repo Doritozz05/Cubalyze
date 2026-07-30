@@ -240,3 +240,17 @@
     display: none;
   }
 }
+
+/* ── Widget mount animation ─────────────────────────────────────────────
+   Replaces framer-motion's mount animation with pure CSS. Only animates
+   opacity — transform positioning stays exclusively under the inline style's
+   control via `transform: translate3d()`. Never animate `transform` here
+   because it would override the inline translate3d during the animation. */
+@keyframes widgetMount {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useCallback, useLayoutEffect, useState, useMemo } from "react";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
@@ -16,9 +17,8 @@ const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
 /**
  * A single docked widget pill in the header dock bar.
  *
- * - **Horizontal drag**: reorders within the dock (macOS‑style).
- * - **Vertical drag down**: undocks to a free‑floating minimized pill.
  * - **Click**: launches the widget as a floating panel at a smart position.
+ * - **Vertical drag down**: undocks to a free‑floating minimized pill with ghost preview.
  */
 function DockPill({
   widgetId,
@@ -31,7 +31,15 @@ function DockPill({
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
   const isDocked = status === "docked";
 
-  // Guard: suppress onClick after a drag so micro-drags don't trigger launch
+  const [isUndocking, setIsUndocking] = useState(false);
+  const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
+
+  const dragState = useRef<{
+    startX: number;
+    startY: number;
+    pointerId: number;
+  } | null>(null);
+  const movedRef = useRef(false);
   const draggedRef = useRef(false);
 
   if (!definition || !isDocked) return null;
@@ -46,18 +54,16 @@ function DockPill({
     store.setStatus(widgetId, "floating");
 
     // Compute a smart launch position if the stored position is unreasonable
-    // (behind sidebar, off-screen, under header, etc.)
     const pos = inst.position;
-    const panelW = definition.panelWidth ?? 340;
+    const panelW = inst.panelWidth ?? 340;
     const isReasonable =
       pos &&
-      pos.x >= 72 && // right of left sidebar
-      pos.y >= 60 && // below header
+      pos.x >= 72 &&
+      pos.y >= 60 &&
       pos.x + panelW < window.innerWidth - 16 &&
       pos.y < window.innerHeight - 60;
 
     if (!isReasonable) {
-      // Count currently-open floating widgets for a cascade offset
       const floatingCount = Object.values(store.instances).filter(
         (i) => i.status === "floating" || i.status === "minimized",
       ).length;
@@ -68,60 +74,162 @@ function DockPill({
     }
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      pointerId: e.pointerId,
+    };
+    movedRef.current = false;
+    draggedRef.current = false;
+    setIsUndocking(false);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Capture may fail on motion.button + asChild; drag still works.
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const state = dragState.current;
+    if (!state || e.pointerId !== state.pointerId) return;
+
+    const dx = e.clientX - state.startX;
+    const dy = e.clientY - state.startY;
+
+    if (!movedRef.current && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      movedRef.current = true;
+    }
+
+    if (!movedRef.current) return;
+
+    // Trigger undock mode when dragging downwards
+    if (dy > 28) {
+      if (!isUndocking) setIsUndocking(true);
+      setGhostPos({
+        x: Math.max(0, Math.min(window.innerWidth - 120, e.clientX - 60)),
+        y: Math.max(64, Math.min(window.innerHeight - 40, e.clientY - 16)),
+      });
+    } else if (isUndocking) {
+      setIsUndocking(false);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const state = dragState.current;
+
+    // Safety net: pointercancel may have cleared dragState mid-drag.
+    // Rarely reached (pointercancel usually suppresses pointerup),
+    // but harmless and catches edge cases across browsers.
+    if (!state && movedRef.current && isUndocking) {
+      draggedRef.current = true;
+      widgetStore.getState().setPosition(widgetId, ghostPos);
+      widgetStore.getState().setStatus(widgetId, "minimized");
+      dragState.current = null;
+      setIsUndocking(false);
+      return;
+    }
+
+    if (!state || e.pointerId !== state.pointerId) return;
+
+    try {
+      e.currentTarget.releasePointerCapture(state.pointerId);
+    } catch {
+      /* ignore */
+    }
+
+    const dy = e.clientY - state.startY;
+
+    if (movedRef.current && dy > 28) {
+      draggedRef.current = true;
+      const finalX = Math.max(0, Math.min(window.innerWidth - 120, e.clientX - 60));
+      const finalY = Math.max(64, Math.min(window.innerHeight - 40, e.clientY - 16));
+
+      const store = widgetStore.getState();
+      store.setPosition(widgetId, { x: finalX, y: finalY });
+      store.setStatus(widgetId, "minimized");
+    }
+
+    dragState.current = null;
+    setIsUndocking(false);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // If we were dragging to undock, complete the undock with the last ghost position.
+    if (movedRef.current && isUndocking) {
+      draggedRef.current = true;
+      widgetStore.getState().setPosition(widgetId, ghostPos);
+      widgetStore.getState().setStatus(widgetId, "minimized");
+    }
+
+    if (dragState.current) {
+      try {
+        e.currentTarget.releasePointerCapture(dragState.current.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    dragState.current = null;
+    setIsUndocking(false);
+  };
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Reorder.Item
-          as="button"
-          value={widgetId}
-          drag
-          layout
-          ref={(el: HTMLElement | null) => onPillRef?.(widgetId, el)}
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.85 }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          whileDrag={{ scale: 1.08, boxShadow: "0 8px 25px rgba(0,0,0,0.15)", zIndex: 60 }}
-          onDragStart={() => { draggedRef.current = true; }}
-          onClick={() => {
-            if (draggedRef.current) {
-              draggedRef.current = false;
-              return;
-            }
-            handleClick();
-          }}
-          onDragEnd={(_e, info) => {
-            if (info.offset.y > 35) {
-              // Vertical drag down → undock
-              const store = widgetStore.getState();
-              store.setStatus(widgetId, "minimized");
-              store.setPosition(widgetId, {
-                x: Math.max(0, info.point.x - 80),
-                y: Math.max(0, info.point.y - 14),
-              });
-            }
-            draggedRef.current = false;
-          }}
-          className={cn(
-            "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors duration-200",
-            "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
-            "cursor-grab active:cursor-grabbing",
-          )}
-          aria-label={`${definition.name} — pinned`}
-        >
-          <Icon className="size-3.5 shrink-0" />
-          <span className="truncate max-w-28">{definition.name}</span>
-        </Reorder.Item>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="text-xs">
-        <div className="flex flex-col gap-0.5">
-          <span className="font-semibold">{definition.name}</span>
-          <span className="text-[10px] text-ink-3">
-            Drag sideways to reorder · Drag down to float · Click to open
-          </span>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.button
+            layout
+            ref={(el: HTMLButtonElement | null) => onPillRef?.(widgetId, el)}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: isUndocking ? 0.3 : 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            onClick={() => {
+              if (draggedRef.current) {
+                draggedRef.current = false;
+                return;
+              }
+              handleClick();
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            className={cn(
+              "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors duration-200",
+              "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
+              "cursor-grab active:cursor-grabbing",
+            )}
+            aria-label={`${definition.name} — pinned`}
+          >
+            <Icon className="size-3.5 shrink-0" />
+            <span className="truncate max-w-28">{definition.name}</span>
+          </motion.button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold">{definition.name}</span>
+            <span className="text-[10px] text-ink-3">
+              Click to open · Drag down to float
+            </span>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Ghost pill portal during undock drag */}
+      {isUndocking &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 shadow-xl text-xs font-medium text-ink"
+            style={{ left: ghostPos.x, top: ghostPos.y }}
+          >
+            <Icon className="size-3.5 shrink-0" />
+            <span className="truncate max-w-28">{definition.name}</span>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -130,10 +238,9 @@ function DockPill({
 /**
  * The widget dock — rendered in the header center area.
  *
- * Shows all widgets with `status === 'docked'` as compact pills in an
- * Apple‑style draggable row. Drag horizontally to reorder, drag down to
- * undock, click to launch. When dragging a floating widget over the dock,
- * a thin accent bar shows where it will be inserted.
+ * Shows all widgets with `status === 'docked'` as compact pills.
+ * Click to launch, drag down to undock. When dragging a floating widget over
+ * the dock, a gap spacer is rendered at the target drop position.
  */
 export function WidgetDock() {
   const dockOrder = useWidgetStore((s) => s.dockOrder);
@@ -192,9 +299,8 @@ export function WidgetDock() {
       return;
     }
 
-    // Find where dropX falls among pills: insert before the first pill whose
-    // center is to the right of dropX
-    let idx = sorted.length; // default: append to end
+    // Find where dropX falls among pills
+    let idx = sorted.length;
     for (let i = 0; i < sorted.length; i++) {
       const rect = sorted[i][1].getBoundingClientRect();
       const midX = rect.left + rect.width / 2;
@@ -219,48 +325,34 @@ export function WidgetDock() {
     return ids;
   }, [dockedIds, isDockZoneActive, insertIndex]);
 
-  const handleReorder = (newOrder: WidgetId[]) => {
-    // Merge reordered visible pills with invisible (floating) items
-    // that were in dockOrder — so they keep their position when re-docked.
-    const current = widgetStore.getState().dockOrder;
-    const visibleSet = new Set(newOrder);
-    const invisible = current.filter((id) => !visibleSet.has(id));
-    widgetStore.getState().setDockOrder([...newOrder, ...invisible]);
-  };
-
   if (dockedIds.length === 0 && !isDockZoneActive) return null;
 
   return (
-    <div className="flex flex-1 items-center justify-center px-1">
-      <Reorder.Group
-        as="div"
-        axis="x"
-        values={dockedIds}
-        onReorder={handleReorder}
-        className="flex items-center gap-1.5"
-        role="toolbar"
-        aria-label="Docked widgets"
-      >
-        <AnimatePresence mode="popLayout">
-          {displayIds.map((id) => {
-            if (id === GAP_ID) {
-              return (
-                <motion.div
-                  key={GAP_ID}
-                  layout
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "3rem" }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                  className="h-8 shrink-0"
-                  aria-hidden
-                />
-              );
-            }
-            return <DockPill key={id} widgetId={id} onPillRef={onPillRef} />;
-          })}
-        </AnimatePresence>
-      </Reorder.Group>
+    <div
+      className="flex flex-1 items-center justify-center gap-1.5 px-1"
+      role="toolbar"
+      aria-label="Docked widgets"
+    >
+      <AnimatePresence mode="popLayout">
+        {displayIds.map((id) => {
+          if (id === GAP_ID) {
+            return (
+              <motion.div
+                key={GAP_ID}
+                layout
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "3rem" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/3"
+                aria-hidden
+              />
+            );
+          }
+          return <DockPill key={id} widgetId={id} onPillRef={onPillRef} />;
+        })}
+      </AnimatePresence>
     </div>
   );
 }
+

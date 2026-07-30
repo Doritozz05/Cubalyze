@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, Save, Trash2, Check, Lock, Plus, ArrowDownToLine } from "lucide-react";
+import { LayoutGrid, Save, Trash2, Check, Lock, ArrowDownToLine } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";

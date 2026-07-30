@@ -90,7 +90,11 @@ export function FloatingCubeButton({
           onPointerDown={drag.onPointerDown}
           onPointerMove={drag.onPointerMove}
           onPointerUp={handlePointerUp}
-          style={{ left: drag.position.x, top: drag.position.y }}
+          onPointerCancel={drag.onPointerCancel}
+          style={{
+            transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
+            transformOrigin: "0 0",
+          }}
           className={
             "fixed z-45 grid size-12 touch-none select-none place-items-center " +
             "rounded-full border border-line bg-surface shadow-lg " +
