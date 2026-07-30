@@ -109,6 +109,6 @@ export function registerAllWidgets(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: FloatingAlgorithmDbPanel as any,
     preview: AlgorithmDbPreview,
-    mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
+    mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
   });
 }

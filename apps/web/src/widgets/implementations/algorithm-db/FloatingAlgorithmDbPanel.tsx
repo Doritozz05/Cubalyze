@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BookOpen, Layers, Filter, ChevronLeft, ChevronRight, Grid } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import {
@@ -22,6 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { puzzleCategoryToType } from "@/utils/puzzleUtils";
+import type { PuzzleCategory } from "@/types";
 
 // ── Puzzle type grouping ──────────────────────────────────────────────────
 
@@ -34,16 +36,35 @@ const PUZZLE_TYPES: { value: PuzzleTypeKey; label: string }[] = [
 
 export interface FloatingAlgorithmDbPanelProps {
   solves?: unknown[];
+  /** Global puzzle category from the app header (e.g. '2x2', '3x3'). Syncs the widget's puzzle selector. */
+  puzzle?: string;
 }
 
-export function FloatingAlgorithmDbPanel({ solves: _solves }: FloatingAlgorithmDbPanelProps) {
+export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAlgorithmDbPanelProps) {
   const { cases: allCases, algorithms: allAlgorithms } = useMemo(
     () => getSeedData(),
     []
   );
 
   // ── Puzzle type filter ────────────────────────────────────────────────
-  const [puzzleType, setPuzzleType] = useState<PuzzleTypeKey>('3x3x3');
+  const [puzzleType, setPuzzleType] = useState<PuzzleTypeKey>(() => {
+    if (puzzle) {
+      const mapped = puzzleCategoryToType(puzzle as PuzzleCategory) as PuzzleTypeKey;
+      if (PUZZLE_TYPES.some((pt) => pt.value === mapped)) return mapped;
+    }
+    return '3x3x3';
+  });
+
+  // Sync internal puzzle type when the global app puzzle changes
+  useEffect(() => {
+    if (!puzzle) return;
+    const mapped = puzzleCategoryToType(puzzle as never) as PuzzleTypeKey;
+    if (PUZZLE_TYPES.some((pt) => pt.value === mapped)) {
+      setPuzzleType(mapped);
+      setSelectedCaseId(null);
+      setActiveViewMode("list");
+    }
+  }, [puzzle]);
 
   // Filter methods by puzzle type
   const puzzleMethods = useMemo(
