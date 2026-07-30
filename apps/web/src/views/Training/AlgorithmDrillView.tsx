@@ -3,23 +3,28 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
-import { generateRandomSetup } from "@/lib/training/setupGenerator";
+import { generateRandomSetup } from "@cubeforge/training";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import {
-  ArrowLeft,
+  TrainingBreadcrumb,
+  VerdictOverlay,
+  StatChip,
+} from "./components";
+import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import type { AlgorithmProgressRecord } from "@cubeforge/training";
+import {
   Eye,
   EyeOff,
-  Check,
-  X,
   SkipForward,
   Shuffle,
   Target,
@@ -43,17 +48,6 @@ interface DrillAttempt {
   timeMs: number;
   correct: boolean;
   timestamp: number;
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Mock data
-   ─────────────────────────────────────────────────────────────────────── */
-
-function mockCaseProgress(caseNumber: string) {
-  const n = parseInt(caseNumber.replace(/\D/g, ""), 10) || 0;
-  const mastery = 30 + ((n * 17) % 70);
-  const bestTime = 800 + ((n * 53) % 2200);
-  return { mastery: Math.min(99, mastery), bestTimeMs: bestTime, attempts: 3 + (n % 15) };
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -109,9 +103,17 @@ export function AlgorithmDrillView({
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
+  const childSubsetIds = useMemo(() => {
+    const children = getChildSubsets(subsetId);
+    return new Set(children.map((c) => c.id));
+  }, [subsetId]);
+
   const subsetCases = useMemo(
-    () => allCases.filter((c) => c.subsetId === subsetId).sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })),
-    [allCases, subsetId],
+    () =>
+      allCases
+        .filter((c) => c.subsetId === subsetId || childSubsetIds.has(c.subsetId))
+        .sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })),
+    [allCases, subsetId, childSubsetIds],
   );
 
   // ── State ─────────────────────────────────────────────────────────────
@@ -161,6 +163,27 @@ export function AlgorithmDrillView({
     isScrambled: drillSmartCube.validation.isScrambled,
   }), [hasSmartCube, drillSmartCube.validation.isScrambled]);
 
+  // ── Real progress from DB ──────────────────────────────────────────────
+  const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
+
+  useEffect(() => {
+    if (!ready) return;
+    getSubsetProgress(subsetId).then((records) => {
+      const map = new Map<string, AlgorithmProgressRecord>();
+      for (const r of records) {
+        map.set(r.algorithmId, r);
+      }
+      setProgressMap(map);
+    });
+  }, [ready, subsetId, getSubsetProgress]);
+
+  // Helper for per-case progress with zero fallback
+  const getProgress = useCallback((caseId: string): { mastery: number; bestTimeMs: number; attempts: number } => {
+    const p = progressMap.get(caseId);
+    return { mastery: p?.mastery ?? 0, bestTimeMs: p?.bestTimeMs ?? 0, attempts: p?.totalAttempts ?? 0 };
+  }, [progressMap]);
+
   // ── Derived data ─────────────────────────────────────────────────────
   const selectedCase = useMemo(
     () => (selectedCaseId ? subsetCases.find((c) => c.id === selectedCaseId) ?? null : null),
@@ -174,9 +197,14 @@ export function AlgorithmDrillView({
 
   const weaknessOrdered = useMemo(() => {
     return [...subsetCases].sort((a, b) => {
-      return mockCaseProgress(a.caseNumber).mastery - mockCaseProgress(b.caseNumber).mastery;
+      return getProgress(a.id).mastery - getProgress(b.id).mastery;
     });
-  }, [subsetCases]);
+  }, [subsetCases, getProgress]);
+
+  const masteredCount = useMemo(
+    () => subsetCases.filter((c) => getProgress(c.id).mastery >= 90).length,
+    [subsetCases, getProgress],
+  );
 
   const correctAttempts = attempts.filter((a) => a.correct);
   const streak = useMemo(() => {
@@ -265,8 +293,22 @@ export function AlgorithmDrillView({
       };
       setAttempts((prev) => [attempt, ...prev]);
       if (!correct && revealIfFail) setShowAlgorithm(true);
+
+      // Persist to DB for progress tracking + SRS
+      dbPersistAttempt({
+        exerciseId: `drill-${subsetId}`,
+        methodId,
+        phaseId: _phaseId as string,
+        caseId: selectedCase.id,
+        timeMs: stoppedTime,
+        verdict: correct ? "correct" : "incorrect",
+        playMode: hasSmartCube ? "smart-cube" : "manual",
+        scramble: currentSetup,
+      }).catch((err) => {
+        console.error("[DrillView] Failed to persist attempt:", err);
+      });
     },
-    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime],
+    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime, dbPersistAttempt, subsetId, methodId, _phaseId, hasSmartCube, currentSetup],
   );
 
   const handleMarkCorrect = useCallback(() => {
@@ -309,7 +351,7 @@ export function AlgorithmDrillView({
           subsetName={subset?.name ?? "?"}
           drillMode={drillMode}
           onModeChange={handleModeChange}
-          masteredCount={subsetCases.filter((c) => mockCaseProgress(c.caseNumber).mastery >= 90).length}
+          masteredCount={masteredCount}
           totalCount={subsetCases.length}
           onBack={onBack}
           smartCubeConnected={drillSmartCube.smartCubeConnected}
@@ -342,7 +384,9 @@ export function AlgorithmDrillView({
             <div className="shrink-0 flex items-stretch gap-4 rounded-xl border border-line bg-surface p-4">
               {/* Left: Case diagram */}
               <div className="shrink-0 flex items-center justify-center">
-                {selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
+                {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d" || (!selectedCase.diagram2D && selectedCase.setupScramble)) ? (
+                  <Case3DDiagram caseData={selectedCase} className="w-28 sm:w-36" />
+                ) : selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
                   <CaseDiagram
                     arrows={selectedCase.diagram2D.arrows}
                     setupScramble={selectedCase.setupScramble}
@@ -350,6 +394,8 @@ export function AlgorithmDrillView({
                     style={visualizationStyle}
                     className="w-28 sm:w-36"
                   />
+                ) : selectedCase?.setupScramble ? (
+                  <Case3DDiagram caseData={selectedCase} className="w-28 sm:w-36" />
                 ) : (
                   <div className="w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center rounded-lg bg-surface-2">
                     <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>
@@ -410,50 +456,22 @@ export function AlgorithmDrillView({
               )}
             </div>
 
-            {/* Timer area (BIG) with verdict overlay */}
-            <div className="flex-1 min-h-50 rounded-xl border border-line bg-surface relative overflow-hidden">
+            {/* Timer area with verdict overlay */}
+            <div className="flex-1 min-h-44 rounded-xl border border-line bg-surface relative overflow-hidden">
               {/* Verdict overlay */}
               <AnimatePresence>
                 {showVerdict && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 rounded-xl bg-surface/98"
-                  >
-                    <span className="nums text-[2.5rem] sm:text-[3rem] font-bold text-ink tracking-tight">
-                      {formatTime(stoppedTime)}
-                    </span>
-                    <span className="nums text-[0.75rem] text-ink-3">
-                      TPS {calculateTps(defaultAlgorithm?.moves ?? [], stoppedTime)}
-                    </span>
-                    <div className="flex gap-3 mt-2">
-                      <button
-                        onClick={handleMarkIncorrect}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-hold/30 bg-hold-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-hold hover:bg-hold-soft/60 hover:border-hold/50 transition-all"
-                      >
-                        <X className="size-5" />
-                        Incorrect
-                      </button>
-                      <button
-                        onClick={handleMarkCorrect}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-ready/30 bg-ready-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-ready hover:bg-ready-soft/60 hover:border-ready/50 transition-all"
-                      >
-                        <Check className="size-5" />
-                        Correct
-                      </button>
-                    </div>
-                    <button
-                      onClick={handleSkip}
-                      className="text-[0.62rem] text-ink-3 hover:text-ink mt-1 transition-colors"
-                    >
-                      Skip without recording
-                    </button>
-                  </motion.div>
+                  <VerdictOverlay
+                    timeDisplay={formatTime(stoppedTime)}
+                    tpsDisplay={calculateTps(defaultAlgorithm?.moves ?? [], stoppedTime)}
+                    onCorrect={handleMarkCorrect}
+                    onIncorrect={handleMarkIncorrect}
+                    onSkip={handleSkip}
+                  />
                 )}
               </AnimatePresence>
 
-              {/* TimerContainer — BIG, fills the space */}
+              {/* TimerContainer — Training drill mode (compact responsive sizing) */}
               <TimerContainer
                 phase={phase}
                 time={time}
@@ -461,7 +479,8 @@ export function AlgorithmDrillView({
                 hintCtx={drillHintCtx}
                 onPress={press}
                 onRelease={release}
-                className="h-full"
+                className="h-full min-h-0 py-3"
+                timerClassName="text-[clamp(2.25rem,6vw,4.25rem)]"
               />
             </div>
           </div>
@@ -475,16 +494,16 @@ export function AlgorithmDrillView({
 
             <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-line bg-surface">
               {drillMode === "single" && (
-                <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "random" && (
-                <RandomModePanel cases={subsetCases} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <RandomModePanel cases={subsetCases} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "sequential" && (
-                <SequentialModePanel cases={subsetCases} currentIndex={seqIndex} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <SequentialModePanel cases={subsetCases} currentIndex={seqIndex} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "weakness" && (
-                <WeaknessModePanel cases={weaknessOrdered} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} />
+                <WeaknessModePanel cases={weaknessOrdered} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
             </div>
 
@@ -509,13 +528,11 @@ function DrillHeader({
   return (
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0"><ArrowLeft className="size-3" />Back</button>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{methodName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{subsetName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-semibold text-ink">Drill</span>
+        <TrainingBreadcrumb onBack={onBack} segments={[
+          { label: methodName },
+          { label: subsetName },
+          { label: "Drill", isCurrent: true },
+        ]} />
         <span className="nums text-[0.62rem] text-ink-3 ml-auto">{masteredCount}/{totalCount} mastered</span>
         {smartCubeConnected && (
           <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">
@@ -541,8 +558,10 @@ function DrillHeader({
    Sidebar panels
    ─────────────────────────────────────────────────────────────────────── */
 
-function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+type ProgressHelper = (id: string) => { mastery: number; bestTimeMs: number; attempts: number };
+
+function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3.5 flex flex-col h-full">
@@ -553,7 +572,7 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: 
       <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-0.5">
         {cases.map((c) => {
           const isSelected = c.id === selectedCaseId;
-          const progress = mockCaseProgress(c.caseNumber);
+          const progress = getProgress(c.id);
           const caseAlg = algorithms.find((a) => a.caseId === c.id && a.isDefault) ?? algorithms.find((a) => a.caseId === c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
@@ -575,11 +594,11 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase }: 
   );
 }
 
-function RandomModePanel({ cases, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+function RandomModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   const selected = cases.find((c) => c.id === selectedCaseId);
-  const progress = selected ? mockCaseProgress(selected.caseNumber) : null;
+  const progress = selected ? getProgress(selected.id) : null;
   return (
     <div className="p-3 flex flex-col items-center gap-4 h-full justify-center">
       <Shuffle className="size-8 text-ink-3/40" />
@@ -603,8 +622,8 @@ function RandomModePanel({ cases, selectedCaseId, onSelectCase }: {
   );
 }
 
-function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; currentIndex: number; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; currentIndex: number; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3">
@@ -622,7 +641,7 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
         {cases.map((c, idx) => {
           const isCurrent = c.id === selectedCaseId;
           const isCompleted = idx < currentIndex;
-          const progress = mockCaseProgress(c.caseNumber);
+          const progress = getProgress(c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
               className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors",
@@ -642,8 +661,8 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
   );
 }
 
-function WeaknessModePanel({ cases, selectedCaseId, onSelectCase }: {
-  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void;
+function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3">
@@ -651,7 +670,7 @@ function WeaknessModePanel({ cases, selectedCaseId, onSelectCase }: {
       <p className="text-[0.58rem] text-ink-3/60 px-1 mb-2">Prioritized by lowest mastery. Practice your weakest cases to improve overall consistency.</p>
       <div className="space-y-1">
         {cases.slice(0, 10).map((c, idx) => {
-          const progress = mockCaseProgress(c.caseNumber);
+          const progress = getProgress(c.id);
           const isSelected = c.id === selectedCaseId;
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
@@ -688,11 +707,4 @@ function SessionStatsPanel({ totalAttempts, correctCount, streak, avgTime }: {
   );
 }
 
-function StatChip({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 p-2 rounded-lg bg-surface-2">
-      <span className="flex items-center gap-1 text-[0.55rem] text-ink-3"><Icon className="size-2.5" />{label}</span>
-      <span className="nums text-[0.75rem] font-semibold text-ink">{value}</span>
-    </div>
-  );
-}
+

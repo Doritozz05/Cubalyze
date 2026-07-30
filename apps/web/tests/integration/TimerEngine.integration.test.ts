@@ -103,4 +103,35 @@ describe('Timer Integration', () => {
     eventsSubject.unsubscribe();
     stopSub.unsubscribe();
   });
+
+  it('should transition to INSPECTION from STOPPED/IDLE when inspection is enabled', () => {
+    const engine = new TimerEngine({ holdToStartDelay: 300, cooldownDelay: 500, useInspection: true });
+
+    expect(engine.getState()).toBe(TimerState.IDLE);
+    expect(engine.startInspection()).toBe(true);
+    expect(engine.getState()).toBe(TimerState.INSPECTION);
+
+    // Holding during inspection enters TOUCHING
+    engine.handleDown();
+    expect(engine.getState()).toBe(TimerState.TOUCHING);
+
+    // Releasing past hold delay starts RUNNING
+    vi.advanceTimersByTime(300);
+    expect(engine.getState()).toBe(TimerState.READY);
+    engine.handleUp();
+    expect(engine.getState()).toBe(TimerState.RUNNING);
+
+    // Stop solve
+    vi.advanceTimersByTime(2000);
+    engine.handleDown();
+    expect(engine.getState()).toBe(TimerState.COOLDOWN);
+    vi.advanceTimersByTime(500);
+    expect(engine.getState()).toBe(TimerState.STOPPED);
+
+    // From STOPPED state: resetting to IDLE and starting inspection
+    engine.reset();
+    expect(engine.getState()).toBe(TimerState.IDLE);
+    expect(engine.startInspection()).toBe(true);
+    expect(engine.getState()).toBe(TimerState.INSPECTION);
+  });
 });

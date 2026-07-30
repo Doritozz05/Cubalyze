@@ -31,29 +31,12 @@ export default defineConfig({
   },
 
   resolve: {
-    alias: {
-      // '@' resolves to web/src/ — the desktop app shares ALL UI/components/hooks
-      // with the web PWA. Desktop-specific files in ./src/ are imported via
-      // relative paths (e.g. './adapters/GanCubeAdapterTauri').
-      '@': path.resolve(__dirname, '../web/src'),
-
-      // Replace GanCubeAdapter (Web Bluetooth) with GanCubeAdapterTauri
-      // (Rust btleplug) for ALL imports across the desktop app.
-      // Cero modificaciones en apps/web/ — el alias solo aplica al build de desktop.
-      '@cubeforge/hardware-hal': path.resolve(
-        __dirname,
-        './src/hardware-hal-override.ts',
-      ),
-
-      // Replace sqlite-wasm + OPFS with tauri-plugin-sql (native SQLite).
-      // The Tauri custom protocol cannot send the COOP/COEP headers required
-      // for OPFS, so the web database falls back to in-memory storage.
-      // This alias makes the desktop app use a native .db file in AppData.
-      '@cubeforge/database': path.resolve(
-        __dirname,
-        './src/database-override.ts',
-      ),
-    },
+    alias: [
+      { find: '@/components/ui', replacement: path.resolve(__dirname, '../../packages/ui/src/components') },
+      { find: '@', replacement: path.resolve(__dirname, '../web/src') },
+      { find: '@cubeforge/hardware-hal', replacement: path.resolve(__dirname, './src/hardware-hal-override.ts') },
+      { find: '@cubeforge/database', replacement: path.resolve(__dirname, './src/database-override.ts') },
+    ],
   },
 
   build: {

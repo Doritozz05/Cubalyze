@@ -4,6 +4,10 @@ export * from './CubeState';
 export * from './FaceletStringConverter';
 export * from './MoveExpander';
 
+// 2×2 (Pocket Cube) state representation
+export * from './Cube2x2State';
+export * from './Cube2x2FaceletConverter';
+
 // Cube orientation system (dynamic notation)
 export * from './orientation/OrientationTable';
 export * from './orientation/MoveTransformer';

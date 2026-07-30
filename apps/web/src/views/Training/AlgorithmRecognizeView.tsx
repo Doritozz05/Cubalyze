@@ -3,11 +3,17 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import {
-  ArrowLeft, Check, X, ChevronRight, Target, Brain,
+  TrainingBreadcrumb,
+} from "./components";
+import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import type { AlgorithmProgressRecord } from "@cubeforge/training";
+import {
+  Check, X, ChevronRight, Target, Brain,
   Shuffle, TrendingDown,
 } from "lucide-react";
 
@@ -28,15 +34,6 @@ interface QuizRound {
   answered: boolean;
   /** Random rotation applied to the diagram (in degrees: 0, 90, 180, 270) */
   rotation: number;
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Mock helpers  (will be replaced with real mastery data later)
-   ─────────────────────────────────────────────────────────────────────── */
-
-function mockCaseMastery(caseNumber: string) {
-  const n = parseInt(caseNumber.replace(/\D/g, ""), 10) || 0;
-  return Math.min(99, 30 + ((n * 17) % 70));
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -95,23 +92,50 @@ export function AlgorithmRecognizeView({
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
+  const childSubsetIds = useMemo(() => {
+    const children = getChildSubsets(subsetId);
+    return new Set(children.map((c) => c.id));
+  }, [subsetId]);
+
   const subsetCases = useMemo(
     () =>
       allCases
         .filter(
           (c): c is typeof c & { id: string } =>
-            Boolean(c.id && c.subsetId === subsetId)
+            Boolean(c.id && (c.subsetId === subsetId || childSubsetIds.has(c.subsetId)))
         )
         .sort((a, b) =>
           a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true })
         ),
-    [allCases, subsetId]
+    [allCases, subsetId, childSubsetIds]
   );
 
-  // Weakest cases first (sorted by ascending mastery)
+  // ── Real progress for weakness ordering ────────────────────────────────
+  const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
+
+  useEffect(() => {
+    if (!ready) return;
+    getSubsetProgress(subsetId).then((records) => {
+      const map = new Map<string, AlgorithmProgressRecord>();
+      for (const r of records) {
+        map.set(r.algorithmId, r);
+      }
+      setProgressMap(map);
+    });
+  }, [ready, subsetId, getSubsetProgress]);
+
+  // Weakest cases first (sorted by ascending mastery from real DB)
   const weaknessOrdered = useMemo(
-    () => [...subsetCases].sort((a, b) => mockCaseMastery(a.caseNumber) - mockCaseMastery(b.caseNumber)),
-    [subsetCases],
+    () => {
+      if (progressMap.size === 0) return [...subsetCases];
+      return [...subsetCases].sort((a, b) => {
+        const ma = progressMap.get(a.id)?.mastery ?? 0;
+        const mb = progressMap.get(b.id)?.mastery ?? 0;
+        return ma - mb;
+      });
+    },
+    [subsetCases, progressMap],
   );
 
   // ── Visualization style ────────────────────────────────────────────────
@@ -133,16 +157,13 @@ export function AlgorithmRecognizeView({
   const generateRound = useCallback(() => {
     if (subsetCases.length < 2) return;
 
-    // Pick the target case
     let targetCase: AlgorithmCase;
 
-    if (mode === "weakest") {
-      // Go through weakest-ordered cases sequentially
+    if (mode === "weakest" && weaknessOrdered.length > 0) {
       const idx = roundIndexRef.current % weaknessOrdered.length;
       targetCase = weaknessOrdered[idx];
       roundIndexRef.current = idx + 1;
     } else {
-      // Random — pick any case
       targetCase = subsetCases[Math.floor(Math.random() * subsetCases.length)];
     }
 
@@ -181,7 +202,21 @@ export function AlgorithmRecognizeView({
       total: prev.total + 1,
     }));
     setSeenCaseIds((prev) => new Set(prev).add(round.caseId));
-  }, [round]);
+
+    // Persist to DB for progress tracking + SRS
+    dbPersistAttempt({
+      exerciseId: `recognize-${subsetId}`,
+      methodId,
+      phaseId: _phaseId as string,
+      caseId: round.caseId,
+      timeMs: 0, // recognition quiz has no timer
+      verdict: isCorrect ? "correct" : "incorrect",
+      playMode: "manual",
+      scramble: "",
+    }).catch((err) => {
+      console.error("[RecognizeView] Failed to persist attempt:", err);
+    });
+  }, [round, dbPersistAttempt, subsetId, methodId, _phaseId]);
 
   // ── Go to next round ────────────────────────────────────────────────
   const handleNext = useCallback(() => {
@@ -273,16 +308,11 @@ function RecognizeHeader({
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
       {/* Breadcrumb + mode toggle row */}
       <div className="flex items-center gap-3">
-        <button onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0">
-          <ArrowLeft className="size-3" />Back
-        </button>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{methodName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-medium text-ink">{subsetName}</span>
-        <span className="text-[0.6rem] text-ink-3/50">›</span>
-        <span className="text-[0.72rem] font-semibold text-ink">Recognize</span>
+        <TrainingBreadcrumb onBack={onBack} segments={[
+          { label: methodName },
+          { label: subsetName },
+          { label: "Recognize", isCurrent: true },
+        ]} />
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -373,13 +403,17 @@ function QuizPanel({
             className="flex flex-col items-center gap-4"
           >
             <div className="relative" style={{ transform: `rotate(${diagramRotation}deg)`, transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-              {currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
+              {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" || (!currentCase.diagram2D && currentCase.setupScramble) ? (
+                <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
+              ) : currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
                 <CaseDiagram
                   arrows={currentCase.diagram2D.arrows}
                   setupScramble={currentCase.setupScramble}
                   style={visualizationStyle}
                   className="w-44 sm:w-52 lg:w-60"
                 />
+              ) : currentCase.setupScramble ? (
+                <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
               ) : (
                 <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 flex items-center justify-center rounded-lg bg-surface-2">
                   <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>

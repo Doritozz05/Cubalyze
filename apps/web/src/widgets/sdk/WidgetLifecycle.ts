@@ -66,7 +66,7 @@ export function connectWidgetLifecycle(
   getDeps: () => HostAPIDependencies,
 ): () => void {
   // Track previous visibility to only react to actual changes
-  let prevVisibility: Record<WidgetId, boolean> = {};
+  const prevVisibility: Record<WidgetId, boolean> = {};
 
   // Initialize from current store state
   const initialState = widgetStore.getState();

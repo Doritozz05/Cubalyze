@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -24,9 +24,7 @@ import type { WidgetId } from "@/widgets/types";
  */
 function DockPill({ widgetId }: { widgetId: WidgetId }) {
   const definition = getWidget(widgetId);
-  const instance = useWidgetStore(
-    useCallback((s) => s.instances[widgetId], [widgetId]),
-  );
+  const instance = useWidgetStore((s) => s.instances[widgetId]);
 
   // ── Drag-to-undock ───────────────────────────────────────────────────
   const dragRef = useRef<{
@@ -171,7 +169,7 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
       {isDragging &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[60] flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 shadow-xl"
+            className="pointer-events-none fixed z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 shadow-xl"
             style={{ left: ghostPos.x, top: ghostPos.y }}
           >
             <Icon className="size-3 shrink-0" />

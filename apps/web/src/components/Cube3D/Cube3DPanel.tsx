@@ -3,16 +3,20 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw, X } from "lucide-react";
+import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 
 export interface Cube3DPanelProps {
   className?: string;
   onClose?: () => void;
+  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  order?: number;
+  /** Active scramble sequence to apply to 3D cube. */
+  scramble?: string;
 }
 
-export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
+export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DPanelProps) {
   const {
     canvasRef,
     containerRef,
@@ -20,8 +24,9 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
     recentMoves,
     calibrate,
     reset,
+    applyScramble,
     rotateCamera,
-  } = useCube3D({ maxRecentMoves: 15 });
+  } = useCube3D({ maxRecentMoves: 15, order, scramble });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -53,6 +58,21 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
           <h3 className="text-sm font-medium text-ink">Cube</h3>
         </div>
         <div className="flex gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => applyScramble(scramble)}
+                disabled={!isReady}
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+              >
+                <Shuffle className="size-3" />
+                Scramble
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Apply scramble to 3D cube</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -103,9 +123,9 @@ export function Cube3DPanel({ className, onClose }: Cube3DPanelProps) {
       </div>
 
       {/* Canvas Wrapper */}
-      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={containerRef as React.RefObject<HTMLDivElement>} className="relative min-h-0 flex-1 overflow-hidden">
         <canvas
-          ref={canvasRef}
+          ref={canvasRef as React.RefObject<HTMLCanvasElement>}
           className={cn(
             "absolute inset-0 h-full w-full outline-none",
             isDragging ? "cursor-grabbing" : "cursor-grab"

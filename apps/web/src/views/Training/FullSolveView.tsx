@@ -1,12 +1,31 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
+import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
+import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
+import type { HintContext } from "@/components/Timer/hintFor";
+import { useDrillTimer } from "@/hooks/useDrillTimer";
+import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
+import { useOrientation } from "@/hooks/useOrientation";
 import {
-  ArrowLeft, Target, Flame, X, Check, Trophy,
-  Cpu, Hand, RotateCcw,
+  TrainingBreadcrumb,
+} from "./components";
+import {
+  Target,
+  Flame,
+  X,
+  Check,
+  Trophy,
+  Eye,
+  MoveHorizontal,
+  Gauge,
+  RotateCw,
+  Lock,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -18,18 +37,20 @@ type FullSolveMode = "targets" | "move-limit" | "tps-challenge" | "rotationless"
 interface PhaseSplit {
   phaseId: string;
   phaseName: string;
-  targetS: number;       // target time in seconds
-  actualMs: number;      // actual duration in ms
+  targetS: number;
+  actualMs: number;
   status: "pending" | "active" | "done";
 }
 
 interface SolveResult {
   totalMs: number;
   splits: PhaseSplit[];
+  moveCount?: number;
+  hadRotations?: boolean;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Mock data per method
+   Phase target definitions
    ─────────────────────────────────────────────────────────────────────── */
 
 function getPhaseTargets(methodName: string): { phaseId: string; phaseName: string; targetS: number }[] {
@@ -69,7 +90,8 @@ function getPhaseTargets(methodName: string): { phaseId: string; phaseName: stri
 function formatTime(ms: number): string {
   if (ms <= 0) return "0.00";
   const s = ms / 1000;
-  return s < 10 ? s.toFixed(2) : s < 60 ? s.toFixed(2) : `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
+  return s < 10 ? s.toFixed(2) : s < 60 ? s.toFixed(2)
+    : `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
 }
 
 const SOLVE_MODES: { id: FullSolveMode; label: string; desc: string }[] = [
@@ -93,52 +115,63 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const phaseTargets = useMemo(() => getPhaseTargets(method?.name ?? ""), [method]);
 
   const [solveMode, setSolveMode] = useState<FullSolveMode>("targets");
-  const [timerPhase, setTimerPhase] = useState<"idle" | "inspection" | "running" | "done">("idle");
-  const [currentTime, setCurrentTime] = useState(0);
+  const [useInspection, setUseInspection] = useState(false);
   const [splits, setSplits] = useState<PhaseSplit[]>(() =>
     phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" as const })),
   );
   const [activeSplitIdx, setActiveSplitIdx] = useState(-1);
-  const [smartCubeMode, setSmartCubeMode] = useState(false);
   const [lastSolve, setLastSolve] = useState<SolveResult | null>(null);
+  const [currentScramble, setCurrentScramble] = useState(
+    () => RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
+  );
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const solveStartRef = useRef<number>(0);
+  // ── Mode-specific state ───────────────────────────────────────────
+  const [moveLimit, setMoveLimit] = useState(60);
+  const [tpsThreshold, setTpsThreshold] = useState(4);
+  const [userMoveCount, setUserMoveCount] = useState<number | null>(null);
+  const [hadRotations, setHadRotations] = useState(false);
+
+  // ── Timer + Smart Cube ──────────────────────────────────────────────
+  const { phase: timerPhase, time, stoppedTime, press, release, reset, engine } = useDrillTimer({ inspection: useInspection });
+  const { remapScramble } = useOrientation();
+  const displayScramble = remapScramble(currentScramble);
+
+  const smartCube = useDrillSmartCube({ engine, setupScramble: currentScramble });
+  const hasSmartCube = smartCube.smartCubeConnected;
+
+  const hintCtx = useMemo<HintContext>(() => ({
+    smartCube: hasSmartCube,
+    scrambleVerif: hasSmartCube,
+    inspection: useInspection,
+    isScrambled: smartCube.validation.isScrambled,
+  }), [hasSmartCube, smartCube.validation.isScrambled, useInspection]);
+
+  // Phase split timing
   const splitStartRef = useRef<number>(0);
+  const solveStartRef = useRef<number>(0);
 
-  const activeSplit = splits[activeSplitIdx];
   const totalTarget = phaseTargets.reduce((s, pt) => s + pt.targetS, 0);
   const totalActual = splits.reduce((s, sp) => s + sp.actualMs / 1000, 0);
+  const activeSplit = splits[activeSplitIdx];
 
-  // ── Start inspection ─────────────────────────────────────────────────
-  const startInspection = useCallback(() => {
-    setTimerPhase("inspection");
-    setCurrentTime(15000);
-    solveStartRef.current = Date.now();
-    timerRef.current = setInterval(() => {
-      const elapsed = Date.now() - solveStartRef.current;
-      const remaining = Math.max(0, 15000 - elapsed);
-      setCurrentTime(remaining);
-      if (remaining <= 0) {
-        // Auto-start solve after inspection
-        clearInterval(timerRef.current!);
-        timerRef.current = null;
-        setTimerPhase("running");
-        setCurrentTime(0);
-        solveStartRef.current = Date.now();
-        splitStartRef.current = Date.now();
-        setActiveSplitIdx(0);
-        setSplits((prev) => prev.map((s, i) => i === 0 ? { ...s, status: "active" } : s));
-        timerRef.current = setInterval(() => {
-          setCurrentTime(Date.now() - solveStartRef.current);
-        }, 10);
-      }
-    }, 10);
-  }, []);
+  // ── Start solve ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (timerPhase === "running" && activeSplitIdx === -1) {
+      // Timer just started — activate first phase
+      const now = Date.now();
+      solveStartRef.current = now;
+      splitStartRef.current = now;
+      setActiveSplitIdx(0);
+      setSplits((prev) => prev.map((s, i) =>
+        i === 0 ? { ...s, status: "active" as const } : { ...s, actualMs: 0, status: "pending" as const }
+      ));
+      setLastSolve(null);
+    }
+  }, [timerPhase, activeSplitIdx]);
 
-  // ── Stop / mark split ───────────────────────────────────────────────
+  // ── Mark phase split ────────────────────────────────────────────────
   const markSplit = useCallback(() => {
-    if (timerPhase !== "running" || activeSplitIdx < 0) return;
+    if (activeSplitIdx < 0) return;
     const now = Date.now();
     const splitDuration = now - splitStartRef.current;
 
@@ -153,274 +186,445 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
     });
 
     if (activeSplitIdx + 1 >= phaseTargets.length) {
-      // All phases done
-      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      // All phases done — stop timer
       const totalMs = now - solveStartRef.current;
-      setCurrentTime(totalMs);
-      setTimerPhase("done");
-      setActiveSplitIdx(-1);
-
-      // Build result
       const resultSplits: PhaseSplit[] = splits.map((s, i) =>
-        i === activeSplitIdx ? { ...s, actualMs: splitDuration, status: "done" as const }
-        : s,
+        i === activeSplitIdx ? { ...s, actualMs: splitDuration, status: "done" as const } : s
       );
       setLastSolve({ totalMs, splits: resultSplits });
+      setActiveSplitIdx(-1);
+      engine.handleDown(); // stop timer via spacebar press simulation
     } else {
       setActiveSplitIdx((prev) => prev + 1);
       splitStartRef.current = now;
     }
-  }, [timerPhase, activeSplitIdx, phaseTargets.length, splits]);
+  }, [activeSplitIdx, phaseTargets.length, splits, engine]);
 
-  // ── Timer display tap ───────────────────────────────────────────────
-  const handleTimerTap = useCallback(() => {
-    if (timerPhase === "idle") {
-      // Start full solve immediately (no inspection)
-      setTimerPhase("running");
-      setCurrentTime(0);
-      solveStartRef.current = Date.now();
-      splitStartRef.current = Date.now();
-      setActiveSplitIdx(0);
-      setSplits((prev) => prev.map((s, i) => i === 0 ? { ...s, status: "active" } : { ...s, actualMs: 0, status: "pending" }));
-      setLastSolve(null);
-      timerRef.current = setInterval(() => {
-        setCurrentTime(Date.now() - solveStartRef.current);
-      }, 10);
-    } else if (timerPhase === "running") {
-      markSplit();
-    } else if (timerPhase === "done") {
-      // Reset
-      setTimerPhase("idle");
-      setCurrentTime(0);
-      setSplits(phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" })));
+  // ── Handle solve complete (smart cube solved or manual stop) ──────
+  useEffect(() => {
+    if (timerPhase === "stopped" && stoppedTime > 0 && lastSolve === null) {
+      // Use precise stoppedTime from timer hook, not Date.now()
+      if (solveStartRef.current > 0) {
+        const lastIdx = activeSplitIdx >= 0 ? activeSplitIdx : phaseTargets.length - 1;
+        const resultSplits = splits.map((s, i) => {
+          if (i === lastIdx && s.status === "active") {
+            return { ...s, actualMs: stoppedTime - totalActual * 1000, status: "done" as const };
+          }
+          return s;
+        });
+        setLastSolve({ totalMs: stoppedTime, splits: resultSplits });
+      }
       setActiveSplitIdx(-1);
     }
-  }, [timerPhase, markSplit, phaseTargets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerPhase, stoppedTime]);
 
-  // ── Cleanup ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  // ── Reset for new solve ─────────────────────────────────────────────
+  const handleNewSolve = useCallback(() => {
+    reset();
+    setSplits(phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" })));
+    setActiveSplitIdx(-1);
+    setLastSolve(null);
+    setUserMoveCount(null);
+    setHadRotations(false);
+    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+  }, [reset, phaseTargets]);
 
-  // ── Render ───────────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────────
   return (
     <div className="relative flex-1 min-h-0 w-full h-full">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden">
         {/* Header */}
         <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0">
-              <ArrowLeft className="size-3" />Back
-            </button>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-semibold text-ink">{method?.name ?? "?"}</span>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-semibold text-ink">Full Solve</span>
+            <TrainingBreadcrumb
+              onBack={onBack}
+              segments={[
+                { label: method?.name ?? "?" },
+                { label: "Full Solve", isCurrent: true },
+              ]}
+            />
             <span className="nums text-[0.62rem] text-ink-3 ml-auto">
-              {timerPhase === "done" ? formatTime(currentTime) : ""}
+              {lastSolve ? formatTime(lastSolve.totalMs) : ""}
             </span>
-            <button onClick={() => setSmartCubeMode((v) => !v)}
-              className={cn("shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors border",
-                smartCubeMode ? "border-ink/20 bg-ink text-surface" : "border-line bg-surface text-ink-3 hover:text-ink hover:border-ink/15")}>
-              {smartCubeMode ? "Smart cube" : "Manual"}
-            </button>
+            {hasSmartCube && (
+              <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">
+                Smart Cube
+              </span>
+            )}
           </div>
 
-          {/* Sub-mode tabs */}
-          <div className="flex gap-1 flex-wrap">
+          {/* Mode tabs */}
+          <div className="flex gap-1 flex-wrap items-center">
             {SOLVE_MODES.map((mode) => (
-              <button key={mode.id} onClick={() => setSolveMode(mode.id)}
-                className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
-                  solveMode === mode.id ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")}
-                title={mode.desc}>
+              <button
+                key={mode.id}
+                onClick={() => setSolveMode(mode.id)}
+                className={cn(
+                  "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
+                  solveMode === mode.id
+                    ? "bg-ink text-surface"
+                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                )}
+                title={mode.desc}
+              >
                 {mode.label}
                 {solveMode === mode.id && (
-                  <motion.div layoutId="fullsolve-mode-active" className="absolute inset-0 rounded-md bg-ink -z-10"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                  <motion.div
+                    layoutId="fullsolve-mode-active"
+                    className="absolute inset-0 rounded-md bg-ink -z-10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
                 )}
               </button>
             ))}
+            <span className="w-px h-5 bg-line mx-1" />
+            <button
+              onClick={() => setUseInspection((v) => !v)}
+              disabled={timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
+                timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"
+                  ? "opacity-40 cursor-not-allowed"
+                  : useInspection
+                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
+              )}
+              title={useInspection ? "Disable 15s inspection" : "Enable WCA-style 15s inspection"}
+            >
+              <Eye className="size-3" />
+              Inspection{useInspection ? " (15s)" : ""}
+            </button>
           </div>
+
+          {/* Mode-specific settings bar */}
+          {solveMode === "move-limit" && (
+            <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
+              <MoveHorizontal className="size-3.5" />
+              <span>Max moves:</span>
+              <input
+                type="number"
+                min={20}
+                max={100}
+                value={moveLimit}
+                onChange={(e) => setMoveLimit(parseInt(e.target.value, 10) || 60)}
+                className="nums w-14 rounded-md border border-line bg-surface-2 px-2 py-0.5 text-[0.65rem] text-ink text-center"
+              />
+              <span className="text-ink-3/50">(standard solve: ~55-60 moves)</span>
+            </div>
+          )}
+          {solveMode === "tps-challenge" && (
+            <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
+              <Gauge className="size-3.5" />
+              <span>Min TPS:</span>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                step={0.5}
+                value={tpsThreshold}
+                onChange={(e) => setTpsThreshold(parseFloat(e.target.value) || 4)}
+                className="nums w-14 rounded-md border border-line bg-surface-2 px-2 py-0.5 text-[0.65rem] text-ink text-center"
+              />
+            </div>
+          )}
+          {solveMode === "rotationless" && (
+            <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
+              <Lock className="size-3.5" />
+              <span>Solve without any cube rotations (y, y', y2). Mark if you rotated below.</span>
+            </div>
+          )}
         </header>
 
         {/* Body */}
         <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden px-4 sm:px-6 lg:px-8 pb-6 lg:pb-8">
-          {/* Phase progress bar */}
+          {/* Phase progress bar — only shown in targets mode */}
+          {solveMode === "targets" && (
           <div className="shrink-0 flex items-center gap-1">
             {splits.map((split) => {
               const isDone = split.status === "done";
               const isActive = split.status === "active";
-              const pct = split.targetS > 0 ? Math.min(100, Math.round((split.actualMs / 1000 / split.targetS) * 100)) : 0;
+              const pct = split.targetS > 0
+                ? Math.min(100, Math.round((split.actualMs / 1000 / split.targetS) * 100))
+                : 0;
               return (
                 <div key={split.phaseId} className="flex-1 flex flex-col gap-1.5 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-[0.55rem] font-medium truncate",
-                      isDone ? "text-ready" : isActive ? "text-ink" : "text-ink-3/40")}>
+                    <span className={cn(
+                      "text-[0.55rem] font-medium truncate",
+                      isDone ? "text-ready" : isActive ? "text-ink" : "text-ink-3/40",
+                    )}>
                       {split.phaseName}
                     </span>
-                    <span className={cn("nums text-[0.5rem] shrink-0 ml-1",
-                      isDone ? "text-ready" : isActive ? "text-ink-2" : "text-ink-3/30")}>
-                      {isDone ? `${(split.actualMs / 1000).toFixed(1)}s` : split.targetS.toFixed(1) + "s"}
+                    <span className={cn(
+                      "nums text-[0.5rem] shrink-0 ml-1",
+                      isDone ? "text-ready" : isActive ? "text-ink-2" : "text-ink-3/30",
+                    )}>
+                      {isDone
+                        ? `${(split.actualMs / 1000).toFixed(1)}s`
+                        : split.targetS.toFixed(1) + "s"}
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
                     {isDone && (
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
                         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                        className={cn("h-full rounded-full", pct <= 100 ? "bg-ready" : "bg-hold")} />
+                        className={cn("h-full rounded-full", pct <= 100 ? "bg-ready" : "bg-hold")}
+                      />
                     )}
                     {isActive && (
-                      <motion.div initial={{ width: 0 }} animate={{ width: "100%" }}
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "100%" }}
                         transition={{ duration: (split.targetS * 1000) / 1000, ease: "linear" }}
-                        className="h-full rounded-full bg-ink/15" />
+                        className="h-full rounded-full bg-ink/15"
+                      />
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
+          )}
 
-          {/* Main area: timer + result */}
+          {/* Main area */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
             {/* Timer / Result area */}
             <div className="flex-1 min-h-70 flex flex-col items-center justify-center rounded-xl border border-line bg-surface relative overflow-hidden">
-              {/* Inspection overlay */}
+              {/* Result overlay */}
               <AnimatePresence>
-                {timerPhase === "inspection" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 rounded-xl bg-caution-soft/60">
-                    <span className="nums text-[3rem] font-bold text-caution">{formatTime(currentTime)}</span>
-                    <span className="text-[0.7rem] font-medium text-caution/80">Inspection</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Done result overlay */}
-              <AnimatePresence>
-                {timerPhase === "done" && lastSolve && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col gap-4 z-10 rounded-xl bg-surface/98 p-6 overflow-y-auto">
+                {timerPhase === "stopped" && lastSolve && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 flex flex-col gap-4 z-10 rounded-xl bg-surface/98 p-6 overflow-y-auto"
+                  >
                     <div className="flex flex-col items-center gap-2">
                       <Trophy className="size-10 text-caution" />
-                      <span className="nums text-[2.5rem] font-bold text-ink">{formatTime(lastSolve.totalMs)}</span>
+                      <span className="nums text-[2.5rem] font-bold text-ink">
+                        {formatTime(lastSolve.totalMs)}
+                      </span>
                       <span className="text-[0.65rem] text-ink-3">Total solve time</span>
                     </div>
 
-                    <div className="space-y-2 w-full max-w-sm mx-auto">
-                      {lastSolve.splits.map((split) => {
-                        const overTarget = split.actualMs / 1000 > split.targetS;
-                        return (
-                          <div key={split.phaseId} className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2">
-                            <span className="text-[0.62rem] font-medium text-ink-2 w-20 shrink-0">{split.phaseName}</span>
-                            <span className={cn("nums text-[0.65rem] font-medium", overTarget ? "text-hold" : "text-ready")}>
-                              {(split.actualMs / 1000).toFixed(2)}s
-                            </span>
-                            <span className="nums text-[0.55rem] text-ink-3/60">/ {split.targetS.toFixed(1)}s</span>
-                            <div className="ml-auto flex items-center gap-1 shrink-0">
-                              {overTarget ? (
-                                <X className="size-3.5 text-hold" />
-                              ) : (
-                                <Check className="size-3.5 text-ready" />
-                              )}
-                              <span className={cn("nums text-[0.55rem]", overTarget ? "text-hold" : "text-ready")}>
-                                {overTarget ? `+${((split.actualMs / 1000) - split.targetS).toFixed(1)}s` : "OK"}
+                    {/* Split breakdown — only shown in targets mode */}
+                    {solveMode === "targets" && (
+                      <div className="space-y-2 w-full max-w-sm mx-auto">
+                        {lastSolve.splits.map((split) => {
+                          const overTarget = split.actualMs / 1000 > split.targetS;
+                          return (
+                            <div
+                              key={split.phaseId}
+                              className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2"
+                            >
+                              <span className="text-[0.62rem] font-medium text-ink-2 w-20 shrink-0">
+                                {split.phaseName}
                               </span>
+                              <span className={cn(
+                                "nums text-[0.65rem] font-medium",
+                                overTarget ? "text-hold" : "text-ready",
+                              )}>
+                                {(split.actualMs / 1000).toFixed(2)}s
+                              </span>
+                              <span className="nums text-[0.55rem] text-ink-3/60">
+                                / {split.targetS.toFixed(1)}s
+                              </span>
+                              <div className="ml-auto flex items-center gap-1 shrink-0">
+                                {overTarget ? (
+                                  <X className="size-3.5 text-hold" />
+                                ) : (
+                                  <Check className="size-3.5 text-ready" />
+                                )}
+                                <span className={cn(
+                                  "nums text-[0.55rem]",
+                                  overTarget ? "text-hold" : "text-ready",
+                                )}>
+                                  {overTarget
+                                    ? `+${((split.actualMs / 1000) - split.targetS).toFixed(1)}s`
+                                    : "OK"}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="flex items-center gap-1.5 text-[0.6rem] text-ink-3">
-                        <Target className="size-3" />
-                        Total target: {totalTarget.toFixed(1)}s
+                          );
+                        })}
                       </div>
-                      <div className={cn("flex items-center gap-1.5 text-[0.6rem] font-medium",
-                        totalActual <= totalTarget ? "text-ready" : "text-hold")}>
-                        Actual: {totalActual.toFixed(1)}s
-                      </div>
-                    </div>
+                    )}
 
-                    <button onClick={() => { setTimerPhase("idle"); setCurrentTime(0); setSplits(phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" }))); setActiveSplitIdx(-1); }}
-                      className="mx-auto inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-[0.7rem] font-semibold text-surface hover:bg-ink/90 transition-colors">
-                      <RotateCcw className="size-3.5" /> New Solve
+                    {/* Total target vs actual — only in targets mode */}
+                    {solveMode === "targets" && (
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="flex items-center gap-1.5 text-[0.6rem] text-ink-3">
+                          <Target className="size-3" />
+                          Total target: {totalTarget.toFixed(1)}s
+                        </div>
+                        <div className={cn(
+                          "flex items-center gap-1.5 text-[0.6rem] font-medium",
+                          totalActual <= totalTarget ? "text-ready" : "text-hold",
+                        )}>
+                          Actual: {totalActual.toFixed(1)}s
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mode-specific result input */}
+                    {solveMode === "move-limit" && (
+                      <div className="flex flex-col items-center gap-2 pt-2 border-t border-line">
+                        <span className="text-[0.6rem] text-ink-3">How many moves did you use?</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            max={200}
+                            value={userMoveCount ?? ""}
+                            onChange={(e) => setUserMoveCount(parseInt(e.target.value, 10) || null)}
+                            className="nums w-16 rounded-md border border-line bg-surface-2 px-2 py-1 text-[0.7rem] text-ink text-center"
+                            placeholder="55"
+                          />
+                          {userMoveCount !== null && (
+                            <span className={cn(
+                              "text-[0.65rem] font-semibold",
+                              userMoveCount <= moveLimit ? "text-ready" : "text-hold",
+                            )}>
+                              {userMoveCount <= moveLimit
+                                ? `${moveLimit - userMoveCount} under limit`
+                                : `${userMoveCount - moveLimit} over limit`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {solveMode === "tps-challenge" && (
+                      <div className="flex flex-col items-center gap-2 pt-2 border-t border-line">
+                        <span className="text-[0.6rem] text-ink-3">How many moves was your solution?</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            max={200}
+                            value={userMoveCount ?? ""}
+                            onChange={(e) => setUserMoveCount(parseInt(e.target.value, 10) || null)}
+                            className="nums w-16 rounded-md border border-line bg-surface-2 px-2 py-1 text-[0.7rem] text-ink text-center"
+                            placeholder="55"
+                          />
+                          {userMoveCount !== null && lastSolve && (
+                            <span className={cn(
+                              "text-[0.65rem] font-semibold",
+                              (userMoveCount / (lastSolve.totalMs / 1000)) >= tpsThreshold ? "text-ready" : "text-hold",
+                            )}>
+                              {(userMoveCount / (lastSolve.totalMs / 1000)).toFixed(1)} TPS
+                              {(userMoveCount / (lastSolve.totalMs / 1000)) >= tpsThreshold
+                                ? " - Passed!" : " - Below target"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {solveMode === "rotationless" && (
+                      <div className="flex flex-col items-center gap-2 pt-2 border-t border-line">
+                        <span className="text-[0.6rem] text-ink-3">Did you use any cube rotations?</span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setHadRotations(false)}
+                            className={cn(
+                              "rounded-md px-3 py-1.5 text-[0.65rem] font-medium transition-colors",
+                              !hadRotations ? "bg-ready/10 text-ready border border-ready/30" : "bg-surface-2 text-ink-3 hover:text-ink",
+                            )}
+                          >
+                            <Check className="size-3 inline mr-1" />No rotations
+                          </button>
+                          <button
+                            onClick={() => setHadRotations(true)}
+                            className={cn(
+                              "rounded-md px-3 py-1.5 text-[0.65rem] font-medium transition-colors",
+                              hadRotations ? "bg-hold/10 text-hold border border-hold/30" : "bg-surface-2 text-ink-3 hover:text-ink",
+                            )}
+                          >
+                            <RotateCw className="size-3 inline mr-1" />Had rotations
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleNewSolve}
+                      className="mx-auto inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-[0.7rem] font-semibold text-surface hover:bg-ink/90 transition-colors"
+                    >
+                      New Solve
                     </button>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Timer button */}
-              <button onClick={handleTimerTap}
-                className={cn("w-full h-full flex flex-col items-center justify-center gap-3 select-none outline-none transition-colors",
-                  timerPhase !== "done" && "cursor-pointer hover:bg-surface-2/50")}>
-                <span className={cn("nums text-[3rem] sm:text-[4rem] font-bold tracking-tight tabular-nums transition-colors",
-                  timerPhase === "running" ? "text-ink" : timerPhase === "idle" ? "text-ink-2" : "text-ink-3/30")}>
-                  {timerPhase === "idle" ? "0.00" : formatTime(currentTime)}
-                </span>
-                <span className="text-[0.65rem] text-ink-3">
-              {timerPhase === "idle" ? "Tap to start solve" :
-               timerPhase === "inspection" ? "Inspecting..." :
-               timerPhase === "running" ? `Tap when ${activeSplit?.phaseName ?? "next phase"} is done` :
-               timerPhase === "done" ? "Tap for new solve" : ""}
-            </span>
-            {timerPhase === "idle" && (
-              <button onClick={(e) => { e.stopPropagation(); startInspection(); }}
-                className="text-[0.55rem] text-ink-3/60 hover:text-ink transition-colors mt-1">
-                or start with 15s inspection
-              </button>
-            )}
-                <span className="flex items-center gap-1.5 text-[0.55rem] text-ink-3/70">
-                  {smartCubeMode ? <><Cpu className="size-3" /> Smart cube</> : <><Hand className="size-3" /> Manual</>}
-                </span>
-              </button>
+              {/* Scramble display above timer */}
+              {currentScramble && timerPhase !== "running" && (
+                <div className="w-full max-w-lg shrink-0 px-4 pt-4">
+                  <ScrambleDisplay
+                    scramble={currentScramble}
+                    displayScramble={displayScramble}
+                    states={hasSmartCube ? smartCube.validation.states : undefined}
+                    currentIndex={hasSmartCube ? smartCube.validation.currentIndex : 0}
+                    errorMoves={hasSmartCube ? smartCube.validation.displayErrorMoves : []}
+                    pendingHalfDouble={hasSmartCube ? smartCube.validation.pendingHalfDouble : false}
+                    isScrambled={hasSmartCube ? smartCube.validation.isScrambled : false}
+                    needsReset={hasSmartCube ? smartCube.validation.needsReset : false}
+                    awaitingSolve={hasSmartCube ? smartCube.validation.awaitingSolve : false}
+                  />
+                </div>
+              )}
+
+              {/* Timer */}
+              <TimerContainer
+                phase={timerPhase}
+                time={time}
+                lastTime={null}
+                hintCtx={hintCtx}
+                onPress={press}
+                onRelease={release}
+                className="flex-1"
+              />
+
+              {/* Phase split hint */}
+              {timerPhase === "running" && activeSplit && (
+                <p className="pb-4 text-[0.6rem] text-ink-3/60">
+                  Currently: <span className="font-medium text-ink-2">{activeSplit.phaseName}</span>
+                  {" — "}tap phase in sidebar to mark split
+                </p>
+              )}
             </div>
 
             {/* Right: phase detail panel */}
             <aside className="min-h-0 lg:w-64 lg:shrink-0 flex flex-col gap-3">
-              <div className="rounded-xl border border-line bg-surface p-4">
-                <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">Phase Targets</h3>
-                <div className="space-y-2.5">
-                  {splits.map((split) => {
-                    const isDone = split.status === "done";
-                    const isActive = split.status === "active";
-                    const pct = split.targetS > 0 ? Math.min(100, Math.round((split.actualMs / 1000 / split.targetS) * 100)) : 0;
-                    return (
-                      <div key={split.phaseId} className={cn("rounded-lg p-2.5 transition-colors",
-                        isActive && "bg-surface-2 ring-1 ring-ink/10",
-                        isDone && "bg-surface-2/50",
-                        !isActive && !isDone && "opacity-40")}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={cn("text-[0.62rem] font-medium", isActive ? "text-ink" : "text-ink-3")}>
-                            {split.phaseName}
-                          </span>
-                          <span className={cn("nums text-[0.55rem]", isDone ? "text-ready" : "text-ink-3/60")}>
-                            {isDone ? `${(split.actualMs / 1000).toFixed(1)}s / ${split.targetS.toFixed(1)}s` : `${split.targetS.toFixed(1)}s`}
-                          </span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
-                          {isDone && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                              transition={{ duration: 0.4 }}
-                              className={cn("h-full rounded-full", pct <= 100 ? "bg-ready" : "bg-hold")} />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
-                  <span className="text-[0.6rem] text-ink-3">Total target</span>
-                  <div className="flex items-center gap-2">
-                    <span className="nums text-[0.68rem] font-semibold text-ink">{totalTarget.toFixed(1)}s</span>
-                    {totalActual > 0 && (
-                      <span className={cn("nums text-[0.62rem]", totalActual <= totalTarget ? "text-ready" : "text-hold")}>
-                        ({(totalActual).toFixed(1)}s)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* Mini 3D Cube */}
+              {hasSmartCube && (
+                <MiniCube3DPanel className="shrink-0" />
+              )}
+
+              {/* Mode-specific sidebar */}
+              {solveMode === "targets" && (
+                <PhaseTargetsPanel
+                  splits={splits}
+                  totalTarget={totalTarget}
+                  totalActual={totalActual}
+                  onMarkSplit={markSplit}
+                />
+              )}
+
+              {solveMode === "move-limit" && (
+                <MoveLimitInfo moveLimit={moveLimit} />
+              )}
+
+              {solveMode === "tps-challenge" && (
+                <TpsInfo tpsThreshold={tpsThreshold} />
+              )}
+
+              {solveMode === "rotationless" && (
+                <RotationlessInfo hadRotations={hadRotations} />
+              )}
 
               {/* Quick tips */}
               <div className="rounded-xl border border-line bg-surface p-3">
@@ -430,7 +634,10 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                   </div>
                   <div>
                     <p className="text-[0.6rem] text-ink-2 leading-relaxed">
-                      Tap when you finish each phase. The timer keeps running between phases — no pauses allowed.
+                      {solveMode === "targets" && "Click each phase in the sidebar to mark splits as you progress. The timer runs continuously — no pauses allowed."}
+                      {solveMode === "move-limit" && `Aim to solve within ${moveLimit} moves. Count your moves mentally or use a smart cube for automatic tracking.`}
+                      {solveMode === "tps-challenge" && `Maintain ${tpsThreshold}+ TPS throughout the solve. Enter your move count after stopping the timer.`}
+                      {solveMode === "rotationless" && "Complete the entire solve without a single cube rotation (y, y', y2). This builds lookahead and F2L efficiency."}
                     </p>
                   </div>
                 </div>
@@ -438,6 +645,156 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             </aside>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Sidebar Panels (mode-specific)
+   ─────────────────────────────────────────────────────────────────────── */
+
+function PhaseTargetsPanel({
+  splits, totalTarget, totalActual, onMarkSplit,
+}: {
+  splits: PhaseSplit[];
+  totalTarget: number;
+  totalActual: number;
+  onMarkSplit: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
+        Phase Targets
+      </h3>
+      <div className="space-y-2.5">
+        {splits.map((split) => {
+          const isDone = split.status === "done";
+          const isActive = split.status === "active";
+          const pct = split.targetS > 0
+            ? Math.min(100, Math.round((split.actualMs / 1000 / split.targetS) * 100))
+            : 0;
+          return (
+            <button
+              key={split.phaseId}
+              onClick={isActive ? onMarkSplit : undefined}
+              className={cn(
+                "w-full rounded-lg p-2.5 transition-colors text-left",
+                isActive && "bg-surface-2 ring-1 ring-ink/10 cursor-pointer hover:bg-surface-2/80",
+                isDone && "bg-surface-2/50",
+                !isActive && !isDone && "opacity-40 cursor-default",
+              )}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={cn(
+                  "text-[0.62rem] font-medium",
+                  isActive ? "text-ink" : "text-ink-3",
+                )}>
+                  {split.phaseName}
+                </span>
+                <span className={cn(
+                  "nums text-[0.55rem]",
+                  isDone ? "text-ready" : "text-ink-3/60",
+                )}>
+                  {isDone
+                    ? `${(split.actualMs / 1000).toFixed(1)}s / ${split.targetS.toFixed(1)}s`
+                    : `${split.targetS.toFixed(1)}s`}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
+                {isDone && (
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.4 }}
+                    className={cn(
+                      "h-full rounded-full",
+                      pct <= 100 ? "bg-ready" : "bg-hold",
+                    )}
+                  />
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
+        <span className="text-[0.6rem] text-ink-3">Total target</span>
+        <div className="flex items-center gap-2">
+          <span className="nums text-[0.68rem] font-semibold text-ink">
+            {totalTarget.toFixed(1)}s
+          </span>
+          {totalActual > 0 && (
+            <span className={cn(
+              "nums text-[0.62rem]",
+              totalActual <= totalTarget ? "text-ready" : "text-hold",
+            )}>
+              ({(totalActual).toFixed(1)}s)
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MoveLimitInfo({ moveLimit }: { moveLimit: number }) {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
+        Move Limit
+      </h3>
+      <div className="text-center py-4">
+        <span className="nums text-[2.5rem] font-bold text-ink">{moveLimit}</span>
+        <p className="text-[0.6rem] text-ink-3 mt-1">max moves allowed</p>
+      </div>
+      <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
+        <p>• CFOP average: ~55-60 moves</p>
+        <p>• Roux average: ~45-50 moves</p>
+        <p>• Advanced goal: ≤ 50 moves</p>
+        <p>• World-class: ≤ 45 moves</p>
+      </div>
+    </div>
+  );
+}
+
+function TpsInfo({ tpsThreshold }: { tpsThreshold: number }) {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
+        TPS Challenge
+      </h3>
+      <div className="text-center py-4">
+        <span className="nums text-[2.5rem] font-bold text-ink">{tpsThreshold}</span>
+        <p className="text-[0.6rem] text-ink-3 mt-1">minimum TPS</p>
+      </div>
+      <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
+        <p>• Beginner: 2-3 TPS</p>
+        <p>• Intermediate: 3-5 TPS</p>
+        <p>• Advanced: 5-8 TPS</p>
+        <p>• Elite: 8-12+ TPS</p>
+      </div>
+    </div>
+  );
+}
+
+function RotationlessInfo({ hadRotations }: { hadRotations: boolean }) {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
+        Rotationless
+      </h3>
+      <div className="text-center py-4">
+        <Lock className={cn("size-10 mx-auto mb-2", hadRotations ? "text-hold" : "text-ready")} />
+        <p className={cn("text-[0.72rem] font-semibold", hadRotations ? "text-hold" : "text-ready")}>
+          {hadRotations ? "Rotation Used" : "Clean Solve!"}
+        </p>
+      </div>
+      <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
+        <p>• Use d moves instead of y + U</p>
+        <p>• Learn F2L cases from all angles</p>
+        <p>• ZZ method forces rotationless solving</p>
+        <p>• Reduces pauses from re-orientation</p>
       </div>
     </div>
   );

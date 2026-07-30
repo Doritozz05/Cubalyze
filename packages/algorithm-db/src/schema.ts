@@ -60,7 +60,7 @@ export const AlgorithmCaseSchema = z.object({
   recognitionPatterns: z.array(z.string()),
   setupScramble: z.string(),
   setupAlgorithm: z.string().optional(),
-  diagramType: z.enum(['2d-top', '3d-isometric', '2d-net', 'none']),
+  diagramType: z.enum(['2d-top', '3d-isometric', '3d', '2d-net', 'none']),
   diagram2D: Diagram2DSchema.optional(),
   diagram3D: Diagram3DSchema.optional(),
   probability: z.string().optional(),
@@ -76,6 +76,7 @@ export const AlgorithmCaseSchema = z.object({
 export const AlgorithmSubsetSchema = z.object({
   id: z.string().uuid(),
   methodId: z.string().uuid(),
+  parentId: z.string().uuid().optional(),
   name: z.string(),
   description: z.string(),
   sortOrder: z.number().int().default(0),

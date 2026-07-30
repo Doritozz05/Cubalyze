@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import { TrainingBreadcrumb } from "./components";
+import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import type { AlgorithmProgressRecord } from "@cubeforge/training";
 import {
-  ArrowLeft, Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
+  Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
   ChevronRight, Lightbulb,
 } from "lucide-react";
 
@@ -21,27 +24,11 @@ interface PhaseStatsProps {
   onBack: () => void;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   Mock helpers
-   ─────────────────────────────────────────────────────────────────────── */
-
-function mockCaseMastery(caseNumber: string) {
-  const n = parseInt(caseNumber.replace(/\D/g, ""), 10) || 0;
-  return Math.min(99, 30 + ((n * 17) % 70));
-}
-
-function mockCaseBestTime(caseNumber: string) {
-  const n = parseInt(caseNumber.replace(/\D/g, ""), 10) || 0;
-  return 600 + ((n * 53) % 2200);
-}
-
-function mockSessionHistory() {
-  return Array.from({ length: 14 }, (_, i) => ({
-    day: new Date(Date.now() - (13 - i) * 86400000).toLocaleDateString("en-US", { weekday: "short" }).slice(0, 3),
-    avgTime: 1.2 + Math.random() * 0.8,
-    accuracy: 75 + Math.random() * 25,
-    attempts: 10 + Math.floor(Math.random() * 40),
-  }));
+interface CaseStat {
+  case: AlgorithmCase;
+  mastery: number;
+  bestTimeMs: number;
+  attempts: number;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -53,7 +40,6 @@ function formatTime(ms: number): string {
   const s = ms / 1000;
   return s < 10 ? s.toFixed(2) : `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
 }
-
 
 /* ──────────────────────────────────────────────────────────────────────────
    Main Component
@@ -67,11 +53,15 @@ export function PhaseStatsView({
   const { cases: allCases } = useMemo(() => getSeedData(), []);
   const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">("overview");
 
+  // ── Real progress from DB ──────────────────────────────────────────────
+  const { ready, getSubsetProgress } = useTrainingProgress();
+  const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
+
   // Find subset for this phase
   const subset = useMemo(() => {
     const phaseToName: Record<string, string> = {
-      "oll": "OLL", "pll": "PLL", "f2l": "F2L", "cmll": "CMLL",
-      "f2l-zz": "F2L", "ll-zz": "OCLL", "f2l-petrus": "F2L", "ll-petrus": "COLL",
+      "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
+      "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
     };
     const name = phaseToName[phaseId];
     if (!name) return null;
@@ -81,54 +71,67 @@ export function PhaseStatsView({
 
   const subsetCases = useMemo(() => {
     if (!subset) return [];
-    return allCases.filter((c) => c.subsetId === subset.id).sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true }));
+    return allCases.filter((c) => c.subsetId === subset.id)
+      .sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, { numeric: true }));
   }, [allCases, subset]);
 
   const hasAlgorithms = subsetCases.length > 0;
 
-  const sessionHistory = useMemo(() => mockSessionHistory(), []);
+  // Load real progress data
+  useEffect(() => {
+    if (!ready || !subset) return;
+    getSubsetProgress(subset.id).then((records) => {
+      const map = new Map<string, AlgorithmProgressRecord>();
+      for (const r of records) {
+        map.set(r.algorithmId, r);
+      }
+      setProgressMap(map);
+    });
+  }, [ready, subset?.id, getSubsetProgress]);
 
-  // Aggregate stats
-  const caseStats = useMemo(() => {
-    return subsetCases.map((c) => ({
-      case: c,
-      mastery: mockCaseMastery(c.caseNumber),
-      bestTime: mockCaseBestTime(c.caseNumber),
-      attempts: 5 + Math.floor(Math.random() * 40),
-    }));
-  }, [subsetCases]);
+  // Build case stats from real data
+  const caseStats: CaseStat[] = useMemo(() => {
+    if (!ready || progressMap.size === 0) return [];
+    return subsetCases.map((c) => {
+      const prog = progressMap.get(c.id);
+      return {
+        case: c,
+        mastery: prog?.mastery ?? 0,
+        bestTimeMs: prog?.bestTimeMs ?? 0,
+        attempts: prog?.totalAttempts ?? 0,
+      };
+    });
+  }, [subsetCases, progressMap, ready]);
 
   const mastered = caseStats.filter((c) => c.mastery >= 90).length;
   const learning = caseStats.filter((c) => c.mastery >= 60 && c.mastery < 90).length;
   const beginner = caseStats.filter((c) => c.mastery > 0 && c.mastery < 60).length;
   const newCases = caseStats.filter((c) => c.mastery === 0).length;
   const avgMastery = caseStats.length > 0 ? Math.round(caseStats.reduce((s, c) => s + c.mastery, 0) / caseStats.length) : 0;
-  const bestTime = caseStats.length > 0 ? Math.min(...caseStats.map((c) => c.bestTime)) : 0;
+  const bestTime = caseStats.length > 0 ? Math.min(...caseStats.filter(c => c.bestTimeMs > 0).map((c) => c.bestTimeMs), Infinity) : 0;
   const totalAttempts = caseStats.reduce((s, c) => s + c.attempts, 0);
 
   const weakCases = useMemo(
-    () => [...caseStats].sort((a, b) => a.mastery - b.mastery).slice(0, 5),
+    () => [...caseStats].filter(c => c.mastery < 100).sort((a, b) => a.mastery - b.mastery).slice(0, 5),
     [caseStats],
   );
+
+  // Empty session history (no fake data)
+  const sessionHistory: { day: string; avgTime: number; accuracy: number; attempts: number }[] = [];
 
   return (
     <div className="relative flex-1 min-h-0 w-full h-full">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         {/* Header */}
         <header className="flex flex-col gap-2 shrink-0">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0">
-              <ArrowLeft className="size-3" />Back
-            </button>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-medium text-ink">{method?.name ?? "?"}</span>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-semibold text-ink">{phaseName}</span>
-            <span className="text-[0.6rem] text-ink-3/50">›</span>
-            <span className="text-[0.72rem] font-semibold text-ink">Stats</span>
-          </div>
-
-          {/* Tab bar */}
+          <TrainingBreadcrumb
+            onBack={onBack}
+            segments={[
+              { label: method?.name ?? "?" },
+              { label: phaseName },
+              { label: "Stats", isCurrent: true },
+            ]}
+          />
           <div className="flex gap-0.5">
             {(["overview", "cases", "history"] as const).map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)}
@@ -144,18 +147,23 @@ export function PhaseStatsView({
           </div>
         </header>
 
-        {/* Body: scrollable */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          {activeTab === "overview" && (
+          {!ready ? (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-[0.7rem] text-ink-3">Loading progress...</p>
+            </div>
+          ) : activeTab === "overview" && (
             <OverviewTab
               mastered={mastered} learning={learning} beginner={beginner} newCases={newCases}
-              totalCases={subsetCases.length} avgMastery={avgMastery} bestTime={bestTime}
+              totalCases={subsetCases.length} avgMastery={avgMastery} bestTime={bestTime === Infinity ? 0 : bestTime}
               totalAttempts={totalAttempts} hasAlgorithms={hasAlgorithms}
               weakCases={weakCases} sessionHistory={sessionHistory}
             />
           )}
           {activeTab === "cases" && (
-            <CasesTab caseStats={caseStats} />
+            <CasesTab caseStats={caseStats.length > 0 ? caseStats : subsetCases.map((c) => ({
+              case: c, mastery: 0, bestTimeMs: 0, attempts: 0,
+            }))} />
           )}
           {activeTab === "history" && (
             <HistoryTab sessionHistory={sessionHistory} />
@@ -176,12 +184,11 @@ function OverviewTab({
 }: {
   mastered: number; learning: number; beginner: number; newCases: number; totalCases: number;
   avgMastery: number; bestTime: number; totalAttempts: number; hasAlgorithms: boolean;
-  weakCases: { case: AlgorithmCase; mastery: number; bestTime: number; attempts: number }[];
+  weakCases: CaseStat[];
   sessionHistory: { day: string; avgTime: number; accuracy: number; attempts: number }[];
 }) {
   return (
     <div className="space-y-5 pb-8">
-      {/* Stat chips row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard icon={Target} label="Avg mastery" value={`${avgMastery}%`}
           color={avgMastery >= 80 ? "text-ready" : avgMastery >= 50 ? "text-caution" : "text-hold"} />
@@ -190,28 +197,21 @@ function OverviewTab({
         <StatCard icon={RotateCcw} label="Cases" value={hasAlgorithms ? `${mastered}/${totalCases} mastered` : `${totalAttempts} attempts`} />
       </div>
 
-      {/* Mastery distribution — only for algorithmic phases */}
-      {hasAlgorithms && totalCases > 0 && (
+      {hasAlgorithms && totalCases > 0 && totalAttempts > 0 && (
         <section className="rounded-xl border border-line bg-surface p-5">
           <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-4">Mastery Distribution</h3>
           <div className="flex gap-2 h-6 rounded-full overflow-hidden bg-surface-2">
             {mastered > 0 && (
               <motion.div initial={{ width: 0 }} animate={{ width: `${(mastered / totalCases) * 100}%` }}
-                transition={{ duration: 0.6 }}
-                className="bg-ready h-full flex items-center justify-center"
-                title={`${mastered} mastered`} />
+                transition={{ duration: 0.6 }} className="bg-ready h-full" title={`${mastered} mastered`} />
             )}
             {learning > 0 && (
               <motion.div initial={{ width: 0 }} animate={{ width: `${(learning / totalCases) * 100}%` }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="bg-caution h-full flex items-center justify-center"
-                title={`${learning} learning`} />
+                transition={{ duration: 0.6, delay: 0.1 }} className="bg-caution h-full" title={`${learning} learning`} />
             )}
             {beginner > 0 && (
               <motion.div initial={{ width: 0 }} animate={{ width: `${(beginner / totalCases) * 100}%` }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-hold h-full flex items-center justify-center"
-                title={`${beginner} beginner`} />
+                transition={{ duration: 0.6, delay: 0.2 }} className="bg-hold h-full" title={`${beginner} beginner`} />
             )}
           </div>
           <div className="flex flex-wrap gap-4 mt-3">
@@ -223,35 +223,42 @@ function OverviewTab({
         </section>
       )}
 
-      {/* Mini trend chart */}
-      <section className="rounded-xl border border-line bg-surface p-5">
-        <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-4">14-Day Trend</h3>
-        <div className="flex items-end gap-1 h-32">
-          {sessionHistory.map((day, idx) => {
-            const maxTime = 2.5;
-            const pct = Math.min(100, (day.avgTime / maxTime) * 100);
-            const prevDay = sessionHistory[idx - 1];
-            const trend = prevDay ? day.avgTime < prevDay.avgTime : true;
-            return (
-              <div key={day.day} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-                <span className="nums text-[0.48rem] text-ink-3/70">{day.avgTime.toFixed(1)}s</span>
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${pct}%` }}
-                  transition={{ duration: 0.5, delay: idx * 0.03 }}
-                  className={cn("w-full rounded-t-sm", trend ? "bg-ink/50" : "bg-hold/40")}
-                />
-                <span className="text-[0.48rem] text-ink-3/50 leading-none">{day.day}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-1 mt-2 text-[0.55rem] text-ink-3/60">
-          <TrendingDown className="size-3 text-ready" /> Avg time trending down — good progress!
-        </div>
-      </section>
+      {hasAlgorithms && totalAttempts === 0 && (
+        <section className="rounded-xl border border-line bg-surface p-8 flex flex-col items-center justify-center text-center">
+          <RotateCcw className="size-8 text-ink-3/30 mb-3" />
+          <h3 className="text-[0.72rem] font-semibold text-ink">No training data yet</h3>
+          <p className="text-[0.6rem] text-ink-3 mt-1 max-w-sm">
+            Start practicing with Drill or Recognize mode to build up your progress stats.
+          </p>
+        </section>
+      )}
 
-      {/* Weakest cases preview */}
+      {sessionHistory.length > 0 && (
+        <section className="rounded-xl border border-line bg-surface p-5">
+          <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-4">14-Day Trend</h3>
+          <div className="flex items-end gap-1 h-32">
+            {sessionHistory.map((day, idx) => {
+              const maxTime = 2.5;
+              const pct = Math.min(100, (day.avgTime / maxTime) * 100);
+              const prevDay = sessionHistory[idx - 1];
+              const trend = prevDay ? day.avgTime < prevDay.avgTime : true;
+              return (
+                <div key={day.day} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                  <span className="nums text-[0.48rem] text-ink-3/70">{day.avgTime.toFixed(1)}s</span>
+                  <motion.div initial={{ height: 0 }} animate={{ height: `${pct}%` }}
+                    transition={{ duration: 0.5, delay: idx * 0.03 }}
+                    className={cn("w-full rounded-t-sm", trend ? "bg-ink/50" : "bg-hold/40")} />
+                  <span className="text-[0.48rem] text-ink-3/50 leading-none">{day.day}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-1 mt-2 text-[0.55rem] text-ink-3/60">
+            <TrendingDown className="size-3 text-ready" /> Avg time trending down — good progress!
+          </div>
+        </section>
+      )}
+
       {hasAlgorithms && weakCases.length > 0 && (
         <section className="rounded-xl border border-line bg-surface p-5">
           <div className="flex items-center justify-between mb-4">
@@ -266,7 +273,7 @@ function OverviewTab({
                   {sc.case.caseNumber}
                 </span>
                 <span className="text-[0.6rem] text-ink-3 truncate flex-1">{sc.case.name}</span>
-                <span className="nums text-[0.58rem] text-ink-3 shrink-0">{formatTime(sc.bestTime)}</span>
+                <span className="nums text-[0.58rem] text-ink-3 shrink-0">{sc.bestTimeMs > 0 ? formatTime(sc.bestTimeMs) : "--"}</span>
                 <div className="h-1.5 w-14 rounded-full bg-surface-2 overflow-hidden shrink-0">
                   <div className={cn("h-full rounded-full", sc.mastery >= 90 ? "bg-ready" : sc.mastery >= 60 ? "bg-caution" : "bg-hold")}
                     style={{ width: `${sc.mastery}%` }} />
@@ -278,36 +285,37 @@ function OverviewTab({
         </section>
       )}
 
-      {/* SRS recommendation */}
-      <section className="rounded-xl border border-line bg-surface p-4">
-        <div className="flex gap-3">
-          <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2">
-            <Lightbulb className="size-4 text-caution" />
+      {hasAlgorithms && (
+        <section className="rounded-xl border border-line bg-surface p-4">
+          <div className="flex gap-3">
+            <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2">
+              <Lightbulb className="size-4 text-caution" />
+            </div>
+            <div>
+              <h4 className="text-[0.7rem] font-semibold text-ink">Spaced Repetition Ready</h4>
+              <p className="text-[0.6rem] text-ink-3 mt-0.5">
+                {totalAttempts > 0
+                  ? `${mastered} cases mastered. Review them in 1 day, 3 days, 7 days to lock in long-term retention.`
+                  : `Start practicing this phase to unlock SRS-based review scheduling.`}
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-[0.7rem] font-semibold text-ink">Spaced Repetition Ready</h4>
-            <p className="text-[0.6rem] text-ink-3 mt-0.5">
-              {hasAlgorithms
-                ? `${mastered} cases mastered. Review them in 1 day, 3 days, 7 days to lock in long-term retention.`
-                : `${totalAttempts} total attempts. Keep training to improve your efficiency and reduce move count.`}
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Cases Tab (algorithmic phases only)
+   Cases Tab
    ─────────────────────────────────────────────────────────────────────── */
 
-function CasesTab({ caseStats }: { caseStats: { case: AlgorithmCase; mastery: number; bestTime: number; attempts: number }[] }) {
+function CasesTab({ caseStats }: { caseStats: CaseStat[] }) {
   const [sortBy, setSortBy] = useState<"mastery" | "time" | "name">("mastery");
   const sorted = useMemo(() => {
     return [...caseStats].sort((a, b) => {
       if (sortBy === "mastery") return a.mastery - b.mastery;
-      if (sortBy === "time") return a.bestTime - b.bestTime;
+      if (sortBy === "time") return a.bestTimeMs - b.bestTimeMs;
       return parseInt(a.case.caseNumber.replace(/\D/g, ""), 10) - parseInt(b.case.caseNumber.replace(/\D/g, ""), 10);
     });
   }, [caseStats, sortBy]);
@@ -340,16 +348,11 @@ function CasesTab({ caseStats }: { caseStats: { case: AlgorithmCase; mastery: nu
             <div key={sc.case.id}
               className={cn("flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/50",
                 idx < sorted.length - 1 && "border-b border-line")}>
-              {/* Rank */}
               <span className="nums text-[0.55rem] text-ink-3/50 shrink-0 w-5">{idx + 1}</span>
-
-              {/* Case info */}
               <div className="flex-1 min-w-0">
                 <span className="nums text-[0.68rem] font-medium text-ink">{sc.case.caseNumber}</span>
                 <span className="text-[0.6rem] text-ink-3 ml-2">{sc.case.name}</span>
               </div>
-
-              {/* Mastery bar */}
               <div className="flex items-center gap-2 shrink-0">
                 <div className="h-1.5 w-20 rounded-full bg-surface-2 overflow-hidden">
                   <div className={cn("h-full rounded-full", sc.mastery >= 90 ? "bg-ready" : sc.mastery >= 60 ? "bg-caution" : "bg-hold")}
@@ -359,13 +362,8 @@ function CasesTab({ caseStats }: { caseStats: { case: AlgorithmCase; mastery: nu
                   {sc.mastery}%
                 </span>
               </div>
-
-              {/* Best time */}
-              <span className="nums text-[0.58rem] text-ink-3 shrink-0 w-14 text-right">{formatTime(sc.bestTime)}</span>
-
-              {/* Attempts */}
+              <span className="nums text-[0.58rem] text-ink-3 shrink-0 w-14 text-right">{sc.bestTimeMs > 0 ? formatTime(sc.bestTimeMs) : "--"}</span>
               <span className="text-[0.55rem] text-ink-3/60 shrink-0 w-10 text-right">{sc.attempts}x</span>
-
               <ChevronRight className="size-3 text-ink-3/20 shrink-0" />
             </div>
           ))}
@@ -380,6 +378,16 @@ function CasesTab({ caseStats }: { caseStats: { case: AlgorithmCase; mastery: nu
    ─────────────────────────────────────────────────────────────────────── */
 
 function HistoryTab({ sessionHistory }: { sessionHistory: { day: string; avgTime: number; accuracy: number; attempts: number }[] }) {
+  if (sessionHistory.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <RotateCcw className="size-6 text-ink-3/20 mb-3" />
+        <p className="text-[0.7rem] text-ink-3">No session history yet</p>
+        <p className="text-[0.6rem] text-ink-3/50 mt-1">Complete training sessions to build history</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 pb-8">
       <div className="rounded-xl border border-line bg-surface p-5">

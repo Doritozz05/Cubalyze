@@ -1,4 +1,4 @@
-import { Cuboid } from "lucide-react";
+import { Box } from "lucide-react";
 import type { WidgetDefinition } from "@/widgets/types";
 
 export const cubeButtonDefinition: WidgetDefinition = {
@@ -6,7 +6,7 @@ export const cubeButtonDefinition: WidgetDefinition = {
   name: "3D cube",
   description:
     "Floating button to toggle the interactive 3D cube view. Only appears when a smart cube is connected.",
-  icon: Cuboid,
+  icon: Box,
   category: "visual",
   author: "cubeforge",
   version: "1.0.0",
@@ -16,3 +16,4 @@ export const cubeButtonDefinition: WidgetDefinition = {
   defaultMinimized: false,
   tags: ["3d", "launcher", "button", "smart", "cube"],
 };
+

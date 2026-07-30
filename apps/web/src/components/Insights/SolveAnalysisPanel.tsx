@@ -520,7 +520,7 @@ function TimelineSection({
                 />
               )}
 
-              {/* Replay playhead — centrado en los bloques de segmentos (no sube al área TPS) */}
+              {/* Replay playhead — centered on segment blocks (does not extend into TPS area) */}
               {replayPositionMs !== null && replayPositionMs !== undefined && (
                 <>
                   {/* Tail: subtle fill behind the playhead */}

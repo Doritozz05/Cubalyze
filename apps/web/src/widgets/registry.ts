@@ -7,6 +7,9 @@ import { cubeButtonDefinition } from "./implementations/cube-button/definition";
 import { timeDistributionDefinition } from "./implementations/time-distribution/definition";
 import { pbProgressionDefinition } from "./implementations/pb-progression/definition";
 import { solveTimelineDefinition } from "./implementations/solve-timeline/definition";
+import { metronomeDefinition } from "./implementations/metronome/definition";
+import { notesDefinition } from "./implementations/notes/definition";
+import { algorithmDbDefinition } from "./implementations/algorithm-db/definition";
 
 export type { WidgetCategory, WidgetCategoryId } from "./types";
 
@@ -51,6 +54,9 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   timeDistributionDefinition,
   pbProgressionDefinition,
   solveTimelineDefinition,
+  metronomeDefinition,
+  notesDefinition,
+  algorithmDbDefinition,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

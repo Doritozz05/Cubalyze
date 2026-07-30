@@ -34,6 +34,12 @@ export interface UsePersistentSessionResult {
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
     orientationTimeline?: OrientationTimeline;
+    /** Override timestamp for imported solves (epoch ms). */
+    timestamp?: number;
+    /** Optional note (used for imported solves). */
+    note?: string;
+    /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+    puzzleType?: string;
   }) => Promise<string | null>;
   updateSolve: (
     id: string,
@@ -48,10 +54,22 @@ export interface UsePersistentSessionResult {
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   clearSession: () => Promise<void>;
+  /** Batch import solves. Returns the number of solves actually inserted. */
+  importSolves: (inputs: Array<{
+    time: number;
+    penalty: Penalty;
+    scramble: string;
+    method?: string;
+    timestamp: number;
+    note?: string;
+    source?: SolveSource;
+  }>) => Promise<number>;
   newSession: (name?: string, puzzle?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
   renameSession: (id: string, name: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
+  /** Fetch solves for any session by ID (does not switch active session). */
+  fetchSessionSolves: (sessionId: string) => Promise<UISolve[]>;
 }
 
 // Convert DB solve to UI solve
@@ -76,6 +94,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
     orientationTimeline: dbSolve.orientationTimeline as UISolve['orientationTimeline'],
+    puzzleType: (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzleType ?? (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzle_type ?? '3x3x3',
   };
 }
 
@@ -210,6 +229,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
     orientationTimeline?: OrientationTimeline;
+    timestamp?: number;
+    note?: string;
+    puzzleType?: string;
   }): Promise<string | null> => {
     if (!session || !reposRef.current) {
       console.error(
@@ -223,20 +245,23 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const { solves: solvesRepo } = reposRef.current;
     
     const solveId = input.id ?? uuidv4();
+    const date = input.timestamp ? new Date(input.timestamp).toISOString() : new Date().toISOString();
     const dbSolve: DBSolve = {
       id: solveId,
       sessionId: session.id,
       timeMs: input.time,
-      date: new Date().toISOString(),
+      date,
       scramble: input.scramble,
       penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
       method: input.method,
       source: input.source ?? "manual",
       moves: input.moves || [],
+      note: input.note ?? undefined,
       orientationTimeline: input.orientationTimeline,
       analysisEngineVersion: '0.1.0',
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
-    };
+      puzzleType: input.puzzleType ?? '3x3x3',
+    } as DBSolve;
     
     try {
       await solvesRepo.insert(dbSolve);
@@ -357,6 +382,71 @@ export function usePersistentSession(): UsePersistentSessionResult {
     ));
   }, [session]);
 
+  const importSolves = useCallback(async (
+    inputs: Array<{
+      time: number;
+      penalty: Penalty;
+      scramble: string;
+      method?: string;
+      timestamp: number;
+      note?: string;
+      source?: SolveSource;
+    }>,
+  ): Promise<number> => {
+    if (!session || !reposRef.current) return 0;
+
+    let imported = 0;
+    const solvesToAdd: UISolve[] = [];
+
+    for (const input of inputs) {
+      const solveId = uuidv4();
+      const date = new Date(input.timestamp).toISOString();
+
+      const dbSolve: DBSolve = {
+        id: solveId,
+        sessionId: session.id,
+        timeMs: input.time,
+        date,
+        scramble: input.scramble,
+        penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
+        method: input.method,
+        note: input.note,
+        source: input.source ?? "manual",
+        moves: [],
+        orientationTimeline: undefined,
+        analysisEngineVersion: '0.1.0',
+        analysis: undefined,
+        puzzleType: '3x3x3',
+      } as DBSolve;
+
+      try {
+        await reposRef.current.solves.insert(dbSolve);
+        imported++;
+
+        solvesToAdd.push({
+          ...toUISolve(dbSolve),
+          method: input.method as UISolve['method'] || undefined,
+          source: input.source ?? "manual",
+        });
+      } catch (err) {
+        console.error('[importSolves] Failed to insert solve:', err);
+      }
+    }
+
+    if (solvesToAdd.length > 0) {
+      setSolves((prev) => [...solvesToAdd, ...prev]);
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === session.id
+            ? { ...s, solveCount: s.solveCount + solvesToAdd.length, updatedAt: Date.now() }
+            : s,
+        ),
+      );
+    }
+
+    return imported;
+  }, [session]);
+
   const clearSession = useCallback(async () => {
     if (!session || !reposRef.current) return;
     const { solves: solvesRepo } = reposRef.current;
@@ -456,6 +546,14 @@ export function usePersistentSession(): UsePersistentSessionResult {
     }
   }, [switchSession, newSession]);
 
+  /** Fetch solves for any session without switching the active session. */
+  const fetchSessionSolves = useCallback(async (sessionId: string): Promise<UISolve[]> => {
+    if (!reposRef.current) return [];
+    const { solves: solvesRepo } = reposRef.current;
+    const rows = await solvesRepo.findAll(sessionId);
+    return rows.map(toUISolve).reverse();
+  }, []);
+
   return {
     session,
     sessions,
@@ -465,9 +563,11 @@ export function usePersistentSession(): UsePersistentSessionResult {
     updateSolve,
     deleteSolve,
     clearSession,
+    importSolves,
     newSession,
     switchSession,
     renameSession,
     deleteSession,
+    fetchSessionSolves,
   };
 }

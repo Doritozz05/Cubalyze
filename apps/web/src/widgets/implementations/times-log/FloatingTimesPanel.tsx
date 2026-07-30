@@ -19,6 +19,7 @@ export interface FloatingTimesPanelProps {
   onClear?: () => void;
   onAnalyze?: (solve: Solve) => void;
   onReplay?: (solve: Solve) => void;
+  puzzle?: string;
 }
 
 /**

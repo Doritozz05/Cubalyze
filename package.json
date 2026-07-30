@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --concurrency 15",
     "lint": "turbo run lint",
     "lint:lines": "echo \"TDD-0006: verify files <300 lines. Run manually: find packages apps -name '*.ts' -o -name '*.tsx' | xargs wc -l | sort -rn | head -20\"",
     "test": "turbo run test",

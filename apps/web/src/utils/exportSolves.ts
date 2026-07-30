@@ -5,8 +5,7 @@ import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime } from "@/utils/formatTime";
 
 /**
- * Export solves to CSV format.
- * Compatible with csTimer / Twisty Timer import.
+ * Export solves to CubeForge CSV format.
  */
 export function exportSolvesToCSV(solves: Solve[], _sessionName?: string): string {
   const header = "No.,Time,Penalty,Scramble,Date,Method,Note";
@@ -22,6 +21,46 @@ export function exportSolvesToCSV(solves: Solve[], _sessionName?: string): strin
   });
 
   return [header, ...rows].join("\n");
+}
+
+/**
+ * Export solves in csTimer-compatible format (semicolon-delimited, quoted).
+ *
+ * csTimer format:
+ *   "Puzzle";"Category";"Time(millis)";"Date(epoch)";"Scramble";"Penalty";"Comment"
+ *
+ * This format is natively importable by csTimer via "Import session(s) from
+ * other timers" and by Twisty Timer / other speedcubing apps.
+ */
+export function exportSolvesToCsTimer(solves: Solve[]): string {
+  const header = '"Puzzle";"Category";"Time(millis)";"Date(epoch)";"Scramble";"Penalty";"Comment"';
+
+  const rows = solves.map((solve) => {
+    const puzzle = "333";
+    const category = "Normal";
+    const timeMs = normalizePenalty(solve.penalty) === "DNF"
+      ? "-1" // csTimer DNF sentinel
+      : String(solve.time);
+    const dateEpoch = String(solve.timestamp);
+    const scramble = escapeQuoted(solve.scramble);
+    const penalty = normalizePenalty(solve.penalty) === "+2"
+      ? "2000"
+      : normalizePenalty(solve.penalty) === "DNF"
+        ? "-1"
+        : "0";
+    const comment = solve.note ? escapeQuoted(solve.note) : "";
+
+    return `"${puzzle}";"${category}";"${timeMs}";"${dateEpoch}";"${scramble}";"${penalty}";"${comment}"`;
+  });
+
+  return [header, ...rows].join("\n");
+}
+
+/**
+ * Escape a string for csTimer CSV: wrap in quotes, escape internal quotes.
+ */
+function escapeQuoted(s: string): string {
+  return s.replace(/"/g, '""');
 }
 
 /**

@@ -19,6 +19,22 @@ describe('PreferencesStore', () => {
     preferencesStore.getState().setTheme('dark');
     expect(preferencesStore.getState().theme).toBe('dark');
   });
+
+  it('handles spacebarHoldDelay, showBpaWpa, and timePrecision settings', () => {
+    const store = preferencesStore.getState();
+    expect(store.spacebarHoldDelay).toBe(300);
+    expect(store.showBpaWpa).toBe(true);
+    expect(store.timePrecision).toBe('centiseconds');
+
+    store.setSpacebarHoldDelay(550);
+    store.setShowBpaWpa(false);
+    store.setTimePrecision('milliseconds');
+
+    const updated = preferencesStore.getState();
+    expect(updated.spacebarHoldDelay).toBe(550);
+    expect(updated.showBpaWpa).toBe(false);
+    expect(updated.timePrecision).toBe('milliseconds');
+  });
 });
 
 describe('ConnectionStore', () => {

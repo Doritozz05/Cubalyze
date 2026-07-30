@@ -15,6 +15,7 @@ export interface SolveRow {
   orientation_timeline: string | null;
   analysis_engine_version: string | null;
   analysis: string | null;
+  puzzle_type?: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +39,7 @@ function rowToSolve(row: SolveRow): Solve {
       : undefined,
     analysisEngineVersion: row.analysis_engine_version ?? undefined,
     analysis: row.analysis ?? undefined,
+    puzzleType: row.puzzle_type ?? '3x3x3',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -60,6 +62,7 @@ function solveToRow(solve: Solve): SolveRow {
       : null,
     analysis_engine_version: solve.analysisEngineVersion ?? null,
     analysis: solve.analysis ?? null,
+    puzzle_type: solve.puzzleType ?? '3x3x3',
     created_at: solve.createdAt ?? new Date().toISOString(),
     updated_at: solve.updatedAt ?? new Date().toISOString(),
   };
@@ -93,16 +96,16 @@ export class SolvesRepository {
   async insert(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, row.created_at, row.updated_at]
     );
   }
 
   async update(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, new Date().toISOString(), row.id]
+      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
+      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, new Date().toISOString(), row.id]
     );
   }
 

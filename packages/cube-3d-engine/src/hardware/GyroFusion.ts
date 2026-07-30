@@ -41,12 +41,12 @@ export class GyroFusion {
    * Normalizes it as a safety measure against noisy BLE data.
    */
   public updateTargetQuaternion(x: number, y: number, z: number, w: number): void {
-    // Mapeo específico para GAN 356 i3 y cubos similares:
-    // El hardware envía coordenadas relativas al PCB del cubo.
-    // Para convertir a Three.js (Right-Handed, Y-up):
-    // 1. Intercambiamos Y y Z (para pasar de Z-up a Y-up).
-    // 2. Invertimos X (o ajustamos signos según el sensor) para corregir la "inversión"
-    //    percibida y alinear el movimiento físico con la cámara.
+    // Specific mapping for GAN 356 i3 and similar cubes:
+    // The hardware sends coordinates relative to the cube PCB.
+    // To convert to Three.js (Right-Handed, Y-up):
+    // 1. Swap Y and Z (to transition from Z-up to Y-up).
+    // 2. Invert X (or adjust signs per sensor) to correct perceived inversion
+    //    and align physical motion with the camera.
     this.rawTargetQuat.set(x, z, -y, w).normalize();
 
     this.hasReceivedUpdate = true;

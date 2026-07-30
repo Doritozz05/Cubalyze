@@ -37,7 +37,7 @@ describe('SolvesRepository', () => {
 
   it('findAll returns mapped solves', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null, source: 'manual', moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 's1', session_id: 'ses1', time_ms: 12345, date: '2026-01-01', scramble: "R U R'", penalty: 'none', method: null, source: 'manual', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3', created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solves = await repo.findAll();
@@ -66,7 +66,7 @@ describe('SolvesRepository', () => {
 
   it('findById returns mapped solve', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP', source: 'smart', moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 's1', session_id: 'ses1', time_ms: 5000, date: '2026-06-01', scramble: 'U', penalty: '+2', method: 'CFOP', source: 'smart', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3', created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solve = await repo.findById('s1');
@@ -80,7 +80,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none', source: 'manual', moves: [],
+      id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01', scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3',
     });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
@@ -92,7 +92,7 @@ describe('SolvesRepository', () => {
   it('update calls UPDATE SQL', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
-    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2', source: 'manual', moves: [] });
+    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, date: '2026-01-01', scramble: '', penalty: '+2', source: 'manual', moves: [], puzzleType: '3x3x3' });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
     expect(call[0]).toContain('UPDATE solves SET');
@@ -116,7 +116,7 @@ describe('SolvesRepository', () => {
   it('rowToSolve defaults source to manual when column missing', async () => {
     // Simulates a pre-migration row that has no `source` column value.
     const db = mockDb([
-      { id: 's9', session_id: 'ses1', time_ms: 9000, date: '2026-01-01', scramble: 'U', penalty: 'none', method: null, moves: "[]", analysis_engine_version: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 's9', session_id: 'ses1', time_ms: 9000, date: '2026-01-01', scramble: 'U', penalty: 'none', method: null, source: 'manual', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3', created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     repo = new SolvesRepository(db);
     const solve = await repo.findById('s9');
@@ -128,7 +128,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [],
+      id: 's2', sessionId: 'ses1', timeMs: 1500, date: '2026-01-01', scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [], puzzleType: '3x3x3',
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[6]).toBe('CFOP'); // method

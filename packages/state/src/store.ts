@@ -59,6 +59,14 @@ export interface PreferencesState {
   showPbDelta: boolean;
   setShowPbDelta: (value: boolean) => void;
 
+  /** Play celebratory audio fanfare on Personal Best. */
+  pbCelebrationAudio: boolean;
+  setPbCelebrationAudio: (value: boolean) => void;
+
+  /** Display celebratory animation & banner on Personal Best. */
+  pbCelebrationAnimation: boolean;
+  setPbCelebrationAnimation: (value: boolean) => void;
+
   /** Custom sticker colors for the 'custom' cube skin. */
   customStickerColors: {
     U: string;
@@ -70,6 +78,10 @@ export interface PreferencesState {
   };
   setCustomStickerColors: (colors: Partial<{ U: string; D: string; F: string; B: string; R: string; L: string }>) => void;
 
+  /** Hardware timer type: none, stackmat (audio), or gan (Bluetooth). */
+  hardwareTimer: 'none' | 'stackmat' | 'gan';
+  setHardwareTimer: (value: 'none' | 'stackmat' | 'gan') => void;
+
   /** Keyboard shortcuts configuration. */
   shortcuts: {
     newScramble: string;
@@ -77,6 +89,18 @@ export interface PreferencesState {
     cancelTimer: string;
   };
   setShortcut: (key: 'newScramble' | 'copyScramble' | 'cancelTimer', value: string) => void;
+
+  /** Spacebar hold duration in milliseconds before timer is ready to start (e.g. 0, 300, 550, 1000). */
+  spacebarHoldDelay: number;
+  setSpacebarHoldDelay: (value: number) => void;
+
+  /** Show Best/Worst Possible Average (BPA/WPA) in active stats. */
+  showBpaWpa: boolean;
+  setShowBpaWpa: (value: boolean) => void;
+
+  /** Time precision format: centiseconds (0.01s) or milliseconds (0.001s). */
+  timePrecision: 'centiseconds' | 'milliseconds';
+  setTimePrecision: (value: 'centiseconds' | 'milliseconds') => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -118,6 +142,12 @@ export const createPreferencesStore = () => {
         showPbDelta: false,
         setShowPbDelta: (value) => set({ showPbDelta: value }),
 
+        pbCelebrationAudio: true,
+        setPbCelebrationAudio: (value) => set({ pbCelebrationAudio: value }),
+
+        pbCelebrationAnimation: true,
+        setPbCelebrationAnimation: (value) => set({ pbCelebrationAnimation: value }),
+
         customStickerColors: {
           U: '#ece8e2',
           D: '#ffe62a',
@@ -131,6 +161,9 @@ export const createPreferencesStore = () => {
             customStickerColors: { ...state.customStickerColors, ...colors },
           })),
 
+        hardwareTimer: 'none',
+        setHardwareTimer: (value) => set({ hardwareTimer: value }),
+
         shortcuts: {
           newScramble: 'n',
           copyScramble: 'c',
@@ -140,6 +173,15 @@ export const createPreferencesStore = () => {
           set((state) => ({
             shortcuts: { ...state.shortcuts, [key]: value },
           })),
+
+        spacebarHoldDelay: 300,
+        setSpacebarHoldDelay: (value) => set({ spacebarHoldDelay: value }),
+
+        showBpaWpa: true,
+        setShowBpaWpa: (value) => set({ showBpaWpa: value }),
+
+        timePrecision: 'centiseconds',
+        setTimePrecision: (value) => set({ timePrecision: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -154,8 +196,14 @@ export const createPreferencesStore = () => {
           audioCues: state.audioCues,
           voiceType: state.voiceType,
           showPbDelta: state.showPbDelta,
+          pbCelebrationAudio: state.pbCelebrationAudio,
+          pbCelebrationAnimation: state.pbCelebrationAnimation,
+          hardwareTimer: state.hardwareTimer,
           customStickerColors: state.customStickerColors,
           shortcuts: state.shortcuts,
+          spacebarHoldDelay: state.spacebarHoldDelay,
+          showBpaWpa: state.showBpaWpa,
+          timePrecision: state.timePrecision,
         }),
         version: 1,
       },

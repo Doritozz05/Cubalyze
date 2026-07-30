@@ -6,10 +6,13 @@ import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { effectiveTime } from "@/types";
 import { formatTime } from "@/utils/formatTime";
-import type { Solve } from "@/types";
+import type { Solve, PuzzleCategory } from "@/types";
+
+import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 
 export interface FloatingPbProgressionProps {
   solves: Solve[];
+  puzzle?: string;
 }
 
 interface PbMilestone {
@@ -25,9 +28,15 @@ interface PbMilestone {
  * Floating widget showing Personal Best progression over time.
  * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
  */
-export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
+export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionProps) {
+  const filteredSolves = useMemo(() => {
+    if (!puzzle) return solves;
+    const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
+    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
+  }, [solves, puzzle]);
+
   const milestones = useMemo(() => {
-    const chrono = [...solves].reverse();
+    const chrono = [...filteredSolves].reverse();
     let runningPb = Infinity;
     const pbs: PbMilestone[] = [];
     let previousPb: number | null = null;
@@ -39,7 +48,7 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
       if (t < runningPb) {
         const delta = previousPb !== null ? t - previousPb : null;
         pbs.push({
-          solveNumber: solves.length - i,
+          solveNumber: filteredSolves.length - i,
           timestamp: solve.timestamp,
           time: t,
           delta,
@@ -56,10 +65,16 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
     }
 
     return pbs.reverse();
-  }, [solves]);
+  }, [filteredSolves]);
 
   const currentPb = milestones.find((m) => m.isCurrent);
   const pbCount = milestones.length;
+
+  const headerActions = puzzle ? (
+    <span className="rounded bg-brand/10 border border-brand/20 px-1.5 py-0.5 text-[0.6rem] font-semibold text-brand tracking-wider">
+      {puzzle}
+    </span>
+  ) : null;
 
   return (
     <FloatingWidgetWrapper
@@ -67,7 +82,8 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
       icon={Trophy}
       label="PB progression"
       pillBadge={currentPb ? formatTime(currentPb.time) : undefined}
-      pillBadge2={pbCount > 0 ? `${pbCount} PB${pbCount !== 1 ? "s" : ""}` : undefined}
+      pillBadge2={puzzle ?? (pbCount > 0 ? `${pbCount} PB${pbCount !== 1 ? "s" : ""}` : undefined)}
+      headerActions={headerActions}
       panelWidth={300}
       panelMaxHeight={320}
       defaultPosition={{ x: 420, y: 380 }}
@@ -81,7 +97,7 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
           </div>
         ) : (
           <div className="relative">
-            <div className="absolute left-[11px] top-2 bottom-2 w-px bg-ink-3/20" />
+            <div className="absolute left-2.75 top-2 bottom-2 w-px bg-ink-3/20" />
 
             {milestones.map((pb, i) => {
               const isFirst = i === 0;
@@ -91,13 +107,13 @@ export function FloatingPbProgression({ solves }: FloatingPbProgressionProps) {
                 <div key={pb.solveId} className="relative flex items-start gap-3 pb-4 last:pb-0">
                   <div className="relative z-10 mt-1">
                     {pb.isCurrent ? (
-                      <div className="flex size-[22px] items-center justify-center rounded-full bg-ready-soft">
+                      <div className="flex size-5.5 items-center justify-center rounded-full bg-ready-soft">
                         <Sparkles className="size-3 text-ready" />
                       </div>
                     ) : (
                       <div
                         className={cn(
-                          "size-[22px] rounded-full border-2 flex items-center justify-center",
+                          "size-5.5 rounded-full border-2 flex items-center justify-center",
                           isFirst
                             ? "border-ink-3/30 bg-surface"
                             : "border-ink-3/20 bg-surface",

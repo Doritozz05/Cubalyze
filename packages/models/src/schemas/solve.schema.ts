@@ -32,6 +32,8 @@ export const SolveSchema = z.object({
   orientationTimeline: z.array(z.tuple([z.number(), z.number()])).optional(),
   analysisEngineVersion: z.string().optional(),
   analysis: z.string().optional(),
+  /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). Optional for backward compat. */
+  puzzleType: z.string().optional(),
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),
 });

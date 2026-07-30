@@ -22,9 +22,7 @@ export interface WidgetCardProps {
  * The card is clickable for quick toggle.
  */
 export function WidgetCard({ widget, className }: WidgetCardProps) {
-  const instance = useWidgetStore(
-    useCallback((s) => s.instances[widget.id], [widget.id]),
-  );
+  const instance = useWidgetStore((s) => s.instances[widget.id]);
   const visible = instance?.visible ?? false;
 
   const handleToggle = useCallback(() => {
@@ -104,7 +102,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
       <div className="flex shrink-0 flex-col items-center gap-2">
         <WidgetPreview
           widgetId={widget.id}
-          className="size-16 sm:size-[72px]"
+          className="size-16 sm:size-18"
         />
 
         <div

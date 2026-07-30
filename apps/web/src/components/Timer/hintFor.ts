@@ -32,7 +32,9 @@ export interface HintContext {
  *   - idle           : branches on smart cube → scramble/inspection/arm
  *                      copy, otherwise "press & hold" copy with `hasLast`
  *                      variation.
- *   - stopped        : always "solve saved".
+ *   - stopped / idle  : branches on smart cube → scramble/inspection/arm
+ *                      copy, otherwise "press & hold" copy with `hasLast`
+ *                      variation.
  */
 export function hintFor(
   phase: TimerState,
@@ -51,7 +53,6 @@ export function hintFor(
     case "running":
       return ctx.smartCube ? "make a move to stop" : "press to stop";
     case "stopped":
-      return "solve saved";
     case "idle":
     default:
       if (ctx.smartCube) {

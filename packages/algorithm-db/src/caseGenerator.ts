@@ -18,6 +18,8 @@ export const SUBSET_VISUALIZATION: Record<string, VisualizationConfig> = {
   CMLL: { style: 'full-color', topFace: 'U', frontFace: 'F' },
   ZBLL: { style: 'full-color', topFace: 'U', frontFace: 'F' },
   F2L: { style: 'full-color', topFace: 'U', frontFace: 'F' },
+  'Basic F2L': { style: 'full-color', topFace: 'U', frontFace: 'F' },
+  'Advanced F2L': { style: 'full-color', topFace: 'U', frontFace: 'F' },
 };
 
 // ─── Color mapping ──────────────────────────────────────────────────────────

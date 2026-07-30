@@ -7,7 +7,14 @@ import type { Subscription } from "rxjs";
 
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore, preferencesStore } from "@cubeforge/state";
-import { MoveTransformer, compactMoveNotation } from "@cubeforge/math-core";
+import {
+  MoveTransformer,
+  compactMoveNotation,
+  CubeState,
+  FaceletStringConverter,
+  Cube2x2State,
+  Cube2x2FaceletConverter,
+} from "@cubeforge/math-core";
 import type {
   CubeMoveEvent,
   CubeOrientation,
@@ -17,6 +24,10 @@ import type {
 export interface UseCube3DOptions {
   /** Max number of recent moves to keep. Default 15. */
   maxRecentMoves?: number;
+  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  order?: number;
+  /** Optional active scramble sequence. */
+  scramble?: string;
 }
 
 export interface UseCube3DResult {
@@ -32,6 +43,8 @@ export interface UseCube3DResult {
   calibrate: () => void;
   /** Reset cube pieces to solved state. */
   reset: () => void;
+  /** Apply a scramble string to the 3D cube model. */
+  applyScramble: (scrambleString?: string) => void;
   /** Rotate camera view by delta X and delta Y (for orbit controls). */
   rotateCamera: (dx: number, dy: number) => void;
   /** Direct ref to the underlying Cube3DEngine instance. */
@@ -49,7 +62,7 @@ export interface UseCube3DResult {
  * and dynamic mount/unmount cycles without WebGL context loss or blank screen bugs.
  */
 export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
-  const { maxRecentMoves = 15 } = options;
+  const { maxRecentMoves = 15, order = 3 } = options;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,6 +113,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
         height: h,
         pixelRatio: window.devicePixelRatio || 1,
         gyroSupported: globalCubeAdapter.gyroSupported,
+        order,
       });
 
       engineRef.current = engine;
@@ -205,7 +219,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       }
       setIsReady(false);
     };
-  }, [appendRecentMove]);
+  }, [appendRecentMove, order]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {
@@ -216,6 +230,28 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     engineRef.current?.resetCube();
     setRecentMoves([]);
   }, []);
+
+  const applyScramble = useCallback((scrambleString?: string) => {
+    const targetScramble = scrambleString || options.scramble;
+    if (!engineRef.current || !targetScramble || !targetScramble.trim()) return;
+
+    try {
+      if (order === 2) {
+        const state = new Cube2x2State();
+        state.applySequence(targetScramble.trim());
+        const facelets = Cube2x2FaceletConverter.toFaceletString(state);
+        engineRef.current.syncFacelets(facelets);
+      } else {
+        const state = new CubeState();
+        state.applySequence(targetScramble.trim());
+        const facelets = FaceletStringConverter.toFaceletString(state);
+        engineRef.current.syncFacelets(facelets);
+      }
+      setRecentMoves([]);
+    } catch (e) {
+      console.warn("[useCube3D] Error applying scramble to 3D cube:", e);
+    }
+  }, [order, options.scramble]);
 
   const rotateCamera = useCallback((dx: number, dy: number) => {
     engineRef.current?.rotateCamera(dx, dy);
@@ -228,6 +264,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     recentMoves,
     calibrate,
     reset,
+    applyScramble,
     rotateCamera,
     engineRef,
   };

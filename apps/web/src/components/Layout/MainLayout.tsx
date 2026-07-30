@@ -7,6 +7,7 @@ import { Header } from "./Header";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
+import type { PuzzleCategory } from "@/types";
 
 /**
  * Width the 3D cube panel occupies once expanded.
@@ -60,6 +61,10 @@ export interface MainLayoutProps {
   isFocused?: boolean;
   /** Whether to hide top header (e.g. for Skills view). */
   hideHeader?: boolean;
+  /** Currently selected puzzle category. */
+  puzzle?: PuzzleCategory;
+  /** Callback when puzzle selection changes. */
+  onPuzzleChange?: (puzzle: PuzzleCategory) => void;
   className?: string;
 }
 
@@ -92,6 +97,8 @@ export function MainLayout({
   onDeleteSession,
   isFocused,
   hideHeader,
+  puzzle,
+  onPuzzleChange,
   className,
 }: MainLayoutProps) {
   // Defer useIsMobile to post-mount to avoid SSR/hydration flash.
@@ -130,9 +137,9 @@ export function MainLayout({
 
   const asideWidth = cubeShown
     ? Math.max(
-        CUBE_MIN_WIDTH,
-        Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
-      )
+      CUBE_MIN_WIDTH,
+      Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
+    )
     : 0;
 
   return (
@@ -157,6 +164,8 @@ export function MainLayout({
             onDeleteSession={onDeleteSession}
             onToggleMobileNav={onToggleMobileNav}
             onAddManual={onAddManual}
+            puzzle={puzzle}
+            onPuzzleChange={onPuzzleChange}
           />
         )}
 

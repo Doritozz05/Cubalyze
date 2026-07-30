@@ -4,7 +4,7 @@ import { useMemo, memo, useState, useRef, useEffect } from "react";
 import { MoreHorizontal, Plus, Skull, Eraser, Trash2, Activity, RotateCcw, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
-import { formatTime, computeStats } from "@/utils/formatTime";
+import { formatTime } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 import { PenaltyBadge } from "@/components/Insights/atoms";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,13 @@ export interface TimesListProps {
  * Memoized so dragging a parent floating panel doesn't re-render the whole
  * list on every pointermove.
  */
+function formatPuzzleBadge(puzzleType?: string): string {
+  if (!puzzleType || puzzleType === "3x3x3" || puzzleType === "3x3") return "3x3";
+  if (puzzleType === "2x2x2" || puzzleType === "2x2") return "2x2";
+  if (puzzleType === "4x4x4" || puzzleType === "4x4") return "4x4";
+  return puzzleType;
+}
+
 export const TimesList = memo(function TimesList({
   solves,
   onUpdate,
@@ -50,8 +57,20 @@ export const TimesList = memo(function TimesList({
   hideHeader,
   className,
 }: TimesListProps) {
-  const stats = useMemo(() => computeStats(solves), [solves]);
-  const bestTime = Number.isFinite(stats.best) ? stats.best : null;
+  const bestTimePerPuzzle = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of solves) {
+      const pType = s.puzzleType ?? "3x3x3";
+      const eff = effectiveTime(s);
+      if (Number.isFinite(eff)) {
+        const current = map.get(pType);
+        if (current === undefined || eff < current) {
+          map.set(pType, eff);
+        }
+      }
+    }
+    return map;
+  }, [solves]);
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
@@ -87,8 +106,10 @@ export const TimesList = memo(function TimesList({
             {solves.map((solve, i) => {
               const eff = effectiveTime(solve);
               const isDnf = !Number.isFinite(eff);
+              const pType = solve.puzzleType ?? "3x3x3";
+              const bestForPuzzle = bestTimePerPuzzle.get(pType);
               const isBest =
-                bestTime !== null && eff === bestTime && !isDnf;
+                bestForPuzzle !== undefined && eff === bestForPuzzle && !isDnf;
               return (
                 <SolveRow
                   key={solve.id}
@@ -185,15 +206,20 @@ const SolveRow = memo(function SolveRow({
         </span>
       </span>
 
-      {/* Time */}
-      <span
-        className={cn(
-          "nums min-w-0 flex-1 text-[0.95rem] tabular-nums",
-          isDnf ? "text-dnf" : isBest ? "text-ready" : "text-ink",
-        )}
-      >
-        {isDnf ? "DNF" : formatTime(eff)}
-      </span>
+      {/* Time + Puzzle Badge */}
+      <div className="min-w-0 flex-1 flex items-center gap-1.5">
+        <span
+          className={cn(
+            "nums text-[0.95rem] tabular-nums",
+            isDnf ? "text-dnf" : isBest ? "text-ready" : "text-ink",
+          )}
+        >
+          {isDnf ? "DNF" : formatTime(eff)}
+        </span>
+        <span className="rounded bg-surface-2 border border-line/60 px-1 py-0.2 text-[0.55rem] font-semibold text-ink-3 tracking-wide uppercase shrink-0">
+          {formatPuzzleBadge(solve.puzzleType)}
+        </span>
+      </div>
 
       <PenaltyBadge penalty={solve.penalty} />
 
@@ -231,7 +257,7 @@ const SolveRow = memo(function SolveRow({
           <TooltipTrigger asChild>
             <button
               onClick={handleNoteClick}
-              className="max-w-[100px] shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-ink-2 italic hover:bg-surface-2 hover:text-ink transition-colors"
+              className="max-w-25 shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-ink-2 italic hover:bg-surface-2 hover:text-ink transition-colors"
               title={solve.note}
             >
               {solve.note}

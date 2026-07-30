@@ -1,0 +1,1 @@
+export { exerciseRegistry } from './registry';

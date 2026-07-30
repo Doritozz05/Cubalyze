@@ -22,6 +22,8 @@ export interface StatsFilters {
   /** Keep only solves recorded with a Smart Cube (i.e. `source === "smart"`). */
   smartCubeOnly: boolean;
   search: string;
+  /** Filter by puzzle type. null = show all. Default "3x3x3". */
+  puzzleType: string | null;
 }
 
 export const DEFAULT_FILTERS: StatsFilters = {
@@ -32,6 +34,7 @@ export const DEFAULT_FILTERS: StatsFilters = {
   sort: "newest",
   smartCubeOnly: false,
   search: "",
+  puzzleType: "3x3x3",
 };
 
 /**
@@ -81,6 +84,7 @@ export function useStatsFilters(
         if (!noteOk && !scrOk && !penOk && !timeOk) return false;
       }
       if (filters.smartCubeOnly && s.source !== "smart") return false;
+      if (filters.puzzleType != null && (s.puzzleType ?? "3x3x3") !== filters.puzzleType) return false;
       return true;
     });
   }, [
@@ -91,6 +95,7 @@ export function useStatsFilters(
     filters.methods,
     filters.search,
     filters.smartCubeOnly,
+    filters.puzzleType,
   ]);
 
   const sorted = useMemo(() => {
