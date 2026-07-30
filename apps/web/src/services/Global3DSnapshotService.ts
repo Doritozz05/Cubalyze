@@ -11,13 +11,13 @@ const F2L_SUBSET_IDS = new Set([
 
 const SLOT_LABELS = [
   { id: 0, key: "FR", name: "Front Right", modelYRot: 0 },
-  { id: 1, key: "FL", name: "Front Left", modelYRot: Math.PI / 2 },
+  { id: 1, key: "FL", name: "Front Left", modelYRot: -Math.PI / 2 },
   { id: 2, key: "BL", name: "Back Left", modelYRot: Math.PI },
-  { id: 3, key: "BR", name: "Back Right", modelYRot: -Math.PI / 2 },
+  { id: 3, key: "BR", name: "Back Right", modelYRot: Math.PI / 2 },
 ];
 
 const F2L_GRAY = "#808080";
-const STORAGE_PREFIX = "cubeforge_snap_3d_v7_";
+const STORAGE_PREFIX = "cubeforge_snap_3d_v8_";
 const CANV_SIZE = 256;
 
 function buildF2LSkinStyle() {
