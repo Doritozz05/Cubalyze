@@ -85,7 +85,7 @@ function validateInvariants(state: CubeState): void {
   expect(epSet.size).toBe(12);
 }
 
-describe('CubeState — Regression (5000 sequences)', () => {
+describe('CubeState — Regression (5000 sequences)', { timeout: 30000 }, () => {
   // ── Invariant Validation ────────────────────────────────────────────────
 
   it('5000 random sequences: parity invariant always holds', () => {

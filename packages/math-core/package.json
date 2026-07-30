@@ -1,6 +1,7 @@
 {
   "name": "@cubeforge/math-core",
   "version": "0.1.0",
+  "private": true,
   "description": "Mathematical core for Rubik's Cube parsing and permutation",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
