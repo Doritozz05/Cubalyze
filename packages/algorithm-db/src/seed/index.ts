@@ -1,9 +1,11 @@
 import { PLL_CASES } from './cfop-pll';
 import { OLL_CASES } from './cfop-oll';
 import { ALL_F2L_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES } from './cfop-f2l';
+import { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES } from './ortega';
 import type { AlgorithmCase, Algorithm } from '../schema';
 
 export { BASIC_F2L_CASES, ADVANCED_F2L_CASES, ALL_F2L_CASES };
+export { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES };
 
 /** All seed cases from all methods/subsets. */
 export interface SeedData {
@@ -36,6 +38,22 @@ export function getSeedData(): SeedData {
   for (const f2l of ALL_F2L_CASES) {
     cases.push(f2l.caseDef);
     for (const a of f2l.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── 2×2: Ortega OLL ───────────────────────────────────────────────
+  for (const oll of ORTEGA_OLL_CASES) {
+    cases.push(oll.caseDef);
+    for (const a of oll.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── 2×2: Ortega PBL ───────────────────────────────────────────────
+  for (const pbl of ORTEGA_PBL_CASES) {
+    cases.push(pbl.caseDef);
+    for (const a of pbl.algorithms) {
       algorithms.push(a);
     }
   }
