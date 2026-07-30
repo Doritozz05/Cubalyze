@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface Position {
   x: number;
@@ -85,6 +85,18 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
 
   const [isDragging, setIsDragging] = useState(false);
   const dragState = useRef<DragState | null>(null);
+
+  // Sync external position changes (e.g. layout organizer) into local state,
+  // but only when the user is NOT actively dragging the element.
+  useEffect(() => {
+    if (!dragState.current) {
+      setPosition(clampToViewport(initial));
+    }
+    // We intentionally depend on the primitive values, not the object reference,
+    // so that this only fires when x or y actually changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial.x, initial.y]);
+
   /** Tracks whether the *current* interaction exceeded the click threshold.
    *  Reset on pointer-down, set on pointer-move. Read via `wasDrag()`. */
   const movedRef = useRef(false);
