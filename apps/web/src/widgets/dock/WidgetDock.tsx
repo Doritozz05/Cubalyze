@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
-import { useDockZoneActive, useDropX, dockZoneState } from "@/widgets/dock/dockZoneState";
+import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -167,17 +167,20 @@ export function WidgetDock() {
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
   const dropX = useDropX();
+  const draggingWidgetId = useDraggingWidgetId();
 
   // ── Pill refs for position calculation ─────────────────────────────────
   const pillRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const onPillRef = useCallback((id: string, el: HTMLElement | null) => {
     if (el) pillRefs.current.set(id, el);
     else pillRefs.current.delete(id);
   }, []);
 
-  // ── Insertion index calculation ───────────────────────────────────────
-  const [insertIndex, setInsertIndex] = useState(-1);
+  // ── Ghost index for dock-from-floating pill shifting ────────────────────
+  const [ghostIndex, setGhostIndex] = useState(-1);
+  const GHOST_ID = "__dock_ghost__";
 
   // Filter to docked widgets (exclude special widgets like cube-button)
   const orderedDocked = dockOrder.filter((id) => {
@@ -197,57 +200,37 @@ export function WidgetDock() {
 
   const dockedIds = [...orderedDocked, ...extraDocked];
 
+  // ── Ghost position from CONTAINER (stable — ghost doesn't create feedback) ─
+  // Using the container width as reference (not pill positions that shift with
+  // the ghost) breaks the feedback loop that plagued the grey-spacer approach.
   useLayoutEffect(() => {
-    if (!isDockZoneActive || dockedIds.length === 0) {
-      setInsertIndex(-1);
+    if (!isDockZoneActive || dockedIds.length === 0 || !draggingWidgetId) {
+      setGhostIndex(-1);
       dockZoneState.setDropIndex(-1);
       return;
     }
 
-    // Sort pill elements by their DOM position (left to right)
-    const sorted = [...pillRefs.current.entries()]
-      .filter(([id]) => dockedIds.includes(id))
-      .sort((a, b) => {
-        const ra = a[1].getBoundingClientRect();
-        const rb = b[1].getBoundingClientRect();
-        return ra.left - rb.left;
-      });
+    const container = containerRef.current;
+    if (!container) return;
 
-    if (sorted.length === 0) {
-      setInsertIndex(0);
-      dockZoneState.setDropIndex(0);
-      return;
-    }
+    const rect = container.getBoundingClientRect();
+    const relativeX = dropX - rect.left;
+    const proportion = Math.max(0, Math.min(1, relativeX / rect.width));
+    const idx = Math.round(proportion * dockedIds.length);
 
-    // Find where dropX falls among pills
-    let idx = sorted.length;
-    for (let i = 0; i < sorted.length; i++) {
-      const rect = sorted[i][1].getBoundingClientRect();
-      const midX = rect.left + rect.width / 2;
-      if (dropX < midX) {
-        idx = i;
-        break;
-      }
-    }
-
-    setInsertIndex(idx);
+    setGhostIndex(idx);
     dockZoneState.setDropIndex(idx);
-  }, [dropX, isDockZoneActive, dockedIds]);
+  }, [dropX, isDockZoneActive, dockedIds, draggingWidgetId]);
 
-  // ── Build display list with gap spacer ────────────────────────────────
-  const GAP_ID = "__gap__";
-
+  // ── Display list: insert invisible ghost at calculated index ──────────
   const displayIds = useMemo(() => {
-    if (!isDockZoneActive || insertIndex < 0) return dockedIds;
+    if (!isDockZoneActive || ghostIndex < 0 || !draggingWidgetId) return dockedIds;
     const ids = [...dockedIds];
-    const idx = Math.min(insertIndex, ids.length);
-    ids.splice(idx, 0, GAP_ID);
+    ids.splice(Math.min(ghostIndex, ids.length), 0, GHOST_ID);
     return ids;
-  }, [dockedIds, isDockZoneActive, insertIndex]);
+  }, [dockedIds, isDockZoneActive, ghostIndex, draggingWidgetId]);
 
   const handleReorder = (newOrder: WidgetId[]) => {
-    // Merge reordered visible pills with invisible (floating) items
-    // that were in dockOrder — so they keep their position when re-docked.
     const current = widgetStore.getState().dockOrder;
     const visibleSet = new Set(newOrder);
     const invisible = current.filter((id) => !visibleSet.has(id));
@@ -258,6 +241,7 @@ export function WidgetDock() {
 
   return (
     <div
+      ref={containerRef}
       className="flex flex-1 items-center justify-center px-1"
       role="toolbar"
       aria-label="Docked widgets"
@@ -271,16 +255,16 @@ export function WidgetDock() {
       >
         <AnimatePresence mode="popLayout">
           {displayIds.map((id) => {
-            if (id === GAP_ID) {
+            if (id === GHOST_ID) {
               return (
                 <motion.div
-                  key={GAP_ID}
+                  key={GHOST_ID}
                   layout
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "3rem" }}
+                  animate={{ opacity: 0, width: 48 }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                  className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/3"
+                  className="h-8 shrink-0"
                   aria-hidden
                 />
               );
