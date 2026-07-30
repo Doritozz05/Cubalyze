@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, Save, Trash2, Check, Lock, Plus } from "lucide-react";
+import { LayoutGrid, Save, Trash2, Check, Lock, Plus, ArrowDownToLine } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
@@ -249,6 +249,13 @@ export function FloatingLayoutOrganizer() {
     setTimeout(() => setSavedId(null), 1500);
   };
 
+  const handleDockAll = () => {
+    const store = widgetStore.getState();
+    for (const id of floatingIds) {
+      store.setStatus(id, "docked");
+    }
+  };
+
   const handleDeleteCustom = (layoutId: string) => {
     widgetStore.getState().deleteCustomLayout(layoutId);
   };
@@ -272,14 +279,25 @@ export function FloatingLayoutOrganizer() {
               <p className="text-[0.65rem] text-ink-3">
                 <span className="font-semibold text-ink">{activeCount}</span> active widget{activeCount !== 1 ? "s" : ""}
               </p>
-              <button
-                onClick={() => setSaveInputOpen((v) => !v)}
-                className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-                title="Save current layout positions"
-              >
-                <Save className="size-2.5" />
-                Save Layout
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleDockAll}
+                  disabled={floatingIds.length === 0}
+                  className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={floatingIds.length === 0 ? "No floating widgets" : `Dock all ${floatingIds.length} floating widget${floatingIds.length !== 1 ? "s" : ""}`}
+                >
+                  <ArrowDownToLine className="size-2.5" />
+                  Dock All
+                </button>
+                <button
+                  onClick={() => setSaveInputOpen((v) => !v)}
+                  className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                  title="Save current layout positions"
+                >
+                  <Save className="size-2.5" />
+                  Save Layout
+                </button>
+              </div>
             </div>
 
             {/* Save input form */}
