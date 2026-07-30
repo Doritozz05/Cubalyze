@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useCallback, useLayoutEffect, useState, useMemo } from "react";
+import { useRef, useCallback, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
-import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
+import { useDockZoneActive, useDropX, dockZoneState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -140,7 +140,6 @@ export function WidgetDock() {
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
   const dropX = useDropX();
-  const draggingId = useDraggingWidgetId();
 
   // ── Pill refs for position calculation ─────────────────────────────────
   const pillRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -209,18 +208,6 @@ export function WidgetDock() {
     dockZoneState.setDropIndex(idx);
   }, [dropX, isDockZoneActive, dockedIds]);
 
-  // ── Build display list with ghost pill ─────────────────────────────────
-  const draggingDef = draggingId ? getWidget(draggingId) : undefined;
-  const GHOST_ID = "__ghost__";
-
-  const displayIds = useMemo(() => {
-    if (!isDockZoneActive || insertIndex < 0) return dockedIds;
-    const ids = [...dockedIds];
-    const idx = Math.min(insertIndex, ids.length);
-    ids.splice(idx, 0, GHOST_ID);
-    return ids;
-  }, [dockedIds, isDockZoneActive, insertIndex]);
-
   const handleReorder = (newOrder: WidgetId[]) => {
     // Merge reordered visible pills with invisible (floating) items
     // that were in dockOrder — so they keep their position when re-docked.
@@ -244,29 +231,21 @@ export function WidgetDock() {
         aria-label="Docked widgets"
       >
         <AnimatePresence mode="popLayout">
-          {displayIds.map((id) => {
-            if (id === GHOST_ID) {
-              const GhostIcon = draggingDef?.icon;
-              return (
-                <motion.div
-                  key={GHOST_ID}
-                  layout
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.7 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-dashed border-accent/50 bg-accent/5 px-2.5 text-xs font-medium"
-                  aria-hidden
-                >
-                  {GhostIcon && <GhostIcon className="size-3.5 shrink-0 text-accent/60" />}
-                  <span className="truncate max-w-28 text-accent/60">
-                    {draggingDef?.name ?? ""}
-                  </span>
-                </motion.div>
-              );
-            }
-            return <DockPill key={id} widgetId={id} onPillRef={onPillRef} />;
-          })}
+          {dockedIds.map((id) => (
+            <DockPill key={id} widgetId={id} onPillRef={onPillRef} />
+          ))}
+          {isDockZoneActive && (
+            <motion.div
+              key="dock-target-pill"
+              layout
+              initial={{ opacity: 0, width: 0, scaleX: 0.5 }}
+              animate={{ opacity: 1, width: "2.5rem", scaleX: 1 }}
+              exit={{ opacity: 0, width: 0, scaleX: 0.5 }}
+              transition={{ type: "spring", stiffness: 500, damping: 32 }}
+              className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/3"
+              aria-hidden
+            />
+          )}
         </AnimatePresence>
       </Reorder.Group>
     </div>

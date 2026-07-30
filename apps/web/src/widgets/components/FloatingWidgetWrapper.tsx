@@ -10,45 +10,20 @@ import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { dockZoneState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
-// ── Props ────────────────────────────────────────────────────────────────
-
 export interface FloatingWidgetWrapperProps {
-  /** Widget id for reading/writing state to widgetStore. */
   widgetId: WidgetId;
-  /** Icon shown in the header and minimized pill. */
   icon: LucideIcon;
-  /** Label shown in the header and minimized pill. */
   label: string;
-  /** Optional badge text (e.g. solve count, PB time). Shown after the label. */
   pillBadge?: string;
-  /** Optional second badge. */
   pillBadge2?: string;
-  /** Width of the expanded panel (px). Default 340. */
   panelWidth?: number;
-  /** Max-height of the expanded body for scroll overflow. */
   panelMaxHeight?: number;
-  /** Extra actions rendered in the header (e.g. "Clear" button). */
   headerActions?: ReactNode;
-  /** Body content when expanded. */
   children: ReactNode;
-  /** Optional className applied to both pill and panel containers. */
   className?: string;
-  /** Fallback default position if widgetStore has no entry. */
   defaultPosition?: { x: number; y: number };
 }
 
-// ── Component ────────────────────────────────────────────────────────────
-
-/**
- * Shared wrapper for all floating widgets.
- *
- * Handles: portal, drag, minimize/expand pill+panel, header, animations,
- * soft snap to viewport and other widgets.
- *
- * Reads `status` from the store:
- *   - `"minimized"` → renders a small draggable pill
- *   - `"floating"` → renders the expanded panel with header+body
- */
 export function FloatingWidgetWrapper({
   widgetId,
   icon: Icon,
@@ -65,27 +40,20 @@ export function FloatingWidgetWrapper({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Clean up dock zone state on unmount (idempotent per widget id)
   useEffect(() => {
-    return () => {
-      dockZoneState.leave(widgetId);
-    };
+    return () => { dockZoneState.leave(widgetId); };
   }, [widgetId]);
 
-  // ── Read runtime state from widgetStore ────────────────────────────────
   const instance = useWidgetStore((s) => s.instances[widgetId]);
-
   const storePosition = instance?.position ?? defaultPosition;
   const status = instance?.status;
   const minimized = status === "minimized";
   const zIndex = instance?.zIndex ?? 25;
 
-  // Write panelWidth to store on mount so other widgets can use it for snap
   useEffect(() => {
     widgetStore.getState().setSize(widgetId, panelWidth);
   }, [widgetId, panelWidth]);
 
-  // ── Snap targets: other floating/minimized widgets with real sizes ────
   const allInstances = useWidgetStore((s) => s.instances);
   const snapTargets = useMemo<SnapRect[]>(() => {
     return Object.entries(allInstances)
@@ -98,12 +66,11 @@ export function FloatingWidgetWrapper({
         x: inst.position.x,
         y: inst.position.y,
         w: inst.panelWidth ?? 340,
-        h: Math.round((inst.panelWidth ?? 340) * 0.85), // reasonable estimate
+        h: Math.round((inst.panelWidth ?? 340) * 0.85),
       }));
   }, [allInstances, widgetId]);
 
-  // ── Drag: sync position back to store on change ────────────────────────
-  const DOCK_THRESHOLD = 30; // px from top of viewport
+  const DOCK_THRESHOLD = 30;
 
   const handlePositionChange = useCallback(
     (pos: { x: number; y: number }) => {
@@ -124,22 +91,17 @@ export function FloatingWidgetWrapper({
     clickThreshold: 4,
     onPositionChange: handlePositionChange,
     onDrag: (pos) => {
-      if (pos.y < 50) {
-        dockZoneState.enter(widgetId, pos.x);
-      } else {
-        dockZoneState.leave(widgetId);
-      }
+      if (pos.y < 50) dockZoneState.enter(widgetId, pos.x);
+      else dockZoneState.leave(widgetId);
     },
     snapThreshold: 8,
     snapTargets,
   });
 
-  // Focus handler — brings this widget to the top of the z-stack
   const handleFocus = useCallback(() => {
     widgetStore.getState().focusWidget(widgetId);
   }, [widgetId]);
 
-  // ── Minimize/expand toggle ─────────────────────────────────────────────
   const toggleMinimized = useCallback(() => {
     const store = widgetStore.getState();
     const inst = store.instances[widgetId];
@@ -150,41 +112,10 @@ export function FloatingWidgetWrapper({
 
   if (!mounted) return null;
 
-  // ── Shared header content ──────────────────────────────────────────────
-  const headerContent = (
-    <>
-      <div className="flex items-center gap-2">
-        <Icon className="size-3.5 text-ink-3" />
-        <span className="text-xs font-medium text-ink">{label}</span>
-        {pillBadge && (
-          <span className="nums text-[0.6rem] text-ink-3">{pillBadge}</span>
-        )}
-        {pillBadge2 && (
-          <span className="nums text-[0.55rem] text-ink-3">{pillBadge2}</span>
-        )}
-      </div>
-      <div className="flex items-center gap-0.5">
-        {headerActions}
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleMinimized();
-          }}
-          className="grid size-6 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-          aria-label={minimized ? "Expand" : "Minimize"}
-        >
-          {minimized ? (
-            <ChevronUp className="size-3.5" />
-          ) : (
-            <ChevronDown className="size-3.5" />
-          )}
-        </button>
-      </div>
-    </>
-  );
+  const isNearDock = drag.position.y < 50;
 
-  // ── Minimized pill ─────────────────────────────────────────────────────
+  // ── 1. Minimized pill ──────────────────────────────────────────────────
+  //    When near dock, CSS-only switch to dock-pill style (same DOM, no unmount)
   if (minimized) {
     return createPortal(
       <motion.div
@@ -197,71 +128,116 @@ export function FloatingWidgetWrapper({
         onPointerMove={drag.onPointerMove}
         onPointerUp={drag.onPointerUp}
         className={cn(
-          "fixed flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
-          drag.isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab",
-          "transition-colors hover:border-ink-2/40",
+          "fixed flex touch-none select-none items-center shadow-lg",
+          // Dock zone: compact pill style (same as DockPill)
+          isNearDock
+            ? "h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium cursor-grabbing"
+            // Normal minimized: bigger pill
+            : "gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 cursor-grab hover:border-ink-2/40",
+          drag.isDragging && !isNearDock && "shadow-2xl",
           className,
         )}
       >
-        <Icon className="size-4 text-ink-3" />
-        <span className="text-xs font-medium text-ink">{label}</span>
-        {pillBadge && (
-          <span className="nums text-[0.65rem] text-ink">{pillBadge}</span>
+        <Icon className={cn("shrink-0 text-ink-3", isNearDock ? "size-3.5" : "size-4")} />
+        <span className={cn("font-medium text-ink", isNearDock ? "text-xs truncate max-w-28" : "text-xs")}>
+          {label}
+        </span>
+        {pillBadge && !isNearDock && <span className="nums text-[0.65rem] text-ink">{pillBadge}</span>}
+        {pillBadge2 && !isNearDock && <span className="nums text-[0.55rem] text-ink-3">{pillBadge2}</span>}
+        {!isNearDock && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleMinimized(); }}
+            className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+            aria-label="Expand"
+          >
+            <ChevronUp className="size-3.5" />
+          </button>
         )}
-        {pillBadge2 && (
-          <span className="nums text-[0.55rem] text-ink-3">{pillBadge2}</span>
-        )}
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleMinimized();
-          }}
-          className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-          aria-label="Expand"
-        >
-          <ChevronUp className="size-3.5" />
-        </button>
       </motion.div>,
       document.body,
     );
   }
 
-  // ── Expanded panel ─────────────────────────────────────────────────────
-  return createPortal(
-    <motion.div
+  // ── 2. Expanded panel / dock pill ──────────────────────────────────────
+  //    When near dock: hide body, shrink to h-8, same DOM (no unmount)
+  const headerContent = (
+    <>
+      <div className="flex items-center gap-2">
+        <Icon className={cn("shrink-0 text-ink-3", isNearDock ? "size-3.5" : "size-3.5")} />
+        <span className={cn("font-medium text-ink", isNearDock ? "text-xs truncate max-w-28" : "text-xs")}>
+          {label}
+        </span>
+        {pillBadge && !isNearDock && <span className="nums text-[0.6rem] text-ink-3">{pillBadge}</span>}
+        {pillBadge2 && !isNearDock && <span className="nums text-[0.55rem] text-ink-3">{pillBadge2}</span>}
+      </div>
+      {!isNearDock && (
+        <div className="flex items-center gap-0.5">
+          {headerActions}
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleMinimized(); }}
+            className="grid size-6 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+            aria-label={minimized ? "Expand" : "Minimize"}
+          >
+            {minimized ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  return createPortal(      <motion.div
       ref={drag.elementRef}
+      layout
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 380, damping: 28 }}
-      style={{ left: drag.position.x, top: drag.position.y, width: panelWidth, zIndex }}
+      style={{
+        left: drag.position.x,
+        top: drag.position.y,
+        width: isNearDock ? undefined : panelWidth,
+        zIndex,
+      }}
       onPointerDown={handleFocus}
       className={cn(
-        "fixed flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
+        "fixed flex touch-none select-none overflow-hidden rounded-lg border border-line bg-surface",
+        // Dock zone: compact pill
+        isNearDock
+          ? "h-8 shadow-lg"
+          // Normal: expanded panel
+          : "flex-col shadow-xl",
         drag.isDragging && "shadow-2xl",
         className,
       )}
     >
-      {/* Drag handle / header */}
+      {/* Drag handle / header — becomes the whole pill in dock zone */}
       <div
         onPointerDown={drag.onPointerDown}
         onPointerMove={drag.onPointerMove}
         onPointerUp={drag.onPointerUp}
         className={cn(
-          "flex items-center justify-between border-b border-line px-3 py-2",
-          drag.isDragging ? "cursor-grabbing" : "cursor-grab",
+          "flex items-center justify-between shrink-0",
+          // Dock zone: compact, no border
+          isNearDock
+            ? "h-8 px-2.5 gap-1.5 rounded-md text-xs font-medium cursor-grabbing"
+            // Normal: header with border
+            : "border-b border-line px-3 py-2 gap-2 cursor-grab",
+          drag.isDragging && !isNearDock && "cursor-grabbing",
         )}
       >
         {headerContent}
       </div>
 
-      {/* Body */}
-      <div
-        className="min-h-0 overflow-y-auto"
-        style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
-      >
-        {children}
-      </div>
+      {/* Body — hidden when in dock zone */}
+      {!isNearDock && (
+        <div
+          className="min-h-0 overflow-y-auto"
+          style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+        >
+          {children}
+        </div>
+      )}
     </motion.div>,
     document.body,
   );
