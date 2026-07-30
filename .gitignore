@@ -41,12 +41,15 @@ coverage/
 # Build tools
 .turbo/
 
-# Next.js / Vite
+# Next.js / Vite / Vercel
 .next/
 out/
 .vite/
+.vercel/
 pruebas/
 .freebuff/
+.junie/
+Thumbs.db
 
 # Tauri / Rust desktop
 **/src-tauri/target/
