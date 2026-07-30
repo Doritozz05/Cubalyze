@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { PanelTop } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
@@ -14,12 +15,13 @@ export interface WidgetCardProps {
 }
 
 /**
- * A single widget card shown inside the Widgets.
+ * A single widget card shown inside the Widgets explorer.
  *
  * Layout (left-to-right):
  *   [Icon + Name + Tag] [Preview thumbnail] [Toggle switch]
  *
  * The card is clickable for quick toggle.
+ * Enabling a widget pins it to the header dock bar automatically.
  */
 export function WidgetCard({ widget, className }: WidgetCardProps) {
   const instance = useWidgetStore((s) => s.instances[widget.id]);
@@ -47,7 +49,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
         "hover:shadow-sm hover:border-ink-2/30",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         visible
-          ? "border-line"
+          ? "border-accent/30 bg-accent/[0.03] shadow-xs"
           : "border-line/60 opacity-70 hover:opacity-100",
         className,
       )}
@@ -59,7 +61,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200",
               visible
-                ? "border-ink/20 bg-ink/5 text-ink"
+                ? "border-accent/30 bg-accent/10 text-accent"
                 : "border-line bg-surface text-ink-3",
             )}
           >
@@ -84,7 +86,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           {widget.description}
         </p>
 
-        {/* Author + version */}
+        {/* Author + version + dock hint */}
         <div className="flex items-center gap-2 text-[0.62rem] text-ink-3/60">
           <span>{widget.author}</span>
           <span>·</span>
@@ -93,6 +95,15 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
             <>
               <span>·</span>
               <span className="capitalize">{widget.source}</span>
+            </>
+          )}
+          {visible && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-0.5 text-accent/80 font-medium">
+                <PanelTop className="size-2.5" />
+                Pinned to header
+              </span>
             </>
           )}
         </div>
@@ -114,10 +125,11 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
             checked={visible}
             onCheckedChange={handleToggle}
             aria-label={`Toggle ${widget.name}`}
-            className="data-[state=checked]:bg-ink"
+            className="data-[state=checked]:bg-accent"
           />
         </div>
       </div>
     </div>
   );
 }
+

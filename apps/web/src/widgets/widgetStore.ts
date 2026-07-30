@@ -73,7 +73,7 @@ export const widgetStore = createStore<WidgetStore>()(
               [id]: {
                 ...inst,
                 visible: willBeVisible,
-                dockMode: inst?.dockMode ?? "docked",
+                dockMode: willBeVisible ? "docked" : (inst?.dockMode ?? "docked"),
               },
             },
           };

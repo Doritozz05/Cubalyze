@@ -10,6 +10,7 @@ import {
   useWidgetStore,
 } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
+import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
 // ── Dock pill ────────────────────────────────────────────────────────────
@@ -142,19 +143,25 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             className={cn(
-              "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-all duration-150",
+              "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-all duration-200 cursor-grab active:cursor-grabbing",
               isVisible
-                ? "border-ink/15 bg-ink/5 text-ink"
-                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
+                ? "border-accent/50 bg-accent/15 text-accent font-semibold shadow-sm ring-1 ring-accent/20"
+                : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
             )}
-            aria-label={`${definition.name} — ${isVisible ? "visible" : "hidden"}`}
+            aria-label={`${definition.name} — ${isVisible ? "open" : "pinned"}`}
           >
+            {isVisible && (
+              <span className="size-1.5 shrink-0 rounded-full bg-accent animate-pulse" />
+            )}
             <Icon className="size-3.5 shrink-0" />
             <span className="truncate max-w-28">{definition.name}</span>
           </motion.button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {definition.name} — {isVisible ? "visible" : "hidden"}. Drag down to undock.
+        <TooltipContent side="bottom" className="text-xs">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold">{definition.name}</span>
+            <span className="text-[10px] text-ink-3">Pinned to header — Click to open · Drag down to float</span>
+          </div>
         </TooltipContent>
       </Tooltip>
 
@@ -192,6 +199,7 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
 export function WidgetDock() {
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
+  const isDockZoneActive = useDockZoneActive();
 
   // Filter to docked widgets that are also active (not toggled off in WidgetExplorer)
   const orderedDocked = dockOrder.filter((id) => {
@@ -205,11 +213,11 @@ export function WidgetDock() {
 
   const dockedIds = [...orderedDocked, ...extraDocked];
 
-  if (dockedIds.length === 0) return null;
+  if (dockedIds.length === 0 && !isDockZoneActive) return null;
 
   return (
     <div
-      className="flex items-center gap-1.5 overflow-x-auto px-1"
+      className="flex items-center gap-1.5 overflow-x-auto px-1 max-w-full"
       role="toolbar"
       aria-label="Docked widgets"
     >
@@ -218,6 +226,17 @@ export function WidgetDock() {
           {dockedIds.map((id) => (
             <DockPill key={id} widgetId={id} />
           ))}
+          {isDockZoneActive && (
+            <motion.div
+              key="dock-target-pill"
+              initial={{ opacity: 0, width: 0, scaleX: 0.5 }}
+              animate={{ opacity: 1, width: "2.5rem", scaleX: 1 }}
+              exit={{ opacity: 0, width: 0, scaleX: 0.5 }}
+              transition={{ type: "spring", stiffness: 500, damping: 32 }}
+              className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/[0.03]"
+              aria-hidden
+            />
+          )}
         </AnimatePresence>
       </LayoutGroup>
     </div>

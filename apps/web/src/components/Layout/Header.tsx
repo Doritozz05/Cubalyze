@@ -172,9 +172,9 @@ export function Header({
   return (
     <header
       className={cn(
-        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color] duration-300",
+        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color,box-shadow] duration-200",
         isDockZoneActive
-          ? "border-ink/20"
+          ? "border-accent/60 shadow-[0_2px_16px_-4px_hsl(var(--accent)/0.35)]"
           : "border-line",
         className,
       )}
@@ -216,8 +216,8 @@ export function Header({
           )}
         </div>
 
-        {/* Center: Widget dock — dynamic flowing row like Apple menu bar */}
-        <div className="flex flex-1 items-center min-w-0 px-4">
+        {/* Center: Widget dock — dynamic flowing row in header center */}
+        <div className="flex flex-1 items-center justify-center min-w-0 px-4">
           <WidgetDock />
         </div>
 
