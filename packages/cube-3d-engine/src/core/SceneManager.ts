@@ -69,6 +69,9 @@ export class SceneManager {
   }
 
   public resize(width: number, height: number): void {
+    // Guard against degenerate dimensions that produce NaN or Infinity aspect.
+    if (width <= 0 || height <= 0) return;
+
     this.width = width;
     this.height = height;
     this.camera.aspect = width / height;

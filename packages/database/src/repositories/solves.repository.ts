@@ -22,6 +22,42 @@ export interface SolveRow {
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
+/**
+ * Safely parse the `moves` JSON column.
+ *
+ * Protects against:
+ *  - empty strings (`JSON.parse('')` → SyntaxError)
+ *  - invalid JSON (`JSON.parse('[invalid]')` → SyntaxError)
+ *  - JSON null literal (`JSON.parse('null')` → null instead of [])
+ *
+ * All failures return an empty array so downstream code that iterates
+ * over `solve.moves` never crashes on corrupt data.
+ */
+function safeParseMoves(raw: string): CubeMoveEvent[] {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Safely parse the `orientation_timeline` JSON column.
+ * Falls back to `undefined` on any parse failure or non-object result.
+ */
+function safeParseOrientationTimeline(raw: string | null): OrientationTimeline | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as OrientationTimeline)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function rowToSolve(row: SolveRow): Solve {
   return {
     id: row.id,
@@ -33,10 +69,8 @@ function rowToSolve(row: SolveRow): Solve {
     method: row.method ?? undefined,
     source: (row.source as Solve['source']) ?? 'manual',
     note: row.note ?? undefined,
-    moves: JSON.parse(row.moves) as CubeMoveEvent[],
-    orientationTimeline: row.orientation_timeline
-      ? (JSON.parse(row.orientation_timeline) as OrientationTimeline)
-      : undefined,
+    moves: safeParseMoves(row.moves),
+    orientationTimeline: safeParseOrientationTimeline(row.orientation_timeline),
     analysisEngineVersion: row.analysis_engine_version ?? undefined,
     analysis: row.analysis ?? undefined,
     puzzleType: row.puzzle_type ?? '3x3x3',
