@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { X, Check, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Case3DDiagram } from "./Case3DDiagram";
 import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
@@ -35,16 +35,7 @@ export function Case3DPanel({
     caseData.subsetId.toLowerCase().includes("f2l") ||
     Boolean(caseData.category?.toLowerCase().includes("f2l"));
 
-  // Filter algorithms by selected slot if F2L
   const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";
-  const slotAlgorithms = useMemo(() => {
-    if (!isF2L) return algorithms;
-    const matched = algorithms.filter(
-      (a) => a.notes && a.notes.includes(`Slot: ${slotKey}`),
-    );
-    if (matched.length > 0) return matched;
-    return algorithms;
-  }, [algorithms, slotKey, isF2L]);
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
@@ -110,70 +101,75 @@ export function Case3DPanel({
         {/* Algorithms */}
         <div>
           <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2">
-            Algorithms ({slotAlgorithms.length})
+            Algorithms ({algorithms.length})
           </h4>
           <div className="space-y-2">
-            {slotAlgorithms.map((alg) => (
-              <div
-                key={alg.id}
-                className={cn(
-                  "flex flex-col gap-1 rounded-lg border p-2.5 transition-colors",
-                  alg.isDefault
-                    ? "border-ink/15 bg-surface-2"
-                    : "border-line bg-surface hover:border-ink/10",
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
-                    {alg.moves.map((move, i) => (
-                      <span key={i}>{move}</span>
-                    ))}
-                  </div>
-                  {alg.isDefault && (
-                    <Check className="size-3.5 text-ready shrink-0" />
+            {algorithms.map((alg) => {
+              const matchesSlot = isF2L && alg.notes?.includes(`Slot: ${slotKey}`);
+              return (
+                <div
+                  key={alg.id}
+                  className={cn(
+                    "flex flex-col gap-1 rounded-lg border p-2.5 transition-colors",
+                    matchesSlot || (!isF2L && alg.isDefault)
+                      ? "border-ink/20 bg-surface-2"
+                      : "border-line bg-surface hover:border-ink/10",
                   )}
-                </div>
-
-                <div className="flex items-center gap-3 text-[0.58rem] text-ink-3">
-                  <span>HTM: {alg.moveCount.htm}</span>
-                  <span>QTM: {alg.moveCount.qtm}</span>
-                  {caseData.puzzleType !== "2x2x2" && alg.moveCount.stm > 0 && (
-                    <span>STM: {alg.moveCount.stm}</span>
-                  )}
-                  {alg.source && (() => {
-                    const sourceUrl = alg.attributionUrl || (
-                      alg.source.startsWith("http")
-                        ? alg.source
-                        : alg.source.toLowerCase().includes("speedcubedb")
-                        ? (caseData.subsetId.toLowerCase().includes("oll")
-                            ? "https://speedcubedb.com/a/3x3/OLL"
-                            : caseData.subsetId.toLowerCase().includes("pll")
-                            ? "https://speedcubedb.com/a/3x3/PLL"
-                            : caseData.subsetId.toLowerCase().includes("f2l")
-                            ? "https://speedcubedb.com/a/3x3/F2L"
-                            : "https://speedcubedb.com")
-                        : undefined
-                    );
-                    return sourceUrl ? (
-                      <a
-                        href={sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 hover:underline hover:text-ink transition-colors"
-                      >
-                        <ExternalLink className="size-2.5" />
-                        {alg.source}
-                      </a>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <ExternalLink className="size-2.5" />
-                        {alg.source}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
+                      {alg.moves.map((move, i) => (
+                        <span key={i}>{move}</span>
+                      ))}
+                    </div>
+                    {alg.notes && (
+                      <span className="rounded bg-surface-3/60 px-1.5 py-0.5 text-[0.58rem] font-medium text-ink-2 shrink-0">
+                        {alg.notes}
                       </span>
-                    );
-                  })()}
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-[0.58rem] text-ink-3">
+                    <span>HTM: {alg.moveCount.htm}</span>
+                    <span>QTM: {alg.moveCount.qtm}</span>
+                    {caseData.puzzleType !== "2x2x2" && alg.moveCount.stm > 0 && (
+                      <span>STM: {alg.moveCount.stm}</span>
+                    )}
+                    {alg.source && (() => {
+                      const sourceUrl = alg.attributionUrl || (
+                        alg.source.startsWith("http")
+                          ? alg.source
+                          : alg.source.toLowerCase().includes("speedcubedb")
+                          ? (caseData.subsetId.toLowerCase().includes("oll")
+                              ? "https://speedcubedb.com/a/3x3/OLL"
+                              : caseData.subsetId.toLowerCase().includes("pll")
+                              ? "https://speedcubedb.com/a/3x3/PLL"
+                              : caseData.subsetId.toLowerCase().includes("f2l")
+                              ? "https://speedcubedb.com/a/3x3/F2L"
+                              : "https://speedcubedb.com")
+                          : undefined
+                      );
+                      return sourceUrl ? (
+                        <a
+                          href={sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 hover:underline hover:text-ink transition-colors"
+                        >
+                          <ExternalLink className="size-2.5" />
+                          {alg.source}
+                        </a>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <ExternalLink className="size-2.5" />
+                          {alg.source}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

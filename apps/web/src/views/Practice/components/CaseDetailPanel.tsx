@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { X, Check, ExternalLink, Play } from "lucide-react";
+import { X, ExternalLink, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
@@ -134,14 +134,16 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                 )}
               >
                 {/* Move display */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
                     {alg.moves.map((move, i) => (
                       <span key={i}>{move}</span>
                     ))}
                   </div>
-                  {alg.isDefault && (
-                    <Check className="size-3.5 text-ready shrink-0" />
+                  {alg.notes && (
+                    <span className="rounded bg-surface-3/60 px-1.5 py-0.5 text-[0.58rem] font-medium text-ink-2 shrink-0">
+                      {alg.notes}
+                    </span>
                   )}
                 </div>
 
