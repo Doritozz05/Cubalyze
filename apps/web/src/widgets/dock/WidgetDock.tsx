@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useLayoutEffect, useState } from "react";
+import { useRef, useCallback, useLayoutEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -208,6 +208,17 @@ export function WidgetDock() {
     dockZoneState.setDropIndex(idx);
   }, [dropX, isDockZoneActive, dockedIds]);
 
+  // ── Build display list with gap spacer ────────────────────────────────
+  const GAP_ID = "__gap__";
+
+  const displayIds = useMemo(() => {
+    if (!isDockZoneActive || insertIndex < 0) return dockedIds;
+    const ids = [...dockedIds];
+    const idx = Math.min(insertIndex, ids.length);
+    ids.splice(idx, 0, GAP_ID);
+    return ids;
+  }, [dockedIds, isDockZoneActive, insertIndex]);
+
   const handleReorder = (newOrder: WidgetId[]) => {
     // Merge reordered visible pills with invisible (floating) items
     // that were in dockOrder — so they keep their position when re-docked.
@@ -231,21 +242,23 @@ export function WidgetDock() {
         aria-label="Docked widgets"
       >
         <AnimatePresence mode="popLayout">
-          {dockedIds.map((id) => (
-            <DockPill key={id} widgetId={id} onPillRef={onPillRef} />
-          ))}
-          {isDockZoneActive && (
-            <motion.div
-              key="dock-target-pill"
-              layout
-              initial={{ opacity: 0, width: 0, scaleX: 0.5 }}
-              animate={{ opacity: 1, width: "2.5rem", scaleX: 1 }}
-              exit={{ opacity: 0, width: 0, scaleX: 0.5 }}
-              transition={{ type: "spring", stiffness: 500, damping: 32 }}
-              className="h-8 shrink-0 rounded-md border border-dashed border-ink/25 bg-ink/3"
-              aria-hidden
-            />
-          )}
+          {displayIds.map((id) => {
+            if (id === GAP_ID) {
+              return (
+                <motion.div
+                  key={GAP_ID}
+                  layout
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "3rem" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                  className="h-8 shrink-0"
+                  aria-hidden
+                />
+              );
+            }
+            return <DockPill key={id} widgetId={id} onPillRef={onPillRef} />;
+          })}
         </AnimatePresence>
       </Reorder.Group>
     </div>
