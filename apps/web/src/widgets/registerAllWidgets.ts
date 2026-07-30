@@ -13,6 +13,7 @@ import { FloatingCubeButton } from "@/widgets/implementations/cube-button/Floati
 import { FloatingMetronomePanel } from "@/widgets/implementations/metronome/FloatingMetronomePanel";
 import { FloatingNotesPanel } from "@/widgets/implementations/notes/FloatingNotesPanel";
 import { FloatingAlgorithmDbPanel } from "@/widgets/implementations/algorithm-db/FloatingAlgorithmDbPanel";
+import { FloatingLayoutOrganizer } from "@/widgets/implementations/layout-organizer/FloatingLayoutOrganizer";
 
 // Previews from implementations/
 import { TimesLogPreview } from "@/widgets/implementations/times-log/TimesLogPreview";
@@ -24,6 +25,7 @@ import { Cube3DPreview } from "@/widgets/implementations/cube-button/Cube3DPrevi
 import { MetronomePreview } from "@/widgets/implementations/metronome/MetronomePreview";
 import { NotesPreview } from "@/widgets/implementations/notes/NotesPreview";
 import { AlgorithmDbPreview } from "@/widgets/implementations/algorithm-db/AlgorithmDbPreview";
+import { LayoutOrganizerPreview } from "@/widgets/implementations/layout-organizer/LayoutOrganizerPreview";
 
 /**
  * Registers all built-in widgets with the WidgetRegistry.
@@ -110,5 +112,12 @@ export function registerAllWidgets(): void {
     component: FloatingAlgorithmDbPanel as any,
     preview: AlgorithmDbPreview,
     mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
+  });
+
+  WidgetRegistry.register("layout-organizer", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: FloatingLayoutOrganizer as any,
+    preview: LayoutOrganizerPreview,
+    mapProps: () => ({}),
   });
 }

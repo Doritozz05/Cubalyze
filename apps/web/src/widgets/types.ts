@@ -47,4 +47,9 @@ export interface WidgetInstanceState {
   position: { x: number; y: number };
   /** Whether the widget is floating freely or anchored in the header dock. */
   dockMode: WidgetDockMode;
+  /**
+   * Runtime z-index for focus management — NOT persisted.
+   * Higher value = rendered on top. Updated by `focusWidget()`.
+   */
+  zIndex?: number;
 }

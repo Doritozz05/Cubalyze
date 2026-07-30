@@ -10,6 +10,7 @@ import { solveTimelineDefinition } from "./implementations/solve-timeline/defini
 import { metronomeDefinition } from "./implementations/metronome/definition";
 import { notesDefinition } from "./implementations/notes/definition";
 import { algorithmDbDefinition } from "./implementations/algorithm-db/definition";
+import { layoutOrganizerDefinition } from "./implementations/layout-organizer/definition";
 
 export type { WidgetCategory, WidgetCategoryId } from "./types";
 
@@ -57,6 +58,7 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   metronomeDefinition,
   notesDefinition,
   algorithmDbDefinition,
+  layoutOrganizerDefinition,
 ];
 
 let _getCustomWidgets: (() => WidgetDefinition[]) | null = null;

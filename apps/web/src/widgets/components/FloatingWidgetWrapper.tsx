@@ -78,6 +78,8 @@ export function FloatingWidgetWrapper({
 
   const storePosition = instance?.position ?? defaultPosition;
   const minimized = instance?.minimized ?? defaultMinimized;
+  // z-index from store — incremented by focusWidget() on pointer-down
+  const zIndex = instance?.zIndex ?? 45;
 
   // ── Drag: sync position back to store on change ────────────────────────
   // Detect dock zone: if dragged near the header (y < DOCK_THRESHOLD),
@@ -109,6 +111,11 @@ export function FloatingWidgetWrapper({
       dockZoneState.active = pos.y < 100;
     },
   });
+
+  // Focus handler — brings this widget to the top of the z-stack
+  const handleFocus = useCallback(() => {
+    widgetStore.getState().focusWidget(widgetId);
+  }, [widgetId]);
 
   // ── Minimize/expand toggle ─────────────────────────────────────────────
   const toggleMinimized = useCallback(() => {
@@ -154,17 +161,17 @@ export function FloatingWidgetWrapper({
   // ── Minimized pill ─────────────────────────────────────────────────────
   if (minimized) {
     return createPortal(
-      <motion.div
+    <motion.div
         ref={drag.elementRef}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 380, damping: 28 }}
-        style={{ left: drag.position.x, top: drag.position.y }}
-        onPointerDown={drag.onPointerDown}
+        style={{ left: drag.position.x, top: drag.position.y, zIndex }}
+        onPointerDown={(e) => { handleFocus(); drag.onPointerDown(e); }}
         onPointerMove={drag.onPointerMove}
         onPointerUp={drag.onPointerUp}
         className={cn(
-          "fixed z-45 flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
+          "fixed flex touch-none select-none items-center gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 shadow-lg",
           drag.isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab",
           "transition-colors hover:border-ink-2/40",
           className,
@@ -201,9 +208,10 @@ export function FloatingWidgetWrapper({
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 380, damping: 28 }}
-      style={{ left: drag.position.x, top: drag.position.y, width: panelWidth }}
+      style={{ left: drag.position.x, top: drag.position.y, width: panelWidth, zIndex }}
+      onPointerDown={handleFocus}
       className={cn(
-        "fixed z-45 flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
+        "fixed flex flex-col touch-none select-none overflow-hidden rounded-lg border border-line bg-surface shadow-xl",
         drag.isDragging && "shadow-2xl",
         className,
       )}

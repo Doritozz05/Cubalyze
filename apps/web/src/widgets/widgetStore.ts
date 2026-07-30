@@ -26,6 +26,8 @@ export interface WidgetStoreActions {
   setDockMode: (id: WidgetId, mode: WidgetInstanceState["dockMode"]) => void;
   /** Reorder docked widgets. */
   setDockOrder: (order: WidgetId[]) => void;
+  /** Bring a widget to the top of the z-stack (like clicking a window in a desktop OS). */
+  focusWidget: (id: WidgetId) => void;
   /** Register a custom widget. Adds to registry + creates instance state. */
   registerCustomWidget: (def: WidgetDefinition) => void;
   /** Remove a custom widget. */
@@ -48,6 +50,9 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
   }
   return map;
 }
+
+// ── Z-index counter (runtime only, never persisted) ─────────────────────
+let _zCounter = 100;
 
 // ── Store ────────────────────────────────────────────────────────────────
 
@@ -124,6 +129,19 @@ export const widgetStore = createStore<WidgetStore>()(
         }),
 
       setDockOrder: (order) => set({ dockOrder: order }),
+
+      focusWidget: (id) =>
+        set((s) => {
+          const inst = s.instances[id];
+          if (!inst) return s;
+          _zCounter += 1;
+          return {
+            instances: {
+              ...s.instances,
+              [id]: { ...inst, zIndex: _zCounter },
+            },
+          };
+        }),
 
       registerCustomWidget: (def) =>
         set((s) => {
@@ -203,7 +221,13 @@ export const widgetStore = createStore<WidgetStore>()(
         } as Record<string, unknown>;
       },
       partialize: (state) => ({
-        instances: state.instances,
+        instances: Object.fromEntries(
+          Object.entries(state.instances).map(([id, inst]) => [
+            id,
+            // Strip runtime-only fields before persisting
+            (({ zIndex: _z, ...rest }) => rest)(inst),
+          ]),
+        ),
         customWidgets: state.customWidgets,
         dockOrder: state.dockOrder,
       }),
