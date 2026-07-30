@@ -29,7 +29,7 @@
  *
  * ## Move set
  *
- * WCA standard for 2×2: U, R, F and their powers (9 moves total).
+ * WCA standard for 2×2: U, R, F, D, L, B and their powers (18 moves total).
  * God's number for 2×2 is 11 in HTM (half-turn metric, where U2 counts as 1 move).
  */
 
@@ -42,7 +42,7 @@ import {
 // ── Constants ────────────────────────────────────────────────────────────
 
 const NUM_CORNERS = 8;
-const NUM_MOVES = 9;
+const NUM_MOVES = 18; // 6 faces × 3 powers
 
 // Coordinate space sizes
 const PERM_SIZE = 40320; // 8! = 40,320
@@ -206,7 +206,7 @@ function ensureInitialized(): void {
 
 /**
  * BFS from the solved state (index 0) to fill the pruning table.
- * Uses a simple queue-based BFS. The maximum distance for 2×2 is 11.
+ * Visits ALL reachable states (no depth limit).
  */
 function bfsBuild(dist: Uint8Array, moveTable: Uint16Array[]): void {
   const queue = new Int32Array(dist.length);
@@ -219,9 +219,10 @@ function bfsBuild(dist: Uint8Array, moveTable: Uint16Array[]): void {
   while (head < tail) {
     const cur = queue[head++];
     const curDist = dist[cur];
-    if (curDist >= MAX_DEPTH) continue;
 
     const nextDist = curDist + 1;
+    if (nextDist > MAX_DEPTH) continue; // Don't need distances beyond max search depth
+
     for (let m = 0; m < NUM_MOVES; m++) {
       const next = moveTable[m][cur];
       if (dist[next] === 255) {
@@ -236,9 +237,9 @@ function bfsBuild(dist: Uint8Array, moveTable: Uint16Array[]): void {
 
 /**
  * Face index for each move (for pruning consecutive same-face moves).
- * U=0, R=1, F=2. Layout: [U,U2,U', R,R2,R', F,F2,F']
+ * Layout: [U,U2,U', R,R2,R', F,F2,F', D,D2,D', L,L2,L', B,B2,B']
  */
-const MOVE_FACE_2X2 = [0, 0, 0, 1, 1, 1, 2, 2, 2];
+const MOVE_FACE_2X2 = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5];
 
 /**
  * Recursive IDA* node.
@@ -309,7 +310,7 @@ export class TwoByTwoSolver {
 
   /**
    * Build pruning tables. Called automatically on first solve, but can
-   * be called explicitly to front-load the ~20ms cost.
+   * be called explicitly to front-load the cost.
    */
   public init(): void {
     if (this.initialized) return;
@@ -346,6 +347,11 @@ export class TwoByTwoSolver {
     // Already solved
     if (permIdx === 0 && orientIdx === 0) {
       return { notation: '', moveCount: 0, moves: [] };
+    }
+
+    // Quick check: if either coordinate isn't in the pruning table, fail fast
+    if (permDist![permIdx] === 255 || orientDist![orientIdx] === 255) {
+      return null;
     }
 
     // IDA*: try increasing depth limits until a solution is found

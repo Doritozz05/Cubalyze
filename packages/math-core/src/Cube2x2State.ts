@@ -46,22 +46,28 @@ export const CORNER_DRB = 7;
 
 // ── 2×2 Move enum ────────────────────────────────────────────────────────
 //
-// Only U, R, F and their powers (9 moves total).
-// Layout: [U1,U2,U3, R1,R2,R3, F1,F2,F3]
+// All 6 faces with their powers (18 moves total).
+// Layout: [U1,U2,U3, R1,R2,R3, F1,F2,F3, D1,D2,D3, L1,L2,L3, B1,B2,B3]
 
 export enum Move2x2 {
   U1 = 0, U2, U3,
   R1, R2, R3,
   F1, F2, F3,
+  D1, D2, D3,
+  L1, L2, L3,
+  B1, B2, B3,
 }
 
-export const NUM_MOVES_2X2 = 9;
+export const NUM_MOVES_2X2 = 18;
 
-/** Notation for each 2×2 move (matches StringToMove keys for U/R/F). */
+/** Notation for each 2×2 move. */
 export const MOVE_2X2_NOTATION: string[] = [
   'U', 'U2', "U'",
   'R', 'R2', "R'",
   'F', 'F2', "F'",
+  'D', 'D2', "D'",
+  'L', 'L2', "L'",
+  'B', 'B2', "B'",
 ];
 
 /** Parse a notation string into a Move2x2 value. */
@@ -69,6 +75,9 @@ export const StringToMove2x2: Record<string, Move2x2> = {
   'U': Move2x2.U1, 'U2': Move2x2.U2, "U'": Move2x2.U3, 'U3': Move2x2.U3,
   'R': Move2x2.R1, 'R2': Move2x2.R2, "R'": Move2x2.R3, 'R3': Move2x2.R3,
   'F': Move2x2.F1, 'F2': Move2x2.F2, "F'": Move2x2.F3, 'F3': Move2x2.F3,
+  'D': Move2x2.D1, 'D2': Move2x2.D2, "D'": Move2x2.D3, 'D3': Move2x2.D3,
+  'L': Move2x2.L1, 'L2': Move2x2.L2, "L'": Move2x2.L3, 'L3': Move2x2.L3,
+  'B': Move2x2.B1, 'B2': Move2x2.B2, "B'": Move2x2.B3, 'B3': Move2x2.B3,
 };
 
 /** Inverse of each move (U1↔U3, U2↔U2). */
@@ -76,11 +85,14 @@ const INVERSE_MOVE_2X2: Move2x2[] = [
   Move2x2.U3, Move2x2.U2, Move2x2.U1,
   Move2x2.R3, Move2x2.R2, Move2x2.R1,
   Move2x2.F3, Move2x2.F2, Move2x2.F1,
+  Move2x2.D3, Move2x2.D2, Move2x2.D1,
+  Move2x2.L3, Move2x2.L2, Move2x2.L1,
+  Move2x2.B3, Move2x2.B2, Move2x2.B1,
 ];
 
-// ── Base move definitions (Kociemba corner tables, U/R/F only) ───────────
+// ── Base move definitions (Kociemba corner tables, 6 faces) ──────────────
 //
-// These are EXACTLY the same corner tables from CubeState.ts baseU/baseR/baseF,
+// These are EXACTLY the same corner tables from CubeState.ts (baseU/baseR/baseF/baseD/baseL/baseB),
 // restricted to corners (cp + co only, no edges).
 
 interface BaseMove {
@@ -106,9 +118,27 @@ const baseF: BaseMove = {
   co: [1, 2, 0, 0, 2, 1, 0, 0],
 };
 
+const baseD: BaseMove = {
+  // D: corner cycle on D layer (bottom view CW)
+  cp: [CORNER_URF, CORNER_UFL, CORNER_ULB, CORNER_UBR, CORNER_DLF, CORNER_DBL, CORNER_DRB, CORNER_DFR],
+  co: [0, 0, 0, 0, 0, 0, 0, 0],
+};
+
+const baseL: BaseMove = {
+  // L: corner cycle on L layer (CW looking at left face)
+  cp: [CORNER_URF, CORNER_ULB, CORNER_DBL, CORNER_UBR, CORNER_DFR, CORNER_UFL, CORNER_DLF, CORNER_DRB],
+  co: [0, 1, 2, 0, 0, 2, 1, 0],
+};
+
+const baseB: BaseMove = {
+  // B: corner cycle on B layer (CW looking at back face)
+  cp: [CORNER_URF, CORNER_UFL, CORNER_UBR, CORNER_DRB, CORNER_DFR, CORNER_DLF, CORNER_ULB, CORNER_DBL],
+  co: [0, 0, 1, 2, 0, 0, 2, 1],
+};
+
 // ── Precomputed move tables ──────────────────────────────────────────────
 //
-// For each of the 9 moves, we precompute:
+// For each of the 18 moves, we precompute:
 //   • src[i]  — source position for the corner now at destination i
 //   • twist[i] — orientation delta added at destination i
 //
@@ -151,29 +181,22 @@ function baseToTable(move: BaseMove): Move2x2Table {
 function buildMoveTables(): Move2x2Table[] {
   const tables: Move2x2Table[] = new Array(NUM_MOVES_2X2);
 
-  // U moves
-  const u1 = baseU;
-  const u2 = composeMoves(baseU, baseU);
-  const u3 = composeMoves(u2, baseU);
-  tables[Move2x2.U1] = baseToTable(u1);
-  tables[Move2x2.U2] = baseToTable(u2);
-  tables[Move2x2.U3] = baseToTable(u3);
+  // Helper: build 3 powers for a base move
+  function buildPowers(base: BaseMove, enumOffset: number): void {
+    const move1 = base;
+    const move2 = composeMoves(base, base);
+    const move3 = composeMoves(move2, base);
+    tables[enumOffset + 0] = baseToTable(move1);
+    tables[enumOffset + 1] = baseToTable(move2);
+    tables[enumOffset + 2] = baseToTable(move3);
+  }
 
-  // R moves
-  const r1 = baseR;
-  const r2 = composeMoves(baseR, baseR);
-  const r3 = composeMoves(r2, baseR);
-  tables[Move2x2.R1] = baseToTable(r1);
-  tables[Move2x2.R2] = baseToTable(r2);
-  tables[Move2x2.R3] = baseToTable(r3);
-
-  // F moves
-  const f1 = baseF;
-  const f2 = composeMoves(baseF, baseF);
-  const f3 = composeMoves(f2, baseF);
-  tables[Move2x2.F1] = baseToTable(f1);
-  tables[Move2x2.F2] = baseToTable(f2);
-  tables[Move2x2.F3] = baseToTable(f3);
+  buildPowers(baseU, Move2x2.U1); // U moves
+  buildPowers(baseR, Move2x2.R1); // R moves
+  buildPowers(baseF, Move2x2.F1); // F moves
+  buildPowers(baseD, Move2x2.D1); // D moves
+  buildPowers(baseL, Move2x2.L1); // L moves
+  buildPowers(baseB, Move2x2.B1); // B moves
 
   return tables;
 }

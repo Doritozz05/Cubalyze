@@ -6,7 +6,7 @@
  * ## Algorithm (identical to csTimer / cubing.js approach)
  *
  *   1. Generate a random valid 2×2 state (random corner permutation +
- *      random corner orientation, with parity/orientation constraints).
+ *      random corner orientation, with orientation sum ≡ 0 mod 3).
  *   2. Solve it optimally using {@link TwoByTwoSolver} (≤ 11 moves).
  *   3. Invert the solution → that's the scramble.
  *
@@ -14,15 +14,12 @@
  * uniformly-distributed random position, and the scramble length is
  * optimal (≤ 11 moves). This is the WCA standard for 2×2 scrambling.
  *
- * ## WCA compliance notes
+ * ## WCA compliance
  *
- *   • Move set: U, R, F only (the other faces are redundant on 2×2
- *     because there are no fixed centers — D/L/B are equivalent to
- *     whole-cube rotations).
- *   • Minimum length: WCA regulation 4b3 requires scrambles of at
- *     least 2 moves. We retry if the optimal solution is < 2 moves.
- *   • These scrambles are "competition-grade" but NOT certified
- *     official (per the PRD Part 0.5).
+ *   • Move set: U, R, F, D, L, B (all 6 faces, 18 moves total).
+ *   • Random state: uniform over all 3,674,160 valid 2×2 states.
+ *   • Minimum length: WCA regulation 4b3b requires at least 4 moves.
+ *     We default to minLength=4 for WCA-compliant scrambles.
  */
 
 import { Cube2x2State } from '@cubeforge/math-core';
@@ -36,43 +33,46 @@ export class TwoByTwoScrambler {
   }
 
   /**
-   * Generate a random valid 2×2 corner state.
+   * Generate a uniformly random valid 2×2 state.
    *
-   * Ensures:
-   *   • Corner permutation is a random permutation of [0..7]
-   *   • Corner orientation sum ≡ 0 (mod 3)
-   *   • The state is NOT already solved (to avoid trivial scrambles)
+   * Algorithm (WCA standard):
+   *   1. Generate random permutation of 8 corners (uniform over 8! = 40320).
+   *   2. Generate random orientation for 7 corners (uniform over 3^7 = 2187),
+   *      with the 8th derived from sum ≡ 0 (mod 3).
+   *   3. The resulting (cp, co) pair is a valid 2×2 state — the solver
+   *      can find the optimal solution using all 6 faces (18 moves).
+   *
+   * This produces a uniform distribution over all 3,674,160 valid 2×2 states.
    */
   public static generateRandomState(): Cube2x2State {
-    let state: Cube2x2State;
+    // Random permutation of 0..7
+    const cp = new Uint8Array(8);
+    const available = [0, 1, 2, 3, 4, 5, 6, 7];
+    for (let i = 0; i < 8; i++) {
+      const idx = Math.floor(Math.random() * available.length);
+      cp[i] = available[idx];
+      available.splice(idx, 1);
+    }
 
-    do {
-      // Random permutation
-      const cp = [0, 1, 2, 3, 4, 5, 6, 7];
-      this.shuffle(cp);
+    // Random orientation with sum ≡ 0 (mod 3)
+    const co = new Uint8Array(8);
+    let sum = 0;
+    for (let i = 0; i < 7; i++) {
+      co[i] = Math.floor(Math.random() * 3);
+      sum += co[i];
+    }
+    co[7] = (3 - (sum % 3)) % 3;
 
-      // Random orientation (first 7 corners random, 8th derived)
-      const co = new Uint8Array(8);
-      let sum = 0;
-      for (let i = 0; i < 7; i++) {
-        co[i] = Math.floor(Math.random() * 3);
-        sum += co[i];
-      }
-      co[7] = (3 - (sum % 3)) % 3;
-
-      state = new Cube2x2State(cp, co);
-    } while (state.isSolved()); // reject trivial solved state
-
-    return state;
+    return new Cube2x2State(cp, co);
   }
 
   /**
    * Generate a single WCA-style random-state scramble.
    *
-   * @param minLength  Minimum number of moves (default 2, per WCA 4b3).
+   * @param minLength  Minimum number of moves (default 4, per WCA 4b3b).
    * @returns Space-separated scramble notation (e.g. "U R' F2 U R2 F'").
    */
-  public generateScramble(minLength: number = 9): string {
+  public generateScramble(minLength: number = 4): string {
     let scramble = '';
     let attempts = 0;
 
@@ -95,10 +95,10 @@ export class TwoByTwoScrambler {
    * Generate a batch of scrambles.
    *
    * @param count  Number of scrambles to generate.
-   * @param minLength  Minimum moves per scramble (default 2).
+   * @param minLength  Minimum moves per scramble (default 4, WCA 4b3b).
    * @returns Array of scramble notation strings.
    */
-  public generateScrambleBatch(count: number, minLength: number = 2): string[] {
+  public generateScrambleBatch(count: number, minLength: number = 4): string[] {
     const scrambles: string[] = [];
     for (let i = 0; i < count; i++) {
       scrambles.push(this.generateScramble(minLength));
@@ -113,7 +113,7 @@ export class TwoByTwoScrambler {
    * @returns Object with `scramble` (notation to apply) and `solution`
    *          (optimal solve notation).
    */
-  public generateScrambleWithSolution(minLength: number = 2): {
+  public generateScrambleWithSolution(minLength: number = 4): {
     scramble: string;
     solution: TwoByTwoSolution | null;
   } {
@@ -136,16 +136,5 @@ export class TwoByTwoScrambler {
     }
 
     return { scramble: '', solution: null };
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────
-
-  private static shuffle(array: number[]): void {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = array[i];
-      array[i] = array[j];
-      array[j] = temp;
-    }
   }
 }
