@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
@@ -387,13 +388,23 @@ export function AlgorithmDrillView({
                 {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d" || (!selectedCase.diagram2D && selectedCase.setupScramble)) ? (
                   <Case3DDiagram caseData={selectedCase} className="w-28 sm:w-36" />
                 ) : selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
-                  <CaseDiagram
-                    arrows={selectedCase.diagram2D.arrows}
-                    setupScramble={selectedCase.setupScramble}
-                    moves={defaultAlgorithm?.moves}
-                    style={visualizationStyle}
-                    className="w-28 sm:w-36"
-                  />
+                  selectedCase.puzzleType === '2x2x2' ? (
+                    <Case2x2Diagram
+                      faceletColors={selectedCase.diagram2D.faceletColors}
+                      setupScramble={selectedCase.setupScramble}
+                      moves={defaultAlgorithm?.moves}
+                      style={visualizationStyle}
+                      className="w-28 sm:w-36"
+                    />
+                  ) : (
+                    <CaseDiagram
+                      arrows={selectedCase.diagram2D.arrows}
+                      setupScramble={selectedCase.setupScramble}
+                      moves={defaultAlgorithm?.moves}
+                      style={visualizationStyle}
+                      className="w-28 sm:w-36"
+                    />
+                  )
                 ) : selectedCase?.setupScramble ? (
                   <Case3DDiagram caseData={selectedCase} className="w-28 sm:w-36" />
                 ) : (

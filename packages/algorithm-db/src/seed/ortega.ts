@@ -1,4 +1,5 @@
 import { expandWideMoves } from '@cubeforge/math-core';
+import { CaseStateGenerator, invertMoveArray } from '../caseGenerator';
 import type { AlgorithmCase, Algorithm } from '../schema';
 
 // ─── Subset IDs (from methodRegistry.ts) ───────────────────────────────────
@@ -67,6 +68,36 @@ function alg(
 
 type AlgInput = { moves: string; isDefault?: boolean; tags?: string[] };
 
+// ─── Diagram helpers ────────────────────────────────────────────────────────
+
+/**
+ * Compute yellow-gray facelet colors for a 2×2 OLL case.
+ * Uses the existing 3×3 CaseStateGenerator (corners-only moves are identical).
+ * Returns a 54-element color array (Y=oriented, #=non-oriented).
+ */
+function computeOllDiagramColors(movesStr: string): string[] {
+  try {
+    const moves = expandWideMoves(movesStr);
+    const { diagramColors } = CaseStateGenerator.generateCaseVisualization(moves, 'yellow-gray');
+    return diagramColors;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Compute setup scramble from the default algorithm's inverse.
+ * This allows the existing 3D rendering pipeline to work for 2×2 PBL.
+ */
+function computeSetupScramble(movesStr: string): string {
+  try {
+    const moves = expandWideMoves(movesStr);
+    return invertMoveArray(moves).join(' ');
+  } catch {
+    return '';
+  }
+}
+
 // ─── Make Ortega OLL case ──────────────────────────────────────────────────
 
 function makeOllCase(
@@ -78,6 +109,9 @@ function makeOllCase(
   tags: string[] = [],
 ): { caseDef: AlgorithmCase; algorithms: Algorithm[] } {
   const caseId = caseUuid(100 + n);
+  const defaultAlg = algorithmsData.find((a) => a.isDefault) ?? algorithmsData[0];
+  const faceletColors = computeOllDiagramColors(defaultAlg.moves);
+
   return {
     caseDef: {
       id: caseId,
@@ -86,7 +120,10 @@ function makeOllCase(
       name: `Ortega OLL — ${name}`,
       recognitionPatterns: [],
       setupScramble: '',
-      diagramType: 'none',
+      diagramType: '2d-top',
+      diagram2D: {
+        faceletColors: faceletColors.length > 0 ? faceletColors : undefined,
+      },
       difficulty,
       category,
       tags,
@@ -118,6 +155,9 @@ function makePblCase(
   tags: string[] = [],
 ): { caseDef: AlgorithmCase; algorithms: Algorithm[] } {
   const caseId = caseUuid(200 + n);
+  const defaultAlg = algorithmsData.find((a) => a.isDefault) ?? algorithmsData[0];
+  const setupScramble = computeSetupScramble(defaultAlg.moves);
+
   return {
     caseDef: {
       id: caseId,
@@ -125,8 +165,8 @@ function makePblCase(
       caseNumber: `Ortega PBL ${name}`,
       name: `Ortega PBL — ${name}`,
       recognitionPatterns: [],
-      setupScramble: '',
-      diagramType: 'none',
+      setupScramble,
+      diagramType: '3d-isometric',
       difficulty,
       category,
       tags,
@@ -201,7 +241,6 @@ export const ORTEGA_OLL_CASES = [
 ];
 
 // ─── Ortega PBL Cases (6) ─────────────────────────────────────────────────
-// SpeedCubeDB lists Adj Opp and Opp Adj as separate cases.
 
 export const ORTEGA_PBL_CASES = [
   makePblCase(0, 'Adj', 'Adjacent swap (top)', [

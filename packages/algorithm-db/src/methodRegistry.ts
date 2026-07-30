@@ -58,9 +58,8 @@ export const SUBSETS: AlgorithmSubset[] = [
   { id: sid(42), methodId: mid(4), name: 'EO', description: 'Edge orientation for Petrus.', sortOrder: 2, puzzleType: '3x3x3' },
 
   // ── 2×2: Ortega ─────────────────────────────────────────────────────
-  { id: sid(50), methodId: mid(5), name: 'Face 1', description: 'Building the first face (not necessarily a layer).', sortOrder: 1, puzzleType: '2x2x2' },
-  { id: sid(51), methodId: mid(5), name: 'OLL', description: 'Orient the last face (7 cases for 2×2).', sortOrder: 2, puzzleType: '2x2x2' },
-  { id: sid(52), methodId: mid(5), name: 'PBL', description: 'Permute Both Layers — solve the cube after OLL.', sortOrder: 3, puzzleType: '2x2x2' },
+  { id: sid(51), methodId: mid(5), name: 'OLL', description: 'Orient the last face (7 cases for 2×2).', sortOrder: 1, puzzleType: '2x2x2' },
+  { id: sid(52), methodId: mid(5), name: 'PBL', description: 'Permute Both Layers — solve the cube after OLL.', sortOrder: 2, puzzleType: '2x2x2' },
 
   // ── 2×2: CLL ────────────────────────────────────────────────────────
   { id: sid(60), methodId: mid(6), name: 'CLL', description: 'Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.', sortOrder: 1, puzzleType: '2x2x2' },

@@ -1,5 +1,6 @@
 import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
+import { Cube2x2State, Cube2x2FaceletConverter } from "@cubeforge/math-core";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 
 const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
@@ -51,8 +52,6 @@ export class Global3DSnapshotService {
 
   private canvas: HTMLCanvasElement | null = null;
   private engine: Cube3DEngine | null = null;
-  private initAttempted = false;
-
   private constructor() {
     this.initStorage();
   }
@@ -82,30 +81,44 @@ export class Global3DSnapshotService {
     }
   }
 
-  private initEngine(): boolean {
-    if (this.engine) return true;
-    if (typeof window === "undefined" || typeof document === "undefined") return false;
-    if (this.initAttempted) return this.engine !== null;
+  /** Separate engine for 2×2 snapshots (order=2). */
+  private engine2x2: Cube3DEngine | null = null;
+  private canvas2x2: HTMLCanvasElement | null = null;
 
-    this.initAttempted = true;
+  private getOrCreateEngine(order: number): Cube3DEngine | null {
+    const is2x2 = order === 2;
+    const existing = is2x2 ? this.engine2x2 : this.engine;
+
+    if (existing) return existing;
+    if (typeof window === "undefined" || typeof document === "undefined") return null;
+
     try {
-      this.canvas = document.createElement("canvas");
-      this.canvas.width = CANV_SIZE;
-      this.canvas.height = CANV_SIZE;
+      const canvas = document.createElement("canvas");
+      canvas.width = CANV_SIZE;
+      canvas.height = CANV_SIZE;
 
-      this.engine = new Cube3DEngine({
-        canvas: this.canvas,
+      const engine = new Cube3DEngine({
+        canvas,
         width: CANV_SIZE,
         height: CANV_SIZE,
-        pixelRatio: 1, // Keep pixelRatio 1 for max performance & low memory
+        pixelRatio: 1,
+        order,
       });
 
-      this.engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
-      return true;
+      engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+
+      if (is2x2) {
+        this.canvas2x2 = canvas;
+        this.engine2x2 = engine;
+      } else {
+        this.canvas = canvas;
+        this.engine = engine;
+      }
+
+      return engine;
     } catch (e) {
-      console.error("[Global3DSnapshotService] Failed to initialize WebGL engine:", e);
-      this.engine = null;
-      return false;
+      console.error(`[Global3DSnapshotService] Failed to initialize WebGL engine (order=${order}):`, e);
+      return null;
     }
   }
 
@@ -156,16 +169,6 @@ export class Global3DSnapshotService {
 
     // Use requestAnimationFrame / setTimeout to keep main thread responsive
     requestAnimationFrame(() => {
-      if (!this.initEngine() || !this.engine || !this.canvas) {
-        const err = new Error("WebGL engine not available");
-        while (this.queue.length > 0) {
-          const task = this.queue.shift();
-          task?.reject(err);
-        }
-        this.isProcessing = false;
-        return;
-      }
-
       const task = this.queue.shift();
       if (!task) {
         this.isProcessing = false;
@@ -174,41 +177,66 @@ export class Global3DSnapshotService {
 
       try {
         const { key, caseData, selectedSlot } = task;
-        const isF2L = F2L_SUBSET_IDS.has(caseData.subsetId);
+        const is2x2 = caseData.puzzleType === '2x2x2';
+        const order = is2x2 ? 2 : 3;
+        const engine = this.getOrCreateEngine(order);
+        const canvas = is2x2 ? this.canvas2x2 : this.canvas;
+
+        if (!engine || !canvas) {
+          task.reject(new Error("WebGL engine not available"));
+          this.isProcessing = false;
+          return;
+        }
+
+        const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
         const modelYRot = SLOT_LABELS[selectedSlot]?.modelYRot ?? 0;
 
         if (isF2L) {
-          this.engine.updateStyle(buildF2LSkinStyle());
+          engine.updateStyle(buildF2LSkinStyle());
         } else {
-          this.engine.updateStyle(getSkinStyle("default"));
+          engine.updateStyle(getSkinStyle("default"));
         }
 
-        this.engine.clearLayerGray();
+        engine.clearLayerGray();
 
         if (caseData.setupScramble) {
-          const rawState = CaseStateGenerator.generateFromScramble(
-            caseData.setupScramble,
-          );
-          const faceletString = CaseStateGenerator.toFaceletString(rawState);
-          this.engine.syncFacelets(faceletString);
+          if (is2x2) {
+            const state = new Cube2x2State();
+            state.applySequence(caseData.setupScramble);
+            const facelets = Cube2x2FaceletConverter.toFaceletString(state);
+            engine.syncFacelets(facelets);
+          } else {
+            const rawState = CaseStateGenerator.generateFromScramble(
+              caseData.setupScramble,
+            );
+            const faceletString = CaseStateGenerator.toFaceletString(rawState);
+            engine.syncFacelets(faceletString);
+          }
         } else {
-          this.engine.resetCube();
+          engine.resetCube();
         }
 
-        this.engine.rotateModelY(modelYRot);
+        if (!is2x2) {
+          engine.rotateModelY(modelYRot);
+        }
+
+        // Rotate 2×2 view by 45° around Y for a nicer 3/4 angle
+        if (is2x2) {
+          engine.rotateModelY(Math.PI / 4);
+        }
 
         const isAdvancedF2L =
           caseData.subsetId === F2L_ADVANCED_SUBSET_ID ||
           Boolean(caseData.tags?.includes("af2l"));
 
         if (isF2L) {
-          this.engine.setF2LMaskGray(F2L_GRAY, isAdvancedF2L);
+          engine.setF2LMaskGray(F2L_GRAY, isAdvancedF2L);
         }
 
         // Synchronous single-frame render
-        this.engine.sceneManager.render();
+        engine.sceneManager.render();
 
-        const dataUrl = this.canvas.toDataURL("image/png");
+        const dataUrl = canvas.toDataURL("image/png");
         if (dataUrl && dataUrl.length > 100) {
           this.memoryCache.set(key, dataUrl);
           try {

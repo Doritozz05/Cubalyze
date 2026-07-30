@@ -4,6 +4,7 @@ import { memo } from "react";
 import { X, Check, ExternalLink, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
+import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DPanel } from "./Case3DPanel";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
@@ -64,13 +65,23 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
         {/* Diagram */}
         {caseData.diagramType === "2d-top" && caseData.diagram2D && (
           <div className="flex justify-center">
-            <CaseDiagram
-              arrows={caseData.diagram2D.arrows}
-              setupScramble={caseData.setupScramble}
-              moves={defaultAlg?.moves}
-              style={visualizationStyle ?? "full-color"}
-              className="w-48"
-            />
+            {caseData.puzzleType === '2x2x2' ? (
+              <Case2x2Diagram
+                faceletColors={caseData.diagram2D.faceletColors}
+                setupScramble={caseData.setupScramble}
+                moves={defaultAlg?.moves}
+                style={visualizationStyle ?? "full-color"}
+                className="w-48"
+              />
+            ) : (
+              <CaseDiagram
+                arrows={caseData.diagram2D.arrows}
+                setupScramble={caseData.setupScramble}
+                moves={defaultAlg?.moves}
+                style={visualizationStyle ?? "full-color"}
+                className="w-48"
+              />
+            )}
           </div>
         )}
 

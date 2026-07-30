@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import {
   TrainingBreadcrumb,
@@ -406,12 +407,21 @@ function QuizPanel({
               {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" || (!currentCase.diagram2D && currentCase.setupScramble) ? (
                 <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
               ) : currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
-                <CaseDiagram
-                  arrows={currentCase.diagram2D.arrows}
-                  setupScramble={currentCase.setupScramble}
-                  style={visualizationStyle}
-                  className="w-44 sm:w-52 lg:w-60"
-                />
+                currentCase.puzzleType === '2x2x2' ? (
+                  <Case2x2Diagram
+                    faceletColors={currentCase.diagram2D.faceletColors}
+                    setupScramble={currentCase.setupScramble}
+                    style={visualizationStyle}
+                    className="w-44 sm:w-52 lg:w-60"
+                  />
+                ) : (
+                  <CaseDiagram
+                    arrows={currentCase.diagram2D.arrows}
+                    setupScramble={currentCase.setupScramble}
+                    style={visualizationStyle}
+                    className="w-44 sm:w-52 lg:w-60"
+                  />
+                )
               ) : currentCase.setupScramble ? (
                 <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
               ) : (

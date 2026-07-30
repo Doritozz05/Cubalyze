@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useCube3D } from "@/hooks/useCube3D";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
+import { Cube2x2State, Cube2x2FaceletConverter } from "@cubeforge/math-core";
 import { getSkinStyle } from "@cubeforge/cube-3d-engine";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
@@ -54,12 +55,14 @@ export function Case3DDiagram({
   interactive = false,
 }: Case3DDiagramProps) {
   if (interactive) {
+    const is2x2 = caseData.puzzleType === '2x2x2';
     return (
       <div className="flex flex-col items-center w-full">
         <Case3DCanvas
           caseData={caseData}
           selectedSlot={selectedSlot}
           className={className}
+          order={is2x2 ? 2 : 3}
         />
         {showSetup && caseData.setupScramble && (
           <div className="mt-2 text-center text-[0.65rem] text-ink-3">
@@ -175,23 +178,27 @@ function Case3DCanvas({
   caseData,
   selectedSlot,
   className,
+  order = 3,
 }: {
   caseData: AlgorithmCase;
   selectedSlot: number;
   className?: string;
+  order?: number;
 }) {
   const { canvasRef, containerRef, isReady, engineRef } = useCube3D({
     maxRecentMoves: 0,
+    order,
   });
 
   const hasSetCameraRef = useRef(false);
-  const isF2L = F2L_SUBSET_IDS.has(caseData.subsetId);
+  const is2x2 = order === 2;
+  const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
 
   useEffect(() => {
     if (!isReady || !engineRef.current) return;
 
     const engine = engineRef.current;
-    const modelYRot = SLOT_LABELS[selectedSlot]?.modelYRot ?? 0;
+    const modelYRot = is2x2 ? 0 : (SLOT_LABELS[selectedSlot]?.modelYRot ?? 0);
 
     try {
       if (isF2L) {
@@ -207,16 +214,25 @@ function Case3DCanvas({
 
       engine.clearLayerGray();
       if (caseData.setupScramble) {
-        const rawState = CaseStateGenerator.generateFromScramble(
-          caseData.setupScramble,
-        );
-        const faceletString = CaseStateGenerator.toFaceletString(rawState);
-        engine.syncFacelets(faceletString);
+        if (is2x2) {
+          const state = new Cube2x2State();
+          state.applySequence(caseData.setupScramble);
+          const facelets = Cube2x2FaceletConverter.toFaceletString(state);
+          engine.syncFacelets(facelets);
+        } else {
+          const rawState = CaseStateGenerator.generateFromScramble(
+            caseData.setupScramble,
+          );
+          const faceletString = CaseStateGenerator.toFaceletString(rawState);
+          engine.syncFacelets(faceletString);
+        }
       } else {
         engine.resetCube();
       }
 
-      engine.rotateModelY(modelYRot);
+      if (!is2x2) {
+        engine.rotateModelY(modelYRot);
+      }
 
       const isAdvancedF2L =
         caseData.subsetId === F2L_ADVANCED_SUBSET_ID ||
@@ -237,7 +253,9 @@ function Case3DCanvas({
     caseData.subsetId,
     selectedSlot,
     isF2L,
+    is2x2,
     caseData.tags,
+    order,
   ]);
 
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
+import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DDiagram } from "./Case3DDiagram";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
@@ -90,13 +91,23 @@ function CaseCard({
         {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
           <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
         ) : caseData.diagramType === "2d-top" && caseData.diagram2D ? (
-          <CaseDiagram
-            arrows={caseData.diagram2D.arrows}
-            setupScramble={caseData.setupScramble}
-            moves={algorithm?.moves}
-            style={visualizationStyle ?? "full-color"}
-            className="w-36"
-          />
+          caseData.puzzleType === '2x2x2' ? (
+            <Case2x2Diagram
+              faceletColors={caseData.diagram2D.faceletColors}
+              setupScramble={caseData.setupScramble}
+              moves={algorithm?.moves}
+              style={visualizationStyle ?? "full-color"}
+              className="w-36"
+            />
+          ) : (
+            <CaseDiagram
+              arrows={caseData.diagram2D.arrows}
+              setupScramble={caseData.setupScramble}
+              moves={algorithm?.moves}
+              style={visualizationStyle ?? "full-color"}
+              className="w-36"
+            />
+          )
         ) : caseData.setupScramble ? (
           <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
         ) : (

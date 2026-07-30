@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Check, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import { SUBSET_VISUALIZATION, getSubset } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
@@ -83,13 +84,23 @@ export function AlgorithmViewerCard({
       {/* ── Diagram Rendering Area ── */}
       <div className="relative flex justify-center items-center h-32 bg-surface-2/30 border border-line rounded-lg p-2 overflow-hidden">
         {activeViewMode === "2d" ? (
-          <CaseDiagram
-            setupScramble={caseData.setupScramble}
-            moves={activeAlg?.moves}
-            style={visStyle}
-            arrows={caseData.diagram2D?.arrows}
-            className="w-32 max-h-30"
-          />
+          caseData.puzzleType === '2x2x2' ? (
+            <Case2x2Diagram
+              faceletColors={caseData.diagram2D?.faceletColors}
+              setupScramble={caseData.setupScramble}
+              moves={activeAlg?.moves}
+              style={visStyle}
+              className="w-32 max-h-30"
+            />
+          ) : (
+            <CaseDiagram
+              setupScramble={caseData.setupScramble}
+              moves={activeAlg?.moves}
+              style={visStyle}
+              arrows={caseData.diagram2D?.arrows}
+              className="w-32 max-h-30"
+            />
+          )
         ) : (
           <Case3DDiagram
             caseData={caseData}
