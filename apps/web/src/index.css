@@ -320,24 +320,20 @@ input[type="image"],
 }
 
 /* ── Widget mount & expansion animations ────────────────────────────────
-   Replaces framer-motion's mount animation with pure CSS.
-   Uses the independent `scale` property so `transform: translate3d()` inline
-   positioning is never overridden while providing a fluid 2-way scale expansion. */
+   Uses independent `scale` and `opacity` so `transform: translate3d()` inline
+   positioning is never overridden while providing a clean 100% flicker-free entry. */
 @keyframes widgetMount {
   0% {
     opacity: 0;
-    scale: 0.90;
-    filter: blur(4px);
-  }
-  65% {
-    opacity: 0.98;
-    scale: 1.012;
-    filter: blur(0px);
+    scale: 0.94;
   }
   100% {
     opacity: 1;
     scale: 1;
-    filter: blur(0px);
   }
+}
+
+.animate-widget-mount {
+  animation: widgetMount 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

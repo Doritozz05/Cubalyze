@@ -197,18 +197,20 @@ export function FloatingWidgetWrapper({
   // ── Unified Animated Floating Widget ─────────────────────────────────
   const showBody = !minimized && !isNearDock;
 
+  // Calculate a comfortable pill width based on label length so text never wraps
+  const pillWidth = Math.max(175, Math.min(230, label.length * 9 + 85));
+
   return createPortal(
     <div
       ref={drag.elementRef}
       data-widget-id={widgetId}
       style={{
         ...positionStyle,
-        width: isNearDock ? undefined : minimized ? 190 : panelWidth,
-        animation: "widgetMount 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+        width: isNearDock ? undefined : minimized ? pillWidth : panelWidth,
       }}
       onPointerDown={handleFocus}
       className={cn(
-        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface/95 backdrop-blur-md shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface/95 backdrop-blur-md shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
         isNearDock
           ? "h-8 rounded-md px-2.5 text-xs font-medium cursor-grabbing"
           : minimized
@@ -228,15 +230,15 @@ export function FloatingWidgetWrapper({
         onPointerUp={drag.onPointerUp}
         onPointerCancel={drag.onPointerCancel}
         className={cn(
-          "flex items-center justify-between shrink-0 transition-colors duration-150 select-none",
+          "flex items-center justify-between shrink-0 transition-colors duration-200 select-none h-9 px-3 gap-2 border-b border-line/60",
           isNearDock
-            ? "h-8 gap-1.5 cursor-grabbing"
-            : minimized
-              ? "h-9 px-3 gap-2 cursor-grab"
-              : "h-9 border-b border-line px-3 gap-2 cursor-grab",
+            ? "h-8 px-2.5 border-b-0 cursor-grabbing"
+            : drag.isDragging
+              ? "cursor-grabbing"
+              : "cursor-grab",
         )}
       >
-        <div className="flex items-center gap-2 min-w-0 shrink">
+        <div className="flex items-center gap-2 min-w-0 shrink whitespace-nowrap">
           <Icon
             className={cn(
               "shrink-0 text-ink-3 transition-transform duration-200",
@@ -245,8 +247,8 @@ export function FloatingWidgetWrapper({
           />
           <span
             className={cn(
-              "font-medium text-ink truncate",
-              isNearDock ? "text-xs max-w-28" : "text-xs",
+              "font-medium text-ink truncate text-xs",
+              isNearDock && "max-w-28",
             )}
           >
             {label}
@@ -265,7 +267,14 @@ export function FloatingWidgetWrapper({
 
         {!isNearDock && (
           <div className="flex items-center gap-1 shrink-0">
-            {showBody && headerActions}
+            <div
+              className={cn(
+                "flex items-center gap-1 transition-opacity duration-200",
+                showBody ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none w-0 overflow-hidden",
+              )}
+            >
+              {headerActions}
+            </div>
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
@@ -277,7 +286,7 @@ export function FloatingWidgetWrapper({
             >
               <ChevronDown
                 className={cn(
-                  "size-3.5 transition-transform duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  "size-3.5 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]",
                   minimized && "rotate-180",
                 )}
               />
@@ -286,18 +295,21 @@ export function FloatingWidgetWrapper({
         )}
       </div>
 
-      {/* 2-Way Expandable Body Container (Vertical & Horizontal simultaneously) */}
+      {/* 2-Way Smooth Expandable Body (Height Grid + Delayed Content Reveal) */}
       <div
-        className="grid transition-[grid-template-rows,opacity] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className="grid transition-[grid-template-rows] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{
           gridTemplateRows: showBody ? "1fr" : "0fr",
-          opacity: showBody ? 1 : 0,
-          pointerEvents: showBody ? "auto" : "none",
         }}
       >
         <div className="min-h-0 overflow-hidden">
           <div
-            className="min-h-0 overflow-y-auto"
+            className={cn(
+              "min-h-0 overflow-y-auto transition-[opacity,transform] duration-250 ease-out",
+              showBody
+                ? "opacity-100 translate-y-0 delay-100 pointer-events-auto"
+                : "opacity-0 -translate-y-2 delay-0 pointer-events-none",
+            )}
             style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
           >
             {children}
