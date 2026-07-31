@@ -18,8 +18,36 @@ export type VoiceType = "male" | "female";
 
 // Keywords to identify male and female voices across different operating systems.
 // The system performs case-insensitive matching.
-const MALE_KEYWORDS = ["david", "mark", "alex", "male", "microsoft", "google uk english male", "daniel", "fred"];
-const FEMALE_KEYWORDS = ["zira", "samantha", "susan", "female", "google us english", "karen", "moira", "tessa", "veena"];
+// Generic vendor keywords (e.g. "microsoft", "google") are strictly avoided here
+// because "Microsoft Zira" / "Microsoft Helena" are female voices, not male.
+const MALE_KEYWORDS = [
+  "david",
+  "mark",
+  "alex",
+  "daniel",
+  "fred",
+  "george",
+  "james",
+  "richard",
+  "thomas",
+  "male",
+  "google uk english male",
+  "google us english male",
+];
+
+const FEMALE_KEYWORDS = [
+  "zira",
+  "samantha",
+  "susan",
+  "karen",
+  "moira",
+  "tessa",
+  "veena",
+  "victoria",
+  "female",
+  "google uk english female",
+  "google us english female",
+];
 
 // ── AudioSystem Class (singleton) ─────────────────────────────────────
 
@@ -51,7 +79,7 @@ export class AudioSystem {
       this.voicesLoaded = true;
     }
 
-    // Asynchronous load (necessary in Chrome, where voices arrive later)
+    // Asynchronous load (necessary in Chrome/Brave, where voices arrive later)
     window.speechSynthesis.onvoiceschanged = () => {
       this.voices = window.speechSynthesis.getVoices();
       if (this.voices.length > 0) {
@@ -87,33 +115,54 @@ export class AudioSystem {
    * Searches for the best available voice for the selected type (male/female).
    *
    * Search strategy:
-   *   1. Keyword match + preferred language (en-US, en-GB, en)
-   *   2. Any English voice
-   *   3. Any available voice
+   *   1. English voice + keyword match for target gender (and NOT opposing gender)
+   *   2. English voice + non-opposing gender
+   *   3. Any English voice
+   *   4. First available voice
    */
   private getPreferredVoice(): SpeechSynthesisVoice | null {
     if (!this.voices.length) return null;
 
-    const keywords = this.voice === "male" ? MALE_KEYWORDS : FEMALE_KEYWORDS;
-    const langPrefs = ["en-US", "en-GB", "en"];
+    const isMale = this.voice === "male";
+    const targetKeywords = isMale ? MALE_KEYWORDS : FEMALE_KEYWORDS;
+    const opposingKeywords = isMale ? FEMALE_KEYWORDS : MALE_KEYWORDS;
+    const langPrefs = ["en-US", "en-GB", "en-AU", "en-CA", "en"];
 
-    // Priority 1: keyword + preferred language
+    const matchesTargetGender = (name: string): boolean => {
+      const lower = name.toLowerCase();
+      const hasTarget = targetKeywords.some((kw) => lower.includes(kw));
+      const hasOpposing = opposingKeywords.some((kw) => lower.includes(kw));
+      return hasTarget && !hasOpposing;
+    };
+
+    const isNotOpposingGender = (name: string): boolean => {
+      const lower = name.toLowerCase();
+      return !opposingKeywords.some((kw) => lower.includes(kw));
+    };
+
+    // Priority 1: Preferred lang + target gender match
     for (const lang of langPrefs) {
-      for (const kw of keywords) {
-        const found = this.voices.find(
-          (v) => v.lang.startsWith(lang) && v.name.toLowerCase().includes(kw),
-        );
-        if (found) return found;
-      }
+      const found = this.voices.find(
+        (v) => v.lang.startsWith(lang) && matchesTargetGender(v.name),
+      );
+      if (found) return found;
     }
 
-    // Priority 2: any English voice
+    // Priority 2: Preferred lang + non-opposing gender
+    for (const lang of langPrefs) {
+      const found = this.voices.find(
+        (v) => v.lang.startsWith(lang) && isNotOpposingGender(v.name),
+      );
+      if (found) return found;
+    }
+
+    // Priority 3: Any English voice
     for (const lang of langPrefs) {
       const found = this.voices.find((v) => v.lang.startsWith(lang));
       if (found) return found;
     }
 
-    // Priority 3: first available voice
+    // Priority 4: First available voice fallback
     return this.voices[0] ?? null;
   }
 
@@ -142,18 +191,21 @@ export class AudioSystem {
 
   /**
    * Plays the "8 seconds" alert.
+   * Spelled out as "eight seconds" to prevent non-English speech engines from
+   * reading digits in another language (e.g., reading "8" as "ocho").
    */
   public play8s(): void {
     if (!this.loadingStarted) this.init();
-    this.speak("8 seconds");
+    this.speak("eight seconds");
   }
 
   /**
    * Plays the "12 seconds" alert.
+   * Spelled out as "twelve seconds" for uniform English TTS synthesis.
    */
   public play12s(): void {
     if (!this.loadingStarted) this.init();
-    this.speak("12 seconds");
+    this.speak("twelve seconds");
   }
 
   /**

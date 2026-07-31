@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDraggable, type SnapRect } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
@@ -194,16 +194,32 @@ export function FloatingWidgetWrapper({
     willChange: drag.isDragging ? "transform" : undefined,
   };
 
-  // ── Minimized pill ───────────────────────────────────────────────────
-  if (minimized) {
-    return createPortal(
+  // ── Unified Animated Floating Widget ─────────────────────────────────
+  const showBody = !minimized && !isNearDock;
+
+  return createPortal(
+    <div
+      ref={drag.elementRef}
+      data-widget-id={widgetId}
+      style={{
+        ...positionStyle,
+        width: isNearDock ? undefined : minimized ? 190 : panelWidth,
+        animation: "widgetMount 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
+      onPointerDown={handleFocus}
+      className={cn(
+        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface/95 backdrop-blur-md shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        isNearDock
+          ? "h-8 rounded-md px-2.5 text-xs font-medium cursor-grabbing"
+          : minimized
+            ? "rounded-lg hover:border-ink-2/40 cursor-grab"
+            : "rounded-xl border-line",
+        drag.isDragging && !isNearDock && "shadow-2xl cursor-grabbing",
+        className,
+      )}
+    >
+      {/* Top Header / Drag Bar */}
       <div
-        ref={drag.elementRef}
-        data-widget-id={widgetId}
-        style={{
-          ...positionStyle,
-          animation: "widgetMount 0.2s ease-out",
-        }}
         onPointerDown={(e) => {
           handleFocus();
           drag.onPointerDown(e);
@@ -212,136 +228,82 @@ export function FloatingWidgetWrapper({
         onPointerUp={drag.onPointerUp}
         onPointerCancel={drag.onPointerCancel}
         className={cn(
-          "fixed flex touch-none select-none items-center shadow-lg transition-[width,height,opacity,border,box-shadow,border-radius,background-color] duration-150 ease-out",
+          "flex items-center justify-between shrink-0 transition-colors duration-150 select-none",
           isNearDock
-            ? "h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium cursor-grabbing"
-            : "gap-2 rounded-lg border border-line bg-surface py-2 pl-3 pr-2 cursor-grab hover:border-ink-2/40",
-          drag.isDragging && !isNearDock && "shadow-2xl",
-          className,
+            ? "h-8 gap-1.5 cursor-grabbing"
+            : minimized
+              ? "h-9 px-3 gap-2 cursor-grab"
+              : "h-9 border-b border-line px-3 gap-2 cursor-grab",
         )}
       >
-        <Icon
-          className={cn(
-            "shrink-0 text-ink-3",
-            isNearDock ? "size-3.5" : "size-4",
+        <div className="flex items-center gap-2 min-w-0 shrink">
+          <Icon
+            className={cn(
+              "shrink-0 text-ink-3 transition-transform duration-200",
+              isNearDock ? "size-3.5" : "size-4",
+            )}
+          />
+          <span
+            className={cn(
+              "font-medium text-ink truncate",
+              isNearDock ? "text-xs max-w-28" : "text-xs",
+            )}
+          >
+            {label}
+          </span>
+          {pillBadge && !isNearDock && (
+            <span className="nums text-[0.65rem] text-ink-3 shrink-0">
+              {pillBadge}
+            </span>
           )}
-        />
-        <span
-          className={cn(
-            "font-medium text-ink",
-            isNearDock ? "text-xs truncate max-w-28" : "text-xs",
+          {pillBadge2 && !isNearDock && (
+            <span className="nums text-[0.55rem] text-ink-3 shrink-0">
+              {pillBadge2}
+            </span>
           )}
-        >
-          {label}
-        </span>
-        {pillBadge && !isNearDock && (
-          <span className="nums text-[0.65rem] text-ink">{pillBadge}</span>
-        )}
-        {pillBadge2 && !isNearDock && (
-          <span className="nums text-[0.55rem] text-ink-3">{pillBadge2}</span>
-        )}
+        </div>
+
         {!isNearDock && (
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleMinimized();
-            }}
-            className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-            aria-label="Expand"
-          >
-            <ChevronUp className="size-3.5" />
-          </button>
-        )}
-      </div>,
-      document.body,
-    );
-  }
-
-  // ── Expanded panel (or dock pill when near dock) ─────────────────────
-  const headerContent = (
-    <>
-      <div className="flex items-center gap-2">
-        <Icon className="shrink-0 size-3.5 text-ink-3" />
-        <span
-          className={cn(
-            "font-medium text-ink",
-            isNearDock ? "text-xs truncate max-w-28" : "text-xs",
-          )}
-        >
-          {label}
-        </span>
-        {pillBadge && !isNearDock && (
-          <span className="nums text-[0.6rem] text-ink-3">{pillBadge}</span>
-        )}
-        {pillBadge2 && !isNearDock && (
-          <span className="nums text-[0.55rem] text-ink-3">{pillBadge2}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {showBody && headerActions}
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMinimized();
+              }}
+              className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+              aria-label={minimized ? "Expand" : "Minimize"}
+            >
+              <ChevronDown
+                className={cn(
+                  "size-3.5 transition-transform duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  minimized && "rotate-180",
+                )}
+              />
+            </button>
+          </div>
         )}
       </div>
-      {!isNearDock && (
-        <div className="flex items-center gap-0.5">
-          {headerActions}
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleMinimized();
-            }}
-            className="grid size-6 place-items-center rounded text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-            aria-label={minimized ? "Expand" : "Minimize"}
-          >
-            <ChevronDown className="size-3.5" />
-          </button>
-        </div>
-      )}
-    </>
-  );
 
-  return createPortal(
-    <div
-      ref={drag.elementRef}
-      data-widget-id={widgetId}
-      style={{
-        ...positionStyle,
-        width: isNearDock ? undefined : panelWidth,
-        animation: "widgetMount 0.2s ease-out",
-      }}
-      onPointerDown={handleFocus}
-      className={cn(
-        "fixed flex touch-none select-none overflow-hidden rounded-lg border border-line bg-surface transition-[width,height,opacity,border,box-shadow,border-radius] duration-150 ease-out",
-        isNearDock
-          ? "h-8 shadow-lg"
-          : "flex-col shadow-xl",
-        drag.isDragging && "shadow-2xl",
-        className,
-      )}
-    >
-      {/* Drag handle / header — becomes the whole pill in dock zone */}
+      {/* 2-Way Expandable Body Container (Vertical & Horizontal simultaneously) */}
       <div
-        onPointerDown={drag.onPointerDown}
-        onPointerMove={drag.onPointerMove}
-        onPointerUp={drag.onPointerUp}
-        onPointerCancel={drag.onPointerCancel}
-        className={cn(
-          "flex items-center justify-between shrink-0 transition-[width,height,opacity,border,box-shadow,border-radius,background-color] duration-150 ease-out",
-          isNearDock
-            ? "h-8 px-2.5 gap-1.5 rounded-md text-xs font-medium cursor-grabbing"
-            : "border-b border-line px-3 py-2 gap-2 cursor-grab",
-          drag.isDragging && !isNearDock && "cursor-grabbing",
-        )}
+        className="grid transition-[grid-template-rows,opacity] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{
+          gridTemplateRows: showBody ? "1fr" : "0fr",
+          opacity: showBody ? 1 : 0,
+          pointerEvents: showBody ? "auto" : "none",
+        }}
       >
-        {headerContent}
-      </div>
-
-      {/* Body — hidden when in dock zone */}
-      {!isNearDock && (
-        <div
-          className="min-h-0 overflow-y-auto"
-          style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
-        >
-          {children}
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className="min-h-0 overflow-y-auto"
+            style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+          >
+            {children}
+          </div>
         </div>
-      )}
+      </div>
     </div>,
     document.body,
   );

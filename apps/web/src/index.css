@@ -319,16 +319,25 @@ input[type="image"],
   cursor: var(--cursor-not-allowed), not-allowed;
 }
 
-/* ── Widget mount animation ─────────────────────────────────────────────
-   Replaces framer-motion's mount animation with pure CSS. Only animates
-   opacity — transform positioning stays exclusively under the inline style's
-   control via `transform: translate3d()`. Never animate `transform` here
-   because it would override the inline translate3d during the animation. */
+/* ── Widget mount & expansion animations ────────────────────────────────
+   Replaces framer-motion's mount animation with pure CSS.
+   Uses the independent `scale` property so `transform: translate3d()` inline
+   positioning is never overridden while providing a fluid 2-way scale expansion. */
 @keyframes widgetMount {
   0% {
     opacity: 0;
+    scale: 0.90;
+    filter: blur(4px);
+  }
+  65% {
+    opacity: 0.98;
+    scale: 1.012;
+    filter: blur(0px);
   }
   100% {
     opacity: 1;
+    scale: 1;
+    filter: blur(0px);
   }
 }
+
