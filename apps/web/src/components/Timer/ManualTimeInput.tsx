@@ -25,19 +25,60 @@ function parseSecondsMs(sRaw: string): number | null {
 }
 
 /**
+ * Parse a value with optional unit suffix ("h", "m", "s", "ms") into milliseconds.
+ * Examples: "1.5h" → 5400000, "90s" → 90000, "2m30s" (handled by caller concatenation).
+ * Returns null if invalid.
+ */
+function parseWithUnit(raw: string): number | null {
+  const match = raw.match(/^([\d.]+)\s*(h|ms|m|s)$/i);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value < 0) return null;
+  switch (match[2].toLowerCase()) {
+    case "h":  return Math.round(value * 3_600_000);
+    case "m":  return Math.round(value * 60_000);
+    case "s":  return Math.round(value * 1000);
+    case "ms": return Math.round(value);
+  }
+  return null;
+}
+
+/**
  * Parse a time string into milliseconds. Accepts:
- *  - "1450"        → 14.50s = 14500 ms (csTimer style: last 2 digits = centiseconds)
- *  - "14.50"       → 14500 ms
+ *  - "1450"        → 14.50s (csTimer numeric: last 2 digits = centiseconds)
+ *  - "14.50"       → 14500 ms (decimal seconds)
  *  - "1:23.45"     → 1m 23.45s = 83450 ms
  *  - "1:23:45.67"  → 1h 23m 45.67s = 5025670 ms
- *  - "75"          → 75000 ms
+ *  - "99h"         → 99 hours
+ *  - "1h30m"       → 1 hour 30 minutes
+ *  - "2m30s"       → 2 minutes 30 seconds
+ *  - "90s"         → 90 seconds
+ *  - "75"          → 75000 ms (plain seconds)
  * Returns null if invalid.
  */
 function parseManualTime(input: string): number | null {
-  const trimmed = input.trim();
+  const trimmed = input.trim().toLowerCase();
   if (trimmed.length === 0) return null;
 
-  // Colon-based formats: "h:mm:ss.cs", "h:mm:ss", "m:ss.cs", "m:ss"
+  // ── Unit suffix formats: "99h", "1h30m", "2m30s", "1h30m45s", "90s" ──
+  if (/[hms]$/i.test(trimmed) && !trimmed.includes(":")) {
+    let totalMs = 0;
+    // Match sequences like "1h30m45.5s" by extracting each number+unit pair
+    const regex = /([\d.]+)\s*(h|m|s|ms)\s*/gi;
+    let match: RegExpExecArray | null;
+    let lastIndex = 0;
+    while ((match = regex.exec(trimmed)) !== null) {
+      const ms = parseWithUnit(match[0].trim());
+      if (ms === null) return null;
+      totalMs += ms;
+      lastIndex = regex.lastIndex;
+    }
+    // If we consumed the whole input, return the total
+    if (lastIndex >= trimmed.length && totalMs > 0) return totalMs;
+    // If nothing matched, fall through to other formats
+  }
+
+  // ── Colon-based formats: "h:mm:ss.cs", "h:mm:ss", "m:ss.cs", "m:ss" ──
   if (trimmed.includes(":")) {
     const parts = trimmed.split(":");
     if (parts.length === 3) {
@@ -58,11 +99,12 @@ function parseManualTime(input: string): number | null {
     return null;
   }
 
+  // ── Decimal seconds: "14.50", "1.5" ──
   if (trimmed.includes(".")) {
     return parseSecondsMs(trimmed);
   }
 
-  // csTimer style numeric input: last 2 digits = centiseconds
+  // ── csTimer style numeric input: last 2 digits = centiseconds ──
   //   3-4 digits: SScc   → "1450" = 14.50s
   //   5-6 digits: MMSScc → "23100" = 2:31.00
   //   7+ digits:  HMMSScc → "1231000" = 1:23:10.00
@@ -71,21 +113,18 @@ function parseManualTime(input: string): number | null {
     const sec = parseInt(trimmed.slice(-4, -2) || "0", 10);
     const rest = trimmed.slice(0, -4);
     if (rest.length === 0) {
-      // 3-4 digits: SScc
       return (sec * 1000) + (cs * 10);
     }
     if (rest.length <= 2) {
-      // 5-6 digits: MMSScc
       const min = parseInt(rest, 10);
       return (min * 60_000) + (sec * 1000) + (cs * 10);
     }
-    // 7+ digits: HMMSScc
     const hours = parseInt(rest.slice(0, -2) || "0", 10);
     const mins = parseInt(rest.slice(-2), 10);
     return (hours * 3_600_000) + (mins * 60_000) + (sec * 1000) + (cs * 10);
   }
 
-  // Short number: treat as seconds
+  // ── Short number: treat as seconds ──
   const sec = Number(trimmed);
   if (!Number.isFinite(sec) || sec < 0) return null;
   return Math.round(sec * 1000);
