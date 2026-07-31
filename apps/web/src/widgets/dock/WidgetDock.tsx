@@ -31,6 +31,7 @@ function DockPill({
   const isDocked = status === "docked";
 
   const [isUndocking, setIsUndocking] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
 
   const draggedRef = useRef(false);
@@ -79,7 +80,7 @@ function DockPill({
         animate={{ opacity: isUndocking ? 0 : 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.85 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        whileDrag={{ scale: 1.08, boxShadow: "0 8px 25px rgba(0,0,0,0.15)", zIndex: 60 }}
+        whileDrag={{ scale: 1.08 }}
         onClick={() => {
           if (draggedRef.current) {
             draggedRef.current = false;
@@ -89,6 +90,7 @@ function DockPill({
         }}
         onDragStart={() => {
           draggedRef.current = true;
+          setIsDragging(true);
         }}
         onDrag={(_e, info) => {
           if (info.offset.y > 28) {
@@ -111,12 +113,14 @@ function DockPill({
             });
           }
           draggedRef.current = false;
+          setIsDragging(false);
           setIsUndocking(false);
         }}
         className={cn(
-          "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors duration-200",
+          "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200",
           "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
           "cursor-grab active:cursor-grabbing",
+          isDragging && "z-[60] shadow-[0_8px_25px_rgba(0,0,0,0.15)]",
         )}
         aria-label={`${definition.name} — pinned`}
       >
