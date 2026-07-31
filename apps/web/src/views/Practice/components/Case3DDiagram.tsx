@@ -40,6 +40,7 @@ function buildF2LSkinStyle() {
 
 export interface Case3DDiagramProps {
   caseData: AlgorithmCase;
+  moves?: string[];
   selectedSlot?: number;
   resetCameraTrigger?: number;
   className?: string;
@@ -50,6 +51,7 @@ export interface Case3DDiagramProps {
 
 export function Case3DDiagram({
   caseData,
+  moves,
   selectedSlot = 0,
   resetCameraTrigger,
   className,
@@ -62,6 +64,7 @@ export function Case3DDiagram({
       <div className="flex flex-col items-center w-full">
         <Case3DCanvas
           caseData={caseData}
+          moves={moves}
           selectedSlot={selectedSlot}
           resetCameraTrigger={resetCameraTrigger}
           className={className}
@@ -98,6 +101,13 @@ function Case3DSnapshotView({
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
     () => service.getCachedSnapshot(cacheKey),
   );
+  const [prevCacheKey, setPrevCacheKey] = useState(cacheKey);
+
+  if (prevCacheKey !== cacheKey) {
+    setPrevCacheKey(cacheKey);
+    setSnapshotUrl(service.getCachedSnapshot(cacheKey));
+  }
+
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Request snapshot when element is visible in/near viewport
@@ -143,7 +153,7 @@ function Case3DSnapshotView({
       isMounted = false;
       observer.disconnect();
     };
-  }, [caseData, selectedSlot, snapshotUrl, service]);
+  }, [caseData, selectedSlot, cacheKey, snapshotUrl, service]);
 
   return (
     <div ref={wrapperRef} className="flex flex-col items-center w-full">
@@ -179,12 +189,14 @@ function Case3DSnapshotView({
 
 function Case3DCanvas({
   caseData,
+  moves,
   selectedSlot,
   resetCameraTrigger,
   className,
   order = 3,
 }: {
   caseData: AlgorithmCase;
+  moves?: string[];
   selectedSlot: number;
   resetCameraTrigger?: number;
   className?: string;
@@ -241,7 +253,23 @@ function Case3DCanvas({
       engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
 
       engine.clearLayerGray();
-      if (caseData.setupScramble) {
+      if (moves && moves.length > 0) {
+        if (is2x2) {
+          const state = new Cube2x2State();
+          const inverseMoves = moves.slice().reverse().map(m => {
+            if (m.endsWith("'")) return m.slice(0, -1);
+            if (m.endsWith("2") || m.endsWith("2'")) return m.endsWith("'") ? m.slice(0, -1) : m;
+            return m + "'";
+          });
+          state.applySequence(inverseMoves.join(" "));
+          const facelets = Cube2x2FaceletConverter.toFaceletString(state);
+          engine.syncFacelets(facelets);
+        } else {
+          const rawState = CaseStateGenerator.generateCaseState(moves);
+          const faceletString = CaseStateGenerator.toFaceletString(rawState);
+          engine.syncFacelets(faceletString);
+        }
+      } else if (caseData.setupScramble) {
         if (is2x2) {
           const state = new Cube2x2State();
           state.applySequence(caseData.setupScramble);
@@ -277,6 +305,7 @@ function Case3DCanvas({
   }, [
     isReady,
     engineRef,
+    caseData.id,
     caseData.setupScramble,
     caseData.subsetId,
     selectedSlot,
@@ -285,6 +314,7 @@ function Case3DCanvas({
     is2x2,
     caseData.tags,
     order,
+    moves ? moves.join(" ") : "",
   ]);
 
   useEffect(() => {

@@ -101,6 +101,17 @@ export function CaseDiagram({
   //   Priority 3: moves (algorithm-inverse — fallback, may differ from canonical)
   const faceletColors = useMemo(() => {
     if (faceletColorsProp) return faceletColorsProp;
+    if (moves && moves.length > 0) {
+      try {
+        const { diagramColors } = CaseStateGenerator.generateCaseVisualization(
+          moves,
+          style,
+        );
+        return diagramColors;
+      } catch {
+        // Fallback to setupScramble below
+      }
+    }
     if (setupScramble) {
       try {
         const { diagramColors } =
@@ -111,24 +122,12 @@ export function CaseDiagram({
         return diagramColors;
       } catch (e) {
         // setupScramble is the canonical source — if it fails, warn loudly
-        // so the bug is visible. Fall back to moves as last resort.
+        // so the bug is visible.
         console.warn(
-          `[CaseDiagram] setupScramble failed for case, falling back to moves:`,
+          `[CaseDiagram] setupScramble failed for case:`,
           setupScramble,
           e,
         );
-      }
-    }
-    if (moves && moves.length > 0) {
-      try {
-        const { diagramColors } = CaseStateGenerator.generateCaseVisualization(
-          moves,
-          style,
-        );
-        return diagramColors;
-      } catch {
-        // Fallback: return empty array if generation fails
-        return [];
       }
     }
     return [];

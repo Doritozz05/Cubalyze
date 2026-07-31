@@ -27,6 +27,12 @@ export function AlgorithmViewerCard({
   const [copiedSetup, setCopiedSetup] = useState(false);
   const [copiedAlg, setCopiedAlg] = useState(false);
   const [selectedAlgId, setSelectedAlgId] = useState<string | null>(null);
+  const [prevCaseId, setPrevCaseId] = useState(caseData.id);
+
+  if (prevCaseId !== caseData.id) {
+    setPrevCaseId(caseData.id);
+    setSelectedAlgId(null);
+  }
 
   // Resolve canonical subset name from prop or from subset ID lookup
   const targetSubsetName =
@@ -109,6 +115,7 @@ export function AlgorithmViewerCard({
         ) : (
           <Case3DDiagram
             caseData={caseData}
+            moves={activeAlg?.moves}
             interactive={true}
             className="w-full h-28"
           />

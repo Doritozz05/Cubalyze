@@ -108,6 +108,14 @@ export function Case2x2Diagram({
   // Generate facelet colors from the canonical pipeline
   const faceletColors = useMemo(() => {
     if (faceletColorsProp) return faceletColorsProp;
+    if (moves && moves.length > 0) {
+      try {
+        const { diagramColors } = CaseStateGenerator.generateCaseVisualization(moves, style);
+        return diagramColors;
+      } catch {
+        // fall through to setupScramble
+      }
+    }
     if (setupScramble) {
       try {
         const { diagramColors } =
@@ -115,14 +123,6 @@ export function Case2x2Diagram({
         return diagramColors;
       } catch {
         // fall through
-      }
-    }
-    if (moves && moves.length > 0) {
-      try {
-        const { diagramColors } = CaseStateGenerator.generateCaseVisualization(moves, style);
-        return diagramColors;
-      } catch {
-        return [];
       }
     }
     return [];

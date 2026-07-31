@@ -30,12 +30,23 @@ export function Case3DPanel({
 }: Case3DPanelProps) {
   const [selectedSlot, setSelectedSlot] = useState<number>(0);
   const [resetCameraTrigger, setResetCameraTrigger] = useState<number>(0);
+  const [selectedAlgId, setSelectedAlgId] = useState<string | null>(null);
+  const [prevCaseId, setPrevCaseId] = useState(caseData.id);
+
+  if (prevCaseId !== caseData.id) {
+    setPrevCaseId(caseData.id);
+    setSelectedAlgId(null);
+    setSelectedSlot(0);
+  }
+
+  const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
+  const activeAlg = algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
+
   const isF2L =
     caseData.subsetId === "00000000-0000-4000-9000-000000000003" ||
     caseData.subsetId === "00000000-0000-4000-9000-000000000004" ||
     caseData.subsetId.toLowerCase().includes("f2l") ||
     Boolean(caseData.category?.toLowerCase().includes("f2l"));
-
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
@@ -95,6 +106,7 @@ export function Case3DPanel({
         {/* 3D Isometric Cube Component */}
         <Case3DDiagram
           caseData={caseData}
+          moves={activeAlg?.moves}
           selectedSlot={selectedSlot}
           resetCameraTrigger={resetCameraTrigger}
           className="max-w-60"
@@ -109,10 +121,17 @@ export function Case3DPanel({
           </h4>
           <div className="space-y-2">
             {algorithms.map((alg) => {
+              const isSelected = alg.id === activeAlg?.id;
               return (
                 <div
                   key={alg.id}
-                  className="flex flex-col gap-1 rounded-lg border border-line bg-surface p-2.5 hover:border-ink/10 transition-colors"
+                  onClick={() => setSelectedAlgId(alg.id)}
+                  className={cn(
+                    "flex flex-col gap-1 rounded-lg border p-2.5 cursor-pointer transition-colors",
+                    isSelected
+                      ? "border-accent-cyan/60 bg-accent-cyan/5 shadow-xs"
+                      : "border-line bg-surface hover:border-ink/20",
+                  )}
                 >
                   <div className="flex items-center gap-2">
                     <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">

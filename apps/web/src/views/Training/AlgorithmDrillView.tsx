@@ -282,7 +282,12 @@ export function AlgorithmDrillView({
   // ── Random setup generation (when case or setupVersion changes) ──────
   useEffect(() => {
     if (defaultAlgorithm?.moves) {
-      const setup = generateRandomSetup(defaultAlgorithm.moves);
+      const setup = generateRandomSetup(
+        defaultAlgorithm.moves,
+        "Y",
+        selectedCase?.puzzleType ?? "3x3x3",
+        selectedCase?.setupScramble,
+      );
       setCurrentSetup(setup || selectedCase?.setupScramble || "");
     } else {
       setCurrentSetup("");

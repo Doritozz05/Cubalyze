@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { X, ExternalLink, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
@@ -27,6 +27,14 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   onPracticeCase,
   className,
 }: CaseDetailPanelProps) {
+  const [selectedAlgId, setSelectedAlgId] = useState<string | null>(null);
+  const [prevCaseId, setPrevCaseId] = useState(caseData.id);
+
+  if (prevCaseId !== caseData.id) {
+    setPrevCaseId(caseData.id);
+    setSelectedAlgId(null);
+  }
+
   if (caseData.diagramType === "3d-isometric") {
     return (
       <Case3DPanel
@@ -40,6 +48,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   }
 
   const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
+  const activeAlg = algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
@@ -71,7 +80,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
               <Case2x2Diagram
                 faceletColors={caseData.diagram2D.faceletColors}
                 setupScramble={caseData.setupScramble}
-                moves={defaultAlg?.moves}
+                moves={activeAlg?.moves}
                 style={visualizationStyle ?? "full-color"}
                 className="w-48"
               />
@@ -79,7 +88,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
               <CaseDiagram
                 arrows={caseData.diagram2D.arrows}
                 setupScramble={caseData.setupScramble}
-                moves={defaultAlg?.moves}
+                moves={activeAlg?.moves}
                 style={visualizationStyle ?? "full-color"}
                 className="w-48"
               />
@@ -99,8 +108,8 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                   key={i}
                   className="flex items-start gap-2 text-[0.72rem] text-ink-2"
                 >
-                  <span className="mt-1.5 size-1 shrink-0 rounded-full bg-ink-3/40" />
-                  {pattern}
+                  <span className="select-none text-ink-3">•</span>
+                  <span>{pattern}</span>
                 </li>
               ))}
             </ul>
@@ -123,11 +132,19 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             Algorithms ({algorithms.length})
           </h4>
           <div className="space-y-2">
-            {algorithms.map((alg) => (
-              <div
-                key={alg.id}
-                className="flex flex-col gap-1 rounded-lg border border-line bg-surface p-2.5 hover:border-ink/10 transition-colors"
-              >
+            {algorithms.map((alg) => {
+              const isSelected = alg.id === activeAlg?.id;
+              return (
+                <div
+                  key={alg.id}
+                  onClick={() => setSelectedAlgId(alg.id)}
+                  className={cn(
+                    "flex flex-col gap-1 rounded-lg border p-2.5 cursor-pointer transition-colors",
+                    isSelected
+                      ? "border-accent-cyan/60 bg-accent-cyan/5 shadow-xs"
+                      : "border-line bg-surface hover:border-ink/20",
+                  )}
+                >
                 {/* Move display */}
                 <div className="flex items-center gap-2">
                   <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
@@ -182,7 +199,8 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                   </p>
                 )}
               </div>
-            ))}
+            );
+          })}
           </div>
         </div>
 
