@@ -63,6 +63,7 @@ export interface UsePersistentSessionResult {
     timestamp: number;
     note?: string;
     source?: SolveSource;
+    puzzleType?: string;
   }>) => Promise<number>;
   newSession: (name?: string, puzzle?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
@@ -391,6 +392,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       timestamp: number;
       note?: string;
       source?: SolveSource;
+      puzzleType?: string;
     }>,
   ): Promise<number> => {
     if (!session || !reposRef.current) return 0;
@@ -416,7 +418,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
         orientationTimeline: undefined,
         analysisEngineVersion: '0.1.0',
         analysis: undefined,
-        puzzleType: '3x3x3',
+        puzzleType: input.puzzleType ?? '3x3x3',
       } as DBSolve;
 
       try {

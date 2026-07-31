@@ -42,7 +42,7 @@ export interface LeftSidebarProps {
   /** Session name for export. */
   sessionName?: string;
   /** Batch import callback for importing solves from files. */
-  onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource }>) => Promise<void>;
+  onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
 }
 
 export function LeftSidebar({

@@ -347,7 +347,7 @@ export default function App() {
 
   // ── Import solve wrapper (adapts importSolves to DataSection's expected shape) ──
   const handleImportSolves = useCallback(
-    async (inputs: Array<{ time: number; penalty: Penalty; scramble: string; method?: string; timestamp: number; note?: string; source?: SolveSource }>) => {
+    async (inputs: Array<{ time: number; penalty: Penalty; scramble: string; method?: string; timestamp: number; note?: string; source?: SolveSource; puzzleType?: string }>) => {
       await importSolves(inputs);
     },
     [importSolves],

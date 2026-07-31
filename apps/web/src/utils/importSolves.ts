@@ -32,6 +32,8 @@ export interface ImportedSolve {
   note?: string;
   puzzle?: string;
   category?: string;
+  /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+  puzzleType?: string;
 }
 
 export interface ImportResult {
@@ -53,6 +55,13 @@ export interface ImportResult {
  * generic CSV:  any comma or tab delimited data with a header row
  * JSON:         starts with `{` or `[`
  */
+/**
+ * Newer csTimer CSV exports carry a header row like
+ * `No.;Time;Comment;Scramble;Date;P.1` (unquoted, semicolon-delimited).
+ * The "Time" column sits right after the semicolon following "No.".
+ */
+const CSTIMER_HEADER_RE = /^no\.?\s*;\s*time\s*;/i;
+
 export function detectFormat(content: string): ImportFormat {
   const trimmed = content.trim();
 
@@ -84,6 +93,11 @@ export function detectFormat(content: string): ImportFormat {
 
   // csTimer: semicolon-delimited with quoted fields
   if (firstLine.includes('";"')) {
+    return "cstimer";
+  }
+
+  // csTimer (newer): unquoted header CSV — `No.;Time;Comment;Scramble;Date;P.1`
+  if (CSTIMER_HEADER_RE.test(firstLine)) {
     return "cstimer";
   }
 
@@ -144,6 +158,7 @@ function parseCsTimerLine(line: string, _index: number): ImportedSolve | null {
     note: comment || undefined,
     puzzle: puzzle || undefined,
     category: category || undefined,
+    puzzleType: mapPuzzleCode(puzzle) ?? inferPuzzleType(scramble || ""),
   };
 }
 
@@ -153,6 +168,199 @@ function mapCsTimerPenalty(raw: string): Penalty {
   if (n === "-1" || n === "2" || n.toLowerCase() === "dnf") return "DNF";
   if (n === "2000" || n === "1" || n === "+2") return "+2";
   return "none";
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   csTimer header CSV parser (newer export format)
+   Format: No.;Time;Comment;Scramble;Date;P.1
+   - semicolon-delimited WITHOUT quotes
+   - Time in WCA format ("1:13.52", "47.41")
+   - Date in human-readable format ("2025-01-16 08:49:47")
+   - optional trailing penalty/effective-time column ("P.1", "Penalty", ...)
+   ─────────────────────────────────────────────────────────────────────── */
+
+/** Parse a WCA-format time ("1:13.52", "47.41") into milliseconds. */
+function parseWcaTimeMs(raw: string): number | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const m = t.match(/^(?:(\d+):)?(\d{1,3})(?:\.(\d{1,3}))?$/);
+  if (!m) return null;
+  const minutes = m[1] ? parseInt(m[1]!, 10) : 0;
+  const seconds = parseInt(m[2]!, 10);
+  const frac = m[3] ? parseInt(m[3]!.padEnd(3, "0").slice(0, 3), 10) : 0;
+  return minutes * 60000 + seconds * 1000 + frac;
+}
+
+/** Map a csTimer puzzle code ("333", "222") to a puzzleType ("3x3x3"). */
+function mapPuzzleCode(code: string): string | undefined {
+  const c = code.trim().toLowerCase();
+  const map: Record<string, string> = {
+    "222": "2x2x2",
+    "333": "3x3x3",
+    "444": "4x4x4",
+    "555": "5x5x5",
+    "666": "6x6x6",
+    "777": "7x7x7",
+    "333oh": "3x3x3",
+  };
+  return map[c];
+}
+
+/**
+ * Infer the puzzle type from a scramble when the file carries no explicit
+ * puzzle column.
+ *
+ * WCA 2×2 scrambles only use the R, U and F faces and are ≤ 11 moves;
+ * 3×3 scrambles use all six faces (~20 moves). If every move is an R/U/F
+ * turn and the scramble is short, it's almost certainly a 2×2.
+ */
+function inferPuzzleType(scramble: string): string {
+  const moves = scramble.trim().split(/\s+/).filter(Boolean);
+  if (moves.length === 0) return "3x3x3";
+  const faces = new Set(moves.map((mv) => mv.replace(/^([RLUDFB]).*$/, "$1")));
+  const onlyRuf = [...faces].every((f) => f === "R" || f === "U" || f === "F");
+  if (onlyRuf && moves.length <= 12) return "2x2x2";
+  return "3x3x3";
+}
+
+interface CsTimerHeaderMap {
+  time: number;
+  comment: number;
+  scramble: number;
+  date: number;
+  penalty: number;
+}
+
+function mapCsTimerHeader(headers: string[]): CsTimerHeaderMap {
+  const find = (pattern: RegExp): number => {
+    for (let i = 0; i < headers.length; i++) {
+      if (pattern.test(headers[i]!.toLowerCase().trim())) return i;
+    }
+    return -1;
+  };
+  return {
+    time: find(/^time/),
+    comment: find(/^(comment|note)/),
+    scramble: find(/^scramble/),
+    date: find(/^date/),
+    penalty: find(/^(pen|p\.?\d*$)/),
+  };
+}
+
+/** Parse one data row of the csTimer header CSV format. */
+function parseCsTimerHeaderLine(
+  fields: string[],
+  col: CsTimerHeaderMap,
+  _lineNum: number,
+): ImportedSolve | null {
+  const get = (idx: number): string =>
+    idx >= 0 && idx < fields.length ? unquote(fields[idx] ?? "") : "";
+
+  const timeRaw = get(col.time);
+  if (!timeRaw) return null;
+
+  let timeMs = 0;
+  let penalty: Penalty = "none";
+  const timeUpper = timeRaw.trim().toUpperCase();
+
+  if (timeUpper === "DNF") {
+    penalty = "DNF";
+  } else if (timeUpper.endsWith("+2")) {
+    penalty = "+2";
+    const parsed = parseWcaTimeMs(timeRaw.slice(0, -2).trim());
+    if (parsed === null) return null;
+    timeMs = parsed;
+  } else {
+    const parsed = parseWcaTimeMs(timeRaw);
+    if (parsed === null) return null;
+    timeMs = parsed;
+  }
+
+  // Optional penalty / effective-time column ("P.1", "Penalty", ...)
+  const pRaw = get(col.penalty);
+  if (pRaw) {
+    const pUpper = pRaw.trim().toUpperCase();
+    if (pUpper === "DNF") {
+      penalty = "DNF";
+    } else if (pUpper.endsWith("+2")) {
+      penalty = "+2";
+    } else if (penalty === "none") {
+      // csTimer penalty codes ("0", "2000", "-1", "1", "2")
+      const coded = mapCsTimerPenalty(pRaw);
+      if (coded !== "none") {
+        penalty = coded;
+      } else {
+        const pMs = parseWcaTimeMs(pRaw);
+        // Effective time = raw + 2000ms → +2
+        if (pMs !== null && pMs - timeMs === 2000) penalty = "+2";
+      }
+    }
+  }
+
+  const scramble = get(col.scramble);
+  const dateRaw = get(col.date);
+  let timestamp = Date.now();
+  if (dateRaw) {
+    const iso = dateRaw.trim().replace(" ", "T");
+    const parsed = Date.parse(iso);
+    if (!isNaN(parsed)) timestamp = parsed;
+  }
+
+  return {
+    time: timeMs,
+    penalty,
+    scramble: scramble || "",
+    timestamp,
+    note: get(col.comment) || undefined,
+    puzzleType: inferPuzzleType(scramble || ""),
+  };
+}
+
+/** Parse the newer csTimer header-based CSV export. */
+function parseCsTimerHeaderCsv(content: string): ImportResult {
+  const lines = content.trim().split("\n");
+  const solves: ImportedSolve[] = [];
+  const errors: { line: number; message: string }[] = [];
+
+  // Locate the header row (first line starting with "No.")
+  let headerIdx = -1;
+  let col: CsTimerHeaderMap | null = null;
+  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const fields = splitCSVLine(lines[i]!, ";").map((f) => unquote(f));
+    if (fields.length >= 4 && /^no\.?$/i.test(fields[0] ?? "")) {
+      headerIdx = i;
+      col = mapCsTimerHeader(fields.map((f) => f.toLowerCase().trim()));
+      break;
+    }
+  }
+  if (headerIdx < 0 || !col) {
+    return {
+      solves: [],
+      errors: [{ line: 0, message: "Could not find csTimer header row" }],
+      format: "cstimer",
+    };
+  }
+  if (col.time < 0) {
+    return {
+      solves: [],
+      errors: [{ line: headerIdx + 1, message: "Could not find Time column in csTimer header" }],
+      format: "cstimer",
+    };
+  }
+
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i]!.trim();
+    if (!line) continue;
+    const fields = splitCSVLine(line, ";").map((f) => unquote(f));
+    const solve = parseCsTimerHeaderLine(fields, col, i + 1);
+    if (solve) {
+      solves.push(solve);
+    } else {
+      errors.push({ line: i + 1, message: "Could not parse line" });
+    }
+  }
+
+  return { solves, errors, format: "cstimer" };
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -206,6 +414,7 @@ function parseCubeForgeLine(line: string, _index: number): ImportedSolve | null 
     timestamp: ts,
     method,
     note: note || undefined,
+    puzzleType: inferPuzzleType(scramble || ""),
   };
 }
 
@@ -323,6 +532,7 @@ function parseGenericLine(
     timestamp,
     method,
     note: get(col.note) || undefined,
+    puzzleType: inferPuzzleType(get(col.scramble) || ""),
   };
 }
 
@@ -338,13 +548,6 @@ function parseGenericLine(
 interface CsTimerJsonExport {
   [key: string]: unknown;
 }
-
-type CsTimerSolveTuple = [
-  [penalty: number, timeMs: number],
-  scramble: string,
-  comment: string,
-  timestamp: number,
-];
 
 function parseCsTimerJson(content: string): ImportResult {
   try {
@@ -402,6 +605,7 @@ function parseCsTimerJson(content: string): ImportResult {
           note: comment || undefined,
           puzzle: "333",
           category: "Normal",
+          puzzleType: inferPuzzleType(scramble),
         });
       }
     }
@@ -440,6 +644,7 @@ interface CubeForgeExport {
     method?: string;
     note?: string;
     source?: string;
+    puzzleType?: string;
   }>;
 }
 
@@ -457,6 +662,7 @@ function parseJsonImport(content: string): ImportResult {
         timestamp: s.timestamp ?? Date.now(),
         method: s.method && isSolveMethod(s.method) ? (s.method as SolveMethod) : undefined,
         note: s.note,
+        puzzleType: s.puzzleType ?? inferPuzzleType(s.scramble ?? ""),
       }));
       return { solves, errors: [], format: "cubeforge-json" };
     }
@@ -490,6 +696,12 @@ export function parseImport(content: string): ImportResult {
   switch (format) {
     case "cstimer": {
       const lines = content.trim().split("\n");
+      const firstLine = lines[0]?.trim() ?? "";
+      // Newer csTimer exports use a header row: `No.;Time;Comment;Scramble;Date;P.1`
+      if (CSTIMER_HEADER_RE.test(firstLine)) {
+        return parseCsTimerHeaderCsv(content);
+      }
+
       const solves: ImportedSolve[] = [];
       const errors: { line: number; message: string }[] = [];
 
@@ -556,6 +768,10 @@ export function previewImport(content: string): ImportPreview {
     headers = splitCSVLine(lines[0] ?? "", delim).map((h) => unquote(h));
   } else if (format === "cstimer" || format === "cstimer-json") {
     headers = ["Puzzle", "Category", "Time (ms)", "Date (epoch)", "Scramble", "Penalty", "Comment"];
+    // Newer header-based csTimer CSV — show the real column names
+    if (format === "cstimer" && CSTIMER_HEADER_RE.test(lines[0]?.trim() ?? "")) {
+      headers = splitCSVLine(lines[0] ?? "", ";").map((h) => unquote(h));
+    }
   } else if (format === "cubeforge-csv") {
     headers = ["No.", "Time", "Penalty", "Scramble", "Date", "Method", "Note"];
   }
@@ -640,6 +856,7 @@ export function toSolveInput(
   method?: string;
   timestamp: number;
   note?: string;
+  puzzleType?: string;
   source: SolveSource;
 } {
   return {
@@ -649,6 +866,7 @@ export function toSolveInput(
     method: imported.method,
     timestamp: imported.timestamp,
     note: imported.note,
+    puzzleType: imported.puzzleType ?? inferPuzzleType(imported.scramble),
     source: "manual" as SolveSource,
   };
 }

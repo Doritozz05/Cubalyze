@@ -36,7 +36,7 @@ export function exportSolvesToCsTimer(solves: Solve[]): string {
   const header = '"Puzzle";"Category";"Time(millis)";"Date(epoch)";"Scramble";"Penalty";"Comment"';
 
   const rows = solves.map((solve) => {
-    const puzzle = "333";
+    const puzzle = puzzleCodeFromType(solve.puzzleType);
     const category = "Normal";
     const timeMs = normalizePenalty(solve.penalty) === "DNF"
       ? "-1" // csTimer DNF sentinel
@@ -63,6 +63,18 @@ function escapeQuoted(s: string): string {
   return s.replace(/"/g, '""');
 }
 
+/** Map a CubeForge puzzle type ("3x3x3") to a csTimer puzzle code ("333"). */
+function puzzleCodeFromType(puzzleType?: string): string {
+  switch (puzzleType) {
+    case "2x2x2": return "222";
+    case "4x4x4": return "444";
+    case "5x5x5": return "555";
+    case "6x6x6": return "666";
+    case "7x7x7": return "777";
+    default: return "333";
+  }
+}
+
 /**
  * Export solves to JSON format (machine-readable, includes full solve data).
  */
@@ -83,6 +95,7 @@ export function exportSolvesToJSON(
       method: solve.method,
       note: solve.note,
       source: solve.source,
+      puzzleType: solve.puzzleType,
     })),
   };
   return JSON.stringify(data, null, 2);
