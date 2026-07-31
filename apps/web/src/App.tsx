@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "zustand";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
@@ -37,7 +38,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { Penalty, PuzzleCategory, Solve, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty, effectiveTime } from "@/types";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
-import type { ViewId } from "@/components/Layout/sidebar.constants";
+import { SIDEBAR_MOTION, type ViewId } from "@/components/Layout/sidebar.constants";
 import { migrateWidgetPositions } from "@/widgets/migration";
 import { installWidgetDebug } from "@/widgets/debug";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
@@ -631,59 +632,77 @@ export default function App() {
     // timer
     return (
       <>
-        {scrambleDisplay && (scrambleVerification || !isFocused) ? (
-          <ScrambleDisplay
-            scramble={currentScramble}
-            displayScramble={displayScramble}
-            states={isManualMode ? undefined : validation.states}
-            currentIndex={isManualMode ? 0 : validation.currentIndex}
-            errorMoves={isManualMode ? [] : validation.displayErrorMoves}
-            pendingHalfDouble={isManualMode ? false : validation.pendingHalfDouble}
-            isScrambled={isManualMode ? false : validation.isScrambled}
-            needsReset={isManualMode ? false : validation.needsReset}
-            awaitingSolve={isManualMode ? false : validation.awaitingSolve}
-            onRegenerate={handleRegenerate}
-            onCopy={handleCopy}
-            indexLabel={`#${scrambleIndex + 1}`}
-            focusModeAction={
-              isManualMode ? (
-                <Button
-                  variant={focusMode ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setFocusMode(!focusMode)}
-                  className={cn(
-                    "h-7 gap-1.5 px-2 text-xs transition-all",
-                    focusMode
-                      ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
-                      : "text-ink-2 hover:text-ink",
-                  )}
-                  title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
-                >
-                  <Eye className="size-3.5" />
-                  Focus
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : isManualMode ? (
-          <div className="flex w-full justify-end mb-2">
-            <Button
-              variant={focusMode ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setFocusMode(!focusMode)}
-              className={cn(
-                "h-7 gap-1.5 px-2 text-xs transition-all",
-                focusMode
-                  ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
-                  : "text-ink-2 hover:text-ink",
-              )}
-              title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+        <AnimatePresence mode="wait">
+          {scrambleDisplay && (scrambleVerification || !isFocused) ? (
+            <motion.div
+              key="scramble-display-container"
+              initial={{ y: "-100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-100%", opacity: 0 }}
+              transition={SIDEBAR_MOTION.panel}
+              className="w-full"
             >
-              <Eye className="size-3.5" />
-              Focus
-            </Button>
-          </div>
-        ) : null}
+              <ScrambleDisplay
+                scramble={currentScramble}
+                displayScramble={displayScramble}
+                states={isManualMode ? undefined : validation.states}
+                currentIndex={isManualMode ? 0 : validation.currentIndex}
+                errorMoves={isManualMode ? [] : validation.displayErrorMoves}
+                pendingHalfDouble={isManualMode ? false : validation.pendingHalfDouble}
+                isScrambled={isManualMode ? false : validation.isScrambled}
+                needsReset={isManualMode ? false : validation.needsReset}
+                awaitingSolve={isManualMode ? false : validation.awaitingSolve}
+                onRegenerate={handleRegenerate}
+                onCopy={handleCopy}
+                indexLabel={`#${scrambleIndex + 1}`}
+                focusModeAction={
+                  isManualMode ? (
+                    <Button
+                      variant={focusMode ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setFocusMode(!focusMode)}
+                      className={cn(
+                        "h-7 gap-1.5 px-2 text-xs transition-all",
+                        focusMode
+                          ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
+                          : "text-ink-2 hover:text-ink",
+                      )}
+                      title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+                    >
+                      <Eye className="size-3.5" />
+                      Focus
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </motion.div>
+          ) : isManualMode ? (
+            <motion.div
+              key="manual-focus-button"
+              initial={{ y: "-100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-100%", opacity: 0 }}
+              transition={SIDEBAR_MOTION.panel}
+              className="flex w-full justify-end mb-2"
+            >
+              <Button
+                variant={focusMode ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setFocusMode(!focusMode)}
+                className={cn(
+                  "h-7 gap-1.5 px-2 text-xs transition-all",
+                  focusMode
+                    ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
+                    : "text-ink-2 hover:text-ink",
+                )}
+                title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+              >
+                <Eye className="size-3.5" />
+                Focus
+              </Button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         {isManualMode ? (
           <ManualTimeInput

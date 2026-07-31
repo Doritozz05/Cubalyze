@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
@@ -146,24 +146,29 @@ export function MainLayout({
         className,
       )}
     >
-      {!isFocused && leftSidebar}
+      <AnimatePresence>
+        {!isFocused && leftSidebar}
+      </AnimatePresence>
 
       <div className={cn("flex flex-1 flex-col", !isFocused && !hideHeader && "pt-14", !isFocused && "md:pl-14")}>
-        {!isFocused && !hideHeader && (
-          <Header
-            sessionCount={sessionCount}
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            onSwitchSession={onSwitchSession}
-            onNewSession={onNewSession}
-            onRenameSession={onRenameSession}
-            onDeleteSession={onDeleteSession}
-            onToggleMobileNav={onToggleMobileNav}
-            onAddManual={onAddManual}
-            puzzle={puzzle}
-            onPuzzleChange={onPuzzleChange}
-          />
-        )}
+        <AnimatePresence>
+          {!isFocused && !hideHeader && (
+            <Header
+              key="header-root"
+              sessionCount={sessionCount}
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSwitchSession={onSwitchSession}
+              onNewSession={onNewSession}
+              onRenameSession={onRenameSession}
+              onDeleteSession={onDeleteSession}
+              onToggleMobileNav={onToggleMobileNav}
+              onAddManual={onAddManual}
+              puzzle={puzzle}
+              onPuzzleChange={onPuzzleChange}
+            />
+          )}
+        </AnimatePresence>
 
         <main className={cn(
           "mx-auto flex w-full flex-1 flex-col overflow-hidden lg:flex-row",
@@ -173,7 +178,7 @@ export function MainLayout({
           <section
             id="timer-section"
             className={cn(
-              "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden",
+              "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-out",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
               hideHeader && "p-3 sm:p-4 gap-3 h-full",
               isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : ""

@@ -226,8 +226,10 @@ export function LeftSidebar({
       <motion.aside
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH }}
-        transition={SIDEBAR_MOTION.container}
+        initial={{ x: "-100%", opacity: 0 }}
+        animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH, x: 0, opacity: 1 }}
+        exit={{ x: "-100%", opacity: 0 }}
+        transition={SIDEBAR_MOTION.panel}
         className="fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
       >
         {sidebarContent}

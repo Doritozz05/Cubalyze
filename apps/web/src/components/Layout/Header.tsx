@@ -5,7 +5,9 @@ import { Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -156,7 +158,11 @@ export function Header({
   };
 
   return (
-    <header
+    <motion.header
+      initial={{ y: "-100%", opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: "-100%", opacity: 0 }}
+      transition={SIDEBAR_MOTION.panel}
       className={cn(
         "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color,box-shadow] duration-200",
         isDockZoneActive
@@ -388,6 +394,6 @@ export function Header({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </header>
+    </motion.header>
   );
 }
