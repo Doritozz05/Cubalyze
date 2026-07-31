@@ -214,7 +214,7 @@ function parseTwistyTimerLine(line: string, _lineNum: number): ImportedSolve | n
 
   const parsedTime = parseWcaTimeWithPenalty(timeRaw);
   if (parsedTime === null) return null;
-  let timeMs = parsedTime.timeMs;
+  const timeMs = parsedTime.timeMs;
   let penalty: Penalty = parsedTime.penalty;
   let note: string | undefined = undefined;
 
