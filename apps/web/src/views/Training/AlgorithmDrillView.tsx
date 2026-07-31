@@ -516,7 +516,7 @@ export function AlgorithmDrillView({
               <MiniCube3DPanel className="shrink-0" />
             )}
 
-            <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-line bg-surface">
+            <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-line bg-surface flex flex-col">
               {drillMode === "single" && (
                 <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
@@ -588,20 +588,22 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase, ge
   cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
-    <div className="p-3.5 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
+    <div className="p-3 flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-2 px-1 shrink-0">
         <h4 className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-ink-3">Select Case</h4>
         <span className="nums text-[0.62rem] text-ink-3/70 font-medium">{cases.length} cases</span>
       </div>
-      <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-0.5">
+      <div className="grid grid-cols-2 gap-2 overflow-y-auto p-1 min-h-0 flex-1">
         {cases.map((c) => {
           const isSelected = c.id === selectedCaseId;
           const progress = getProgress(c.id);
           const caseAlg = algorithms.find((a) => a.caseId === c.id && a.isDefault) ?? algorithms.find((a) => a.caseId === c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
-              className={cn("flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-all duration-150 shadow-xs",
-                isSelected ? "border-ink/40 bg-surface-2 ring-2 ring-ink/15 shadow-sm" : "border-line bg-surface hover:border-ink/20 hover:bg-surface-2/60")}>
+              className={cn("flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-all duration-150 outline-none cursor-pointer",
+                isSelected
+                  ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"
+                  : "border-line bg-surface hover:border-ink/20 hover:bg-surface-2/60")}>
               <div className="flex items-center justify-between">
                 <span className="nums text-[0.78rem] font-bold text-ink">{c.caseNumber}</span>
                 <span className="nums text-[0.6rem] font-semibold text-ink-3">{progress.mastery}%</span>
@@ -650,9 +652,9 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
   cases: AlgorithmCase[]; currentIndex: number; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
-    <div className="p-3">
-      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1">Progress</h4>
-      <div className="mb-3 px-1">
+    <div className="p-3 flex flex-col h-full min-h-0">
+      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1 shrink-0">Progress</h4>
+      <div className="mb-3 px-1 shrink-0">
         <div className="flex items-center justify-between text-[0.55rem] text-ink-3 mb-1">
           <span>Case {currentIndex + 1} of {cases.length}</span>
           <span>{Math.round(((currentIndex + 1) / cases.length) * 100)}%</span>
@@ -661,19 +663,19 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
           <div className="h-full rounded-full bg-ink/60 transition-all duration-300" style={{ width: `${((currentIndex + 1) / cases.length) * 100}%` }} />
         </div>
       </div>
-      <div className="space-y-0.5">
+      <div className="space-y-0.5 overflow-y-auto p-1 min-h-0 flex-1">
         {cases.map((c, idx) => {
           const isCurrent = c.id === selectedCaseId;
           const isCompleted = idx < currentIndex;
           const progress = getProgress(c.id);
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
-              className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors",
-                isCurrent && "bg-surface-2 ring-1 ring-ink/10", !isCurrent && "hover:bg-surface-2/50")}>
+              className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors cursor-pointer outline-none",
+                isCurrent && "bg-surface-2 border border-ink/30 font-medium", !isCurrent && "hover:bg-surface-2/50")}>
               <span className={cn("nums text-[0.62rem] font-medium shrink-0 w-5", isCompleted ? "text-ready" : isCurrent ? "text-ink" : "text-ink-3")}>
                 {isCompleted ? "✓" : idx + 1}
               </span>
-              <span className={cn("text-[0.62rem] truncate flex-1", isCurrent ? "text-ink font-medium" : "text-ink-3")}>
+              <span className={cn("text-[0.62rem] truncate flex-1", isCurrent ? "text-ink font-semibold" : "text-ink-3")}>
                 {c.caseNumber}{c.name && c.name !== c.caseNumber ? ` ${c.name}` : ""}
               </span>
               <span className="nums text-[0.55rem] text-ink-3 shrink-0">{progress.mastery}%</span>
@@ -689,17 +691,17 @@ function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }:
   cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
-    <div className="p-3">
-      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1">Weakest Cases First</h4>
-      <p className="text-[0.58rem] text-ink-3/60 px-1 mb-2">Prioritized by lowest mastery. Practice your weakest cases to improve overall consistency.</p>
-      <div className="space-y-1">
+    <div className="p-3 flex flex-col h-full min-h-0">
+      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1 shrink-0">Weakest Cases First</h4>
+      <p className="text-[0.58rem] text-ink-3/60 px-1 mb-2 shrink-0">Prioritized by lowest mastery. Practice your weakest cases to improve overall consistency.</p>
+      <div className="space-y-1 overflow-y-auto p-1 min-h-0 flex-1">
         {cases.slice(0, 10).map((c, idx) => {
           const progress = getProgress(c.id);
           const isSelected = c.id === selectedCaseId;
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
-              className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors",
-                isSelected && "bg-surface-2 ring-1 ring-ink/10", !isSelected && "hover:bg-surface-2/50")}>
+              className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors cursor-pointer outline-none",
+                isSelected && "bg-surface-2 border border-ink/30 font-medium", !isSelected && "hover:bg-surface-2/50")}>
               <span className={cn("nums text-[0.58rem] font-medium shrink-0 w-4", idx < 3 ? "text-hold" : idx < 6 ? "text-caution" : "text-ink-3")}>{idx + 1}</span>
               <span className="text-[0.62rem] text-ink truncate flex-1">{c.caseNumber}{c.name && c.name !== c.caseNumber ? ` ${c.name}` : ""}</span>
               <span className={cn("nums text-[0.55rem] shrink-0", progress.mastery < 50 ? "text-hold" : progress.mastery < 75 ? "text-caution" : "text-ink-3")}>{progress.mastery}%</span>
