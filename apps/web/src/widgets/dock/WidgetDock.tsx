@@ -76,7 +76,7 @@ function DockPill({
         layout
         ref={(el: HTMLElement | null) => onPillRef?.(widgetId, el)}
         initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: isUndocking ? 0.3 : 1, scale: 1 }}
+        animate={{ opacity: isUndocking ? 0 : 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.85 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         whileDrag={{ scale: 1.08, boxShadow: "0 8px 25px rgba(0,0,0,0.15)", zIndex: 60 }}
