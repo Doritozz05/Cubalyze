@@ -52,13 +52,6 @@ export function ScrambleSection() {
         onCheckedChange={setScrambleDisplay}
       />
 
-      <SettingToggle
-        title="Rotate scramble with cube"
-        description="The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
-        checked={scrambleFollowsCube}
-        onCheckedChange={setScrambleFollowsCube}
-      />
-
       {scrambleDisplay && (
         <SettingToggle
           title="Scramble verification"
@@ -67,6 +60,13 @@ export function ScrambleSection() {
           onCheckedChange={setScrambleVerification}
         />
       )}
+
+      <SettingToggle
+        title="Rotate scramble with cube"
+        description="The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
+        checked={scrambleFollowsCube}
+        onCheckedChange={setScrambleFollowsCube}
+      />
     </div>
   );
 }
