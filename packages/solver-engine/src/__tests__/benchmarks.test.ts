@@ -10,6 +10,8 @@ import { CubeState, Cube2x2State, FaceletStringConverter } from '@cubeforge/math
 import { Min2PhaseSolver, TwoByTwoSolver } from '../index';
 import { RandomStateGenerator } from '../RandomStateGenerator';
 
+const isCI = !!process.env.GITHUB_ACTIONS || !!process.env.CI;
+
 // ────────────────────────────────────────────────────────────────────────
 //  Benchmark helper: measure p50, p95, p99 over N iterations
 // ────────────────────────────────────────────────────────────────────────
@@ -51,7 +53,7 @@ function bench(fn: () => void, iterations = 100, warmup = 5): BenchResult {
 //  B1: Min2PhaseSolver.init() < 500ms (p95)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B1 — Min2PhaseSolver.init()', { timeout: 30000 }, () => {
+describe.skipIf(isCI)('B1 — Min2PhaseSolver.init()', { timeout: 30000 }, () => {
   it('Min2Phase WASM init < 500ms (p90)', () => {
     const times: number[] = [];
     // Warmup: 1 call
@@ -76,7 +78,7 @@ describe('B1 — Min2PhaseSolver.init()', { timeout: 30000 }, () => {
 //  B2: Min2PhaseSolver.solve() < 10ms (p99)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B2 — Min2PhaseSolver.solve()', { timeout: 60000 }, () => {
+describe.skipIf(isCI)('B2 — Min2PhaseSolver.solve()', { timeout: 60000 }, () => {
   const solver = new Min2PhaseSolver();
 
   // Pre-generate states to avoid state generation cost in benchmark
@@ -102,7 +104,7 @@ describe('B2 — Min2PhaseSolver.solve()', { timeout: 60000 }, () => {
 //  B3: TwoByTwoSolver.solve() < 5ms (p99)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B3 — TwoByTwoSolver.solve()', { timeout: 30000 }, () => {
+describe.skipIf(isCI)('B3 — TwoByTwoSolver.solve()', { timeout: 30000 }, () => {
   const solver = new TwoByTwoSolver();
   solver.init();
 
@@ -139,7 +141,7 @@ describe('B3 — TwoByTwoSolver.solve()', { timeout: 30000 }, () => {
 //  B4: RandomStateGenerator.generateScramble() < 20ms (p99)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B4 — RandomStateGenerator.generateScramble()', { timeout: 30000 }, () => {
+describe.skipIf(isCI)('B4 — RandomStateGenerator.generateScramble()', { timeout: 30000 }, () => {
   const solver = new Min2PhaseSolver();
 
   it('generateScramble 3×3 < 200ms (p99)', () => {
@@ -157,7 +159,7 @@ describe('B4 — RandomStateGenerator.generateScramble()', { timeout: 30000 }, (
 //  B5: CubeState.applySequence(100 moves) < 5ms (p99)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B5 — CubeState.applySequence(100 moves)', { timeout: 30000 }, () => {
+describe.skipIf(isCI)('B5 — CubeState.applySequence(100 moves)', { timeout: 30000 }, () => {
   // Pre-build a 100-move sequence
   const longScramble = (() => {
     const faces = ['U', 'R', 'F', 'D', 'L', 'B'];

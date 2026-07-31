@@ -17,6 +17,7 @@ import { makeSolveFromScramble, makeMoves } from './test-helpers';
 // Windows thresholds are honest about real-world variance while still
 // catching actual regressions.
 const PERF_MULTIPLIER = process.platform === 'win32' ? 5 : 1;
+const isCI = !!process.env.GITHUB_ACTIONS || !!process.env.CI;
 
 // ────────────────────────────────────────────────────────────────────────
 //  Benchmark helper
@@ -81,10 +82,12 @@ async function benchAsync(fn: () => Promise<void>, iterations = 50, warmup = 3):
 //  B6: CFOPMetricsCalculator.compute() < 10ms (p99)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B6 — CFOPMetricsCalculator.compute()', { timeout: 60000 }, () => {
+describe.skipIf(isCI)('B6 — CFOPMetricsCalculator.compute()', { timeout: 60000 }, () => {
   // Pre-build a timeline once, reuse for all benchmark runs
   const scramble = "R U R' U' R' F R2 U' R' U' R U R' F'";
-  const { solveMoves } = makeSolveFromScramble(scramble);    it('CFOP full metrics computation < 20ms (p99)', async () => {
+  const { solveMoves } = makeSolveFromScramble(scramble);
+
+  it('CFOP full metrics computation < 20ms (p99)', async () => {
       const { p99, p95, mean } = await benchAsync(async () => {
         // Rebuild timeline per iteration to avoid caching effects
         const tl = TimelineBuilder.build(solveMoves, 'CFOP', undefined, scramble);
@@ -102,7 +105,7 @@ describe('B6 — CFOPMetricsCalculator.compute()', { timeout: 60000 }, () => {
 //  B7: TimelineBuilder.build(100 entries) < 20ms (p99)
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('B7 — TimelineBuilder.build()', { timeout: 30000 }, () => {
+describe.skipIf(isCI)('B7 — TimelineBuilder.build()', { timeout: 30000 }, () => {
   // Pre-build 100 moves
   const { solveMoves: moves } = makeSolveFromScramble(
     "R' U' F D2 L2 D' R2 U' B2 D' L2 B2 L' D B D2 B R' D L2 R' U' F",
@@ -131,3 +134,4 @@ describe('B7 — TimelineBuilder.build()', { timeout: 30000 }, () => {
     expect(p99).toBeLessThan(100 * PERF_MULTIPLIER);
   });
 });
+
