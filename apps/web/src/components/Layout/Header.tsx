@@ -37,19 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
-
-const CATEGORIES: PuzzleCategory[] = [
-  "2x2",
-  "3x3",
-  "4x4",
-  "5x5",
-  "6x6",
-  "7x7",
-  "3x3 OH",
-  "Megaminx",
-  "Pyraminx",
-  "Skewb",
-];
+import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 
 /**
  * Sleek custom SVG Battery icon supporting multi-phase fill & color gradients.
@@ -358,7 +346,7 @@ export function Header({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map((c) => (
+              {PUZZLE_CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c} className="text-xs">
                   {c}
                 </SelectItem>

@@ -27,6 +27,20 @@ import {
 
 // ── Mappings ─────────────────────────────────────────────────────────────
 
+/** All puzzle categories selectable in the UI, in display order. */
+export const PUZZLE_CATEGORIES: PuzzleCategory[] = [
+  "2x2",
+  "3x3",
+  "4x4",
+  "5x5",
+  "6x6",
+  "7x7",
+  "3x3 OH",
+  "Megaminx",
+  "Pyraminx",
+  "Skewb",
+];
+
 /** Map a UI PuzzleCategory to the database puzzle_type string. */
 export function puzzleCategoryToType(category: PuzzleCategory): string {
   switch (category) {

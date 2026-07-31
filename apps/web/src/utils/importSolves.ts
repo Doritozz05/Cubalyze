@@ -7,7 +7,7 @@ import { normalizePenalty } from "@/types";
    Import format identifiers
    ─────────────────────────────────────────────────────────────────────── */
 
-export type ImportFormat = "cstimer" | "cstimer-json" | "cubeforge-csv" | "cubeforge-json" | "generic-csv" | "unknown";
+export type ImportFormat = "cstimer" | "cstimer-json" | "twistytimer" | "cubeforge-csv" | "cubeforge-json" | "generic-csv" | "unknown";
 
 export interface ImportPreview {
   format: ImportFormat;
@@ -51,6 +51,7 @@ export interface ImportResult {
  *
  * csTimer JSON: {"session1":[[[0,73521],"scramble","",1737013787],...],...,"properties":{...}}
  * csTimer CSV:  "333";"Normal";"122170";"1620000000000";"R U R' U'...";"0";""
+ * TwistyTimer:  "54.03";"R U R' U'";"2025-01-08T19:50:06.520+01:00"
  * CubeForge:    No.,Time,Penalty,Scramble,Date,Method,Note
  * generic CSV:  any comma or tab delimited data with a header row
  * JSON:         starts with `{` or `[`
@@ -61,6 +62,23 @@ export interface ImportResult {
  * The "Time" column sits right after the semicolon following "No.".
  */
 const CSTIMER_HEADER_RE = /^no\.?\s*;\s*time\s*;/i;
+
+/**
+ * TwistyTimer CSV rows look like: `"54.03";"R U R' U'";"2025-01-08T19:50:06.520+01:00"`
+ * — exactly 3 quoted semicolon-delimited fields: WCA time, scramble, ISO date with
+ * timezone offset, and NO header row.
+ */
+function looksLikeTwistyTimerLine(line: string): boolean {
+  const t = line.trim();
+  if (!t.startsWith('"')) return false;
+  const fields = splitCSVLine(t, ";");
+  if (fields.length !== 3) return false;
+  const time = unquote(fields[0] ?? "").trim();
+  const date = unquote(fields[2] ?? "").trim();
+  const timeOk = parseWcaTimeWithPenalty(time) !== null;
+  const dateOk = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(date);
+  return timeOk && dateOk;
+}
 
 export function detectFormat(content: string): ImportFormat {
   const trimmed = content.trim();
@@ -89,7 +107,14 @@ export function detectFormat(content: string): ImportFormat {
     }
   }
 
-  const firstLine = trimmed.split("\n")[0]?.trim() ?? "";
+  const lines = trimmed.split("\n");
+  const firstLine = lines[0]?.trim() ?? "";
+
+  // TwistyTimer: "time";"scramble";"date" — 3 quoted fields, WCA time + ISO date
+  // (checked before the classic csTimer check since it also uses ";")
+  if (lines.slice(0, 3).some((l) => looksLikeTwistyTimerLine(l))) {
+    return "twistytimer";
+  }
 
   // csTimer: semicolon-delimited with quoted fields
   if (firstLine.includes('";"')) {
@@ -171,6 +196,65 @@ function mapCsTimerPenalty(raw: string): Penalty {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+   TwistyTimer CSV parser
+   Format: "time";"scramble";"date"
+   - quoted, semicolon-delimited, NO header row
+   - Time in WCA format ("54.03", "1:06.74"), may carry "+2" suffix or be "DNF"
+   - Date in ISO-8601 with timezone ("2025-01-08T19:50:06.520+01:00")
+   ─────────────────────────────────────────────────────────────────────── */
+
+function parseTwistyTimerLine(line: string, _lineNum: number): ImportedSolve | null {
+  const fields = splitCSVLine(line, ";");
+  if (fields.length < 3) return null;
+  const timeRaw = unquote(fields[0] ?? "");
+  const scramble = unquote(fields[1] ?? "");
+  const dateRaw = unquote(fields[2] ?? "");
+
+  if (!timeRaw) return null;
+
+  const parsedTime = parseWcaTimeWithPenalty(timeRaw);
+  if (parsedTime === null) return null;
+  let timeMs = parsedTime.timeMs;
+  let penalty: Penalty = parsedTime.penalty;
+
+  let timestamp = Date.now();
+  if (dateRaw) {
+    const parsed = Date.parse(dateRaw);
+    if (!isNaN(parsed)) timestamp = parsed;
+  }
+
+  return {
+    time: timeMs,
+    penalty,
+    scramble: scramble || "",
+    timestamp,
+    puzzleType: inferPuzzleType(scramble || ""),
+  };
+}
+
+function parseTwistyTimerCsv(content: string): ImportResult {
+  const lines = content.trim().split("\n");
+  const solves: ImportedSolve[] = [];
+  const errors: { line: number; message: string }[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!.trim();
+    if (!line) continue;
+    // Skip potential header rows like "Time";"Scramble";"Date"
+    const first = unquote(splitCSVLine(line, ";")[0] ?? "").trim();
+    if (looksLikeHeaderField(first)) continue;
+    const solve = parseTwistyTimerLine(line, i + 1);
+    if (solve) {
+      solves.push(solve);
+    } else {
+      errors.push({ line: i + 1, message: "Could not parse line" });
+    }
+  }
+
+  return { solves, errors, format: "twistytimer" };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
    csTimer header CSV parser (newer export format)
    Format: No.;Time;Comment;Scramble;Date;P.1
    - semicolon-delimited WITHOUT quotes
@@ -189,6 +273,39 @@ function parseWcaTimeMs(raw: string): number | null {
   const seconds = parseInt(m[2]!, 10);
   const frac = m[3] ? parseInt(m[3]!.padEnd(3, "0").slice(0, 3), 10) : 0;
   return minutes * 60000 + seconds * 1000 + frac;
+}
+
+/**
+ * Parse a WCA-format time string that may carry penalty markers:
+ *   "46.07"             → { timeMs: 46070, penalty: "none" }
+ *   "46.07+" / "46.07+2" → { timeMs: 46070, penalty: "+2" }
+ *   "DNF"               → { timeMs: 0, penalty: "DNF" }
+ *   "DNF(44.83)"        → { timeMs: 44830, penalty: "DNF" } (raw time from parens)
+ */
+function parseWcaTimeWithPenalty(raw: string): { timeMs: number; penalty: Penalty } | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const upper = t.toUpperCase();
+
+  if (upper === "DNF") return { timeMs: 0, penalty: "DNF" };
+
+  const dnfMatch = upper.match(/^DNF\(([\d:.]+)\)$/);
+  if (dnfMatch) {
+    const inner = parseWcaTimeMs(dnfMatch[1]!);
+    if (inner === null) return null;
+    return { timeMs: inner, penalty: "DNF" };
+  }
+
+  const plusMatch = t.match(/^(.*)\+2?$/);
+  if (plusMatch) {
+    const inner = parseWcaTimeMs(plusMatch[1]!);
+    if (inner === null) return null;
+    return { timeMs: inner, penalty: "+2" };
+  }
+
+  const plain = parseWcaTimeMs(t);
+  if (plain === null) return null;
+  return { timeMs: plain, penalty: "none" };
 }
 
 /** Map a csTimer puzzle code ("333", "222") to a puzzleType ("3x3x3"). */
@@ -259,22 +376,10 @@ function parseCsTimerHeaderLine(
   const timeRaw = get(col.time);
   if (!timeRaw) return null;
 
-  let timeMs = 0;
-  let penalty: Penalty = "none";
-  const timeUpper = timeRaw.trim().toUpperCase();
-
-  if (timeUpper === "DNF") {
-    penalty = "DNF";
-  } else if (timeUpper.endsWith("+2")) {
-    penalty = "+2";
-    const parsed = parseWcaTimeMs(timeRaw.slice(0, -2).trim());
-    if (parsed === null) return null;
-    timeMs = parsed;
-  } else {
-    const parsed = parseWcaTimeMs(timeRaw);
-    if (parsed === null) return null;
-    timeMs = parsed;
-  }
+  const parsedTime = parseWcaTimeWithPenalty(timeRaw);
+  if (parsedTime === null) return null;
+  let timeMs = parsedTime.timeMs;
+  let penalty: Penalty = parsedTime.penalty;
 
   // Optional penalty / effective-time column ("P.1", "Penalty", ...)
   const pRaw = get(col.penalty);
@@ -282,7 +387,7 @@ function parseCsTimerHeaderLine(
     const pUpper = pRaw.trim().toUpperCase();
     if (pUpper === "DNF") {
       penalty = "DNF";
-    } else if (pUpper.endsWith("+2")) {
+    } else if (pUpper.endsWith("+2") || pUpper.endsWith("+")) {
       penalty = "+2";
     } else if (penalty === "none") {
       // csTimer penalty codes ("0", "2000", "-1", "1", "2")
@@ -743,6 +848,9 @@ export function parseImport(content: string): ImportResult {
     case "cstimer-json":
       return parseCsTimerJson(content);
 
+    case "twistytimer":
+      return parseTwistyTimerCsv(content);
+
     case "cubeforge-json":
       return parseJsonImport(content);
 
@@ -750,7 +858,7 @@ export function parseImport(content: string): ImportResult {
       return parseGenericCSV(content);
 
     default:
-      return { solves: [], errors: [{ line: 0, message: "Could not detect file format. Supported: csTimer CSV, CubeForge CSV/JSON, generic CSV/TSV." }], format };
+      return { solves: [], errors: [{ line: 0, message: "Could not detect file format. Supported: csTimer CSV, Twisty Timer CSV, CubeForge CSV/JSON, generic CSV/TSV." }], format };
   }
 }
 
@@ -766,6 +874,8 @@ export function previewImport(content: string): ImportPreview {
   if (format === "generic-csv") {
     const delim = lines[0]?.includes("\t") ? "\t" : ",";
     headers = splitCSVLine(lines[0] ?? "", delim).map((h) => unquote(h));
+  } else if (format === "twistytimer") {
+    headers = ["Time", "Scramble", "Date"];
   } else if (format === "cstimer" || format === "cstimer-json") {
     headers = ["Puzzle", "Category", "Time (ms)", "Date (epoch)", "Scramble", "Penalty", "Comment"];
     // Newer header-based csTimer CSV — show the real column names
@@ -830,6 +940,11 @@ function unquote(s: string): string {
 
 function isSolveMethod(s: string): s is SolveMethod {
   return ["CFOP", "Roux", "ZZ", "Petrus"].includes(s as SolveMethod);
+}
+
+/** True when a field looks like a column header (e.g. "Time", "Scramble"). */
+function looksLikeHeaderField(value: string): boolean {
+  return /^(time|scramble|date|comment|penalty|no\.?)$/i.test(value);
 }
 
 /**

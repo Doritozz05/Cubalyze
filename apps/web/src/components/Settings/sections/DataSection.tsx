@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
 import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToJSON, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
-import type { Solve } from '@/types';
+import { PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
+import type { Solve, PuzzleCategory } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,8 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
     errors: number;
   } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  // Puzzle category selected before importing — solves are stored into it.
+  const [importCategory, setImportCategory] = useState<PuzzleCategory | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Store the original file content so handleConfirmImport can parse the
@@ -51,6 +54,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
         setImportResult(null);
         setImportError(null);
         setDragOver(false);
+        setImportCategory(null);
         fileContentRef.current = '';
       }, 200);
       return () => clearTimeout(t);
@@ -114,7 +118,12 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
     setImportState('importing');
     try {
       const result = parseImport(fileContentRef.current);
-      const inputs = result.solves.map(toSolveInput);
+      // Force the user-selected category so solves always land where the
+      // user picked — never rely on puzzle inference for placement.
+      const puzzleType = importCategory ? puzzleCategoryToType(importCategory) : undefined;
+      const inputs = result.solves.map((s) =>
+        toSolveInput(puzzleType ? { ...s, puzzleType } : s),
+      );
       await onImportSolves(inputs);
 
       setImportResult({
@@ -126,7 +135,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
       setImportError('Import failed: ' + (e instanceof Error ? e.message : String(e)));
       setImportState('error');
     }
-  }, [importPreview, onImportSolves]);
+  }, [importPreview, onImportSolves, importCategory]);
 
   // ── Export handlers ──────────────────────────────────────────────────
   const handleExportCSV = () => {
@@ -174,7 +183,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
             </p>
           </div>
           <button
-            onClick={() => { setImportOpen(true); setImportState('idle'); }}
+            onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); }}
             disabled={!onImportSolves}
             className="shrink-0 rounded-lg border border-line bg-surface-2/50 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
           >
@@ -289,49 +298,93 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
             <div className="overflow-y-auto p-5">
               {importState === 'idle' && (
                 <div className="flex flex-col gap-5">
-                  {/* Drop zone */}
-                  <div
-                    onDragOver={onDragOver}
-                    onDragLeave={onDragLeave}
-                    onDrop={onDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 px-6 transition-colors cursor-pointer',
-                      dragOver
-                        ? 'border-ink bg-ink/5'
-                        : 'border-line hover:border-ink/30 hover:bg-surface-2/50',
-                    )}
-                  >
-                    <div className="grid size-12 place-items-center rounded-full bg-surface-2">
-                      <FileUp className={cn('size-5', dragOver ? 'text-ink' : 'text-ink-3/50')} />
+                  {!importCategory ? (
+                    /* ── Step 1: pick the puzzle category ──────────────── */
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-surface-2">
+                          <Grid3x3 className="size-4 text-ink-2" />
+                        </div>
+                        <div>
+                          <p className="text-[0.8rem] font-medium text-ink">Choose the puzzle category</p>
+                          <p className="text-[0.62rem] text-ink-3">Solves will be saved into this category.</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PUZZLE_CATEGORIES.map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => setImportCategory(c)}
+                            className="rounded-lg border border-line bg-surface-2/40 px-2 py-2.5 text-[0.7rem] font-medium text-ink transition-all hover:border-accent/60 hover:bg-surface-2 hover:text-accent cursor-pointer"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-[0.78rem] font-medium text-ink">
-                        Drop your file here or click to browse
-                      </p>
-                      <p className="mt-1 text-[0.65rem] text-ink-3">
-                        csTimer CSV, CubeForge CSV/JSON, Twisty Timer, or any CSV
-                      </p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv,.txt,.json,.tsv"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </div>
+                  ) : (
+                    /* ── Step 2: drop zone for the chosen category ─────── */
+                    <>
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Grid3x3 className="size-3.5 shrink-0 text-accent" />
+                          <p className="truncate text-[0.7rem] text-ink">
+                            Importing into <strong className="text-accent">{importCategory}</strong>
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setImportCategory(null)}
+                          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink cursor-pointer"
+                        >
+                          <ArrowLeft className="size-3" />
+                          Change
+                        </button>
+                      </div>
 
-                  <div className="flex items-center gap-3 rounded-lg border border-line/30 bg-surface-2/30 p-3">
-                    <FileText className="size-3.5 text-ink-3/50 shrink-0" />
-                    <div className="text-[0.62rem] text-ink-3 leading-relaxed">
-                      <strong>csTimer format:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;333&quot;;&quot;Normal&quot;;&quot;12217&quot;;&quot;1620000000&quot;;&quot;R U R'&quot;;&quot;0&quot;;&quot;&quot;</code>
-                      <br />
-                      <strong>CSV format:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">No.,Time,Penalty,Scramble,Date,Method,Note</code>
-                      <br />
-                      Times should be in milliseconds (csTimer) or seconds (generic CSV).
-                    </div>
-                  </div>
+                      <div
+                        onDragOver={onDragOver}
+                        onDragLeave={onDragLeave}
+                        onDrop={onDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                          'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 px-6 transition-colors cursor-pointer',
+                          dragOver
+                            ? 'border-ink bg-ink/5'
+                            : 'border-line hover:border-ink/30 hover:bg-surface-2/50',
+                        )}
+                      >
+                        <div className="grid size-12 place-items-center rounded-full bg-surface-2">
+                          <FileUp className={cn('size-5', dragOver ? 'text-ink' : 'text-ink-3/50')} />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[0.78rem] font-medium text-ink">
+                            Drop your file here or click to browse
+                          </p>
+                          <p className="mt-1 text-[0.65rem] text-ink-3">
+                            csTimer CSV, CubeForge CSV/JSON, Twisty Timer, or any CSV
+                          </p>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".csv,.txt,.json,.tsv"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3 rounded-lg border border-line/30 bg-surface-2/30 p-3">
+                        <FileText className="size-3.5 text-ink-3/50 shrink-0" />
+                        <div className="text-[0.62rem] text-ink-3 leading-relaxed">
+                          <strong>csTimer format:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;333&quot;;&quot;Normal&quot;;&quot;12217&quot;;&quot;1620000000&quot;;&quot;R U R'&quot;;&quot;0&quot;;&quot;&quot;</code>
+                          <br />
+                          <strong>Newer csTimer:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">No.;Time;Comment;Scramble;Date;P.1</code>
+                          <br />
+                          <strong>Twisty Timer:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;54.03&quot;;&quot;R U R'&quot;;&quot;2025-01-08T19:50:06+01:00&quot;</code>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -341,7 +394,8 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                     <Check className="size-4 text-emerald-400 shrink-0" />
                     <div>
                       <p className="text-[0.72rem] font-medium text-emerald-500">
-                        Detected: {importPreview.format === 'cstimer' || importPreview.format === 'cstimer-json' ? 'csTimer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
+                        Detected: {importPreview.format === 'cstimer' || importPreview.format === 'cstimer-json' ? 'csTimer' : importPreview.format === 'twistytimer' ? 'Twisty Timer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
+                        {importCategory && <span className="text-ink-2"> · into <strong>{importCategory}</strong></span>}
                       </p>
                       <p className="text-[0.62rem] text-ink-3 mt-0.5">
                         {importPreview.rowCount} solve{importPreview.rowCount !== 1 ? 's' : ''} found{importPreview.errorCount > 0 ? ` · ${importPreview.errorCount} error${importPreview.errorCount !== 1 ? 's' : ''}` : ''}
@@ -366,7 +420,11 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                           {importPreview.samples.map((s, i) => (
                             <tr key={i} className="border-b border-line/50 last:border-0">
                               <td className="px-3 py-2 text-ink font-mono">
-                                {s.penalty === 'DNF' ? 'DNF' : `${(s.time / 1000).toFixed(2)}s`}
+                                {s.penalty === 'DNF'
+                                  ? s.time > 0
+                                    ? `DNF(${(s.time / 1000).toFixed(2)})`
+                                    : 'DNF'
+                                  : `${(s.time / 1000).toFixed(2)}s${s.penalty === '+2' ? '+' : ''}`}
                               </td>
                               <td className="px-3 py-2">{s.penalty}</td>
                               <td className="px-3 py-2 text-ink-3 font-mono max-w-30 truncate">{s.scramble}</td>
@@ -388,9 +446,10 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                     </button>
                     <button
                       onClick={() => void handleConfirmImport()}
-                      className="rounded-md bg-ink px-4 py-1.5 text-[0.68rem] font-medium text-surface hover:bg-ink/90 transition-colors cursor-pointer"
+                      disabled={!importCategory}
+                      className="rounded-md bg-ink px-4 py-1.5 text-[0.68rem] font-medium text-surface hover:bg-ink/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
-                      Import {importPreview.rowCount} solves
+                      Import {importPreview.rowCount} solves{importCategory ? ` into ${importCategory}` : ''}
                     </button>
                   </div>
                 </div>

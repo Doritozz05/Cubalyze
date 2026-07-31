@@ -214,7 +214,11 @@ const SolveRow = memo(function SolveRow({
             isDnf ? "text-dnf" : isBest ? "text-ready" : "text-ink",
           )}
         >
-          {isDnf ? "DNF" : formatTime(eff)}
+          {isDnf
+            ? solve.time > 0
+              ? `DNF(${formatTime(solve.time)})`
+              : "DNF"
+            : `${formatTime(eff)}${solve.penalty === "+2" ? "+" : ""}`}
         </span>
         <span className="rounded bg-surface-2 border border-line/60 px-1 py-0.2 text-[0.55rem] font-semibold text-ink-3 tracking-wide uppercase shrink-0">
           {formatPuzzleBadge(solve.puzzleType)}
