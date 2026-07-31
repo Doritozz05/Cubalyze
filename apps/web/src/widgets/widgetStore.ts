@@ -91,11 +91,16 @@ function clampStatus(id: WidgetId, status: WidgetStatus): WidgetStatus {
   }
   return status;
 }
-// Must stay below LeftSidebar (z-50) and Dialog overlays (z-50).
-// Header is z-20, so widgets live in the 21-49 band.
+// Widgets must live in a fixed band BELOW the app chrome so they can never
+// overlap panels/overlays: LeftSidebar is z-50, Dialogs/Sheets/Settings are
+// z-50, header is z-20. The 25-49 band keeps widgets above the header but
+// always beneath every z-50 surface.
+//
+// Ordering between widgets is handled by renormalizing the whole band on
+// focus (see focusWidget): the most recently dragged widget is always on
+// top, but no widget can ever climb above Z_MAX.
 const Z_MIN = 25;
 const Z_MAX = 49;
-let _zCounter = Z_MIN;
 
 // ── Store ────────────────────────────────────────────────────────────────
 
@@ -132,6 +137,9 @@ export const widgetStore = createStore<WidgetStore>()(
                 ...inst,
                 status: willBeActive ? "docked" : "inactive",
                 position,
+                // Leaving the floating state — drop the runtime z-index so it
+                // starts at the band floor again next time it floats.
+                zIndex: undefined,
               },
             },
           };
@@ -162,7 +170,17 @@ export const widgetStore = createStore<WidgetStore>()(
             dockOrder,
             instances: {
               ...s.instances,
-              [id]: { ...instance, status: clamped },
+              [id]: {
+                ...instance,
+                status: clamped,
+                // Only floating/minimized widgets hold a z-index; clear it
+                // when leaving that state so a re-floated widget doesn't
+                // reappear on top with a stale value.
+                zIndex:
+                  clamped === "floating" || clamped === "minimized"
+                    ? instance.zIndex
+                    : undefined,
+              },
             },
           };
         }),
@@ -232,24 +250,47 @@ export const widgetStore = createStore<WidgetStore>()(
             dockOrder,
             instances: {
               ...s.instances,
-              [id]: { ...instance, status: clamped },
+              [id]: { ...instance, status: clamped, zIndex: undefined },
             },
           };
         }),
 
+      // ── Focus: bring to top of the z-stack ───────────────────────
       focusWidget: (id) =>
         set((s) => {
           const inst = s.instances[id];
           if (!inst) return s;
-          _zCounter += 1;
-          // Cap at Z_MAX to prevent widgets from appearing above modals/sidebar
-          const z = Math.min(_zCounter, Z_MAX);
-          return {
-            instances: {
-              ...s.instances,
-              [id]: { ...inst, zIndex: z },
-            },
-          };
+
+          // Current bottom→top order of floating/minimized widgets, derived
+          // from their stored z-index (unfocused widgets default to the band
+          // floor). Sorting is stable, so ties keep a deterministic order.
+          const order = Object.entries(s.instances)
+            .filter(
+              ([, w]) => w?.status === "floating" || w?.status === "minimized",
+            )
+            .sort(([, a], [, b]) => (a?.zIndex ?? Z_MIN) - (b?.zIndex ?? Z_MIN))
+            .map(([wid]) => wid);
+
+          // Move the focused widget to the top of the stack.
+          const stack = [...order.filter((wid) => wid !== id), id];
+
+          // Renormalize the whole stack across the fixed band so the most
+          // recently dragged widget is always on top, re-dragging brings it
+          // back to top, and no widget can ever climb above Z_MAX (panels,
+          // dialogs and the sidebar live at z-50). This also fixes the old
+          // counter approach, where every widget saturated at Z_MAX and the
+          // drag order was lost.
+          const span = Math.max(Z_MAX - Z_MIN, 1);
+          const instances = { ...s.instances };
+          stack.forEach((wid, i) => {
+            const z =
+              stack.length <= 1
+                ? Z_MIN
+                : Math.round(Z_MIN + (i * span) / (stack.length - 1));
+            instances[wid] = { ...instances[wid], zIndex: z };
+          });
+
+          return { instances };
         }),
 
       registerCustomWidget: (def) =>

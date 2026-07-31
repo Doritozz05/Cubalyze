@@ -59,7 +59,9 @@ export interface WidgetInstanceState {
   position: { x: number; y: number };
   /**
    * Runtime z-index for focus management — NOT persisted.
-   * Higher value = rendered on top. Updated by `focusWidget()`.
+   * Higher value = rendered on top. Updated by `focusWidget()`,
+   * which renormalizes the whole stack into the fixed widget band
+   * (below app chrome: sidebar/settings/dialogs are z-50).
    */
   zIndex?: number;
   /**
