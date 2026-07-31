@@ -218,7 +218,6 @@ export function ManualTimeInput({
             "nums w-[clamp(320px,70vw,900px)] rounded-xl border-2 bg-transparent py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
             "border-line text-ink placeholder:text-ink-3/20",
             "focus:border-ink-2 focus:bg-surface/50",
-            parsedMs != null && parsedMs > 0 && "border-emerald-500/40",
           )}
           autoComplete="off"
           spellCheck={false}
