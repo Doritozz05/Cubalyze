@@ -214,8 +214,8 @@ export function FloatingWidgetWrapper({
         isNearDock
           ? "h-8 rounded-md px-2.5 text-xs font-medium cursor-grabbing"
           : minimized
-            ? "rounded-lg hover:border-ink-2/40 cursor-grab"
-            : "rounded-xl border-line",
+            ? "rounded-lg cursor-grab"
+            : "rounded-xl",
         drag.isDragging && !isNearDock && "shadow-2xl cursor-grabbing",
         className,
       )}
