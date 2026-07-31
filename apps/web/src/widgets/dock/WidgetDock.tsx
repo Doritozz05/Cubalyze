@@ -193,7 +193,7 @@ function DockPill({
           ref={ghostRef}
           aria-hidden
           className={cn(
-            "pointer-events-none fixed left-0 top-0 z-[60] flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 text-xs font-medium text-ink shadow-xl",
+            "pointer-events-none fixed left-0 top-0 z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 text-xs font-medium text-ink shadow-xl",
             isDragging
               ? "opacity-100"
               : isCommitted
@@ -402,7 +402,7 @@ export function WidgetDock() {
       role="toolbar"
       aria-label="Docked widgets"
       onScroll={updateScrollEdges}
-      className="flex min-w-0 flex-1 items-center overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex min-w-0 flex-1 items-center overflow-x-auto px-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
       style={{ maskImage: edgeMask, WebkitMaskImage: edgeMask }}
     >
       <Reorder.Group
