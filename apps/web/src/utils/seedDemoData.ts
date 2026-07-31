@@ -395,14 +395,25 @@ export async function seedDemoDataIfEmpty(
   // silently populated with fake solves.
   if (typeof window === "undefined") return;
 
+  // Expose console helper for developers/testers
+  if (typeof window !== "undefined") {
+    (window as unknown as Record<string, unknown>).seedDemoData = () => {
+      window.localStorage.setItem("cubeforge:seed-demo", "1");
+      window.location.reload();
+    };
+    (window as unknown as Record<string, unknown>).clearDemoData = () => {
+      window.localStorage.removeItem("cubeforge:seed-demo");
+      window.location.reload();
+    };
+  }
+
   // Demo DB injection is ONLY allowed when running on Vite dev server on localhost.
-  // In production (Vercel, Tauri desktop app, custom domains), fake solves are NEVER seeded.
   if (!isLocalhost()) return;
 
-  const isDev = import.meta.env.DEV;
   const flag = window.localStorage.getItem("cubeforge:seed-demo");
   const url = new URL(window.location.href);
-  if (!isDev && flag !== "1" && !url.searchParams.has("seed")) return;
+  // Only seed if explicitly requested via localStorage flag or ?seed= URL parameter
+  if (flag !== "1" && !url.searchParams.has("seed")) return;
 
   // Check if solves already exist (don't double-seed)
   const existing = await solvesRepo.count();

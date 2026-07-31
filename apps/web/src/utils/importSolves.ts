@@ -1023,7 +1023,7 @@ export function toSolveInput(
   time: number;
   penalty: Penalty;
   scramble: string;
-  method?: string;
+  method?: SolveMethod;
   timestamp: number;
   note?: string;
   puzzleType?: string;

@@ -24,55 +24,60 @@ export function exportSolvesToCSV(solves: Solve[], _sessionName?: string): strin
 }
 
 /**
- * Export solves in csTimer-compatible format (semicolon-delimited, quoted).
- *
- * csTimer format:
- *   "Puzzle";"Category";"Time(millis)";"Date(epoch)";"Scramble";"Penalty";"Comment"
- *
- * This format is natively importable by csTimer via "Import session(s) from
- * other timers" and by Twisty Timer / other speedcubing apps.
+ * Format a Date object to csTimer's human-readable timestamp: "YYYY-MM-DD HH:mm:ss"
  */
-export function exportSolvesToCsTimer(solves: Solve[]): string {
-  const header = '"Puzzle";"Category";"Time(millis)";"Date(epoch)";"Scramble";"Penalty";"Comment"';
-
-  const rows = solves.map((solve) => {
-    const puzzle = puzzleCodeFromType(solve.puzzleType);
-    const category = "Normal";
-    const timeMs = normalizePenalty(solve.penalty) === "DNF"
-      ? "-1" // csTimer DNF sentinel
-      : String(solve.time);
-    const dateEpoch = String(solve.timestamp);
-    const scramble = escapeQuoted(solve.scramble);
-    const penalty = normalizePenalty(solve.penalty) === "+2"
-      ? "2000"
-      : normalizePenalty(solve.penalty) === "DNF"
-        ? "-1"
-        : "0";
-    const comment = solve.note ? escapeQuoted(solve.note) : "";
-
-    return `"${puzzle}";"${category}";"${timeMs}";"${dateEpoch}";"${scramble}";"${penalty}";"${comment}"`;
-  });
-
-  return [header, ...rows].join("\n");
+function formatCsTimerDate(timestamp: number): string {
+  const d = new Date(timestamp);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const mins = pad(d.getMinutes());
+  const secs = pad(d.getSeconds());
+  return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
 }
 
 /**
- * Escape a string for csTimer CSV: wrap in quotes, escape internal quotes.
+ * Export solves in csTimer's official CSV export format.
+ *
+ * Header: No.;Time;Comment;Scramble;Date;P.1
+ * Example lines:
+ *   1;1:13.52;;F U2 R2...;2025-01-16 08:49:47;1:13.52
+ *   4;46.07+;;D F2 L'...;2025-01-16 11:25:54;44.07
+ *   7;DNF(44.83);Hola;U2 F L2...;2026-07-31 13:06:30;44.83
  */
-function escapeQuoted(s: string): string {
-  return s.replace(/"/g, '""');
-}
+export function exportSolvesToCsTimer(solves: Solve[]): string {
+  const header = "No.;Time;Comment;Scramble;Date;P.1";
 
-/** Map a CubeForge puzzle type ("3x3x3") to a csTimer puzzle code ("333"). */
-function puzzleCodeFromType(puzzleType?: string): string {
-  switch (puzzleType) {
-    case "2x2x2": return "222";
-    case "4x4x4": return "444";
-    case "5x5x5": return "555";
-    case "6x6x6": return "666";
-    case "7x7x7": return "777";
-    default: return "333";
-  }
+  const rows = solves.map((solve, i) => {
+    const no = i + 1;
+    const pen = normalizePenalty(solve.penalty);
+
+    let timeStr: string;
+    let p1Str: string;
+
+    if (pen === "DNF") {
+      const rawSecs = solve.time > 0 ? (solve.time / 1000).toFixed(2) : "";
+      timeStr = rawSecs ? `DNF(${formatTime(solve.time)})` : "DNF";
+      p1Str = rawSecs ? formatTime(solve.time) : "DNF";
+    } else if (pen === "+2") {
+      const eff = effectiveTime(solve);
+      timeStr = `${formatTime(eff)}+`;
+      p1Str = formatTime(solve.time);
+    } else {
+      timeStr = formatTime(solve.time);
+      p1Str = timeStr;
+    }
+
+    const comment = solve.note ? solve.note.replace(/;/g, ",") : "";
+    const scramble = solve.scramble.replace(/;/g, "");
+    const dateStr = formatCsTimerDate(solve.timestamp);
+
+    return `${no};${timeStr};${comment};${scramble};${dateStr};${p1Str}`;
+  });
+
+  return [header, ...rows].join("\n");
 }
 
 /**
