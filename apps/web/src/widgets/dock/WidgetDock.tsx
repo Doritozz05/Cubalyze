@@ -314,7 +314,6 @@ export function WidgetDock() {
     if (atRightRef.current) {
       el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dockedIds.length]);
 
   // Keep fades in sync with pill changes and window resizes.
@@ -350,8 +349,6 @@ export function WidgetDock() {
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dockedIds.length, isDockZoneActive]);
 
   // ── Ghost position from CONTAINER (stable — ghost doesn't create feedback) ─

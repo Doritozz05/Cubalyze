@@ -17,7 +17,6 @@ import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
 import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
 import { Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
@@ -70,7 +69,6 @@ export default function App() {
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
-  const setFocusMode = useStore(preferencesStore, (s) => s.setFocusMode);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
   const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
