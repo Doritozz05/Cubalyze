@@ -20,7 +20,10 @@ const GHOST_WIDTH = 48;
  * A single docked widget pill in the header dock bar.
  *
  * - **Click**: launches the widget as a floating panel at a smart position.
- * - **Vertical drag down**: undocks to a free‑floating minimized pill with ghost preview.
+ * - **Drag (any direction)**: the pill instantly "lifts out" of the dock — the
+ *   real pill fades out with no transition and a portaled clone follows the
+ *   cursor, so it's NEVER clipped by the dock's overflow container. Dragging
+ *   down past the commit threshold undocks to a free-floating minimized pill.
  */
 function DockPill({
   widgetId,
@@ -33,15 +36,25 @@ function DockPill({
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
   const isDocked = status === "docked";
 
-  const [isUndocking, setIsUndocking] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
 
   const draggedRef = useRef(false);
+  const itemRef = useRef<HTMLElement | null>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  // Dock-slot position where the lift started, so the clone tracks with zero jump.
+  const ghostOriginRef = useRef<{ x: number; y: number } | null>(null);
 
   if (!definition || !isDocked) return null;
 
   const Icon = definition.icon;
+
+  // Position the lifted clone directly via transform — no React re-render per
+  // frame, so the clone tracks the cursor at 60fps.
+  const placeGhost = (x: number, y: number) => {
+    const el = ghostRef.current;
+    if (!el) return;
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  };
 
   const handleClick = () => {
     const store = widgetStore.getState();
@@ -78,12 +91,21 @@ function DockPill({
         value={widgetId}
         drag
         layout
-        ref={(el: HTMLElement | null) => onPillRef?.(widgetId, el)}
+        ref={(el: HTMLElement | null) => {
+          itemRef.current = el;
+          onPillRef?.(widgetId, el);
+        }}
         initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: isUndocking ? 0 : 1, scale: 1 }}
+        animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.85 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        whileDrag={{ scale: 1.08 }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 30,
+          // Hide the real pill INSTANTLY on lift (no clipped fade inside the
+          // overflow container); fade it back smoothly when it snaps back.
+          opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
+        }}
         onClick={() => {
           if (draggedRef.current) {
             draggedRef.current = false;
@@ -91,20 +113,23 @@ function DockPill({
           }
           handleClick();
         }}
-        onDragStart={() => {
+        onDragStart={(_e, info) => {
           draggedRef.current = true;
           setIsDragging(true);
+          // Lift out from the pill's exact dock position so there's no jump.
+          const el = itemRef.current;
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            ghostOriginRef.current = { x: rect.left, y: rect.top };
+            placeGhost(rect.left, rect.top);
+          } else {
+            placeGhost(info.point.x - 60, info.point.y - 16);
+          }
         }}
         onDrag={(_e, info) => {
-          if (info.offset.y > 28) {
-            if (!isUndocking) setIsUndocking(true);
-            setGhostPos({
-              x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
-              y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
-            });
-          } else if (isUndocking) {
-            setIsUndocking(false);
-          }
+          const origin = ghostOriginRef.current;
+          if (!origin) return;
+          placeGhost(origin.x + info.offset.x, origin.y + info.offset.y);
         }}
         onDragEnd={(_e, info) => {
           if (info.offset.y > 35) {
@@ -117,13 +142,12 @@ function DockPill({
           }
           draggedRef.current = false;
           setIsDragging(false);
-          setIsUndocking(false);
+          ghostOriginRef.current = null;
         }}
         className={cn(
           "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200",
           "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
           "cursor-grab active:cursor-grabbing",
-          isDragging && "z-[60] shadow-[0_8px_25px_rgba(0,0,0,0.15)]",
         )}
         aria-label={`${definition.name} — pinned`}
       >
@@ -131,18 +155,23 @@ function DockPill({
         <span className="truncate max-w-28">{definition.name}</span>
       </Reorder.Item>
 
-      {/* Ghost pill portal during undock drag */}
-      {isUndocking &&
-        createPortal(
-          <div
-            className="pointer-events-none fixed z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 shadow-xl text-xs font-medium text-ink"
-            style={{ left: ghostPos.x, top: ghostPos.y }}
-          >
-            <Icon className="size-3.5 shrink-0" />
-            <span className="truncate max-w-28">{definition.name}</span>
-          </div>,
-          document.body,
-        )}
+      {/* Lifted clone — portaled to <body> so the dock's overflow NEVER clips
+          it. Rendered always (for zero-latency lift) but only visible while
+          dragging; positioned imperatively via transform for 60fps tracking. */}
+      {createPortal(
+        <div
+          ref={ghostRef}
+          aria-hidden
+          className={cn(
+            "pointer-events-none fixed left-0 top-0 z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 text-xs font-medium text-ink shadow-xl",
+            isDragging ? "opacity-100" : "opacity-0 transition-opacity duration-150",
+          )}
+        >
+          <Icon className="size-3.5 shrink-0" />
+          <span className="truncate max-w-28">{definition.name}</span>
+        </div>,
+        document.body,
+      )}
     </>
   );
 }
@@ -375,4 +404,3 @@ export function WidgetDock() {
     </div>
   );
 }
-
