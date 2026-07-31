@@ -25,8 +25,8 @@ export type { WidgetHostProps };
 const EXCLUDED_FROM_HOST = new Set(["cube-button"]);
 
 function WidgetInstanceItem({ id, hostProps }: { id: string; hostProps: WidgetHostProps }) {
-  if (EXCLUDED_FROM_HOST.has(id)) return null;
   const status = useWidgetStore((s) => s.instances[id]?.status);
+  if (EXCLUDED_FROM_HOST.has(id)) return null;
   if (status !== "floating" && status !== "minimized") return null;
 
   const reg = WidgetRegistry.get(id);

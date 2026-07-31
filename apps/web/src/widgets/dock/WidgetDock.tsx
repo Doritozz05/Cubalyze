@@ -198,7 +198,14 @@ export function WidgetDock() {
     )
     .map(([id]) => id);
 
-  const dockedIds = [...orderedDocked, ...extraDocked];
+  // ── Memoize so the array identity is stable across renders ───────────────
+  // Without this, `dockedIds` is a new reference on every render, which makes
+  // useLayoutEffect/useMemo that depend on it fire on every render.
+  const dockedIds = useMemo(
+    () => [...orderedDocked, ...extraDocked],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dockOrder, instances],
+  );
 
   // ── Ghost position from CONTAINER (stable — ghost doesn't create feedback) ─
   // Using the container width as reference (not pill positions that shift with

@@ -10,7 +10,7 @@ import { useSyncExternalStore } from "react";
  * report "near dock" independently. Unmount or leave cleans up
  * only that widget's entry — no race condition.
  */
-let _nearIds = new Set<string>();
+const _nearIds = new Set<string>();
 let _dropX = 0;
 let _dropIndex = -1; // calculated insertion index (-1 = end)
 const listeners = new Set<() => void>();

@@ -110,10 +110,10 @@ export const widgetStore = createStore<WidgetStore>()(
         set((s) => {
           const inst = s.instances[id];
           const willBeActive = inst?.status === "inactive";
-          let dockOrder = s.dockOrder;
-          if (willBeActive && !dockOrder.includes(id)) {
-            dockOrder = [...dockOrder, id];
-          }
+          const dockOrder =
+            willBeActive && !s.dockOrder.includes(id)
+              ? [...s.dockOrder, id]
+              : s.dockOrder;
           return {
             dockOrder,
             instances: {
@@ -138,13 +138,14 @@ export const widgetStore = createStore<WidgetStore>()(
           const wasDocked = instance.status === "docked";
           const willBeDocked = clamped === "docked";
 
-          let dockOrder = s.dockOrder;
-          if (willBeDocked && !wasDocked) {
-            dockOrder = [...dockOrder.filter((i) => i !== id), id];
-          } else if (!willBeDocked && wasDocked) {
-            // When leaving docked state (to floating/minimized), keep in dockOrder
-            // so the pill can reappear if status goes back to docked
-          }
+          // When transitioning into docked (e.g. floating → docked), move the
+          // widget to the end of the dock order. Otherwise keep dockOrder intact
+          // (including the case where it leaves docked → floating/minimized:
+          // we keep it in dockOrder so the pill can reappear if it docks again).
+          const dockOrder =
+            willBeDocked && !wasDocked
+              ? [...s.dockOrder.filter((i) => i !== id), id]
+              : s.dockOrder;
 
           return {
             dockOrder,
@@ -189,7 +190,10 @@ export const widgetStore = createStore<WidgetStore>()(
           const instance = s.instances[id];
           if (!instance) return s;
           const clamped = clampStatus(id, "docked");
-          let dockOrder = [...s.dockOrder.filter((i) => i !== id)];
+          // `splice` and `push` mutate the array in-place, so `const` is fine:
+          // we never reassign the binding itself. (ESLint's `prefer-const` only
+          // detects reassignment via `=`, `+=`, etc., not mutations.)
+          const dockOrder = [...s.dockOrder.filter((i) => i !== id)];
           if (index >= 0 && index < dockOrder.length) {
             dockOrder.splice(index, 0, id);
           } else {

@@ -306,8 +306,8 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       // Clamp to viewport
       const maxX = Math.max(0, window.innerWidth - elW);
       const maxY = Math.max(0, window.innerHeight - elH);
-      let rawX = Math.max(0, Math.min(maxX, state.origX + dx));
-      let rawY = Math.max(0, Math.min(maxY, state.origY + dy));
+      const rawX = Math.max(0, Math.min(maxX, state.origX + dx));
+      const rawY = Math.max(0, Math.min(maxY, state.origY + dy));
 
       // Apply soft snap
       const snapped = applySnap(
