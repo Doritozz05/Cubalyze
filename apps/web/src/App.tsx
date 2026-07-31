@@ -473,14 +473,17 @@ export default function App() {
     timerStateRefValue === "running" || timerStateRefValue === "ready";
   const isManualMode = inputMode === "manual";
 
+  const [manualFocus, setManualFocus] = useState(false);
+
   const isFocused =
-    focusMode &&
-    (isManualMode ||
-      timerPhase === "running" ||
-      timerPhase === "inspection" ||
-      timerPhase === "holding" ||
-      timerPhase === "ready_for_move" ||
-      (timerPhase === "ready" && !smartCubeConnected));
+    (isManualMode && manualFocus) ||
+    (focusMode &&
+      !isManualMode &&
+      (timerPhase === "running" ||
+        timerPhase === "inspection" ||
+        timerPhase === "holding" ||
+        timerPhase === "ready_for_move" ||
+        (timerPhase === "ready" && !smartCubeConnected)));
 
   const scrollToTimer = useCallback(() => {
     document.getElementById("timer-section")?.scrollIntoView({
@@ -656,50 +659,48 @@ export default function App() {
                 onCopy={handleCopy}
                 indexLabel={`#${scrambleIndex + 1}`}
                 focusModeAction={
-                  isManualMode ? (
-                    <Button
-                      variant={focusMode ? "secondary" : "ghost"}
-                      size="sm"
-                      onClick={() => setFocusMode(!focusMode)}
+                  isManualMode && focusMode ? (
+                    <button
+                      type="button"
+                      onClick={() => setManualFocus(!manualFocus)}
                       className={cn(
-                        "h-7 gap-1.5 px-2 text-xs transition-all",
-                        focusMode
-                          ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
-                          : "text-ink-2 hover:text-ink",
+                        "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
+                        manualFocus
+                          ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
+                          : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
                       )}
-                      title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+                      title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
                     >
                       <Eye className="size-3.5" />
                       Focus
-                    </Button>
+                    </button>
                   ) : undefined
                 }
               />
             </motion.div>
-          ) : isManualMode ? (
+          ) : isManualMode && focusMode ? (
             <motion.div
               key="manual-focus-button"
-              initial={{ y: "-100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "-100%", opacity: 0 }}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
               transition={SIDEBAR_MOTION.panel}
               className="flex w-full justify-end mb-2"
             >
-              <Button
-                variant={focusMode ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setFocusMode(!focusMode)}
+              <button
+                type="button"
+                onClick={() => setManualFocus(!manualFocus)}
                 className={cn(
-                  "h-7 gap-1.5 px-2 text-xs transition-all",
-                  focusMode
-                    ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
-                    : "text-ink-2 hover:text-ink",
+                  "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
+                  manualFocus
+                    ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
+                    : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
                 )}
-                title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+                title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
               >
                 <Eye className="size-3.5" />
                 Focus
-              </Button>
+              </button>
             </motion.div>
           ) : null}
         </AnimatePresence>

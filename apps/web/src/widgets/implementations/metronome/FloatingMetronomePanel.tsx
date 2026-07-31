@@ -333,9 +333,9 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
               variant="outline"
               size="sm"
               className={cn(
-                "h-7 px-0 text-[10px] font-mono font-medium transition-colors text-center",
+                "h-7 px-0 text-[10px] font-mono font-medium transition-colors text-center data-[variant=outline]:border-l",
                 Math.abs(tps - preset) < 0.05
-                  ? "bg-accent/15 border-accent text-accent font-semibold"
+                  ? "bg-surface-2 border-ink/30 text-ink font-semibold"
                   : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
               )}
             >
@@ -347,7 +347,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
         {/* Sound Preset Selector */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-2">
-            <Music className="size-3 text-accent" />
+            <Music className="size-3 text-ink-2" />
             <span>Sound Mode</span>
           </div>
           <ToggleGroup
@@ -363,7 +363,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "h-7 px-1 text-[10px] font-medium transition-colors text-center",
+                  "h-7 px-1 text-[10px] font-medium transition-colors text-center data-[variant=outline]:border-l",
                   soundMode === mode.id
                     ? "bg-ink text-surface border-ink font-bold"
                     : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
@@ -392,9 +392,9 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "size-6 p-0 text-[10px] font-mono flex items-center justify-center border",
+                    "size-6 p-0 text-[10px] font-mono flex items-center justify-center border data-[variant=outline]:border-l",
                     beatsPerBar === count
-                      ? "bg-accent text-white border-accent font-bold"
+                      ? "bg-ink text-surface border-ink font-bold"
                       : "bg-surface text-ink-2 border-line hover:bg-surface-2",
                   )}
                 >
