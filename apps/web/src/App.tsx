@@ -15,6 +15,9 @@ import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
 import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
+import { Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { toast, Toaster } from "sonner";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
@@ -65,6 +68,7 @@ export default function App() {
 
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
+  const setFocusMode = useStore(preferencesStore, (s) => s.setFocusMode);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
   const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
@@ -465,10 +469,12 @@ export default function App() {
   const timerStateRefValue = timerStateRef.current;
   const timerRunning =
     timerStateRefValue === "running" || timerStateRefValue === "ready";
+  const isManualMode = inputMode === "manual";
 
   const isFocused =
     focusMode &&
-    (timerPhase === "running" ||
+    (isManualMode ||
+      timerPhase === "running" ||
       timerPhase === "inspection" ||
       timerPhase === "holding" ||
       timerPhase === "ready_for_move" ||
@@ -622,10 +628,9 @@ export default function App() {
     }
 
     // timer
-    const isManualMode = inputMode === "manual";
     return (
       <>
-        {(isManualMode || scrambleVerification) && !isFocused && (
+        {(isManualMode || scrambleVerification || !isFocused) && (
           <ScrambleDisplay
             scramble={currentScramble}
             displayScramble={displayScramble}
@@ -639,6 +644,25 @@ export default function App() {
             onRegenerate={handleRegenerate}
             onCopy={handleCopy}
             indexLabel={`#${scrambleIndex + 1}`}
+            focusModeAction={
+              isManualMode ? (
+                <Button
+                  variant={focusMode ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFocusMode(!focusMode)}
+                  className={cn(
+                    "h-7 gap-1.5 px-2 text-xs transition-all",
+                    focusMode
+                      ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
+                      : "text-ink-2 hover:text-ink",
+                  )}
+                  title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+                >
+                  <Eye className="size-3.5" />
+                  Focus
+                </Button>
+              ) : undefined
+            }
           />
         )}
 

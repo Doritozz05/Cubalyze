@@ -12,6 +12,7 @@ export interface ScrambleDisplayProps {
   onRegenerate?: () => void;
   onCopy?: () => void;
   indexLabel?: string;
+  focusModeAction?: React.ReactNode;
   states?: ('pending' | 'correct' | 'incorrect')[];
   currentIndex?: number;
   errorMoves?: string[];
@@ -27,6 +28,7 @@ export function ScrambleDisplay({
   onRegenerate,
   onCopy,
   indexLabel,
+  focusModeAction,
   states,
   currentIndex = 0,
   errorMoves = [],
@@ -65,6 +67,7 @@ export function ScrambleDisplay({
           ) : null}
         </div>
         <div className="flex items-center gap-1">
+          {focusModeAction}
           <Button
             variant="ghost"
             size="sm"
