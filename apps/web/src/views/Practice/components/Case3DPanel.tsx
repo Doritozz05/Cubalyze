@@ -172,7 +172,7 @@ export function Case3DPanel({
             onClick={() => onPracticeCase(caseData.subsetId, caseData.id)}
             className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
           >
-            Practice This Case
+            Practice this case
           </button>
         )}
       </div>

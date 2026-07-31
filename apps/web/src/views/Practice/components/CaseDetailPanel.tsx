@@ -193,7 +193,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
           >
             <Play className="size-3.5" />
-            Practice This Case
+            Practice this case
           </button>
         )}
 
