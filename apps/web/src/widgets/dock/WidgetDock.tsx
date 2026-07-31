@@ -45,8 +45,12 @@ function DockPill({
   const suppressClickRef = useRef(false);
   const itemRef = useRef<HTMLElement | null>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
-  // Dock-slot position where the lift started, so the clone tracks with zero jump.
+  // Dock-slot position where the lift started, so the clone tracks with zero
+  // jump. The drag-start offset is subtracted because framer-motion has already
+  // transformed the pill by the drag threshold (~3px) by the time onDragStart
+  // fires — otherwise the clone would double-count it and sit a few px off.
   const ghostOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   if (!definition || !isDocked) return null;
 
@@ -121,6 +125,7 @@ function DockPill({
           suppressClickRef.current = true;
           setIsDragging(true);
           setIsCommitted(false);
+          dragStartOffsetRef.current = { x: info.offset.x, y: info.offset.y };
           // Lift out from the pill's exact dock position so there's no jump.
           const el = itemRef.current;
           if (el) {
@@ -134,7 +139,11 @@ function DockPill({
         onDrag={(_e, info) => {
           const origin = ghostOriginRef.current;
           if (!origin) return;
-          placeGhost(origin.x + info.offset.x, origin.y + info.offset.y);
+          const start = dragStartOffsetRef.current;
+          placeGhost(
+            origin.x + (info.offset.x - start.x),
+            origin.y + (info.offset.y - start.y),
+          );
         }}
         onDragEnd={(_e, info) => {
           if (info.offset.y > 35) {
