@@ -113,11 +113,13 @@ describe("parseImport — Twisty Timer", () => {
     expect(result.solves[0]!.scramble).toBe("R' D2 R B2 F2 R' B2 F2 R' U2 R2 B R2 D' F D' U' L2 B2 U");
   });
 
-  it("handles DNF and +2 penalties inside the time field", () => {
+  it("handles DNF and +2 penalties inside the time field or as 4th field", () => {
     const csv = [
       '"DNF";"R U R\' U\'";"2025-01-08T19:50:06.520+01:00"',
       '"12.34+2";"F R U R\' U\' F\'";"2025-01-09T10:00:00.000+01:00"',
       '"1:05.00+2";"R U R\' U\'";"2025-01-10T10:00:00.000+01:00"',
+      '"0.87";"B U2 L D2 B\' R2 L2 F2 D F L D2 R2 U2 L B2 R U2 L\'";"2026-07-31T14:48:38.212+02:00";"DNF"',
+      '"1.04";"D2 R2 D B2 D\' B2 L2 B2 U\' B\' L U2 B\' R2 D L2 U B\' D";"2026-07-31T14:48:43.841+02:00";"Hola note"',
     ].join("\n");
     const result = parseImport(csv);
     expect(result.solves[0]!.penalty).toBe("DNF");
@@ -125,6 +127,16 @@ describe("parseImport — Twisty Timer", () => {
     expect(result.solves[1]!.time).toBe(12340);
     expect(result.solves[2]!.penalty).toBe("+2");
     expect(result.solves[2]!.time).toBe(65000);
+    expect(result.solves[3]!.penalty).toBe("DNF");
+    expect(result.solves[3]!.time).toBe(870);
+    expect(result.solves[4]!.penalty).toBe("none");
+    expect(result.solves[4]!.time).toBe(1040);
+    expect(result.solves[4]!.note).toBe("Hola note");
+  });
+
+  it("detects format when the first line is a 4-field DNF line", () => {
+    const line = '"0.87";"B U2 L D2 B\' R2 L2 F2 D F L D2 R2 U2 L B2 R U2 L\'";"2026-07-31T14:48:38.212+02:00";"DNF"';
+    expect(detectFormat(line)).toBe("twistytimer");
   });
 
   it("infers 3x3x3 for these 18-20 move all-face scrambles", () => {
@@ -167,10 +179,10 @@ describe("csTimer header CSV — penalties & comments", () => {
     expect(result.solves[2]!.time).toBe(44830);
   });
 
-  it("parses the + suffix as a +2 penalty", () => {
+  it("parses the + suffix as a +2 penalty and extracts raw time from P.1 column", () => {
     const result = parseImport(CSTIMER_PENALTY_CSV);
     expect(result.solves[1]!.penalty).toBe("+2");
-    expect(result.solves[1]!.time).toBe(46070);
+    expect(result.solves[1]!.time).toBe(44070);
   });
 
   it("parses the +2 suffix as a +2 penalty", () => {

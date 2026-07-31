@@ -72,7 +72,7 @@ function looksLikeTwistyTimerLine(line: string): boolean {
   const t = line.trim();
   if (!t.startsWith('"')) return false;
   const fields = splitCSVLine(t, ";");
-  if (fields.length !== 3) return false;
+  if (fields.length < 3 || fields.length > 5) return false;
   const time = unquote(fields[0] ?? "").trim();
   const date = unquote(fields[2] ?? "").trim();
   const timeOk = parseWcaTimeWithPenalty(time) !== null;
@@ -216,6 +216,20 @@ function parseTwistyTimerLine(line: string, _lineNum: number): ImportedSolve | n
   if (parsedTime === null) return null;
   let timeMs = parsedTime.timeMs;
   let penalty: Penalty = parsedTime.penalty;
+  let note: string | undefined = undefined;
+
+  for (let i = 3; i < fields.length; i++) {
+    const extra = unquote(fields[i] ?? "").trim();
+    if (!extra) continue;
+    const upper = extra.toUpperCase();
+    if (upper === "DNF") {
+      penalty = "DNF";
+    } else if (upper === "+2" || upper === "+") {
+      penalty = "+2";
+    } else if (!note) {
+      note = extra;
+    }
+  }
 
   let timestamp = Date.now();
   if (dateRaw) {
@@ -228,6 +242,7 @@ function parseTwistyTimerLine(line: string, _lineNum: number): ImportedSolve | n
     penalty,
     scramble: scramble || "",
     timestamp,
+    note,
     puzzleType: inferPuzzleType(scramble || ""),
   };
 }
@@ -394,11 +409,21 @@ function parseCsTimerHeaderLine(
       const coded = mapCsTimerPenalty(pRaw);
       if (coded !== "none") {
         penalty = coded;
-      } else {
-        const pMs = parseWcaTimeMs(pRaw);
-        // Effective time = raw + 2000ms → +2
-        if (pMs !== null && pMs - timeMs === 2000) penalty = "+2";
       }
+    }
+  }
+
+  // In csTimer header CSV, the Time column (e.g. "46.07+") contains the penalty-adjusted time (raw + 2s).
+  // The P.1 column (e.g. "44.07") contains the raw solve time.
+  // CubeForge expects solve.time to be the RAW time, so effectiveTime(solve) = solve.time + 2000ms.
+  if (penalty === "+2") {
+    const pMs = pRaw ? parseWcaTimeMs(pRaw) : null;
+    if (pMs !== null && pMs > 0 && pMs < timeMs) {
+      timeMs = pMs;
+    } else if (timeRaw.endsWith("+")) {
+      timeMs = Math.max(0, timeMs - 2000);
+    } else if (pMs !== null && pMs > 0) {
+      timeMs = pMs;
     }
   }
 

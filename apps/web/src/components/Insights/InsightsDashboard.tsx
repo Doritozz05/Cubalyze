@@ -79,16 +79,26 @@ export function InsightsDashboard({
 
   // Fetch data when filters change
   useEffect(() => {
+    let cancelled = false;
+
     if (selectedSession === null) {
-      // "All sessions" — fetch all
+      // "All sessions" — fetch non-active sessions and combine with active session's live `solves`
       setLoadingData(true);
-      Promise.all(sessions.map((s) => fetchSessionSolves(s.id)))
+      const otherSessions = sessions.filter((s) => s.id !== activeSessionId);
+
+      Promise.all(otherSessions.map((s) => fetchSessionSolves(s.id)))
         .then((results) => {
-          setAllSessionSolves(results.flat());
-          setSpecificSessionSolves(null);
+          if (!cancelled) {
+            setAllSessionSolves([...solves, ...results.flat()]);
+            setSpecificSessionSolves(null);
+          }
         })
-        .catch(() => setAllSessionSolves([]))
-        .finally(() => setLoadingData(false));
+        .catch(() => {
+          if (!cancelled) setAllSessionSolves(solves);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingData(false);
+        });
     } else if (selectedSession === activeSessionId) {
       // Active session — use already-loaded solves
       setSpecificSessionSolves(null);
@@ -97,13 +107,23 @@ export function InsightsDashboard({
       setLoadingData(true);
       fetchSessionSolves(selectedSession)
         .then((rows) => {
-          setSpecificSessionSolves(rows);
-          setAllSessionSolves(null);
+          if (!cancelled) {
+            setSpecificSessionSolves(rows);
+            setAllSessionSolves(null);
+          }
         })
-        .catch(() => setSpecificSessionSolves([]))
-        .finally(() => setLoadingData(false));
+        .catch(() => {
+          if (!cancelled) setSpecificSessionSolves([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingData(false);
+        });
     }
-  }, [selectedSession, sessions, fetchSessionSolves, activeSessionId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSession, sessions, fetchSessionSolves, activeSessionId, solves]);
 
   // Determine the data pool to filter from
   const dataPool = useMemo(() => {
