@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Mic, MicOff, Cpu, Headphones, Bluetooth } from 'lucide-react';
+import { Clock, Mic, MicOff, Cpu, Headphones, Bluetooth, Keyboard } from 'lucide-react';
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
 import { SettingToggle } from '../components/SettingToggle';
@@ -16,6 +16,8 @@ import {
  * Timer settings section.
  *
  * Houses the preferences that drive the start-of-solve flow:
+ *   - Input Mode             : 'timer' (normal hold-to-start) or 'manual' (type times directly).
+ *   - Click to start/stop    : allow clicking the timer area to start/stop like spacebar.
  *   - Inspection             : run the 15s WCA inspection countdown before
  *                              the solve.
  *   - Inspection Audio Cues  : play voice alerts during inspection.
@@ -43,6 +45,10 @@ export function TimerSection() {
 
   const spacebarHoldDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
   const setSpacebarHoldDelay = useStore(preferencesStore, (s) => s.setSpacebarHoldDelay);
+  const inputMode = useStore(preferencesStore, (s) => s.inputMode);
+  const setInputMode = useStore(preferencesStore, (s) => s.setInputMode);
+  const clickToStart = useStore(preferencesStore, (s) => s.clickToStart);
+  const setClickToStart = useStore(preferencesStore, (s) => s.setClickToStart);
 
   return (
     <div className="flex flex-col gap-5">
@@ -55,6 +61,48 @@ export function TimerSection() {
           when no Smart Cube is connected.
         </p>
       </div>
+
+      {/* ── Input Mode: Timer vs Manual ──────────────────────────── */}
+      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="min-w-0 flex-1">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            <Keyboard className="size-3.5 text-ink-2" />
+            Manual time entry
+          </h4>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            Replace the timer with a text input to type times directly (like csTimer). Type "1450" or "14.50" to log a solve. Inspection and hold-to-start are bypassed.
+          </p>
+        </div>
+        <div className="mt-0.5 shrink-0">
+          <Select value={inputMode} onValueChange={(v) => setInputMode(v as 'timer' | 'manual')}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Input mode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="timer">
+                <div className="flex items-center gap-2">
+                  <Clock className="size-3.5" />
+                  <span>Timer (default)</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="manual">
+                <div className="flex items-center gap-2">
+                  <Keyboard className="size-3.5" />
+                  <span>Manual entry</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* ── Click to start/stop ───────────────────────────────────── */}
+      <SettingToggle
+        title="Click to start/stop"
+        description="Allow clicking the timer area to start and stop the timer with the mouse, just like the spacebar. When off, only the spacebar controls the timer."
+        checked={clickToStart}
+        onCheckedChange={setClickToStart}
+      />
 
       {/* ── Spacebar Hold Delay ────────────────────────────────────── */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">

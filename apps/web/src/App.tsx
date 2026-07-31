@@ -4,6 +4,7 @@ import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
@@ -67,6 +68,9 @@ export default function App() {
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
   const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
+  const inputMode = useStore(preferencesStore, (s) => s.inputMode);
+  const clickToStart = useStore(preferencesStore, (s) => s.clickToStart);
+  const spacebarHoldDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
 
   // ── PB Celebration state ───────────────────────────────────────────────
   const [activePbMilestone, setActivePbMilestone] = useState<PbMilestoneResult | null>(null);
@@ -503,6 +507,23 @@ export default function App() {
 
   // Manual solve submit — delegates to addSolve (manual entry, no moves,
   // no analysis). The sheet handles its own scramble generation.
+  // Manual time entry (inputMode === 'manual') — inline submit handler.
+  // Bypasses the timer engine completely: saves directly with no moves/analysis.
+  const handleManualSubmit = useCallback(
+    async (time: number, penalty: Penalty) => {
+      await addSolve({
+        time,
+        penalty,
+        scramble: currentScramble,
+        method: methodPref,
+        source: "manual",
+        puzzleType: puzzleCategoryToType(puzzle),
+      });
+      toast.success(`Logged: ${(time / 1000).toFixed(2)}s`);
+    },
+    [addSolve, currentScramble, methodPref, puzzle],
+  );
+
   const handleAddManual = useCallback(
     async (input: {
       time: number;
@@ -599,46 +620,56 @@ export default function App() {
     }
 
     // timer
+    const isManualMode = inputMode === "manual";
     return (
       <>
-        {scrambleVerification && !isFocused && (
+        {(isManualMode || scrambleVerification) && !isFocused && (
           <ScrambleDisplay
             scramble={currentScramble}
             displayScramble={displayScramble}
-            states={validation.states}
-            currentIndex={validation.currentIndex}
-            errorMoves={validation.displayErrorMoves}
-            pendingHalfDouble={validation.pendingHalfDouble}
-            isScrambled={validation.isScrambled}
-            needsReset={validation.needsReset}
-            awaitingSolve={validation.awaitingSolve}
+            states={isManualMode ? undefined : validation.states}
+            currentIndex={isManualMode ? 0 : validation.currentIndex}
+            errorMoves={isManualMode ? [] : validation.displayErrorMoves}
+            pendingHalfDouble={isManualMode ? false : validation.pendingHalfDouble}
+            isScrambled={isManualMode ? false : validation.isScrambled}
+            needsReset={isManualMode ? false : validation.needsReset}
+            awaitingSolve={isManualMode ? false : validation.awaitingSolve}
             onRegenerate={handleRegenerate}
             onCopy={handleCopy}
             indexLabel={`#${scrambleIndex + 1}`}
           />
         )}
 
-        <TimerContainer
-          phase={timerPhase}
-          time={timerTime}
-          lastTime={timerLastTime}
-          pb={previousPB}
-          showPbDelta={showPbDelta}
-          pbMilestone={activePbMilestone}
-          onDismissPbBanner={handleDismissPbBanner}
-          hintCtx={{
-            smartCube: smartCubeConnected,
-            scrambleVerif: scrambleVerification,
-            inspection,
-            isScrambled: validation.isScrambled,
-          }}
-          onPress={timerPress}
-          onRelease={timerRelease}
-          onCancel={handleTimerCancel}
-          stateRef={timerStateRef}
-          cancelRef={cancelRef}
-          className="mt-1 flex-1"
-        />
+        {isManualMode ? (
+          <ManualTimeInput
+            onSubmit={handleManualSubmit}
+            className="mt-1 flex-1"
+          />
+        ) : (
+          <TimerContainer
+            phase={timerPhase}
+            time={timerTime}
+            lastTime={timerLastTime}
+            pb={previousPB}
+            showPbDelta={showPbDelta}
+            pbMilestone={activePbMilestone}
+            onDismissPbBanner={handleDismissPbBanner}
+            hintCtx={{
+              smartCube: smartCubeConnected,
+              scrambleVerif: scrambleVerification,
+              inspection,
+              isScrambled: validation.isScrambled,
+            }}
+            onPress={timerPress}
+            onRelease={timerRelease}
+            onCancel={handleTimerCancel}
+            stateRef={timerStateRef}
+            cancelRef={cancelRef}
+            clickToStart={clickToStart}
+            holdDelay={spacebarHoldDelay}
+            className="mt-1 flex-1"
+          />
+        )}
 
         {!isFocused && (
           <SessionStats
@@ -655,7 +686,6 @@ export default function App() {
     <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
       <ThemeProvider>
         <MainLayout
-          pb={currentPB}
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={session?.id ?? null}

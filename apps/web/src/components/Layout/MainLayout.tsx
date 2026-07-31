@@ -41,8 +41,6 @@ export interface MainLayoutProps {
   cube3DActive?: boolean;
   /** Whether the 3D cube has been activated at least once (keeps it mounted). */
   cube3DReady?: boolean;
-  /** Personal best shown in the header (ms). */
-  pb?: number | null;
   /** Current session solve count, shown as a chip in the header. */
   sessionCount?: number;
   /** All known sessions (for the switcher). */
@@ -87,7 +85,6 @@ export function MainLayout({
   cube3D,
   cube3DActive,
   cube3DReady,
-  pb,
   sessionCount,
   sessions,
   activeSessionId,
@@ -154,7 +151,6 @@ export function MainLayout({
       <div className={cn("flex flex-1 flex-col", !isFocused && !hideHeader && "pt-14", !isFocused && "md:pl-14")}>
         {!isFocused && !hideHeader && (
           <Header
-            pb={pb}
             sessionCount={sessionCount}
             sessions={sessions}
             activeSessionId={activeSessionId}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { TimerDisplay } from "./TimerDisplay";
 import { PbCelebrationBanner } from "./PbCelebrationBanner";
@@ -37,6 +37,10 @@ export interface TimerContainerProps {
   onCancel?: () => void;
   /** Optional className override for the time display text size. */
   timerClassName?: string;
+  /** When true, clicking the timer area toggles start/stop like spacebar. */
+  clickToStart?: boolean;
+  /** Hold delay in ms (used to time the auto-release after click in clickToStart mode). */
+  holdDelay?: number;
   className?: string;
 }
 
@@ -60,6 +64,8 @@ export function TimerContainer({
   cancelRef,
   onCancel,
   timerClassName,
+  clickToStart = false,
+  holdDelay = 300,
   className,
 }: TimerContainerProps) {
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
@@ -87,37 +93,63 @@ export function TimerContainer({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (!clickToStart) return; // Only respond to pointer when clickToStart is ON
       if (e.button !== 0 && e.pointerType === "mouse") return;
       e.preventDefault();
       onPress();
     },
-    [onPress],
+    [onPress, clickToStart],
   );
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
+      if (!clickToStart) return; // Only respond to pointer when clickToStart is ON
       e.preventDefault();
       onRelease();
     },
-    [onRelease],
+    [onRelease, clickToStart],
   );
 
-  const hasPbActive = pbMilestone != null && pbMilestone.types.length > 0 && (phase === "stopped" || phase === "idle");
+  // Click-to-start: a single click toggles the timer (start/stop like spacebar)
+  const onClick = useCallback(() => {
+    if (!clickToStart) return;
+    if (phase === "idle" || phase === "stopped") {
+      // Simulate a full press-hold-release cycle
+      onPress();
+      // Wait for the hold delay to pass so engine transitions to READY, then release
+      const effectiveDelay = holdDelay > 0 ? holdDelay + 50 : 50;
+      setTimeout(() => onRelease(), effectiveDelay);
+    } else if (phase === "running") {
+      onPress(); // stops the timer
+    }
+  }, [clickToStart, phase, onPress, onRelease, holdDelay]);
+
+  // Ref to read latest phase in event handlers (avoids stale closure at render time)
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
 
   return (
     <div
       role="button"
-      tabIndex={0}
-      aria-label="Timer. Hold to start, press to stop."
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerLeave={(e) => {
-        if (e.buttons === 0) return;
-        onRelease();
-      }}
+      tabIndex={clickToStart ? 0 : -1}
+      aria-label={clickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
+      onPointerDown={clickToStart ? onPointerDown : undefined}
+      onPointerUp={clickToStart ? onPointerUp : undefined}
+      onClick={clickToStart ? onClick : undefined}
+      onPointerLeave={
+        clickToStart
+          ? (e: React.PointerEvent) => {
+              if (e.buttons === 0) return;
+              if (phaseRef.current === "idle" || phaseRef.current === "stopped") return;
+              onRelease();
+            }
+          : undefined
+      }
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full cursor-pointer active:cursor-grabbing flex-col items-center justify-center rounded-lg transition-all duration-300",
+        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full flex-col items-center justify-center rounded-lg transition-all duration-300",
+        !clickToStart && "cursor-default",
+        clickToStart && "cursor-pointer",
         "outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}

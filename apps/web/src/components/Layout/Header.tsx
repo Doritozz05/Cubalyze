@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Timer, Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
+import { Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
@@ -96,7 +96,6 @@ function BatteryIcon({ level }: { level: number | null }) {
 }
 
 export interface HeaderProps {
-  pb?: number | null;
   /** Current session solve count, shown as a small chip. */
   sessionCount?: number;
   /** All known sessions (for the session switcher). */
@@ -130,7 +129,6 @@ export interface HeaderProps {
  * working on" context selectors are visually adjacent.
  */
 export function Header({
-  pb,
   sessionCount,
   sessions,
   activeSessionId,
@@ -238,17 +236,6 @@ export function Header({
               </TooltipTrigger>
               <TooltipContent side="bottom">Add manual solve</TooltipContent>
             </Tooltip>
-          ) : null}
-          {pb != null && Number.isFinite(pb) ? (
-            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 sm:flex">
-              <Timer className="size-3.5 text-ink-3" />
-              <span className="text-[0.62rem] uppercase tracking-[0.16em] text-ink-3">
-                PB
-              </span>
-              <span className="nums text-xs text-ink">
-                {formatPb(pb)}
-              </span>
-            </div>
           ) : null}
 
           {/* Session switcher — next to the puzzle selector */}
@@ -415,13 +402,4 @@ export function Header({
       </AlertDialog>
     </header>
   );
-}
-
-function formatPb(ms: number): string {
-  const totalCs = Math.floor(ms / 10);
-  const cs = totalCs % 100;
-  const s = Math.floor(totalCs / 100);
-  const m = Math.floor(s / 60);
-  if (m > 0) return `${m}:${(s % 60).toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`;
-  return `${s}.${cs.toString().padStart(2, "0")}`;
 }

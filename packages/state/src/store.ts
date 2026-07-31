@@ -101,6 +101,14 @@ export interface PreferencesState {
   /** Time precision format: centiseconds (0.01s) or milliseconds (0.001s). */
   timePrecision: 'centiseconds' | 'milliseconds';
   setTimePrecision: (value: 'centiseconds' | 'milliseconds') => void;
+
+  /** Timer input mode: 'timer' uses the normal hold-to-start timer; 'manual' shows a text input for typing times directly (like csTimer). */
+  inputMode: 'timer' | 'manual';
+  setInputMode: (value: 'timer' | 'manual') => void;
+
+  /** When enabled, clicking the timer area starts/stops the timer (like spacebar). Default OFF. */
+  clickToStart: boolean;
+  setClickToStart: (value: boolean) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -182,6 +190,12 @@ export const createPreferencesStore = () => {
 
         timePrecision: 'centiseconds',
         setTimePrecision: (value) => set({ timePrecision: value }),
+
+        inputMode: 'timer',
+        setInputMode: (value) => set({ inputMode: value }),
+
+        clickToStart: false,
+        setClickToStart: (value) => set({ clickToStart: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -204,6 +218,8 @@ export const createPreferencesStore = () => {
           spacebarHoldDelay: state.spacebarHoldDelay,
           showBpaWpa: state.showBpaWpa,
           timePrecision: state.timePrecision,
+          inputMode: state.inputMode,
+          clickToStart: state.clickToStart,
         }),
         version: 1,
       },
