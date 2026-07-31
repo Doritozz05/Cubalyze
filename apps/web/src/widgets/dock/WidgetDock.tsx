@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useLayoutEffect, useState, useMemo } from "react";
+import { useRef, useCallback, useEffect, useLayoutEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,9 @@ import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from 
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
+
+/** Width (px) of the invisible drop-zone spacer rendered while dragging over the dock. */
+const GHOST_WIDTH = 48;
 
 // ── Dock pill ────────────────────────────────────────────────────────────
 
@@ -198,9 +201,102 @@ export function WidgetDock() {
     [dockOrder, instances],
   );
 
+  // ── Edge fades for horizontal overflow ──────────────────────────────────
+  // When the dock overflows its centered area, fade the pills at the visible
+  // edges to hint there's more content in that direction.
+  const [scrollEdges, setScrollEdges] = useState({ left: false, right: false });
+
+  // Shared "at right edge" tracker — updated by updateScrollEdges (called from
+  // onScroll and ResizeObserver) so it always reflects the user's LAST scroll
+  // position, not just the state at the previous count change.
+  const atRightRef = useRef(false);
+
+  const updateScrollEdges = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const atLeft = el.scrollLeft <= 2;
+    const atRight = el.scrollLeft >= el.scrollWidth - el.clientWidth - 2;
+    atRightRef.current = atRight;
+    setScrollEdges((prev) =>
+      prev.left === !atLeft && prev.right === !atRight
+        ? prev
+        : { left: !atLeft, right: !atRight },
+    );
+  }, []);
+
+  const edgeMask =
+    scrollEdges.left || scrollEdges.right
+      ? `linear-gradient(to right, ${
+          scrollEdges.left ? "transparent" : "black"
+        } 0, black 12px, black calc(100% - 12px), ${
+          scrollEdges.right ? "transparent" : "black"
+        } 100%)`
+      : undefined;
+
+  // ── Auto-reveal: when a new widget docks, scroll so it becomes visible ──
+  // Only auto-scroll to the right edge if the user was ALREADY looking at the
+  // end of the dock (where new pills appear). If they were scrolled elsewhere
+  // (e.g. they just dropped a widget mid-dock), keep their position instead
+  // of yanking the viewport away from the pill they just placed.
+  //
+  // Declared BEFORE the ResizeObserver effect so it reads atRightRef from the
+  // user's last scroll (pre-add) rather than the post-add geometry.
+  const prevDockedCountRef = useRef(dockedIds.length);
+  useLayoutEffect(() => {
+    const prevCount = prevDockedCountRef.current;
+    prevDockedCountRef.current = dockedIds.length;
+    const el = containerRef.current;
+    const grew = dockedIds.length > prevCount;
+    if (!el || !grew || el.scrollWidth <= el.clientWidth + 1) return;
+    if (atRightRef.current) {
+      el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dockedIds.length]);
+
+  // Keep fades in sync with pill changes and window resizes.
+  useLayoutEffect(() => {
+    updateScrollEdges();
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(updateScrollEdges);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateScrollEdges, dockedIds, isDockZoneActive]);
+
+  // ── Mouse-wheel horizontal scroll ───────────────────────────────────────
+  // The dock scrolls horizontally, but a plain mouse wheel emits vertical
+  // deltas (and the scrollbar is hidden), so cut-off pills are unreachable.
+  // When the dock overflows, translate the wheel into horizontal scrolling.
+  // When it fits, let the wheel scroll the page as usual.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const overflow = el.scrollWidth > el.clientWidth + 1;
+      if (!overflow) return;
+      e.preventDefault();
+      // Normalize line-mode deltas (some mice/trackpads report ±1-3 per notch)
+      // to pixel distances so the dock scrolls at a comfortable speed.
+      const factor = e.deltaMode === 1 ? 16 : 1;
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY)
+        ? e.deltaX * factor
+        : e.deltaY * factor;
+      el.scrollLeft += dx;
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dockedIds.length, isDockZoneActive]);
+
   // ── Ghost position from CONTAINER (stable — ghost doesn't create feedback) ─
   // Using the container width as reference (not pill positions that shift with
   // the ghost) breaks the feedback loop that plagued the grey-spacer approach.
+  // With a horizontally scrollable dock, offset by scrollLeft and measure the
+  // full content width (minus the 48px ghost spacer) so the drop index still
+  // lands under the cursor.
   useLayoutEffect(() => {
     if (!isDockZoneActive || dockedIds.length === 0 || !draggingWidgetId) {
       setGhostIndex(-1);
@@ -211,9 +307,12 @@ export function WidgetDock() {
     const container = containerRef.current;
     if (!container) return;
 
+    // NOTE: isDockZoneActive is guaranteed true here (early return above), so
+    // scrollWidth includes the ghost spacer — subtract it for stable mapping.
     const rect = container.getBoundingClientRect();
-    const relativeX = dropX - rect.left;
-    const proportion = Math.max(0, Math.min(1, relativeX / rect.width));
+    const contentX = dropX - rect.left + container.scrollLeft;
+    const contentWidth = Math.max(container.scrollWidth - GHOST_WIDTH, 1);
+    const proportion = Math.max(0, Math.min(1, contentX / contentWidth));
     const idx = Math.round(proportion * dockedIds.length);
 
     setGhostIndex(idx);
@@ -240,16 +339,18 @@ export function WidgetDock() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-1 items-center justify-center px-1"
       role="toolbar"
       aria-label="Docked widgets"
+      onScroll={updateScrollEdges}
+      className="flex min-w-0 flex-1 items-center overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{ maskImage: edgeMask, WebkitMaskImage: edgeMask }}
     >
       <Reorder.Group
         as="div"
         axis="x"
         values={dockedIds}
         onReorder={handleReorder}
-        className="flex items-center gap-1.5"
+        className="mx-auto flex items-center gap-1.5"
       >
         <AnimatePresence mode="popLayout">
           {displayIds.map((id) => {
@@ -259,7 +360,7 @@ export function WidgetDock() {
                   key={GHOST_ID}
                   layout
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 0, width: 48 }}
+                  animate={{ opacity: 0, width: GHOST_WIDTH }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 32 }}
                   className="h-8 shrink-0"
