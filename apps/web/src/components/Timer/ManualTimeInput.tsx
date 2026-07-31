@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import type { Penalty } from "@/types";
@@ -235,27 +234,7 @@ export function ManualTimeInput({
         ))}
       </div>
 
-      {/* Hint — only visible when input is empty, fades out when typing */}
-      <AnimatePresence>
-        {input.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex flex-col items-center justify-center gap-1 text-ink-3 overflow-hidden"
-          >
-            <span className="nums text-[0.7rem] uppercase tracking-[0.18em]">
-              Enter to log · Esc to clear
-            </span>
-            <span className="text-[0.55rem] text-ink-3/60 text-center leading-relaxed">
-              <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1450</code> = 14.50s ·{" "}
-              <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">23100</code> = 2:31.00 ·{" "}
-              <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1:23.45</code> = 1m 23.45s ·{" "}
-              <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1:23:45</code> = 1h 23m
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }
