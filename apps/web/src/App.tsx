@@ -631,7 +631,7 @@ export default function App() {
     // timer
     return (
       <>
-        {scrambleDisplay && (scrambleVerification || !isFocused) && (
+        {scrambleDisplay && (scrambleVerification || !isFocused) ? (
           <ScrambleDisplay
             scramble={currentScramble}
             displayScramble={displayScramble}
@@ -665,7 +665,25 @@ export default function App() {
               ) : undefined
             }
           />
-        )}
+        ) : isManualMode ? (
+          <div className="flex w-full justify-end mb-2">
+            <Button
+              variant={focusMode ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFocusMode(!focusMode)}
+              className={cn(
+                "h-7 gap-1.5 px-2 text-xs transition-all",
+                focusMode
+                  ? "bg-primary/20 text-primary hover:bg-primary/30 font-medium shadow-sm"
+                  : "text-ink-2 hover:text-ink",
+              )}
+              title={focusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+            >
+              <Eye className="size-3.5" />
+              Focus
+            </Button>
+          </div>
+        ) : null}
 
         {isManualMode ? (
           <ManualTimeInput
