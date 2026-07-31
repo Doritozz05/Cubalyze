@@ -148,7 +148,6 @@ export function ManualTimeInput({
   className,
 }: ManualTimeInputProps) {
   const [input, setInput] = useState("");
-  const [submittedTime, setSubmittedTime] = useState<number | null>(null);
   const [penalty, setPenalty] = useState<Penalty>("none");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -163,7 +162,6 @@ export function ManualTimeInput({
   const handleSubmit = useCallback(() => {
     if (parsedMs == null || parsedMs <= 0) return;
     onSubmit(parsedMs, penalty);
-    setSubmittedTime(parsedMs);
     setInput("");
     setPenalty("none");
     // Re-focus for next entry
@@ -186,21 +184,6 @@ export function ManualTimeInput({
 
   return (
     <div className={cn("relative flex flex-col items-center justify-center gap-7 overflow-visible", className)}>
-      {/* Submitted time flash — absolute so it doesn't push content */}
-      <AnimatePresence>
-        {submittedTime !== null && (
-          <motion.div
-            key={submittedTime}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="absolute -top-2 text-ink-3 text-sm nums"
-          >
-            Logged: {formatTime(submittedTime)}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Big time input — replaces the timer number */}
       <div className="relative flex items-center">
         <input
@@ -210,7 +193,6 @@ export function ManualTimeInput({
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
-            setSubmittedTime(null);
           }}
           onKeyDown={handleKeyDown}
           placeholder="0.00"

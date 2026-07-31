@@ -520,6 +520,8 @@ export default function App() {
         puzzleType: puzzleCategoryToType(puzzle),
       });
       toast.success(`Logged: ${(time / 1000).toFixed(2)}s`);
+      setCurrentScramble(generateScrambleFor(puzzle));
+      setScrambleIndex((i) => i + 1);
     },
     [addSolve, currentScramble, methodPref, puzzle],
   );
