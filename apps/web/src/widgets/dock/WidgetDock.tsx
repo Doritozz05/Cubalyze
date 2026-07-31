@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
 import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
+import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -51,6 +52,13 @@ function DockPill({
   // fires — otherwise the clone would double-count it and sit a few px off.
   const ghostOriginRef = useRef<{ x: number; y: number } | null>(null);
   const dragStartOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // ── Global grabbing cursor while dragging ─────────────────────────────
+  // The lifted clone is pointer-events-none, so the CSS cursor follows
+  // whatever element sits under the pointer — leaving the dock would flip it
+  // back to default/pointer mid-drag. Pin `cursor: grabbing` on <html> for
+  // the whole drag instead (cleanup also runs on unmount).
+  useGlobalDragCursor(isDragging);
 
   if (!definition || !isDocked) return null;
 

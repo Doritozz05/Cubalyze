@@ -117,7 +117,7 @@ export function TimerContainer({
       }}
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full cursor-pointer flex-col items-center justify-center rounded-lg transition-all duration-300",
+        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full cursor-pointer active:cursor-grabbing flex-col items-center justify-center rounded-lg transition-all duration-300",
         "outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}

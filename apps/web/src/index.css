@@ -277,6 +277,17 @@
 .cursor-col-resize { cursor: var(--cursor-resize-w), col-resize; }
 .cursor-row-resize { cursor: var(--cursor-resize-n), row-resize; }
 
+/* While a drag is in progress, force the grabbing cursor everywhere.
+   The CSS cursor follows the element UNDER the pointer — not the element
+   being dragged. Without this, dragging a dock pill would flip the cursor
+   back to default/pointer as soon as the pointer leaves the dock (e.g. over
+   the timer). The .drag-grabbing class is toggled on <html> by the drag
+   hooks for the duration of the drag. */
+html.drag-grabbing,
+html.drag-grabbing * {
+  cursor: var(--cursor-grabbing), grabbing !important;
+}
+
 /* The body-level DMZ arrow is inherited, so restore the correct cursor on
    native interactive controls that don't carry a cursor-* class: DMZ I-beam
    on text-entry fields and DMZ hand on links/buttons (beats both the UA

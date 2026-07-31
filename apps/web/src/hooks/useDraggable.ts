@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 
 export interface Position {
   x: number;
@@ -183,6 +184,13 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   });
 
   const [isDragging, setIsDragging] = useState(false);
+
+  // ── Global grabbing cursor while dragging ─────────────────────────────
+  // The CSS cursor follows the element under the pointer, not the element
+  // being dragged. Pin `cursor: grabbing` on <html> for the drag duration
+  // so the cursor stays grabbing even when the pointer is over elements
+  // with their own cursor-* classes (e.g. the timer).
+  useGlobalDragCursor(isDragging);
 
   // ── Safeguard: after EVERY React render during drag, re-apply the ────
   //    correct transform. This handles edge cases where state changes
