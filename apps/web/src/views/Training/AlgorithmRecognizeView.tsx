@@ -385,7 +385,13 @@ function QuizPanel({
   round, currentCase, algorithm, visualizationStyle,
   subsetCases, onSelect, onNext,
 }: QuizPanelProps) {
-  const diagramRotation = round.answered ? 0 : round.rotation;
+  const is3DDiagram =
+    currentCase.diagramType === "3d-isometric" ||
+    currentCase.diagramType === "3d" ||
+    (!currentCase.diagram2D && Boolean(currentCase.setupScramble)) ||
+    (currentCase.diagramType !== "2d-top" && !currentCase.diagram2D);
+
+  const diagramRotation = (round.answered || is3DDiagram) ? 0 : round.rotation;
   const correctCase = subsetCases.find((c) => c.id === round.caseId);
   const isCorrect = round.answered && round.selectedId === round.caseId;
 
