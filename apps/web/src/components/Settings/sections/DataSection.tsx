@@ -315,7 +315,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                           <button
                             key={c}
                             onClick={() => setImportCategory(c)}
-                            className="rounded-lg border border-line bg-surface-2/40 px-2 py-2.5 text-[0.7rem] font-medium text-ink transition-all hover:border-accent/60 hover:bg-surface-2 hover:text-accent cursor-pointer"
+                            className="rounded-lg border border-line bg-surface-2/40 px-2 py-2.5 text-[0.7rem] font-medium text-ink transition-all hover:border-ink/40 hover:bg-surface-2 cursor-pointer"
                           >
                             {c}
                           </button>
@@ -325,11 +325,11 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                   ) : (
                     /* ── Step 2: drop zone for the chosen category ─────── */
                     <>
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-2/50 px-3 py-2">
                         <div className="flex min-w-0 items-center gap-2">
-                          <Grid3x3 className="size-3.5 shrink-0 text-accent" />
+                          <Grid3x3 className="size-3.5 shrink-0 text-ready" />
                           <p className="truncate text-[0.7rem] text-ink">
-                            Importing into <strong className="text-accent">{importCategory}</strong>
+                            Importing into <strong className="text-ready font-semibold">{importCategory}</strong>
                           </p>
                         </div>
                         <button
