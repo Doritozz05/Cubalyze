@@ -6,7 +6,6 @@ import { Box } from "lucide-react";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { CUBE_BUTTON_SENTINEL } from "./definition";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function getDefaultPos(): Position {
   if (typeof window === "undefined") return { x: 100, y: 100 };
@@ -110,42 +109,37 @@ export function FloatingCubeButton({
   };
 
   return createPortal(
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          ref={drag.elementRef}
-          data-widget-id="cube-button"
-          onPointerDown={drag.onPointerDown}
-          onPointerMove={drag.onPointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={drag.onPointerCancel}
-          style={{
-            // CRITICAL: `position:fixed` with ONLY transform and no left/top
-            // renders the element at its static-flow position (potentially
-            // off-screen when portaled to document.body). Anchoring at (0,0)
-            // makes translate3d offset from the viewport origin — same
-            // semantics as left/top. Mirrors FloatingWidgetWrapper.
-            position: "fixed",
-            left: 0,
-            top: 0,
-            transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
-            transformOrigin: "0 0",
-            willChange: drag.isDragging ? "transform" : undefined,
-            animation: "widgetMount 0.2s ease-out",
-          }}
-          className={
-            "fixed z-[45] grid size-12 touch-none select-none place-items-center " +
-            "rounded-full border border-line bg-surface shadow-lg " +
-            "transition-colors hover:border-ink-2/40 " +
-            (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
-          }
-          aria-label="Open 3D cube view"
-        >
-          <Box className="size-5 text-ink-2" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="left">Open 3D cube</TooltipContent>
-    </Tooltip>,
+    <button
+      ref={drag.elementRef}
+      data-widget-id="cube-button"
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={drag.onPointerCancel}
+      style={{
+        // CRITICAL: `position:fixed` with ONLY transform and no left/top
+        // renders the element at its static-flow position (potentially
+        // off-screen when portaled to document.body). Anchoring at (0,0)
+        // makes translate3d offset from the viewport origin — same
+        // semantics as left/top. Mirrors FloatingWidgetWrapper.
+        position: "fixed",
+        left: 0,
+        top: 0,
+        transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
+        transformOrigin: "0 0",
+        willChange: drag.isDragging ? "transform" : undefined,
+        animation: "widgetMount 0.2s ease-out",
+      }}
+      className={
+        "fixed z-[45] grid size-12 touch-none select-none place-items-center " +
+        "rounded-full border border-line bg-surface shadow-lg " +
+        "transition-colors hover:border-ink-2/40 " +
+        (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
+      }
+      aria-label="Open 3D cube view"
+    >
+      <Box className="size-5 text-ink-2" />
+    </button>,
     document.body,
   );
 }

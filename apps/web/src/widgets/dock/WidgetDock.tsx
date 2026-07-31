@@ -4,7 +4,6 @@ import { useRef, useCallback, useLayoutEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
 import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
@@ -70,72 +69,60 @@ function DockPill({
 
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Reorder.Item
-            as="button"
-            value={widgetId}
-            drag
-            layout
-            ref={(el: HTMLElement | null) => onPillRef?.(widgetId, el)}
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: isUndocking ? 0.3 : 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.85 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            whileDrag={{ scale: 1.08, boxShadow: "0 8px 25px rgba(0,0,0,0.15)", zIndex: 60 }}
-            onClick={() => {
-              if (draggedRef.current) {
-                draggedRef.current = false;
-                return;
-              }
-              handleClick();
-            }}
-            onDragStart={() => {
-              draggedRef.current = true;
-            }}
-            onDrag={(_e, info) => {
-              if (info.offset.y > 28) {
-                if (!isUndocking) setIsUndocking(true);
-                setGhostPos({
-                  x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
-                  y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
-                });
-              } else if (isUndocking) {
-                setIsUndocking(false);
-              }
-            }}
-            onDragEnd={(_e, info) => {
-              if (info.offset.y > 35) {
-                const store = widgetStore.getState();
-                store.setStatus(widgetId, "minimized");
-                store.setPosition(widgetId, {
-                  x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
-                  y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
-                });
-              }
-              draggedRef.current = false;
-              setIsUndocking(false);
-            }}
-            className={cn(
-              "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors duration-200",
-              "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
-              "cursor-grab active:cursor-grabbing",
-            )}
-            aria-label={`${definition.name} — pinned`}
-          >
-            <Icon className="size-3.5 shrink-0" />
-            <span className="truncate max-w-28">{definition.name}</span>
-          </Reorder.Item>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-semibold">{definition.name}</span>
-            <span className="text-[10px] text-ink-3">
-              Click to open · Drag down to float
-            </span>
-          </div>
-        </TooltipContent>
-      </Tooltip>
+      <Reorder.Item
+        as="button"
+        value={widgetId}
+        drag
+        layout
+        ref={(el: HTMLElement | null) => onPillRef?.(widgetId, el)}
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: isUndocking ? 0.3 : 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.85 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        whileDrag={{ scale: 1.08, boxShadow: "0 8px 25px rgba(0,0,0,0.15)", zIndex: 60 }}
+        onClick={() => {
+          if (draggedRef.current) {
+            draggedRef.current = false;
+            return;
+          }
+          handleClick();
+        }}
+        onDragStart={() => {
+          draggedRef.current = true;
+        }}
+        onDrag={(_e, info) => {
+          if (info.offset.y > 28) {
+            if (!isUndocking) setIsUndocking(true);
+            setGhostPos({
+              x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
+              y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
+            });
+          } else if (isUndocking) {
+            setIsUndocking(false);
+          }
+        }}
+        onDragEnd={(_e, info) => {
+          if (info.offset.y > 35) {
+            const store = widgetStore.getState();
+            store.setStatus(widgetId, "minimized");
+            store.setPosition(widgetId, {
+              x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
+              y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
+            });
+          }
+          draggedRef.current = false;
+          setIsUndocking(false);
+        }}
+        className={cn(
+          "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors duration-200",
+          "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
+          "cursor-grab active:cursor-grabbing",
+        )}
+        aria-label={`${definition.name} — pinned`}
+      >
+        <Icon className="size-3.5 shrink-0" />
+        <span className="truncate max-w-28">{definition.name}</span>
+      </Reorder.Item>
 
       {/* Ghost pill portal during undock drag */}
       {isUndocking &&
