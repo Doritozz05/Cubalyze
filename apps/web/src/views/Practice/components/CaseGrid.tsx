@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DDiagram } from "./Case3DDiagram";
+import { getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 
 export interface CaseGridProps {
@@ -45,8 +46,8 @@ export const CaseGrid = memo(function CaseGrid({
     >
       {cases.map((c) => {
         const isSelected = c.id === selectedCaseId;
-        const caseAlgs = algorithms.filter((a) => a.caseId === c.id);
-        const defaultAlg = caseAlgs.find((a) => a.isDefault) ?? caseAlgs[0];
+        const orderedAlgs = getAlgorithmsForCase(c.id);
+        const defaultAlg = orderedAlgs[0] ?? algorithms.find((a) => a.caseId === c.id);
 
         return (
           <CaseCard
@@ -89,7 +90,7 @@ function CaseCard({
       {/* Diagram — supports 3D isometric & 2D top diagrams */}
       <div className="flex items-center justify-center w-full min-h-35 pt-1">
         {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
-          <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
+          <Case3DDiagram caseData={caseData} customViewAngle={algorithm?.customViewAngle} className="w-full max-w-44" />
         ) : caseData.diagramType === "2d-top" && caseData.diagram2D ? (
           caseData.puzzleType === '2x2x2' ? (
             <Case2x2Diagram
@@ -97,6 +98,7 @@ function CaseCard({
               setupScramble={caseData.setupScramble}
               moves={algorithm?.moves}
               style={visualizationStyle ?? "full-color"}
+              rotation={algorithm?.customDiagramRotation}
               className="w-36"
             />
           ) : (
@@ -105,11 +107,12 @@ function CaseCard({
               setupScramble={caseData.setupScramble}
               moves={algorithm?.moves}
               style={visualizationStyle ?? "full-color"}
+              rotation={algorithm?.customDiagramRotation}
               className="w-36"
             />
           )
         ) : caseData.setupScramble ? (
-          <Case3DDiagram caseData={caseData} className="w-full max-w-44" />
+          <Case3DDiagram caseData={caseData} customViewAngle={algorithm?.customViewAngle} className="w-full max-w-44" />
         ) : (
           <div className="w-36 h-36 flex items-center justify-center rounded-lg bg-surface-2">
             <span className="text-ink-3/40 text-[0.65rem]">No diagram</span>

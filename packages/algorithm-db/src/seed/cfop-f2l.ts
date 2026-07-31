@@ -42,7 +42,7 @@ function makeAlg(
       stm: computeMetricFromString(movesStr, 'stm'),
     },
     isDefault, source: 'SpeedCubeDB', difficulty, triggers: [], notes,
-    isMirror: false, isInverse: false,
+    isMirror: false, isInverse: false, isCustom: false, sortOrder: 0,
   };
 }
 

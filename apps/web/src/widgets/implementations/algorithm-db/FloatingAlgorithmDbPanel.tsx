@@ -11,6 +11,7 @@ import {
   getChildSubsets,
 } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { AlgorithmViewerCard } from "./components/AlgorithmViewerCard";
 import {
   Select,
@@ -41,7 +42,7 @@ export interface FloatingAlgorithmDbPanelProps {
 }
 
 export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAlgorithmDbPanelProps) {
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(
+  const { cases: allCases } = useMemo(
     () => getSeedData(),
     []
   );
@@ -140,11 +141,8 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
 
   const activeCase: AlgorithmCase | undefined = subsetCases[activeCaseIndex] ?? subsetCases[0];
 
-  // Algorithms for active case
-  const activeAlgorithms = useMemo(() => {
-    if (!activeCase) return [];
-    return allAlgorithms.filter((a) => a.caseId === activeCase.id);
-  }, [allAlgorithms, activeCase]);
+  // Algorithms for active case (seed + custom, ordered)
+  const { algorithms: activeAlgorithms } = useCaseAlgorithms(activeCase?.id);
 
   const handleSelectCase = (caseId: string) => {
     setSelectedCaseId(caseId);

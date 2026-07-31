@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useCube3D } from "@/hooks/useCube3D";
 import { CaseStateGenerator } from "@cubeforge/algorithm-db";
 import { Cube2x2State, Cube2x2FaceletConverter } from "@cubeforge/math-core";
-import { getSkinStyle } from "@cubeforge/cube-3d-engine";
+import { getSkinStyle, Cube3DEngine } from "@cubeforge/cube-3d-engine";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 
@@ -47,6 +47,9 @@ export interface Case3DDiagramProps {
   showSetup?: boolean;
   /** If true, keeps live WebGL engine running (for detail view). Default: false (uses 3D image snapshot). */
   interactive?: boolean;
+  /** Custom camera orbit [theta, phi, radius] from a user-created algorithm.
+   *  When set, forces interactive mode and overrides the default isometric view. */
+  customViewAngle?: [number, number, number];
 }
 
 export function Case3DDiagram({
@@ -57,8 +60,11 @@ export function Case3DDiagram({
   className,
   showSetup = false,
   interactive = false,
+  customViewAngle,
 }: Case3DDiagramProps) {
-  if (interactive) {
+  // Custom orientation → force interactive (snapshots are at fixed angles)
+  const effectiveInteractive = interactive || !!customViewAngle;
+  if (effectiveInteractive) {
     const is2x2 = caseData.puzzleType === '2x2x2';
     return (
       <div className="flex flex-col items-center w-full">
@@ -69,6 +75,7 @@ export function Case3DDiagram({
           resetCameraTrigger={resetCameraTrigger}
           className={className}
           order={is2x2 ? 2 : 3}
+          customViewAngle={customViewAngle}
         />
         {showSetup && caseData.setupScramble && (
           <div className="mt-2 text-center text-[0.65rem] text-ink-3">
@@ -187,13 +194,15 @@ function Case3DSnapshotView({
   );
 }
 
-function Case3DCanvas({
+export function Case3DCanvas({
   caseData,
   moves,
   selectedSlot,
   resetCameraTrigger,
   className,
   order = 3,
+  customViewAngle,
+  onEngineReady,
 }: {
   caseData: AlgorithmCase;
   moves?: string[];
@@ -201,6 +210,9 @@ function Case3DCanvas({
   resetCameraTrigger?: number;
   className?: string;
   order?: number;
+  customViewAngle?: [number, number, number];
+  /** Called when the engine is initialized, so parent can access camera for capture. */
+  onEngineReady?: (engine: Cube3DEngine) => void;
 }) {
   const { canvasRef, containerRef, isReady, engineRef, rotateCamera } = useCube3D({
     maxRecentMoves: 0,
@@ -236,6 +248,13 @@ function Case3DCanvas({
   const is2x2 = order === 2;
   const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
 
+  // Notify parent when engine is ready
+  useEffect(() => {
+    if (isReady && engineRef.current) {
+      onEngineReady?.(engineRef.current);
+    }
+  }, [isReady, engineRef, onEngineReady]);
+
   useEffect(() => {
     if (!isReady || !engineRef.current) return;
 
@@ -249,8 +268,15 @@ function Case3DCanvas({
         engine.updateStyle(getSkinStyle("default"));
       }
 
-      // Reset camera to default isometric view angle
-      engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+      // Reset camera to custom or default isometric view angle
+      if (customViewAngle) {
+        engine.sceneManager.setOrbitAngles(
+          customViewAngle[0],
+          customViewAngle[1],
+        );
+      } else {
+        engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+      }
 
       engine.clearLayerGray();
       if (moves && moves.length > 0) {
@@ -315,6 +341,7 @@ function Case3DCanvas({
     caseData.tags,
     order,
     moves ? moves.join(" ") : "",
+    customViewAngle,
   ]);
 
   useEffect(() => {

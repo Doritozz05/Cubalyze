@@ -48,6 +48,14 @@ export const AlgorithmSchema = z.object({
   mirrorOf: z.string().optional(),
   isInverse: z.boolean().default(false),
   votes: z.number().int().nonnegative().optional(),
+  /** User-created algorithm (not from seed data). */
+  isCustom: z.boolean().optional().default(false),
+  /** Custom 3D camera orbit for this algorithm's preview [theta, phi, radius]. */
+  customViewAngle: z.tuple([z.number(), z.number(), z.number()]).optional(),
+  /** Custom 2D diagram rotation in degrees (0–360). For cases with diagramType '2d-top'. */
+  customDiagramRotation: z.number().min(0).max(360).optional(),
+  /** User-defined sort order within the case. Lower = first. */
+  sortOrder: z.number().int().optional().default(0),
 });
 
 // ─── Case (the cube state / recognition target) ────────────────────────────

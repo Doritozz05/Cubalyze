@@ -101,6 +101,7 @@ export function AlgorithmViewerCard({
               setupScramble={caseData.setupScramble}
               moves={activeAlg?.moves}
               style={visStyle}
+              rotation={activeAlg?.customDiagramRotation}
               className="w-32 max-h-30"
             />
           ) : (
@@ -109,6 +110,7 @@ export function AlgorithmViewerCard({
               moves={activeAlg?.moves}
               style={visStyle}
               arrows={caseData.diagram2D?.arrows}
+              rotation={activeAlg?.customDiagramRotation}
               className="w-32 max-h-30"
             />
           )
@@ -116,6 +118,7 @@ export function AlgorithmViewerCard({
           <Case3DDiagram
             caseData={caseData}
             moves={activeAlg?.moves}
+            customViewAngle={activeAlg?.customViewAngle}
             interactive={true}
             className="w-full h-28"
           />

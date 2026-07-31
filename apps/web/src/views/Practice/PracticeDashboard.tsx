@@ -65,14 +65,6 @@ export function PracticeDashboard({
     [allCases, selectedCaseId],
   );
 
-  const selectedAlgorithms = useMemo(
-    () =>
-      selectedCaseId
-        ? allAlgorithms.filter((a) => a.caseId === selectedCaseId)
-        : [],
-    [allAlgorithms, selectedCaseId],
-  );
-
   const handleSelectSubset = useCallback((subsetId: string) => {
     setSelectedSubsetId(subsetId);
     setSelectedCaseId(null);
@@ -145,7 +137,6 @@ export function PracticeDashboard({
               >
                 <CaseDetailPanel
                   caseData={selectedCase}
-                  algorithms={selectedAlgorithms}
                   onClose={() => setSelectedCaseId(null)}
                   visualizationStyle={visualizationStyle}
                   onPracticeCase={onPracticeCase}

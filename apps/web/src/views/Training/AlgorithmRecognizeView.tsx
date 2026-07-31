@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
@@ -89,7 +90,7 @@ export function AlgorithmRecognizeView({
   void _phaseId;
 
   // ── Data ─────────────────────────────────────────────────────────────
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(() => getSeedData(), []);
+  const { cases: allCases } = useMemo(() => getSeedData(), []);
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
@@ -230,14 +231,9 @@ export function AlgorithmRecognizeView({
     [subsetCases, round],
   );
 
-  const currentAlgorithm = useMemo(() => {
-    if (!currentCase) return null;
-    return (
-      allAlgorithms.find((a) => a.caseId === currentCase.id && a.isDefault) ??
-      allAlgorithms.find((a) => a.caseId === currentCase.id) ??
-      null
-    );
-  }, [allAlgorithms, currentCase]);
+  // ── Ordered algorithms for current case (seed + custom) ──────────
+  const { primaryAlgorithm: currentAlgorithm } =
+    useCaseAlgorithms(currentCase?.id);
 
 
 
@@ -411,13 +407,14 @@ function QuizPanel({
           >
             <div className="relative" style={{ transform: `rotate(${diagramRotation}deg)`, transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" || (!currentCase.diagram2D && currentCase.setupScramble) ? (
-                <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
+                <Case3DDiagram caseData={currentCase} customViewAngle={currentAlgorithm?.customViewAngle} className="w-44 sm:w-52 lg:w-60" />
               ) : currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
                 currentCase.puzzleType === '2x2x2' ? (
                   <Case2x2Diagram
                     faceletColors={currentCase.diagram2D.faceletColors}
                     setupScramble={currentCase.setupScramble}
                     style={visualizationStyle}
+                    rotation={currentAlgorithm?.customDiagramRotation}
                     className="w-44 sm:w-52 lg:w-60"
                   />
                 ) : (
@@ -425,11 +422,12 @@ function QuizPanel({
                     arrows={currentCase.diagram2D.arrows}
                     setupScramble={currentCase.setupScramble}
                     style={visualizationStyle}
+                    rotation={currentAlgorithm?.customDiagramRotation}
                     className="w-44 sm:w-52 lg:w-60"
                   />
                 )
               ) : currentCase.setupScramble ? (
-                <Case3DDiagram caseData={currentCase} className="w-44 sm:w-52 lg:w-60" />
+                <Case3DDiagram caseData={currentCase} customViewAngle={currentAlgorithm?.customViewAngle} className="w-44 sm:w-52 lg:w-60" />
               ) : (
                 <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 flex items-center justify-center rounded-lg bg-surface-2">
                   <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>

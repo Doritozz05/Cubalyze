@@ -47,7 +47,7 @@ function alg(
     id, caseId, moves,
     moveCount: moveCount ?? { htm: 0, qtm: 0, stm: 0 },
     isDefault, source: 'SpeedCubeDB', difficulty, triggers, notes,
-    isMirror: false, isInverse: false,
+    isMirror: false, isInverse: false, isCustom: false, sortOrder: 0,
   };
 }
 

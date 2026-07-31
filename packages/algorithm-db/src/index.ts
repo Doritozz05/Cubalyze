@@ -19,6 +19,10 @@ export {
 } from './methodRegistry';
 export { getSeedData, seedIfEmpty, isSeeded } from './seed/index';
 
+// Move metrics (shared utility — used by seed files and AlgorithmEditor)
+export { computeMoveMetricsFromString, computeMoveMetricsFromTokens } from './moveMetrics';
+export type { MoveMetric, MoveCountResult } from './moveMetrics';
+
 // Case generation and verification pipeline
 export {
   CaseStateGenerator,
