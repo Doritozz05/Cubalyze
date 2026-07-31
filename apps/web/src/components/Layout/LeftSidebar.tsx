@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { motion, LayoutGroup } from "framer-motion";
 import { Sun, Moon, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,7 +58,8 @@ export function LeftSidebar({
   onImportSolves,
 }: LeftSidebarProps) {
   const isMobile = useIsMobile();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -172,7 +175,7 @@ export function LeftSidebar({
           icon={mounted && isDark ? Sun : Moon}
           label={mounted && isDark ? "Light mode" : "Dark mode"}
           labelVisible={labelVisible}
-          onClick={() => setTheme(isDark ? "light" : "dark")}
+          onClick={() => setStoreTheme(isDark ? "light" : "dark")}
         />
       </div>
     </>

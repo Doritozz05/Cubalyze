@@ -1,12 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
+
+function ThemeSync() {
+  const storeTheme = useStore(preferencesStore, (s) => s.theme);
+  const { theme: nextTheme, setTheme } = useTheme();
+
+  React.useEffect(() => {
+    if (storeTheme && storeTheme !== nextTheme) {
+      setTheme(storeTheme);
+    }
+  }, [storeTheme, nextTheme, setTheme]);
+
+  return null;
+}
 
 /**
  * Wraps next-themes so the app supports light/dark via the `.dark` class
  * (configured in globals.css). `attribute="class"` toggles the `.dark` class
- * on <html>; `defaultTheme="light"` keeps the pale canvas by default.
+ * on <html>; `defaultTheme="system"` respects system preference or store theme.
  */
 export function ThemeProvider({
   children,
@@ -15,11 +30,12 @@ export function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
+      defaultTheme="system"
+      enableSystem
       disableTransitionOnChange
       {...props}
     >
+      <ThemeSync />
       {children}
     </NextThemesProvider>
   );

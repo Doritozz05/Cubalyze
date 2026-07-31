@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,7 +12,8 @@ import { Button } from "@/components/ui/button";
  * next-themes hydration mismatch, then swaps between sun/moon icons.
  */
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
 
   // next-themes reads localStorage in an effect; we need a paint after mount
@@ -25,7 +28,7 @@ export function ThemeToggle() {
       size="icon"
       className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={() => setStoreTheme(isDark ? "light" : "dark")}
     >
       {mounted ? (
         isDark ? (
