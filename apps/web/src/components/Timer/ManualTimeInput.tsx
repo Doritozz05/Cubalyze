@@ -62,12 +62,27 @@ function parseManualTime(input: string): number | null {
     return parseSecondsMs(trimmed);
   }
 
-  // csTimer style: "1450" → 14.50 seconds = 14500 ms
-  // If 3+ digits, treat last 2 as centiseconds
-  if (trimmed.length >= 3 && /^\d+$/.test(trimmed)) {
+  // csTimer style numeric input: last 2 digits = centiseconds
+  //   3-4 digits: SScc   → "1450" = 14.50s
+  //   5-6 digits: MMSScc → "23100" = 2:31.00
+  //   7+ digits:  HMMSScc → "1231000" = 1:23:10.00
+  if (/^\d+$/.test(trimmed) && trimmed.length >= 3) {
     const cs = parseInt(trimmed.slice(-2), 10);
-    const sec = parseInt(trimmed.slice(0, -2), 10);
-    return (sec * 1000) + (cs * 10);
+    const sec = parseInt(trimmed.slice(-4, -2) || "0", 10);
+    const rest = trimmed.slice(0, -4);
+    if (rest.length === 0) {
+      // 3-4 digits: SScc
+      return (sec * 1000) + (cs * 10);
+    }
+    if (rest.length <= 2) {
+      // 5-6 digits: MMSScc
+      const min = parseInt(rest, 10);
+      return (min * 60_000) + (sec * 1000) + (cs * 10);
+    }
+    // 7+ digits: HMMSScc
+    const hours = parseInt(rest.slice(0, -2) || "0", 10);
+    const mins = parseInt(rest.slice(-2), 10);
+    return (hours * 3_600_000) + (mins * 60_000) + (sec * 1000) + (cs * 10);
   }
 
   // Short number: treat as seconds
@@ -172,7 +187,7 @@ export function ManualTimeInput({
 
         {/* Preview of parsed time — absolutely positioned below the input, no layout shift */}
         {preview && (
-          <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 nums text-xs text-emerald-400/80 whitespace-nowrap">
+          <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 nums text-xs text-ink-3 whitespace-nowrap">
             = {preview}
           </span>
         )}
@@ -207,9 +222,9 @@ export function ManualTimeInput({
         </span>
         <span className="text-[0.55rem] text-ink-3/60 text-center leading-relaxed">
           <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1450</code> = 14.50s ·{" "}
-          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">14.50</code> = 14.50s ·{" "}
+          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">23100</code> = 2:31.00 ·{" "}
           <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1:23.45</code> = 1m 23.45s ·{" "}
-          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1:23:45.67</code> = 1h 23m
+          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1:23:45</code> = 1h 23m
         </span>
       </div>
     </div>
