@@ -323,19 +323,16 @@ function parseWcaTimeWithPenalty(raw: string): { timeMs: number; penalty: Penalt
   return { timeMs: plain, penalty: "none" };
 }
 
-/** Map a csTimer puzzle code ("333", "222") to a puzzleType ("3x3x3"). */
+/** Map a csTimer puzzle code ("333", "222", "222so") to a puzzleType ("3x3x3", "2x2x2"). */
 function mapPuzzleCode(code: string): string | undefined {
   const c = code.trim().toLowerCase();
-  const map: Record<string, string> = {
-    "222": "2x2x2",
-    "333": "3x3x3",
-    "444": "4x4x4",
-    "555": "5x5x5",
-    "666": "6x6x6",
-    "777": "7x7x7",
-    "333oh": "3x3x3",
-  };
-  return map[c];
+  if (c.startsWith("222")) return "2x2x2";
+  if (c.startsWith("333")) return "3x3x3";
+  if (c.startsWith("444")) return "4x4x4";
+  if (c.startsWith("555")) return "5x5x5";
+  if (c.startsWith("666")) return "6x6x6";
+  if (c.startsWith("777")) return "7x7x7";
+  return undefined;
 }
 
 /**
@@ -670,9 +667,9 @@ function parseGenericLine(
    csTimer JSON import (native export format)
    Format: {"session1":[[[penalty,timeMs],scramble,comment,timestamp],...],
             "session2":[...],...,"properties":{...}}
-   - penalty: 0 = none, 1 = +2, 2 = DNF
-   - timeMs is in milliseconds
-   - properties contains session metadata + settings (truncated on import)
+   - penalty: 0 = none, 1 or 2000 = +2, 2 or -1 = DNF
+   - timeMs is in milliseconds (raw time without penalty)
+   - properties contains session metadata + settings
    ─────────────────────────────────────────────────────────────────────── */
 
 interface CsTimerJsonExport {
@@ -684,6 +681,37 @@ function parseCsTimerJson(content: string): ImportResult {
     const data: CsTimerJsonExport = JSON.parse(content);
     const solves: ImportedSolve[] = [];
     const errors: { line: number; message: string }[] = [];
+
+    // Parse session metadata if available from properties.sessionData
+    const sessionPuzzleMap: Record<string, string> = {};
+    if (typeof data.properties === "object" && data.properties !== null) {
+      const props = data.properties as Record<string, unknown>;
+      if (typeof props.sessionData === "string") {
+        try {
+          const sData = JSON.parse(props.sessionData);
+          if (typeof sData === "object" && sData !== null) {
+            for (const sId of Object.keys(sData)) {
+              const sObj = (sData as Record<string, unknown>)[sId];
+              if (
+                typeof sObj === "object" &&
+                sObj !== null &&
+                typeof (sObj as Record<string, unknown>).opt === "object" &&
+                (sObj as Record<string, unknown>).opt !== null
+              ) {
+                const opt = (sObj as Record<string, unknown>).opt as Record<string, unknown>;
+                const scrType = String(opt.scrType || "");
+                if (scrType) {
+                  const mapped = mapPuzzleCode(scrType);
+                  if (mapped) sessionPuzzleMap[`session${sId}`] = mapped;
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore sessionData parse error
+        }
+      }
+    }
 
     const sessionKeys = Object.keys(data).filter((k) => /^session\d+$/.test(k));
 
@@ -697,6 +725,8 @@ function parseCsTimerJson(content: string): ImportResult {
     for (const key of sessionKeys) {
       const sessionData = data[key];
       if (!Array.isArray(sessionData)) continue;
+
+      const sessionPuzzle = sessionPuzzleMap[key];
 
       for (let i = 0; i < sessionData.length; i++) {
         const entry = sessionData[i];
@@ -733,9 +763,9 @@ function parseCsTimerJson(content: string): ImportResult {
           scramble,
           timestamp,
           note: comment || undefined,
-          puzzle: "333",
+          puzzle: sessionPuzzle || "333",
           category: "Normal",
-          puzzleType: inferPuzzleType(scramble),
+          puzzleType: sessionPuzzle ?? inferPuzzleType(scramble),
         });
       }
     }

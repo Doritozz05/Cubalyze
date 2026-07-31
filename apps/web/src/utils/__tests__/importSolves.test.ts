@@ -255,3 +255,37 @@ describe("2x2 vs 3x3 detection", () => {
     expect(input.puzzleType).toBe("3x3x3");
   });
 });
+
+describe("csTimer JSON format", () => {
+  it("parses native csTimer JSON export with +2, DNF and comments", () => {
+    const json = JSON.stringify({
+      session1: [
+        [[0, 73521], "F U2 R2 F2", "", 1737013787],
+        [[2000, 44070], "D F2 L'", "", 1737023154],
+        [[-1, 44830], "U2 F L2", "Hola", 1785495990],
+      ],
+      properties: {
+        sessionData: JSON.stringify({
+          "1": { name: 1, opt: { scrType: "333" } },
+        }),
+      },
+    });
+
+    expect(detectFormat(json)).toBe("cstimer-json");
+    const result = parseImport(json);
+    expect(result.format).toBe("cstimer-json");
+    expect(result.solves).toHaveLength(3);
+    expect(result.solves[0]!.time).toBe(73521);
+    expect(result.solves[0]!.penalty).toBe("none");
+
+    // +2 solve: raw time is preserved as 44070ms, penalty is "+2"
+    expect(result.solves[1]!.time).toBe(44070);
+    expect(result.solves[1]!.penalty).toBe("+2");
+
+    // DNF solve: raw time is preserved as 44830ms, penalty is "DNF", comment is "Hola"
+    expect(result.solves[2]!.time).toBe(44830);
+    expect(result.solves[2]!.penalty).toBe("DNF");
+    expect(result.solves[2]!.note).toBe("Hola");
+    expect(result.solves[2]!.timestamp).toBe(1785495990000);
+  });
+});
