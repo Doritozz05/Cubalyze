@@ -243,7 +243,7 @@ function Case3DCanvas({
     const modelYRot = is2x2 ? 0 : (SLOT_LABELS[selectedSlot]?.modelYRot ?? 0);
 
     try {
-      if (isF2L) {
+      if (isF2L || is2x2) {
         engine.updateStyle(buildF2LSkinStyle());
       } else {
         engine.updateStyle(getSkinStyle("default"));

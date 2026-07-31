@@ -192,7 +192,7 @@ export class Global3DSnapshotService {
         const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
         const modelYRot = SLOT_LABELS[selectedSlot]?.modelYRot ?? 0;
 
-        if (isF2L) {
+        if (isF2L || is2x2) {
           engine.updateStyle(buildF2LSkinStyle());
         } else {
           engine.updateStyle(getSkinStyle("default"));

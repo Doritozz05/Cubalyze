@@ -96,8 +96,7 @@ function computeOllDiagramColors(movesStr: string): string[] {
 function computeSetupScramble(movesStr: string): string {
   try {
     const moves = expandWideMoves(movesStr);
-    // z2 puts yellow on U (Ortega convention), then inverse creates pre-PBL state
-    return 'z2 ' + invertMoveArray(moves).join(' ');
+    return invertMoveArray(moves).join(' ');
   } catch {
     return '';
   }
