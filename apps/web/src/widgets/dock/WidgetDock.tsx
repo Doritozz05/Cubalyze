@@ -37,8 +37,12 @@ function DockPill({
   const isDocked = status === "docked";
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isCommitted, setIsCommitted] = useState(false);
 
-  const draggedRef = useRef(false);
+  // Set on drag start and only cleared by the post-drag click event (or a
+  // safety timeout) — prevents the click that fires after a drag from
+  // launching the widget when the user just reordered a pill.
+  const suppressClickRef = useRef(false);
   const itemRef = useRef<HTMLElement | null>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
   // Dock-slot position where the lift started, so the clone tracks with zero jump.
@@ -107,15 +111,16 @@ function DockPill({
           opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
         }}
         onClick={() => {
-          if (draggedRef.current) {
-            draggedRef.current = false;
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
             return;
           }
           handleClick();
         }}
         onDragStart={(_e, info) => {
-          draggedRef.current = true;
+          suppressClickRef.current = true;
           setIsDragging(true);
+          setIsCommitted(false);
           // Lift out from the pill's exact dock position so there's no jump.
           const el = itemRef.current;
           if (el) {
@@ -139,10 +144,18 @@ function DockPill({
               x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
               y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
             });
+            // Commit: hide the clone instantly so it doesn't double-vision
+            // with the minimized pill appearing at the same spot.
+            setIsCommitted(true);
           }
-          draggedRef.current = false;
+          // The click event fires AFTER this handler, so the suppression flag
+          // must NOT be cleared here — the click itself (or a safety timeout)
+          // clears it. Otherwise every reorder drag would launch the widget.
           setIsDragging(false);
           ghostOriginRef.current = null;
+          window.setTimeout(() => {
+            suppressClickRef.current = false;
+          }, 0);
         }}
         className={cn(
           "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200",
@@ -163,8 +176,12 @@ function DockPill({
           ref={ghostRef}
           aria-hidden
           className={cn(
-            "pointer-events-none fixed left-0 top-0 z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 text-xs font-medium text-ink shadow-xl",
-            isDragging ? "opacity-100" : "opacity-0 transition-opacity duration-150",
+            "pointer-events-none fixed left-0 top-0 z-[60] flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 text-xs font-medium text-ink shadow-xl",
+            isDragging
+              ? "opacity-100"
+              : isCommitted
+                ? "opacity-0"
+                : "opacity-0 transition-opacity duration-150",
           )}
         >
           <Icon className="size-3.5 shrink-0" />
