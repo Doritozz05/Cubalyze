@@ -189,6 +189,7 @@ export function ManualTimeInput({
           ref={inputRef}
           type="text"
           inputMode="decimal"
+          maxLength={14}
           value={input}
           onChange={(e) => {
             setInput(e.target.value);

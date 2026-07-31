@@ -35,6 +35,9 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
   const [importError, setImportError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Store the original file content so handleConfirmImport can parse the
+  // full data (rawLines is truncated for preview).
+  const fileContentRef = useRef<string>('');
 
   const isEmpty = solves.length === 0;
 
@@ -48,6 +51,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
         setImportResult(null);
         setImportError(null);
         setDragOver(false);
+        fileContentRef.current = '';
       }, 200);
       return () => clearTimeout(t);
     }
@@ -65,6 +69,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
         return;
       }
 
+      fileContentRef.current = content;
       setImportPreview(preview);
       setImportState('preview');
       setImportError(null);
@@ -108,10 +113,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
 
     setImportState('importing');
     try {
-      const content = await readFileAsText(
-        new File([importPreview.rawLines.join('\n')], 'import', { type: 'text/plain' }),
-      );
-      const result = parseImport(content);
+      const result = parseImport(fileContentRef.current);
       const inputs = result.solves.map(toSolveInput);
       await onImportSolves(inputs);
 
@@ -259,7 +261,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
 
       {/* ── Import Dialog ──────────────────────────────────────────────── */}
       <Dialog open={importOpen} onOpenChange={(open) => { if (!open) { setImportOpen(false); if (importState === 'done') window.location.reload(); } }}>
-        <DialogContent className="sm:max-w-lg overflow-hidden p-0 gap-0">
+        <DialogContent className="sm:max-w-lg overflow-hidden p-0 gap-0" showCloseButton={false}>
           <DialogHeader className="sr-only">
             <DialogTitle>Import solves</DialogTitle>
           </DialogHeader>
@@ -339,7 +341,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                     <Check className="size-4 text-emerald-400 shrink-0" />
                     <div>
                       <p className="text-[0.72rem] font-medium text-emerald-500">
-                        Detected: {importPreview.format === 'cstimer' ? 'csTimer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
+                        Detected: {importPreview.format === 'cstimer' || importPreview.format === 'cstimer-json' ? 'csTimer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
                       </p>
                       <p className="text-[0.62rem] text-ink-3 mt-0.5">
                         {importPreview.rowCount} solve{importPreview.rowCount !== 1 ? 's' : ''} found{importPreview.errorCount > 0 ? ` · ${importPreview.errorCount} error${importPreview.errorCount !== 1 ? 's' : ''}` : ''}
@@ -353,9 +355,11 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                       <table className="w-full text-left text-[0.65rem]">
                         <thead>
                           <tr className="border-b border-line bg-surface-2">
-                            {importPreview.headers.slice(0, 5).map((h, i) => (
-                              <th key={i} className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">{h}</th>
-                            ))}
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Time</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Penalty</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Scramble</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Date</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Note</th>
                           </tr>
                         </thead>
                         <tbody>

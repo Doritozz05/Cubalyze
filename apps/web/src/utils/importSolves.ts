@@ -7,7 +7,7 @@ import { normalizePenalty } from "@/types";
    Import format identifiers
    ─────────────────────────────────────────────────────────────────────── */
 
-export type ImportFormat = "cstimer" | "cubeforge-csv" | "cubeforge-json" | "generic-csv" | "unknown";
+export type ImportFormat = "cstimer" | "cstimer-json" | "cubeforge-csv" | "cubeforge-json" | "generic-csv" | "unknown";
 
 export interface ImportPreview {
   format: ImportFormat;
@@ -47,10 +47,11 @@ export interface ImportResult {
 /**
  * Detect the import format from the first few lines of content.
  *
- * csTimer:     "333";"Normal";"122170";"1620000000000";"R U R' U'...";"0";""
- * CubeForge:   No.,Time,Penalty,Scramble,Date,Method,Note
- * generic CSV: any comma or tab delimited data with a header row
- * JSON:        starts with `{` or `[`
+ * csTimer JSON: {"session1":[[[0,73521],"scramble","",1737013787],...],...,"properties":{...}}
+ * csTimer CSV:  "333";"Normal";"122170";"1620000000000";"R U R' U'...";"0";""
+ * CubeForge:    No.,Time,Penalty,Scramble,Date,Method,Note
+ * generic CSV:  any comma or tab delimited data with a header row
+ * JSON:         starts with `{` or `[`
  */
 export function detectFormat(content: string): ImportFormat {
   const trimmed = content.trim();
@@ -58,7 +59,21 @@ export function detectFormat(content: string): ImportFormat {
   // JSON
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {
-      JSON.parse(trimmed);
+      const parsed = JSON.parse(trimmed);
+      // csTimer JSON export: has session1, session2, ... keys + optional properties
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        const keys = Object.keys(parsed);
+        const sessionKeys = keys.filter((k: string) => /^session\d+$/.test(k));
+        if (sessionKeys.length > 0 && sessionKeys.length >= keys.length - 1) {
+          // Most keys are sessionN (+ optional "properties")
+          return "cstimer-json";
+        }
+        // CubeForge JSON: has "app", "solves", etc.
+        if (parsed.app === "CubeForge" && Array.isArray(parsed.solves)) {
+          return "cubeforge-json";
+        }
+        return "cubeforge-json";
+      }
       return "cubeforge-json";
     } catch {
       return "unknown";
@@ -312,6 +327,103 @@ function parseGenericLine(
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+   csTimer JSON import (native export format)
+   Format: {"session1":[[[penalty,timeMs],scramble,comment,timestamp],...],
+            "session2":[...],...,"properties":{...}}
+   - penalty: 0 = none, 1 = +2, 2 = DNF
+   - timeMs is in milliseconds
+   - properties contains session metadata + settings (truncated on import)
+   ─────────────────────────────────────────────────────────────────────── */
+
+interface CsTimerJsonExport {
+  [key: string]: unknown;
+}
+
+type CsTimerSolveTuple = [
+  [penalty: number, timeMs: number],
+  scramble: string,
+  comment: string,
+  timestamp: number,
+];
+
+function parseCsTimerJson(content: string): ImportResult {
+  try {
+    const data: CsTimerJsonExport = JSON.parse(content);
+    const solves: ImportedSolve[] = [];
+    const errors: { line: number; message: string }[] = [];
+
+    const sessionKeys = Object.keys(data).filter((k) => /^session\d+$/.test(k));
+
+    // Sort session keys numerically so order is preserved
+    sessionKeys.sort((a, b) => {
+      const na = parseInt(a.replace("session", ""), 10);
+      const nb = parseInt(b.replace("session", ""), 10);
+      return na - nb;
+    });
+
+    for (const key of sessionKeys) {
+      const sessionData = data[key];
+      if (!Array.isArray(sessionData)) continue;
+
+      for (let i = 0; i < sessionData.length; i++) {
+        const entry = sessionData[i];
+        if (!Array.isArray(entry) || entry.length < 2) {
+          errors.push({ line: 0, message: `Invalid entry in ${key}[${i}]` });
+          continue;
+        }
+
+        const meta = entry[0];
+        if (!Array.isArray(meta) || meta.length < 2) {
+          errors.push({ line: 0, message: `Invalid solve tuple in ${key}[${i}]` });
+          continue;
+        }
+
+        const penaltyNum = Number(meta[0]) || 0;
+        const timeMs = Number(meta[1]);
+
+        if (isNaN(timeMs) || timeMs < 0) {
+          errors.push({ line: 0, message: `Invalid time in ${key}[${i}]` });
+          continue;
+        }
+
+        const scramble = String(entry[1] ?? "");
+        const comment = String(entry[2] ?? "");
+        // csTimer timestamps are in seconds (epoch), convert to milliseconds
+        const tsRaw = typeof entry[3] === "number" ? entry[3] : 0;
+        const timestamp = tsRaw > 0 ? tsRaw * 1000 : Date.now();
+
+        const penalty = mapCsTimerPenaltyNumber(penaltyNum);
+
+        solves.push({
+          time: timeMs,
+          penalty,
+          scramble,
+          timestamp,
+          note: comment || undefined,
+          puzzle: "333",
+          category: "Normal",
+        });
+      }
+    }
+
+    return { solves, errors, format: "cstimer-json" };
+  } catch (e) {
+    return {
+      solves: [],
+      errors: [{ line: 0, message: `Invalid csTimer JSON: ${e instanceof Error ? e.message : String(e)}` }],
+      format: "cstimer-json",
+    };
+  }
+}
+
+function mapCsTimerPenaltyNumber(n: number): Penalty {
+  // csTimer: 0 = none, 1 = +2, 2 = DNF
+  if (n === 2 || n === -1) return "DNF";
+  if (n === 1 || n === 2000) return "+2";
+  return "none";
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
    JSON import (CubeForge format)
    ─────────────────────────────────────────────────────────────────────── */
 
@@ -416,6 +528,9 @@ export function parseImport(content: string): ImportResult {
       return { solves, errors, format };
     }
 
+    case "cstimer-json":
+      return parseCsTimerJson(content);
+
     case "cubeforge-json":
       return parseJsonImport(content);
 
@@ -439,7 +554,7 @@ export function previewImport(content: string): ImportPreview {
   if (format === "generic-csv") {
     const delim = lines[0]?.includes("\t") ? "\t" : ",";
     headers = splitCSVLine(lines[0] ?? "", delim).map((h) => unquote(h));
-  } else if (format === "cstimer") {
+  } else if (format === "cstimer" || format === "cstimer-json") {
     headers = ["Puzzle", "Category", "Time (ms)", "Date (epoch)", "Scramble", "Penalty", "Comment"];
   } else if (format === "cubeforge-csv") {
     headers = ["No.", "Time", "Penalty", "Scramble", "Date", "Method", "Note"];
