@@ -199,6 +199,7 @@ export function FloatingWidgetWrapper({
     return createPortal(
       <div
         ref={drag.elementRef}
+        data-widget-id={widgetId}
         style={{
           ...positionStyle,
           animation: "widgetMount 0.2s ease-out",
@@ -299,6 +300,7 @@ export function FloatingWidgetWrapper({
   return createPortal(
     <div
       ref={drag.elementRef}
+      data-widget-id={widgetId}
       style={{
         ...positionStyle,
         width: isNearDock ? undefined : panelWidth,

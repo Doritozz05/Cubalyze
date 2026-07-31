@@ -95,9 +95,7 @@ export function LeftSidebar({
    */
   const handleNavItemClick = useCallback(
     (id: string) => {
-      console.log("[LeftSidebar] handleNavItemClick triggered with id:", id);
       if (id === "widgets") {
-        console.log("[LeftSidebar] Setting widgetExplorerOpen = true");
         setWidgetExplorerOpen(true);
         return;
       }

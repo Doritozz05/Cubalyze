@@ -35,6 +35,7 @@ import { normalizePenalty, effectiveTime } from "@/types";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import { migrateWidgetPositions } from "@/widgets/migration";
+import { installWidgetDebug } from "@/widgets/debug";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { connectWidgetLifecycle } from "@/widgets/sdk";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
@@ -114,6 +115,7 @@ export default function App() {
   // ── Widget lifecycle connection (avoids stale closure via refs) ────────
   useEffect(() => {
     migrateWidgetPositions();
+    installWidgetDebug();
     const disconnect = connectWidgetLifecycle(() => ({
       solves: solvesRef.current,
       method: methodRef.current,

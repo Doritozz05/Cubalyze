@@ -59,7 +59,6 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
 
   // Reset to "all" + clear search on open
   useEffect(() => {
-    console.log("[WidgetExplorer] Component open state changed to:", open);
     if (open) {
       setActiveCategory("all");
       setSearchQuery("");
@@ -163,10 +162,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
 
   return (
     <>
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      console.log("[WidgetExplorer] Dialog onOpenChange fired with newOpen:", newOpen);
-      onOpenChange(newOpen);
-    }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={`${EXPLORER_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line`}
         showCloseButton={false}

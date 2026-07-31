@@ -4,7 +4,7 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { WidgetId, WidgetInstanceState, WidgetDefinition, WidgetStatus } from "./types";
-import { BUILT_IN_WIDGETS } from "./registry";
+import { BUILT_IN_WIDGETS, getWidget } from "./registry";
 
 // ── Custom Layout ────────────────────────────────────────────────────────
 
@@ -35,6 +35,8 @@ export interface WidgetStoreActions {
   /** Set a widget's status directly. Use this instead of the old setDockMode + setMinimized. */
   setStatus: (id: WidgetId, status: WidgetStatus) => void;
   setPosition: (id: WidgetId, position: { x: number; y: number }) => void;
+  /** Reset a widget's position back to its definition default (self-heal). */
+  resetWidgetPosition: (id: WidgetId) => void;
   /** Set the widget's panel width for accurate snap calculations. */
   setSize: (id: WidgetId, panelWidth: number) => void;
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
@@ -114,6 +116,14 @@ export const widgetStore = createStore<WidgetStore>()(
             willBeActive && !s.dockOrder.includes(id)
               ? [...s.dockOrder, id]
               : s.dockOrder;
+          // Deterministic self-heal: re-activating a widget resets its
+          // position to the definition default. This guarantees a widget
+          // toggled ON again can never reappear off-screen / invisible due
+          // to a corrupted persisted position.
+          const def = getWidget(id);
+          const position = willBeActive && def
+            ? { ...def.defaultPosition }
+            : inst?.position;
           return {
             dockOrder,
             instances: {
@@ -121,6 +131,7 @@ export const widgetStore = createStore<WidgetStore>()(
               [id]: {
                 ...inst,
                 status: willBeActive ? "docked" : "inactive",
+                position,
               },
             },
           };
@@ -163,6 +174,24 @@ export const widgetStore = createStore<WidgetStore>()(
             [id]: { ...s.instances[id], position },
           },
         })),
+
+      resetWidgetPosition: (id) =>
+        set((s) => {
+          const inst = s.instances[id];
+          if (!inst) return s;
+          const def = getWidget(id);
+          return {
+            instances: {
+              ...s.instances,
+              [id]: {
+                ...inst,
+                position: def
+                  ? { ...def.defaultPosition }
+                  : { x: 100, y: 100 },
+              },
+            },
+          };
+        }),
 
       setSize: (id, panelWidth) =>
         set((s) => ({

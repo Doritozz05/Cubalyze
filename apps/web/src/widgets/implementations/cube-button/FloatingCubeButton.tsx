@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
 import { Box } from "lucide-react";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
@@ -20,6 +19,24 @@ function getDefaultPos(): Position {
 /** True if the position is the sentinel value (meaning "use dynamic default"). */
 function isSentinel(pos: Position): boolean {
   return pos.x === CUBE_BUTTON_SENTINEL.x && pos.y === CUBE_BUTTON_SENTINEL.y;
+}
+
+/** True if the position is finite (rejects NaN / Infinity / corrupt values). */
+function isFinitePosition(pos: Position | undefined): pos is Position {
+  return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y);
+}
+
+/** True if the button (48×48) would be at least partially inside the viewport. */
+function isOnScreen(pos: Position): boolean {
+  if (typeof window === "undefined") return true;
+  const W = 48;
+  const H = 48;
+  return (
+    pos.x < window.innerWidth &&
+    pos.x + W > 0 &&
+    pos.y < window.innerHeight &&
+    pos.y + H > 0
+  );
 }
 
 export interface FloatingCubeButtonProps {
@@ -47,14 +64,30 @@ export function FloatingCubeButton({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Read position from widgetStore. Sentinel (-1, -1) = compute dynamically.
+  // Read position from widgetStore. Sentinel (-99999, -99999) = compute dynamically.
   const instance = useWidgetStore(
     useCallback((s) => s.instances["cube-button"], []),
   );
   const rawPosition = instance?.position;
+
+  // Self-heal: if the persisted position is corrupt (NaN, Infinity), missing,
+  // or left over from a different window size (off-screen), reset it to the
+  // dynamic default so a future toggle can never resurrect the invisible state.
+  useEffect(() => {
+    const p = widgetStore.getState().instances["cube-button"]?.position;
+    if (!p) {
+      widgetStore.getState().setPosition("cube-button", getDefaultPos());
+    } else if (!isSentinel(p) && (!isFinitePosition(p) || !isOnScreen(p))) {
+      widgetStore.getState().setPosition("cube-button", getDefaultPos());
+    }
+  }, []);
+
+  // `storePosition` is always truthy: corrupt / sentinel values fall back to
+  // the dynamic default, so it's safe to pass directly to useDraggable.
   const storePosition =
-    rawPosition && !isSentinel(rawPosition) ? rawPosition : getDefaultPos();
-  const [defaultPos] = useState(getDefaultPos);
+    rawPosition && !isSentinel(rawPosition) && isFinitePosition(rawPosition)
+      ? rawPosition
+      : getDefaultPos();
 
   const handlePositionChange = useCallback(
     (pos: Position) => {
@@ -63,13 +96,10 @@ export function FloatingCubeButton({
     [],
   );
 
-  const drag = useDraggable<HTMLButtonElement>(
-    storePosition || defaultPos,
-    {
-      clickThreshold: 5,
-      onPositionChange: handlePositionChange,
-    },
-  );
+  const drag = useDraggable<HTMLButtonElement>(storePosition, {
+    clickThreshold: 5,
+    onPositionChange: handlePositionChange,
+  });
 
   if (!mounted || cubePanelOpen) return null;
 
@@ -82,21 +112,29 @@ export function FloatingCubeButton({
   return createPortal(
     <Tooltip>
       <TooltipTrigger asChild>
-        <motion.button
+        <button
           ref={drag.elementRef}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          data-widget-id="cube-button"
           onPointerDown={drag.onPointerDown}
           onPointerMove={drag.onPointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={drag.onPointerCancel}
           style={{
+            // CRITICAL: `position:fixed` with ONLY transform and no left/top
+            // renders the element at its static-flow position (potentially
+            // off-screen when portaled to document.body). Anchoring at (0,0)
+            // makes translate3d offset from the viewport origin — same
+            // semantics as left/top. Mirrors FloatingWidgetWrapper.
+            position: "fixed",
+            left: 0,
+            top: 0,
             transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
             transformOrigin: "0 0",
+            willChange: drag.isDragging ? "transform" : undefined,
+            animation: "widgetMount 0.2s ease-out",
           }}
           className={
-            "fixed z-45 grid size-12 touch-none select-none place-items-center " +
+            "fixed z-[45] grid size-12 touch-none select-none place-items-center " +
             "rounded-full border border-line bg-surface shadow-lg " +
             "transition-colors hover:border-ink-2/40 " +
             (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
@@ -104,7 +142,7 @@ export function FloatingCubeButton({
           aria-label="Open 3D cube view"
         >
           <Box className="size-5 text-ink-2" />
-        </motion.button>
+        </button>
       </TooltipTrigger>
       <TooltipContent side="left">Open 3D cube</TooltipContent>
     </Tooltip>,
