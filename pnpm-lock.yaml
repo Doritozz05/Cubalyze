@@ -65,9 +65,15 @@ importers:
       '@cubeforge/state':
         specifier: workspace:*
         version: link:../../packages/state
+      '@cubeforge/statistics':
+        specifier: workspace:*
+        version: link:../../packages/statistics
       '@cubeforge/timer-engine':
         specifier: workspace:*
         version: link:../../packages/timer-engine
+      '@cubeforge/training':
+        specifier: workspace:*
+        version: link:../../packages/training
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../../packages/types
