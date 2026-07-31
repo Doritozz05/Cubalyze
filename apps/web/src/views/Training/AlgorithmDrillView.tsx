@@ -8,6 +8,8 @@ import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/al
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
@@ -156,13 +158,22 @@ export function AlgorithmDrillView({
   }, [subset]);
 
   // ── Timer hint context (controls TimerDisplay hint text) ─────────────
+  const scrambleDisplay = useStore(
+    preferencesStore,
+    (s) => s.scrambleDisplay,
+  );
+  const scrambleVerificationRaw = useStore(
+    preferencesStore,
+    (s) => s.scrambleVerification,
+  );
+  const scrambleVerification = scrambleDisplay && scrambleVerificationRaw;
   const hasSmartCube = drillSmartCube.smartCubeConnected;
   const drillHintCtx = useMemo<HintContext>(() => ({
     smartCube: hasSmartCube,
-    scrambleVerif: hasSmartCube,
+    scrambleVerif: hasSmartCube && scrambleVerification,
     inspection: false,
     isScrambled: drillSmartCube.validation.isScrambled,
-  }), [hasSmartCube, drillSmartCube.validation.isScrambled]);
+  }), [hasSmartCube, scrambleVerification, drillSmartCube.validation.isScrambled]);
 
   // ── Real progress from DB ──────────────────────────────────────────────
   const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();

@@ -16,6 +16,15 @@ export function ScrambleSection() {
     (s) => s.setScrambleFollowsCube,
   );
 
+  const scrambleDisplay = useStore(
+    preferencesStore,
+    (s) => s.scrambleDisplay,
+  );
+  const setScrambleDisplay = useStore(
+    preferencesStore,
+    (s) => s.setScrambleDisplay,
+  );
+
   const scrambleVerification = useStore(
     preferencesStore,
     (s) => s.scrambleVerification,
@@ -32,9 +41,17 @@ export function ScrambleSection() {
           <Shuffle className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] text-ink-2">
-          Configure how scramble sequences are generated, verified, and aligned with your cube.
+          Configure how scramble sequences are generated, displayed, verified, and aligned with your cube.
         </p>
       </div>
+
+      <SettingToggle
+        title="Show scramble display"
+        description="Display the scramble sequence on the main timer screen and save the scramble with your solves."
+        checked={scrambleDisplay}
+        onCheckedChange={setScrambleDisplay}
+      />
+
       <SettingToggle
         title="Rotate scramble with cube"
         description="The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
@@ -42,12 +59,14 @@ export function ScrambleSection() {
         onCheckedChange={setScrambleFollowsCube}
       />
 
-      <SettingToggle
-        title="Scramble verification"
-        description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
-        checked={scrambleVerification}
-        onCheckedChange={setScrambleVerification}
-      />
+      {scrambleDisplay && (
+        <SettingToggle
+          title="Scramble verification"
+          description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
+          checked={scrambleVerification}
+          onCheckedChange={setScrambleVerification}
+        />
+      )}
     </div>
   );
 }

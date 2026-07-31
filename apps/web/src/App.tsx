@@ -67,6 +67,7 @@ export default function App() {
   } = usePersistentSession();
 
   const methodPref = useStore(preferencesStore, (s) => s.method);
+  const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
   const setFocusMode = useStore(preferencesStore, (s) => s.setFocusMode);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
@@ -223,7 +224,7 @@ export default function App() {
       addSolve({
         id: solveId,
         time,
-        scramble: currentScramble,
+        scramble: scrambleDisplay ? currentScramble : "",
         penalty,
         method: methodPref,
         source: capturedSource,
@@ -246,7 +247,7 @@ export default function App() {
           toast.error("Couldn't save solve — check console for details");
         });
     },
-    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation, puzzle],
+    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation, puzzle, scrambleDisplay],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
@@ -520,7 +521,7 @@ export default function App() {
       await addSolve({
         time,
         penalty,
-        scramble: currentScramble,
+        scramble: scrambleDisplay ? currentScramble : "",
         method: methodPref,
         source: "manual",
         puzzleType: puzzleCategoryToType(puzzle),
@@ -529,7 +530,7 @@ export default function App() {
       setCurrentScramble(generateScrambleFor(puzzle));
       setScrambleIndex((i) => i + 1);
     },
-    [addSolve, currentScramble, methodPref, puzzle],
+    [addSolve, currentScramble, methodPref, puzzle, scrambleDisplay],
   );
 
   const handleAddManual = useCallback(
@@ -630,7 +631,7 @@ export default function App() {
     // timer
     return (
       <>
-        {(isManualMode || scrambleVerification || !isFocused) && (
+        {scrambleDisplay && (scrambleVerification || !isFocused) && (
           <ScrambleDisplay
             scramble={currentScramble}
             displayScramble={displayScramble}
@@ -682,7 +683,7 @@ export default function App() {
             onDismissPbBanner={handleDismissPbBanner}
             hintCtx={{
               smartCube: smartCubeConnected,
-              scrambleVerif: scrambleVerification,
+              scrambleVerif: scrambleDisplay && scrambleVerification,
               inspection,
               isScrambled: validation.isScrambled,
             }}

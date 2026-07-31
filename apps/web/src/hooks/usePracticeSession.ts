@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
@@ -96,10 +98,14 @@ export function usePracticeSession({
     else if (phase !== "stopped") setShowVerdict(false);
   }, [phase, stoppedTime]);
 
+  const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
+  const scrambleVerificationRaw = useStore(preferencesStore, (s) => s.scrambleVerification);
+  const scrambleVerification = scrambleDisplay && scrambleVerificationRaw;
+
   const hintCtx = useMemo<HintContext>(() => ({
-    smartCube: hasSmartCube, scrambleVerif: hasSmartCube, inspection: false,
+    smartCube: hasSmartCube, scrambleVerif: hasSmartCube && scrambleVerification, inspection: false,
     isScrambled: smartCube.validation.isScrambled,
-  }), [hasSmartCube, smartCube.validation.isScrambled]);
+  }), [hasSmartCube, scrambleVerification, smartCube.validation.isScrambled]);
 
   // Stats
   const validAttempts = attempts.filter((a) => a.timeMs > 0);

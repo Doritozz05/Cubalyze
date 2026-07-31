@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import {
   useScrambleValidator,
   type ScrambleValidationResult,
@@ -44,10 +46,20 @@ export function useDrillSmartCube({
   engine,
   setupScramble,
 }: UseDrillSmartCubeOptions): UseDrillSmartCubeResult {
-  // ── Scramble validation (always active, auto-detects cube presence) ──
+  const scrambleDisplay = useStore(
+    preferencesStore,
+    (s) => s.scrambleDisplay,
+  );
+  const scrambleVerificationRaw = useStore(
+    preferencesStore,
+    (s) => s.scrambleVerification,
+  );
+  const scrambleVerification = scrambleDisplay && scrambleVerificationRaw;
+
+  // ── Scramble validation ──
   const validation = useScrambleValidator(
     setupScramble || "",
-    setupScramble.length > 0,
+    scrambleVerification && (setupScramble ? setupScramble.length > 0 : false),
   );
 
   // ── Smart Cube connection state ──────────────────────────────────────

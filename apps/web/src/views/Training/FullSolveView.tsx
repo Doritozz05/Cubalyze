@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
@@ -136,15 +138,25 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);
 
+  const scrambleDisplay = useStore(
+    preferencesStore,
+    (s) => s.scrambleDisplay,
+  );
+  const scrambleVerificationRaw = useStore(
+    preferencesStore,
+    (s) => s.scrambleVerification,
+  );
+  const scrambleVerification = scrambleDisplay && scrambleVerificationRaw;
+
   const smartCube = useDrillSmartCube({ engine, setupScramble: currentScramble });
   const hasSmartCube = smartCube.smartCubeConnected;
 
   const hintCtx = useMemo<HintContext>(() => ({
     smartCube: hasSmartCube,
-    scrambleVerif: hasSmartCube,
+    scrambleVerif: hasSmartCube && scrambleVerification,
     inspection: useInspection,
     isScrambled: smartCube.validation.isScrambled,
-  }), [hasSmartCube, smartCube.validation.isScrambled, useInspection]);
+  }), [hasSmartCube, scrambleVerification, smartCube.validation.isScrambled, useInspection]);
 
   // Phase split timing
   const splitStartRef = useRef<number>(0);
@@ -566,7 +578,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                   <ScrambleDisplay
                     scramble={currentScramble}
                     displayScramble={displayScramble}
-                    states={hasSmartCube ? smartCube.validation.states : undefined}
+                    states={hasSmartCube && scrambleVerification ? smartCube.validation.states : undefined}
                     currentIndex={hasSmartCube ? smartCube.validation.currentIndex : 0}
                     errorMoves={hasSmartCube ? smartCube.validation.displayErrorMoves : []}
                     pendingHalfDouble={hasSmartCube ? smartCube.validation.pendingHalfDouble : false}

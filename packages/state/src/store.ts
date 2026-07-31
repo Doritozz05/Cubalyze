@@ -35,6 +35,10 @@ export interface PreferencesState {
   inspection: boolean;
   setInspection: (value: boolean) => void;
 
+  /** Whether to show the scramble display on the timer and save scramble with solves. */
+  scrambleDisplay: boolean;
+  setScrambleDisplay: (value: boolean) => void;
+
   /** Require the scramble to be physically applied before solving. */
   scrambleVerification: boolean;
   setScrambleVerification: (value: boolean) => void;
@@ -132,6 +136,9 @@ export const createPreferencesStore = () => {
         inspection: true,
         setInspection: (value) => set({ inspection: value }),
 
+        scrambleDisplay: true,
+        setScrambleDisplay: (value) => set({ scrambleDisplay: value }),
+
         scrambleVerification: true,
         setScrambleVerification: (value) => set({ scrambleVerification: value }),
 
@@ -204,6 +211,7 @@ export const createPreferencesStore = () => {
           appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
           inspection: state.inspection,
+          scrambleDisplay: state.scrambleDisplay,
           scrambleVerification: state.scrambleVerification,
           method: state.method,
           focusMode: state.focusMode,

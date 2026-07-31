@@ -647,10 +647,12 @@ export function useSolveSession(
   options: UseSolveSessionOptions = {},
 ): UseSolveSessionResult {
   const inspectionPref = useStore(preferencesStore, (s) => s.inspection);
-  const scrambleVerificationPref = useStore(
+  const scrambleDisplayPref = useStore(preferencesStore, (s) => s.scrambleDisplay);
+  const scrambleVerificationRaw = useStore(
     preferencesStore,
     (s) => s.scrambleVerification,
   );
+  const scrambleVerificationPref = scrambleDisplayPref && scrambleVerificationRaw;
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const voiceTypePref = useStore(preferencesStore, (s) => s.voiceType);
   const hardwareTimerPref = useStore(preferencesStore, (s) => s.hardwareTimer);
