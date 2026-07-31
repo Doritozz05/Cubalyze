@@ -622,6 +622,8 @@ export default function App() {
         <TrainingDashboard
           preset={trainingPreset}
           onPresetConsumed={() => setTrainingPreset(null)}
+          puzzle={puzzle}
+          onPuzzleChange={handlePuzzleChange}
         />
       );
     }

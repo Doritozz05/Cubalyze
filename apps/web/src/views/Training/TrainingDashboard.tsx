@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, type AlgorithmMethod } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
@@ -16,6 +16,15 @@ import { LSESubPhaseView } from "./LSESubPhaseView";
 import { EODetectView } from "./EODetectView";
 import { EOEfficiencyView } from "./EOEfficiencyView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import type { PuzzleCategory } from "@/types";
+import { puzzleCategoryToType, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Box,
   Layers,
@@ -42,7 +51,7 @@ import {
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Phase definitions (same as before — pure data)
+   Phase definitions (pure data)
    ─────────────────────────────────────────────────────────────────────── */
 
 type PhaseId = string;
@@ -81,6 +90,17 @@ const METHOD_PHASES: Record<string, PhaseDef[]> = {
     { id: "eo-petrus", name: "EO", icon: Gauge, description: "Edge Orientation after blocks.", sortOrder: 3, hasAlgorithms: false },
     { id: "f2l-petrus", name: "F2L (Petrus)", icon: MoveHorizontal, description: "Finish F2L after EO.", sortOrder: 4, hasAlgorithms: true },
     { id: "ll-petrus", name: "Last layer", icon: Target, description: "COLL + EPLL for Petrus last layer.", sortOrder: 5, hasAlgorithms: true },
+  ],
+  Ortega: [
+    { id: "oll", name: "OLL (2×2)", icon: Palette, description: "Orient top face — 7 cases to master.", sortOrder: 1, hasAlgorithms: true },
+    { id: "pbl", name: "PBL", icon: Shuffle, description: "Permute Both Layers — 6 cases for 2×2.", sortOrder: 2, hasAlgorithms: true },
+  ],
+  CLL: [
+    { id: "cll", name: "CLL", icon: Layers, description: "Corners of Last Layer — 42 cases for 2×2.", sortOrder: 1, hasAlgorithms: true },
+  ],
+  EG: [
+    { id: "eg1", name: "EG-1", icon: Grid2x2, description: "Bottom layer adjacent swap — 42 cases.", sortOrder: 1, hasAlgorithms: true },
+    { id: "eg2", name: "EG-2", icon: Grid2x2, description: "Bottom layer diagonal swap — 42 cases.", sortOrder: 2, hasAlgorithms: true },
   ],
 };
 
@@ -139,6 +159,7 @@ function findSubsetId(methodId: string, phaseId: string): string | null {
   const phaseToSubsetName: Record<string, string> = {
     "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
     "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
+    "pbl": "PBL", "cll": "CLL", "eg1": "EG-1", "eg2": "EG-2",
   };
   const subsetName = phaseToSubsetName[phaseId];
   if (!subsetName) return null;
@@ -149,13 +170,16 @@ function findSubsetId(methodId: string, phaseId: string): string | null {
 
 const METHOD_ACCENTS: Record<string, string> = {
   CFOP: "bg-ink/70", Roux: "bg-ink/60", ZZ: "bg-ink/50", Petrus: "bg-ink/40",
+  Ortega: "bg-ink/70", CLL: "bg-ink/60", EG: "bg-ink/50",
 };
 const METHOD_ICONS: Record<string, React.ElementType> = {
   CFOP: Layers, Roux: Box, ZZ: Zap, Petrus: Pyramid,
+  Ortega: Grid2x2, CLL: Layers, EG: Grid2x2,
 };
 
 const PHASE_DOT: Record<string, string> = {
-  cross: "bg-blue-400", f2l: "bg-emerald-400", af2l: "bg-teal-400", oll: "bg-amber-400", pll: "bg-violet-400",
+  cross: "bg-blue-400", f2l: "bg-emerald-400", af2l: "bg-teal-400", oll: "bg-amber-400", pll: "bg-violet-400", pbl: "bg-purple-400",
+  cll: "bg-indigo-400", eg1: "bg-rose-400", eg2: "bg-cyan-400",
   "first-block": "bg-rose-400", "second-block": "bg-orange-400", cmll: "bg-violet-400", lse: "bg-cyan-400",
   eoline: "bg-sky-400", "f2l-zz": "bg-emerald-400", "ll-zz": "bg-amber-400",
   "block-222": "bg-rose-400", "block-223": "bg-orange-400", "eo-petrus": "bg-cyan-400",
@@ -171,13 +195,16 @@ function masteryLabel(pct: number): string {
 
 /* ── Mock fallback (used only when DB is not ready) ──────────────────────── */
 
-const FALLBACK_MASTERY: Record<string, number> = { CFOP: 80, Roux: 70, ZZ: 30, Petrus: 45 };
+const FALLBACK_MASTERY: Record<string, number> = { CFOP: 80, Roux: 70, ZZ: 30, Petrus: 45, Ortega: 60, CLL: 0, EG: 0 };
 
 /* ──────────────────────────────────────────────────────────────────────────
    Flat Dashboard (Fase 6)
    ─────────────────────────────────────────────────────────────────────── */
 
 function FlatDashboard({
+  selectedPuzzle,
+  onSelectPuzzle,
+  puzzleMethods,
   activeMethodId,
   onSelectMethod,
   methodMasteries,
@@ -189,6 +216,9 @@ function FlatDashboard({
   dueCount,
   dbReady,
 }: {
+  selectedPuzzle: PuzzleCategory;
+  onSelectPuzzle: (puzzle: PuzzleCategory) => void;
+  puzzleMethods: AlgorithmMethod[];
   activeMethodId: string;
   onSelectMethod: (methodId: string) => void;
   methodMasteries: Record<string, number>;
@@ -206,10 +236,48 @@ function FlatDashboard({
 
   return (
     <>
-      <header className="flex flex-col gap-2 shrink-0">
-        {/* Method tabs — flat, no L2 step */}
+      <header className="flex flex-col gap-3 shrink-0">
+        {/* Header row: Dropdown puzzle selector + SRS badge */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-3">Puzzle</span>
+            <Select value={selectedPuzzle} onValueChange={(val) => onSelectPuzzle(val as PuzzleCategory)}>
+              <SelectTrigger className="h-8 w-36 gap-2 rounded-lg border-line bg-surface px-2.5 text-[0.7rem] font-semibold text-ink shadow-xs">
+                <SelectValue placeholder="Select puzzle" />
+              </SelectTrigger>
+              <SelectContent>
+                {PUZZLE_CATEGORIES.map((p) => {
+                  const is2x2 = p === "2x2";
+                  const is3x3 = p === "3x3";
+                  return (
+                    <SelectItem key={p} value={p} className="text-[0.7rem]">
+                      <div className="flex items-center gap-2 font-medium">
+                        {is2x2 ? (
+                          <Grid2x2 className="size-3.5 text-ink-2" />
+                        ) : is3x3 ? (
+                          <Grid3x3 className="size-3.5 text-ink-2" />
+                        ) : (
+                          <Box className="size-3.5 text-ink-2" />
+                        )}
+                        <span>{p}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {dueCount > 0 && (
+            <span className="nums shrink-0 rounded-full bg-caution/15 px-2.5 py-0.5 text-[0.6rem] font-medium text-caution ml-auto">
+              {dueCount} due for review
+            </span>
+          )}
+        </div>
+
+        {/* Method tabs — filtered by selected puzzle */}
         <div className="flex gap-1 flex-wrap items-center">
-          {METHODS.map((m) => {
+          {puzzleMethods.map((m) => {
             const MIcon = METHOD_ICONS[m.name] ?? Layers;
             const isActive = m.id === activeMethodId;
             const mPct = methodMasteries[m.name] ?? FALLBACK_MASTERY[m.name] ?? 0;
@@ -218,7 +286,7 @@ function FlatDashboard({
                 key={m.id}
                 onClick={() => onSelectMethod(m.id)}
                 className={cn(
-                  "relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
+                  "relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors cursor-pointer",
                   isActive
                     ? "bg-ink text-surface"
                     : "text-ink-3 hover:text-ink hover:bg-surface-2",
@@ -237,11 +305,6 @@ function FlatDashboard({
               </button>
             );
           })}
-          {dueCount > 0 && (
-            <span className="nums shrink-0 rounded-full bg-caution/15 px-2 py-0.5 text-[0.58rem] font-medium text-caution ml-auto">
-              {dueCount} due for review
-            </span>
-          )}
         </div>
       </header>
 
@@ -499,10 +562,49 @@ interface FullSolveViewState {
 export interface TrainingDashboardProps {
   preset?: { subsetId: string; caseId: string } | null;
   onPresetConsumed?: () => void;
+  puzzle?: PuzzleCategory;
+  onPuzzleChange?: (puzzle: PuzzleCategory) => void;
 }
 
-export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboardProps = {}) {
-  const [activeMethodId, setActiveMethodId] = useState<string>(() => METHODS[0]?.id ?? "");
+export function TrainingDashboard({
+  preset,
+  onPresetConsumed,
+  puzzle: puzzleProp = "3x3",
+  onPuzzleChange,
+}: TrainingDashboardProps = {}) {
+  const [selectedPuzzle, setSelectedPuzzle] = useState<PuzzleCategory>(puzzleProp);
+
+  // Synchronize internal puzzle selection with header/app puzzle prop
+  useEffect(() => {
+    if (puzzleProp) {
+      setSelectedPuzzle(puzzleProp);
+    }
+  }, [puzzleProp]);
+
+  const targetPuzzleType = puzzleCategoryToType(selectedPuzzle);
+
+  const puzzleMethods = useMemo(() => {
+    return METHODS.filter((m) => (m.puzzleType ?? "3x3x3") === targetPuzzleType);
+  }, [targetPuzzleType]);
+
+  const [activeMethodId, setActiveMethodId] = useState<string>(() => puzzleMethods[0]?.id ?? METHODS[0]?.id ?? "");
+
+  // Auto-switch activeMethodId when puzzle changes if current method is not compatible
+  useEffect(() => {
+    if (puzzleMethods.length > 0 && !puzzleMethods.some((m) => m.id === activeMethodId)) {
+      setActiveMethodId(puzzleMethods[0].id);
+    }
+  }, [puzzleMethods, activeMethodId]);
+
+  const handleSelectPuzzle = (p: PuzzleCategory) => {
+    setSelectedPuzzle(p);
+    onPuzzleChange?.(p);
+    const newTargetType = puzzleCategoryToType(p);
+    const newMethods = METHODS.filter((m) => (m.puzzleType ?? "3x3x3") === newTargetType);
+    if (newMethods.length > 0) {
+      setActiveMethodId(newMethods[0].id);
+    }
+  };
 
   // Sub-view routing (direct from exercise cards, no L2)
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
@@ -559,7 +661,15 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
   useEffect(() => {
     if (preset?.subsetId) {
       const subset = SUBSETS.find((s) => s.id === preset.subsetId);
-      if (subset) setActiveMethodId(subset.methodId);
+      if (subset) {
+        setActiveMethodId(subset.methodId);
+        const method = METHODS.find((m) => m.id === subset.methodId);
+        if (method?.puzzleType === "2x2x2") {
+          setSelectedPuzzle("2x2");
+        } else if (method?.puzzleType === "3x3x3") {
+          setSelectedPuzzle("3x3");
+        }
+      }
       onPresetConsumed?.();
     }
   }, [preset?.subsetId, onPresetConsumed]);
@@ -675,10 +785,7 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
           {/* Generic: blind */}
           {modeId === "blind" && <BlindPracticeView {...props} />}
 
-          {/* Cross-specific — unified trainer (no timer) replaces the old
-              optimal/CN timer views. Routes for both "optimal" (≤8) and
-              "cn" modes; the trainer exposes a depth selector + color-neutral
-              toggle so both exercise intents are covered. */}
+          {/* Cross-specific */}
           {phaseType === "cross" && (modeId === "optimal" || modeId === "cn") && (
             <CrossTrainerView {...props} />
           )}
@@ -696,12 +803,15 @@ export function TrainingDashboard({ preset, onPresetConsumed }: TrainingDashboar
     );
   }
 
-  // ── Flat Dashboard (Fase 6) ─────────────────────────────────────────
+  // ── Flat Dashboard ─────────────────────────────────────────────────
 
   return (
     <div className="relative flex-1 min-h-0 w-full">
       <div className="absolute inset-0 flex flex-col gap-5 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <FlatDashboard
+          selectedPuzzle={selectedPuzzle}
+          onSelectPuzzle={handleSelectPuzzle}
+          puzzleMethods={puzzleMethods}
           activeMethodId={activeMethodId}
           onSelectMethod={setActiveMethodId}
           methodMasteries={methodMasteries}
