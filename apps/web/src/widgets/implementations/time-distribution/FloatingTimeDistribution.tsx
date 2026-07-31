@@ -41,6 +41,10 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
   );
 
   const BAR_HEIGHT = 120;
+  // Reserved headroom at the top of the chart so hover tooltips render
+  // INSIDE the panel instead of being clipped by the panel's overflow.
+  const TOOLTIP_ZONE = 28;
+  const CHART_HEIGHT = BAR_HEIGHT + TOOLTIP_ZONE;
 
   const headerActions = puzzle ? (
     <span className="rounded bg-brand/10 border border-brand/20 px-1.5 py-0.5 text-[0.6rem] font-semibold text-brand tracking-wider">
@@ -67,7 +71,10 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
         ) : (
           <>
             {/* Bar chart */}
-            <div className="flex items-end gap-0.5" style={{ height: BAR_HEIGHT }}>
+            <div
+              className="flex items-end gap-0.5"
+              style={{ height: CHART_HEIGHT }}
+            >
               {histogram.map((bin: { label: string; count: number }, i: number) => {
                 const height = maxCount > 0 ? (bin.count / maxCount) * BAR_HEIGHT : 0;
                 const isModal = bin.count === maxCount && maxCount > 0;
@@ -75,7 +82,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
                   <div
                     key={i}
                     className="group relative flex flex-1 flex-col items-center justify-end"
-                    style={{ height: BAR_HEIGHT }}
+                    style={{ height: CHART_HEIGHT }}
                   >
                     <div
                       className={cn(
@@ -84,8 +91,10 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
                       )}
                       style={{ height: Math.max(2, height) }}
                     />
-                    {/* Tooltip on hover */}
-                    <div className="pointer-events-none absolute bottom-full mb-1 hidden flex-col items-center group-hover:flex">
+                    {/* Tooltip on hover — anchored to the top of the chart so it
+                        stays inside the panel body (overflow-y-auto) and never
+                        gets clipped above the chart. */}
+                    <div className="pointer-events-none absolute top-0 mt-1 hidden flex-col items-center group-hover:flex">
                       <div className="rounded border border-line bg-surface px-2 py-1 text-[0.55rem] text-ink whitespace-nowrap shadow-lg">
                         <span className="font-medium">{bin.label}s</span>
                         <span className="ml-1.5 text-ink-3">{bin.count} solves</span>
