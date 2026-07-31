@@ -130,7 +130,7 @@ export function ManualTimeInput({
           onKeyDown={handleKeyDown}
           placeholder="0.00"
           className={cn(
-            "nums w-[clamp(200px,35vw,380px)] rounded-xl border-2 bg-transparent py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
+            "nums w-[clamp(280px,55vw,640px)] rounded-xl border-2 bg-transparent py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
             "border-line text-ink placeholder:text-ink-3/20",
             "focus:border-ink-2 focus:bg-surface/50",
             parsedMs != null && parsedMs > 0 && "border-emerald-500/40",
@@ -170,9 +170,14 @@ export function ManualTimeInput({
       </div>
 
       {/* Hint */}
-      <div className="flex items-center justify-center text-ink-3">
+      <div className="flex flex-col items-center justify-center gap-1 text-ink-3">
         <span className="nums text-[0.7rem] uppercase tracking-[0.18em]">
-          Type time · Enter to log · Esc to clear
+          Enter to log · Esc to clear
+        </span>
+        <span className="text-[0.55rem] text-ink-3/60">
+          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1450</code> = 14.50s ·{" "}
+          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">14.50</code> = 14.50s ·{" "}
+          <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.52rem]">1:23.45</code> = 1 min 23.45s
         </span>
       </div>
     </div>

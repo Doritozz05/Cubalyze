@@ -128,6 +128,8 @@ export function TimerContainer({
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
 
+  const hasPbActive = pbMilestone != null && pbMilestone.types.length > 0 && (phase === "stopped" || phase === "idle");
+
   return (
     <div
       role="button"
