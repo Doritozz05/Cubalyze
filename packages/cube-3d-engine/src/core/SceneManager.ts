@@ -30,13 +30,16 @@ export class SceneManager {
 
   public onRender: OnRenderCallback | null = null;
 
+  private readonly baseFov: number = 45;
+
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, width: number, height: number, pixelRatio: number) {
     this.width = width;
     this.height = height;
 
     this.scene = new Scene();
 
-    this.camera = new PerspectiveCamera(45, this.width / this.height, 0.1, 100);
+    this.camera = new PerspectiveCamera(this.baseFov, this.width / this.height, 0.1, 100);
+    this.updateCameraAspectAndFov(width, height);
     this.camera.position.set(0, 0, this.orbitRadius);
     this.camera.lookAt(0, 0, 0);
 
@@ -70,14 +73,30 @@ export class SceneManager {
     }
   }
 
+  private updateCameraAspectAndFov(width: number, height: number): void {
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+
+    // On narrow viewports (aspect < 1.0), widen the vertical FOV proportionally
+    // so the horizontal FOV remains constant and the 3D cube scales down to fit.
+    if (aspect < 1.0) {
+      const baseFovRad = (this.baseFov * Math.PI) / 180;
+      const targetFovRad = 2 * Math.atan(Math.tan(baseFovRad / 2) / aspect);
+      this.camera.fov = (targetFovRad * 180) / Math.PI;
+    } else {
+      this.camera.fov = this.baseFov;
+    }
+
+    this.camera.updateProjectionMatrix();
+  }
+
   public resize(width: number, height: number): void {
     // Guard against degenerate dimensions that produce NaN or Infinity aspect.
     if (width <= 0 || height <= 0) return;
 
     this.width = width;
     this.height = height;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.updateCameraAspectAndFov(width, height);
     this.renderer.setSize(width, height, false);
   }
 
