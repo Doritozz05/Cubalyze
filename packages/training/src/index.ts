@@ -36,4 +36,11 @@ export type { SessionEvent, SessionStateListener } from './session';
 
 // ─── Progress ─────────────────────────────────────────────────────────────
 export { ProgressTracker } from './progress';
-export type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord } from './progress';
+export type {
+  ITrainingProgressRepo,
+  TrainingAttemptRecord,
+  AlgorithmProgressRecord,
+  ExerciseProgressRecord,
+  PhaseStatsRecord,
+  MetricKind,
+} from './progress';

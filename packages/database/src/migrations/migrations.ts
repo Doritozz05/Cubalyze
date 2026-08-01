@@ -289,4 +289,13 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_skill_progress_completed_at ON skill_progress(completed_at);
     `,
   },
+  {
+    id: '014_add_recognition_and_efficiency',
+    description: 'Add recognition accuracy to algorithm_progress and optimal_moves to training_attempts',
+    sql: `
+      ALTER TABLE algorithm_progress ADD COLUMN recognition_accuracy REAL NOT NULL DEFAULT 0;
+      ALTER TABLE algorithm_progress ADD COLUMN recognition_attempts INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE training_attempts ADD COLUMN optimal_moves INTEGER;
+    `,
+  },
 ];

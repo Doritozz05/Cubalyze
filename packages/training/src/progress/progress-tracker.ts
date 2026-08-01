@@ -28,6 +28,8 @@ export interface ITrainingProgressRepo {
   upsertExerciseProgress(progress: ExerciseProgressRecord): Promise<ExerciseProgressRecord>;
   getMethodExerciseProgress(methodId: string): Promise<ExerciseProgressRecord[]>;
   getMethodMastery(methodId: string): Promise<number>;
+  /** Per-phase aggregate stats (avg time, accuracy, efficiency) for phase weakness detection. */
+  getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStatsRecord | null>;
 }
 
 // ─── Record Types (what comes from the DB) ────────────────────────────────
@@ -42,6 +44,10 @@ export interface TrainingAttemptRecord {
   timeMs: number;
   verdict: AttemptVerdict;
   playMode: PlayMode;
+  moveCount?: number;
+  optimalMoves?: number;
+  tps?: number;
+  rotationCount?: number;
   timestamp: number;
 }
 
@@ -57,6 +63,8 @@ export interface AlgorithmProgressRecord {
   srsNextReviewAt: number;
   srsIntervalDays: number;
   srsEaseFactor: number;
+  recognitionAccuracy: number;
+  recognitionAttempts: number;
 }
 
 export interface ExerciseProgressRecord {
@@ -70,6 +78,22 @@ export interface ExerciseProgressRecord {
   avgTimeMs: number;
   lastPracticedAt: number;
 }
+
+/** Per-phase aggregate stats derived from training attempts. */
+export interface PhaseStatsRecord {
+  methodId: string;
+  phaseId: string;
+  totalAttempts: number;
+  accuracy: number;   // 0-100
+  avgTimeMs: number;
+  bestTimeMs: number;
+  failRate: number;   // 0-1
+  efficiency: number; // 0-1 (optimal_moves / move_count)
+  lastPracticedAt: number;
+}
+
+/** What a training attempt measures. Recognition quizzes must NOT touch execution time metrics. */
+export type MetricKind = 'execution' | 'recognition';
 
 // ─── SM-2 Spaced Repetition Algorithm ─────────────────────────────────────
 
@@ -143,7 +167,15 @@ export class ProgressTracker {
 
   /**
    * Record a training attempt and update algorithm + exercise progress.
-   * Returns updated algorithm progress.
+   *
+   * - Exercise progress is ALWAYS updated (every training view contributes).
+   * - Algorithm progress is updated when `caseId` is present.
+   * - Recognition attempts (`metricKind: 'recognition'`) update only
+   *   `recognitionAccuracy`/`recognitionAttempts` and mastery — they
+   *   never touch execution time metrics (fixes Recognize corrupting
+   *   best/avg time with timeMs=0).
+   *
+   * Returns updated algorithm progress (null when no caseId).
    */
   async recordAttempt(params: {
     exerciseId: string;
@@ -154,10 +186,19 @@ export class ProgressTracker {
     verdict: AttemptVerdict;
     playMode: PlayMode;
     scramble: string;
+    metricKind?: MetricKind;
+    moveCount?: number;
+    optimalMoves?: number;
+    tps?: number;
+    rotationCount?: number;
   }): Promise<AlgorithmProgressRecord | null> {
-    const { exerciseId, methodId, phaseId, caseId, timeMs, verdict, playMode, scramble } = params;
+    const {
+      exerciseId, methodId, phaseId, caseId, timeMs, verdict, playMode, scramble,
+      metricKind = 'execution', moveCount, optimalMoves, tps, rotationCount,
+    } = params;
 
-    // Insert the raw attempt record
+    // Insert the raw attempt record (with efficiency metadata when available)
+    const now = Date.now();
     await this.repo.insertAttempt({
       exerciseId,
       methodId,
@@ -167,25 +208,95 @@ export class ProgressTracker {
       timeMs,
       verdict,
       playMode,
-      timestamp: Date.now(),
+      moveCount,
+      optimalMoves,
+      tps,
+      rotationCount,
+      timestamp: now,
     });
+
+    // Update exercise progress — ALWAYS (even without caseId).
+    // Recognition quizzes persist timeMs=0; guard time fields so they never
+    // corrupt exercise best/avg time.
+    const exPrev = await this.repo.getExerciseProgress(exerciseId, methodId, phaseId);
+    const hasTime = timeMs > 0;
+    const exProgress: ExerciseProgressRecord = {
+      exerciseId,
+      methodId,
+      phaseId,
+      totalSessions: exPrev?.totalSessions ?? 1,
+      totalAttempts: (exPrev?.totalAttempts ?? 0) + 1,
+      bestAccuracy: Math.max(exPrev?.bestAccuracy ?? 0, verdict === "correct" ? 100 : 0),
+      bestTimeMs: hasTime
+        ? exPrev && exPrev.bestTimeMs > 0 ? Math.min(exPrev.bestTimeMs, timeMs) : timeMs
+        : (exPrev?.bestTimeMs ?? 0),
+      avgTimeMs: hasTime
+        ? exPrev
+          ? Math.round((exPrev.avgTimeMs * (exPrev.totalAttempts) + timeMs) / ((exPrev.totalAttempts) + 1))
+          : timeMs
+        : (exPrev?.avgTimeMs ?? 0),
+      lastPracticedAt: now,
+    };
+    await this.repo.upsertExerciseProgress(exProgress);
 
     if (!caseId) return null;
 
     // Update algorithm progress
     const prev = await this.repo.getAlgorithmProgress(caseId);
-    const bestTimeMs = prev ? (prev.bestTimeMs > 0 ? Math.min(prev.bestTimeMs, timeMs) : timeMs) : timeMs;
-    const totalAttempts = (prev?.totalAttempts ?? 0) + 1;
-    const correctCount = prev
-      ? prev.totalAttempts > 0
-        ? Math.round((prev.accuracy / 100) * prev.totalAttempts) + (verdict === "correct" ? 1 : 0)
-        : verdict === "correct" ? 1 : 0
-      : verdict === "correct" ? 1 : 0;
-    const accuracy = Math.round((correctCount / totalAttempts) * 100);
-    const avgTimeMs = prev
-      ? Math.round((prev.avgTimeMs * (prev.totalAttempts) + timeMs) / totalAttempts)
-      : timeMs;
     const correctStreak = verdict === "correct" ? (prev?.correctStreak ?? 0) + 1 : 0;
+    const totalAttempts = (prev?.totalAttempts ?? 0) + 1;
+
+    if (metricKind === 'recognition') {
+      // Recognition: only accuracy + SRS. Preserve execution time metrics untouched.
+      const recAttempts = (prev?.recognitionAttempts ?? 0) + 1;
+      const recCorrect = prev
+        ? Math.round((prev.recognitionAccuracy / 100) * prev.recognitionAttempts) + (verdict === "correct" ? 1 : 0)
+        : (verdict === "correct" ? 1 : 0);
+      const recognitionAccuracy = Math.round((recCorrect / recAttempts) * 100);
+
+      const quality = verdictToQuality(verdict, 0, 0); // no time signal → 4/2
+      const { ease, interval } = computeSM2(
+        quality,
+        prev?.srsEaseFactor ?? DEFAULT_EASE_FACTOR,
+        prev?.srsIntervalDays ?? 0,
+      );
+
+      // Mastery blends recognition accuracy (speed weight neutralized).
+      const mastery = computeMastery(recCorrect, recAttempts, correctStreak, 1);
+
+      const progress: AlgorithmProgressRecord = {
+        algorithmId: caseId,
+        mastery,
+        accuracy: prev?.accuracy ?? 0, // execution accuracy untouched
+        bestTimeMs: prev?.bestTimeMs ?? 0,
+        avgTimeMs: prev?.avgTimeMs ?? 0,
+        totalAttempts,
+        correctStreak,
+        lastPracticedAt: now,
+        srsNextReviewAt: verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now,
+        srsIntervalDays: interval,
+        srsEaseFactor: ease,
+        recognitionAccuracy,
+        recognitionAttempts: recAttempts,
+      };
+
+      await this.repo.upsertAlgorithmProgress(progress);
+      return progress;
+    }
+
+    // Execution path. Reconstruct counts over EXECUTION-ONLY attempts so that
+    // interleaved recognition attempts (which share totalAttempts) never
+    // corrupt execution accuracy or average time.
+    const execAttempts = prev ? Math.max((prev.totalAttempts ?? 0) - (prev.recognitionAttempts ?? 0), 0) : 0;
+    const bestTimeMs = prev ? (prev.bestTimeMs > 0 ? Math.min(prev.bestTimeMs, timeMs) : timeMs) : timeMs;
+    const correctCount = prev && execAttempts > 0
+      ? Math.round((prev.accuracy / 100) * execAttempts) + (verdict === "correct" ? 1 : 0)
+      : (verdict === "correct" ? 1 : 0);
+    const execTotal = execAttempts + 1;
+    const accuracy = Math.round((correctCount / execTotal) * 100);
+    const avgTimeMs = prev && execAttempts > 0
+      ? Math.round((prev.avgTimeMs * execAttempts + timeMs) / execTotal)
+      : timeMs;
 
     const quality = verdictToQuality(verdict, timeMs, bestTimeMs);
     const avgTimeRatio = bestTimeMs > 0 ? avgTimeMs / bestTimeMs : 1;
@@ -197,7 +308,6 @@ export class ProgressTracker {
       prev?.srsIntervalDays ?? 0,
     );
 
-    const now = Date.now();
     const progress: AlgorithmProgressRecord = {
       algorithmId: caseId,
       mastery,
@@ -210,27 +320,11 @@ export class ProgressTracker {
       srsNextReviewAt: verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now,
       srsIntervalDays: interval,
       srsEaseFactor: ease,
+      recognitionAccuracy: prev?.recognitionAccuracy ?? 0,
+      recognitionAttempts: prev?.recognitionAttempts ?? 0,
     };
 
     await this.repo.upsertAlgorithmProgress(progress);
-
-    // Update exercise progress
-    const exPrev = await this.repo.getExerciseProgress(exerciseId, methodId, phaseId);
-    const exProgress: ExerciseProgressRecord = {
-      exerciseId,
-      methodId,
-      phaseId,
-      totalSessions: exPrev?.totalSessions ?? 1,
-      totalAttempts: (exPrev?.totalAttempts ?? 0) + 1,
-      bestAccuracy: Math.max(exPrev?.bestAccuracy ?? 0, accuracy),
-      bestTimeMs: exPrev && exPrev.bestTimeMs > 0 ? Math.min(exPrev.bestTimeMs, timeMs) : timeMs,
-      avgTimeMs: exPrev
-        ? Math.round((exPrev.avgTimeMs * (exPrev.totalAttempts) + timeMs) / ((exPrev.totalAttempts) + 1))
-        : timeMs,
-      lastPracticedAt: now,
-    };
-    await this.repo.upsertExerciseProgress(exProgress);
-
     return progress;
   }
 
@@ -253,6 +347,8 @@ export class ProgressTracker {
         srsNextReviewAt: 0,
         srsIntervalDays: 0,
         srsEaseFactor: DEFAULT_EASE_FACTOR,
+        recognitionAccuracy: 0,
+        recognitionAttempts: 0,
       }
     );
   }
@@ -283,6 +379,13 @@ export class ProgressTracker {
    */
   async getMethodMastery(methodId: string): Promise<number> {
     return this.repo.getMethodMastery(methodId);
+  }
+
+  /**
+   * Get per-phase aggregate stats for phase-level weakness detection.
+   */
+  async getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStatsRecord | null> {
+    return this.repo.getPhaseStats(methodId, phaseId);
   }
 
   /**

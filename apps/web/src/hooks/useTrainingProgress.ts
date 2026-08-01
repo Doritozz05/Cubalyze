@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { initDB, TrainingRepository } from "@cubeforge/database";
-import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord } from "@cubeforge/training";
+import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind } from "@cubeforge/training";
 import { ProgressTracker } from "@cubeforge/training";
 import type { AttemptVerdict, PlayMode } from "@cubeforge/training";
 
@@ -27,6 +27,7 @@ function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
     upsertExerciseProgress: async (p: ExerciseProgressRecord) => repo.upsertExerciseProgress(p),
     getMethodExerciseProgress: (methodId: string) => repo.getMethodExerciseProgress(methodId),
     getMethodMastery: (methodId: string) => repo.getMethodMastery(methodId),
+    getPhaseStats: (methodId: string, phaseId: string) => repo.getPhaseStats(methodId, phaseId),
   };
 }
 
@@ -43,12 +44,18 @@ export interface UseTrainingProgressResult {
     verdict: AttemptVerdict;
     playMode: PlayMode;
     scramble: string;
+    metricKind?: MetricKind;
+    moveCount?: number;
+    optimalMoves?: number;
+    tps?: number;
+    rotationCount?: number;
   }) => Promise<AlgorithmProgressRecord | null>;
   getCaseProgress: (algorithmId: string) => Promise<AlgorithmProgressRecord>;
   getSubsetProgress: (subsetId: string) => Promise<AlgorithmProgressRecord[]>;
   getMethodMastery: (methodId: string) => Promise<number>;
   getDueForReview: (limit?: number) => Promise<AlgorithmProgressRecord[]>;
   getMethodExerciseProgress: (methodId: string) => Promise<ExerciseProgressRecord[]>;
+  getPhaseStats: (methodId: string, phaseId: string) => Promise<PhaseStatsRecord | null>;
 }
 
 export function useTrainingProgress(): UseTrainingProgressResult {
@@ -92,6 +99,11 @@ export function useTrainingProgress(): UseTrainingProgressResult {
       verdict: AttemptVerdict;
       playMode: PlayMode;
       scramble: string;
+      metricKind?: MetricKind;
+      moveCount?: number;
+      optimalMoves?: number;
+      tps?: number;
+      rotationCount?: number;
     }) => {
       if (!tracker) return null;
       return tracker.recordAttempt(params);
@@ -153,6 +165,14 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     [tracker],
   );
 
+  const getPhaseStats = useCallback(
+    async (methodId: string, phaseId: string) => {
+      if (!tracker) return null;
+      return tracker.getPhaseStats(methodId, phaseId);
+    },
+    [tracker],
+  );
+
   return {
     ready,
     recordAttempt,
@@ -161,5 +181,6 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     getMethodMastery,
     getDueForReview,
     getMethodExerciseProgress,
+    getPhaseStats,
   };
 }

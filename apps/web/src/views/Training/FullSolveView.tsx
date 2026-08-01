@@ -14,6 +14,7 @@ import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
+import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import {
   TrainingBreadcrumb,
   TouchAside,
@@ -151,6 +152,44 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
 
   const smartCube = useDrillSmartCube({ engine, setupScramble: currentScramble });
   const hasSmartCube = smartCube.smartCubeConnected;
+
+  // ── Persistence: every completed solve feeds phase stats ──────────────
+  // A single pass per solve (ref identity guards StrictMode double-invoke).
+  // Per-phase splits feed phase weakness; the total row records the solve.
+  const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const persistedSolveRef = useRef<SolveResult | null>(null);
+
+  useEffect(() => {
+    if (!lastSolve || persistedSolveRef.current === lastSolve) return;
+    persistedSolveRef.current = lastSolve;
+
+    for (const split of lastSolve.splits) {
+      if (split.actualMs <= 0) continue;
+      const overTarget = split.actualMs / 1000 > split.targetS;
+      dbPersistAttempt({
+        exerciseId: `full-solve-${methodId}`,
+        methodId,
+        phaseId: split.phaseId,
+        timeMs: split.actualMs,
+        verdict: overTarget ? "incorrect" : "correct",
+        playMode: hasSmartCube ? "smart-cube" : "manual",
+        scramble: currentScramble,
+      }).catch((err) => console.error("[FullSolve] persist split failed:", err));
+    }
+
+    // Total solve (moveCount may be undefined in targets mode; in move-limit
+    // /TPS modes the user submits it in the result overlay afterwards).
+    dbPersistAttempt({
+      exerciseId: `full-solve-${methodId}`,
+      methodId,
+      phaseId: "full",
+      timeMs: lastSolve.totalMs,
+      verdict: "correct",
+      playMode: hasSmartCube ? "smart-cube" : "manual",
+      scramble: currentScramble,
+      moveCount: userMoveCount ?? undefined,
+    }).catch((err) => console.error("[FullSolve] persist total failed:", err));
+  }, [lastSolve, userMoveCount, hasSmartCube, currentScramble, methodId, dbPersistAttempt]);
 
   const hintCtx = useMemo<HintContext>(() => ({
     smartCube: hasSmartCube,

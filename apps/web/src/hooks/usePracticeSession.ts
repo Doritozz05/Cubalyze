@@ -10,6 +10,7 @@ import { useOrientation } from "@/hooks/useOrientation";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { RandomStateGenerator } from "@cubeforge/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
+import type { MetricKind } from "@cubeforge/training";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared helpers
@@ -40,6 +41,13 @@ export interface PracticeSessionParams {
   methodId: string;
   phaseId: string;
   exerciseId: string;
+  /** Optional per-phase efficiency metadata (move count vs optimal) so
+      phase-target trainings (Cross/EO/LSE) feed real phase stats. */
+  metricKind?: MetricKind;
+  moveCount?: number | null;
+  optimalMoves?: number | null;
+  tps?: number | null;
+  rotationCount?: number | null;
 }
 
 export interface PracticeSessionResult {
@@ -77,6 +85,7 @@ export interface PracticeSessionResult {
 
 export function usePracticeSession({
   methodId, phaseId, exerciseId,
+  metricKind, moveCount, optimalMoves, tps, rotationCount,
 }: PracticeSessionParams): PracticeSessionResult {
   const [attempts, setAttempts] = useState<PracticeAttempt[]>([]);
   const [currentScramble, setCurrentScramble] = useState(
@@ -128,8 +137,14 @@ export function usePracticeSession({
       verdict: correct ? "correct" : "incorrect",
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentScramble,
+      metricKind,
+      moveCount: moveCount ?? undefined,
+      optimalMoves: optimalMoves ?? undefined,
+      tps: tps ?? undefined,
+      rotationCount: rotationCount ?? undefined,
     }).catch((err) => { console.error(`[${exerciseId}] Failed to persist:`, err); });
-  }, [stoppedTime, dbPersistAttempt, methodId, phaseId, exerciseId, hasSmartCube, currentScramble]);
+  }, [stoppedTime, dbPersistAttempt, methodId, phaseId, exerciseId, hasSmartCube, currentScramble,
+    metricKind, moveCount, optimalMoves, tps, rotationCount]);
 
   const regenerateScramble = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
@@ -137,7 +152,17 @@ export function usePracticeSession({
 
   const handleCorrect = useCallback(() => { recordAttempt(true); reset(); regenerateScramble(); }, [recordAttempt, reset, regenerateScramble]);
   const handleIncorrect = useCallback(() => { recordAttempt(false); reset(); regenerateScramble(); }, [recordAttempt, reset, regenerateScramble]);
-  const handleSkip = useCallback(() => { reset(); regenerateScramble(); }, [reset, regenerateScramble]);
+  const handleSkip = useCallback(() => {
+    // Skips are also persisted (verdict 'skipped') so fail/skip rates are real.
+    dbPersistAttempt({
+      exerciseId, methodId, phaseId, timeMs: 0,
+      verdict: "skipped",
+      playMode: hasSmartCube ? "smart-cube" : "manual",
+      scramble: currentScramble,
+      metricKind,
+    }).catch((err) => { console.error(`[${exerciseId}] Failed to persist skip:`, err); });
+    reset(); regenerateScramble();
+  }, [reset, regenerateScramble, dbPersistAttempt, exerciseId, methodId, phaseId, hasSmartCube, currentScramble, metricKind]);
 
   return {
     phase, time, stoppedTime, press, release, reset,

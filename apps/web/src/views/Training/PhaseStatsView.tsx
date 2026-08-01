@@ -7,10 +7,10 @@ import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 import { TrainingBreadcrumb } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import type { AlgorithmProgressRecord } from "@cubeforge/training";
+import type { AlgorithmProgressRecord, PhaseStatsRecord } from "@cubeforge/training";
 import {
   Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
-  ChevronRight, Lightbulb,
+  ChevronRight, Lightbulb, Gauge, AlertTriangle,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -29,6 +29,7 @@ interface CaseStat {
   mastery: number;
   bestTimeMs: number;
   attempts: number;
+  recognitionAccuracy: number;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -54,8 +55,17 @@ export function PhaseStatsView({
   const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">("overview");
 
   // ── Real progress from DB ──────────────────────────────────────────────
-  const { ready, getSubsetProgress } = useTrainingProgress();
+  const { ready, getSubsetProgress, getPhaseStats } = useTrainingProgress();
   const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
+  const [phaseStats, setPhaseStats] = useState<PhaseStatsRecord | null>(null);
+
+  // Load phase-level aggregates (avg time, accuracy, efficiency) from
+  // training_attempts — these cover phase-target trainings (Cross/EO/LSE)
+  // that have no per-algorithm cases.
+  useEffect(() => {
+    if (!ready) return;
+    getPhaseStats(methodId, phaseId).then((stats) => setPhaseStats(stats));
+  }, [ready, methodId, phaseId, getPhaseStats]);
 
   // Find subset for this phase
   const subset = useMemo(() => {
@@ -99,6 +109,7 @@ export function PhaseStatsView({
         mastery: prog?.mastery ?? 0,
         bestTimeMs: prog?.bestTimeMs ?? 0,
         attempts: prog?.totalAttempts ?? 0,
+        recognitionAccuracy: prog?.recognitionAccuracy ?? 0,
       };
     });
   }, [subsetCases, progressMap, ready]);
@@ -113,6 +124,14 @@ export function PhaseStatsView({
 
   const weakCases = useMemo(
     () => [...caseStats].filter(c => c.mastery < 100).sort((a, b) => a.mastery - b.mastery).slice(0, 5),
+    [caseStats],
+  );
+
+  const weakRecognition = useMemo(
+    () => [...caseStats]
+      .filter(c => c.recognitionAccuracy > 0 && c.recognitionAccuracy < 80)
+      .sort((a, b) => a.recognitionAccuracy - b.recognitionAccuracy)
+      .slice(0, 5),
     [caseStats],
   );
 
@@ -158,11 +177,12 @@ export function PhaseStatsView({
               totalCases={subsetCases.length} avgMastery={avgMastery} bestTime={bestTime === Infinity ? 0 : bestTime}
               totalAttempts={totalAttempts} hasAlgorithms={hasAlgorithms}
               weakCases={weakCases} sessionHistory={sessionHistory}
+              phaseStats={phaseStats} weakRecognition={weakRecognition}
             />
           )}
           {activeTab === "cases" && (
             <CasesTab caseStats={caseStats.length > 0 ? caseStats : subsetCases.map((c) => ({
-              case: c, mastery: 0, bestTimeMs: 0, attempts: 0,
+              case: c, mastery: 0, bestTimeMs: 0, attempts: 0, recognitionAccuracy: 0,
             }))} />
           )}
           {activeTab === "history" && (
@@ -180,12 +200,14 @@ export function PhaseStatsView({
 
 function OverviewTab({
   mastered, learning, beginner, newCases, totalCases, avgMastery, bestTime, totalAttempts,
-  hasAlgorithms, weakCases, sessionHistory,
+  hasAlgorithms, weakCases, sessionHistory, phaseStats, weakRecognition,
 }: {
   mastered: number; learning: number; beginner: number; newCases: number; totalCases: number;
   avgMastery: number; bestTime: number; totalAttempts: number; hasAlgorithms: boolean;
   weakCases: CaseStat[];
   sessionHistory: { day: string; avgTime: number; accuracy: number; attempts: number }[];
+  phaseStats: PhaseStatsRecord | null;
+  weakRecognition: CaseStat[];
 }) {
   return (
     <div className="space-y-5 pb-8">
@@ -259,6 +281,42 @@ function OverviewTab({
         </section>
       )}
 
+      {phaseStats && phaseStats.totalAttempts > 0 && (
+        <section className="rounded-xl border border-line bg-surface p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">Phase Performance</h3>
+            <span className="text-[0.55rem] text-ink-3/60">from all training sessions</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Clock className="size-2.5" />Avg time</span>
+              <span className="nums text-[0.9rem] font-bold text-ink mt-1 block">{formatTime(phaseStats.avgTimeMs)}</span>
+            </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Target className="size-2.5" />Accuracy</span>
+              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.accuracy >= 80 ? "text-ready" : phaseStats.accuracy >= 50 ? "text-caution" : "text-hold")}>
+                {phaseStats.accuracy}%
+              </span>
+            </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Gauge className="size-2.5" />Efficiency</span>
+              <span className="nums text-[0.9rem] font-bold text-ink mt-1 block">
+                {phaseStats.efficiency > 0 ? `${Math.round(phaseStats.efficiency * 100)}%` : "--"}
+              </span>
+            </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><AlertTriangle className="size-2.5" />Fail rate</span>
+              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.failRate < 0.2 ? "text-ready" : phaseStats.failRate < 0.4 ? "text-caution" : "text-hold")}>
+                {Math.round(phaseStats.failRate * 100)}%
+              </span>
+            </div>
+          </div>
+          <p className="text-[0.55rem] text-ink-3/60 mt-3">
+            {phaseStats.totalAttempts} attempts recorded across phase trainings (Cross/EO/LSE/Full Solve).
+          </p>
+        </section>
+      )}
+
       {hasAlgorithms && weakCases.length > 0 && (
         <section className="rounded-xl border border-line bg-surface p-5">
           <div className="flex items-center justify-between mb-4">
@@ -279,6 +337,28 @@ function OverviewTab({
                     style={{ width: `${sc.mastery}%` }} />
                 </div>
                 <span className="nums text-[0.55rem] text-ink-2 shrink-0 w-7 text-right">{sc.mastery}%</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {hasAlgorithms && weakRecognition.length > 0 && (
+        <section className="rounded-xl border border-line bg-surface p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">Weak Recognition</h3>
+            <span className="text-[0.55rem] text-ink-3/60">You execute but don't recognize these yet</span>
+          </div>
+          <div className="space-y-1.5">
+            {weakRecognition.map((sc) => (
+              <div key={sc.case.id} className="flex items-center gap-3 rounded-lg px-3 py-2 bg-surface-2/50">
+                <span className="nums text-[0.62rem] font-medium text-ink-2 shrink-0 w-10">{sc.case.caseNumber}</span>
+                <span className="text-[0.6rem] text-ink-3 truncate flex-1">{sc.case.name}</span>
+                <span className="nums text-[0.58rem] text-ink-2 shrink-0">{sc.recognitionAccuracy}% recog</span>
+                <div className="h-1.5 w-14 rounded-full bg-surface-2 overflow-hidden shrink-0">
+                  <div className={cn("h-full rounded-full", sc.recognitionAccuracy >= 80 ? "bg-ready" : sc.recognitionAccuracy >= 50 ? "bg-caution" : "bg-hold")}
+                    style={{ width: `${sc.recognitionAccuracy}%` }} />
+                </div>
               </div>
             ))}
           </div>

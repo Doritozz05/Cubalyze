@@ -212,7 +212,9 @@ export function AlgorithmRecognizeView({
     }));
     setSeenCaseIds((prev) => new Set(prev).add(round.caseId));
 
-    // Persist to DB for progress tracking + SRS
+    // Persist to DB for progress tracking + SRS.
+    // metricKind: 'recognition' — updates ONLY recognition accuracy + mastery;
+    // never touches execution best/avg time (which timeMs: 0 would corrupt).
     dbPersistAttempt({
       exerciseId: `recognize-${subsetId}`,
       methodId,
@@ -222,6 +224,7 @@ export function AlgorithmRecognizeView({
       verdict: isCorrect ? "correct" : "incorrect",
       playMode: "manual",
       scramble: "",
+      metricKind: "recognition",
     }).catch((err) => {
       console.error("[RecognizeView] Failed to persist attempt:", err);
     });

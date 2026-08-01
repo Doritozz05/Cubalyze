@@ -316,7 +316,11 @@ export function AlgorithmDrillView({
       setAttempts((prev) => [attempt, ...prev]);
       if (!correct && revealIfFail) setShowAlgorithm(true);
 
-      // Persist to DB for progress tracking + SRS
+      // Persist to DB for progress tracking + SRS.
+      // metricKind: 'execution' — updates mastery + best/avg time.
+      // NOTE: no moveCount/optimalMoves — drill is a manual-verdict execution
+      // with no real move tracking; faking the algorithm length would make
+      // getPhaseStats efficiency always 1.0.
       dbPersistAttempt({
         exerciseId: `drill-${subsetId}`,
         methodId,
@@ -326,6 +330,7 @@ export function AlgorithmDrillView({
         verdict: correct ? "correct" : "incorrect",
         playMode: hasSmartCube ? "smart-cube" : "manual",
         scramble: currentSetup,
+        metricKind: "execution",
       }).catch((err) => {
         console.error("[DrillView] Failed to persist attempt:", err);
       });

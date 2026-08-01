@@ -29,6 +29,7 @@ export interface TrainingAttemptRow {
   executed_moves: string | null;
   tps: number | null;
   move_count: number | null;
+  optimal_moves: number | null;
   rotation_count: number | null;
   inspection_ms: number | null;
   timestamp: number;
@@ -47,6 +48,8 @@ export interface AlgorithmProgressRow {
   srs_next_review_at: number;
   srs_interval_days: number;
   srs_ease_factor: number;
+  recognition_accuracy: number;
+  recognition_attempts: number;
 }
 
 export interface ExerciseProgressRow {
@@ -79,6 +82,7 @@ export interface TrainingAttempt {
   executedMoves?: CubeMoveEvent[];
   tps?: number;
   moveCount?: number;
+  optimalMoves?: number;
   rotationCount?: number;
   inspectionMs?: number;
   timestamp: number;
@@ -97,6 +101,8 @@ export interface AlgorithmProgress {
   srsNextReviewAt: number;
   srsIntervalDays: number;
   srsEaseFactor: number;
+  recognitionAccuracy: number;
+  recognitionAttempts: number;
 }
 
 export interface ExerciseProgress {
@@ -109,6 +115,19 @@ export interface ExerciseProgress {
   bestAccuracy: number;
   bestTimeMs: number;
   avgTimeMs: number;
+  lastPracticedAt: number;
+}
+
+/** Per-phase aggregate stats derived from training_attempts. */
+export interface PhaseStats {
+  methodId: string;
+  phaseId: string;
+  totalAttempts: number;
+  accuracy: number;      // 0-100
+  avgTimeMs: number;
+  bestTimeMs: number;
+  failRate: number;      // 0-1
+  efficiency: number;    // 0-1 (optimal_moves / move_count), 0 when unavailable
   lastPracticedAt: number;
 }
 
@@ -132,6 +151,7 @@ function rowToAttempt(row: TrainingAttemptRow): TrainingAttempt {
     executedMoves: row.executed_moves ? JSON.parse(row.executed_moves) : undefined,
     tps: row.tps ?? undefined,
     moveCount: row.move_count ?? undefined,
+    optimalMoves: row.optimal_moves ?? undefined,
     rotationCount: row.rotation_count ?? undefined,
     inspectionMs: row.inspection_ms ?? undefined,
     timestamp: row.timestamp,
@@ -152,6 +172,8 @@ function rowToAlgorithmProgress(row: AlgorithmProgressRow): AlgorithmProgress {
     srsNextReviewAt: row.srs_next_review_at,
     srsIntervalDays: row.srs_interval_days,
     srsEaseFactor: row.srs_ease_factor,
+    recognitionAccuracy: row.recognition_accuracy ?? 0,
+    recognitionAttempts: row.recognition_attempts ?? 0,
   };
 }
 
@@ -198,19 +220,20 @@ export class TrainingRepository {
       executed_moves: attempt.executedMoves ? JSON.stringify(attempt.executedMoves) : null,
       tps: attempt.tps ?? null,
       move_count: attempt.moveCount ?? null,
+      optimal_moves: attempt.optimalMoves ?? null,
       rotation_count: attempt.rotationCount ?? null,
       inspection_ms: attempt.inspectionMs ?? null,
       timestamp: attempt.timestamp || Date.now(),
     };
 
     await this.db(
-      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, rotation_count, inspection_ms, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id, row.exercise_id, row.method_id, row.phase_id, row.subset_id,
         row.case_id, row.scramble, row.time_ms, row.verdict, row.play_mode,
         row.expected_moves, row.executed_moves, row.tps, row.move_count,
-        row.rotation_count, row.inspection_ms, row.timestamp,
+        row.optimal_moves, row.rotation_count, row.inspection_ms, row.timestamp,
       ],
     );
 
@@ -266,12 +289,14 @@ export class TrainingRepository {
       await this.db(
         `UPDATE algorithm_progress SET mastery = ?, accuracy = ?, best_time_ms = ?, avg_time_ms = ?,
          total_attempts = ?, correct_streak = ?, last_practiced_at = ?,
-         srs_next_review_at = ?, srs_interval_days = ?, srs_ease_factor = ?
+         srs_next_review_at = ?, srs_interval_days = ?, srs_ease_factor = ?,
+         recognition_accuracy = ?, recognition_attempts = ?
          WHERE algorithm_id = ?`,
         [
           progress.mastery, progress.accuracy, progress.bestTimeMs, progress.avgTimeMs,
           progress.totalAttempts, progress.correctStreak, progress.lastPracticedAt,
           progress.srsNextReviewAt, progress.srsIntervalDays, progress.srsEaseFactor,
+          progress.recognitionAccuracy, progress.recognitionAttempts,
           progress.algorithmId,
         ],
       );
@@ -280,13 +305,15 @@ export class TrainingRepository {
       const id = generateId();
       await this.db(
         `INSERT INTO algorithm_progress (id, algorithm_id, mastery, accuracy, best_time_ms, avg_time_ms,
-         total_attempts, correct_streak, last_practiced_at, srs_next_review_at, srs_interval_days, srs_ease_factor)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         total_attempts, correct_streak, last_practiced_at, srs_next_review_at, srs_interval_days, srs_ease_factor,
+         recognition_accuracy, recognition_attempts)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, progress.algorithmId, progress.mastery, progress.accuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.totalAttempts,
           progress.correctStreak, progress.lastPracticedAt,
           progress.srsNextReviewAt, progress.srsIntervalDays, progress.srsEaseFactor,
+          progress.recognitionAccuracy, progress.recognitionAttempts,
         ],
       );
       return { ...progress, id };
@@ -408,5 +435,40 @@ export class TrainingRepository {
       [methodId],
     );
     return (rows[0] as { best: number | null }).best ?? 0;
+  }
+
+  // ── Phase Stats ────────────────────────────────────────────────────
+
+  /**
+   * Aggregate per-phase stats from training_attempts. Used for
+   * phase-level weakness detection (avg time, accuracy, efficiency).
+   */
+  async getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStats | null> {
+    const rows = await this.db(
+      `SELECT
+         COUNT(*) as total_attempts,
+         AVG(CASE WHEN verdict = 'correct' THEN 1.0 ELSE 0 END) as accuracy,
+         AVG(CASE WHEN time_ms > 0 THEN time_ms END) as avg_time_ms,
+         MIN(CASE WHEN time_ms > 0 THEN time_ms END) as best_time_ms,
+         AVG(CASE WHEN verdict IN ('incorrect', 'dnf') THEN 1.0 ELSE 0 END) as fail_rate,
+         AVG(CASE WHEN optimal_moves > 0 AND move_count > 0 THEN optimal_moves * 1.0 / move_count END) as efficiency,
+         MAX(timestamp) as last_practiced_at
+       FROM training_attempts
+       WHERE method_id = ? AND phase_id = ?`,
+      [methodId, phaseId],
+    );
+    const r = rows[0] as Record<string, unknown>;
+    if (!r || Number(r.total_attempts) === 0) return null;
+    return {
+      methodId,
+      phaseId,
+      totalAttempts: Number(r.total_attempts),
+      accuracy: Math.round((Number(r.accuracy) || 0) * 100),
+      avgTimeMs: Math.round(Number(r.avg_time_ms) || 0),
+      bestTimeMs: Math.round(Number(r.best_time_ms) || 0),
+      failRate: Number(r.fail_rate) || 0,
+      efficiency: Number(r.efficiency) || 0,
+      lastPracticedAt: Number(r.last_practiced_at) || 0,
+    };
   }
 }

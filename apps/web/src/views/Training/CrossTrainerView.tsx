@@ -284,9 +284,8 @@ export function CrossTrainerView({
     setAttempts((prev) => [attempt, ...prev]);
     setUserMoves(null);
 
-    // Persist to DB. We reuse recordAttempt with timeMs=0 (no timer) and
-    // encode move-count metadata in the scramble field as a suffix so the
-    // existing TrainingAttempt schema needs no migration.
+    // Persist to DB using REAL efficiency columns (optimal_moves vs move_count)
+    // so phase stats can compute efficiency = optimal / actual.
     dbPersistAttempt({
       exerciseId: `cross-trainer-${phaseId}`,
       methodId,
@@ -294,7 +293,9 @@ export function CrossTrainerView({
       timeMs: 0,
       verdict: efficient ? "correct" : "incorrect",
       playMode: "manual",
-      scramble: `${cross.scramble} #moves=${userMoves} #optimal=${cross.optimalDepth} #face=${cross.face}`,
+      scramble: cross.scramble,
+      moveCount: userMoves,
+      optimalMoves: cross.optimalDepth,
     }).catch((err) => console.error("[CrossTrainer] persist failed:", err));
   }, [
     userMoves,
