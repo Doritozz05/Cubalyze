@@ -37,6 +37,17 @@ export interface UseCube3DResult {
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** Whether the 3D engine is fully initialized. */
   isReady: boolean;
+  /**
+   * True when WebGL context creation failed (e.g. browser context limit
+   * reached on iOS Safari). The panel should show a graceful fallback
+   * instead of an infinite "Initializing 3D Cube..." spinner.
+   */
+  initFailed: boolean;
+  /**
+   * True when the global context manager force-evicted this engine's WebGL
+   * context after init (browser hit the context limit). Same fallback UI.
+   */
+  contextEvicted: boolean;
   /** Display-notation moves + rotation notation (compact). */
   recentMoves: string[];
   /** Calibrate the gyroscope (sets current orientation as white-top / green-front). */
@@ -72,6 +83,8 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
   const initFailedRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
+  const [initFailed, setInitFailed] = useState(false);
+  const [contextEvicted, setContextEvicted] = useState(false);
   const [recentMoves, setRecentMoves] = useState<string[]>([]);
 
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
@@ -118,7 +131,24 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
           pixelRatio: window.devicePixelRatio || 1,
           gyroSupported: globalCubeAdapter.gyroSupported,
           order,
+          // Surface context eviction (iOS Safari context limit) so the panel
+          // can show a graceful fallback instead of a frozen canvas.
+          onContextEvicted: () => {
+            setContextEvicted(true);
+            setIsReady(false);
+            initFailedRef.current = true;
+          },
         });
+
+        // The engine may have been evicted immediately on registration (budget
+        // exhausted with no evictable victims). Treat it as init failure and
+        // fully dispose so no subscriptions/GPU resources leak.
+        if (engine.isContextEvicted()) {
+          engine.dispose();
+          initFailedRef.current = true;
+          setInitFailed(true);
+          return;
+        }
 
         engineRef.current = engine;
 
@@ -188,9 +218,11 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
         setIsReady(true);
       } catch (err) {
         // WebGL context creation failed (e.g. browser context limit reached).
-        // Set initFailedRef so the ResizeObserver stops retrying — showing the
-        // 'Initializing 3D Cube...' overlay is better than an infinite error loop.
+        // Set initFailedRef so the ResizeObserver stops retrying — the panel
+        // shows a graceful "3D unavailable" fallback instead of an infinite
+        // 'Initializing 3D Cube...' error loop.
         initFailedRef.current = true;
+        setInitFailed(true);
         console.warn("[useCube3D] Failed to initialize WebGL engine:", err);
       }
     };
@@ -231,6 +263,8 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       // Reset so the next mount (e.g. re-opening the panel) can try again.
       initFailedRef.current = false;
       setIsReady(false);
+      setInitFailed(false);
+      setContextEvicted(false);
     };
   }, [appendRecentMove, order]);
 
@@ -274,6 +308,8 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     canvasRef,
     containerRef,
     isReady,
+    initFailed,
+    contextEvicted,
     recentMoves,
     calibrate,
     reset,

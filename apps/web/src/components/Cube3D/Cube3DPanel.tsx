@@ -21,6 +21,8 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
     canvasRef,
     containerRef,
     isReady,
+    initFailed,
+    contextEvicted,
     recentMoves,
     calibrate,
     reset,
@@ -138,13 +140,20 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
 
         {/* Loading state overlay — pointer-events-none so the canvas can still
             receive pointer events during the initializing phase */}
-        {!isReady && (
+        {initFailed || contextEvicted ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80 px-4">
+            <span className="text-xs text-ink-3/70 text-center select-none">
+              3D view unavailable — too many 3D views are open on this device.
+              Close another 3D view and reopen.
+            </span>
+          </div>
+        ) : !isReady ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80">
             <span className="text-xs text-ink-3/50 animate-pulse select-none">
               Initializing 3D Cube...
             </span>
           </div>
-        )}
+        ) : null}
 
         {/* Moves overlay at bottom — pointer-events-none so drags on the label
             pass through to the canvas; hidden when the panel is too narrow */}

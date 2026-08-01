@@ -18,7 +18,7 @@ export function WidgetExplorerSidebar({
 }: WidgetExplorerSidebarProps) {
   return (
     <nav
-      className="flex shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas px-2 py-3"
+      className="flex h-full shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas px-2 py-3"
       style={{ width: EXPLORER_SIDEBAR_WIDTH }}
     >
       <p className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 select-none">

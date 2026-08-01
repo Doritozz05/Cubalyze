@@ -97,6 +97,11 @@ export class Global3DSnapshotService {
         height: CANV_SIZE,
         pixelRatio: 1,
         order,
+        // These engines are offscreen, lazily recreated and fully cached —
+        // they are the FIRST victims when the global WebGL context budget
+        // is exceeded (iOS Safari). The manager force-evicts them and the
+        // existing isContextLost() guard below recreates them on demand.
+        contextEvictable: true,
       });
 
       // The plan supplies the camera for each render; this is only a safe

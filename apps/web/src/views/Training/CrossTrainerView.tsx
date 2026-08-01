@@ -99,6 +99,8 @@ export function CrossTrainerView({
     canvasRef,
     containerRef,
     isReady,
+    initFailed,
+    contextEvicted,
     calibrate,
     reset,
     engineRef,
@@ -514,13 +516,19 @@ export function CrossTrainerView({
                   ref={canvasRef as React.RefObject<HTMLCanvasElement>}
                   className="absolute inset-0 h-full w-full outline-none"
                 />
-                {!isReady && (
+                {initFailed || contextEvicted ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
+                    <span className="text-[0.58rem] text-ink-3/70 text-center">
+                      3D unavailable — too many 3D views open
+                    </span>
+                  </div>
+                ) : !isReady ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
                     <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
                       Initializing 3D...
                     </span>
                   </div>
-                )}
+                ) : null}
                 {stickeringOn && isReady && replayState === "idle" && (
                   <div className="absolute bottom-2 left-2 rounded bg-background/85 px-2 py-1 text-[0.55rem] text-ink-3">
                     Cross edges highlighted

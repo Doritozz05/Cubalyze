@@ -6,6 +6,7 @@ export * from './core/SceneManager';
 export * from './core/CubeMeshFactory';
 export * from './core/CubeModel';
 export * from './core/Cube3DEngine';
+export * from './core/WebGLContextManager';
 export { parseFaceletsToCubies2x2, type ParsedCubie2x2 } from './core/FaceletParser2x2';
 
 // Styles (skins / appearances)

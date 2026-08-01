@@ -180,7 +180,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
   const innerContent = (
     <div className="flex h-full min-h-0">
       {/* ── Sidebar (desktop only; touch uses scrollable category chips) ── */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:flex h-full shrink-0">
         <WidgetExplorerSidebar
           activeCategory={activeCategory}
           onSelectCategory={handleSelectCategory}

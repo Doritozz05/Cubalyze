@@ -9,8 +9,20 @@ import {
   Mesh,
   Spherical,
 } from 'three';
+import { webglContextManager } from './WebGLContextManager';
 
 export type OnRenderCallback = () => void;
+
+export interface SceneManagerOptions {
+  /**
+   * Mark this context as disposable. The global context manager evicts
+   * disposable contexts first when the browser's WebGL context budget is
+   * exceeded (e.g. offscreen snapshot engines — they are recreated on demand).
+   */
+  evictable?: boolean;
+  /** Called when the global context manager force-evicts this context. */
+  onContextEvicted?: () => void;
+}
 
 export class SceneManager {
   public scene: Scene;
@@ -32,7 +44,24 @@ export class SceneManager {
 
   private readonly baseFov: number = 45;
 
-  constructor(canvas: HTMLCanvasElement | OffscreenCanvas, width: number, height: number, pixelRatio: number) {
+  /** True after the global context manager force-evicted this context. */
+  private contextEvicted = false;
+
+  /**
+   * Called when the global context manager force-evicts this context.
+   * Set from the constructor options; lets the owning engine stop its loop.
+   */
+  public onContextEvicted: (() => void) | null = null;
+
+  constructor(
+    canvas: HTMLCanvasElement | OffscreenCanvas,
+    width: number,
+    height: number,
+    pixelRatio: number,
+    options: SceneManagerOptions = {},
+  ) {
+    this.onContextEvicted = options.onContextEvicted ?? null;
+
     this.width = width;
     this.height = height;
 
@@ -71,7 +100,32 @@ export class SceneManager {
       }, false);
     }
 
+    // Register with the global LRU context manager. If the browser context
+    // budget is exhausted, an older (evictable-first) context is destroyed to
+    // make room — preventing iOS Safari from returning null for getContext().
+    const kept = webglContextManager.register(this.renderer, {
+      evictable: options.evictable ?? false,
+      onEvicted: () => {
+        this.contextEvicted = true;
+        this.onContextEvicted?.();
+      },
+    });
+    if (!kept) {
+      this.contextEvicted = true;
+      this.onContextEvicted?.();
+    }
+
     [this.ambientLight, this.directionalLight] = this.setupLighting();
+  }
+
+  /**
+   * True when the global context manager force-evicted this context (its
+   * slot was reclaimed because the browser hit the WebGL context limit).
+   * Evicted contexts can no longer render — callers should stop their loop
+   * and show a graceful fallback instead of a frozen canvas.
+   */
+  public isContextEvicted(): boolean {
+    return this.contextEvicted || webglContextManager.isEvicted(this.renderer);
   }
 
   private setupLighting(): [AmbientLight, DirectionalLight] {
@@ -174,11 +228,15 @@ export class SceneManager {
   public render(): void {
     // Skip render if the WebGL context has been lost (e.g. tab hidden, GPU reset).
     if (this.renderer.getContext?.()?.isContextLost?.()) return;
+    webglContextManager.touch(this.renderer);
     this.renderer.render(this.scene, this.camera);
     this.onRender?.();
   }
 
   public dispose(): void {
+    // Remove from the LRU registry so its slot is not counted while disposed.
+    // (Map.delete never throws — kept outside the try.)
+    webglContextManager.unregister(this.renderer);
     try {
       // renderer.dispose() frees GPU resources (textures, buffers, programs).
       // Do NOT call forceContextLoss() here: it permanently marks the canvas DOM

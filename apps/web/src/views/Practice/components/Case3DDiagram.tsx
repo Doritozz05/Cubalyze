@@ -191,7 +191,7 @@ export function Case3DCanvas({
   /** Blocks pointer-drag orbit so only explicit controls rotate the camera. */
   lockOrbit?: boolean;
 }) {
-  const { canvasRef, containerRef, isReady, engineRef, rotateCamera } = useCube3D({
+  const { canvasRef, containerRef, isReady, initFailed, contextEvicted, engineRef, rotateCamera } = useCube3D({
     maxRecentMoves: 0,
     order,
   });
@@ -272,11 +272,17 @@ export function Case3DCanvas({
           lockOrbit ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         )}
       />
-      {!isReady && (
+      {initFailed || contextEvicted ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
+          <span className="text-[0.58rem] text-ink-3/70 text-center">
+            3D unavailable — too many 3D views open
+          </span>
+        </div>
+      ) : !isReady ? (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
           <span className="text-[0.6rem] text-ink-3/50 animate-pulse">Rendering 3D...</span>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

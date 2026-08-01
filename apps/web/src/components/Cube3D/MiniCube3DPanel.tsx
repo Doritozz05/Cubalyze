@@ -24,7 +24,7 @@ export interface MiniCube3DPanelProps {
  * green front — standard WCA orientation).
  */
 export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
-  const { canvasRef, containerRef, isReady, recentMoves, calibrate, reset, applyScramble } =
+  const { canvasRef, containerRef, isReady, initFailed, contextEvicted, recentMoves, calibrate, reset, applyScramble } =
     useCube3D({ maxRecentMoves: 8, scramble });
 
   return (
@@ -105,14 +105,20 @@ export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
           className="absolute inset-0 h-full w-full outline-none"
         />
 
-        {/* Loading state */}
-        {!isReady && (
+        {/* Loading / fallback state */}
+        {initFailed || contextEvicted ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
+            <span className="text-[0.58rem] text-ink-3/70 text-center">
+              3D unavailable — too many 3D views open
+            </span>
+          </div>
+        ) : !isReady ? (
           <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
             <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
               Initializing...
             </span>
           </div>
-        )}
+        ) : null}
 
         {/* Recent moves overlay */}
         <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-2 py-1.5">

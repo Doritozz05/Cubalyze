@@ -17,6 +17,19 @@ export interface Cube3DEngineOptions {
   gyroSupported?: boolean;
   /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
   order?: number;
+  /**
+   * Mark this context as disposable. The global context manager evicts
+   * disposable contexts first when the browser's WebGL context budget is
+   * exceeded. Use for offscreen/snapshot engines that are recreated lazily
+   * on demand (NOT for user-visible React canvases).
+   */
+  contextEvictable?: boolean;
+  /**
+   * Called when the global context manager force-evicts this engine's WebGL
+   * context (browser hit the context limit). The engine stops its render
+   * loop; the caller should surface a graceful fallback in the UI.
+   */
+  onContextEvicted?: () => void;
 }
 
 export class Cube3DEngine {
@@ -29,6 +42,7 @@ export class Cube3DEngine {
 
   private onOrientationChangeCb?: (o: CubeOrientation) => void;
   private onRotationEventCb?: (e: RotationEvent) => void;
+  private onContextEvictedCb?: () => void;
   private orientationSub?: Subscription;
   private rotationEventSub?: Subscription;
 
@@ -55,8 +69,18 @@ export class Cube3DEngine {
   private grayedStickers: { mesh: Mesh; originalMat: Material }[] = [];
 
   constructor(options: Cube3DEngineOptions) {
-    const { canvas, width, height, pixelRatio = 1, gyroSupported = false, order = 3 } = options;
-    this.init(canvas, width, height, pixelRatio, gyroSupported, order);
+    const {
+      canvas,
+      width,
+      height,
+      pixelRatio = 1,
+      gyroSupported = false,
+      order = 3,
+      contextEvictable = false,
+      onContextEvicted,
+    } = options;
+    this.onContextEvictedCb = onContextEvicted;
+    this.init(canvas, width, height, pixelRatio, gyroSupported, order, contextEvictable);
   }
 
   private init(
@@ -66,8 +90,22 @@ export class Cube3DEngine {
     pixelRatio: number,
     gyroSupported: boolean,
     order: number,
+    contextEvictable: boolean,
   ) {
-    this.sceneManager = new SceneManager(canvas, width, height, pixelRatio);
+    this.sceneManager = new SceneManager(canvas, width, height, pixelRatio, {
+      evictable: contextEvictable,
+      onContextEvicted: () => {
+        // Stop the rAF loop immediately so an evicted engine doesn't keep
+        // burning frames against a destroyed context.
+        this.isRunning = false;
+        if (this.animFrameId !== null) {
+          cancelAnimationFrame(this.animFrameId);
+          this.animFrameId = null;
+        }
+        this.needsRender = false;
+        this.onContextEvictedCb?.();
+      },
+    });
 
     this.factory = new CubeMeshFactory();
     this.model = new CubeModel(this.factory, order);
@@ -102,8 +140,18 @@ export class Cube3DEngine {
    * facelet syncs, style changes, sticker graying, rotations, …). If the
    * render loop is paused, this restarts it for one frame.
    */
+  /**
+   * True when the global context manager force-evicted this engine's WebGL
+   * context. Once evicted, the engine stops rendering and must be recreated
+   * by the caller (e.g. via a remount) to render again.
+   */
+  public isContextEvicted(): boolean {
+    return !this.isRunning || (this.sceneManager?.isContextEvicted() ?? false);
+  }
+
   public requestRender(): void {
     if (!this.isRunning) return;
+    if (this.sceneManager?.isContextEvicted()) return;
     this.needsRender = true;
     if (this.animFrameId === null) {
       this.lastTime = performance.now();
