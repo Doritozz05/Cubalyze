@@ -47,6 +47,12 @@ function progressRow(overrides: Partial<Record<string, unknown>> = {}): Record<s
     srs_ease_factor: 2.5,
     recognition_accuracy: 0,
     recognition_attempts: 0,
+    srs_stability: 0,
+    srs_difficulty: 5,
+    srs_state: 'new',
+    srs_lapses: 0,
+    srs_review_count: 0,
+    last_review_at: 0,
     ...overrides,
   };
 }
@@ -115,13 +121,14 @@ describe('TrainingRepository — Attempts', () => {
       optimalMoves: 8,
       rotationCount: 1,
       inspectionMs: 20000,
+      reviewGrade: 'good',
       timestamp: 1700000000000,
     });
     const bind = db.mock.calls[0][1] as unknown[];
     // Column order in INSERT: id, exercise_id, method_id, phase_id, subset_id,
     //   case_id, scramble, time_ms, verdict, play_mode, expected_moves,
     //   executed_moves, tps, move_count, optimal_moves, rotation_count,
-    //   inspection_ms, timestamp
+    //   inspection_ms, review_grade, timestamp
     expect(bind[3]).toBe('cross'); // phase_id
     expect(bind[4]).toBe('f2l'); // subset_id
     expect(bind[5]).toBe('case1'); // case_id
@@ -135,7 +142,8 @@ describe('TrainingRepository — Attempts', () => {
     expect(bind[14]).toBe(8); // optimal_moves
     expect(bind[15]).toBe(1); // rotation_count
     expect(bind[16]).toBe(20000); // inspection_ms
-    expect(bind[17]).toBe(1700000000000); // timestamp
+    expect(bind[17]).toBe('good'); // review_grade
+    expect(bind[18]).toBe(1700000000000); // timestamp
   });
 
   it('insertAttempt with missing optional fields stores NULL', async () => {
@@ -154,7 +162,8 @@ describe('TrainingRepository — Attempts', () => {
     // Column order in INSERT: id(0), exercise_id(1), method_id(2), phase_id(3),
     //   subset_id(4), case_id(5), scramble(6), time_ms(7), verdict(8), play_mode(9),
     //   expected_moves(10), executed_moves(11), tps(12), move_count(13),
-    //   optimal_moves(14), rotation_count(15), inspection_ms(16), timestamp(17)
+    //   optimal_moves(14), rotation_count(15), inspection_ms(16), review_grade(17),
+    //   timestamp(18)
     expect(bind[3]).toBeNull(); // phase_id
     expect(bind[4]).toBeNull(); // subset_id
     expect(bind[5]).toBeNull(); // case_id
@@ -167,6 +176,7 @@ describe('TrainingRepository — Attempts', () => {
     expect(bind[14]).toBeNull(); // optimal_moves
     expect(bind[15]).toBeNull(); // rotation_count
     expect(bind[16]).toBeNull(); // inspection_ms
+    expect(bind[17]).toBeNull(); // review_grade
   });
 
   it('insertAttempt with no timestamp defaults to current time', async () => {
@@ -184,7 +194,7 @@ describe('TrainingRepository — Attempts', () => {
       timestamp: 0,
     });
     const bind = db.mock.calls[0][1] as unknown[];
-    expect(bind[17]).toBeGreaterThanOrEqual(before); // timestamp
+    expect(bind[18]).toBeGreaterThanOrEqual(before); // timestamp
   });
 
   it('getAttemptsByCase queries by case_id with limit', async () => {
@@ -280,6 +290,48 @@ describe('TrainingRepository — Algorithm Progress', () => {
     });
   });
 
+  it('maps FSRS columns (srs_stability, srs_state, ...) to domain', async () => {
+    const db = mockDb([progressRow({
+      srs_stability: 3.9,
+      srs_difficulty: 4,
+      srs_state: 'review',
+      srs_lapses: 1,
+      srs_review_count: 2,
+      last_review_at: 1700000000000,
+    })]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getAlgorithmProgress('alg1');
+    expect(result).toMatchObject({
+      srsStability: 3.9,
+      srsDifficulty: 4,
+      srsState: 'review',
+      srsLapses: 1,
+      srsReviewCount: 2,
+      lastReviewAt: 1700000000000,
+    });
+  });
+
+  it('falls back to defaults when FSRS columns are absent (pre-015 rows)', async () => {
+    const db = mockDb([progressRow({
+      srs_stability: null,
+      srs_difficulty: null,
+      srs_state: null,
+      srs_lapses: null,
+      srs_review_count: null,
+      last_review_at: null,
+    })]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getAlgorithmProgress('alg1');
+    expect(result).toMatchObject({
+      srsStability: 0,
+      srsDifficulty: 5,
+      srsState: 'new',
+      srsLapses: 0,
+      srsReviewCount: 0,
+      lastReviewAt: 0,
+    });
+  });
+
   it('upsertAlgorithmProgress INSERTs when missing', async () => {
     const db = mockDb([]); // getAlgorithmProgress → empty → INSERT path
     repo = new TrainingRepository(db);
@@ -297,6 +349,12 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsEaseFactor: 2.5,
       recognitionAccuracy: 0,
       recognitionAttempts: 0,
+      srsStability: 0,
+      srsDifficulty: 5,
+      srsState: 'new',
+      srsLapses: 0,
+      srsReviewCount: 0,
+      lastReviewAt: 0,
     });
     const lastCall = db.mock.calls[db.mock.calls.length - 1];
     expect(lastCall[0]).toContain('INSERT INTO algorithm_progress');
@@ -319,6 +377,12 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsEaseFactor: 2.8,
       recognitionAccuracy: 0,
       recognitionAttempts: 0,
+      srsStability: 3,
+      srsDifficulty: 4,
+      srsState: 'review',
+      srsLapses: 1,
+      srsReviewCount: 2,
+      lastReviewAt: 1700000000000,
     });
     const lastCall = db.mock.calls[db.mock.calls.length - 1];
     expect(lastCall[0]).toContain('UPDATE algorithm_progress SET');

@@ -298,4 +298,17 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE training_attempts ADD COLUMN optimal_moves INTEGER;
     `,
   },
+  {
+    id: '015_add_fsrs_fields',
+    description: 'Add FSRS spaced-repetition fields (stability/difficulty/state/lapses/review_count/last_review_at) to algorithm_progress and review_grade to training_attempts',
+    sql: `
+      ALTER TABLE algorithm_progress ADD COLUMN srs_stability REAL NOT NULL DEFAULT 0;
+      ALTER TABLE algorithm_progress ADD COLUMN srs_difficulty REAL NOT NULL DEFAULT 5;
+      ALTER TABLE algorithm_progress ADD COLUMN srs_state TEXT NOT NULL DEFAULT 'new';
+      ALTER TABLE algorithm_progress ADD COLUMN srs_lapses INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE algorithm_progress ADD COLUMN srs_review_count INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE algorithm_progress ADD COLUMN last_review_at INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE training_attempts ADD COLUMN review_grade TEXT;
+    `,
+  },
 ];

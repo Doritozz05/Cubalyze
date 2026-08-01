@@ -32,6 +32,7 @@ export interface TrainingAttemptRow {
   optimal_moves: number | null;
   rotation_count: number | null;
   inspection_ms: number | null;
+  review_grade: string | null;
   timestamp: number;
 }
 
@@ -50,6 +51,12 @@ export interface AlgorithmProgressRow {
   srs_ease_factor: number;
   recognition_accuracy: number;
   recognition_attempts: number;
+  srs_stability: number;
+  srs_difficulty: number;
+  srs_state: string;
+  srs_lapses: number;
+  srs_review_count: number;
+  last_review_at: number;
 }
 
 export interface ExerciseProgressRow {
@@ -85,6 +92,8 @@ export interface TrainingAttempt {
   optimalMoves?: number;
   rotationCount?: number;
   inspectionMs?: number;
+  /** FSRS review grade (again|hard|good|easy) — set only by the review flow. */
+  reviewGrade?: string;
   timestamp: number;
 }
 
@@ -103,6 +112,18 @@ export interface AlgorithmProgress {
   srsEaseFactor: number;
   recognitionAccuracy: number;
   recognitionAttempts: number;
+  /** FSRS-lite: memory stability in days (0 = not yet FSRS-tracked). */
+  srsStability: number;
+  /** FSRS-lite: intrinsic difficulty 1-10. */
+  srsDifficulty: number;
+  /** FSRS-lite: new | learning | review | relearning. */
+  srsState: "new" | "learning" | "review" | "relearning";
+  /** FSRS-lite: total forgotten reviews. */
+  srsLapses: number;
+  /** FSRS-lite: total graded reviews. */
+  srsReviewCount: number;
+  /** Epoch ms of the last SRS review (≠ last_practiced_at). */
+  lastReviewAt: number;
 }
 
 export interface ExerciseProgress {
@@ -154,6 +175,7 @@ function rowToAttempt(row: TrainingAttemptRow): TrainingAttempt {
     optimalMoves: row.optimal_moves ?? undefined,
     rotationCount: row.rotation_count ?? undefined,
     inspectionMs: row.inspection_ms ?? undefined,
+    reviewGrade: row.review_grade ?? undefined,
     timestamp: row.timestamp,
   };
 }
@@ -174,6 +196,12 @@ function rowToAlgorithmProgress(row: AlgorithmProgressRow): AlgorithmProgress {
     srsEaseFactor: row.srs_ease_factor,
     recognitionAccuracy: row.recognition_accuracy ?? 0,
     recognitionAttempts: row.recognition_attempts ?? 0,
+    srsStability: row.srs_stability ?? 0,
+    srsDifficulty: row.srs_difficulty ?? 5,
+    srsState: (row.srs_state ?? "new") as AlgorithmProgress["srsState"],
+    srsLapses: row.srs_lapses ?? 0,
+    srsReviewCount: row.srs_review_count ?? 0,
+    lastReviewAt: row.last_review_at ?? 0,
   };
 }
 
@@ -223,17 +251,19 @@ export class TrainingRepository {
       optimal_moves: attempt.optimalMoves ?? null,
       rotation_count: attempt.rotationCount ?? null,
       inspection_ms: attempt.inspectionMs ?? null,
+      review_grade: attempt.reviewGrade ?? null,
       timestamp: attempt.timestamp || Date.now(),
     };
 
     await this.db(
-      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, review_grade, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id, row.exercise_id, row.method_id, row.phase_id, row.subset_id,
         row.case_id, row.scramble, row.time_ms, row.verdict, row.play_mode,
         row.expected_moves, row.executed_moves, row.tps, row.move_count,
-        row.optimal_moves, row.rotation_count, row.inspection_ms, row.timestamp,
+        row.optimal_moves, row.rotation_count, row.inspection_ms, row.review_grade,
+        row.timestamp,
       ],
     );
 
@@ -290,13 +320,17 @@ export class TrainingRepository {
         `UPDATE algorithm_progress SET mastery = ?, accuracy = ?, best_time_ms = ?, avg_time_ms = ?,
          total_attempts = ?, correct_streak = ?, last_practiced_at = ?,
          srs_next_review_at = ?, srs_interval_days = ?, srs_ease_factor = ?,
-         recognition_accuracy = ?, recognition_attempts = ?
+         recognition_accuracy = ?, recognition_attempts = ?,
+         srs_stability = ?, srs_difficulty = ?, srs_state = ?, srs_lapses = ?,
+         srs_review_count = ?, last_review_at = ?
          WHERE algorithm_id = ?`,
         [
           progress.mastery, progress.accuracy, progress.bestTimeMs, progress.avgTimeMs,
           progress.totalAttempts, progress.correctStreak, progress.lastPracticedAt,
           progress.srsNextReviewAt, progress.srsIntervalDays, progress.srsEaseFactor,
           progress.recognitionAccuracy, progress.recognitionAttempts,
+          progress.srsStability, progress.srsDifficulty, progress.srsState,
+          progress.srsLapses, progress.srsReviewCount, progress.lastReviewAt,
           progress.algorithmId,
         ],
       );
@@ -306,14 +340,17 @@ export class TrainingRepository {
       await this.db(
         `INSERT INTO algorithm_progress (id, algorithm_id, mastery, accuracy, best_time_ms, avg_time_ms,
          total_attempts, correct_streak, last_practiced_at, srs_next_review_at, srs_interval_days, srs_ease_factor,
-         recognition_accuracy, recognition_attempts)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         recognition_accuracy, recognition_attempts, srs_stability, srs_difficulty, srs_state,
+         srs_lapses, srs_review_count, last_review_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, progress.algorithmId, progress.mastery, progress.accuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.totalAttempts,
           progress.correctStreak, progress.lastPracticedAt,
           progress.srsNextReviewAt, progress.srsIntervalDays, progress.srsEaseFactor,
           progress.recognitionAccuracy, progress.recognitionAttempts,
+          progress.srsStability, progress.srsDifficulty, progress.srsState,
+          progress.srsLapses, progress.srsReviewCount, progress.lastReviewAt,
         ],
       );
       return { ...progress, id };

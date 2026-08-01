@@ -65,6 +65,18 @@ export interface AlgorithmProgressRecord {
   srsEaseFactor: number;
   recognitionAccuracy: number;
   recognitionAttempts: number;
+  /** FSRS-lite: memory stability in days (0 = not yet FSRS-tracked). */
+  srsStability: number;
+  /** FSRS-lite: intrinsic difficulty 1-10. */
+  srsDifficulty: number;
+  /** FSRS-lite: new | learning | review | relearning. */
+  srsState: "new" | "learning" | "review" | "relearning";
+  /** FSRS-lite: total forgotten reviews. */
+  srsLapses: number;
+  /** FSRS-lite: total graded reviews. */
+  srsReviewCount: number;
+  /** Epoch ms of the last SRS review (≠ lastPracticedAt). */
+  lastReviewAt: number;
 }
 
 export interface ExerciseProgressRecord {
@@ -278,6 +290,12 @@ export class ProgressTracker {
         srsEaseFactor: ease,
         recognitionAccuracy,
         recognitionAttempts: recAttempts,
+        srsStability: prev?.srsStability ?? 0,
+        srsDifficulty: prev?.srsDifficulty ?? 5,
+        srsState: prev?.srsState ?? "new",
+        srsLapses: prev?.srsLapses ?? 0,
+        srsReviewCount: prev?.srsReviewCount ?? 0,
+        lastReviewAt: prev?.lastReviewAt ?? 0,
       };
 
       await this.repo.upsertAlgorithmProgress(progress);
@@ -322,6 +340,12 @@ export class ProgressTracker {
       srsEaseFactor: ease,
       recognitionAccuracy: prev?.recognitionAccuracy ?? 0,
       recognitionAttempts: prev?.recognitionAttempts ?? 0,
+      srsStability: prev?.srsStability ?? 0,
+      srsDifficulty: prev?.srsDifficulty ?? 5,
+      srsState: prev?.srsState ?? "new",
+      srsLapses: prev?.srsLapses ?? 0,
+      srsReviewCount: prev?.srsReviewCount ?? 0,
+      lastReviewAt: prev?.lastReviewAt ?? 0,
     };
 
     await this.repo.upsertAlgorithmProgress(progress);
@@ -349,6 +373,12 @@ export class ProgressTracker {
         srsEaseFactor: DEFAULT_EASE_FACTOR,
         recognitionAccuracy: 0,
         recognitionAttempts: 0,
+        srsStability: 0,
+        srsDifficulty: 5,
+        srsState: "new",
+        srsLapses: 0,
+        srsReviewCount: 0,
+        lastReviewAt: 0,
       }
     );
   }

@@ -36,6 +36,16 @@ export type { SessionEvent, SessionStateListener } from './session';
 
 // ─── Progress ─────────────────────────────────────────────────────────────
 export { ProgressTracker } from './progress';
+export {
+  FSRS_DEFAULTS,
+  retrievability,
+  nextDifficulty,
+  nextStability,
+  intervalFor,
+  isDue,
+  fsrsReview,
+  REQUEST_RETENTION,
+} from './progress';
 export type {
   ITrainingProgressRepo,
   TrainingAttemptRecord,
@@ -43,4 +53,7 @@ export type {
   ExerciseProgressRecord,
   PhaseStatsRecord,
   MetricKind,
+  FSRSRecord,
+  SRSGrade,
+  SRSState,
 } from './progress';

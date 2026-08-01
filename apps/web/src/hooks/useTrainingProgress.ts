@@ -126,6 +126,12 @@ export function useTrainingProgress(): UseTrainingProgressResult {
           srsNextReviewAt: 0,
           srsIntervalDays: 0,
           srsEaseFactor: 2.5,
+          srsStability: 0,
+          srsDifficulty: 5,
+          srsState: "new",
+          srsLapses: 0,
+          srsReviewCount: 0,
+          lastReviewAt: 0,
         } as AlgorithmProgressRecord;
       }
       return tracker.getCaseProgress(algorithmId);
