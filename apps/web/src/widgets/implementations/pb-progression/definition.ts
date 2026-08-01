@@ -1,4 +1,4 @@
-import { Trophy } from "lucide-react";
+import { TrendingDown } from "lucide-react";
 import type { WidgetDefinition } from "@/widgets/types";
 
 export const pbProgressionDefinition: WidgetDefinition = {
@@ -6,7 +6,7 @@ export const pbProgressionDefinition: WidgetDefinition = {
   name: "PB progression",
   description:
     "Personal Best timeline showing every PB milestone. Track your improvement journey from first solve to current best.",
-  icon: Trophy,
+  icon: TrendingDown,
   category: "timer",
   author: "cubeforge",
   version: "1.0.0",
