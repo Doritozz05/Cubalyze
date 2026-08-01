@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowDown, ArrowUp, Scale, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, Info, Scale, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { formatTime } from "@/utils/formatTime";
 import { phaseColorHex } from "@/utils/phaseColors";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
 import type { Solve } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 import {
@@ -15,6 +17,7 @@ import {
   type CfopPhaseName,
   type PhaseBalanceRow,
 } from "./phaseBalance";
+import type { CfopBenchmarkReference } from "./benchmarks";
 
 export interface FloatingPhaseBalanceProps {
   solves: Solve[];
@@ -33,8 +36,8 @@ function deltaLabel(delta: number | undefined): string {
 function statusFor(row: PhaseBalanceRow): { label: string; tone: string; icon: typeof ArrowUp } {
   const delta = row.latestDelta ?? 0;
   if (Math.abs(delta) < 0.025) return { label: "Balanced", tone: "text-ink-3", icon: Minus };
-  if (delta > 0) return { label: "Above avg", tone: "text-caution", icon: ArrowUp };
-  return { label: "Below avg", tone: "text-ready", icon: ArrowDown };
+  if (delta > 0) return { label: "Above self avg", tone: "text-caution", icon: ArrowUp };
+  return { label: "Below self avg", tone: "text-ready", icon: ArrowDown };
 }
 
 function PhaseBar({
@@ -43,17 +46,19 @@ function PhaseBar({
   colorIndex,
   muted = false,
   skipped = false,
+  displayName,
 }: {
   phaseName: CfopPhaseName;
   share: number;
   colorIndex: number;
   muted?: boolean;
   skipped?: boolean;
+  displayName?: string;
 }) {
   const color = phaseColorHex(phaseName, colorIndex);
   return (
     <div className="flex items-center gap-2">
-      <span className="w-9 shrink-0 text-[0.58rem] font-medium text-ink-2">{phaseName}</span>
+      <span className="w-9 shrink-0 text-[0.58rem] font-medium text-ink-2">{displayName ?? phaseName}</span>
       <div className={cn(
         "h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2",
         skipped && "border border-dashed border-ink-3/35 bg-transparent",
@@ -67,14 +72,6 @@ function PhaseBar({
         {pct(share)}
       </span>
     </div>
-  );
-}
-
-function SkipBadge() {
-  return (
-    <span className="rounded border border-ink-3/25 bg-surface-2 px-1 py-0.5 text-[0.48rem] font-semibold uppercase tracking-wide text-ink-3">
-      Skip
-    </span>
   );
 }
 
@@ -104,20 +101,80 @@ function LatestBreakdown({ analysis }: { analysis: SolveMetrics }) {
               skipped={segment.skipped}
             />
           </div>
-          {segment.skipped && <SkipBadge />}
+          {segment.skipped && <PhaseSkipBadge phaseName={segment.phaseName} />}
         </div>
       ))}
     </div>
   );
 }
 
-function AverageBreakdown({ rows }: { rows: PhaseBalanceRow[] }) {
+function BenchmarkDisclosure({ benchmark }: { benchmark: CfopBenchmarkReference }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          tabIndex={0}
+          className="inline-flex cursor-help items-center gap-1 outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50"
+          aria-label={`About the ${benchmark.label} reference`}
+        >
+          <Info className="size-2.5" />
+          <span>{benchmark.rangeLabel} reference</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-72">
+        <span className="font-medium">{benchmark.source.label}</span> · v{benchmark.version}.
+        This is an educational split reference, not a universal statistical norm. {benchmark.caveat}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function AverageBreakdown({
+  rows,
+  benchmark,
+  hasEnoughForTrend,
+}: {
+  rows: PhaseBalanceRow[];
+  benchmark: CfopBenchmarkReference | null;
+  hasEnoughForTrend: boolean;
+}) {
   return (
     <div className="space-y-1.5">
       <div className="mb-2 flex items-center justify-between text-[0.56rem] uppercase tracking-wider text-ink-3">
         <span>Recent average</span>
-        <span>last 20 comparable</span>
+        {benchmark ? (
+          <BenchmarkDisclosure benchmark={benchmark} />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className="cursor-help outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50"
+                aria-label="Community reference unavailable for this average"
+              >
+                last 20 comparable
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-64">
+              {hasEnoughForTrend
+                ? "The educational community reference is only applied to effective averages from 8 to 60 seconds. Outside that range, your self-baseline remains the more honest comparison."
+                : "Five comparable solves are needed before showing the educational community reference. Your self-baseline is already available."}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
+      {benchmark && (
+        <>
+          <div className="flex items-center justify-between text-[0.5rem] text-ink-3">
+            <span>Self baseline vs reference split</span>
+            <span className="nums">12 · 50 · 16.5 · 21.5%</span>
+          </div>
+          <div className="flex justify-end gap-3 text-[0.48rem] text-ink-3">
+            <span>solid = yours</span>
+            <span>muted = reference</span>
+          </div>
+        </>
+      )}
       {rows.map((row, index) => {
         const status = statusFor(row);
         const StatusIcon = status.icon;
@@ -126,7 +183,7 @@ function AverageBreakdown({ rows }: { rows: PhaseBalanceRow[] }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="text-[0.58rem] font-medium text-ink-2">{row.phaseName}</span>
-                {row.latestSkipped && <SkipBadge />}
+                {row.latestSkipped && <PhaseSkipBadge phaseName={row.phaseName} />}
               </div>
               <div className="flex items-center gap-2 nums text-[0.58rem]">
                 <span className="text-ink-3">{formatTime(row.avgDurationMs)}</span>
@@ -137,6 +194,11 @@ function AverageBreakdown({ rows }: { rows: PhaseBalanceRow[] }) {
                     {deltaLabel(row.latestDelta)}
                   </span>
                 )}
+                {row.benchmarkDelta !== undefined && (
+                  <span className="nums w-14 text-right text-ink-3" title="Your average minus reference">
+                    ref {row.benchmarkDelta > 0 ? "+" : ""}{(row.benchmarkDelta * 100).toFixed(1)}%
+                  </span>
+                )}
               </div>
             </div>
             <PhaseBar
@@ -145,6 +207,15 @@ function AverageBreakdown({ rows }: { rows: PhaseBalanceRow[] }) {
               colorIndex={index}
               skipped={row.latestSkipped}
             />
+            {benchmark && row.benchmarkShare !== undefined && (
+              <PhaseBar
+                phaseName={row.phaseName}
+                share={row.benchmarkShare}
+                colorIndex={index}
+                muted
+                displayName="Ref"
+              />
+            )}
           </div>
         );
       })}
@@ -180,7 +251,11 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
           <>
             {latest && <LatestBreakdown analysis={latest} />}
             <div className="border-t border-line/60 pt-3">
-              <AverageBreakdown rows={data.rows} />
+              <AverageBreakdown
+                rows={data.rows}
+                benchmark={data.benchmark}
+                hasEnoughForTrend={data.hasEnoughForTrend}
+              />
             </div>
             <div className="flex items-center justify-between border-t border-line/60 pt-2 text-[0.56rem] text-ink-3">
               <span>{data.analysedSolves} comparable solves</span>

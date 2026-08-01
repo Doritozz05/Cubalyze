@@ -2,6 +2,7 @@ import type { Solve } from "@/types";
 import { effectiveTime } from "@/types";
 import type { PhaseMetrics, SolveMetrics } from "@cubeforge/types";
 import { derivePhaseDistribution, isComparablePhaseAnalysis } from "@cubeforge/analysis-engine";
+import { getCfopBenchmark, type CfopBenchmarkReference } from "./benchmarks";
 
 export const CFOP_PHASES = ["Cross", "F2L", "OLL", "PLL"] as const;
 export type CfopPhaseName = (typeof CFOP_PHASES)[number];
@@ -15,12 +16,16 @@ export interface PhaseBalanceRow {
   latestShare?: number;
   latestDelta?: number;
   latestSkipped?: boolean;
+  benchmarkShare?: number;
+  benchmarkDelta?: number;
 }
 
 export interface PhaseBalanceData {
   rows: PhaseBalanceRow[];
   analysedSolves: number;
   hasEnoughForTrend: boolean;
+  averageTimeMs: number;
+  benchmark: CfopBenchmarkReference | null;
 }
 
 export interface ComparableSolve {
@@ -124,6 +129,13 @@ export function buildPhaseBalance(
     baseline.map((phase) => [phase.phaseName as CfopPhaseName, phase]),
   );
   const currentAnalysis = currentAnalysisForSolves(solves, latestAnalysis);
+  const averageTimeMs = comparable.length > 0
+    ? comparable.reduce((sum, { solve }) => sum + effectiveTime(solve), 0) / comparable.length
+    : 0;
+  // Do not show a community reference for a tiny sample: the widget's own
+  // baseline is useful from solve one, while comparison becomes meaningful
+  // after five comparable solves.
+  const benchmark = comparable.length >= 5 ? getCfopBenchmark(averageTimeMs) : null;
   const latestShares = currentAnalysis
     ? sharesForAnalysis(currentAnalysis)
     : undefined;
@@ -146,6 +158,8 @@ export function buildPhaseBalance(
       latestDelta: latestShare === undefined ? undefined : latestShare - averageShare,
       latestSkipped: latestPhase?.skipped === true
         || (latestPhase?.durationMs === 0 && latestPhase?.moveCount === 0),
+      benchmarkShare: benchmark?.shares[phaseName],
+      benchmarkDelta: benchmark ? averageShare - benchmark.shares[phaseName] : undefined,
     };
   });
 
@@ -153,6 +167,8 @@ export function buildPhaseBalance(
     rows,
     analysedSolves: comparable.length,
     hasEnoughForTrend: comparable.length >= 5,
+    averageTimeMs,
+    benchmark,
   };
 }
 

@@ -6,6 +6,7 @@ import {
   getComparableSolves,
   getLatestComparableAnalysis,
 } from "./phaseBalance";
+import { CFOP_BENCHMARKS, getCfopBenchmark } from "./benchmarks";
 
 function makeAnalysis(
   id: string,
@@ -88,6 +89,24 @@ function makeSolve(id: string, analysis?: SolveMetrics, penalty: Solve["penalty"
 }
 
 describe("Phase Balance data", () => {
+  it("exposes the versioned educational reference only in its stated range", () => {
+    expect(CFOP_BENCHMARKS).toHaveLength(1);
+    const reference = getCfopBenchmark(20_000);
+    expect(reference?.shares).toEqual({
+      Cross: 0.12,
+      F2L: 0.5,
+      OLL: 0.165,
+      PLL: 0.215,
+    });
+    expect(reference).not.toBeNull();
+    expect(reference!.shares.Cross
+      + reference!.shares.F2L
+      + reference!.shares.OLL
+      + reference!.shares.PLL).toBeCloseTo(1);
+    expect(getCfopBenchmark(7_999)).toBeNull();
+    expect(getCfopBenchmark(60_001)).toBeNull();
+  });
+
   it("uses only finite, comparable CFOP solves", () => {
     const valid = makeSolve("valid", makeAnalysis("valid"));
     const withoutReport = makeSolve("without-report", undefined);
@@ -143,6 +162,30 @@ describe("Phase Balance data", () => {
     expect(data.rows.map((row) => row.phaseName)).toEqual(["Cross", "F2L", "OLL", "PLL"]);
     expect(data.rows.reduce((sum, row) => sum + row.share, 0)).toBeCloseTo(1);
     expect(data.rows.every((row) => row.latestDelta !== undefined)).toBe(true);
+    expect(data.benchmark).toBeNull();
+  });
+
+  it("adds the community reference only after five comparable solves", () => {
+    const solves = Array.from({ length: 5 }, (_, index) =>
+      makeSolve(`solve-${index}`, makeAnalysis(`solve-${index}`), "none", index + 1),
+    );
+    const data = buildPhaseBalance(solves);
+
+    expect(data.hasEnoughForTrend).toBe(true);
+    expect(data.benchmark?.version).toBe("2026-08-01-cubeskills-v1");
+    expect(data.rows.map((row) => row.benchmarkShare)).toEqual([0.12, 0.5, 0.165, 0.215]);
+  });
+
+  it("selects the reference range from effective solve time", () => {
+    const solves = Array.from({ length: 5 }, (_, index) => {
+      const solve = makeSolve(`effective-${index}`, makeAnalysis(`effective-${index}`), "none", index + 1);
+      solve.time = 7_000;
+      return solve;
+    });
+
+    // The analysis payload is 8.5s, but the authoritative solve time is 7s;
+    // the 8–60s reference must therefore remain disabled.
+    expect(buildPhaseBalance(solves).benchmark).toBeNull();
   });
 
   it("orders comparable solves by timestamp and averages each solve equally", () => {

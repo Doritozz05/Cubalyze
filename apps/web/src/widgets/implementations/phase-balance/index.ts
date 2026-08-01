@@ -14,3 +14,13 @@ export type {
   PhaseBalanceRow,
   ComparableSolve,
 } from "./phaseBalance";
+export {
+  CFOP_REFERENCE_VERSION,
+  CFOP_BENCHMARKS,
+  getCfopBenchmark,
+} from "./benchmarks";
+export type {
+  CfopBenchmarkReference,
+  CfopReferenceConfidence,
+  CfopSplitShares,
+} from "./benchmarks";

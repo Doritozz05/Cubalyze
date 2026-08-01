@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline, isComparablePhaseAnalysis } from "@/utils/insights";
 import { phaseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
@@ -168,12 +169,7 @@ export function FloatingPhaseTimeline({
               <div className="mb-2 flex items-center gap-1.5 rounded-md border border-line/60 bg-surface-2/50 px-2 py-1.5">
                 <span className="text-[0.56rem] font-medium uppercase tracking-wide text-ink-3">Skips</span>
                 {skippedPhases.map((phase) => (
-                  <span
-                    key={phase}
-                    className="rounded border border-ink-3/25 bg-surface px-1.5 py-0.5 text-[0.55rem] font-semibold text-ink-2"
-                  >
-                    {phase} skip
-                  </span>
+                  <PhaseSkipBadge key={phase} phaseName={phase} compact />
                 ))}
               </div>
             )}
