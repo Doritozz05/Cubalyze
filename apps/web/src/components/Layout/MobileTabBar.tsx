@@ -10,19 +10,15 @@ import type { ViewId } from "./sidebar.constants";
 /**
  * Bottom tab bar for the touch regime (mobile + tablet, <1024px).
  *
- * Desktop (>=1024px) is untouched: this component is `lg:hidden`, so it never
- * renders on the desktop rail layout. It provides native-app-style navigation
- * (Twisty Timer style) with uniform flat tabs (Timer stays centered).
- *
- * - `onNavigate` reuses the same `ViewId` navigation as the desktop rail.
- * - `onOpenMore` opens the touch navigation sheet (Settings, Widgets, theme…).
- * - Respects `env(safe-area-inset-bottom)` for iOS home indicator.
+ * Desktop (>=1024px) is untouched (`lg:hidden`).
+ * Provides 5 primary navigation tabs plus a "More" button that opens
+ * a swipeable bottom grid sheet with secondary options.
  */
 
 interface MobileTabBarProps {
   activeView: ViewId;
   onNavigate: (view: ViewId) => void;
-  /** Open the "More" sheet (hamburger equivalent, replaced by bottom bar). */
+  /** Open the "More" bottom grid sheet. */
   onOpenMore?: () => void;
   className?: string;
 }
@@ -72,7 +68,7 @@ export function MobileTabBar({
                 aria-label={tab.label}
                 className={cn(
                   "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[0.58rem] font-medium transition-colors select-none",
-                  "min-h-11 touch-manipulation outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  "min-h-11 touch-manipulation outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
                   isActive ? "text-ink" : "text-ink-3 hover:text-ink-2",
                 )}
               >
@@ -90,7 +86,7 @@ export function MobileTabBar({
             );
           })}
 
-          {/* More — opens the touch sheet (Settings, Widgets, theme, cube…) */}
+          {/* More — opens the touch grid sheet (Settings, Smart Cube, Theme) */}
           <button
             type="button"
             onClick={() => {
@@ -98,9 +94,7 @@ export function MobileTabBar({
               onOpenMore?.();
             }}
             aria-label="More options"
-            className={cn(
-              "relative flex min-h-11 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md text-[0.58rem] font-medium text-ink-3 transition-colors select-none outline-none hover:text-ink-2 focus-visible:ring-1 focus-visible:ring-ring",
-            )}
+            className="relative flex min-h-11 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md text-[0.58rem] font-medium text-ink-3 transition-colors select-none outline-none hover:text-ink-2 focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
           >
             <Menu className="size-5" />
             <span className="leading-none">More</span>

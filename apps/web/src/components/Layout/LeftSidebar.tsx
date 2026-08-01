@@ -47,6 +47,12 @@ export interface LeftSidebarProps {
   sessionName?: string;
   /** Batch import callback for importing solves from files. */
   onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
+  settingsOpen?: boolean;
+  onSettingsOpenChange?: (open: boolean) => void;
+  widgetExplorerOpen?: boolean;
+  onWidgetExplorerOpenChange?: (open: boolean) => void;
+  cubeConnectorOpen?: boolean;
+  onCubeConnectorOpenChange?: (open: boolean) => void;
 }
 
 export function LeftSidebar({
@@ -58,6 +64,12 @@ export function LeftSidebar({
   solves,
   sessionName,
   onImportSolves,
+  settingsOpen: externalSettingsOpen,
+  onSettingsOpenChange,
+  widgetExplorerOpen: externalWidgetExplorerOpen,
+  onWidgetExplorerOpenChange,
+  cubeConnectorOpen: externalCubeConnectorOpen,
+  onCubeConnectorOpenChange,
 }: LeftSidebarProps) {
   // Touch regime (mobile + tablet <1024px) renders the Sheet variant.
   // Desktop (>=1024px) keeps the hover-to-expand rail untouched.
@@ -66,8 +78,18 @@ export function LeftSidebar({
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
+  const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
+  const [internalWidgetExplorerOpen, setInternalWidgetExplorerOpen] = useState(false);
+  const [internalCubeConnectorOpen, setInternalCubeConnectorOpen] = useState(false);
+
+  const settingsOpen = externalSettingsOpen ?? internalSettingsOpen;
+  const setSettingsOpen = onSettingsOpenChange ?? setInternalSettingsOpen;
+
+  const widgetExplorerOpen = externalWidgetExplorerOpen ?? internalWidgetExplorerOpen;
+  const setWidgetExplorerOpen = onWidgetExplorerOpenChange ?? setInternalWidgetExplorerOpen;
+
+  const cubeConnectorOpen = externalCubeConnectorOpen ?? internalCubeConnectorOpen;
+  const setCubeConnectorOpen = onCubeConnectorOpenChange ?? setInternalCubeConnectorOpen;
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Timestamp until which hover-expansion is suppressed (set when the window
@@ -222,7 +244,9 @@ export function LeftSidebar({
         <CubeConnector 
           variant="rail" 
           expanded={labelVisible} 
+          open={cubeConnectorOpen}
           onOpenChange={(open) => {
+            setCubeConnectorOpen(open);
             if (!open) {
               onMobileOpenChange?.(false);
               setIsHovered(false);

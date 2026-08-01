@@ -68,6 +68,8 @@ export interface CubeConnectorProps {
   variant?: "header" | "rail";
   /** When variant="rail", toggles the text label visibility (sidebar expanded). */
   expanded?: boolean;
+  /** Controlled open state. */
+  open?: boolean;
   /** Callback fired when the dialog opens or closes. */
   onOpenChange?: (open: boolean) => void;
 }
@@ -76,9 +78,12 @@ export function CubeConnector({
   className,
   variant = "header",
   expanded = false,
+  open: externalOpen,
   onOpenChange,
 }: CubeConnectorProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen ?? internalOpen;
+
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">(
     globalCubeAdapter.isConnected ? "connected" : "disconnected"
   );
@@ -88,7 +93,7 @@ export function CubeConnector({
 
   const handleOpenChange = (newOpen: boolean) => {
     console.log("[CubeConnector] handleOpenChange called with newOpen:", newOpen);
-    setOpen(newOpen);
+    setInternalOpen(newOpen);
     onOpenChange?.(newOpen);
     if (newOpen) {
       setStatus(globalCubeAdapter.isConnected ? "connected" : "disconnected");
@@ -112,7 +117,7 @@ export function CubeConnector({
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
 
-      setOpen(false); // Close dialog on success
+      handleOpenChange(false); // Close dialog on success
       onOpenChange?.(false);
     } catch (e: unknown) {
       console.error(e);
@@ -146,7 +151,7 @@ export function CubeConnector({
       await globalCubeAdapter.disconnect();
       setStatus("disconnected");
       toast.success("Cube disconnected");
-      setOpen(false);
+      handleOpenChange(false);
     } catch (e) {
       console.error(e);
       toast.error("Failed to disconnect");

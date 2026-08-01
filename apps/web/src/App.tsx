@@ -4,6 +4,7 @@ import { useStore } from "zustand";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { MobileTabBar } from "@/components/Layout/MobileTabBar";
+import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
@@ -109,6 +110,10 @@ export default function App() {
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
+  const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
   const [currentScramble, setCurrentScramble] = useState(() =>
     generateScrambleFor("3x3"),
@@ -734,6 +739,12 @@ export default function App() {
               solves={solves}
               sessionName={session?.name}
               onImportSolves={handleImportSolves}
+              settingsOpen={settingsOpen}
+              onSettingsOpenChange={setSettingsOpen}
+              widgetExplorerOpen={widgetExplorerOpen}
+              onWidgetExplorerOpenChange={setWidgetExplorerOpen}
+              cubeConnectorOpen={cubeConnectorOpen}
+              onCubeConnectorOpenChange={setCubeConnectorOpen}
             />
           }
           isFocused={isFocused}
@@ -741,18 +752,22 @@ export default function App() {
           main={renderMain()}
         />
 
-        {/* Bottom tab bar — touch regime only (mobile + tablet <1024px).
-            `lg:hidden` keeps the desktop rail layout pixel-identical. The
-            "More" button opens the same navigation sheet that the old
-            hamburger used to (LeftSidebar renders its Sheet variant on
-            touch). Hidden in focus mode, like the rest of the chrome. */}
+        {/* Bottom tab bar — touch regime only (mobile + tablet <1024px). */}
         {!isFocused && (
           <MobileTabBar
             activeView={activeView}
             onNavigate={handleNavigate}
-            onOpenMore={() => setMobileNavOpen(true)}
+            onOpenMore={() => setMobileMoreOpen(true)}
           />
         )}
+
+        {/* Mobile grid options bottom sheet (Settings, Smart Cube, Theme) */}
+        <MobileMoreSheet
+          open={mobileMoreOpen}
+          onOpenChange={setMobileMoreOpen}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenCubeConnector={() => setCubeConnectorOpen(true)}
+        />
 
         {/* Manual solve sheet — mounted at App level (opened from the
             Header "+" button). A manual entry is a session action, not an
