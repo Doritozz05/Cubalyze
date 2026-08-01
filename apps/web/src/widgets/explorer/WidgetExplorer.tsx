@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Search, Puzzle, Plus, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Search, Puzzle, Plus, Loader2, AlertCircle, CheckCircle2, Filter } from "lucide-react";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { WidgetRegistry } from "@/widgets/WidgetRegistry";
 import { validateWidgetPlugin, sanitizeWidgetId } from "@/widgets/loader";
@@ -14,6 +14,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -226,27 +233,24 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
               </div>
             </div>
 
-            {/* Category chips — touch only (sidebar is hidden <1024px).
-                Wrap instead of scroll so every category is always fully
-                visible and nothing gets clipped at the edge. */}
-            <div className="shrink-0 border-b border-line/50 px-4 py-2 lg:hidden">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {WIDGET_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleSelectCategory(cat.id)}
-                    className={cn(
-                      "h-8 shrink-0 touch-manipulation rounded-full border px-3 text-xs font-medium transition-colors duration-150 select-none",
-                      activeCategory === cat.id
-                        ? "border-ink-2/40 bg-surface-2 text-ink"
-                        : "border-line bg-surface text-ink-3 hover:text-ink-2",
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
+            {/* Category dropdown — touch only (sidebar is hidden <1024px) */}
+            <div className="shrink-0 border-b border-line/60 px-4 py-2.5 lg:hidden">
+              <Select value={activeCategory} onValueChange={(val) => handleSelectCategory(val as WidgetCategoryId)}>
+                <SelectTrigger className="h-9 w-full max-w-[240px] gap-2 rounded-lg border border-line bg-surface-2 px-3 text-xs font-semibold text-ink shadow-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <Filter className="size-3.5 shrink-0 text-ink-3" />
+                    <span className="text-ink-3 font-normal">Category:</span>
+                    <SelectValue placeholder="Category" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent side="bottom" align="start">
+                  {WIDGET_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                      <span className="font-medium">{cat.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Search bar */}

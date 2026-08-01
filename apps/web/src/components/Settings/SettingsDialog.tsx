@@ -8,6 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { SettingsSidebar } from './SettingsSidebar';
 import { cn } from '@/lib/utils';
 import { TOUCH_FULL_BLEED } from '@/lib/touch';
@@ -83,6 +90,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
   }, []);
 
   const activeMeta = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
+  const ActiveMetaIcon = activeMeta?.icon;
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
@@ -115,7 +123,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:pb-safe`}
+        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] max-lg:h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:pb-safe`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
@@ -129,38 +137,30 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
           />
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            {/* Touch-only section picker — the sidebar is hidden <1024px, so
-                the sections become a horizontal scrollable chip row (44px
-                targets). Desktop (>=1024px) shows the sidebar instead. */}
-            <div className="shrink-0 border-b border-line/60 px-3 py-2 lg:hidden">
-              {/* flex-wrap (like the WidgetExplorer category chips) so every
-                  section tab is always fully visible on touch — horizontal
-                  scroll clipped the last chips on narrow screens. */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {SETTINGS_SECTIONS.map((section) => {
-                  const Icon = section.icon;
-                  const isActive = section.id === activeSection;
-                  return (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => handleSelectSection(section.id)}
-                      className={cn(
-                        "flex h-11 shrink-0 touch-manipulation items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 select-none",
-                        isActive
-                          ? "border-ink-2/40 bg-surface-2 text-ink"
-                          : "border-line bg-surface text-ink-3 hover:text-ink-2",
-                      )}
-                    >
-                      <Icon className="size-3.5 shrink-0" />
-                      {section.label}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Mobile-only compact section dropdown header (<1024px) */}
+            <div className="shrink-0 border-b border-line px-4 py-3 lg:hidden">
+              <Select value={activeSection} onValueChange={handleSelectSection}>
+                <SelectTrigger className="h-10 w-full gap-2 rounded-xl border border-line bg-surface-2 px-3.5 text-sm font-semibold text-ink shadow-xs">
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent side="bottom" align="start" className="max-h-[60vh] overflow-y-auto z-[100]">
+                  {SETTINGS_SECTIONS.map((section) => {
+                    const Icon = section.icon;
+                    return (
+                      <SelectItem key={section.id} value={section.id} className="py-2.5 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <Icon className="size-4 shrink-0 text-ink-3" />
+                          <span className="font-medium text-ink">{section.label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
-            {/* Section header */}
-            <div className="shrink-0 border-b border-line px-8 py-6 max-lg:px-4 max-lg:py-4">
+
+            {/* Desktop section header (>=1024px) */}
+            <div className="shrink-0 border-b border-line px-8 py-6 max-lg:hidden">
               <h2 className="text-[0.95rem] font-semibold text-ink">
                 {activeMeta?.label ?? 'Settings'}
               </h2>
