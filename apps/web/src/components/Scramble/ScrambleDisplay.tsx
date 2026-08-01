@@ -111,16 +111,15 @@ export function ScrambleDisplay({
         </div>
       ) : errorMoves.length > 0 ? (
         <div
-          // Touch (<1024px): larger tokens in a single horizontally-scrollable
-          // row so long scrambles stay readable without pushing the timer down.
-          // Desktop keeps the wrap layout untouched.
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:flex-nowrap max-lg:justify-start max-lg:gap-x-3 max-lg:overflow-x-auto max-lg:py-1"
+          // Touch (<1024px): smaller tokens that wrap so the full scramble
+          // fits on screen with zero horizontal scroll. Desktop unchanged.
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
           translate="no"
         >
           {errorMoves.map((m, i) => (
             <span
               key={`err-${i}`}
-              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100 max-lg:text-lg"
+              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100 max-lg:text-sm"
             >
               {m}
             </span>
@@ -128,10 +127,9 @@ export function ScrambleDisplay({
         </div>
       ) : (
         <div
-          // Touch (<1024px): larger tokens in a single horizontally-scrollable
-          // row so long scrambles stay readable without pushing the timer down.
-          // Desktop keeps the wrap layout untouched.
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:flex-nowrap max-lg:justify-start max-lg:gap-x-3 max-lg:overflow-x-auto max-lg:py-1"
+          // Touch (<1024px): smaller tokens that wrap so the full scramble
+          // fits on screen with zero horizontal scroll. Desktop unchanged.
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
           translate="no"
         >
           {tokens.map((tok, i) => {
@@ -143,7 +141,7 @@ export function ScrambleDisplay({
               <span
                 key={`${tok}-${i}`}
                 className={cn(
-                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 max-lg:text-lg",
+                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 max-lg:text-sm",
                   isCompleted && "text-ink-3 scale-110",
                   isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
                   isActive && !isCompleted && !pendingHalfDouble && "text-ink scale-100",

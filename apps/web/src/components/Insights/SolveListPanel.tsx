@@ -46,6 +46,8 @@ function FilterChip({ active, count, dot, onClick, children }: FilterChipProps) 
       onClick={onClick}
       className={cn(
         "flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.62rem] font-medium transition-colors",
+        // Touch (<1024px): ≥32px tap targets
+        "max-lg:h-8 max-lg:px-3 max-lg:text-xs",
         active
           ? "bg-surface-2 text-ink"
           : "bg-transparent text-ink-3/50 hover:text-ink-3",
@@ -253,18 +255,17 @@ export const SolveListPanel = memo(function SolveListPanel({
         {/* Search + reset */}
         <div className="flex items-center gap-2 px-2.5 pb-2.5">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-ink-3" />
-            <Input
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-ink-3" />              <Input
               placeholder="Search time, scramble, DNF, notes…"
               value={filters.search}
               onChange={(e) => setFilters({ search: e.target.value })}
-              className="h-7 pl-7 pr-2 text-[0.72rem]"
+              className="h-7 pl-7 pr-2 text-[0.72rem] max-lg:h-9"
             />
           </div>
           {isFiltered && (
             <button
               onClick={reset}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:h-9 max-lg:px-2.5"
             >
               <X className="size-3" />
               Reset
@@ -337,7 +338,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                     )}
                   />
 
-                  <div className="px-3 pb-1.75 pt-1.75">
+                  <div className="px-3 pb-1.75 pt-1.75 max-lg:py-4">
                     {/* Line 1: index + time + delta + source + penalty */}
                     <div className="flex items-center gap-2.5">
                       <span className="flex w-7 shrink-0 items-center justify-end gap-1.5">
