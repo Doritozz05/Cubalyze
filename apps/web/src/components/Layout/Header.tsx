@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { WidgetExplorer } from "@/widgets/explorer";
+import { useWidgetStore } from "@/widgets/widgetStore";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -140,6 +141,11 @@ export function Header({
   // opens the explorer (desktop uses the LeftSidebar-owned explorer).
   const isTouch = useIsTouch();
   const [widgetsOpen, setWidgetsOpen] = useState(false);
+  // Number of widgets currently active — shown as a badge on the touch
+  // "Widgets" button so users can see how many are live (no dock on touch).
+  const activeWidgetCount = useWidgetStore(
+    (s) => Object.values(s.instances).filter((i) => i?.status !== "inactive").length,
+  );
 
   const connectionStatus = useStore(connectionStore, (s) => s.status);
   const batteryLevel = useStore(connectionStore, (s) => s.batteryLevel);
@@ -224,6 +230,11 @@ export function Header({
             >
               <Puzzle className="size-3.5" />
               <span className="nums">Widgets</span>
+              {activeWidgetCount > 0 && (
+                <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2">
+                  {activeWidgetCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
