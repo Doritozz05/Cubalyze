@@ -673,6 +673,8 @@ export default function App() {
               scrambleVerif: scrambleDisplay && scrambleVerification,
               inspection,
               isScrambled: validation.isScrambled,
+              isLastSolveDnf: timerLastTime !== null && solves[0]?.penalty === "DNF",
+              lastSolvePenalty: timerLastTime !== null ? solves[0]?.penalty : "none",
             }}
             onPress={timerPress}
             onRelease={timerRelease}
@@ -681,6 +683,8 @@ export default function App() {
             cancelRef={cancelRef}
             clickToStart={clickToStart}
             holdDelay={spacebarHoldDelay}
+            lastSolve={solves[0] ?? null}
+            onUpdatePenalty={(id, pen) => updateSolve(id, { penalty: pen })}
             className="mt-1 flex-1"
           />
         )}

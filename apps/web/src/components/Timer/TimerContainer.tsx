@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { TimerDisplay } from "./TimerDisplay";
 import { PbCelebrationBanner } from "./PbCelebrationBanner";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
-import type { TimerState } from "@/types";
+import type { TimerState, Solve, Penalty } from "@/types";
 import type { HintContext } from "./hintFor";
 
 export interface TimerContainerProps {
@@ -41,6 +41,10 @@ export interface TimerContainerProps {
   clickToStart?: boolean;
   /** Hold delay in ms (used to time the auto-release after click in clickToStart mode). */
   holdDelay?: number;
+  /** Last recorded solve object for quick penalty modification. */
+  lastSolve?: Solve | null;
+  /** Callback to update penalty of a solve. */
+  onUpdatePenalty?: (id: string, penalty: Penalty) => void;
   className?: string;
 }
 
@@ -66,6 +70,8 @@ export function TimerContainer({
   timerClassName,
   clickToStart = false,
   holdDelay = 300,
+  lastSolve,
+  onUpdatePenalty,
   className,
 }: TimerContainerProps) {
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
@@ -193,6 +199,49 @@ export function TimerContainer({
         hintCtx={hintCtx}
         className={timerClassName}
       />
+
+      {/* Quick Penalty Action Bar for Last Solve (Only for solves completed in the current session) */}
+      {lastTime !== null && lastSolve && onUpdatePenalty && (phase === "stopped" || phase === "idle") && (
+        <div
+          className="mt-3 flex items-center gap-1 rounded-full border border-line/30 bg-surface-2/60 px-1.5 py-1 backdrop-blur-md shadow-2xs transition-all duration-200 z-10"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              const next: Penalty = lastSolve.penalty === "none" ? "+2" : lastSolve.penalty === "+2" ? "none" : "+2";
+              onUpdatePenalty(lastSolve.id, next);
+            }}
+            className={cn(
+              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none",
+              lastSolve.penalty === "+2"
+                ? "bg-plus2-soft text-plus2 font-bold ring-1 ring-plus2/30"
+                : "text-ink-3 hover:bg-surface-3 hover:text-ink",
+            )}
+            title="Toggle +2 penalty"
+          >
+            +2
+          </button>
+          <div className="h-3 w-px bg-line/40" />
+          <button
+            type="button"
+            onClick={() => {
+              const next: Penalty = lastSolve.penalty === "DNF" ? "none" : "DNF";
+              onUpdatePenalty(lastSolve.id, next);
+            }}
+            className={cn(
+              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none",
+              lastSolve.penalty === "DNF"
+                ? "bg-dnf-soft text-dnf font-bold ring-1 ring-dnf/30"
+                : "text-ink-3 hover:bg-surface-3 hover:text-ink",
+            )}
+            title="Toggle DNF penalty"
+          >
+            DNF
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,10 @@ export interface HintContext {
   inspection: boolean;
   /** The scramble has been physically applied on the Smart Cube. */
   isScrambled: boolean;
+  /** Whether the last solve in current session is DNF. */
+  isLastSolveDnf?: boolean;
+  /** Penalty string for the last solve in current session. */
+  lastSolvePenalty?: string;
 }
 
 /**

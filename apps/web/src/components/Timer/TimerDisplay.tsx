@@ -71,6 +71,14 @@ export function TimerDisplay({
     } else {
       formattedTime = "DNF";
     }
+  } else if ((state === "idle" || state === "stopped") && hasLast && displayTime > 0) {
+    if (hintCtx?.isLastSolveDnf) {
+      formattedTime = "DNF";
+    } else if (hintCtx?.lastSolvePenalty === "+2") {
+      formattedTime = `${formatTime(displayTime, timePrecision)}+`;
+    } else {
+      formattedTime = formatTime(displayTime, timePrecision);
+    }
   } else {
     formattedTime = formatTime(displayTime, timePrecision);
   }

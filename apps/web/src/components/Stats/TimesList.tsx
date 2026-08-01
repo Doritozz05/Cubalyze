@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, memo, useState, useRef, useEffect } from "react";
-import { MoreHorizontal, Plus, Skull, Eraser, Trash2, Activity, RotateCcw, Pencil, Check, X } from "lucide-react";
+import { MoreHorizontal, Plus, XCircle, Eraser, Trash2, Activity, RotateCcw, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime } from "@/utils/formatTime";
@@ -330,7 +330,7 @@ const SolveRow = memo(function SolveRow({
               })
             }
           >
-            <Skull className="size-3.5" />
+            <XCircle className="size-3.5" />
             {solve.penalty === "DNF" ? "Remove DNF" : "Mark DNF"}
           </DropdownMenuItem>
           {solve.penalty !== "none" ? (
