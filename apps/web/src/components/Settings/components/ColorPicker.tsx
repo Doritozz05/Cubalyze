@@ -57,7 +57,7 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="group flex items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
+        className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
       >
         <div
           className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"

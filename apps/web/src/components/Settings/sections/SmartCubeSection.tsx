@@ -149,7 +149,7 @@ export function SmartCubeSection() {
               variant="outline"
               size="sm"
               onClick={handleDisconnect}
-              className="h-8 border-line text-xs font-medium text-ink hover:bg-surface-2"
+              className="max-lg:h-11 h-8 border-line text-xs font-medium text-ink hover:bg-surface-2"
             >
               Disconnect
             </Button>
@@ -158,7 +158,7 @@ export function SmartCubeSection() {
               size="sm"
               onClick={handleConnect}
               disabled={isTransitioning}
-              className="h-8 text-xs font-medium"
+              className="max-lg:h-11 h-8 text-xs font-medium"
             >
               {isTransitioning ? "Connecting..." : "Connect"}
             </Button>

@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, parse, getDay } from "date-fns";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Repeat, X, Check, Pencil, FileText, Palette, Timer, MoreHorizontal, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -412,7 +413,7 @@ export function TrainingCalendar() {
       {/* ── Task Panel (centered modal, like SettingsDialog) ─────────── */}
       <Dialog open={isPanelOpen} onOpenChange={(open) => { if (!open) closePanel(); }}>
         <DialogContent
-          className="sm:max-w-lg max-h-[80vh] overflow-hidden p-0 gap-0"
+          className={`sm:max-w-lg max-h-[80vh] overflow-hidden p-0 gap-0 ${TOUCH_FULL_BLEED} max-lg:pb-safe`}
           showCloseButton={false}
         >
           <DialogHeader className="sr-only">

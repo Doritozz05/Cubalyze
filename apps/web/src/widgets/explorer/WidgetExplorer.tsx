@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { WidgetExplorerSidebar } from "./WidgetExplorerSidebar";
 import { WidgetCard } from "./WidgetCard";
@@ -296,7 +297,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
           setImportStatus("idle");
         }
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={`sm:max-w-md ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="size-4 text-ink-3" />

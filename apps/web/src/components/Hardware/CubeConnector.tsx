@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { orientationStore, connectionStore } from "@cubeforge/state";
@@ -216,7 +217,7 @@ export function CubeConnector({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger}
-      <DialogContent className="sm:max-w-md bg-surface text-ink border-line">
+      <DialogContent className={`sm:max-w-md bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>Connect smart cube</DialogTitle>
           <DialogDescription>

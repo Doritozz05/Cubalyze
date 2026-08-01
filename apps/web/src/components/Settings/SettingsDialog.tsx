@@ -9,6 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { SettingsSidebar } from './SettingsSidebar';
+import { cn } from '@/lib/utils';
+import { TOUCH_FULL_BLEED } from '@/lib/touch';
 import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
 import { GeneralSection } from './sections/GeneralSection';
 import { AppearanceSection } from './sections/AppearanceSection';
@@ -113,7 +115,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line`}
+        className={`${SETTINGS_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:pb-safe`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
@@ -127,8 +129,35 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
           />
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            {/* Touch-only section picker — the sidebar is hidden <1024px, so
+                the sections become a horizontal scrollable chip row (44px
+                targets). Desktop (>=1024px) shows the sidebar instead. */}
+            <div className="shrink-0 border-b border-line/60 px-3 py-2 lg:hidden">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                {SETTINGS_SECTIONS.map((section) => {
+                  const Icon = section.icon;
+                  const isActive = section.id === activeSection;
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => handleSelectSection(section.id)}
+                      className={cn(
+                        "flex h-11 shrink-0 touch-manipulation items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 select-none",
+                        isActive
+                          ? "border-ink-2/40 bg-surface-2 text-ink"
+                          : "border-line bg-surface text-ink-3 hover:text-ink-2",
+                      )}
+                    >
+                      <Icon className="size-3.5 shrink-0" />
+                      {section.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             {/* Section header */}
-            <div className="shrink-0 border-b border-line px-8 py-6">
+            <div className="shrink-0 border-b border-line px-8 py-6 max-lg:px-4 max-lg:py-4">
               <h2 className="text-[0.95rem] font-semibold text-ink">
                 {activeMeta?.label ?? 'Settings'}
               </h2>
@@ -138,7 +167,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
             </div>
 
             {/* Section content with animated transitions */}
-            <div className="relative min-h-0 flex-1 overflow-y-auto px-8 py-6">
+            <div className="relative min-h-0 flex-1 overflow-y-auto px-8 py-6 max-lg:px-4 max-lg:py-4">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={activeSection}

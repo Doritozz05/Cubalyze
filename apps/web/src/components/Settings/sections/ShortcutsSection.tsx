@@ -97,7 +97,7 @@ export function ShortcutsSection() {
             </div>
             <button
               onClick={() => handleStartCapture(def.key)}
-              className="shrink-0 group/shortcut relative"
+              className="shrink-0 group/shortcut relative max-lg:flex max-lg:min-h-11 max-lg:items-center max-lg:justify-center"
             >
               {isCapturing ? (
                 <kbd className="inline-flex items-center gap-1.5 rounded-lg border-2 border-ready bg-ready/10 px-3 py-2 text-[0.78rem] font-mono font-medium text-ready animate-pulse shadow-sm shadow-ready/20">

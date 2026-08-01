@@ -7,6 +7,7 @@ import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { WidgetExplorer } from "@/widgets/explorer";
@@ -406,7 +407,7 @@ export function Header({
           if (!open) setDeleteTarget(null);
         }}
       >
-        <AlertDialogContent className="max-w-sm">
+        <AlertDialogContent className={`max-w-sm ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base">
               Delete “{deleteTarget?.name}”?
@@ -418,9 +419,9 @@ export function Header({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-8 text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="max-lg:h-11 h-8 text-xs">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="h-8 bg-dnf text-xs text-white hover:bg-dnf/90"
+              className="max-lg:h-11 h-8 bg-dnf text-xs text-white hover:bg-dnf/90"
               onClick={() => {
                 if (deleteTarget) onDeleteSession?.(deleteTarget.id);
                 setDeleteTarget(null);

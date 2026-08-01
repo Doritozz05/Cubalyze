@@ -17,6 +17,7 @@ import {
   Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import type { SkillNode } from "./skillTreeData";
 
 interface SkillNodeModalProps {
@@ -60,7 +61,7 @@ export function SkillNodeModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="max-w-xl bg-surface text-ink border-line rounded-xl p-6 shadow-2xl space-y-4 max-lg:max-h-[85vh] max-lg:overflow-y-auto max-lg:pb-safe"
+        className={`max-w-xl bg-surface text-ink border-line rounded-xl p-6 shadow-2xl space-y-4 max-lg:max-h-[85vh] max-lg:overflow-y-auto max-lg:pb-safe ${TOUCH_FULL_BLEED}`}
       >
         {/* Header */}
         <DialogHeader className="space-y-1 text-left pr-8">
