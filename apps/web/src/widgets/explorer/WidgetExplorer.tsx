@@ -236,7 +236,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             {/* Category dropdown — touch only (sidebar is hidden <1024px) */}
             <div className="shrink-0 border-b border-line/60 px-4 py-2.5 lg:hidden">
               <Select value={activeCategory} onValueChange={(val) => handleSelectCategory(val as WidgetCategoryId)}>
-                <SelectTrigger className="h-9 w-full max-w-[240px] gap-2 rounded-lg border border-line bg-surface-2 px-3 text-xs font-semibold text-ink shadow-xs">
+                <SelectTrigger className="h-9 w-full max-w-60 gap-2 rounded-lg border border-line bg-surface-2 px-3 text-xs font-semibold text-ink shadow-xs">
                   <div className="flex items-center gap-2 truncate">
                     <Filter className="size-3.5 shrink-0 text-ink-3" />
                     <span className="text-ink-3 font-normal">Category:</span>

@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SettingsSidebar } from './SettingsSidebar';
-import { cn } from '@/lib/utils';
 import { TOUCH_FULL_BLEED } from '@/lib/touch';
 import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
 import { GeneralSection } from './sections/GeneralSection';
@@ -90,7 +89,6 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
   }, []);
 
   const activeMeta = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
-  const ActiveMetaIcon = activeMeta?.icon;
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
@@ -143,7 +141,7 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
                 <SelectTrigger className="h-10 w-full gap-2 rounded-xl border border-line bg-surface-2 px-3.5 text-sm font-semibold text-ink shadow-xs">
                   <SelectValue placeholder="Select section" />
                 </SelectTrigger>
-                <SelectContent side="bottom" align="start" className="max-h-[60vh] overflow-y-auto z-[100]">
+                <SelectContent side="bottom" align="start" className="max-h-[60vh] overflow-y-auto z-100">
                   {SETTINGS_SECTIONS.map((section) => {
                     const Icon = section.icon;
                     return (
