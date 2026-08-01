@@ -11,6 +11,7 @@ import {
   GripVertical,
   RotateCcw,
   RotateCw,
+  Focus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -248,6 +249,25 @@ export function AlgorithmEditorDialog({
     setRotation2D((prev) => normalizeDegrees(prev + delta));
   }, []);
 
+  // ── 3D camera steps (exact 90° around Y) ────────────────────────────
+  const rotate3DBy = useCallback((degrees: number) => {
+    const engine = engineRef.current;
+    if (!engine?.sceneManager) return;
+    const pos = engine.sceneManager.camera.position;
+    const radius = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2);
+    const theta = Math.atan2(pos.x, pos.z);
+    const phi = Math.asin(Math.max(-1, Math.min(1, pos.y / radius)));
+    engine.sceneManager.setOrbitAngles(
+      theta + (degrees * Math.PI) / 180,
+      phi,
+      radius,
+    );
+  }, []);
+
+  const resetIsometric = useCallback(() => {
+    engineRef.current?.setIsometricView();
+  }, []);
+
   // ── Save / Submit ────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (!canSave) return;
@@ -375,7 +395,7 @@ export function AlgorithmEditorDialog({
                     Orientation preview
                   </span>
                   <span className="ml-auto text-[0.55rem] text-ink-3/50">
-                    {is3D ? "Drag to rotate" : "Rotate to match your view"}
+                    {is3D ? "Use the 90° buttons" : "Rotate to match your view"}
                   </span>
                 </div>
 
@@ -392,6 +412,7 @@ export function AlgorithmEditorDialog({
                       className="w-full h-full"
                       order={is2x2 ? 2 : 3}
                       onEngineReady={handleEngineReady}
+                      lockOrbit
                     />
                   ) : variant.type === "2d-2x2" ? (
                     <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -418,8 +439,36 @@ export function AlgorithmEditorDialog({
 
                 {/* Rotation controls + capture */}
                 {is3D ? (
-                  /* 3D: capture button only (drag handles rotation) */
-                  <div className="flex items-center gap-2 mt-2.5">
+                  /* 3D: exact ±90° steps + isometric reset + capture (no drag) */
+                  <div className="flex items-center gap-1.5 mt-2.5">
+                    <button
+                      onClick={() => rotate3DBy(-90)}
+                      disabled={!engineReady}
+                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
+                      title="Rotate 90° counter-clockwise"
+                    >
+                      <RotateCcw className="size-3" />
+                      −90°
+                    </button>
+                    <button
+                      onClick={() => rotate3DBy(90)}
+                      disabled={!engineReady}
+                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
+                      title="Rotate 90° clockwise"
+                    >
+                      <RotateCw className="size-3" />
+                      +90°
+                    </button>
+                    <button
+                      onClick={resetIsometric}
+                      disabled={!engineReady}
+                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
+                      title="Reset to isometric view"
+                    >
+                      <Focus className="size-3" />
+                      ISO
+                    </button>
+                    <div className="flex-1" />
                     <Button
                       variant="ghost"
                       size="sm"
@@ -428,7 +477,7 @@ export function AlgorithmEditorDialog({
                       className="h-7 gap-1.5 px-2.5 text-[0.62rem] text-ink-3 hover:text-ink"
                     >
                       <Camera className="size-3" />
-                      Capture orientation
+                      Capture
                     </Button>
                     {capturedOrientation && (
                       <>
@@ -441,55 +490,35 @@ export function AlgorithmEditorDialog({
                     )}
                   </div>
                 ) : (
-                  /* 2D: rotation slider + nudge buttons + capture */
-                  <div className="mt-2.5 space-y-2">
-                    {/* Slider */}
-                    <div className="flex items-center gap-2">
-                      <RotateCcw className="size-3 text-ink-3 shrink-0" />
-                      <input
-                        type="range"
-                        min={0}
-                        max={360}
-                        step={1}
-                        value={rotation2D}
-                        onChange={(e) =>
-                          setRotation2D(Number(e.target.value))
-                        }
-                        className="h-1.5 w-full appearance-none rounded-full bg-surface-2 accent-accent-cyan cursor-pointer"
-                        aria-label="Diagram rotation"
-                      />
-                      <RotateCw className="size-3 text-ink-3 shrink-0" />
-                    </div>
-                    {/* Nudge buttons + capture + indicator */}
-                    <div className="flex items-center gap-1.5">
-                      {[-90, 90, 180].map((delta) => (
-                        <button
-                          key={delta}
-                          onClick={() => nudgeRotation(delta)}
-                          className="rounded border border-line px-1.5 py-0.5 text-[0.55rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                        >
-                          {delta > 0 ? `+${delta}°` : `${delta}°`}
-                        </button>
-                      ))}
-                      <div className="flex-1" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCaptureRotation}
-                        className="h-7 gap-1.5 px-2.5 text-[0.62rem] text-ink-3 hover:text-ink"
+                  /* 2D: rotation nudge buttons + capture (no slider) */
+                  <div className="flex items-center gap-1.5 mt-2.5">
+                    {[-90, 90, 180].map((delta) => (
+                      <button
+                        key={delta}
+                        onClick={() => nudgeRotation(delta)}
+                        className="rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
                       >
-                        <Camera className="size-3" />
-                        Capture
-                      </Button>
-                      {capturedRotation2D != null && (
-                        <>
-                          <span className="text-[0.55rem] text-accent-cyan font-mono">
-                            {capturedRotation2D}°
-                          </span>
-                          <span className="size-1.5 rounded-full bg-accent-cyan" />
-                        </>
-                      )}
-                    </div>
+                        {delta > 0 ? `+${delta}°` : `${delta}°`}
+                      </button>
+                    ))}
+                    <div className="flex-1" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCaptureRotation}
+                      className="h-7 gap-1.5 px-2.5 text-[0.62rem] text-ink-3 hover:text-ink"
+                    >
+                      <Camera className="size-3" />
+                      Capture
+                    </Button>
+                    {capturedRotation2D != null && (
+                      <>
+                        <span className="text-[0.55rem] text-accent-cyan font-mono">
+                          {capturedRotation2D}°
+                        </span>
+                        <span className="size-1.5 rounded-full bg-accent-cyan" />
+                      </>
+                    )}
                   </div>
                 )}
               </section>
@@ -579,13 +608,13 @@ export function AlgorithmEditorDialog({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-between border-t border-line bg-canvas px-5 py-3.5">
-              <p className="text-[0.6rem] text-ink-3">
+            <div className="flex shrink-0 items-center gap-3 border-t border-line bg-canvas px-5 py-3.5">
+              <p className="min-w-0 flex-1 truncate text-[0.6rem] text-ink-3">
                 {canSave
                   ? `${parsedMoves.length} move${parsedMoves.length !== 1 ? "s" : ""} — ready to save`
                   : "Enter algorithm notation above"}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -598,7 +627,7 @@ export function AlgorithmEditorDialog({
                   size="sm"
                   onClick={handleSave}
                   disabled={!canSave || saving}
-                  className="h-8 text-xs bg-accent-cyan text-surface hover:bg-accent-cyan/85"
+                  className="h-8 px-3 text-xs bg-accent-cyan text-surface shadow-xs hover:bg-accent-cyan/85 focus-visible:ring-accent-cyan/30"
                 >
                   {saving
                     ? "Saving…"

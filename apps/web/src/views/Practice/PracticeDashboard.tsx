@@ -36,10 +36,7 @@ export function PracticeDashboard({
   }, [initialSubsetId, initialCaseId]);
 
   // ── Get seed data (in-memory for now; database integration later) ────
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(
-    () => getSeedData(),
-    [],
-  );
+  const { cases: allCases } = useMemo(() => getSeedData(), []);
 
   // ── Filtered cases for selected subset ───────────────────────────────
   const filteredCases = useMemo(
@@ -49,12 +46,6 @@ export function PracticeDashboard({
         : [],
     [allCases, selectedSubsetId],
   );
-
-  // ── Algorithms for filtered cases ──────────────────────────────────────
-  const filteredAlgorithms = useMemo(() => {
-    const caseIds = new Set(filteredCases.map((c) => c.id));
-    return allAlgorithms.filter((a) => caseIds.has(a.caseId));
-  }, [allAlgorithms, filteredCases]);
 
   // ── Selected case data ────────────────────────────────────────────────
   const selectedCase = useMemo(
@@ -120,7 +111,6 @@ export function PracticeDashboard({
               </div>
               <CaseGrid
                 cases={filteredCases}
-                algorithms={filteredAlgorithms}
                 selectedCaseId={selectedCaseId}
                 onSelectCase={handleSelectCase}
                 visualizationStyle={visualizationStyle}

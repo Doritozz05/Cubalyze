@@ -178,6 +178,7 @@ export function Case3DCanvas({
   className,
   order = 3,
   onEngineReady,
+  lockOrbit = false,
 }: {
   caseData: AlgorithmCase;
   algorithm?: ViewAlgorithm;
@@ -187,6 +188,8 @@ export function Case3DCanvas({
   order?: number;
   /** Called when the engine is initialized, so the editor can capture camera state. */
   onEngineReady?: (engine: Cube3DEngine) => void;
+  /** Blocks pointer-drag orbit so only explicit controls rotate the camera. */
+  lockOrbit?: boolean;
 }) {
   const { canvasRef, containerRef, isReady, engineRef, rotateCamera } = useCube3D({
     maxRecentMoves: 0,
@@ -203,18 +206,20 @@ export function Case3DCanvas({
   );
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (lockOrbit) return;
     setIsDragging(true);
     lastPos.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDragging) return;
+    if (lockOrbit || !isDragging) return;
     const dx = event.clientX - lastPos.current.x;
     const dy = event.clientY - lastPos.current.y;
     lastPos.current = { x: event.clientX, y: event.clientY };
     rotateCamera(dx, dy);
   };
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (lockOrbit) return;
     setIsDragging(false);
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -268,7 +273,10 @@ export function Case3DCanvas({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="absolute inset-0 h-full w-full outline-none cursor-grab active:cursor-grabbing touch-none"
+        className={cn(
+          "absolute inset-0 h-full w-full outline-none touch-none",
+          lockOrbit ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+        )}
       />
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/80">

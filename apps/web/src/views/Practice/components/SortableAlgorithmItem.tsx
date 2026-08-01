@@ -74,7 +74,7 @@ export function SortableAlgorithmItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-2", isPrimary && "pr-14")}>
           <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
             {alg.moves.map((move, i) => (
               <span key={i}>{move}</span>
@@ -133,7 +133,7 @@ export function SortableAlgorithmItem({
 
       {isPrimary && (
         <div className="absolute top-2 right-2">
-          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-400/30 bg-amber-400/8 px-1.5 py-0.5 text-[0.5rem] font-medium text-amber-400 leading-none">
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-ink px-1.5 py-0.5 text-[0.5rem] font-semibold text-surface leading-none">
             primary
           </span>
         </div>

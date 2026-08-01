@@ -5,13 +5,12 @@ import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DDiagram } from "./Case3DDiagram";
-import { getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
+import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
 
 export interface CaseGridProps {
   cases: AlgorithmCase[];
-  algorithms: Algorithm[];
   selectedCaseId: string | null;
   onSelectCase: (caseId: string) => void;
   /** Visualization style for dynamic diagram generation (default: 'full-color'). */
@@ -21,7 +20,6 @@ export interface CaseGridProps {
 
 export const CaseGrid = memo(function CaseGrid({
   cases,
-  algorithms,
   selectedCaseId,
   onSelectCase,
   visualizationStyle,
@@ -47,14 +45,11 @@ export const CaseGrid = memo(function CaseGrid({
     >
       {cases.map((c) => {
         const isSelected = c.id === selectedCaseId;
-        const orderedAlgs = getAlgorithmsForCase(c.id);
-        const defaultAlg = orderedAlgs[0] ?? algorithms.find((a) => a.caseId === c.id);
 
         return (
           <CaseCard
             key={c.id}
             caseData={c}
-            algorithm={defaultAlg}
             isSelected={isSelected}
             onClick={() => onSelectCase(c.id)}
             visualizationStyle={visualizationStyle}
@@ -67,17 +62,20 @@ export const CaseGrid = memo(function CaseGrid({
 
 function CaseCard({
   caseData,
-  algorithm,
   isSelected,
   onClick,
   visualizationStyle,
 }: {
   caseData: AlgorithmCase;
-  algorithm?: Algorithm;
   isSelected: boolean;
   onClick: () => void;
   visualizationStyle?: VisualizationStyle;
 }) {
+  // Reactive subscription: re-renders when custom algorithms or ordering
+  // change, so the grid reflects saved orientations without a reload.
+  const { algorithms } = useCaseAlgorithms(caseData.id);
+  const algorithm = algorithms[0] ?? null;
+
   return (
     <button
       onClick={onClick}
@@ -124,7 +122,7 @@ function CaseCard({
       {/* Case info — algorithm moves primary, case number & name secondary */}
       <div className="flex flex-col items-center gap-0.5 w-full mt-1">
         {algorithm && (
-          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1">
+          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1 break-words max-w-full">
             {algorithm.moves.join(" ")}
           </span>
         )}
