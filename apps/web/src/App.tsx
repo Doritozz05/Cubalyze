@@ -25,6 +25,7 @@ import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { preferencesStore } from "@cubeforge/state";
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
+import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import {
   generateScrambleFor,
@@ -134,13 +135,13 @@ export default function App() {
   }, []);
 
   // ── Last solve analysis (displayed in the "Analysis" view) ─────────────
-  const lastSolveRef = useRef<{
-    solve: ReturnType<typeof usePersistentSession>['solves'][number] | null;
-    analysis: SolveMetrics | null;
-  }>({ solve: null, analysis: null });
   const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
-  // Track the DB solve ID for the current solve so we can persist analysis later
-  const pendingSolveIdRef = useRef<string | null>(null);
+  // Monotonic completion ordering prevents an out-of-order IndexedDB promise
+  // from deciding which analysis is displayed. A token becomes "saved" only
+  // after its own insert succeeds, so a failed later insert cannot hide an
+  // earlier valid analysis.
+  const completionTokenRef = useRef(0);
+  const latestSavedTokenRef = useRef(0);
 
   // Tracks the live Smart Cube connection state so `handleComplete` (which
   // must be defined *before* `useSolveSession` provides `smartCubeConnected`)
@@ -155,13 +156,6 @@ export default function App() {
     trainingActiveRef.current = activeView === "training";
   }, [activeView]);
 
-  // Capture scramble & method at solve stop time to avoid stale closure race.
-  // These refs are populated by handleComplete (synchronous callback from
-  // engine.stop$) BEFORE setCurrentScramble regenerates. The analysis effect
-  // reads these refs instead of the React state to guarantee it uses the
-  // correct scramble — not the newly generated one.
-  const scrambleAtSolveRef = useRef<string>("");
-  const methodAtSolveRef = useRef<SolveMethod>("CFOP");
 
   const handlePuzzleChange = useCallback((newPuzzle: PuzzleCategory) => {
     setPuzzle(newPuzzle);
@@ -184,12 +178,12 @@ export default function App() {
       _rawOrientations: (CubeOrientation | undefined)[],
       rawOrientationTimeline: OrientationTimeline | undefined,
     ) => {
-      // Capture scramble & method in refs BEFORE regenerating.
-      // The analysis useEffect reads these refs (not the React state) to
-      // avoid the race where setCurrentScramble(newScramble) has already
-      // fired by the time the effect executes.
-      scrambleAtSolveRef.current = currentScramble;
-      methodAtSolveRef.current = methodPref;
+      // These locals are captured by this solve's background job before the
+      // next scramble is generated, so the analysis uses the correct input.
+      const capturedScramble = currentScramble;
+      const capturedMethod = methodPref;
+      const solveId = uuidv4();
+      const completionToken = ++completionTokenRef.current;
 
       // `smartCubeConnectedRef.current` reflects the live connection state at
       // solve-stop time (synced by the effect below). We use a ref instead of
@@ -197,14 +191,8 @@ export default function App() {
       // declared before `useSolveSession` provides it (it's passed as `onSolve`).
       const capturedSource: SolveSource = smartCubeConnectedRef.current ? "smart" : "manual";
 
-      // Generate the solve ID synchronously BEFORE calling addSolve so that
-      // pendingSolveIdRef is already set when the analysis useEffect fires
-      // (triggered by setLastTime in the stop$ subscription). Without this,
-      // the effect reads null because addSolve's .then() hasn't resolved yet.
-      const solveId = uuidv4();
-      pendingSolveIdRef.current = solveId;
-
       // Check for Personal Best milestones (Single, Ao5, Ao12) before adding
+
       const pbResult = detectPbMilestones(solvesRef.current, time, penalty, puzzleCategoryToType(puzzle));
       if (pbResult.types.length > 0) {
         if (pbCelebrationAudio) {
@@ -217,36 +205,76 @@ export default function App() {
         setActivePbMilestone(null);
       }
 
-      // Save with raw moves immediately so replay/timeline have data
-      // from the first render. The analysis effect will overwrite with
-      // compacted moves + computed metrics.
-      addSolve({
+      // Save with raw moves immediately so replay/timeline have data from the
+      // first render. The background job later replaces them with compacted
+      // moves and computed metrics.
+      const savePromise = addSolve({
         id: solveId,
         time,
-        scramble: scrambleDisplay ? currentScramble : "",
+        scramble: scrambleDisplay ? capturedScramble : "",
         penalty,
-        method: methodPref,
+        method: capturedMethod,
         source: capturedSource,
         moves: rawMoves,
         orientationTimeline: rawOrientationTimeline,
         puzzleType: puzzleCategoryToType(puzzle),
-      })
+      });
+      savePromise
         .then((returnedId) => {
           if (!returnedId) {
             console.warn('[handleComplete] addSolve returned null — solve NOT saved to DB!');
             toast.error('Solve not saved — database not ready. Try again.');
-            pendingSolveIdRef.current = null;
             return;
           }
+          latestSavedTokenRef.current = Math.max(latestSavedTokenRef.current, completionToken);
           setCurrentScramble(generateScrambleFor(puzzle));
           setScrambleIndex((i) => i + 1);
+
+          // Analysis is intentionally independent from the save continuation.
+          // It waits for this exact insert, then patches this exact solve.
+          // Nothing here depends on a global "pending solve" ref.
+          if (rawMoves.length > 0) {
+            queueSolveAnalysis(
+              {
+                solveId,
+                save: savePromise,
+                analyze: async () => runAnalysis(
+                  rawMoves,
+                  capturedScramble,
+                  capturedMethod,
+                  _rawOrientations,
+                  time,
+                ),
+                onResult: async ({ metrics: analysis, compactedMoves, compactedOrientationTimeline }) => {
+                  if (latestSavedTokenRef.current === completionToken) {
+                    setLastAnalysis(analysis);
+                  }
+                  console.log(
+                    '%c[App] Persisting moves+analysis to solve %s · %d raw → %d compacted',
+                    'color:#38bdf8',
+                    solveId.slice(0, 8),
+                    rawMoves.length,
+                    compactedMoves.length,
+                  );
+                  await updateSolve(solveId, {
+                    moves: compactedMoves,
+                    orientationTimeline: compactedOrientationTimeline,
+                    analysis,
+                  });
+                },
+              },
+              (err) => {
+                console.error(`[App] Background analysis failed for solve ${solveId}:`, err);
+              },
+            );
+          }
         })
         .catch((err) => {
           console.error('[handleComplete] addSolve threw:', err);
           toast.error("Couldn't save solve — check console for details");
         });
     },
-    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation, puzzle, scrambleDisplay],
+    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation, puzzle, scrambleDisplay, updateSolve],
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
@@ -262,9 +290,6 @@ export default function App() {
     smartCubeConnected,
     inspection,
     scrambleVerification,
-    lastSolveMoves,
-    lastSolveOrientations,
-    lastSolveOrientationTimeline,
   } = session$;
 
   // Sync the connection ref so handleComplete (declared above, before session$
@@ -280,74 +305,6 @@ export default function App() {
     }
   }, [timerPhase]);
 
-  // ── Run analysis on solve complete ─────────────────────────────────────
-  const prevLastTimeRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    // Detect new solve completion (lastTime changed from something to a new value)
-    if (timerLastTime !== null && timerLastTime !== prevLastTimeRef.current) {
-      prevLastTimeRef.current = timerLastTime;
-
-      // Use the stable snapshot captured at stop time (avoids race with IDLE clearing).
-      // scrambleAtSolveRef / methodAtSolveRef were set by handleComplete which
-      // runs synchronously from engine.stop$ BEFORE setCurrentScramble fires.
-      const moves = lastSolveMoves;
-      const scr = scrambleAtSolveRef.current;
-      const m = methodAtSolveRef.current;
-
-      if (moves.length > 0) {
-        const pendingId = pendingSolveIdRef.current;
-        console.log(
-          '%c[App] Analysis queued · %d moves · solveId=%s',
-          'color:#38bdf8',
-          moves.length,
-          pendingId ? pendingId.slice(0, 8) : 'null (waiting for addSolve)',
-        );
-        // Defer to next tick to avoid blocking the UI
-        setTimeout(() => {
-          runAnalysis(moves, scr, m, lastSolveOrientations, timerLastTime).then((result) => {
-            if (result) {
-              const { metrics: analysis, compactedMoves, compactedOrientationTimeline } = result;
-              lastSolveRef.current = { solve: null, analysis };
-              setLastAnalysis(analysis);
-
-              // Persist COMPACTED moves + analysis to DB.
-              // This guarantees solve.moves.length === analysis.totalMoves
-              // for all downstream consumers (replay, timeline, widgets).
-              const solveId = pendingSolveIdRef.current;
-              if (solveId) {
-                console.log(
-                  '%c[App] Persisting moves+analysis to solve %s · %d raw → %d compacted',
-                  'color:#38bdf8',
-                  solveId.slice(0, 8),
-                  moves.length,
-                  compactedMoves.length,
-                );
-                updateSolve(solveId, {
-                  moves: compactedMoves,
-                  orientationTimeline: compactedOrientationTimeline,
-                  analysis,
-                }).catch(() =>
-                  console.warn("Failed to persist moves + analysis"),
-                );
-                pendingSolveIdRef.current = null;
-              } else {
-                console.warn(
-                  '%c[App] solveId is null — moves+analysis NOT persisted. addSolve may have failed or not completed yet.',
-                  'color:#facc15',
-                );
-              }
-            }
-          });
-        }, 0);
-      }
-    }
-
-    // Reset when going back to idle
-    if (timerPhase === "idle") {
-      prevLastTimeRef.current = null;
-    }
-  }, [timerLastTime, timerPhase, lastSolveMoves, lastSolveOrientations, lastSolveOrientationTimeline, updateSolve]);
 
   // ── Import solve wrapper (adapts importSolves to DataSection's expected shape) ──
   const handleImportSolves = useCallback(

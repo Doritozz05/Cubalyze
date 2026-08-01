@@ -46,19 +46,19 @@ function PhaseBar({
   colorIndex,
   muted = false,
   skipped = false,
-  displayName,
+  showLabel = true,
 }: {
   phaseName: CfopPhaseName;
   share: number;
   colorIndex: number;
   muted?: boolean;
   skipped?: boolean;
-  displayName?: string;
+  showLabel?: boolean;
 }) {
   const color = phaseColorHex(phaseName, colorIndex);
   return (
     <div className="flex items-center gap-2">
-      <span className="w-9 shrink-0 text-[0.58rem] font-medium text-ink-2">{displayName ?? phaseName}</span>
+      {showLabel && <span className="w-9 shrink-0 text-[0.58rem] font-medium text-ink-2">{phaseName}</span>}
       <div className={cn(
         "h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2",
         skipped && "border border-dashed border-ink-3/35 bg-transparent",
@@ -187,7 +187,6 @@ function AverageBreakdown({
               </div>
               <div className="flex items-center gap-2 nums text-[0.58rem]">
                 <span className="text-ink-3">{formatTime(row.avgDurationMs)}</span>
-                <span className="font-medium text-ink">{pct(row.share)}</span>
                 {row.latestDelta !== undefined && (
                   <span className={cn("flex w-14 items-center justify-end gap-0.5", status.tone)}>
                     <StatusIcon className="size-2.5" />
@@ -206,6 +205,7 @@ function AverageBreakdown({
               share={row.share}
               colorIndex={index}
               skipped={row.latestSkipped}
+              showLabel={false}
             />
             {benchmark && row.benchmarkShare !== undefined && (
               <PhaseBar
@@ -213,7 +213,7 @@ function AverageBreakdown({
                 share={row.benchmarkShare}
                 colorIndex={index}
                 muted
-                displayName="Ref"
+                showLabel={false}
               />
             )}
           </div>
