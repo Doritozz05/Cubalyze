@@ -95,7 +95,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
                         stays inside the panel body (overflow-y-auto) and never
                         gets clipped above the chart. */}
                     <div className="pointer-events-none absolute top-0 mt-1 hidden flex-col items-center group-hover:flex">
-                      <div className="rounded border border-line bg-surface px-2 py-1 text-[0.55rem] text-ink whitespace-nowrap shadow-lg">
+                      <div className="rounded border border-line bg-surface px-2 py-1 text-[0.6rem] text-ink whitespace-nowrap shadow-lg">
                         <span className="font-medium">{bin.label}s</span>
                         <span className="ml-1.5 text-ink-3">{bin.count} solves</span>
                       </div>
@@ -107,7 +107,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
 
             {/* X-axis labels */}
             {histogram.length > 0 && (
-              <div className="mt-1.5 flex justify-between text-[0.5rem] text-ink-3/70">
+              <div className="mt-1.5 flex justify-between text-[0.6rem] text-ink-3/70">
                 <span className="nums">{histogram[0].label.split("–")[0]}s</span>
                 {histogram.length > 2 && (
                   <span className="nums">
@@ -129,7 +129,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="inline-block size-2 rounded-sm bg-ink-2" />
-                  Best {formatTime(stats.best)}
+                  Best {stats.best != null ? formatTime(stats.best) : "—"}
                 </span>
               </div>
               <span className="nums">

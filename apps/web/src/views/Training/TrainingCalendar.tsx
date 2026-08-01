@@ -31,14 +31,14 @@ type PanelMode = "list" | "add" | "edit";
 const STORAGE_KEY = "cubeforge-training-calendar";
 
 const TASK_COLORS: { value: TaskColor; label: string; dot: string }[] = [
-  { value: "blue",    label: "Blue",    dot: "bg-blue-400" },
-  { value: "emerald", label: "Green",   dot: "bg-emerald-400" },
-  { value: "amber",   label: "Yellow",  dot: "bg-amber-400" },
-  { value: "violet",  label: "Purple",  dot: "bg-violet-400" },
-  { value: "rose",    label: "Pink",    dot: "bg-rose-400" },
-  { value: "cyan",    label: "Cyan",    dot: "bg-cyan-400" },
-  { value: "orange",  label: "Orange",  dot: "bg-orange-400" },
-  { value: "pink",    label: "Magenta", dot: "bg-pink-400" },
+  { value: "blue",    label: "Blue",    dot: "bg-phase-blue" },
+  { value: "emerald", label: "Green",   dot: "bg-phase-emerald" },
+  { value: "amber",   label: "Yellow",  dot: "bg-phase-amber" },
+  { value: "violet",  label: "Purple",  dot: "bg-phase-violet" },
+  { value: "rose",    label: "Pink",    dot: "bg-phase-rose" },
+  { value: "cyan",    label: "Cyan",    dot: "bg-phase-cyan" },
+  { value: "orange",  label: "Orange",  dot: "bg-phase-orange" },
+  { value: "pink",    label: "Magenta", dot: "bg-phase-pink" },
 ];
 
 const COLOR_MAP = new Map(TASK_COLORS.map((c) => [c.value, c]));
@@ -307,7 +307,7 @@ export function TrainingCalendar() {
               <ChevronRight className="size-3.5" />
             </button>
           </div>
-          <button onClick={goToday} className="ml-auto rounded-md px-2 py-0.5 text-[0.55rem] font-medium text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors shrink-0">
+          <button onClick={goToday} className="ml-auto rounded-md px-2 py-0.5 text-[0.6rem] font-medium text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors shrink-0">
             Today
           </button>
         </div>
@@ -315,7 +315,7 @@ export function TrainingCalendar() {
         {/* Weekday headers */}
         <div className="grid grid-cols-7 px-3">
           {WEEKDAYS_SHORT.map((d, i) => (
-            <div key={i} className="py-1 text-center text-[0.5rem] font-medium text-ink-3/50 uppercase tracking-wider">
+            <div key={i} className="py-1 text-center text-[0.6rem] font-medium text-ink-3/50 uppercase tracking-wider">
               {d}
             </div>
           ))}
@@ -365,7 +365,7 @@ export function TrainingCalendar() {
                       return (
                         <div
                           key={task.id}
-                          className="truncate rounded-sm text-[0.55rem] font-semibold leading-snug px-1 py-[1.5px]"
+                          className="truncate rounded-sm text-[0.6rem] font-semibold leading-snug px-1 py-[1.5px]"
                           style={{
                             backgroundColor: hex + "1A",
                             color: hex,
@@ -376,7 +376,7 @@ export function TrainingCalendar() {
                       );
                     })}
                     {moreCount > 0 && (
-                      <span className="text-[0.45rem] font-medium text-ink-3/50 leading-tight text-center">
+                      <span className="text-[0.6rem] font-medium text-ink-3/50 leading-tight text-center">
                         +{moreCount}
                       </span>
                     )}
@@ -387,7 +387,7 @@ export function TrainingCalendar() {
                 {dayTasks && dayTasks.length > 0 && (
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30">
                     <div className="bg-canvas border border-line rounded-lg shadow-lg py-1.5 px-2.5 min-w-35">
-                      <div className="text-[0.55rem] font-medium text-ink-3/60 mb-1 pb-1 border-b border-line">
+                      <div className="text-[0.6rem] font-medium text-ink-3/60 mb-1 pb-1 border-b border-line">
                         {format(day, "MMM d")} — {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
                       </div>
                       <div className="space-y-1">
@@ -482,7 +482,7 @@ export function TrainingCalendar() {
                                 {task.repeat !== "none" && (
                                   <div className="mt-1 flex items-center gap-1.5">
                                     <Repeat className="size-2.5 text-ink-3/50" />
-                                    <span className="text-[0.55rem] text-ink-3/60">{formatRepeatDescription(task.repeat, task.daysOfWeek)}</span>
+                                    <span className="text-[0.6rem] text-ink-3/60">{formatRepeatDescription(task.repeat, task.daysOfWeek)}</span>
                                   </div>
                                 )}
                               </div>
@@ -591,7 +591,7 @@ export function TrainingCalendar() {
                     <div className={cn("space-y-1.5 rounded-lg border border-line bg-surface p-3.5", draft.repeat !== "custom" && "opacity-60")}>
                       <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
                         <Calendar className="size-3" /> Days
-                        {draft.repeat !== "custom" && <span className="ml-auto text-[0.5rem] text-ink-3/40 italic">auto</span>}
+                        {draft.repeat !== "custom" && <span className="ml-auto text-[0.6rem] text-ink-3/40 italic">auto</span>}
                       </label>
                       <div className="flex gap-1">
                         {WEEKDAYS.map((dayName, i) => {
@@ -622,8 +622,8 @@ export function TrainingCalendar() {
                           );
                         })}
                       </div>
-                      {draft.repeat === "weekdays" && <p className="text-[0.5rem] text-ink-3/40 italic">Weekdays only.</p>}
-                      {draft.repeat === "weekly" && <p className="text-[0.5rem] text-ink-3/40 italic">Same day each week.</p>}
+                      {draft.repeat === "weekdays" && <p className="text-[0.6rem] text-ink-3/40 italic">Weekdays only.</p>}
+                      {draft.repeat === "weekly" && <p className="text-[0.6rem] text-ink-3/40 italic">Same day each week.</p>}
                     </div>
                   )}
 

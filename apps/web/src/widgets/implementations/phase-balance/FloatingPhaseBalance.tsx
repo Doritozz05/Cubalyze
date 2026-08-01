@@ -165,7 +165,7 @@ function AverageBreakdown({
       </div>
       {benchmark && (
         <>
-          <div className="flex items-center justify-between text-[0.5rem] text-ink-3">
+          <div className="flex items-center justify-between text-[0.6rem] text-ink-3">
             <span>Self baseline vs reference split</span>
             <span className="nums">12 · 50 · 16.5 · 21.5%</span>
           </div>

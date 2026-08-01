@@ -106,7 +106,7 @@ export function TimerDisplay({
           <span
             className={cn(
               "nums text-[clamp(1rem,3vw,1.8rem)] font-medium leading-none",
-              deltaMs <= 0 ? "text-emerald-400" : "text-red-400",
+              deltaMs <= 0 ? "text-ready" : "text-dnf",
             )}
           >
             {deltaMs <= 0 ? "\u2212" : "+"}{formatTime(Math.abs(deltaMs))}

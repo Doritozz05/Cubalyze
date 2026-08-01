@@ -220,7 +220,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
             <div className="flex items-center gap-2">
               <Brain className="size-4 text-ink-2" />
               <h4 className="text-[0.85rem] font-medium text-ink">csTimer format</h4>
-              <span className="rounded-full bg-amber-400/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-amber-500">Recommended</span>
+              <span className="rounded-full bg-caution/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-caution">Recommended</span>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
               Semicolon-delimited format natively importable by csTimer, Twisty Timer, and most cubing apps. Times in milliseconds, epoch dates.
@@ -390,10 +390,10 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
 
               {importState === 'preview' && importPreview && (
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3">
-                    <Check className="size-4 text-emerald-400 shrink-0" />
+                  <div className="flex items-center gap-3 rounded-lg border border-ready/20 bg-ready/5 p-3">
+                    <Check className="size-4 text-ready shrink-0" />
                     <div>
-                      <p className="text-[0.72rem] font-medium text-emerald-500">
+                      <p className="text-[0.72rem] font-medium text-ready">
                         Detected: {importPreview.format === 'cstimer' || importPreview.format === 'cstimer-json' ? 'csTimer' : importPreview.format === 'twistytimer' ? 'Twisty Timer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
                         {importCategory && <span className="text-ink-2"> · into <strong>{importCategory}</strong></span>}
                       </p>
@@ -464,8 +464,8 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
 
               {importState === 'done' && importResult && (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
-                  <div className="grid size-14 place-items-center rounded-full bg-emerald-400/10">
-                    <Check className="size-6 text-emerald-400" />
+                  <div className="grid size-14 place-items-center rounded-full bg-ready/10">
+                    <Check className="size-6 text-ready" />
                   </div>
                   <div className="text-center">
                     <p className="text-[0.85rem] font-semibold text-ink">
@@ -488,8 +488,8 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
 
               {importState === 'error' && importError && (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
-                  <div className="grid size-14 place-items-center rounded-full bg-red-400/10">
-                    <AlertTriangle className="size-6 text-red-400" />
+                  <div className="grid size-14 place-items-center rounded-full bg-dnf/10">
+                    <AlertTriangle className="size-6 text-dnf" />
                   </div>
                   <div className="text-center max-w-xs">
                     <p className="text-[0.82rem] font-semibold text-ink">Import failed</p>

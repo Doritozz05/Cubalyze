@@ -76,7 +76,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
       icon={Notebook}
       defaultPosition={{ x: 880, y: 440 }}
       headerActions={
-        <div className="flex items-center gap-1 rounded bg-surface-2 border border-line px-1.5 py-0.5 text-[10px] text-ink-3 font-mono">
+        <div className="flex items-center gap-1 rounded bg-surface-2 border border-line px-1.5 py-0.5 text-[0.62rem] text-ink-3 font-mono">
           <span>{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
         </div>
       }
@@ -88,7 +88,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
             <button
               onClick={() => setActiveTab("scratchpad")}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[0.68rem] font-medium transition-colors",
                 activeTab === "scratchpad"
                   ? "bg-surface border border-line text-ink font-semibold shadow-xs"
                   : "text-ink-3 hover:bg-surface-2 hover:text-ink"
@@ -101,7 +101,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
             <button
               onClick={() => setActiveTab("todos")}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[0.68rem] font-medium transition-colors",
                 activeTab === "todos"
                   ? "bg-surface border border-line text-ink font-semibold shadow-xs"
                   : "text-ink-3 hover:bg-surface-2 hover:text-ink"
@@ -110,7 +110,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
               <CheckSquare className="size-3.5" />
               <span>Goals</span>
               {todos.length > 0 && (
-                <span className="rounded-full bg-surface-2 border border-line px-1.5 text-[9px] text-ink-3 font-mono">
+                <span className="rounded-full bg-surface-2 border border-line px-1.5 text-[0.62rem] text-ink-3 font-mono">
                   {completedCount}/{todos.length}
                 </span>
               )}
@@ -119,7 +119,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
             <button
               onClick={() => setActiveTab("notes")}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[0.68rem] font-medium transition-colors",
                 activeTab === "notes"
                   ? "bg-surface border border-line text-ink font-semibold shadow-xs"
                   : "text-ink-3 hover:bg-surface-2 hover:text-ink"
@@ -136,13 +136,13 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
           {/* TAB 1: Scratchpad */}
           {activeTab === "scratchpad" && (
             <div className="flex size-full flex-col space-y-2 min-h-0">
-              <div className="flex items-center justify-between text-[11px] text-ink-3 shrink-0">
+              <div className="flex items-center justify-between text-[0.68rem] text-ink-3 shrink-0">
                 <span>Quick session scratchpad:</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleCopyScratchpad}
-                  className="h-6 px-1.5 text-[10px] text-ink-2 hover:text-ink"
+                  className="h-6 px-1.5 text-[0.62rem] text-ink-2 hover:text-ink"
                 >
                   {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
                   <span>{copied ? "Copied!" : "Copy"}</span>
@@ -153,7 +153,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                 value={scratchpad}
                 onChange={(e) => setScratchpad(e.target.value)}
                 placeholder="Write quick notes, algorithms to review, or session takeaways..."
-                className="flex-1 w-full min-h-0 resize-none rounded-lg bg-surface border border-line p-2.5 font-mono text-[11px] text-ink placeholder:text-ink-3/50 focus:border-ink/40 focus:outline-none"
+                className="flex-1 w-full min-h-0 resize-none rounded-lg bg-surface border border-line p-2.5 font-mono text-[0.68rem] text-ink placeholder:text-ink-3/50 focus:border-ink/40 focus:outline-none"
               />
             </div>
           )}
@@ -168,7 +168,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                   value={newTodoText}
                   onChange={(e) => setNewTodoText(e.target.value)}
                   placeholder="Add goal (e.g., Sub-12 Ao50 in 3x3)..."
-                  className="h-8 flex-1 text-[11px]"
+                  className="h-8 flex-1 text-[0.68rem]"
                 />
                 <Button type="submit" size="sm" className="h-8 px-3">
                   <Plus className="size-3.5" />
@@ -180,7 +180,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                 {todos.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-ink-3">
                     <ListTodo className="size-6 mb-1 opacity-40" />
-                    <p className="text-[11px]">No goals added yet</p>
+                    <p className="text-[0.68rem]">No goals added yet</p>
                   </div>
                 ) : (
                   todos.map((todo) => (
@@ -221,7 +221,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                 <div className="flex justify-end pt-1 shrink-0">
                   <button
                     onClick={clearCompletedTodos}
-                    className="text-[10px] text-ink-3 hover:text-ink transition-colors"
+                    className="text-[0.62rem] text-ink-3 hover:text-ink transition-colors"
                   >
                     Clear completed ({completedCount})
                   </button>
@@ -241,7 +241,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                     value={newNoteTitle}
                     onChange={(e) => setNewNoteTitle(e.target.value)}
                     placeholder="Title..."
-                    className="h-7 text-[10px] px-1.5"
+                    className="h-7 text-[0.62rem] px-1.5"
                   />
                   <Button onClick={handleCreateNote} size="sm" className="h-7 w-7 p-0 shrink-0">
                     <Plus className="size-3" />
@@ -310,11 +310,11 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                       value={selectedNote.content}
                       onChange={(e) => updateNote(selectedNote.id, { content: e.target.value })}
                       placeholder="Note content..."
-                      className="flex-1 w-full min-h-0 resize-none bg-transparent p-1 font-mono text-[11px] text-ink placeholder:text-ink-3/40 focus:outline-none"
+                      className="flex-1 w-full min-h-0 resize-none bg-transparent p-1 font-mono text-[0.68rem] text-ink placeholder:text-ink-3/40 focus:outline-none"
                     />
                   </>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-ink-3 text-[11px]">
+                  <div className="flex h-full items-center justify-center text-ink-3 text-[0.68rem]">
                     Select or create a note
                   </div>
                 )}

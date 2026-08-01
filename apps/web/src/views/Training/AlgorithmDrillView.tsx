@@ -391,12 +391,12 @@ export function AlgorithmDrillView({
               {hasSmartCube && (
                 <span className="text-[0.55rem] text-ink-3/60 ml-auto flex items-center gap-1.5">
                   <span className="flex items-center gap-0.5">
-                    <span className="size-1.5 rounded-full bg-yellow-400" />
+                    <span className="size-1.5 rounded-full bg-phase-yellow" />
                     {topColor}
                   </span>
                   <span className="text-ink-3/30">·</span>
                   <span className="flex items-center gap-0.5">
-                    <span className="size-1.5 rounded-full bg-green-400" />
+                    <span className="size-1.5 rounded-full bg-phase-green" />
                     {frontColor}
                   </span>
                 </span>

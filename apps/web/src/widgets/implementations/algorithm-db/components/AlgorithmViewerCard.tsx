@@ -83,7 +83,7 @@ export function AlgorithmViewerCard({
       {/* ── Case Header Banner ── */}
       <div className="flex items-center justify-between gap-2 bg-surface-2/60 border border-line rounded-md px-2.5 py-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          <Badge variant="outline" className="font-mono text-[11px] font-bold text-ink border-line-2 bg-surface-2">
+          <Badge variant="outline" className="font-mono text-[0.68rem] font-bold text-ink border-line-2 bg-surface-2">
             {caseData.caseNumber}
           </Badge>
           {caseData.name && caseData.name !== caseData.caseNumber && (
@@ -94,7 +94,7 @@ export function AlgorithmViewerCard({
           {caseData.category &&
             caseData.category !== caseData.name &&
             caseData.category !== caseData.caseNumber && (
-              <span className="rounded bg-surface-2/80 border border-line/60 px-1.5 py-0.5 text-[10px] font-medium text-ink-3">
+              <span className="rounded bg-surface-2/80 border border-line/60 px-1.5 py-0.5 text-[0.62rem] font-medium text-ink-3">
                 {caseData.category}
               </span>
             )}
@@ -136,14 +136,14 @@ export function AlgorithmViewerCard({
       {/* ── Setup Scramble Section ── */}
       {caseData.setupScramble && (
         <div className="flex flex-col gap-1 bg-surface-2/40 border border-line rounded-md p-2">
-          <div className="flex items-center justify-between text-[10px] font-medium text-ink-3">
+          <div className="flex items-center justify-between text-[0.62rem] font-medium text-ink-3">
             <span>Setup scramble</span>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={handleCopySetup}
-              className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
+              className="h-5 px-1.5 text-[0.62rem] text-ink-3 hover:text-ink gap-1"
             >
               {copiedSetup ? (
                 <>
@@ -158,7 +158,7 @@ export function AlgorithmViewerCard({
               )}
             </Button>
           </div>
-          <div className="font-mono text-[11px] text-ink-2 bg-surface-1 border border-line/60 rounded px-2 py-1 break-all select-all">
+          <div className="font-mono text-[0.68rem] text-ink-2 bg-surface-1 border border-line/60 rounded px-2 py-1 break-all select-all">
             {caseData.setupScramble}
           </div>
         </div>
@@ -167,7 +167,7 @@ export function AlgorithmViewerCard({
       {/* ── Solution Algorithm Section ── */}
       <div className="flex flex-col gap-1.5 bg-surface-2/40 border border-line rounded-md p-2">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-medium text-ink-3">
+          <span className="text-[0.62rem] font-medium text-ink-3">
             Algorithm
           </span>
 
@@ -176,7 +176,7 @@ export function AlgorithmViewerCard({
             variant="ghost"
             size="sm"
             onClick={handleCopyAlg}
-            className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
+            className="h-5 px-1.5 text-[0.62rem] text-ink-3 hover:text-ink gap-1"
           >
             {copiedAlg ? (
               <>
@@ -200,14 +200,14 @@ export function AlgorithmViewerCard({
         {/* Triggers */}
         {activeAlg?.triggers && activeAlg.triggers.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <span className="text-[10px] text-ink-3 flex items-center gap-1">
+            <span className="text-[0.62rem] text-ink-3 flex items-center gap-1">
               <Tag className="size-2.5" /> Triggers:
             </span>
             {activeAlg.triggers.map((trigger, idx) => (
               <Badge
                 key={idx}
                 variant="secondary"
-                className="text-[9px] font-mono text-ink-2 px-1 py-0"
+                className="text-[0.62rem] font-mono text-ink-2 px-1 py-0"
               >
                 {trigger}
               </Badge>
@@ -218,7 +218,7 @@ export function AlgorithmViewerCard({
         {/* Alternative Algorithms Tabs (if more than 1) */}
         {algorithms.length > 1 && (
           <div className="mt-1 pt-1.5 border-t border-line/60">
-            <span className="text-[10px] text-ink-3 block mb-1 font-medium">
+            <span className="text-[0.62rem] text-ink-3 block mb-1 font-medium">
               Alternative algorithms ({algorithms.length}):
             </span>
             <div className="flex flex-wrap gap-1">
@@ -232,7 +232,7 @@ export function AlgorithmViewerCard({
                     size="sm"
                     onClick={() => setSelectedAlgId(alg.id)}
                     className={cn(
-                      "h-6 px-2 text-[10px] font-mono transition-all",
+                      "h-6 px-2 text-[0.62rem] font-mono transition-all",
                       isActive
                         ? "bg-ink text-surface shadow-xs font-semibold"
                         : "text-ink-3 hover:text-ink"
@@ -247,7 +247,7 @@ export function AlgorithmViewerCard({
         )}
 
         {/* Additional Case Info Footer */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/40 text-[10px] text-ink-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/40 text-[0.62rem] text-ink-3">
           {caseData.probability && (
             <span>Probability: <strong className="text-ink-2 font-mono">{caseData.probability}</strong></span>
           )}

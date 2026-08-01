@@ -12,7 +12,7 @@ export function MetronomePreview() {
       {/* TPS & BPM Readout */}
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs font-bold text-ink">4.0 TPS</span>
-        <span className="font-mono text-[9px] font-semibold text-ink-3">240 BPM</span>
+        <span className="font-mono text-[0.62rem] font-semibold text-ink-3">240 BPM</span>
       </div>
 
       {/* Rhythmic Waveform */}

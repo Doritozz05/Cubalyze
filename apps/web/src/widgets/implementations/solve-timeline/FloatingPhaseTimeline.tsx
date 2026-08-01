@@ -137,7 +137,7 @@ export function FloatingPhaseTimeline({
             {selectedIdx !== 0 && (
               <button
                 onClick={() => setSelectedIdx(0)}
-                className="ml-auto rounded bg-ready-soft px-2 py-1 text-[0.55rem] font-medium uppercase tracking-wide text-ready transition-colors hover:bg-ready-soft/80"
+                className="ml-auto rounded bg-ready-soft px-2 py-1 text-[0.6rem] font-medium uppercase tracking-wide text-ready transition-colors hover:bg-ready-soft/80"
               >
                 Back to latest
               </button>
@@ -180,7 +180,7 @@ export function FloatingPhaseTimeline({
                     <Tooltip key={entry.phaseName}>
                       <TooltipTrigger asChild>
                         <div
-                          className="relative flex items-center justify-center text-[0.5rem] font-medium text-white transition-all"
+                          className="relative flex items-center justify-center text-[0.6rem] font-medium text-white transition-all"
                           style={{
                             width: `${Math.max(entry.fraction * 100, 4)}%`,
                             backgroundColor: entry.color,
@@ -234,7 +234,7 @@ export function FloatingPhaseTimeline({
                   ))}
                 </div>
 
-                <div className="mt-2 flex items-center justify-between text-[0.55rem] text-ink-3">
+                <div className="mt-2 flex items-center justify-between text-[0.6rem] text-ink-3">
                   <span>
                     {selectedSolve.moves?.length ?? 0} moves ·{" "}
                     {formatTime(totalMs)} total

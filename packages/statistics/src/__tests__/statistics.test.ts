@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeBpaWpa, averageOf } from '../index.js';
+import { computeBpaWpa, averageOf, computeStats } from '../index.js';
 
 describe('computeBpaWpa', () => {
   it('returns null when solves count is not N - 1', () => {
@@ -26,5 +26,17 @@ describe('computeBpaWpa', () => {
 
     // WPA assumes 5th solve is DNF (infinity) -> solves are [10, 11, 12, 13, DNF] -> trim 10 & DNF -> avg of (11+12+13)/3 = 12.00s (12000ms)
     expect(res?.wpa).toBe(12000);
+  });
+});
+
+describe('computeStats', () => {
+  it('returns null best/worst (not Infinity) when there are no solves', () => {
+    const stats = computeStats([]);
+    expect(stats.best).toBeNull();
+    expect(stats.worst).toBeNull();
+    expect(stats.mean).toBeNull();
+    expect(stats.ao5).toBeNull();
+    expect(stats.ao12).toBeNull();
+    expect(stats.total).toBe(0);
   });
 });

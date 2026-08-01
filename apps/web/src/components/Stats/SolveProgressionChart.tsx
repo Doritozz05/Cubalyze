@@ -223,7 +223,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
           </span>
           {hasDnfs && (
             <span className="flex items-center gap-1">
-              <span className="text-[0.5rem] text-dnf">✕</span>
+              <span className="text-[0.6rem] text-dnf">✕</span>
               DNF
             </span>
           )}
@@ -379,12 +379,12 @@ function ScatterTooltip({ active, payload }: any) {
       <div className="flex items-baseline gap-2 text-[0.6rem] text-ink-3">
         Solve #{point.solveIndex}
         {point.isDnf && (
-          <span className="rounded bg-dnf-soft px-1 py-0.5 text-[0.5rem] font-medium uppercase text-dnf">
+          <span className="rounded bg-dnf-soft px-1 py-0.5 text-[0.6rem] font-medium uppercase text-dnf">
             DNF
           </span>
         )}
         {point.isPb && !point.isDnf && (
-          <span className="rounded bg-[#FBBF24]/15 px-1 py-0.5 text-[0.5rem] font-medium uppercase text-[#FBBF24]">
+          <span className="rounded bg-[#FBBF24]/15 px-1 py-0.5 text-[0.6rem] font-medium uppercase text-[#FBBF24]">
             PB
           </span>
         )}

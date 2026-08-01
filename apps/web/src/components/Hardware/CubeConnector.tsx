@@ -163,7 +163,7 @@ export function CubeConnector({
       className={cn(
         "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors cursor-pointer",
         "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-        status === "connected" && "text-blue-500",
+        status === "connected" && "text-phase-blue-500",
         className,
       )}
       aria-label="Connect smart cube"
@@ -195,7 +195,7 @@ export function CubeConnector({
           onClick={() => handleOpenChange(true)}
           className={cn(
             "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
-            status === "connected" && "text-blue-500 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:text-blue-600",
+            status === "connected" && "text-phase-blue-500 border-phase-blue-500/20 bg-phase-blue-500/5 hover:bg-phase-blue-500/10 hover:text-phase-blue-600",
             className,
           )}
           aria-label="Connect smart cube"
@@ -229,7 +229,7 @@ export function CubeConnector({
             <span className="text-sm font-medium">Status</span>
             <span className={cn(
               "text-sm capitalize",
-              status === "connected" ? "text-blue-500" : "text-ink-3"
+              status === "connected" ? "text-phase-blue-500" : "text-ink-3"
             )}>
               {status}
             </span>

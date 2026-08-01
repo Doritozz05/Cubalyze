@@ -448,7 +448,7 @@ export function ReplaySection({
                 {totalMs > 0 && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-line/40">
                     <div
-                      className="h-full bg-blue-500/60 transition-[width] duration-75 linear"
+                      className="h-full bg-phase-blue-500/60 transition-[width] duration-75 linear"
                       style={{ width: `${Math.min(100, (positionMs / totalMs) * 100)}%` }}
                     />
                   </div>
@@ -542,7 +542,7 @@ export function ReplaySection({
                           "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
                           replayState === "playing"
                             ? "bg-ink text-background hover:bg-ink/80 hover:scale-105"
-                            : "bg-blue-500 text-white hover:bg-blue-600 hover:scale-105",
+                            : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
                         )}
                         aria-label={
                           replayState === "playing" ? "Pause" : "Play"

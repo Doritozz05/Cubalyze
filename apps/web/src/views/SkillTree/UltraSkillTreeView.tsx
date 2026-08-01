@@ -136,14 +136,14 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   return (
     <div className="w-full max-w-7xl mx-auto h-full flex flex-col min-h-0 space-y-3">
       {/* Clean Toolbar Header */}
-      <div className="p-3 sm:p-4 rounded-xl bg-card border border-border shadow-sm space-y-3">
+      <div className="p-3 sm:p-4 rounded-xl bg-surface border border-line space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Title & Description */}
           <div>
-            <h1 className="text-lg font-bold text-foreground tracking-tight">
+            <h1 className="text-lg font-bold text-ink tracking-tight">
               Speedcubing Skill Tree
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-ink-3 mt-0.5">
               A complete progression from absolute beginner to world-class elite — mastering every dimension of speedcubing.
             </p>
           </div>
@@ -151,29 +151,29 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
           {/* Search Bar & Progress Ratio */}
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             <div className="relative flex-1 sm:w-60">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
               <Input
                 type="text"
                 placeholder="Search technique..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs bg-muted/40 border-border/70 focus-visible:ring-1 focus-visible:ring-primary"
+                className="h-8 pl-8 text-xs bg-surface-2/40 border-line/70 focus-visible:ring-1 focus-visible:ring-ink"
               />
             </div>
 
             {/* Progress Badge */}
-            <div className="px-3 py-1 rounded-lg bg-muted/50 border border-border text-xs flex items-center gap-1.5 shrink-0">
-              <span className="text-muted-foreground font-medium">Completed:</span>
-              <span className="text-foreground font-bold">
+            <div className="px-3 py-1 rounded-lg bg-surface-2/50 border border-line text-xs flex items-center gap-1.5 shrink-0">
+              <span className="text-ink-3 font-medium">Completed:</span>
+              <span className="text-ink font-bold">
                 {stats.completed}/{stats.total}
               </span>
-              <span className="text-foreground font-mono font-semibold">({stats.percent}%)</span>
+              <span className="text-ink font-mono font-semibold">({stats.percent}%)</span>
             </div>
           </div>
         </div>
 
         {/* Category Pills Bar */}
-        <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-border/50 scrollbar-none">            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
+        <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-line/50 scrollbar-none">            <span className="text-xs font-medium text-ink-3 flex items-center gap-1 mr-1 shrink-0">
             <SlidersHorizontal className="w-3 h-3" /> Branch ({CATEGORY_ITEMS.length - 1}):
           </span>
           {CATEGORY_ITEMS.map((cat) => {
@@ -186,8 +186,8 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                 onClick={() => setFilterCategory(cat.id)}
                 className={`h-7 text-xs px-2.5 py-0 rounded-md border transition-all ${
                   isActive
-                    ? "bg-foreground text-background font-semibold border-foreground shadow-sm"
-                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                    ? "bg-ink text-surface font-semibold border-ink shadow-sm"
+                    : "bg-surface-2/30 border-line/40 text-ink-3 hover:text-ink hover:bg-surface-2/70"
                 }`}
               >
                 {cat.label}

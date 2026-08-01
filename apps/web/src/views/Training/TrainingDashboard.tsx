@@ -178,12 +178,12 @@ const METHOD_ICONS: Record<string, React.ElementType> = {
 };
 
 const PHASE_DOT: Record<string, string> = {
-  cross: "bg-blue-400", f2l: "bg-emerald-400", af2l: "bg-teal-400", oll: "bg-amber-400", pll: "bg-violet-400", pbl: "bg-purple-400",
-  cll: "bg-indigo-400", eg1: "bg-rose-400", eg2: "bg-cyan-400",
-  "first-block": "bg-rose-400", "second-block": "bg-orange-400", cmll: "bg-violet-400", lse: "bg-cyan-400",
-  eoline: "bg-sky-400", "f2l-zz": "bg-emerald-400", "ll-zz": "bg-amber-400",
-  "block-222": "bg-rose-400", "block-223": "bg-orange-400", "eo-petrus": "bg-cyan-400",
-  "f2l-petrus": "bg-emerald-400", "ll-petrus": "bg-amber-400",
+  cross: "bg-phase-blue", f2l: "bg-phase-emerald", af2l: "bg-phase-teal", oll: "bg-phase-amber", pll: "bg-phase-violet", pbl: "bg-phase-purple",
+  cll: "bg-phase-indigo", eg1: "bg-phase-rose", eg2: "bg-phase-cyan",
+  "first-block": "bg-phase-rose", "second-block": "bg-phase-orange", cmll: "bg-phase-violet", lse: "bg-phase-cyan",
+  eoline: "bg-phase-sky", "f2l-zz": "bg-phase-emerald", "ll-zz": "bg-phase-amber",
+  "block-222": "bg-phase-rose", "block-223": "bg-phase-orange", "eo-petrus": "bg-phase-cyan",
+  "f2l-petrus": "bg-phase-emerald", "ll-petrus": "bg-phase-amber",
 };
 
 function masteryLabel(pct: number): string {
@@ -269,8 +269,8 @@ function FlatDashboard({
           </div>
 
           {dueCount > 0 && (
-            <span className="nums shrink-0 inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[0.6rem] font-semibold text-black dark:text-white ml-auto">
-              <span className="size-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span className="nums shrink-0 inline-flex items-center gap-1.5 rounded-full bg-caution/20 border border-caution/40 px-2.5 py-0.5 text-[0.6rem] font-semibold text-ink ml-auto">
+              <span className="size-1.5 rounded-full bg-caution shrink-0" />
               {dueCount} due for review
             </span>
           )}

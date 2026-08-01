@@ -147,7 +147,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
             {/* Top Metric Cards */}
             <div className="grid grid-cols-3 gap-2 rounded-lg border border-line bg-surface-2/40 p-2 text-left">
               <div>
-                <span className="block text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
+                <span className="block text-[0.6rem] font-medium uppercase tracking-wider text-ink-3">
                   Current
                 </span>
                 <span className="nums text-sm font-semibold text-ink">
@@ -155,7 +155,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
                 </span>
               </div>
               <div>
-                <span className="block text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
+                <span className="block text-[0.6rem] font-medium uppercase tracking-wider text-ink-3">
                   Total Drop
                 </span>
                 <span className="nums text-sm font-medium text-ready">
@@ -163,7 +163,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
                 </span>
               </div>
               <div>
-                <span className="block text-[0.55rem] font-medium uppercase tracking-wider text-ink-3">
+                <span className="block text-[0.6rem] font-medium uppercase tracking-wider text-ink-3">
                   Faster
                 </span>
                 <span className="nums text-sm font-medium text-ink-2">
@@ -175,7 +175,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
             {/* Step Staircase Graph (if 2+ PBs) */}
             {chartData && (
               <div className="rounded-lg border border-line/60 bg-surface-2/20 p-2">
-                <div className="flex items-center justify-between mb-1 text-[0.55rem] font-mono text-ink-3 px-1">
+                <div className="flex items-center justify-between mb-1 text-[0.6rem] font-mono text-ink-3 px-1">
                   <span>Staircase Trend</span>
                   <span>{milestonesChrono.length} Milestones</span>
                 </div>
@@ -248,7 +248,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
 
             {/* Timeline Milestones List */}
             <div className="space-y-1 pt-1">
-              <div className="flex items-center justify-between text-[0.55rem] uppercase tracking-wider font-semibold text-ink-3 font-mono px-0.5 pb-1 border-b border-line/50">
+              <div className="flex items-center justify-between text-[0.6rem] uppercase tracking-wider font-semibold text-ink-3 font-mono px-0.5 pb-1 border-b border-line/50">
                 <span>Milestone History</span>
                 <span>{milestonesList.length} PBs</span>
               </div>
@@ -288,7 +288,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
                                 {formatTime(pb.time)}
                               </span>
                               {pb.isCurrent && (
-                                <span className="rounded border border-line bg-surface-2 px-1 py-0.2 text-[0.5rem] font-mono font-medium text-ink-2">
+                                <span className="rounded border border-line bg-surface-2 px-1 py-0.2 text-[0.6rem] font-mono font-medium text-ink-2">
                                   Current
                                 </span>
                               )}

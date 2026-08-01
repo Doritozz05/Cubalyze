@@ -28,10 +28,10 @@ export interface SessionStats {
   count: number;
   /** Total solves including DNFs. */
   total: number;
-  /** Best effective time in ms (Infinity if all DNF). */
-  best: number;
-  /** Worst effective time in ms (Infinity if all DNF). */
-  worst: number;
+  /** Best effective time in ms, null when there are no solves, Infinity if all DNF. */
+  best: number | null;
+  /** Worst effective time in ms, null when there are no solves, Infinity if all DNF. */
+  worst: number | null;
   /** Arithmetic mean of effective times (DNF excluded). */
   mean: number | null;
   /** Average of 5 (current, trimming best/worst). null if not enough solves. */
@@ -88,8 +88,10 @@ export function computeStats(solves: StatSolve[]): SessionStats {
     return {
       count: 0,
       total: 0,
-      best: INF,
-      worst: INF,
+      // No solves → no best/worst at all. Null (not Infinity) so UI shows
+      // "—" like ao5/ao12/mean instead of a confusing "DNF" best.
+      best: null,
+      worst: null,
       mean: null,
       ao5: null,
       ao12: null,

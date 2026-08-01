@@ -11,7 +11,6 @@ import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
 import { TrainingDashboard } from "@/views/Training/TrainingDashboard";
 import { UltraSkillTreeView } from "@/views/SkillTree/UltraSkillTreeView";
-import { CubeforgeCommandPalette } from "@/components/Layout/CubeforgeCommandPalette";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
@@ -101,12 +100,7 @@ export default function App() {
     subsetId: string;
     caseId: string;
   } | null>(null);
-  const [practicePreset, setPracticePreset] = useState<{
-    subsetId: string;
-    caseId: string;
-  } | null>(null);
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -564,8 +558,6 @@ export default function App() {
     if (activeView === "practice") {
       return (
         <PracticeDashboard
-          initialSubsetId={practicePreset?.subsetId}
-          initialCaseId={practicePreset?.caseId}
           onPracticeCase={(subsetId, caseId) => {
             setTrainingPreset({ subsetId, caseId });
             setActiveView("training");
@@ -782,16 +774,6 @@ export default function App() {
           />
         )}
 
-        <CubeforgeCommandPalette
-          open={commandPaletteOpen}
-          onOpenChange={setCommandPaletteOpen}
-          onNavigate={handleNavigate}
-          onToggle3DCube={handleOpenCube}
-          onSelectAlgorithmCase={(subsetId, caseId) => {
-            setPracticePreset({ subsetId, caseId });
-            setActiveView("practice");
-          }}
-        />
         <Toaster position="bottom-center" richColors={false} />
       </ThemeProvider>
     </div>

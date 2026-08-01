@@ -349,7 +349,7 @@ function RecognizeHeader({
         </div>
 
         {/* Stats */}
-        <span className="text-[0.55rem] text-ink-3/50 flex items-center gap-2">
+        <span className="text-[0.6rem] text-ink-3/50 flex items-center gap-2">
           {totalCount > 0 && (
             <>
               <span className="flex items-center gap-1">
@@ -467,7 +467,7 @@ function QuizPanel({
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center"
                 >
-                  <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Solution</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Solution</span>
                   <p className="nums text-[0.78rem] font-semibold text-ink mt-0.5 leading-relaxed">
                     {algorithm.moves.join(" ")}
                   </p>
@@ -476,7 +476,7 @@ function QuizPanel({
 
               {currentCase.setupScramble && (
                 <div className="text-center">
-                  <span className="text-[0.55rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
                   <p className="nums text-[0.72rem] text-ink-2/80 mt-0.5 leading-relaxed">{currentCase.setupScramble}</p>
                 </div>
               )}
@@ -536,7 +536,7 @@ function QuizPanel({
                       </div>
                       {opt.name && opt.name !== opt.caseNumber && (
                         <span className={cn(
-                          "block text-[0.55rem] mt-0.5 truncate",
+                          "block text-[0.6rem] mt-0.5 truncate",
                           isThisCorrect ? "text-ready/70" : isThisSelected ? "text-hold/70" : "text-ink-3/50",
                         )}>{opt.name}</span>
                       )}
@@ -616,12 +616,12 @@ function RecognizeStatsPanel({
         <div className="flex items-center gap-3 pt-2 border-t border-line">
           <div className="flex-1 text-center">
             <span className="nums text-[0.9rem] font-bold text-ready block">{correct}</span>
-            <span className="text-[0.5rem] text-ink-3">Correct</span>
+            <span className="text-[0.6rem] text-ink-3">Correct</span>
           </div>
           <div className="w-px h-6 bg-line" />
           <div className="flex-1 text-center">
             <span className="nums text-[0.9rem] font-bold text-hold block">{incorrect}</span>
-            <span className="text-[0.5rem] text-ink-3">Incorrect</span>
+            <span className="text-[0.6rem] text-ink-3">Incorrect</span>
           </div>
         </div>
 

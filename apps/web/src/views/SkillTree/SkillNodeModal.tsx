@@ -42,15 +42,15 @@ export function SkillNodeModal({
   const statusBadges: Record<SkillNode["status"], { label: string; style: string }> = {
     completed: {
       label: "Completed",
-      style: "bg-foreground text-background font-bold border-foreground",
+      style: "bg-ink text-surface font-bold border-ink",
     },
     unlocked: {
       label: "Accessible",
-      style: "bg-muted text-foreground border-border font-semibold",
+      style: "bg-surface-2 text-ink border-line font-semibold",
     },
     locked: {
       label: "Locked",
-      style: "bg-muted text-muted-foreground border-border",
+      style: "bg-surface-2 text-ink-3 border-line",
     },
   };
 
@@ -60,12 +60,12 @@ export function SkillNodeModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="max-w-xl bg-popover text-popover-foreground border-border rounded-xl p-6 shadow-2xl space-y-4"
+        className="max-w-xl bg-surface text-ink border-line rounded-xl p-6 shadow-2xl space-y-4"
       >
         {/* Header */}
         <DialogHeader className="space-y-1 text-left pr-8">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            <span className="text-xs font-semibold tracking-wider text-ink-3 uppercase">
               {node.category.toUpperCase()} • TIER {node.tier.toUpperCase()}
             </span>
             <span
@@ -78,36 +78,36 @@ export function SkillNodeModal({
             </span>
           </div>
 
-          <DialogTitle className="text-xl font-bold text-foreground tracking-tight flex items-center justify-between">
+          <DialogTitle className="text-xl font-bold text-ink tracking-tight flex items-center justify-between">
             <span>{node.title}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
+          <DialogDescription className="text-xs text-ink-3">
             {node.subtitle}
           </DialogDescription>
         </DialogHeader>
 
         {/* Speedcubing Theory Explanation */}
         <div className="space-y-1.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-foreground" /> Speedcubing Theory & Key Concept
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5 text-ink" /> Speedcubing Theory & Key Concept
           </h4>
-          <p className="text-xs text-foreground/90 leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/60">
+          <p className="text-xs text-ink/90 leading-relaxed bg-surface-2/30 p-3 rounded-lg border border-line/60">
             {node.theory}
           </p>
         </div>
 
         {/* Full Description */}
-        <div className="text-xs text-muted-foreground leading-relaxed px-1">
+        <div className="text-xs text-ink-3 leading-relaxed px-1">
           {node.description}
         </div>
 
         {/* Model Formula / Insertion */}
         {node.exampleFormula && (
           <div className="space-y-1.5">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Code2 className="w-3.5 h-3.5 text-foreground" /> Model Formula / Example Sequence
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 flex items-center gap-1.5">
+              <Code2 className="w-3.5 h-3.5 text-ink" /> Model Formula / Example Sequence
             </h4>
-            <div className="p-3 bg-card border border-border rounded-lg font-mono text-xs text-foreground font-semibold text-center tracking-wide select-all shadow-inner">
+            <div className="p-3 bg-surface border border-line rounded-lg font-mono text-xs text-ink font-semibold text-center tracking-wide select-all shadow-inner">
               {node.exampleFormula}
             </div>
           </div>
@@ -116,16 +116,16 @@ export function SkillNodeModal({
         {/* Prerequisites */}
         {node.prerequisites.length > 0 && (
           <div className="space-y-1.5">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Prerequisites
             </h4>
             <div className="flex flex-wrap gap-2">
               {node.prerequisites.map((req) => (
                 <span
                   key={req}
-                  className="px-2.5 py-1 text-xs bg-muted/40 border border-border rounded-md text-muted-foreground flex items-center gap-1.5"
+                  className="px-2.5 py-1 text-xs bg-surface-2/40 border border-line rounded-md text-ink-3 flex items-center gap-1.5"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-foreground" /> {req}
+                  <CheckCircle2 className="w-3.5 h-3.5 text-ink" /> {req}
                 </span>
               ))}
             </div>
@@ -135,16 +135,16 @@ export function SkillNodeModal({
         {/* Recommended Drills */}
         {node.recommendedDrills.length > 0 && (
           <div className="space-y-1.5">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-foreground" /> Recommended Practice Drills
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5 text-ink" /> Recommended Practice Drills
             </h4>
             <ul className="space-y-1.5">
               {node.recommendedDrills.map((drill) => (
                 <li
                   key={drill}
-                  className="text-xs text-foreground/90 flex items-center gap-2 p-2.5 rounded-lg bg-card/60 border border-border/60"
+                  className="text-xs text-ink/90 flex items-center gap-2 p-2.5 rounded-lg bg-surface/60 border border-line/60"
                 >
-                  <ArrowRight className="w-3.5 h-3.5 text-foreground shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-ink shrink-0" />
                   <span>{drill}</span>
                 </li>
               ))}
@@ -153,7 +153,7 @@ export function SkillNodeModal({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+        <div className="pt-3 border-t border-line/60 flex items-center justify-between gap-3">
           {/* Toggle Complete Button */}
           {!isLocked ? (
             <Button
@@ -163,8 +163,8 @@ export function SkillNodeModal({
               className={cn(
                 "text-xs font-semibold gap-1.5 transition-all",
                 isCompleted
-                  ? "border-foreground/40 text-foreground hover:bg-muted"
-                  : "bg-foreground text-background hover:bg-foreground/90 font-bold shadow-md"
+                  ? "border-ink/40 text-ink hover:bg-surface-2"
+                  : "bg-ink text-surface hover:bg-ink/90 font-bold shadow-md"
               )}
             >
               {isCompleted ? (
@@ -178,7 +178,7 @@ export function SkillNodeModal({
               )}
             </Button>
           ) : (
-            <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+            <span className="text-xs text-ink-3 italic flex items-center gap-1">
               <Lock className="w-3.5 h-3.5" /> Locked: complete prerequisites to unlock
             </span>
           )}

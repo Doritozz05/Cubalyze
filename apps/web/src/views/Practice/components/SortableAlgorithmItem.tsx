@@ -90,7 +90,7 @@ export function SortableAlgorithmItem({
           )}
 
           {isCustom && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-1.5 py-0.5 text-[0.55rem] font-medium text-ink-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2">
               <Sparkles className="size-2" />
               custom
             </span>
@@ -133,7 +133,7 @@ export function SortableAlgorithmItem({
 
       {isPrimary && (
         <div className="absolute top-2 right-2">
-          <span className="inline-flex items-center gap-0.5 rounded-full bg-ink px-1.5 py-0.5 text-[0.5rem] font-semibold text-surface leading-none">
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-ink px-1.5 py-0.5 text-[0.6rem] font-semibold text-surface leading-none">
             primary
           </span>
         </div>

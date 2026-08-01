@@ -299,7 +299,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                 timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"
                   ? "opacity-40 cursor-not-allowed"
                   : useInspection
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    ? "bg-caution/10 text-caution border border-caution/20"
                     : "text-ink-3 hover:text-ink hover:bg-surface-2",
               )}
               title={useInspection ? "Disable 15s inspection" : "Enable WCA-style 15s inspection"}
@@ -363,13 +363,13 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                 <div key={split.phaseId} className="flex-1 flex flex-col gap-1.5 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className={cn(
-                      "text-[0.55rem] font-medium truncate",
+                      "text-[0.6rem] font-medium truncate",
                       isDone ? "text-ready" : isActive ? "text-ink" : "text-ink-3/40",
                     )}>
                       {split.phaseName}
                     </span>
                     <span className={cn(
-                      "nums text-[0.5rem] shrink-0 ml-1",
+                      "nums text-[0.6rem] shrink-0 ml-1",
                       isDone ? "text-ready" : isActive ? "text-ink-2" : "text-ink-3/30",
                     )}>
                       {isDone
@@ -441,7 +441,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                               )}>
                                 {(split.actualMs / 1000).toFixed(2)}s
                               </span>
-                              <span className="nums text-[0.55rem] text-ink-3/60">
+                              <span className="nums text-[0.6rem] text-ink-3/60">
                                 / {split.targetS.toFixed(1)}s
                               </span>
                               <div className="ml-auto flex items-center gap-1 shrink-0">
@@ -451,7 +451,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                                   <Check className="size-3.5 text-ready" />
                                 )}
                                 <span className={cn(
-                                  "nums text-[0.55rem]",
+                                  "nums text-[0.6rem]",
                                   overTarget ? "text-hold" : "text-ready",
                                 )}>
                                   {overTarget
@@ -705,7 +705,7 @@ function PhaseTargetsPanel({
                   {split.phaseName}
                 </span>
                 <span className={cn(
-                  "nums text-[0.55rem]",
+                  "nums text-[0.6rem]",
                   isDone ? "text-ready" : "text-ink-3/60",
                 )}>
                   {isDone

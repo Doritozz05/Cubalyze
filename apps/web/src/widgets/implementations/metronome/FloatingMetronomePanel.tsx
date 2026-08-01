@@ -240,7 +240,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
               </span>
               <span className="text-xs text-accent font-extrabold font-mono">TPS</span>
             </div>
-            <span className="text-[11px] font-mono text-ink-3 font-medium">
+            <span className="text-[0.68rem] font-mono text-ink-3 font-medium">
               {bpm} BPM
             </span>
           </div>
@@ -279,7 +279,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                 variant="outline"
                 size="sm"
                 onClick={() => setTps((t) => Math.max(2.0, Math.round((t - 0.5) * 10) / 10))}
-                className="h-6 px-1.5 py-0 text-[10px] font-mono"
+                className="h-6 px-1.5 py-0 text-[0.62rem] font-mono"
               >
                 -0.5
               </Button>
@@ -303,7 +303,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                 variant="outline"
                 size="sm"
                 onClick={() => setTps((t) => Math.min(15.0, Math.round((t + 0.5) * 10) / 10))}
-                className="h-6 px-1.5 py-0 text-[10px] font-mono"
+                className="h-6 px-1.5 py-0 text-[0.62rem] font-mono"
               >
                 +0.5
               </Button>
@@ -333,7 +333,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
               variant="outline"
               size="sm"
               className={cn(
-                "h-7 px-0 text-[10px] font-mono font-medium transition-colors text-center data-[variant=outline]:border-l",
+                "h-7 px-0 text-[0.62rem] font-mono font-medium transition-colors text-center data-[variant=outline]:border-l",
                 Math.abs(tps - preset) < 0.05
                   ? "bg-surface-2 border-ink/30 text-ink font-semibold"
                   : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
@@ -346,7 +346,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
 
         {/* Sound Preset Selector */}
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-2">
+          <div className="flex items-center gap-1 text-[0.68rem] font-semibold text-ink-2">
             <Music className="size-3 text-ink-2" />
             <span>Sound Mode</span>
           </div>
@@ -363,7 +363,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "h-7 px-1 text-[10px] font-medium transition-colors text-center data-[variant=outline]:border-l",
+                  "h-7 px-1 text-[0.62rem] font-medium transition-colors text-center data-[variant=outline]:border-l",
                   soundMode === mode.id
                     ? "bg-ink text-surface border-ink font-bold"
                     : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
@@ -378,7 +378,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
         {/* Beats Per Bar & Volume Row */}
         <div className="pt-2 border-t border-line flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="text-ink-3 text-[11px]">Accent:</span>
+            <span className="text-ink-3 text-[0.68rem]">Accent:</span>
             <ToggleGroup
               type="single"
               value={beatsPerBar.toString()}
@@ -392,7 +392,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "size-6 p-0 text-[10px] font-mono flex items-center justify-center border data-[variant=outline]:border-l",
+                    "size-6 p-0 text-[0.62rem] font-mono flex items-center justify-center border data-[variant=outline]:border-l",
                     beatsPerBar === count
                       ? "bg-ink text-surface border-ink font-bold"
                       : "bg-surface text-ink-2 border-line hover:bg-surface-2",

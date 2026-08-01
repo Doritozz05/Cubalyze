@@ -74,6 +74,32 @@
 
   --color-accent-emerald: var(--accent-emerald);
 
+  /* Phase / training accent dots — the "rainbow" used to colour-code
+     exercises, calendar tasks and progress markers. Kept as first-class
+     palette tokens (same Tailwind-400 values as before, so visuals don't
+     shift) so the whole app draws from one vocabulary instead of raw
+     Tailwind classes. */
+  --color-phase-blue: var(--phase-blue);
+  --color-phase-emerald: var(--phase-emerald);
+  --color-phase-teal: var(--phase-teal);
+  --color-phase-amber: var(--phase-amber);
+  --color-phase-violet: var(--phase-violet);
+  --color-phase-purple: var(--phase-purple);
+  --color-phase-indigo: var(--phase-indigo);
+  --color-phase-rose: var(--phase-rose);
+  --color-phase-cyan: var(--phase-cyan);
+  --color-phase-orange: var(--phase-orange);
+  --color-phase-sky: var(--phase-sky);
+  --color-phase-pink: var(--phase-pink);
+  /* Functional accent shades (blue/purple 500-600, sticker yellow/green)
+     used by Replay, Cross Trainer and Cube Connector — same hex values as
+     before, tokenised so the whole app draws from one vocabulary. */
+  --color-phase-blue-500: var(--phase-blue-500);
+  --color-phase-blue-600: var(--phase-blue-600);
+  --color-phase-purple-500: var(--phase-purple-500);
+  --color-phase-yellow: var(--phase-yellow);
+  --color-phase-green: var(--phase-green);
+
   --color-ready: var(--ready);
   --color-ready-soft: var(--ready-soft);
   --color-hold: var(--hold);
@@ -100,7 +126,7 @@
   --secondary: #f1f3f5;
   --secondary-foreground: #212529;
   --muted: #f1f3f5;
-  --muted-foreground: #868e96;
+  --muted-foreground: #667085;
   --accent: #f1f3f5;
   --accent-foreground: #212529;
   --destructive: #b3261e;
@@ -118,9 +144,31 @@
   --surface: #ffffff;
   --surface-2: #f1f3f5;
   --accent-emerald: #047857;
+  /* Phase dots (light) — identical hex values to the previous Tailwind-400
+     classes so colours don't change, they're just tokenised now. */
+  --phase-blue: #60a5fa;
+  --phase-emerald: #34d399;
+  --phase-teal: #2dd4bf;
+  --phase-amber: #fbbf24;
+  --phase-violet: #a78bfa;
+  --phase-purple: #c084fc;
+  --phase-indigo: #818cf8;
+  --phase-rose: #fb7185;
+  --phase-cyan: #22d3ee;
+  --phase-orange: #fb923c;
+  --phase-sky: #38bdf8;
+  --phase-pink: #f472b6;
+  --phase-blue-500: #3b82f6;
+  --phase-blue-600: #2563eb;
+  --phase-purple-500: #a855f7;
+  --phase-yellow: #facc15;
+  --phase-green: #4ade80;
   --ink: #212529;
   --ink-2: #495057;
-  --ink-3: #868e96;
+  /* ink-3 bumped from gray-500 (#868e96, ~3.3:1) to gray-600 (#667085,
+     ~4.8:1 on white / ~4.6:1 on the bone canvas) so secondary text passes
+     WCAG AA for normal-sized text. */
+  --ink-3: #667085;
   --line: #e9ecef;
   --line-2: #dee2e6;
   --ready: #4c9a6a;
@@ -147,18 +195,18 @@
 }
 
 .dark {
-  --background: #1b1f23;
+  --background: #14171b;
   --foreground: #e9ecef;
-  --card: #1b1f23;
+  --card: #1f2429;
   --card-foreground: #e9ecef;
-  --popover: #1b1f23;
+  --popover: #22282e;
   --popover-foreground: #e9ecef;
   --primary: #e9ecef;
   --primary-foreground: #1b1f23;
   --secondary: #24292e;
   --secondary-foreground: #e9ecef;
   --muted: #24292e;
-  --muted-foreground: #868e96;
+  --muted-foreground: #9099a3;
   --accent: #24292e;
   --accent-foreground: #e9ecef;
   --destructive: #e06a5f;
@@ -175,16 +223,20 @@
   --sidebar-ring: #495057;
 
   /* Custom palette (dark) — tuned for low-glare night use.
-     Canvas matches surface so the main stage blends seamlessly with floating
-     panels and the SessionStats card; the floating elevations come from
-     shadows rather than from a darker backplate. */
-  --canvas: #1b1f23;
+     Canvas sits one step darker than surface/card so the main stage reads
+     as recessed while panels, widgets and dialogs float on top. Elevation
+     comes from the lighter backplates plus the existing subtle shadows. */
+  --canvas: #14171b;
   --surface: #1b1f23;
   --surface-2: #24292e;
+  --card: #1f2429;
+  --popover: #22282e;
   --accent-emerald: #34d399;
   --ink: #e9ecef;
   --ink-2: #adb5bd;
-  --ink-3: #6c757d;
+  /* ink-3 brightened (gray-500 → #9099a3) so secondary text clears 4.5:1
+     against both the darker canvas and the lighter surfaces. */
+  --ink-3: #9099a3;
   --line: #2a2f35;
   --line-2: #343a40;
   --ready: #6abf8a;
@@ -234,16 +286,30 @@
     color: var(--ink);
   }
 
-  /* Scrollbar hidden everywhere — content scrolls but no visual chrome.
-     Keeps overflow:auto / overflow-y:auto working, just hides the bar.
-     Users who need scroll indicators will see the content clipping. */
+  /* Thin, theme-aware scrollbars — scrollable regions keep a subtle,
+     always-present indicator that matches the utilitarian aesthetic.
+     Firefox uses scrollbar-width/scrollbar-color; WebKit gets a 6px
+     rounded thumb coloured with the line tokens. */
   * {
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
   }
   *::-webkit-scrollbar {
-    display: none;
+    width: 6px;
+    height: 6px;
   }
-  /* Radix ScrollArea uses its own custom scrollbar elements — hide them too. */
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-3);
+  }
+  /* Radix ScrollArea renders its own custom scrollbar element — keep it
+     hidden (its viewport still scrolls; native thin bars cover the rest). */
   [data-slot="scroll-area-scrollbar"] {
     display: none;
   }

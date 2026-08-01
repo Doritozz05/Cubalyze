@@ -49,7 +49,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
         "hover:shadow-sm hover:border-ink-2/30",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         active
-          ? "border-accent/30 bg-accent/[0.03] shadow-xs"
+          ? "border-line bg-surface-2/30 shadow-xs"
           : "border-line/60 opacity-70 hover:opacity-100",
         className,
       )}
@@ -61,7 +61,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200",
               active
-                ? "border-accent/30 bg-accent/10 text-ink"
+                ? "border-line-2 bg-surface-2 text-ink"
                 : "border-line bg-surface text-ink-3",
             )}
           >
@@ -100,7 +100,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           {active && (
             <>
               <span>·</span>
-              <span className="flex items-center gap-0.5 text-accent/80 font-medium">
+              <span className="flex items-center gap-0.5 text-ink-2 font-medium">
                 <PanelTop className="size-2.5" />
                 Pinned to header
               </span>

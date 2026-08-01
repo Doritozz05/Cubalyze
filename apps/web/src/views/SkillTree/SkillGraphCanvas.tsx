@@ -408,19 +408,19 @@ export function SkillGraphCanvas({
       ref={containerRef}
       onMouseDown={handleMouseDown}
       className={cn(
-        "relative w-full flex-1 min-h-130 overflow-hidden rounded-xl border border-border/80 touch-none",
-        "bg-background/95 select-none cursor-grab active:cursor-grabbing shadow-inner",
+        "relative w-full flex-1 min-h-130 overflow-hidden rounded-xl border border-line/80 touch-none",
+        "bg-canvas/95 select-none cursor-grab active:cursor-grabbing shadow-inner",
       )}
     >
       {/* Subtle Grid Pattern Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[24px_24px] opacity-35 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-size-[24px_24px] opacity-35 pointer-events-none" />
 
       {/* Floating Viewport Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-card/90 backdrop-blur-sm border border-border shadow-sm text-xs font-mono">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono">
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          className="h-7 w-7 text-ink-3 hover:text-ink"
           onClick={() => handleZoom(0.15)}
           title="Zoom in"
         >
@@ -429,23 +429,23 @@ export function SkillGraphCanvas({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          className="h-7 w-7 text-ink-3 hover:text-ink"
           onClick={() => handleZoom(-0.15)}
           title="Zoom out"
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </Button>
-        <div className="w-px h-4 bg-border" />
+        <div className="w-px h-4 bg-line" />
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          className="h-7 w-7 text-ink-3 hover:text-ink"
           onClick={resetView}
           title="Reset view"
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </Button>
-        <span className="px-2 text-[10px] text-muted-foreground font-semibold">
+        <span className="px-2 text-[0.62rem] text-ink-3 font-semibold">
           {Math.round(zoom * 100)}%
         </span>
       </div>
@@ -477,7 +477,7 @@ export function SkillGraphCanvas({
                   <path
                     d={pathD}
                     fill="none"
-                    stroke="var(--foreground)"
+                    stroke="var(--ink)"
                     strokeWidth={4}
                     strokeOpacity={0.15}
                     strokeLinecap="round"
@@ -489,7 +489,7 @@ export function SkillGraphCanvas({
                   fill="none"
                   stroke={
                     c.isActive
-                      ? "var(--foreground)"
+                      ? "var(--ink)"
                       : isUnlockedLink
                       ? "rgba(148, 163, 184, 0.7)"
                       : "rgba(100, 116, 139, 0.25)"
@@ -532,14 +532,14 @@ export function SkillGraphCanvas({
                     "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
                     // 1. ACCESIBLE (unlocked, not completed): Solid background, dark text/icon, crisp border
                     isUnlocked &&
-                      "bg-card text-foreground border-2 border-foreground hover:border-foreground hover:scale-110 hover:shadow-lg",
+                      "bg-surface text-ink border-2 border-ink hover:border-ink hover:scale-110 hover:shadow-lg",
                     // 2. COMPLETADO (completed): Solid high contrast style
                     isCompleted &&
-                      "bg-foreground text-background font-bold border-2 border-foreground shadow-lg group-hover:scale-110",
+                      "bg-ink text-surface font-bold border-2 border-ink shadow-lg group-hover:scale-110",
                     // 3. INACCESIBLE (locked): Solid muted background with lock icon
                     isLocked &&
-                      "bg-muted border-2 border-border text-muted-foreground group-hover:border-foreground group-hover:scale-105",
-                    isHovered && "z-10 ring-4 ring-foreground",
+                      "bg-surface-2 border-2 border-line text-ink-3 group-hover:border-ink group-hover:scale-105",
+                    isHovered && "z-10 ring-4 ring-ink",
                   )}
                 >
                   {/* Icon */}
@@ -547,13 +547,13 @@ export function SkillGraphCanvas({
 
                   {/* Status Indicator */}
                   {isCompleted && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-background border-2 border-foreground text-foreground flex items-center justify-center text-[10px] font-bold shadow-sm">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-canvas border-2 border-ink text-ink flex items-center justify-center text-[0.62rem] font-bold shadow-sm">
                       <Check className="w-3 h-3 stroke-3" />
                     </div>
                   )}
 
                   {isLocked && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-muted border border-border text-muted-foreground flex items-center justify-center text-[10px]">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-surface-2 border border-line text-ink-3 flex items-center justify-center text-[0.62rem]">
                       <Lock className="w-3 h-3" />
                     </div>
                   )}
@@ -564,7 +564,7 @@ export function SkillGraphCanvas({
                       onClick={(e) => onToggleComplete(node.id, e)}
                       title={isCompleted ? "Mark as accessible" : "Mark as completed"}
                       className={cn(
-                        "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-card border border-foreground flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-foreground hover:text-background shadow-md",
+                        "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-surface border border-ink flex items-center justify-center text-ink opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ink hover:text-surface shadow-md",
                       )}
                     >
                       <Check className="w-3 h-3 stroke-3" />
@@ -578,15 +578,15 @@ export function SkillGraphCanvas({
                     className={cn(
                       "text-xs font-bold tracking-tight leading-tight line-clamp-2 transition-colors",
                       isCompleted
-                        ? "text-foreground font-semibold"
+                        ? "text-ink font-semibold"
                         : isUnlocked
-                        ? "text-foreground group-hover:text-primary"
-                        : "text-muted-foreground",
+                        ? "text-ink group-hover:text-ink"
+                        : "text-ink-3",
                     )}
                   >
                     {node.title}
                   </h4>
-                  <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground block">
+                  <span className="text-[0.62rem] uppercase tracking-wider font-semibold text-ink-3 block">
                     {node.tier}
                   </span>
                 </div>
@@ -597,8 +597,8 @@ export function SkillGraphCanvas({
       </div>
 
       {/* Footer Info Legend */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border shadow-sm">
-        <Info className="w-3.5 h-3.5 text-foreground shrink-0" />
+      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm">
+        <Info className="w-3.5 h-3.5 text-ink shrink-0" />
         <span>Click an accessible node for full explanations or to mark as completed</span>
       </div>
     </div>

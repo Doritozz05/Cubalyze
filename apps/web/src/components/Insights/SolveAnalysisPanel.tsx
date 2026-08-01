@@ -362,21 +362,21 @@ function TimelineSection({
               return (
                 <span
                   key={`yt-${i}`}
-                  className="absolute right-0 nums text-[0.5rem] leading-none text-ink-3"
+                  className="absolute right-0 nums text-[0.6rem] leading-none text-ink-3"
                   style={{ top: y, transform: "translateY(-50%)" }}
                 >
                   {t.toFixed(0)}
                 </span>
               );
             })}
-            <span className="absolute left-0 text-[0.4rem] uppercase tracking-wider text-ink-3/50 leading-none"
+            <span className="absolute left-0 text-[0.6rem] uppercase tracking-wider text-ink-3/50 leading-none"
               style={{ top: 0, lineHeight: 1 }}
             >
               tps
             </span>
             {meanTps > 0 && (
               <span
-                className="absolute left-0 nums text-[0.4rem] leading-none text-ready/70"
+                className="absolute left-0 nums text-[0.6rem] leading-none text-ready/70"
                 style={{ top: meanTpsY, transform: "translateY(-50%)" }}
               >
                 avg&nbsp;{meanTps.toFixed(1)}
@@ -640,7 +640,7 @@ function TimelineSection({
                         {/* Adjacent moves */}
                         {(before.length > 0 || after.length > 0) && (
                           <div className="mt-2 border-t border-line/40 pt-2">
-                            <span className="text-[0.55rem] uppercase tracking-wide text-ink-3">
+                            <span className="text-[0.6rem] uppercase tracking-wide text-ink-3">
                               Adjacent moves
                             </span>
                             <div className="mt-1 flex items-center gap-1 font-mono text-[0.65rem]">
@@ -715,7 +715,7 @@ function TimelineSection({
                         {/* Stats */}
                         <div className="mt-2 flex items-baseline gap-3">
                           <div className="flex flex-col">
-                            <span className="text-[0.55rem] uppercase tracking-wider text-ink-3">
+                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
                               Time
                             </span>
                             <span className="nums text-base font-medium text-ink">
@@ -723,7 +723,7 @@ function TimelineSection({
                             </span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[0.55rem] uppercase tracking-wider text-ink-3">
+                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
                               Moves
                             </span>
                             <span className="nums text-base font-medium text-ink">
@@ -731,7 +731,7 @@ function TimelineSection({
                             </span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[0.55rem] uppercase tracking-wider text-ink-3">
+                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
                               TPS
                             </span>
                             <span className="nums text-base font-medium text-ink">
@@ -740,7 +740,7 @@ function TimelineSection({
                           </div>
                         </div>
                         {/* Duration fraction */}
-                        <div className="mt-1.5 text-[0.55rem] text-ink-3">
+                        <div className="mt-1.5 text-[0.6rem] text-ink-3">
                           {Math.round((seg.durationMs / totalMs) * 100)}% of solve
                         </div>
                       </HoverCardContent>
@@ -755,7 +755,7 @@ function TimelineSection({
           {xTickFracs.map((f, i) => (
             <span
               key={`xt-${i}`}
-              className="absolute nums text-[0.5rem] leading-none text-ink-3/70"
+              className="absolute nums text-[0.6rem] leading-none text-ink-3/70"
               style={{
                 left: `${f * 100}%`,
                 transform:
@@ -1102,7 +1102,7 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
               <div className="flex items-center gap-2">
                 <span className="text-ink-2 font-medium">Pair {pair.pairNumber}</span>
                 {isSlowest && (
-                  <span className="text-[0.5rem] uppercase tracking-wider text-caution font-medium">
+                  <span className="text-[0.6rem] uppercase tracking-wider text-caution font-medium">
                     slowest
                   </span>
                 )}
@@ -1232,7 +1232,7 @@ function RotEfficiencySection({ metrics }: { metrics: SolveMetrics }) {
               <span
                 className={cn(
                   "nums font-medium",
-                  count > 3 ? "text-amber-400" : count > 0 ? "text-ink" : "text-ink-3/50",
+                  count > 3 ? "text-caution" : count > 0 ? "text-ink" : "text-ink-3/50",
                 )}
               >
                 {count} rot

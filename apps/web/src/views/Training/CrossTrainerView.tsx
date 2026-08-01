@@ -375,8 +375,8 @@ export function CrossTrainerView({
             className={cn(
               "shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border",
               cnMode
-                ? "border-purple-500/20 bg-purple-500/5 text-purple-400"
-                : "border-blue-500/20 bg-blue-500/5 text-blue-400",
+                ? "border-phase-purple-500/20 bg-phase-purple-500/5 text-phase-purple"
+                : "border-phase-blue-500/20 bg-phase-blue-500/5 text-phase-blue",
             )}
           >
             {cnMode ? "CN" : `${cross.face}-cross`} · {cross.optimalDepth} opt
@@ -428,7 +428,7 @@ export function CrossTrainerView({
             className={cn(
               "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.62rem] font-medium transition-colors",
               cnMode
-                ? "bg-purple-500/15 text-purple-400"
+                ? "bg-phase-purple-500/15 text-phase-purple"
                 : "text-ink-3 hover:text-ink hover:bg-surface-2",
             )}
             title="Color-neutral: picks the best cross face automatically"
@@ -474,7 +474,7 @@ export function CrossTrainerView({
                     className={cn(
                       "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors",
                       stickeringOn
-                        ? "bg-blue-500/10 text-blue-400"
+                        ? "bg-phase-blue-500/10 text-phase-blue"
                         : "text-ink-3 hover:text-ink hover:bg-surface-2",
                     )}
                     title="Toggle cross-piece highlight"
@@ -593,7 +593,7 @@ export function CrossTrainerView({
                     "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
                     replayState === "playing"
                       ? "bg-ink text-background hover:bg-ink/80"
-                      : "bg-blue-500 text-white hover:bg-blue-600",
+                      : "bg-phase-blue-500 text-white hover:bg-phase-blue-600",
                   )}
                   aria-label={replayState === "playing" ? "Pause" : "Play"}
                 >
@@ -632,7 +632,7 @@ export function CrossTrainerView({
               {totalMs > 0 && (
                 <div className="mt-2 h-0.5 rounded bg-line/40 overflow-hidden">
                   <div
-                    className="h-full bg-blue-500/60 transition-[width] duration-75 linear"
+                    className="h-full bg-phase-blue-500/60 transition-[width] duration-75 linear"
                     style={{
                       width: `${Math.min(100, (positionMs / totalMs) * 100)}%`,
                     }}
@@ -792,7 +792,7 @@ export function CrossTrainerView({
 
             <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
               <div className="flex items-center gap-2 mb-2">
-                <Crosshair className="size-3.5 text-blue-400" />
+                <Crosshair className="size-3.5 text-phase-blue" />
                 <h4 className="text-[0.62rem] font-medium text-ink-2">
                   Current scramble
                 </h4>

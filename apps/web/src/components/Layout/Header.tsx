@@ -58,16 +58,17 @@ function BatteryIcon({ level }: { level: number | null }) {
   // Clamp level between 0 and 100
   const pct = Math.max(0, Math.min(100, level));
 
-  // Determine fill color & status phase
-  let colorClass = "text-emerald-500 fill-emerald-500";
+  // Determine fill color & status phase — mapped to the app's semantic
+  // palette tokens (ready / caution / plus2 / dnf) instead of raw Tailwind.
+  let colorClass = "text-ready fill-ready";
   if (pct <= 15) {
-    colorClass = "text-rose-500 fill-rose-500";
+    colorClass = "text-dnf fill-dnf";
   } else if (pct <= 35) {
-    colorClass = "text-amber-500 fill-amber-500";
+    colorClass = "text-plus2 fill-plus2";
   } else if (pct <= 65) {
-    colorClass = "text-yellow-400 fill-yellow-400";
+    colorClass = "text-caution fill-caution";
   } else if (pct <= 85) {
-    colorClass = "text-emerald-400 fill-emerald-400";
+    colorClass = "text-ready fill-ready";
   }
 
   // Inner fill width (max inner width is 14px, starting at x=3)
@@ -166,7 +167,7 @@ export function Header({
       className={cn(
         "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color,box-shadow] duration-200",
         isDockZoneActive
-          ? "border-accent/60 shadow-[0_2px_16px_-4px_hsl(var(--accent)/0.35)]"
+          ? "border-ink-2/40 shadow-xs"
           : "border-line",
         className,
       )}

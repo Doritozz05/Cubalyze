@@ -99,13 +99,13 @@ export function ScrambleDisplay({
 
       {awaitingSolve ? (
         <div className="flex flex-col items-center justify-center gap-2 py-4">
-          <p className="text-sm text-amber-400">
+          <p className="text-sm text-caution">
             Solve the cube to apply this scramble
           </p>
         </div>
       ) : needsReset ? (
         <div className="flex flex-col items-center justify-center gap-2 py-4">
-          <p className="text-sm text-amber-400">
+          <p className="text-sm text-caution">
             Too many mistakes — solve the cube to continue
           </p>
         </div>
@@ -117,7 +117,7 @@ export function ScrambleDisplay({
           {errorMoves.map((m, i) => (
             <span
               key={`err-${i}`}
-              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-red-400 scale-100"
+              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100"
             >
               {m}
             </span>

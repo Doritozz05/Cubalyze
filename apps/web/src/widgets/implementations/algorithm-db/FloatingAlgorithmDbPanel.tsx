@@ -176,7 +176,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
       panelWidth={320}
       defaultPosition={{ x: 380, y: 72 }}
       headerActions={
-        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-2 border border-line text-[10px] text-ink-3 font-mono">
+        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-2 border border-line text-[0.62rem] text-ink-3 font-mono">
           <span className="text-ink font-semibold">
             {puzzleLabel}
           </span>
@@ -197,7 +197,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
             <span className="text-xs font-medium">
               No methods available for {puzzleLabel}
             </span>
-            <span className="text-[10px] mt-0.5">
+            <span className="text-[0.62rem] mt-0.5">
               Methods will be added in a future update
             </span>
           </div>
@@ -205,7 +205,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
           <>
             {/* ── Puzzle Type Select ── */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-medium text-ink-3 flex items-center gap-1">
+              <label className="text-[0.62rem] font-medium text-ink-3 flex items-center gap-1">
                 <Grid className="size-2.5" /> Puzzle
               </label>
               <Select
@@ -233,7 +233,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
             <div className="grid grid-cols-2 gap-2">
               {/* Method Select */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-medium text-ink-3 flex items-center gap-1">
+                <label className="text-[0.62rem] font-medium text-ink-3 flex items-center gap-1">
                   <Layers className="size-2.5" /> Method
                 </label>
                 <Select
@@ -259,7 +259,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
 
               {/* Submethod Select */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-medium text-ink-3 flex items-center gap-1">
+                <label className="text-[0.62rem] font-medium text-ink-3 flex items-center gap-1">
                   <Filter className="size-2.5" /> Submethod
                 </label>
                 <Select
@@ -286,7 +286,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
 
             {/* ── Mode Navigation Bar: List view vs Detail view ── */}
             <div className="flex items-center justify-between border-b border-line pb-1.5 pt-0.5">
-              <span className="text-[10px] font-medium text-ink-3">
+              <span className="text-[0.62rem] font-medium text-ink-3">
                 Cases ({subsetCases.length})
               </span>
 
@@ -296,7 +296,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                   variant={activeViewMode === "list" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setActiveViewMode("list")}
-                  className="h-5 px-1.5 text-[10px] gap-1"
+                  className="h-5 px-1.5 text-[0.62rem] gap-1"
                 >
                   <Grid className="size-2.5" />
                   <span>List</span>
@@ -307,7 +307,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                     variant={activeViewMode === "detail" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setActiveViewMode("detail")}
-                    className="h-5 px-1.5 text-[10px] gap-1"
+                    className="h-5 px-1.5 text-[0.62rem] gap-1"
                   >
                     <span>Algorithm</span>
                   </Button>
@@ -331,7 +331,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                             size="sm"
                             onClick={() => handleSelectCase(c.id)}
                             className={cn(
-                              "h-8 px-1 flex flex-col items-center justify-center font-mono text-[10px] transition-all",
+                              "h-8 px-1 flex flex-col items-center justify-center font-mono text-[0.62rem] transition-all",
                               isSelected
                                 ? "bg-ink text-surface border-ink font-semibold shadow-xs"
                                 : "bg-surface-1/80 text-ink-2 border-line/60 hover:text-ink hover:bg-surface-2"
@@ -359,7 +359,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                     variant="ghost"
                     size="sm"
                     onClick={() => setActiveViewMode("list")}
-                    className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
+                    className="h-5 px-1.5 text-[0.62rem] text-ink-3 hover:text-ink gap-1"
                   >
                     <ChevronLeft className="size-3" />
                     <span>All cases</span>
@@ -376,7 +376,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                     >
                       <ChevronLeft className="size-3" />
                     </Button>
-                    <span className="font-mono text-[10px] font-bold text-ink px-1">
+                    <span className="font-mono text-[0.62rem] font-bold text-ink px-1">
                       {activeCaseIndex + 1}/{subsetCases.length}
                     </span>
                     <Button
