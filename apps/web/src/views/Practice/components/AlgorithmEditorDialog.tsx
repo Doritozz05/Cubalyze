@@ -131,13 +131,9 @@ export function AlgorithmEditorDialog({
   const [saving, setSaving] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
 
-  // ── Orientation / Rotation state ─────────────────────────────────────
   const [capturedOrientation, setCapturedOrientation] =
     useState<CapturedOrientation | null>(null);
   const [rotation2D, setRotation2D] = useState(0);
-  const [capturedRotation2D, setCapturedRotation2D] = useState<number | null>(
-    null,
-  );
 
   // ── 3D Engine ref (populated by Case3DCanvas via onEngineReady) ─────
   const engineRef = useRef<Cube3DEngine | null>(null);
@@ -155,13 +151,13 @@ export function AlgorithmEditorDialog({
 
   const previewAlgorithm = useMemo<Pick<Algorithm, "moves" | "viewPreferences">>(() => ({
     moves: seedAlgMoves,
-    viewPreferences: capturedOrientation || capturedRotation2D != null
+    viewPreferences: capturedOrientation || rotation2D !== 0
       ? {
           ...(capturedOrientation ? { camera: capturedOrientation } : {}),
-          ...(capturedRotation2D != null ? { diagramRotation: capturedRotation2D } : {}),
+          ...(rotation2D !== 0 ? { diagramRotation: rotation2D } : {}),
         }
       : undefined,
-  }), [seedAlgMoves, capturedOrientation, capturedRotation2D]);
+  }), [seedAlgMoves, capturedOrientation, rotation2D]);
 
   // Stable callback for Case3DCanvas to avoid re-fire loops
   const handleEngineReady = useCallback((engine: Cube3DEngine) => {
@@ -186,10 +182,8 @@ export function AlgorithmEditorDialog({
         }
         if (viewPreferences.diagramRotation != null) {
           setRotation2D(viewPreferences.diagramRotation);
-          setCapturedRotation2D(viewPreferences.diagramRotation);
         } else {
           setRotation2D(0);
-          setCapturedRotation2D(null);
         }
       } else {
         setNotation("");
@@ -197,7 +191,6 @@ export function AlgorithmEditorDialog({
         setNotes("");
         setCapturedOrientation(null);
         setRotation2D(0);
-        setCapturedRotation2D(null);
       }
       setSaving(false);
       engineRef.current = null;
@@ -214,35 +207,6 @@ export function AlgorithmEditorDialog({
   );
 
   const canSave = parsedMoves.length > 0;
-
-  // ── Capture 3D camera orientation ────────────────────────────────────
-  const handleCaptureOrientation = useCallback(() => {
-    const engine = engineRef.current;
-    if (!engine?.sceneManager) {
-      toast.error("3D cube not ready yet. Try again in a moment.");
-      return;
-    }
-
-    const camera = engine.sceneManager.camera;
-    if (!camera) {
-      toast.error("Could not access camera. Try again.");
-      return;
-    }
-
-    const spherical = cameraToSpherical(camera.position);
-    setCapturedOrientation(spherical);
-    toast.success("Orientation captured", {
-      description: `θ: ${spherical.theta.toFixed(2)}  φ: ${spherical.phi.toFixed(2)}`,
-    });
-  }, []);
-
-  // ── Capture 2D rotation ──────────────────────────────────────────────
-  const handleCaptureRotation = useCallback(() => {
-    setCapturedRotation2D(rotation2D);
-    toast.success("Rotation captured", {
-      description: `${rotation2D}°`,
-    });
-  }, [rotation2D]);
 
   // ── 2D rotation nudges ───────────────────────────────────────────────
   const nudgeRotation = useCallback((delta: number) => {
@@ -276,9 +240,15 @@ export function AlgorithmEditorDialog({
     try {
       const id = existingAlgorithm?.id ?? generateUuid();
 
+      // Live auto-capture at save time
+      let activeCamera = capturedOrientation;
+      if (is3D && engineRef.current?.sceneManager?.camera) {
+        activeCamera = cameraToSpherical(engineRef.current.sceneManager.camera.position);
+      }
+
       const viewPreferences: AlgorithmViewPreferences = {
-        ...(capturedOrientation ? { camera: capturedOrientation } : {}),
-        ...(capturedRotation2D != null ? { diagramRotation: capturedRotation2D } : {}),
+        ...(is3D && activeCamera ? { camera: activeCamera } : {}),
+        ...(!is3D && rotation2D !== 0 ? { diagramRotation: rotation2D } : {}),
         ...(existingAlgorithm?.viewPreferences?.preferredF2LSlot != null
           ? { preferredF2LSlot: existingAlgorithm.viewPreferences.preferredF2LSlot }
           : {}),
@@ -322,8 +292,9 @@ export function AlgorithmEditorDialog({
     moveCount,
     difficulty,
     notes,
+    is3D,
     capturedOrientation,
-    capturedRotation2D,
+    rotation2D,
     onClose,
   ]);
 
@@ -437,14 +408,14 @@ export function AlgorithmEditorDialog({
                   )}
                 </div>
 
-                {/* Rotation controls + capture */}
+                {/* Rotation controls */}
                 {is3D ? (
-                  /* 3D: exact ±90° steps + isometric reset + capture (no drag) */
+                  /* 3D: exact ±90° steps + isometric reset */
                   <div className="flex items-center gap-1.5 mt-2.5">
                     <button
                       onClick={() => rotate3DBy(-90)}
                       disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
+                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
                       title="Rotate 90° counter-clockwise"
                     >
                       <RotateCcw className="size-3" />
@@ -453,7 +424,7 @@ export function AlgorithmEditorDialog({
                     <button
                       onClick={() => rotate3DBy(90)}
                       disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
+                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
                       title="Rotate 90° clockwise"
                     >
                       <RotateCw className="size-3" />
@@ -462,35 +433,15 @@ export function AlgorithmEditorDialog({
                     <button
                       onClick={resetIsometric}
                       disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
+                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
                       title="Reset to isometric view"
                     >
                       <Focus className="size-3" />
                       ISO
                     </button>
-                    <div className="flex-1" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCaptureOrientation}
-                      disabled={!engineReady}
-                      className="h-7 gap-1.5 px-2.5 text-[0.62rem] text-ink-3 hover:text-ink"
-                    >
-                      <Camera className="size-3" />
-                      Capture
-                    </Button>
-                    {capturedOrientation && (
-                      <>
-                        <span className="text-[0.55rem] text-ink font-mono font-medium">
-                          θ: {capturedOrientation.theta.toFixed(2)} φ:{" "}
-                          {capturedOrientation.phi.toFixed(2)}
-                        </span>
-                        <span className="size-1.5 rounded-full bg-ink" />
-                      </>
-                    )}
                   </div>
                 ) : (
-                  /* 2D: rotation nudge buttons + capture (no slider) */
+                  /* 2D: rotation nudge buttons */
                   <div className="flex items-center gap-1.5 mt-2.5">
                     {[-90, 90, 180].map((delta) => (
                       <button
@@ -501,24 +452,9 @@ export function AlgorithmEditorDialog({
                         {delta > 0 ? `+${delta}°` : `${delta}°`}
                       </button>
                     ))}
-                    <div className="flex-1" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCaptureRotation}
-                      className="h-7 gap-1.5 px-2.5 text-[0.62rem] text-ink-3 hover:text-ink"
-                    >
-                      <Camera className="size-3" />
-                      Capture
-                    </Button>
-                    {capturedRotation2D != null && (
-                      <>
-                        <span className="text-[0.55rem] text-ink font-mono font-medium">
-                          {capturedRotation2D}°
-                        </span>
-                        <span className="size-1.5 rounded-full bg-ink" />
-                      </>
-                    )}
+                    <div className="ml-auto text-[0.6rem] font-mono text-ink-3">
+                      Rotation: <span className="font-semibold text-ink">{rotation2D}°</span>
+                    </div>
                   </div>
                 )}
               </section>
