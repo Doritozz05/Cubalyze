@@ -31,8 +31,7 @@ export function MetronomePreview() {
       </div>
 
       {/* Pulse Status */}
-      <div className="flex items-center justify-between text-[8px] text-ink-3">
-        <span className="font-mono">Pacing</span>
+      <div className="flex items-center justify-end text-[8px] text-ink-3">
         <div className="flex gap-1">
           <div className="size-1 rounded-full bg-ink" />
           <div className="size-1 rounded-full bg-line" />
