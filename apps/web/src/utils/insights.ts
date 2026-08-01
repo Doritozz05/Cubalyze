@@ -15,6 +15,7 @@ export {
   deriveActivityHeatmap,
   deriveTpsSeries,
   derivePhaseDistribution,
+  isComparablePhaseAnalysis,
   derivePauseCause,
   deriveAvgTime,
 } from "@cubeforge/analysis-engine";

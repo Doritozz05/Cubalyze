@@ -72,6 +72,8 @@
   --color-line: var(--line);
   --color-line-2: var(--line-2);
 
+  --color-accent-emerald: var(--accent-emerald);
+
   --color-ready: var(--ready);
   --color-ready-soft: var(--ready-soft);
   --color-hold: var(--hold);
@@ -115,6 +117,7 @@
   --canvas: #f8f9fa;
   --surface: #ffffff;
   --surface-2: #f1f3f5;
+  --accent-emerald: #047857;
   --ink: #212529;
   --ink-2: #495057;
   --ink-3: #868e96;
@@ -178,6 +181,7 @@
   --canvas: #1b1f23;
   --surface: #1b1f23;
   --surface-2: #24292e;
+  --accent-emerald: #34d399;
   --ink: #e9ecef;
   --ink-2: #adb5bd;
   --ink-3: #6c757d;

@@ -47,6 +47,22 @@ function makeMetrics(overrides: Partial<SolveMetrics> = {}): SolveMetrics {
       { phaseName: "OLL", durationMs: 1500, moveCount: 9, tps: 6, pauseCount: 1, pauseTimeMs: 300 },
       { phaseName: "PLL", durationMs: 2500, moveCount: 13, tps: 5.2, pauseCount: 0, pauseTimeMs: 0 },
     ],
+    detectionReport: {
+      method: "CFOP",
+      expectedPhases: ["Cross", "F2L", "OLL", "PLL"],
+      phases: [
+        { phaseName: "Cross", startIndex: 0, endIndex: 7, completionIndex: 7, startTimestamp: 0, endTimestamp: 2000, durationMs: 2000, moveCount: 8 },
+        { phaseName: "F2L", startIndex: 8, endIndex: 36, completionIndex: 36, startTimestamp: 2000, endTimestamp: 8000, durationMs: 6000, moveCount: 29 },
+        { phaseName: "OLL", startIndex: 37, endIndex: 45, completionIndex: 45, startTimestamp: 8000, endTimestamp: 9500, durationMs: 1500, moveCount: 9 },
+        { phaseName: "PLL", startIndex: 46, endIndex: 58, completionIndex: 58, startTimestamp: 9500, endTimestamp: 12000, durationMs: 2500, moveCount: 13 },
+      ],
+      complete: true,
+      finalStateSolved: true,
+      confidence: "high",
+      warnings: [],
+      initialStateSource: "initial-facelets",
+      phaseSchema: "cfop-canonical",
+    },
     tps: { global: 4.1, effective: 4.5, byPhase: {}, peakInstantaneous: 7.2 },
     pauses: {
       totalCount: 3,
@@ -190,6 +206,44 @@ describe("derivePhaseDistribution", () => {
 
   it("returns empty when no analysed solves", () => {
     expect(derivePhaseDistribution([makeSolve()])).toEqual([]);
+  });
+
+  it("excludes analyses without reports, non-CFOP, and incomplete reports", () => {
+    const withoutReport = makeSolve({ id: "without-report", analysis: makeMetrics({ detectionReport: undefined }) });
+    const nonCfop = makeSolve({
+      id: "roux",
+      analysis: makeMetrics({
+        detectionReport: {
+          method: "Roux",
+          expectedPhases: ["First Block"],
+          phases: [],
+          complete: true,
+          finalStateSolved: true,
+          confidence: "high",
+          warnings: [],
+          initialStateSource: "scramble",
+          phaseSchema: "generic",
+        },
+      }),
+    });
+    const incomplete = makeSolve({
+      id: "incomplete",
+      analysis: makeMetrics({
+        detectionReport: {
+          method: "CFOP",
+          expectedPhases: ["Cross", "F2L", "OLL", "PLL"],
+          phases: [],
+          complete: false,
+          finalStateSolved: false,
+          confidence: "low",
+          warnings: ["incomplete-solve"],
+          initialStateSource: "unknown",
+          phaseSchema: "cfop-canonical",
+        },
+      }),
+    });
+
+    expect(derivePhaseDistribution([withoutReport, nonCfop, incomplete])).toEqual([]);
   });
 });
 

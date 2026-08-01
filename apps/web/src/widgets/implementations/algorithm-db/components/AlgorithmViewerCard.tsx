@@ -6,7 +6,11 @@ import { cn } from "@/lib/utils";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
-import { SUBSET_VISUALIZATION, getSubset } from "@cubeforge/algorithm-db";
+import {
+  getSubset,
+  resolveAlgorithmDiagramRotation,
+  resolveCaseVisualizationStyle,
+} from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,14 +54,12 @@ export function AlgorithmViewerCard({
 
   const activeViewMode: "2d" | "3d" = is3DMode ? "3d" : "2d";
 
-  const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
+  const defaultAlg = algorithms[0] ?? null;
   const activeAlg =
     algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
 
   // Fix: Use targetSubsetName to index SUBSET_VISUALIZATION (OLL -> yellow-gray, PLL -> full-color)
-  const visStyle: VisualizationStyle =
-    SUBSET_VISUALIZATION[targetSubsetName]?.style ??
-    (lowerSubsetName.includes("oll") ? "yellow-gray" : "full-color");
+  const visStyle: VisualizationStyle = resolveCaseVisualizationStyle(caseData);
 
   const handleCopySetup = () => {
     if (!caseData.setupScramble) return;
@@ -81,7 +83,7 @@ export function AlgorithmViewerCard({
       {/* ── Case Header Banner ── */}
       <div className="flex items-center justify-between gap-2 bg-surface-2/60 border border-line rounded-md px-2.5 py-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          <Badge variant="outline" className="font-mono text-[11px] font-bold text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10">
+          <Badge variant="outline" className="font-mono text-[11px] font-bold text-ink border-line-2 bg-surface-2">
             {caseData.caseNumber}
           </Badge>
           {caseData.name && caseData.name !== caseData.caseNumber && (
@@ -89,6 +91,13 @@ export function AlgorithmViewerCard({
               {caseData.name}
             </span>
           )}
+          {caseData.category &&
+            caseData.category !== caseData.name &&
+            caseData.category !== caseData.caseNumber && (
+              <span className="rounded bg-surface-2/80 border border-line/60 px-1.5 py-0.5 text-[10px] font-medium text-ink-3">
+                {caseData.category}
+              </span>
+            )}
         </div>
       </div>
 
@@ -99,23 +108,25 @@ export function AlgorithmViewerCard({
             <Case2x2Diagram
               faceletColors={caseData.diagram2D?.faceletColors}
               setupScramble={caseData.setupScramble}
-              moves={activeAlg?.moves}
+              moves={undefined}
               style={visStyle}
+              rotation={resolveAlgorithmDiagramRotation(activeAlg)}
               className="w-32 max-h-30"
             />
           ) : (
             <CaseDiagram
               setupScramble={caseData.setupScramble}
-              moves={activeAlg?.moves}
+              moves={undefined}
               style={visStyle}
               arrows={caseData.diagram2D?.arrows}
+              rotation={resolveAlgorithmDiagramRotation(activeAlg)}
               className="w-32 max-h-30"
             />
           )
         ) : (
           <Case3DDiagram
             caseData={caseData}
-            moves={activeAlg?.moves}
+            algorithm={activeAlg}
             interactive={true}
             className="w-full h-28"
           />
@@ -132,12 +143,12 @@ export function AlgorithmViewerCard({
               variant="ghost"
               size="sm"
               onClick={handleCopySetup}
-              className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-accent-cyan gap-1"
+              className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
             >
               {copiedSetup ? (
                 <>
-                  <Check className="size-3 text-accent-emerald" />
-                  <span className="text-accent-emerald">Copied</span>
+                  <Check className="size-3 text-ready" />
+                  <span className="text-ready">Copied</span>
                 </>
               ) : (
                 <>
@@ -165,12 +176,12 @@ export function AlgorithmViewerCard({
             variant="ghost"
             size="sm"
             onClick={handleCopyAlg}
-            className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-accent-cyan gap-1"
+            className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
           >
             {copiedAlg ? (
               <>
-                <Check className="size-3 text-accent-emerald" />
-                <span className="text-accent-emerald">Copied</span>
+                <Check className="size-3 text-ready" />
+                <span className="text-ready">Copied</span>
               </>
             ) : (
               <>
@@ -182,7 +193,7 @@ export function AlgorithmViewerCard({
         </div>
 
         {/* Algorithm moves container */}
-        <div className="font-mono text-xs font-semibold text-accent-cyan bg-surface-1 border border-line rounded p-2 leading-relaxed wrap-break-word shadow-inner">
+        <div className="font-mono text-xs font-semibold text-ink bg-surface-1 border border-line rounded p-2 leading-relaxed wrap-break-word shadow-xs">
           {movesText || "No algorithm available"}
         </div>
 
@@ -223,7 +234,7 @@ export function AlgorithmViewerCard({
                     className={cn(
                       "h-6 px-2 text-[10px] font-mono transition-all",
                       isActive
-                        ? "bg-accent-cyan/20 text-accent-cyan border-accent-cyan/40 hover:bg-accent-cyan/30"
+                        ? "bg-ink text-surface shadow-xs font-semibold"
                         : "text-ink-3 hover:text-ink"
                     )}
                   >

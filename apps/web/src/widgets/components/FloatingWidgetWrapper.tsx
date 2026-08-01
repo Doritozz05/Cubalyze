@@ -210,7 +210,7 @@ export function FloatingWidgetWrapper({
       }}
       onPointerDown={handleFocus}
       className={cn(
-        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface/95 backdrop-blur-md shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
+        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
         isNearDock
           ? "h-8 rounded-md px-2.5 text-xs font-medium cursor-grabbing"
           : minimized
@@ -296,26 +296,28 @@ export function FloatingWidgetWrapper({
       </div>
 
       {/* 2-Way Smooth Expandable Body (Height Grid + Delayed Content Reveal) */}
-      <div
-        className="grid transition-[grid-template-rows] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
-        style={{
-          gridTemplateRows: showBody ? "1fr" : "0fr",
-        }}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div
-            className={cn(
-              "min-h-0 overflow-y-auto transition-[opacity,transform] duration-250 ease-out",
-              showBody
-                ? "opacity-100 translate-y-0 delay-100 pointer-events-auto"
-                : "opacity-0 -translate-y-2 delay-0 pointer-events-none",
-            )}
-            style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
-          >
-            {children}
+      {!isNearDock && (
+        <div
+          className="grid transition-[grid-template-rows] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{
+            gridTemplateRows: showBody ? "1fr" : "0fr",
+          }}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div
+              className={cn(
+                "min-h-0 overflow-y-auto transition-[opacity,transform] duration-250 ease-out",
+                showBody
+                  ? "opacity-100 translate-y-0 delay-100 pointer-events-auto"
+                  : "opacity-0 -translate-y-2 delay-0 pointer-events-none",
+              )}
+              style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+            >
+              {children}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>,
     document.body,
   );

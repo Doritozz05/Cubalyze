@@ -95,12 +95,66 @@ export interface SolveTimeline {
   /** The detected/reconstructed phase segments. */
   phases: PhaseSegment[];
 
+  /** Optional authoritative timer duration (ms), when supplied by the timer. */
+  solveTimeMs?: number;
+
+  /** How the initial cube state was seeded. */
+  initialStateSource?: InitialStateSource;
+
+  /** Detailed phase-detection result, populated after PhaseSplitter runs. */
+  detectionReport?: PhaseDetectionReport;
+
   /** Timestamp of the solve start (first move). */
   startTimestamp: number;
 
   /** Timestamp of the solve end (last move or solved detection). */
   endTimestamp: number;
 }
+
+export type InitialStateSource =
+  | 'initial-facelets'
+  | 'scramble'
+  | 'solved-fallback'
+  | 'unknown';
+
+export type PhaseDetectionWarning =
+  | 'missing-phase'
+  | 'incomplete-solve'
+  | 'final-state-not-solved'
+  | 'initial-state-unknown'
+  | 'scramble-only-seed'
+  | 'side-cross-approximation'
+  | 'simultaneous-phase'
+  | 'phase-skip'
+  | 'non-monotonic-timestamps'
+  | 'non-finite-timestamps'
+  | 'unattributed-time'
+  | 'advanced-technique-possible';
+
+export type PhaseDetectionConfidence = 'high' | 'medium' | 'low' | 'invalid';
+
+/** Structured result used by consumers that need to judge comparability. */
+export interface PhaseDetectionReport {
+  method: string;
+  expectedPhases: string[];
+  phases: PhaseSegment[];
+  complete: boolean;
+  finalStateSolved: boolean;
+  crossFace?: CubeFace;
+  confidence: PhaseDetectionConfidence;
+  warnings: PhaseDetectionWarning[];
+  initialStateSource: InitialStateSource;
+  phaseSchema: 'cfop-canonical' | 'cfop-advanced' | 'generic' | 'unknown';
+
+  /** Authoritative timer duration, when available. */
+  solveTimeMs?: number;
+
+  /** Time between adjacent detected phases, not owned by either phase. */
+  transitionTimeMs?: number;
+
+  /** Duration that could not be assigned to a phase or transition. */
+  unattributedTimeMs?: number;
+} 
 
 // ─── Phase Segmentation ──────────────────────────────────────────────────────
 
@@ -124,14 +178,29 @@ export interface PhaseSegment {
   /** Index of the LAST entry belonging to this phase (inclusive). */
   endIndex: number;
 
+  /** Index where the phase mask first matched. */
+  completionIndex?: number;
+
   /** Timestamp of the first move in this phase. */
   startTimestamp: number;
 
   /** Timestamp of the last move in this phase. */
   endTimestamp: number;
 
-  /** Duration of this phase in milliseconds. */
+  /** Duration of this phase in milliseconds. Kept for compatibility. */
   durationMs: number;
+
+  /** Time attributed to movement/execution. */
+  executionMs?: number;
+
+  /** Recognition time explicitly attributed to this phase, if known. */
+  recognitionMs?: number;
+
+  /** Gap from the previous phase completion to this phase start. */
+  transitionMs?: number;
+
+  /** True when the phase completed without owning any move. */
+  skipped?: boolean;
 
   /** Number of moves in this phase. */
   moveCount: number;
@@ -165,6 +234,14 @@ export interface MethodMeta {
 export interface PhaseMetrics {
   phaseName: string;
   durationMs: number;
+  /** Time spent executing moves in this phase. */
+  executionMs?: number;
+  /** Recognition time attributed to this phase, when available. */
+  recognitionMs?: number;
+  /** Gap from the preceding phase completion to this phase start. */
+  transitionMs?: number;
+  /** True when this phase completed without owning a move. */
+  skipped?: boolean;
   moveCount: number;
   tps: number;
   pauseCount: number;
@@ -187,6 +264,9 @@ export interface SolveMetrics {
 
   /** Phase-level metrics. */
   phases: PhaseMetrics[];
+
+  /** Detailed phase detection/comparability report. */
+  detectionReport?: PhaseDetectionReport;
 
   // ─── Core Metrics ───
   tps: TPSMetrics;

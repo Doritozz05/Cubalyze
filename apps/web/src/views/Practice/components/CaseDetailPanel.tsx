@@ -1,16 +1,43 @@
 "use client";
 
-import { memo, useState } from "react";
-import { X, ExternalLink, Play } from "lucide-react";
+import { memo, useState, useCallback, useEffect, useMemo } from "react";
+import { toast } from "sonner";
+import {
+  X,
+  Play,
+  Plus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DPanel } from "./Case3DPanel";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+import { AlgorithmEditorDialog } from "./AlgorithmEditorDialog";
+import { SortableAlgorithmItem } from "./SortableAlgorithmItem";
+import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
+import { algorithmStore } from "@cubeforge/state";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
+import type {
+  AlgorithmCase,
+  Algorithm,
+  VisualizationStyle,
+} from "@cubeforge/algorithm-db";
 
 export interface CaseDetailPanelProps {
   caseData: AlgorithmCase;
-  algorithms: Algorithm[];
+  /** @deprecated No longer needed — algorithms are now fetched via useCaseAlgorithms hook. */
+  algorithms?: Algorithm[];
   onClose: () => void;
   /** Visualisation style for dynamic diagram generation (default: 'full-color'). */
   visualizationStyle?: VisualizationStyle;
@@ -21,20 +48,91 @@ export interface CaseDetailPanelProps {
 
 export const CaseDetailPanel = memo(function CaseDetailPanel({
   caseData,
-  algorithms,
+  algorithms: _algorithmsProp,
   onClose,
   visualizationStyle,
   onPracticeCase,
   className,
 }: CaseDetailPanelProps) {
+  // ── Algorithms from hook (seed + custom, ordered) ──────────────────
+  const { algorithms, primaryAlgorithm } = useCaseAlgorithms(caseData.id);
+
+  // ── Algorithm editor state ──────────────────────────────────────────
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingAlgorithm, setEditingAlgorithm] = useState<Algorithm | null>(
+    null,
+  );
+
+  // ── Selected algorithm state ────────────────────────────────────────
   const [selectedAlgId, setSelectedAlgId] = useState<string | null>(null);
-  const [prevCaseId, setPrevCaseId] = useState(caseData.id);
 
-  if (prevCaseId !== caseData.id) {
-    setPrevCaseId(caseData.id);
+  // Reset selection when case changes
+  useEffect(() => {
     setSelectedAlgId(null);
-  }
+  }, [caseData.id]);
 
+  // ── DnD sensors ─────────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
+  // ── Sorted algorithm IDs for SortableContext ────────────────────────
+  const sortedAlgIds = useMemo(
+    () => algorithms.map((a) => a.id),
+    [algorithms],
+  );
+
+  // ── Drag end handler ────────────────────────────────────────────────
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sortedAlgIds.indexOf(String(active.id));
+      const newIndex = sortedAlgIds.indexOf(String(over.id));
+
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const newOrder = [...sortedAlgIds];
+      newOrder.splice(oldIndex, 1);
+      newOrder.splice(newIndex, 0, String(active.id));
+
+      algorithmStore.getState().setCaseOrder(caseData.id, newOrder);
+    },
+    [sortedAlgIds, caseData.id],
+  );
+
+  const activeAlg =
+    algorithms.find((a) => a.id === selectedAlgId) ?? primaryAlgorithm;
+
+  // ── Handlers ────────────────────────────────────────────────────────
+
+  const handleOpenAddDialog = useCallback(() => {
+    setEditingAlgorithm(null);
+    setEditorOpen(true);
+  }, []);
+
+  const handleOpenEditDialog = useCallback((alg: Algorithm) => {
+    setEditingAlgorithm(alg);
+    setEditorOpen(true);
+  }, []);
+
+  const handleCloseEditor = useCallback(() => {
+    setEditorOpen(false);
+    setEditingAlgorithm(null);
+  }, []);
+
+  const handleDeleteAlgorithm = useCallback((alg: Algorithm) => {
+    algorithmStore.getState().removeCustomAlgorithm(alg.id);
+    setSelectedAlgId((prev) => (prev === alg.id ? null : prev));
+    toast.success("Algorithm removed", {
+      description: `${alg.moves.slice(0, 4).join(" ")}${alg.moves.length > 4 ? " …" : ""}`,
+    });
+  }, []);
+
+  // ── 3D isometric cases delegate to Case3DPanel ─────────────────────
   if (caseData.diagramType === "3d-isometric") {
     return (
       <Case3DPanel
@@ -47,200 +145,189 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
     );
   }
 
-  const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
-  const activeAlg = algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
-
+  // ── Render ──────────────────────────────────────────────────────────
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between shrink-0 px-4 py-3 border-b border-line">
-        <div className="flex items-center gap-2">
-          <span className="nums text-[0.85rem] font-semibold text-ink">
-            {caseData.caseNumber}
-          </span>
-          {caseData.name && caseData.name !== caseData.caseNumber && (
-            <span className="text-[0.75rem] text-ink-2">{caseData.name}</span>
+    <>
+      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+        {/* Header */}
+        <div className="flex items-center justify-between shrink-0 px-4 py-3 border-b border-line">
+          <div className="flex items-center gap-2">
+            <span className="nums text-[0.85rem] font-semibold text-ink">
+              {caseData.caseNumber}
+            </span>
+            {caseData.name && caseData.name !== caseData.caseNumber && (
+              <span className="text-[0.75rem] text-ink-2">
+                {caseData.name}
+              </span>
+            )}
+            {caseData.category &&
+              caseData.category !== caseData.name &&
+              caseData.category !== caseData.caseNumber && (
+                <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-3">
+                  {caseData.category}
+                </span>
+              )}
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
+            aria-label="Close"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          {/* Diagram — uses primaryAlgorithm (first in order) */}
+          {caseData.diagramType === "2d-top" && caseData.diagram2D && (
+            <div className="flex justify-center">
+              {caseData.puzzleType === "2x2x2" ? (
+                <Case2x2Diagram
+                  faceletColors={caseData.diagram2D.faceletColors}
+                  setupScramble={caseData.setupScramble}
+                  moves={undefined}
+                  style={visualizationStyle ?? "full-color"}
+                  rotation={resolveAlgorithmDiagramRotation(activeAlg)}
+                  className="w-48"
+                />
+              ) : (
+                <CaseDiagram
+                  arrows={caseData.diagram2D.arrows}
+                  setupScramble={caseData.setupScramble}
+                  moves={undefined}
+                  style={visualizationStyle ?? "full-color"}
+                  rotation={resolveAlgorithmDiagramRotation(activeAlg)}
+                  className="w-48"
+                />
+              )}
+            </div>
           )}
 
-        </div>
-        <button
-          onClick={onClose}
-          className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-        >
-          <X className="size-4" />
-        </button>
-      </div>
+          {/* Recognition patterns */}
+          {caseData.recognitionPatterns.length > 0 && (
+            <div>
+              <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2">
+                Recognition
+              </h4>
+              <ul className="space-y-1.5">
+                {caseData.recognitionPatterns.map((pattern, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-[0.72rem] text-ink-2"
+                  >
+                    <span className="select-none text-ink-3">•</span>
+                    <span>{pattern}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-        {/* Diagram */}
-        {caseData.diagramType === "2d-top" && caseData.diagram2D && (
-          <div className="flex justify-center">
-            {caseData.puzzleType === '2x2x2' ? (
-              <Case2x2Diagram
-                faceletColors={caseData.diagram2D.faceletColors}
-                setupScramble={caseData.setupScramble}
-                moves={activeAlg?.moves}
-                style={visualizationStyle ?? "full-color"}
-                className="w-48"
-              />
-            ) : (
-              <CaseDiagram
-                arrows={caseData.diagram2D.arrows}
-                setupScramble={caseData.setupScramble}
-                moves={activeAlg?.moves}
-                style={visualizationStyle ?? "full-color"}
-                className="w-48"
-              />
-            )}
-          </div>
-        )}
+          {/* Probability */}
+          {caseData.probability && (
+            <div>
+              <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">
+                Probability
+              </h4>
+              <p className="text-[0.72rem] text-ink-2">
+                {caseData.probability}
+              </p>
+            </div>
+          )}
 
-        {/* Recognition patterns */}
-        {caseData.recognitionPatterns.length > 0 && (
+          {/* ── Algorithms (drag-and-drop reorderable) ── */}
           <div>
-            <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2">
-              Recognition
-            </h4>
-            <ul className="space-y-1.5">
-              {caseData.recognitionPatterns.map((pattern, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-[0.72rem] text-ink-2"
-                >
-                  <span className="select-none text-ink-3">•</span>
-                  <span>{pattern}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Probability */}
-        {caseData.probability && (
-          <div>
-            <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">
-              Probability
-            </h4>
-            <p className="text-[0.72rem] text-ink-2">{caseData.probability}</p>
-          </div>
-        )}
-
-        {/* Algorithms */}
-        <div>
-          <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2">
-            Algorithms ({algorithms.length})
-          </h4>
-          <div className="space-y-2">
-            {algorithms.map((alg) => {
-              const isSelected = alg.id === activeAlg?.id;
-              return (
-                <div
-                  key={alg.id}
-                  onClick={() => setSelectedAlgId(alg.id)}
-                  className={cn(
-                    "flex flex-col gap-1 rounded-lg border p-2.5 cursor-pointer transition-colors",
-                    isSelected
-                      ? "border-accent-cyan/60 bg-accent-cyan/5 shadow-xs"
-                      : "border-line bg-surface hover:border-ink/20",
-                  )}
-                >
-                {/* Move display */}
-                <div className="flex items-center gap-2">
-                  <div className="nums flex flex-wrap gap-x-1.5 gap-y-0.5 text-[0.75rem] font-medium text-ink">
-                    {alg.moves.map((move, i) => (
-                      <span key={i}>{move}</span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Metadata row */}
-                <div className="flex items-center gap-3 text-[0.58rem] text-ink-3">
-                  <span>HTM: {alg.moveCount.htm}</span>
-                  <span>QTM: {alg.moveCount.qtm}</span>
-                  {caseData.puzzleType !== '2x2x2' && alg.moveCount.stm > 0 && <span>STM: {alg.moveCount.stm}</span>}
-                  {alg.source && (() => {
-                    const sourceUrl = alg.attributionUrl || (
-                      alg.source.startsWith("http")
-                        ? alg.source
-                        : alg.source.toLowerCase().includes("speedcubedb")
-                        ? (caseData.subsetId.toLowerCase().includes("oll")
-                            ? "https://speedcubedb.com/a/3x3/OLL"
-                            : caseData.subsetId.toLowerCase().includes("pll")
-                            ? "https://speedcubedb.com/a/3x3/PLL"
-                            : caseData.subsetId.toLowerCase().includes("f2l")
-                            ? "https://speedcubedb.com/a/3x3/F2L"
-                            : "https://speedcubedb.com")
-                        : undefined
-                    );
-                    return sourceUrl ? (
-                      <a
-                        href={sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 hover:underline hover:text-ink transition-colors"
-                      >
-                        <ExternalLink className="size-2.5" />
-                        {alg.source}
-                      </a>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <ExternalLink className="size-2.5" />
-                        {alg.source}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                {/* Notes */}
-                {alg.notes && (
-                  <p className="text-[0.65rem] text-ink-3/70 mt-0.5">
-                    {alg.notes}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-          </div>
-        </div>
-
-        {/* Practice this case button — navigates to Training */}
-        {onPracticeCase && (
-          <button
-            onClick={() => onPracticeCase(caseData.subsetId, caseData.id)}
-            className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
-          >
-            <Play className="size-3.5" />
-            Practice this case
-          </button>
-        )}
-
-        {/* Setup scramble */}
-        {caseData.setupScramble && (
-          <div>
-            <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">
-              Setup Scramble
-            </h4>
-            <p className="nums text-[0.68rem] text-ink-2/80 bg-surface-2 rounded px-2 py-1.5">
-              {caseData.setupScramble}
-            </p>
-          </div>
-        )}
-
-        {/* Tags */}
-        {caseData.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {caseData.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[0.58rem] text-ink-3"
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">
+                Algorithms ({algorithms.length})
+              </h4>
+              <button
+                onClick={handleOpenAddDialog}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
+                title="Add custom algorithm"
               >
-                {tag}
-              </span>
-            ))}
+                <Plus className="size-3" />
+                Add custom
+              </button>
+            </div>
+
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortedAlgIds}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {algorithms.map((alg) => (
+                    <SortableAlgorithmItem
+                      key={alg.id}
+                      alg={alg}
+                      isSelected={alg.id === activeAlg?.id}
+                      isPrimary={alg.id === primaryAlgorithm?.id}
+                      is2x2={caseData.puzzleType === "2x2x2"}
+                      subsetId={caseData.subsetId}
+                      onSelect={() => setSelectedAlgId(alg.id)}
+                      onEdit={() => handleOpenEditDialog(alg)}
+                      onDelete={() => handleDeleteAlgorithm(alg)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
-        )}
+
+          {/* Practice this case button */}
+          {onPracticeCase && (
+            <button
+              onClick={() =>
+                onPracticeCase(caseData.subsetId, caseData.id)
+              }
+              className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
+            >
+              <Play className="size-3.5" />
+              Practice this case
+            </button>
+          )}
+
+          {/* Setup scramble */}
+          {caseData.setupScramble && (
+            <div>
+              <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">
+                Setup Scramble
+              </h4>
+              <p className="nums text-[0.68rem] text-ink-2/80 bg-surface-2 rounded px-2 py-1.5">
+                {caseData.setupScramble}
+              </p>
+            </div>
+          )}
+
+          {/* Tags */}
+          {caseData.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {caseData.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[0.58rem] text-ink-3"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Algorithm Editor Dialog */}
+      <AlgorithmEditorDialog
+        open={editorOpen}
+        onClose={handleCloseEditor}
+        caseData={caseData}
+        existingAlgorithm={editingAlgorithm}
+      />
+    </>
   );
 });

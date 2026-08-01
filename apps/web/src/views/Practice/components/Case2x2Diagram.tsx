@@ -93,6 +93,8 @@ export interface Case2x2DiagramProps {
   style?: VisualizationStyle;
   showGray?: boolean;
   className?: string;
+  /** 2D diagram rotation in degrees (0–360). Applied via CSS transform. */
+  rotation?: number;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -104,25 +106,31 @@ export function Case2x2Diagram({
   style = "full-color",
   showGray = true,
   className,
+  rotation = 0,
 }: Case2x2DiagramProps) {
-  // Generate facelet colors from the canonical pipeline
+  // Canonical priority: setupScramble + subset policy always wins. Explicit
+  // facelets and algorithm moves are compatibility fallbacks only.
   const faceletColors = useMemo(() => {
-    if (faceletColorsProp) return faceletColorsProp;
-    if (moves && moves.length > 0) {
-      try {
-        const { diagramColors } = CaseStateGenerator.generateCaseVisualization(moves, style);
-        return diagramColors;
-      } catch {
-        // fall through to setupScramble
-      }
-    }
     if (setupScramble) {
       try {
-        const { diagramColors } =
-          CaseStateGenerator.generateFromScrambleVisualization(setupScramble, style);
-        return diagramColors;
+        return CaseStateGenerator.generateFromScrambleVisualization(
+          setupScramble,
+          style,
+        ).diagramColors;
       } catch {
-        // fall through
+        // Fall through to compatibility data.
+      }
+    }
+    if (faceletColorsProp) {
+      return style === "yellow-gray"
+        ? faceletColorsProp.map((color) => color === "Y" ? "Y" : "#")
+        : faceletColorsProp;
+    }
+    if (moves && moves.length > 0) {
+      try {
+        return CaseStateGenerator.generateCaseVisualization(moves, style).diagramColors;
+      } catch {
+        // Fall through to an empty diagram for malformed legacy data.
       }
     }
     return [];
@@ -138,6 +146,7 @@ export function Case2x2Diagram({
     <svg
       viewBox={`0 0 ${TOTAL} ${TOTAL}`}
       className={cn("w-full h-auto max-w-60 select-none", className)}
+      style={rotation !== 0 ? { transform: `rotate(${rotation}deg)`, transformOrigin: "center" } : undefined}
     >
       <rect width={TOTAL} height={TOTAL} fill="transparent" rx={6} />
 

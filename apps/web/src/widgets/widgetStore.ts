@@ -71,7 +71,7 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
   return map;
 }
 
-function statusFromLegacy(
+function statusFromPreviousLayout(
   visible: boolean,
   dockMode: string | undefined,
   minimized: boolean,
@@ -91,6 +91,29 @@ function clampStatus(id: WidgetId, status: WidgetStatus): WidgetStatus {
   }
   return status;
 }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isWidgetStatus(value: unknown): value is WidgetStatus {
+  return value === "inactive"
+    || value === "docked"
+    || value === "floating"
+    || value === "minimized";
+}
+
+function safePosition(
+  value: unknown,
+  fallback: { x: number; y: number },
+): { x: number; y: number } {
+  if (!isRecord(value)) return { ...fallback };
+  const x = value.x;
+  const y = value.y;
+  return Number.isFinite(x) && Number.isFinite(y)
+    ? { x, y } as { x: number; y: number }
+    : { ...fallback };
+}
 // Widgets must live in a fixed band BELOW the app chrome so they can never
 // overlap panels/overlays: LeftSidebar is z-50, Dialogs/Sheets/Settings are
 // z-50, header is z-20. The 25-49 band keeps widgets above the header but
@@ -101,6 +124,81 @@ function clampStatus(id: WidgetId, status: WidgetStatus): WidgetStatus {
 // top, but no widget can ever climb above Z_MAX.
 const Z_MIN = 25;
 const Z_MAX = 49;
+
+/**
+ * Pure persistence migration used by Zustand and regression tests.
+ *
+ * Existing layouts keep their relative dock order; newly-added built-ins are
+ * appended so adding a widget never silently rearranges a user's workspace.
+ */
+export function migratePersistedWidgetState(
+  persisted: unknown,
+  oldVersion: number,
+): Record<string, unknown> {
+  const raw = (persisted ?? {}) as Record<string, unknown>;
+  const rawInstances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
+  const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));
+  const customWidgets = Array.isArray(raw.customWidgets)
+    ? raw.customWidgets as WidgetDefinition[]
+    : [];
+  const cleanedInstances: Record<string, Record<string, unknown>> = {};
+
+  for (const [id, rawValue] of Object.entries(rawInstances)) {
+    const isBuiltIn = validIds.has(id);
+    const isCustom = customWidgets.some((w) => w?.id === id);
+    if (!isBuiltIn && !isCustom) continue;
+
+    const value = isRecord(rawValue) ? rawValue : {};
+    const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
+    const fallbackPosition = def?.defaultPosition ?? { x: 100, y: 100 };
+
+    // Migrate previous layouts to the current status-based format.
+    if (oldVersion < 4) {
+      const visible = value.visible === true;
+      const dockMode = typeof value.dockMode === "string" ? value.dockMode : "docked";
+      const minimized = value.minimized === true;
+      const status = statusFromPreviousLayout(visible, dockMode, minimized);
+      cleanedInstances[id] = {
+        status: clampStatus(id as WidgetId, status),
+        position: safePosition(value.position, fallbackPosition),
+      };
+    } else {
+      const status = isWidgetStatus(value.status)
+        ? value.status
+        : def?.defaultActive ? "docked" : "inactive";
+      cleanedInstances[id] = {
+        status: clampStatus(id as WidgetId, status),
+        position: safePosition(value.position, fallbackPosition),
+      };
+    }
+  }
+
+  // New built-ins must be present even when the persisted instance map
+  // predates them.
+  for (const w of BUILT_IN_WIDGETS) {
+    if (!cleanedInstances[w.id]) {
+      cleanedInstances[w.id] = {
+        status: w.defaultActive ? "docked" : "inactive",
+        position: { ...w.defaultPosition },
+      };
+    }
+  }
+
+  const existingDockOrder = Array.isArray(raw.dockOrder)
+    ? (raw.dockOrder as string[])
+    : [];
+  const builtInOrder = BUILT_IN_WIDGETS.map((w) => w.id as string);
+  const combinedOrder = Array.from(
+    new Set([...existingDockOrder, ...builtInOrder]),
+  ).filter((id) => cleanedInstances[id]);
+
+  return {
+    ...raw,
+    instances: cleanedInstances,
+    dockOrder: combinedOrder,
+    customLayouts: (raw.customLayouts as CustomLayout[]) ?? [],
+  };
+}
 
 // ── Store ────────────────────────────────────────────────────────────────
 
@@ -350,84 +448,9 @@ export const widgetStore = createStore<WidgetStore>()(
     }),
     {
       name: "cubeforge:widgets",
-      version: 4,
-      migrate: (persisted, oldVersion) => {
-        const raw = (persisted ?? {}) as Record<string, unknown>;
-        const rawInstances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
-        const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));
-
-        const cleanedInstances: Record<string, Record<string, unknown>> = {};
-
-        for (const [id, value] of Object.entries(rawInstances)) {
-          const isBuiltIn = validIds.has(id);
-          const isCustom = ((raw.customWidgets ?? []) as WidgetDefinition[]).some(
-            (w) => w.id === id,
-          );
-          if (!isBuiltIn && !isCustom) continue;
-
-          // Migrate from v3 (visible + dockMode + minimized) → v4 (status)
-          if (oldVersion < 4) {
-            const visible = (value.visible as boolean) ?? false;
-            const dockMode = (value.dockMode as string) ?? "docked";
-            const minimized = (value.minimized as boolean) ?? false;
-            const status = statusFromLegacy(visible, dockMode, minimized);
-
-            // Clamp no-dock widgets
-            const clamped = clampStatus(id as WidgetId, status as WidgetStatus);
-
-            // Ensure position is valid — use definition default if missing
-            const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
-            const position =
-              value.position &&
-              typeof (value.position as Record<string, unknown>).x === "number" &&
-              typeof (value.position as Record<string, unknown>).y === "number"
-                ? value.position
-                : def
-                  ? { ...def.defaultPosition }
-                  : { x: 100, y: 100 };
-
-            cleanedInstances[id] = {
-              status: clamped,
-              position,
-            };
-          } else {
-            // v4+ — ensure status exists
-            const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
-            cleanedInstances[id] = {
-              status: (value.status as string) ?? (def?.defaultActive ? "docked" : "inactive"),
-              position:
-                value.position ??
-                (def ? { ...def.defaultPosition } : { x: 100, y: 100 }),
-            };
-          }
-        }
-
-        // Ensure all built-in widgets have instance state
-        for (const w of BUILT_IN_WIDGETS) {
-          if (!cleanedInstances[w.id]) {
-            cleanedInstances[w.id] = {
-              status: w.defaultActive ? "docked" : "inactive",
-              position: { ...w.defaultPosition },
-            };
-          }
-        }
-
-        const builtInOrder = BUILT_IN_WIDGETS.map((w) => w.id as string);
-        const existingDockOrder = (raw.dockOrder ?? []) as string[];
-        const combinedOrder = Array.from(
-          new Set([...builtInOrder, ...existingDockOrder]),
-        ).filter((id) => cleanedInstances[id]);
-
-        // Migrate customLayouts if present
-        const customLayouts = (raw.customLayouts as CustomLayout[]) ?? [];
-
-        return {
-          ...raw,
-          instances: cleanedInstances,
-          dockOrder: combinedOrder,
-          customLayouts,
-        } as Record<string, unknown>;
-      },
+      version: 5,
+      migrate: (persisted, oldVersion) =>
+        migratePersistedWidgetState(persisted, oldVersion),
       partialize: (state) => ({
         instances: Object.fromEntries(
           Object.entries(state.instances).map(([id, inst]) => [

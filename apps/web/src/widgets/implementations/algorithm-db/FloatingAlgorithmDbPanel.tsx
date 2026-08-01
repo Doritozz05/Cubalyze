@@ -11,6 +11,7 @@ import {
   getChildSubsets,
 } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { AlgorithmViewerCard } from "./components/AlgorithmViewerCard";
 import {
   Select,
@@ -41,7 +42,7 @@ export interface FloatingAlgorithmDbPanelProps {
 }
 
 export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAlgorithmDbPanelProps) {
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(
+  const { cases: allCases } = useMemo(
     () => getSeedData(),
     []
   );
@@ -140,11 +141,8 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
 
   const activeCase: AlgorithmCase | undefined = subsetCases[activeCaseIndex] ?? subsetCases[0];
 
-  // Algorithms for active case
-  const activeAlgorithms = useMemo(() => {
-    if (!activeCase) return [];
-    return allAlgorithms.filter((a) => a.caseId === activeCase.id);
-  }, [allAlgorithms, activeCase]);
+  // Algorithms for active case (seed + custom, ordered)
+  const { algorithms: activeAlgorithms } = useCaseAlgorithms(activeCase?.id);
 
   const handleSelectCase = (caseId: string) => {
     setSelectedCaseId(caseId);
@@ -179,11 +177,11 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
       defaultPosition={{ x: 380, y: 72 }}
       headerActions={
         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-2 border border-line text-[10px] text-ink-3 font-mono">
-          <span className="text-accent-cyan font-medium">
+          <span className="text-ink font-semibold">
             {puzzleLabel}
           </span>
           <span>/</span>
-          <span className="text-accent-cyan font-medium">
+          <span className="text-ink font-semibold">
             {currentMethod?.name}
           </span>
           <span>/</span>
@@ -335,7 +333,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                             className={cn(
                               "h-8 px-1 flex flex-col items-center justify-center font-mono text-[10px] transition-all",
                               isSelected
-                                ? "bg-accent-cyan/20 text-accent-cyan border-accent-cyan/40 hover:bg-accent-cyan/30 font-bold"
+                                ? "bg-ink text-surface border-ink font-semibold shadow-xs"
                                 : "bg-surface-1/80 text-ink-2 border-line/60 hover:text-ink hover:bg-surface-2"
                             )}
                           >
@@ -378,7 +376,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                     >
                       <ChevronLeft className="size-3" />
                     </Button>
-                    <span className="font-mono text-[10px] font-bold text-accent-cyan px-1">
+                    <span className="font-mono text-[10px] font-bold text-ink px-1">
                       {activeCaseIndex + 1}/{subsetCases.length}
                     </span>
                     <Button

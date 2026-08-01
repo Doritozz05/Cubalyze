@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getSeedData, SUBSETS, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import { getSeedData, SUBSETS, resolveVisualizationStyleForSubset } from "@cubeforge/algorithm-db";
 import type { VisualizationStyle } from "@cubeforge/algorithm-db";
 import { MethodTree } from "./components/MethodTree";
 import { CaseGrid } from "./components/CaseGrid";
@@ -36,10 +36,7 @@ export function PracticeDashboard({
   }, [initialSubsetId, initialCaseId]);
 
   // ── Get seed data (in-memory for now; database integration later) ────
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(
-    () => getSeedData(),
-    [],
-  );
+  const { cases: allCases } = useMemo(() => getSeedData(), []);
 
   // ── Filtered cases for selected subset ───────────────────────────────
   const filteredCases = useMemo(
@@ -50,12 +47,6 @@ export function PracticeDashboard({
     [allCases, selectedSubsetId],
   );
 
-  // ── Algorithms for filtered cases ──────────────────────────────────────
-  const filteredAlgorithms = useMemo(() => {
-    const caseIds = new Set(filteredCases.map((c) => c.id));
-    return allAlgorithms.filter((a) => caseIds.has(a.caseId));
-  }, [allAlgorithms, filteredCases]);
-
   // ── Selected case data ────────────────────────────────────────────────
   const selectedCase = useMemo(
     () =>
@@ -63,14 +54,6 @@ export function PracticeDashboard({
         ? allCases.find((c) => c.id === selectedCaseId) ?? null
         : null,
     [allCases, selectedCaseId],
-  );
-
-  const selectedAlgorithms = useMemo(
-    () =>
-      selectedCaseId
-        ? allAlgorithms.filter((a) => a.caseId === selectedCaseId)
-        : [],
-    [allAlgorithms, selectedCaseId],
   );
 
   const handleSelectSubset = useCallback((subsetId: string) => {
@@ -87,7 +70,7 @@ export function PracticeDashboard({
     if (!selectedSubsetId) return "full-color";
     const subset = SUBSETS.find((s) => s.id === selectedSubsetId);
     if (!subset) return "full-color";
-    return SUBSET_VISUALIZATION[subset.name]?.style ?? "full-color";
+    return resolveVisualizationStyleForSubset(subset.name);
   }, [selectedSubsetId]);
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -128,7 +111,6 @@ export function PracticeDashboard({
               </div>
               <CaseGrid
                 cases={filteredCases}
-                algorithms={filteredAlgorithms}
                 selectedCaseId={selectedCaseId}
                 onSelectCase={handleSelectCase}
                 visualizationStyle={visualizationStyle}
@@ -145,7 +127,6 @@ export function PracticeDashboard({
               >
                 <CaseDetailPanel
                   caseData={selectedCase}
-                  algorithms={selectedAlgorithms}
                   onClose={() => setSelectedCaseId(null)}
                   visualizationStyle={visualizationStyle}
                   onPracticeCase={onPracticeCase}

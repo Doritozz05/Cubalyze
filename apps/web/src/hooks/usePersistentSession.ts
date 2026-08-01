@@ -6,6 +6,7 @@ import { normalizePenalty } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
+import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { seedDemoDataIfEmpty } from "@/utils/seedDemoData";
 
 /** Session metadata returned by the API. */
@@ -259,7 +260,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       moves: input.moves || [],
       note: input.note ?? undefined,
       orientationTimeline: input.orientationTimeline,
-      analysisEngineVersion: '0.1.0',
+      analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
       puzzleType: input.puzzleType ?? '3x3x3',
     } as DBSolve;
@@ -416,7 +417,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
         source: input.source ?? "manual",
         moves: [],
         orientationTimeline: undefined,
-        analysisEngineVersion: '0.1.0',
+        analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
         analysis: undefined,
         puzzleType: input.puzzleType ?? '3x3x3',
       } as DBSolve;

@@ -518,7 +518,7 @@ export function CrossTrainerView({
                   </div>
                 )}
                 {stickeringOn && isReady && replayState === "idle" && (
-                  <div className="absolute bottom-2 left-2 rounded bg-background/60 backdrop-blur-sm px-2 py-1 text-[0.55rem] text-ink-3">
+                  <div className="absolute bottom-2 left-2 rounded bg-background/85 px-2 py-1 text-[0.55rem] text-ink-3">
                     Cross edges highlighted
                   </div>
                 )}
@@ -549,7 +549,7 @@ export function CrossTrainerView({
                 </button>
               </div>
               {showOptimal ? (
-                <p className="font-mono text-[0.72rem] text-ink leading-relaxed break-words">
+                <p className="font-mono text-[0.72rem] text-ink leading-relaxed wrap-break-word">
                   {cross.optimalSolution || "—"}
                 </p>
               ) : (

@@ -8,8 +8,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
 import { formatTime } from "@/utils/formatTime";
-import { deriveTimeline } from "@/utils/insights";
+import { deriveTimeline, isComparablePhaseAnalysis } from "@/utils/insights";
 import { phaseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import type { Solve } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
@@ -42,20 +43,30 @@ export function FloatingPhaseTimeline({
 }: FloatingPhaseTimelineProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
 
-  const { selectedSolve, derived } = useMemo(() => {
-    const firstSolve = solves[0];
+  const { selectedSolve, derived, skippedPhases } = useMemo(() => {
+    const orderedSolves = [...solves].sort((a, b) => b.timestamp - a.timestamp);
+    const firstSolve = orderedSolves[0];
     const hasPending =
-      selectedIdx === 0 && lastAnalysis && firstSolve && !firstSolve.analysis;
+      selectedIdx === 0
+      && lastAnalysis
+      && firstSolve
+      && firstSolve.id === lastAnalysis.solveId
+      && isComparablePhaseAnalysis(lastAnalysis);
     const solve: Solve | null =
-      solves[selectedIdx] ?? (solves.length > 0 ? solves[0] : null);
+      orderedSolves[selectedIdx] ?? (orderedSolves.length > 0 ? orderedSolves[0] : null);
 
-    if (!solve) return { selectedSolve: null, derived: null };
+    if (!solve) return { selectedSolve: null, derived: null, skippedPhases: [] as string[] };
 
-    const effectiveSolve: Solve = hasPending
-      ? { ...solve, analysis: lastAnalysis! }
-      : solve;
+    const effectiveAnalysis = hasPending ? lastAnalysis! : solve.analysis;
+    if (!isComparablePhaseAnalysis(effectiveAnalysis)) {
+      return { selectedSolve: solve, derived: null, skippedPhases: [] as string[] };
+    }
+    const effectiveSolve: Solve = { ...solve, analysis: effectiveAnalysis };
     const tl = deriveTimeline(effectiveSolve);
-    return { selectedSolve: solve, derived: tl };
+    const skippedPhases = effectiveAnalysis.phases
+      .filter((phase) => phase.skipped || (phase.durationMs === 0 && phase.moveCount === 0))
+      .map((phase) => phase.phaseName);
+    return { selectedSolve: solve, derived: tl, skippedPhases };
   }, [solves, selectedIdx, lastAnalysis]);
 
   const timelinePhaseEntries = useMemo<TimelineEntry[]>(() => {
@@ -83,7 +94,9 @@ export function FloatingPhaseTimeline({
   const totalMs = derived?.totalMs ?? 0;
 
   const recentSolves = useMemo(
-    () => solves.slice(0, MAX_SOLVES_IN_PICKER),
+    () => [...solves]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, MAX_SOLVES_IN_PICKER),
     [solves],
   );
 
@@ -138,18 +151,28 @@ export function FloatingPhaseTimeline({
             <p className="text-sm text-ink-2">No solves yet</p>
             <p className="text-xs text-ink-3">Complete a solve to see the phase timeline.</p>
           </div>
-        ) : !selectedSolve.analysis && !(selectedIdx === 0 && lastAnalysis) ? (
+        ) : !derived ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <Activity className="size-8 text-ink-3/30" />
             <p className="text-sm text-ink-2">No analysis yet</p>
             <p className="text-xs text-ink-3">
               {selectedSolve.source === "smart"
-                ? "The analysis pipeline is running. Check back shortly."
+                ? selectedSolve.analysis
+                  ? "This solve has an incomplete analysis. Re-analyze it to show comparable phases."
+                  : "The analysis pipeline is running. Check back shortly."
                 : "Manual entry. Connect a Smart Cube to get phase analysis."}
             </p>
           </div>
         ) : (
           <>
+            {skippedPhases.length > 0 && (
+              <div className="mb-2 flex items-center gap-1.5 rounded-md border border-line/60 bg-surface-2/50 px-2 py-1.5">
+                <span className="text-[0.56rem] font-medium uppercase tracking-wide text-ink-3">Skips</span>
+                {skippedPhases.map((phase) => (
+                  <PhaseSkipBadge key={phase} phaseName={phase} compact />
+                ))}
+              </div>
+            )}
             {timelinePhaseEntries.length > 0 && (
               <>
                 <div className="mb-2 flex h-7 w-full overflow-hidden rounded-md">
@@ -227,7 +250,7 @@ export function FloatingPhaseTimeline({
               </>
             )}
 
-            {timelinePhaseEntries.length === 0 && selectedSolve.analysis && (
+            {timelinePhaseEntries.length === 0 && derived && (
               <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
                 <p className="text-xs text-ink-3">Timeline data unavailable for this solve.</p>
               </div>

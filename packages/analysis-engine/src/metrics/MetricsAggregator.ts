@@ -40,26 +40,27 @@ export class MetricsAggregator {
     timeline: SolveTimeline,
     scramble: string,
   ): Promise<SolveMetrics> {
-    const { entries, phases, startTimestamp, endTimestamp } = timeline;
+    const { entries, phases } = timeline;
 
-    const totalTimeMs = Math.max(0, endTimestamp - startTimestamp);
+    const totalTimeMs = MetricsAggregator.totalTimeMs(timeline);
     const totalMoves = entries.length;
 
     // ─── Phase-level metrics ────────────────────────────────────────────
-    // Filter out zero-move phases — they occur when multiple phase masks
-    // complete simultaneously (e.g., at the solved state at the end of a
-    // solve). Including them would show confusing 0-move, 0-duration phases
-    // in the UI. The phase names are still available via timeline.phases for
-    // method-specific calculators (CFOPMetricsCalculator, etc.).
+    // Keep zero-move phases: a simultaneous completion is a valid CFOP skip
+    // (for example OLL or PLL skip) and must remain represented in the
+    // canonical four-phase contract.
     const phasesMetrics: PhaseMetrics[] = phases
-      .filter((p) => p.moveCount > 0)
       .map((p) => ({
         phaseName: p.phaseName,
         durationMs: p.durationMs,
+        executionMs: p.executionMs,
+        recognitionMs: p.recognitionMs,
+        transitionMs: p.transitionMs,
+        skipped: p.skipped,
         moveCount: p.moveCount,
-        tps: p.durationMs > 0
-          ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
-          : 0,
+        tps: p.skipped || p.durationMs <= 0
+          ? 0
+          : Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100,
         pauseCount: 0, // computed below
         pauseTimeMs: 0,
       }));
@@ -104,6 +105,7 @@ export class MetricsAggregator {
       totalTimeMs,
       totalMoves,
       phases: phasesMetrics,
+      detectionReport: timeline.detectionReport,
       tps,
       pauses,
       fluidity,
@@ -126,26 +128,30 @@ export class MetricsAggregator {
     pauses: PauseMetrics;
     fluidity: FluidityMetrics;
     rotation: RotationMetrics;
+    detectionReport?: SolveMetrics['detectionReport'];
   } {
-    const { entries, phases, startTimestamp, endTimestamp } = timeline;
+    const { entries, phases } = timeline;
 
-    const totalTimeMs = Math.max(0, endTimestamp - startTimestamp);
+    const totalTimeMs = MetricsAggregator.totalTimeMs(timeline);
     const totalMoves = entries.length;
     const pauses: PauseMetrics = PauseDetector.detect(timeline);
     const tps: TPSMetrics = TPSCalculator.compute(timeline, pauses.totalPauseTimeMs);
     const fluidity: FluidityMetrics = FluidityCalculator.compute(timeline);
     const rotation: RotationMetrics = RotationCounter.compute(timeline);
 
-    // Filter out zero-move phases (same rationale as computeAll)
+    // Preserve zero-move phases so valid OLL/PLL skips remain comparable.
     const phasesMetrics: PhaseMetrics[] = phases
-      .filter((p) => p.moveCount > 0)
       .map((p) => ({
         phaseName: p.phaseName,
         durationMs: p.durationMs,
+        executionMs: p.executionMs,
+        recognitionMs: p.recognitionMs,
+        transitionMs: p.transitionMs,
+        skipped: p.skipped,
         moveCount: p.moveCount,
-        tps: p.durationMs > 0
-          ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
-          : 0,
+        tps: p.skipped || p.durationMs <= 0
+          ? 0
+          : Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100,
         pauseCount: 0,
         pauseTimeMs: 0,
       }));
@@ -158,6 +164,23 @@ export class MetricsAggregator {
       }
     }
 
-    return { totalTimeMs, totalMoves, phases: phasesMetrics, tps, pauses, fluidity, rotation };
+    return {
+      totalTimeMs,
+      totalMoves,
+      phases: phasesMetrics,
+      tps,
+      pauses,
+      fluidity,
+      rotation,
+      detectionReport: timeline.detectionReport,
+    };
+  }
+
+  /** Prefer the timer's authoritative duration over move-event timestamps. */
+  private static totalTimeMs(timeline: SolveTimeline): number {
+    if (timeline.solveTimeMs !== undefined && Number.isFinite(timeline.solveTimeMs)) {
+      return Math.max(0, timeline.solveTimeMs);
+    }
+    return Math.max(0, timeline.endTimestamp - timeline.startTimestamp);
   }
 }

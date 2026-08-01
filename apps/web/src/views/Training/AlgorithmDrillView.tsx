@@ -3,8 +3,16 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+import {
+  METHODS,
+  SUBSETS,
+  getSeedData,
+  getChildSubsets,
+  resolveVisualizationStyleForSubset,
+  resolveAlgorithmDiagramRotation,
+} from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
+import { useCaseAlgorithms, getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
@@ -102,7 +110,7 @@ export function AlgorithmDrillView({
 }: AlgorithmDrillViewProps) {
   void _phaseId; // reserved for future: stores attempts with phase context
   // ── Data ─────────────────────────────────────────────────────────────
-  const { cases: allCases, algorithms: allAlgorithms } = useMemo(() => getSeedData(), []);
+  const { cases: allCases } = useMemo(() => getSeedData(), []);
   const subset = useMemo(() => SUBSETS.find((s) => s.id === subsetId), [subsetId]);
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
@@ -153,8 +161,7 @@ export function AlgorithmDrillView({
 
   // ── Visualization style (yellow-gray for OLL, full-color for PLL, etc.) ─
   const visualizationStyle = useMemo<VisualizationStyle>(() => {
-    const config = subset?.name ? SUBSET_VISUALIZATION[subset.name] : undefined;
-    return config?.style ?? 'full-color';
+    return resolveVisualizationStyleForSubset(subset?.name);
   }, [subset]);
 
   // ── Timer hint context (controls TimerDisplay hint text) ─────────────
@@ -201,11 +208,8 @@ export function AlgorithmDrillView({
     () => (selectedCaseId ? subsetCases.find((c) => c.id === selectedCaseId) ?? null : null),
     [selectedCaseId, subsetCases],
   );
-  const selectedAlgorithms = useMemo(
-    () => (selectedCaseId ? allAlgorithms.filter((a) => a.caseId === selectedCaseId) : []),
-    [selectedCaseId, allAlgorithms],
-  );
-  const defaultAlgorithm = selectedAlgorithms.find((a) => a.isDefault) ?? selectedAlgorithms[0];
+  // ── Ordered algorithms for the selected case (seed + custom, ordered) ──
+  const { primaryAlgorithm: defaultAlgorithm } = useCaseAlgorithms(selectedCaseId);
 
   const weaknessOrdered = useMemo(() => {
     return [...subsetCases].sort((a, b) => {
@@ -404,22 +408,24 @@ export function AlgorithmDrillView({
               {/* Left: Case diagram */}
               <div className="shrink-0 flex items-center justify-center">
                 {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d" || (!selectedCase.diagram2D && selectedCase.setupScramble)) ? (
-                  <Case3DDiagram caseData={selectedCase} className="w-28 sm:w-36" />
+                  <Case3DDiagram caseData={selectedCase} algorithm={defaultAlgorithm} className="w-28 sm:w-36" />
                 ) : selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
                   selectedCase.puzzleType === '2x2x2' ? (
                     <Case2x2Diagram
                       faceletColors={selectedCase.diagram2D.faceletColors}
                       setupScramble={selectedCase.setupScramble}
-                      moves={defaultAlgorithm?.moves}
+                      moves={undefined}
                       style={visualizationStyle}
+                      rotation={resolveAlgorithmDiagramRotation(defaultAlgorithm)}
                       className="w-28 sm:w-36"
                     />
                   ) : (
                     <CaseDiagram
                       arrows={selectedCase.diagram2D.arrows}
                       setupScramble={selectedCase.setupScramble}
-                      moves={defaultAlgorithm?.moves}
+                      moves={undefined}
                       style={visualizationStyle}
+                      rotation={resolveAlgorithmDiagramRotation(defaultAlgorithm)}
                       className="w-28 sm:w-36"
                     />
                   )
@@ -523,7 +529,7 @@ export function AlgorithmDrillView({
 
             <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-line bg-surface flex flex-col">
               {drillMode === "single" && (
-                <CaseSelectorPanel cases={subsetCases} algorithms={allAlgorithms} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
+                <CaseSelectorPanel cases={subsetCases} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
               )}
               {drillMode === "random" && (
                 <RandomModePanel cases={subsetCases} selectedCaseId={selectedCaseId} onSelectCase={setSelectedCaseId} getProgress={getProgress} />
@@ -589,8 +595,8 @@ function DrillHeader({
 
 type ProgressHelper = (id: string) => { mastery: number; bestTimeMs: number; attempts: number };
 
-function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase, getProgress }: {
-  cases: AlgorithmCase[]; algorithms: Algorithm[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
+function CaseSelectorPanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
+  cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
   return (
     <div className="p-3 flex flex-col h-full min-h-0">
@@ -602,7 +608,7 @@ function CaseSelectorPanel({ cases, algorithms, selectedCaseId, onSelectCase, ge
         {cases.map((c) => {
           const isSelected = c.id === selectedCaseId;
           const progress = getProgress(c.id);
-          const caseAlg = algorithms.find((a) => a.caseId === c.id && a.isDefault) ?? algorithms.find((a) => a.caseId === c.id);
+          const caseAlg = getAlgorithmsForCase(c.id)[0];
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
               className={cn("flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-all duration-150 outline-none cursor-pointer",

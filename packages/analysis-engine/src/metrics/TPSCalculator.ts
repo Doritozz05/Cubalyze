@@ -39,11 +39,13 @@ export class TPSCalculator {
       };
     }
 
-    const totalTimeMs = timeline.endTimestamp - timeline.startTimestamp;
+    const totalTimeMs = timeline.solveTimeMs !== undefined && Number.isFinite(timeline.solveTimeMs)
+      ? Math.max(0, timeline.solveTimeMs)
+      : Math.max(0, timeline.endTimestamp - timeline.startTimestamp);
     const effectiveTimeMs = Math.max(1, totalTimeMs - pauseTimeMs);
 
     // Global TPS
-    const global = entries.length / (totalTimeMs / 1000);
+    const global = totalTimeMs > 0 ? entries.length / (totalTimeMs / 1000) : 0;
 
     // Effective TPS (excluding pauses)
     const effective = entries.length / (effectiveTimeMs / 1000);

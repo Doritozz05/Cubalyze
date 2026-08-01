@@ -28,6 +28,18 @@ export const Diagram3DSchema = z.object({
 
 // ─── Algorithm (the move sequence) ─────────────────────────────────────────
 
+export const OrbitCameraSchema = z.object({
+  theta: z.number().finite(),
+  phi: z.number().finite(),
+  radius: z.number().positive().finite(),
+});
+
+export const AlgorithmViewPreferencesSchema = z.object({
+  camera: OrbitCameraSchema.optional(),
+  diagramRotation: z.number().min(0).max(360).optional(),
+  preferredF2LSlot: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+});
+
 export const AlgorithmSchema = z.object({
   id: z.string().uuid(),
   caseId: z.string().uuid(),
@@ -48,6 +60,16 @@ export const AlgorithmSchema = z.object({
   mirrorOf: z.string().optional(),
   isInverse: z.boolean().default(false),
   votes: z.number().int().nonnegative().optional(),
+  /** User-created algorithm (not from seed data). */
+  isCustom: z.boolean().optional().default(false),
+  /** Canonical view preferences for this algorithm's preview. */
+  viewPreferences: AlgorithmViewPreferencesSchema.optional(),
+  /** @deprecated Use viewPreferences.camera. Kept for persisted-data migration. */
+  customViewAngle: z.tuple([z.number(), z.number(), z.number()]).optional(),
+  /** @deprecated Use viewPreferences.diagramRotation. Kept for persisted-data migration. */
+  customDiagramRotation: z.number().min(0).max(360).optional(),
+  /** User-defined sort order within the case. Lower = first. */
+  sortOrder: z.number().int().optional().default(0),
 });
 
 // ─── Case (the cube state / recognition target) ────────────────────────────
@@ -96,6 +118,8 @@ export const AlgorithmMethodSchema = z.object({
 // ─── Derived types ─────────────────────────────────────────────────────────
 
 export type ArrowDef = z.infer<typeof ArrowDefSchema>;
+export type OrbitCamera = z.infer<typeof OrbitCameraSchema>;
+export type AlgorithmViewPreferences = z.infer<typeof AlgorithmViewPreferencesSchema>;
 export type Diagram2D = z.infer<typeof Diagram2DSchema>;
 export type Diagram3D = z.infer<typeof Diagram3DSchema>;
 export type Algorithm = z.infer<typeof AlgorithmSchema>;

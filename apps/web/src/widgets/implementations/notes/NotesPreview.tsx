@@ -15,13 +15,13 @@ export function NotesPreview() {
       {/* Mini Ruled Scratchpad Lines */}
       <div className="space-y-1">
         <div className="flex items-center gap-1 border-b border-line/60 pb-0.5 min-w-0">
-          <span className="size-1 shrink-0 rounded-full bg-accent-cyan" />
+          <span className="size-1 shrink-0 rounded-full bg-ink" />
           <span className="font-mono text-[7px] text-ink-2 truncate w-full">
             {displayText}
           </span>
         </div>
         <div className="flex items-center gap-1 min-w-0">
-          <span className="size-1 shrink-0 rounded-xs border border-accent-cyan/80 bg-accent-cyan/20" />
+          <span className="size-1 shrink-0 rounded-xs border border-ink bg-ink/10" />
           <span className="font-mono text-[6.5px] text-ink-3 truncate w-full">
             {firstGoal}
           </span>
@@ -37,7 +37,7 @@ export function NotesPreview() {
       {/* Footer count indicator */}
       <div className="flex items-center justify-between text-[6.5px] font-mono text-ink-3 pt-0.5 border-t border-line/60">
         <span>Scratchpad</span>
-        <span className="text-accent-cyan font-semibold">{todos.filter((t) => t.completed).length}/{todos.length}</span>
+        <span className="text-ink font-semibold">{todos.filter((t) => t.completed).length}/{todos.length}</span>
       </div>
     </div>
   );

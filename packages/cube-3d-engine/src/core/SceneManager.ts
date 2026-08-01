@@ -22,11 +22,15 @@ export class SceneManager {
   private height: number;
 
   private readonly orbitRadius: number = 7;
+  private readonly minOrbitRadius: number = 2;
+  private readonly maxOrbitRadius: number = 20;
 
   private ambientLight: AmbientLight;
   private directionalLight: DirectionalLight;
 
   public onRender: OnRenderCallback | null = null;
+
+  private readonly baseFov: number = 45;
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, width: number, height: number, pixelRatio: number) {
     this.width = width;
@@ -34,7 +38,8 @@ export class SceneManager {
 
     this.scene = new Scene();
 
-    this.camera = new PerspectiveCamera(45, this.width / this.height, 0.1, 100);
+    this.camera = new PerspectiveCamera(this.baseFov, this.width / this.height, 0.1, 100);
+    this.updateCameraAspectAndFov(width, height);
     this.camera.position.set(0, 0, this.orbitRadius);
     this.camera.lookAt(0, 0, 0);
 
@@ -68,14 +73,30 @@ export class SceneManager {
     }
   }
 
+  private updateCameraAspectAndFov(width: number, height: number): void {
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+
+    // On narrow viewports (aspect < 1.0), widen the vertical FOV proportionally
+    // so the horizontal FOV remains constant and the 3D cube scales down to fit.
+    if (aspect < 1.0) {
+      const baseFovRad = (this.baseFov * Math.PI) / 180;
+      const targetFovRad = 2 * Math.atan(Math.tan(baseFovRad / 2) / aspect);
+      this.camera.fov = (targetFovRad * 180) / Math.PI;
+    } else {
+      this.camera.fov = this.baseFov;
+    }
+
+    this.camera.updateProjectionMatrix();
+  }
+
   public resize(width: number, height: number): void {
     // Guard against degenerate dimensions that produce NaN or Infinity aspect.
     if (width <= 0 || height <= 0) return;
 
     this.width = width;
     this.height = height;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.updateCameraAspectAndFov(width, height);
     this.renderer.setSize(width, height, false);
   }
 
@@ -90,7 +111,10 @@ export class SceneManager {
     spherical.phi -= dy * SPEED; 
 
     spherical.phi = Math.max(MIN_PHI, Math.min(MAX_PHI, spherical.phi));
-    spherical.radius = this.orbitRadius;
+    spherical.radius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, spherical.radius),
+    );
 
     this.camera.position.setFromSpherical(spherical);
     this.camera.lookAt(0, 0, 0);
@@ -107,14 +131,18 @@ export class SceneManager {
    * `theta` = azimuth around Y axis.  `phi` = elevation from horizontal plane.
    * Elevation is clamped to avoid flipping.
    */
-  public setOrbitAngles(theta: number, phi: number): void {
+  public setOrbitAngles(theta: number, phi: number, radius = this.orbitRadius): void {
     const MAX_ELEVATION = Math.PI / 2 - 0.1;
-    const clamped = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, phi));
-    const cosPhi = Math.cos(clamped);
+    const clampedPhi = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, phi));
+    const clampedRadius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, Number.isFinite(radius) ? radius : this.orbitRadius),
+    );
+    const cosPhi = Math.cos(clampedPhi);
     this.camera.position.set(
-      this.orbitRadius * cosPhi * Math.sin(theta),
-      this.orbitRadius * Math.sin(clamped),
-      this.orbitRadius * cosPhi * Math.cos(theta),
+      clampedRadius * cosPhi * Math.sin(theta),
+      clampedRadius * Math.sin(clampedPhi),
+      clampedRadius * cosPhi * Math.cos(theta),
     );
     this.camera.lookAt(0, 0, 0);
   }

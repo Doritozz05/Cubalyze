@@ -11,7 +11,7 @@ export function MetronomePreview() {
     <div className="flex size-full flex-col justify-between p-2 select-none bg-surface border border-line rounded">
       {/* TPS & BPM Readout */}
       <div className="flex items-center justify-between">
-        <span className="font-mono text-xs font-bold text-accent-cyan">4.0 TPS</span>
+        <span className="font-mono text-xs font-bold text-ink">4.0 TPS</span>
         <span className="font-mono text-[9px] font-semibold text-ink-3">240 BPM</span>
       </div>
 
@@ -23,7 +23,7 @@ export function MetronomePreview() {
             className="w-full rounded-xs"
             style={{
               height: `${h}%`,
-              backgroundColor: i === 2 || i === 7 ? "var(--color-accent-cyan, #06b6d4)" : "var(--color-line, #e5e7eb)",
+              backgroundColor: i === 2 || i === 7 ? "var(--color-ink)" : "var(--color-line)",
               opacity: i === 2 || i === 7 ? 1 : 0.5,
             }}
           />
@@ -31,10 +31,9 @@ export function MetronomePreview() {
       </div>
 
       {/* Pulse Status */}
-      <div className="flex items-center justify-between text-[8px] text-ink-3">
-        <span className="font-mono">Pacing</span>
+      <div className="flex items-center justify-end text-[8px] text-ink-3">
         <div className="flex gap-1">
-          <div className="size-1 rounded-full bg-accent-cyan" />
+          <div className="size-1 rounded-full bg-ink" />
           <div className="size-1 rounded-full bg-line" />
           <div className="size-1 rounded-full bg-line" />
           <div className="size-1 rounded-full bg-line" />

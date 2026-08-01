@@ -11,6 +11,7 @@
 import type { CubeFace, CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { v4 as uuidv4 } from "uuid";
 import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
+import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { isLocalhost } from "./env";
 
 // ─── Orientation Timeline Generator ───────────────────────────────────────
@@ -327,11 +328,50 @@ function generateMetrics(
     +Math.max(1.5, globalTps * (0.5 + Math.random())).toFixed(2),
   );
 
+  let phaseIndex = 0;
+  let phaseTimestamp = 0;
+  const detectionPhases = phases.map((phase) => {
+    const startIndex = phaseIndex;
+    const endIndex = phaseIndex + phase.moveCount - 1;
+    const startTimestamp = phaseTimestamp;
+    const endTimestamp = phaseTimestamp + phase.durationMs;
+    phaseIndex += phase.moveCount;
+    phaseTimestamp = endTimestamp;
+    return {
+      phaseName: phase.phaseName,
+      startIndex,
+      endIndex,
+      completionIndex: endIndex,
+      startTimestamp,
+      endTimestamp,
+      durationMs: phase.durationMs,
+      executionMs: phase.durationMs,
+      recognitionMs: 0,
+      transitionMs: 0,
+      skipped: false,
+      moveCount: phase.moveCount,
+    };
+  });
+
   return {
     solveId,
     totalTimeMs,
     totalMoves,
     phases,
+    detectionReport: {
+      method: "CFOP",
+      expectedPhases: ["Cross", "F2L", "OLL", "PLL"],
+      phases: detectionPhases,
+      complete: true,
+      finalStateSolved: true,
+      confidence: "medium",
+      warnings: ["scramble-only-seed"],
+      initialStateSource: "scramble",
+      phaseSchema: "cfop-canonical",
+      solveTimeMs: totalTimeMs,
+      transitionTimeMs: 0,
+      unattributedTimeMs: 0,
+    },
     tps: {
       global: globalTps,
       effective: +(totalMoves / ((totalTimeMs - totalPauseTimeMs) / 1000)).toFixed(2),
@@ -463,7 +503,7 @@ export async function seedDemoDataIfEmpty(
       source: "smart" as const,
       moves,
       orientationTimeline,
-      analysisEngineVersion: "0.1.0",
+      analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
       analysis: JSON.stringify(analysis),
       createdAt: ts.toISOString(),
       updatedAt: ts.toISOString(),

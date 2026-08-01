@@ -273,9 +273,9 @@ export function FloatingLayoutOrganizer() {
       ) : (
         <div className="flex flex-col">
           {/* Scrollable content */}
-          <div className="flex flex-col gap-0 max-h-[380px] overflow-y-auto">
+          <div className="flex flex-col gap-0 max-h-95 overflow-y-auto">
             {/* Header bar + save layout button */}
-            <div className="sticky top-0 z-[1] flex items-center justify-between border-b border-line bg-surface-2/90 backdrop-blur-xs px-3 py-1.5">
+            <div className="sticky top-0 z-1 flex items-center justify-between border-b border-line bg-surface-2 px-3 py-1.5">
               <p className="text-[0.65rem] text-ink-3">
                 <span className="font-semibold text-ink">{activeCount}</span> active widget{activeCount !== 1 ? "s" : ""}
               </p>
@@ -337,7 +337,7 @@ export function FloatingLayoutOrganizer() {
             {customLayouts.length > 0 && (
               <div className="px-2.5 pt-2 pb-1">
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[0.55rem] uppercase tracking-[0.1em] text-ink-3/70 font-semibold">Custom Layouts</p>
+                  <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold">Custom Layouts</p>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {customLayouts.map((layout) => {
@@ -379,7 +379,7 @@ export function FloatingLayoutOrganizer() {
                           <div className="relative overflow-hidden rounded border border-line/50 bg-surface-2/50">
                             <LayoutPreviewSvg rects={rects} ids={requiredIds} />
                             {!isFullyActive && (
-                              <div className="absolute inset-0 bg-surface/70 backdrop-blur-[1px] flex items-center justify-center gap-1 text-ink-3">
+                              <div className="absolute inset-0 bg-surface/85 flex items-center justify-center gap-1 text-ink-3">
                                 <Lock className="size-3 text-ink-3/80" />
                               </div>
                             )}
@@ -420,7 +420,7 @@ export function FloatingLayoutOrganizer() {
             {/* ── Built-in presets section ─────────────────────────────────── */}
             {activeCount > 0 && (
               <div className="px-2.5 pt-2 pb-1">
-                <p className="text-[0.55rem] uppercase tracking-[0.1em] text-ink-3/70 font-semibold mb-1.5">Presets</p>
+                <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold mb-1.5">Presets</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {layoutData.map((layout) => (
                     <button

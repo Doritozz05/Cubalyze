@@ -100,8 +100,15 @@ describe('MetricsAggregator', () => {
     for (const phase of metrics.phases) {
       expect(phase.phaseName).toBeDefined();
       expect(phase.durationMs).toBeGreaterThanOrEqual(0);
-      expect(phase.moveCount).toBeGreaterThan(0);
-      expect(phase.tps).toBeGreaterThanOrEqual(0);
+      if (phase.skipped) {
+        expect(phase.moveCount).toBe(0);
+        expect(phase.durationMs).toBe(0);
+        expect(phase.tps).toBe(0);
+      } else {
+        expect(phase.moveCount).toBeGreaterThan(0);
+        expect(phase.durationMs).toBeGreaterThan(0);
+        expect(phase.tps).toBeGreaterThanOrEqual(0);
+      }
     }
   });
 

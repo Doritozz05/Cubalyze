@@ -38,9 +38,15 @@ describe('Pipeline — End-to-End', () => {
     expect(metrics.phases.length).toBeGreaterThan(0);
     for (const phase of metrics.phases) {
       expect(phase.phaseName).toBeTruthy();
-      expect(phase.durationMs).toBeGreaterThan(0);
-      expect(phase.moveCount).toBeGreaterThan(0);
-      expect(phase.tps).toBeGreaterThanOrEqual(0);
+      if (phase.skipped) {
+        expect(phase.durationMs).toBe(0);
+        expect(phase.moveCount).toBe(0);
+        expect(phase.tps).toBe(0);
+      } else {
+        expect(phase.durationMs).toBeGreaterThan(0);
+        expect(phase.moveCount).toBeGreaterThan(0);
+        expect(phase.tps).toBeGreaterThanOrEqual(0);
+      }
     }
 
     // Core metrics must exist

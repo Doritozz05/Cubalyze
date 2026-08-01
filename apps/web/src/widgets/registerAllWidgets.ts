@@ -8,6 +8,7 @@ import { FloatingTimesPanel } from "@/widgets/implementations/times-log/Floating
 import { FloatingTimeDistribution } from "@/widgets/implementations/time-distribution/FloatingTimeDistribution";
 import { FloatingPbProgression } from "@/widgets/implementations/pb-progression/FloatingPbProgression";
 import { FloatingPhaseTimeline } from "@/widgets/implementations/solve-timeline/FloatingPhaseTimeline";
+import { FloatingPhaseBalance } from "@/widgets/implementations/phase-balance/FloatingPhaseBalance";
 import { FloatingCube2DPanel } from "@/widgets/implementations/scramble-2d/FloatingCube2DPanel";
 import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
 import { FloatingMetronomePanel } from "@/widgets/implementations/metronome/FloatingMetronomePanel";
@@ -20,6 +21,7 @@ import { TimesLogPreview } from "@/widgets/implementations/times-log/TimesLogPre
 import { TimeDistributionPreview } from "@/widgets/implementations/time-distribution/TimeDistributionPreview";
 import { PbProgressionPreview } from "@/widgets/implementations/pb-progression/PbProgressionPreview";
 import { SolveTimelinePreview } from "@/widgets/implementations/solve-timeline/SolveTimelinePreview";
+import { PhaseBalancePreview } from "@/widgets/implementations/phase-balance/PhaseBalancePreview";
 import { Scramble2DPreview } from "@/widgets/implementations/scramble-2d/Scramble2DPreview";
 import { Cube3DPreview } from "@/widgets/implementations/cube-button/Cube3DPreview";
 import { MetronomePreview } from "@/widgets/implementations/metronome/MetronomePreview";
@@ -66,6 +68,13 @@ export function registerAllWidgets(): void {
     component: FloatingPbProgression as any,
     preview: PbProgressionPreview,
     mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
+  });
+
+  WidgetRegistry.register("phase-balance", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: FloatingPhaseBalance as any,
+    preview: PhaseBalancePreview,
+    mapProps: ({ solves, lastAnalysis }: WidgetHostProps) => ({ solves, lastAnalysis }),
   });
 
   WidgetRegistry.register("solve-timeline", {

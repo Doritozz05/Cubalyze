@@ -190,11 +190,11 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       initEngineIfNeeded(rect.width, rect.height);
     }
 
-    // ResizeObserver guards against 0x0 container size
+    // ResizeObserver guards against tiny or 0x0 container size during collapse
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
+        if (width >= 40 && height >= 40) {
           if (!engineRef.current) {
             initEngineIfNeeded(width, height);
           } else {
