@@ -104,19 +104,6 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
     [sortedAlgIds, caseData.id],
   );
 
-  // ── 3D isometric cases delegate to Case3DPanel ─────────────────────
-  if (caseData.diagramType === "3d-isometric") {
-    return (
-      <Case3DPanel
-        caseData={caseData}
-        algorithms={algorithms}
-        onClose={onClose}
-        onPracticeCase={onPracticeCase}
-        className={className}
-      />
-    );
-  }
-
   const activeAlg =
     algorithms.find((a) => a.id === selectedAlgId) ?? primaryAlgorithm;
 
@@ -144,6 +131,19 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
       description: `${alg.moves.slice(0, 4).join(" ")}${alg.moves.length > 4 ? " …" : ""}`,
     });
   }, []);
+
+  // ── 3D isometric cases delegate to Case3DPanel ─────────────────────
+  if (caseData.diagramType === "3d-isometric") {
+    return (
+      <Case3DPanel
+        caseData={caseData}
+        algorithms={algorithms}
+        onClose={onClose}
+        onPracticeCase={onPracticeCase}
+        className={className}
+      />
+    );
+  }
 
   // ── Render ──────────────────────────────────────────────────────────
   return (

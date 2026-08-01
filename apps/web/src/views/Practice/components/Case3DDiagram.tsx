@@ -248,13 +248,7 @@ export function Case3DCanvas({
     selectedSlot,
     resetCameraTrigger,
     order,
-    plan.engineFacelets,
-    plan.camera.theta,
-    plan.camera.phi,
-    plan.camera.radius,
-    plan.modelRotationY,
-    plan.isF2L,
-    plan.isAdvancedF2L,
+    plan,
   ]);
 
   useEffect(() => {
