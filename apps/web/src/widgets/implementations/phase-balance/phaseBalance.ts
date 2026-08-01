@@ -78,7 +78,8 @@ function comparableSolve(solve: Solve): ComparableSolve | null {
   const effective = effectiveTime(solve);
   if (!Number.isFinite(effective)) return null;
   if (!isComparablePhaseAnalysis(solve.analysis)) return null;
-  return { solve, analysis: solve.analysis };
+  const analysis = solve.analysis;
+  return { solve, analysis };
 }
 
 function phaseMap(phases: PhaseMetrics[]): Map<CfopPhaseName, PhaseMetrics> {

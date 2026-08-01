@@ -174,7 +174,9 @@ export function MainLayout({
       dragStartRef.current = null;
       try {
         (e.target as HTMLDivElement).releasePointerCapture(e.pointerId);
-      } catch (_) {}
+      } catch {
+        // ignore if pointer capture was already lost
+      }
     },
     [],
   );

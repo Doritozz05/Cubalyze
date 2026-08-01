@@ -75,7 +75,7 @@ export function FloatingPhaseTimeline({
       const pauseMarks = derived.pauseMarks.filter(
         (p) => p.phase === seg.phaseName,
       );
-      const totalPauseMs = pauseMarks.reduce((s, p) => s + p.durationMs, 0);
+      const totalPauseMs = pauseMarks.reduce((s: number, p) => s + p.durationMs, 0);
       return {
         phaseName: seg.phaseName,
         durationMs: seg.durationMs,
@@ -90,7 +90,7 @@ export function FloatingPhaseTimeline({
   }, [derived]);
 
   const pauseCount = derived?.pauseMarks.length ?? 0;
-  const totalPauseMs = derived?.pauseMarks.reduce((s, p) => s + p.durationMs, 0) ?? 0;
+  const totalPauseMs = derived?.pauseMarks.reduce((s: number, p) => s + p.durationMs, 0) ?? 0;
   const totalMs = derived?.totalMs ?? 0;
 
   const recentSolves = useMemo(
