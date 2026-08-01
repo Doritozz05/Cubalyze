@@ -46,13 +46,10 @@ export class MetricsAggregator {
     const totalMoves = entries.length;
 
     // ─── Phase-level metrics ────────────────────────────────────────────
-    // Filter out zero-move phases — they occur when multiple phase masks
-    // complete simultaneously (e.g., at the solved state at the end of a
-    // solve). Including them would show confusing 0-move, 0-duration phases
-    // in the UI. The phase names are still available via timeline.phases for
-    // method-specific calculators (CFOPMetricsCalculator, etc.).
+    // Keep zero-move phases: a simultaneous completion is a valid CFOP skip
+    // (for example OLL or PLL skip) and must remain represented in the
+    // canonical four-phase contract.
     const phasesMetrics: PhaseMetrics[] = phases
-      .filter((p) => p.moveCount > 0)
       .map((p) => ({
         phaseName: p.phaseName,
         durationMs: p.durationMs,
@@ -61,9 +58,9 @@ export class MetricsAggregator {
         transitionMs: p.transitionMs,
         skipped: p.skipped,
         moveCount: p.moveCount,
-        tps: p.durationMs > 0
-          ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
-          : 0,
+        tps: p.skipped || p.durationMs <= 0
+          ? 0
+          : Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100,
         pauseCount: 0, // computed below
         pauseTimeMs: 0,
       }));
@@ -142,9 +139,8 @@ export class MetricsAggregator {
     const fluidity: FluidityMetrics = FluidityCalculator.compute(timeline);
     const rotation: RotationMetrics = RotationCounter.compute(timeline);
 
-    // Filter out zero-move phases (same rationale as computeAll)
+    // Preserve zero-move phases so valid OLL/PLL skips remain comparable.
     const phasesMetrics: PhaseMetrics[] = phases
-      .filter((p) => p.moveCount > 0)
       .map((p) => ({
         phaseName: p.phaseName,
         durationMs: p.durationMs,
@@ -153,9 +149,9 @@ export class MetricsAggregator {
         transitionMs: p.transitionMs,
         skipped: p.skipped,
         moveCount: p.moveCount,
-        tps: p.durationMs > 0
-          ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
-          : 0,
+        tps: p.skipped || p.durationMs <= 0
+          ? 0
+          : Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100,
         pauseCount: 0,
         pauseTimeMs: 0,
       }));

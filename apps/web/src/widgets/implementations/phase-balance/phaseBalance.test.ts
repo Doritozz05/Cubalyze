@@ -7,7 +7,12 @@ import {
   getLatestComparableAnalysis,
 } from "./phaseBalance";
 
-function makeAnalysis(id: string, scale = 1, proportions = [1000, 4000, 1500, 2000]): SolveMetrics {
+function makeAnalysis(
+  id: string,
+  scale = 1,
+  proportions = [1000, 4000, 1500, 2000],
+  skippedPhase?: "OLL" | "PLL",
+): SolveMetrics {
   const phases = [
     ["Cross", proportions[0]],
     ["F2L", proportions[1]],
@@ -20,9 +25,10 @@ function makeAnalysis(id: string, scale = 1, proportions = [1000, 4000, 1500, 20
     totalMoves: 50,
     phases: phases.map(([phaseName, durationMs], index) => ({
       phaseName,
-      durationMs: durationMs * scale,
-      moveCount: [6, 28, 8, 12][index],
-      tps: 4,
+      durationMs: skippedPhase === phaseName ? 0 : durationMs * scale,
+      skipped: skippedPhase === phaseName,
+      moveCount: skippedPhase === phaseName ? 0 : [6, 28, 8, 12][index],
+      tps: skippedPhase === phaseName ? 0 : 4,
       pauseCount: 0,
       pauseTimeMs: 0,
     })),
@@ -35,9 +41,10 @@ function makeAnalysis(id: string, scale = 1, proportions = [1000, 4000, 1500, 20
         endIndex: index,
         completionIndex: index,
         startTimestamp: 0,
-        endTimestamp: durationMs * scale,
-        durationMs: durationMs * scale,
-        moveCount: [6, 28, 8, 12][index],
+        endTimestamp: skippedPhase === phaseName ? 0 : durationMs * scale,
+        durationMs: skippedPhase === phaseName ? 0 : durationMs * scale,
+        skipped: skippedPhase === phaseName,
+        moveCount: skippedPhase === phaseName ? 0 : [6, 28, 8, 12][index],
       })),
       complete: true,
       finalStateSolved: true,
@@ -83,11 +90,23 @@ function makeSolve(id: string, analysis?: SolveMetrics, penalty: Solve["penalty"
 describe("Phase Balance data", () => {
   it("uses only finite, comparable CFOP solves", () => {
     const valid = makeSolve("valid", makeAnalysis("valid"));
-    const legacy = makeSolve("legacy", undefined);
+    const withoutReport = makeSolve("without-report", undefined);
     const dnf = makeSolve("dnf", makeAnalysis("dnf"), "DNF");
 
-    expect(getComparableSolves([valid, legacy, dnf])).toHaveLength(1);
-    expect(buildPhaseBalance([valid, legacy, dnf]).analysedSolves).toBe(1);
+    expect(getComparableSolves([valid, withoutReport, dnf])).toHaveLength(1);
+    expect(buildPhaseBalance([valid, withoutReport, dnf]).analysedSolves).toBe(1);
+  });
+
+  it("accepts a valid OLL/PLL skip as a complete four-phase solve", () => {
+    const pllSkip = makeSolve("pll-skip", makeAnalysis("pll-skip", 1, [1000, 4000, 1500, 2000], "PLL"));
+    const data = buildPhaseBalance([pllSkip], pllSkip.analysis);
+
+    expect(getComparableSolves([pllSkip])).toHaveLength(1);
+    expect(data.rows.find((row) => row.phaseName === "PLL")).toMatchObject({
+      share: 0,
+      avgMoveCount: 0,
+    });
+    expect(data.rows.reduce((sum, row) => sum + row.share, 0)).toBeCloseTo(1);
   });
 
   it("computes shares from the recent self-baseline and latest deltas", () => {

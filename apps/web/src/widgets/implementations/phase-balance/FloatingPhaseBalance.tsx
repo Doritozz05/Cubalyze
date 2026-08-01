@@ -142,7 +142,7 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
             <Scale className="size-7 text-ink-3/30" />
             <p className="text-sm font-medium text-ink-2">Not enough comparable CFOP data</p>
             <p className="max-w-60 text-[0.66rem] leading-relaxed text-ink-3">
-              Complete analysed CFOP solves that reach a solved state. Legacy, incomplete, non-CFOP, and DNF solves stay out of this comparison.
+              Complete analysed CFOP solves that reach a solved state. Incomplete, non-CFOP, and DNF solves stay out of this comparison.
             </p>
           </div>
         ) : (

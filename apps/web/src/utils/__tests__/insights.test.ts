@@ -208,8 +208,8 @@ describe("derivePhaseDistribution", () => {
     expect(derivePhaseDistribution([makeSolve()])).toEqual([]);
   });
 
-  it("excludes legacy, non-CFOP, and incomplete reports", () => {
-    const legacy = makeSolve({ id: "legacy", analysis: makeMetrics({ detectionReport: undefined }) });
+  it("excludes analyses without reports, non-CFOP, and incomplete reports", () => {
+    const withoutReport = makeSolve({ id: "without-report", analysis: makeMetrics({ detectionReport: undefined }) });
     const nonCfop = makeSolve({
       id: "roux",
       analysis: makeMetrics({
@@ -243,7 +243,7 @@ describe("derivePhaseDistribution", () => {
       }),
     });
 
-    expect(derivePhaseDistribution([legacy, nonCfop, incomplete])).toEqual([]);
+    expect(derivePhaseDistribution([withoutReport, nonCfop, incomplete])).toEqual([]);
   });
 });
 

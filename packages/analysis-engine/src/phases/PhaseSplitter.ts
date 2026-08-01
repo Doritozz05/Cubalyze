@@ -88,7 +88,7 @@ export class PhaseSplitter {
   }
 
   /**
-   * Validate detected boundaries. The legacy default validates the boundaries
+   * Validate detected boundaries. The default validates the boundaries
    * that were found; `{ strict: true }` additionally requires a complete
    * phase sequence and a solved final state.
    */
@@ -186,7 +186,7 @@ export class PhaseSplitter {
       const skipped = completionIndex === previousCompletion;
       // A non-skipped phase owns the moves after the previous completion up to
       // and including its completion move. A skipped phase owns no move; its
-      // indices remain addressable for legacy consumers, while `skipped` is
+      // indices remain addressable for compatibility consumers, while `skipped` is
       // the source of truth for annotation and metrics.
       const startIndex = skipped ? completionIndex : previousCompletion + 1;
       const endIndex = completionIndex;
@@ -226,7 +226,7 @@ export class PhaseSplitter {
       searchFrom = completionIndex;
     }
 
-    // Preserve the legacy invariant that a fully detected solve covers any
+    // Preserve the invariant that a fully detected solve covers any
     // trailing events after the last mask match. Those events belong to the
     // final non-skipped phase; a skipped terminal phase remains zero-move.
     if (phaseIndex === masks.length && phases.length > 0) {

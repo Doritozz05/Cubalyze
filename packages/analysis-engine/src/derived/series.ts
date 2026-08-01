@@ -31,8 +31,8 @@ export interface SeriesSolve extends StatSolve {
 
 /**
  * Whether an analysis was produced by the hardened CFOP pipeline and is safe
- * to include in phase-comparison views. Legacy serialized metrics can still
- * power their own solve/replay views, but must not be mixed into CFOP shares.
+ * to include in phase-comparison views. Analyses without a complete canonical
+ * report must not be mixed into CFOP shares.
  */
 export function isComparablePhaseAnalysis(
   analysis: SolveMetrics | undefined,
@@ -149,15 +149,18 @@ export function derivePhaseDistribution(solves: SeriesSolve[]): PhaseShare[] {
   if (analysed.length === 0) return [];
 
   const phaseNames = ["Cross", "F2L", "OLL", "PLL"];
-  const acc = new Map<string, { dur: number; moves: number; tps: number; share: number; n: number }>();
+  const acc = new Map<string, { dur: number; moves: number; tps: number; share: number; n: number; tpsN: number }>();
   for (const s of analysed) {
     const totalDuration = s.analysis!.phases.reduce((sum, phase) => sum + phase.durationMs, 0);
     if (!Number.isFinite(totalDuration) || totalDuration <= 0) continue;
     for (const p of s.analysis!.phases) {
-      const cur = acc.get(p.phaseName) ?? { dur: 0, moves: 0, tps: 0, share: 0, n: 0 };
+      const cur = acc.get(p.phaseName) ?? { dur: 0, moves: 0, tps: 0, share: 0, n: 0, tpsN: 0 };
       cur.dur += p.durationMs;
       cur.moves += p.moveCount;
-      cur.tps += p.tps;
+      if (p.durationMs > 0 && p.moveCount > 0) {
+        cur.tps += p.tps;
+        cur.tpsN += 1;
+      }
       cur.share += p.durationMs / totalDuration;
       cur.n += 1;
       acc.set(p.phaseName, cur);
@@ -173,7 +176,7 @@ export function derivePhaseDistribution(solves: SeriesSolve[]): PhaseShare[] {
         avgDurationMs: v.dur / v.n,
         avgMoveCount: v.moves / v.n,
         share: v.share / v.n,
-        avgTps: v.tps / v.n,
+        avgTps: v.tpsN > 0 ? v.tps / v.tpsN : 0,
       };
     })
     .filter((phase): phase is PhaseShare => phase !== null);

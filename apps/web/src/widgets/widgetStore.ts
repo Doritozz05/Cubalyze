@@ -71,7 +71,7 @@ function buildDefaultInstances(): Record<WidgetId, WidgetInstanceState> {
   return map;
 }
 
-function statusFromLegacy(
+function statusFromPreviousLayout(
   visible: boolean,
   dockMode: string | undefined,
   minimized: boolean,
@@ -152,12 +152,12 @@ export function migratePersistedWidgetState(
     const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
     const fallbackPosition = def?.defaultPosition ?? { x: 100, y: 100 };
 
-    // Migrate legacy layouts to the current status-based format.
+    // Migrate previous layouts to the current status-based format.
     if (oldVersion < 4) {
       const visible = value.visible === true;
       const dockMode = typeof value.dockMode === "string" ? value.dockMode : "docked";
       const minimized = value.minimized === true;
-      const status = statusFromLegacy(visible, dockMode, minimized);
+      const status = statusFromPreviousLayout(visible, dockMode, minimized);
       cleanedInstances[id] = {
         status: clampStatus(id as WidgetId, status),
         position: safePosition(value.position, fallbackPosition),

@@ -147,7 +147,7 @@ export function FloatingPhaseTimeline({
             <p className="text-xs text-ink-3">
               {selectedSolve.source === "smart"
                 ? selectedSolve.analysis
-                  ? "This solve uses an older or incomplete analysis contract. Re-analyze it to show comparable phases."
+                  ? "This solve has an incomplete analysis. Re-analyze it to show comparable phases."
                   : "The analysis pipeline is running. Check back shortly."
                 : "Manual entry. Connect a Smart Cube to get phase analysis."}
             </p>
