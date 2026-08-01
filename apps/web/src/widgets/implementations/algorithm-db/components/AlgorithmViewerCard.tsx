@@ -83,7 +83,7 @@ export function AlgorithmViewerCard({
       {/* ── Case Header Banner ── */}
       <div className="flex items-center justify-between gap-2 bg-surface-2/60 border border-line rounded-md px-2.5 py-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          <Badge variant="outline" className="font-mono text-[11px] font-bold text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10">
+          <Badge variant="outline" className="font-mono text-[11px] font-bold text-ink border-line-2 bg-surface-2">
             {caseData.caseNumber}
           </Badge>
           {caseData.name && caseData.name !== caseData.caseNumber && (
@@ -136,12 +136,12 @@ export function AlgorithmViewerCard({
               variant="ghost"
               size="sm"
               onClick={handleCopySetup}
-              className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-accent-cyan gap-1"
+              className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
             >
               {copiedSetup ? (
                 <>
-                  <Check className="size-3 text-accent-emerald" />
-                  <span className="text-accent-emerald">Copied</span>
+                  <Check className="size-3 text-ready" />
+                  <span className="text-ready">Copied</span>
                 </>
               ) : (
                 <>
@@ -169,12 +169,12 @@ export function AlgorithmViewerCard({
             variant="ghost"
             size="sm"
             onClick={handleCopyAlg}
-            className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-accent-cyan gap-1"
+            className="h-5 px-1.5 text-[10px] text-ink-3 hover:text-ink gap-1"
           >
             {copiedAlg ? (
               <>
-                <Check className="size-3 text-accent-emerald" />
-                <span className="text-accent-emerald">Copied</span>
+                <Check className="size-3 text-ready" />
+                <span className="text-ready">Copied</span>
               </>
             ) : (
               <>
@@ -186,7 +186,7 @@ export function AlgorithmViewerCard({
         </div>
 
         {/* Algorithm moves container */}
-        <div className="font-mono text-xs font-semibold text-accent-cyan bg-surface-1 border border-line rounded p-2 leading-relaxed wrap-break-word shadow-inner">
+        <div className="font-mono text-xs font-semibold text-ink bg-surface-1 border border-line rounded p-2 leading-relaxed wrap-break-word shadow-xs">
           {movesText || "No algorithm available"}
         </div>
 
@@ -227,7 +227,7 @@ export function AlgorithmViewerCard({
                     className={cn(
                       "h-6 px-2 text-[10px] font-mono transition-all",
                       isActive
-                        ? "bg-accent-cyan/20 text-accent-cyan border-accent-cyan/40 hover:bg-accent-cyan/30"
+                        ? "bg-ink text-surface shadow-xs font-semibold"
                         : "text-ink-3 hover:text-ink"
                     )}
                   >

@@ -358,7 +358,7 @@ export function AlgorithmEditorDialog({
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="grid size-7 place-items-center rounded-md bg-accent-cyan text-surface">
+                <div className="grid size-7 place-items-center rounded-md bg-ink text-surface">
                   <Plus className="size-3.5" />
                 </div>
                 <div>
@@ -481,11 +481,11 @@ export function AlgorithmEditorDialog({
                     </Button>
                     {capturedOrientation && (
                       <>
-                        <span className="text-[0.55rem] text-accent-cyan font-mono">
+                        <span className="text-[0.55rem] text-ink font-mono font-medium">
                           θ: {capturedOrientation.theta.toFixed(2)} φ:{" "}
                           {capturedOrientation.phi.toFixed(2)}
                         </span>
-                        <span className="size-1.5 rounded-full bg-accent-cyan" />
+                        <span className="size-1.5 rounded-full bg-ink" />
                       </>
                     )}
                   </div>
@@ -513,10 +513,10 @@ export function AlgorithmEditorDialog({
                     </Button>
                     {capturedRotation2D != null && (
                       <>
-                        <span className="text-[0.55rem] text-accent-cyan font-mono">
+                        <span className="text-[0.55rem] text-ink font-mono font-medium">
                           {capturedRotation2D}°
                         </span>
-                        <span className="size-1.5 rounded-full bg-accent-cyan" />
+                        <span className="size-1.5 rounded-full bg-ink" />
                       </>
                     )}
                   </div>
@@ -541,7 +541,7 @@ export function AlgorithmEditorDialog({
                   value={notation}
                   onChange={(e) => setNotation(e.target.value)}
                   placeholder="e.g. R U R' U' R' F R2 U' R' U' R U R' F'"
-                  className="min-h-[72px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2.5 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-accent-cyan/60 focus:ring-1 focus:ring-accent-cyan/20"
+                  className="min-h-[72px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2.5 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                   autoFocus
                 />
                 <p className="mt-1.5 text-[0.58rem] text-ink-3/70">
@@ -627,7 +627,7 @@ export function AlgorithmEditorDialog({
                   size="sm"
                   onClick={handleSave}
                   disabled={!canSave || saving}
-                  className="h-8 px-3 text-xs bg-accent-cyan text-surface shadow-xs hover:bg-accent-cyan/85 focus-visible:ring-accent-cyan/30"
+                  className="h-8 px-3 text-xs bg-ink text-surface shadow-xs hover:bg-ink/90 focus-visible:ring-ring"
                 >
                   {saving
                     ? "Saving…"

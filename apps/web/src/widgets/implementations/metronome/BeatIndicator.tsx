@@ -31,9 +31,9 @@ export function BeatIndicator({
               "size-3 rounded-full transition-all duration-100 border",
               isActive
                 ? isFirst
-                  ? "bg-accent border-accent scale-125 shadow-md shadow-accent/40"
-                  : "bg-emerald-500 border-emerald-500 scale-110"
-                : "bg-surface-3 border-line opacity-40",
+                  ? "bg-ink border-ink scale-125 shadow-xs"
+                  : "bg-ink/75 border-ink scale-110"
+                : "bg-surface-2 border-line opacity-40",
             )}
           />
         );

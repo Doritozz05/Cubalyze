@@ -309,8 +309,8 @@ function SubsetItem({
       className={cn(
         "block w-full text-left px-2 py-1 text-[0.68rem] rounded-sm transition-colors",
         isSelected
-          ? "bg-accent-cyan/10 text-accent-cyan font-semibold"
-          : "text-ink-3 hover:text-ink-2 hover:bg-surface-2/30",
+          ? "bg-ink text-surface font-semibold shadow-xs"
+          : "text-ink-3 hover:text-ink hover:bg-surface-2/60",
       )}
     >
       {subset.name}

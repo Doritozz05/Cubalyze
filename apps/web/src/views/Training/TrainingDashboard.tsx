@@ -269,7 +269,8 @@ function FlatDashboard({
           </div>
 
           {dueCount > 0 && (
-            <span className="nums shrink-0 rounded-full bg-caution/15 px-2.5 py-0.5 text-[0.6rem] font-medium text-caution ml-auto">
+            <span className="nums shrink-0 inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[0.6rem] font-semibold text-black dark:text-white ml-auto">
+              <span className="size-1.5 rounded-full bg-amber-500 shrink-0" />
               {dueCount} due for review
             </span>
           )}

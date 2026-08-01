@@ -216,7 +216,7 @@ export function Case3DPanel({
               </h4>
               <button
                 onClick={handleOpenAddDialog}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-accent-cyan hover:text-accent-cyan/80 hover:bg-accent-cyan/5 transition-colors"
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
                 title="Add custom algorithm"
               >
                 <Plus className="size-3" />

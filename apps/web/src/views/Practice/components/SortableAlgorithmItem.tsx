@@ -56,8 +56,8 @@ export function SortableAlgorithmItem({
       className={cn(
         "group flex gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors relative",
         isSelected
-          ? "border-accent-cyan/60 bg-accent-cyan/5 shadow-xs"
-          : "border-line bg-surface hover:border-ink/20",
+          ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"
+          : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2/60",
         isDragging && "shadow-lg z-10",
       )}
     >
@@ -90,7 +90,7 @@ export function SortableAlgorithmItem({
           )}
 
           {isCustom && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-accent-cyan/30 bg-accent-cyan/8 px-1.5 py-0.5 text-[0.55rem] font-medium text-accent-cyan">
+            <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-1.5 py-0.5 text-[0.55rem] font-medium text-ink-2">
               <Sparkles className="size-2" />
               custom
             </span>

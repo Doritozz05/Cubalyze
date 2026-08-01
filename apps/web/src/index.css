@@ -72,7 +72,6 @@
   --color-line: var(--line);
   --color-line-2: var(--line-2);
 
-  --color-accent-cyan: var(--accent-cyan);
   --color-accent-emerald: var(--accent-emerald);
 
   --color-ready: var(--ready);
@@ -118,7 +117,6 @@
   --canvas: #f8f9fa;
   --surface: #ffffff;
   --surface-2: #f1f3f5;
-  --accent-cyan: #0e7490;
   --accent-emerald: #047857;
   --ink: #212529;
   --ink-2: #495057;
@@ -183,7 +181,6 @@
   --canvas: #1b1f23;
   --surface: #1b1f23;
   --surface-2: #24292e;
-  --accent-cyan: #38bdf8;
   --accent-emerald: #34d399;
   --ink: #e9ecef;
   --ink-2: #adb5bd;
