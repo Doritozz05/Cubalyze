@@ -708,7 +708,7 @@ export default function App() {
   };
 
   return (
-    <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
+    <div className="antialiased bg-background text-foreground h-dvh w-full overflow-hidden">
       <ThemeProvider>
         <MainLayout
           sessionCount={solves.length}

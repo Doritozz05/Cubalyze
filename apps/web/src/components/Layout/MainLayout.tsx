@@ -226,11 +226,10 @@ export function MainLayout({
         </AnimatePresence>
 
         <main className={cn(
-          "mx-auto flex w-full flex-1 flex-col overflow-hidden lg:flex-row",
-          // NOTE: no height override here — <main> is flex-1, so flex layout
-          // sizes it. Bottom-bar space is reserved on the wrapper (above).
-          !isFocused && !hideHeader && "h-[calc(100dvh-3.5rem)]",
-          !isFocused && hideHeader && "h-dvh"
+          "mx-auto flex w-full flex-1 flex-col min-h-0 overflow-hidden lg:flex-row",
+          // NOTE: no height override — <main> is flex-1 min-h-0, so flex layout
+          // sizes it. Bottom-bar and top header spaces are reserved on the wrapper.
+          hideHeader ? "h-dvh" : "h-full"
         )}>
           <section
             id="timer-section"
