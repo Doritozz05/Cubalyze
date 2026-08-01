@@ -3,7 +3,6 @@ import { Search, SlidersHorizontal, Map, LayoutList, Check, Lock, Sparkles } fro
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useIsTouch } from "@/hooks/use-mobile";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
 import { SkillNodeModal } from "./SkillNodeModal";
 import { ALL_SKILL_NODES, type SkillNode } from "./skillTreeData";
@@ -35,8 +34,6 @@ const CATEGORY_ITEMS = [
 const LOCAL_STORAGE_KEY = "cubeforge_completed_skills_v2";
 
 export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
-  const isTouch = useIsTouch();
-
   // View mode: 'graph' (interactive tree) or 'list' (compact card grid)
   const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
 
