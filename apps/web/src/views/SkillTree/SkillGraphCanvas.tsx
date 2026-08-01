@@ -565,32 +565,34 @@ export function SkillGraphCanvas({
                   {/* Icon */}
                   <NodeIcon className="w-7 h-7 stroke-2" />
 
-                  {/* Status Indicator */}
-                  {isCompleted && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-canvas border-2 border-ink text-ink flex items-center justify-center text-[0.62rem] font-bold shadow-sm">
-                      <Check className="w-3 h-3 stroke-3" />
-                    </div>
-                  )}
-
-                  {isLocked && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-surface-2 border border-line text-ink-3 flex items-center justify-center text-[0.62rem]">
-                      <Lock className="w-3 h-3" />
-                    </div>
-                  )}
-
-                  {/* Hover Quick Toggle Action for accessible nodes (desktop only; touch uses overlay checks below) */}
-                  {onToggleComplete && !isLocked && (
+                  {/* Status / Interactive Completion Toggle Badge */}
+                  {!isLocked && onToggleComplete ? (
                     <button
-                      onClick={(e) => onToggleComplete(node.id, e)}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleComplete(node.id, e);
+                      }}
                       title={isCompleted ? "Mark as accessible" : "Mark as completed"}
+                      aria-label={isCompleted ? "Mark as accessible" : "Mark as completed"}
                       className={cn(
-                        "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-surface border border-ink flex items-center justify-center text-ink opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ink hover:text-surface shadow-md",
-                        "max-lg:hidden",
+                        "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
+                        isCompleted
+                          ? "border-ink bg-ink text-surface shadow-sm"
+                          : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink hover:bg-surface-2"
                       )}
                     >
-                      <Check className="w-3 h-3 stroke-3" />
+                      <Check className={cn("size-3.5 stroke-[2.5]", isCompleted ? "opacity-100" : "opacity-40")} />
                     </button>
-                  )}
+                  ) : isCompleted ? (
+                    <div className="absolute -top-1 -right-1 z-20 flex size-5.5 items-center justify-center rounded-full border border-ink bg-ink text-surface shadow-xs">
+                      <Check className="size-3 stroke-[2.5]" />
+                    </div>
+                  ) : isLocked ? (
+                    <div className="absolute -top-1 -right-1 z-20 flex size-5.5 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-3">
+                      <Lock className="size-3" />
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Clean Label Under Node */}
@@ -616,32 +618,6 @@ export function SkillGraphCanvas({
           })}
         </div>
       </div>
-
-      {/* Touch: always-visible ≥36px complete checks, rendered OUTSIDE the scaled canvas so real size stays 36px */}
-      {isTouch && (
-        <div className="pointer-events-none absolute inset-0 z-10">
-          {nodes.map((node) => {
-            if (!onToggleComplete || node.status === "locked") return null;
-            const isCompleted = node.status === "completed";
-            return (
-              <button
-                key={`touch-check-${node.id}`}
-                onClick={(e) => onToggleComplete(node.id, e)}
-                title={isCompleted ? "Mark as accessible" : "Mark as completed"}
-                aria-label={isCompleted ? "Mark as accessible" : "Mark as completed"}
-                style={{
-                  // 61 = node corner (68) + 4px offset − half of the original 22px button
-                  left: pan.x + (node.x + 61) * zoom,
-                  top: pan.y + (node.y + 61) * zoom,
-                }}
-                className="pointer-events-auto absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink bg-surface text-ink shadow-md transition-colors active:scale-90 hover:bg-ink hover:text-surface"
-              >
-                <Check className="size-4 stroke-[2.5]" />
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Footer Info Legend */}
       <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
