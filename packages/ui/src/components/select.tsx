@@ -80,7 +80,11 @@ function SelectContent({
           className={cn(
             "p-1",
             position === "popper" &&
-              "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1"
+              // On touch (<1024px) the content is a full-bleed bottom sheet:
+              // the viewport must NOT stay pinned to the trigger height, or the
+              // sheet would only show a single item. h-auto lets it grow to
+              // fit the items (capped by the content's max-h-[45vh]!).
+              "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1 max-lg:h-auto"
           )}
         >
           {children}

@@ -133,7 +133,10 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
                 the sections become a horizontal scrollable chip row (44px
                 targets). Desktop (>=1024px) shows the sidebar instead. */}
             <div className="shrink-0 border-b border-line/60 px-3 py-2 lg:hidden">
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              {/* flex-wrap (like the WidgetExplorer category chips) so every
+                  section tab is always fully visible on touch — horizontal
+                  scroll clipped the last chips on narrow screens. */}
+              <div className="flex flex-wrap items-center gap-1.5">
                 {SETTINGS_SECTIONS.map((section) => {
                   const Icon = section.icon;
                   const isActive = section.id === activeSection;

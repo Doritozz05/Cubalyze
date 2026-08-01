@@ -375,7 +375,7 @@ export function Header({
               size="sm"
               // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`
               // so the chip matches the sibling PB / session chips in dark mode.
-              className="w-30 max-lg:w-24 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
+              className="w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
               aria-label="Puzzle category"
             >
               <SelectValue />
