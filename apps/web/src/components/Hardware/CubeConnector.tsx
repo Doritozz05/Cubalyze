@@ -14,6 +14,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { TOUCH_FULL_BLEED } from "@/lib/touch";
@@ -81,6 +89,7 @@ export function CubeConnector({
   open: externalOpen,
   onOpenChange,
 }: CubeConnectorProps) {
+  const isTouch = useIsTouch();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen ?? internalOpen;
 
@@ -219,90 +228,112 @@ export function CubeConnector({
 
   const trigger = variant === "rail" ? railButton : headerTrigger;
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      {trigger}
-      <DialogContent className={`sm:max-w-md bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
-        <DialogHeader>
-          <DialogTitle>Connect smart cube</DialogTitle>
-          <DialogDescription>
-            Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
-          </DialogDescription>
-        </DialogHeader>
+  const innerContent = (
+    <div className="flex flex-col gap-4 py-4 max-lg:py-0">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">Status</span>
+        <span className={cn(
+          "text-sm capitalize",
+          status === "connected" ? "text-phase-blue-500" : "text-ink-3"
+        )}>
+          {status}
+        </span>
+      </div>
 
-        <div className="flex flex-col gap-4 py-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Status</span>
-            <span className={cn(
-              "text-sm capitalize",
-              status === "connected" ? "text-phase-blue-500" : "text-ink-3"
-            )}>
-              {status}
-            </span>
+      {errorMsg && (
+        <Alert variant="destructive" className="py-2">
+          <Info className="size-4" />
+          <AlertTitle>Connection Error</AlertTitle>
+          <AlertDescription className="text-xs mt-1">
+            {errorMsg}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {showMacInput && status !== "connected" && (
+        <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2 p-3 text-sm">
+          <p className="text-ink-2">
+            Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:
+          </p>
+          <div className="relative group">
+            <code className="rounded bg-ink/5 p-1.5 pr-8 font-mono text-xs text-ink break-all cursor-text select-all">
+              {instructions}
+            </code>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
+                  className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Copy</TooltipContent>
+            </Tooltip>
           </div>
-
-          {errorMsg && (
-            <Alert variant="destructive" className="py-2">
-              <Info className="size-4" />
-              <AlertTitle>Connection Error</AlertTitle>
-              <AlertDescription className="text-xs mt-1">
-                {errorMsg}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {showMacInput && status !== "connected" && (
-            <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2 p-3 text-sm">
-              <p className="text-ink-2">
-                Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:
-              </p>
-              <div className="relative group">
-                <code className="rounded bg-ink/5 p-1.5 pr-8 font-mono text-xs text-ink break-all cursor-text select-all">
-                  {instructions}
-                </code>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
-                      className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">Copy</TooltipContent>
-                </Tooltip>
-              </div>
-              <div className="space-y-1.5 mt-2">
-                <p className="text-ink-2 text-xs">Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
-                <Input
-                  value={manualMac}
-                  onChange={(e) => setManualMac(e.target.value)}
-                  placeholder="MAC address"
-                  className="h-8"
-                />
-              </div>
-            </div>
-          )}
-
-          {status === "connected" ? (
-            <Button
-              onClick={disconnectCube}
-              variant="destructive"
-              className="w-full mt-2"
-            >
-              Disconnect Cube
-            </Button>
-          ) : (
-            <Button
-              onClick={connectCube}
-              disabled={status === "connecting" || (showMacInput && !manualMac)}
-              className="w-full mt-2"
-            >
-              {status === "connecting" ? "Connecting..." : "Connect Cube"}
-            </Button>
-          )}
+          <div className="space-y-1.5 mt-2">
+            <p className="text-ink-2 text-xs">Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
+            <Input
+              value={manualMac}
+              onChange={(e) => setManualMac(e.target.value)}
+              placeholder="MAC address"
+              className="h-8"
+            />
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+
+      {status === "connected" ? (
+        <Button
+          onClick={disconnectCube}
+          variant="destructive"
+          className="w-full mt-2"
+        >
+          Disconnect Cube
+        </Button>
+      ) : (
+        <Button
+          onClick={connectCube}
+          disabled={status === "connecting" || (showMacInput && !manualMac)}
+          className="w-full mt-2"
+        >
+          {status === "connecting" ? "Connecting..." : "Connect Cube"}
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {trigger}
+      {isTouch ? (
+        <Drawer open={open} onOpenChange={handleOpenChange}>
+          <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] p-0 pb-safe focus:outline-none">
+            <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
+              <DrawerTitle className="text-sm font-semibold text-ink">Connect smart cube</DrawerTitle>
+              <DrawerDescription className="text-xs text-ink-3 mt-1">
+                Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="p-5 overflow-y-auto">
+              {innerContent}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogContent className={`sm:max-w-md bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
+            <DialogHeader>
+              <DialogTitle>Connect smart cube</DialogTitle>
+              <DialogDescription>
+                Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
+              </DialogDescription>
+            </DialogHeader>
+            {innerContent}
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
