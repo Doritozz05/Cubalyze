@@ -31,6 +31,7 @@ import type {
   Algorithm,
   AlgorithmCase,
   AlgorithmViewPreferences,
+  OrbitCamera,
   VisualizationStyle,
 } from "@cubeforge/algorithm-db";
 import { algorithmStore } from "@cubeforge/state";
@@ -49,11 +50,7 @@ export interface AlgorithmEditorDialogProps {
 
 type Difficulty = "beginner" | "intermediate" | "advanced";
 
-interface CapturedOrientation {
-  theta: number;
-  phi: number;
-  radius: number;
-}
+type CapturedOrientation = OrbitCamera;
 
 // ─── Diagram variant detection ──────────────────────────────────────────
 
@@ -175,8 +172,17 @@ export function AlgorithmEditorDialog({
         setNotes(existingAlgorithm.notes ?? "");
         // Restore the canonical view preferences. The resolver only falls
         // back to legacy fields for already-persisted historical records.
-        if (viewPreferences.camera) {
-          setCapturedOrientation(viewPreferences.camera);
+        if (
+          viewPreferences.camera &&
+          typeof viewPreferences.camera.theta === "number" &&
+          typeof viewPreferences.camera.phi === "number" &&
+          typeof viewPreferences.camera.radius === "number"
+        ) {
+          setCapturedOrientation({
+            theta: viewPreferences.camera.theta,
+            phi: viewPreferences.camera.phi,
+            radius: viewPreferences.camera.radius,
+          });
         } else {
           setCapturedOrientation(null);
         }
