@@ -52,7 +52,7 @@ export function MobileMoreSheet({
       <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] p-0 pb-safe focus:outline-none">
         <DrawerHeader className="relative border-b border-line px-5 py-3.5 text-left">
           <DrawerTitle className="text-sm font-semibold text-ink">
-            More Options
+            More options
           </DrawerTitle>
           <button
             type="button"

@@ -9,6 +9,8 @@ import type { PbMilestoneResult } from "@/utils/pbDetection";
 import type { TimerState, Solve, Penalty } from "@/types";
 import type { HintContext } from "./hintFor";
 
+import { useIsTouch } from "@/hooks/use-mobile";
+
 export interface TimerContainerProps {
   /** Current phase from the engine. */
   phase: TimerState;
@@ -75,6 +77,10 @@ export function TimerContainer({
   onUpdatePenalty,
   className,
 }: TimerContainerProps) {
+  const isTouch = useIsTouch();
+  // Touch devices always enable click/tap to start & stop because there is no keyboard.
+  const activeClickToStart = clickToStart || isTouch;
+
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
   // refs so the parent doesn't re-render on every animation frame.
   useEffect(() => {
@@ -100,26 +106,28 @@ export function TimerContainer({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!clickToStart) return; // Only respond to pointer when clickToStart is ON
+      const isTouchPointer = e.pointerType === "touch";
+      if (!activeClickToStart && !isTouchPointer) return;
       if (e.button !== 0 && e.pointerType === "mouse") return;
       e.preventDefault();
       onPress();
     },
-    [onPress, clickToStart],
+    [onPress, activeClickToStart],
   );
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!clickToStart) return; // Only respond to pointer when clickToStart is ON
+      const isTouchPointer = e.pointerType === "touch";
+      if (!activeClickToStart && !isTouchPointer) return;
       e.preventDefault();
       onRelease();
     },
-    [onRelease, clickToStart],
+    [onRelease, activeClickToStart],
   );
 
   // Click-to-start: a single click toggles the timer (start/stop like spacebar)
   const onClick = useCallback(() => {
-    if (!clickToStart) return;
+    if (!activeClickToStart) return;
     if (phase === "idle" || phase === "stopped") {
       // Simulate a full press-hold-release cycle
       onPress();
@@ -129,7 +137,7 @@ export function TimerContainer({
     } else if (phase === "running") {
       onPress(); // stops the timer
     }
-  }, [clickToStart, phase, onPress, onRelease, holdDelay]);
+  }, [activeClickToStart, phase, onPress, onRelease, holdDelay]);
 
   // Ref to read latest phase in event handlers (avoids stale closure at render time)
   const phaseRef = useRef(phase);
@@ -140,13 +148,13 @@ export function TimerContainer({
   return (
     <div
       role="button"
-      tabIndex={clickToStart ? 0 : -1}
-      aria-label={clickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
-      onPointerDown={clickToStart ? onPointerDown : undefined}
-      onPointerUp={clickToStart ? onPointerUp : undefined}
-      onClick={clickToStart ? onClick : undefined}
+      tabIndex={activeClickToStart ? 0 : -1}
+      aria-label={activeClickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
+      onPointerDown={activeClickToStart ? onPointerDown : undefined}
+      onPointerUp={activeClickToStart ? onPointerUp : undefined}
+      onClick={activeClickToStart ? onClick : undefined}
       onPointerLeave={
-        clickToStart
+        activeClickToStart
           ? (e: React.PointerEvent) => {
               if (e.buttons === 0) return;
               if (phaseRef.current === "idle" || phaseRef.current === "stopped") return;
@@ -162,8 +170,8 @@ export function TimerContainer({
         "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(340px,48vh,520px)]",
         // Kill double-tap zoom delay on touch; no effect on mouse.
         "touch-manipulation",
-        !clickToStart && "cursor-default",
-        clickToStart && "cursor-pointer",
+        !activeClickToStart && "cursor-default",
+        activeClickToStart && "cursor-pointer",
         "outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}
