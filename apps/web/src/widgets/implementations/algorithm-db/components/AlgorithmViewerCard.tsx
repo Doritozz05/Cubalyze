@@ -54,7 +54,7 @@ export function AlgorithmViewerCard({
 
   const activeViewMode: "2d" | "3d" = is3DMode ? "3d" : "2d";
 
-  const defaultAlg = algorithms.find((a) => a.isDefault) ?? algorithms[0];
+  const defaultAlg = algorithms[0] ?? null;
   const activeAlg =
     algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
 
@@ -91,6 +91,13 @@ export function AlgorithmViewerCard({
               {caseData.name}
             </span>
           )}
+          {caseData.category &&
+            caseData.category !== caseData.name &&
+            caseData.category !== caseData.caseNumber && (
+              <span className="rounded bg-surface-2/80 border border-line/60 px-1.5 py-0.5 text-[10px] font-medium text-ink-3">
+                {caseData.category}
+              </span>
+            )}
         </div>
       </div>
 

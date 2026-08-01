@@ -153,6 +153,7 @@ function makeOllCase(
 function makePblCase(
   n: number,
   shortName: string,
+  fullName: string,
   category: string,
   algorithmsData: AlgInput[],
   difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate',
@@ -167,7 +168,7 @@ function makePblCase(
       id: caseId,
       subsetId: PBL_SUBSET_ID,
       caseNumber: shortName,
-      name: category,
+      name: fullName,
       recognitionPatterns: [],
       setupScramble,
       diagramType: '3d-isometric',
@@ -247,42 +248,42 @@ export const ORTEGA_OLL_CASES = [
 // ─── Ortega PBL Cases (6) ─────────────────────────────────────────────────
 
 export const ORTEGA_PBL_CASES = [
-  makePblCase(0, 'Adj', 'Adjacent swap (top)', [
+  makePblCase(0, 'Adj', 'Adjacent swap (top)', '1-Layer Swap', [
     { moves: "y R U R' F' R U R' U' R' F R2 U' R'", isDefault: true },
     { moves: "y R' F R F' R U2 R' U R U2 R'" },
     { moves: "y R U R' U' R' F R2 U' R' U' R U R' F'" },
     { moves: "y2 R' F R' F2 R U' R' F2 R2" },
   ], 'beginner', ['adjacent']),
 
-  makePblCase(1, 'Opp', 'Opposite swap (top)', [
+  makePblCase(1, 'Opp', 'Opposite swap (top)', '1-Layer Swap', [
     { moves: "R U' R' U' F2 U' R U R' U F2", isDefault: true },
     { moves: "F R U' R' U' R U R' F' R U R' U' R' F R F'" },
     { moves: "R U' R' U' F2 U' R U R' D R2" },
     { moves: "z2 R U' R' U' F2 U' R U R' U R2 B2" },
   ], 'beginner', ['opposite']),
 
-  makePblCase(2, 'Opp Opp', 'Both layers opposite', [
+  makePblCase(2, 'Opp Opp', 'Both layers opposite', '2-Layer Swap', [
     { moves: "R2 F2 R2", isDefault: true },
     { moves: "R2 B2 R2" },
     { moves: "x R2 U2 R2" },
     { moves: "x' R2 U2 R2" },
   ], 'beginner', ['opposite', 'opposite']),
 
-  makePblCase(3, 'Adj Adj', 'Both layers adjacent', [
+  makePblCase(3, 'Adj Adj', 'Both layers adjacent', '2-Layer Swap', [
     { moves: "R2 U' B2 U2 R2 U' R2", isDefault: true },
     { moves: "y2 R2 U' R2 U2 F2 U' R2" },
     { moves: "R2 U R2 U2 F2 U F2" },
     { moves: "R2 U' F2 U2 R2 U' B2" },
   ], 'intermediate', ['adjacent', 'adjacent']),
 
-  makePblCase(4, 'Adj Opp', 'Adjacent top + Opposite bottom', [
+  makePblCase(4, 'Adj Opp', 'Adjacent top + Opposite bottom', '2-Layer Swap', [
     { moves: "R U' R F2 R' U R'", isDefault: true },
     { moves: "R' F R' F2 R U' R" },
     { moves: "y2 R' U R' F2 R F' R" },
     { moves: "y2 R' U L' U2 R U' L" },
   ], 'intermediate', ['adjacent', 'opposite']),
 
-  makePblCase(5, 'Opp Adj', 'Opposite top + Adjacent bottom', [
+  makePblCase(5, 'Opp Adj', 'Opposite top + Adjacent bottom', '2-Layer Swap', [
     { moves: "y R2 U R2 U' R2 U R2 U' R2", isDefault: true },
     { moves: "R' D R' F2 R D' R" },
     { moves: "z2 R U' R F2 R' U R'" },

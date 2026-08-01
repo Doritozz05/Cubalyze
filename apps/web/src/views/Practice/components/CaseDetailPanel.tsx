@@ -160,6 +160,13 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                 {caseData.name}
               </span>
             )}
+            {caseData.category &&
+              caseData.category !== caseData.name &&
+              caseData.category !== caseData.caseNumber && (
+                <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-3">
+                  {caseData.category}
+                </span>
+              )}
           </div>
           <button
             onClick={onClose}
