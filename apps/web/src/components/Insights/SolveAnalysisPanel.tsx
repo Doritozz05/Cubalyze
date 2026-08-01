@@ -97,10 +97,11 @@ export function SolveAnalysisPanel({
 
   return (
     <div className={cn("flex flex-col gap-4 px-1 pb-4 bg-canvas", className)}>
-      {/* Back to overview */}
+      {/* Back to overview — desktop only; the touch overlay provides its
+          own sticky header with a back button. */}
       <button
         onClick={onBackToOverview}
-        className="flex items-center gap-1.5 self-start text-[0.72rem] text-ink-3 transition-colors hover:text-ink"
+        className="flex items-center gap-1.5 self-start text-[0.72rem] text-ink-3 transition-colors hover:text-ink max-lg:hidden"
       >
         <ArrowLeft className="size-3.5" />
         Overview
@@ -150,7 +151,7 @@ export function SolveAnalysisPanel({
           variant="ghost"
           size="sm"
           onClick={onDeleteSolve}
-          className="h-7 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
+          className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
         >
           <Trash2 className="size-3" />
           Delete

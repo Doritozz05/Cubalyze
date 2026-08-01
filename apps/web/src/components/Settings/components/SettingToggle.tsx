@@ -1,6 +1,7 @@
 'use client';
 
 import { Switch } from '@/components/ui/switch';
+import { useIsTouch } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 export interface SettingToggleProps {
@@ -24,6 +25,19 @@ export function SettingToggle({
   onCheckedChange,
   className,
 }: SettingToggleProps) {
+  // Touch (<1024px): the whole row is a 44px tap target (like native
+  // settings), so the Switch sits inside a size-11 tappable button. Desktop
+  // (>=1024px) is untouched — the Switch stays a plain inline toggle.
+  const isTouch = useIsTouch();
+
+  const switchEl = (
+    <Switch
+      checked={checked}
+      onCheckedChange={onCheckedChange}
+      className="mt-0.5 shrink-0"
+    />
+  );
+
   return (
     <div
       className={cn(
@@ -38,11 +52,21 @@ export function SettingToggle({
           {description}
         </p>
       </div>
-      <Switch
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        className="mt-0.5 shrink-0"
-      />
+      {isTouch ? (
+        <div
+          role="switch"
+          aria-checked={checked}
+          aria-label={title}
+          onClick={() => onCheckedChange(!checked)}
+          className="mt-0.5 grid size-11 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-lg"
+        >
+          <span className="pointer-events-none" aria-hidden="true">
+            <Switch checked={checked} onCheckedChange={onCheckedChange} />
+          </span>
+        </div>
+      ) : (
+        switchEl
+      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { useCube3D } from "@/hooks/useCube3D";
 import { useCrossScramble } from "@/hooks/useCrossScramble";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useOrientation } from "@/hooks/useOrientation";
-import { TrainingBreadcrumb, StatChip } from "./components";
+import { TrainingBreadcrumb, StatChip, TouchAside } from "./components";
 import {
   ReplayEngine,
   type ReplayState,
@@ -398,6 +398,8 @@ export function CrossTrainerView({
               }}
               className={cn(
                 "nums rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors",
+                // Touch: bigger tap targets.
+                "max-lg:h-10 max-lg:min-w-11 max-lg:text-[0.7rem]",
                 cross.depth === d
                   ? "bg-ink text-surface"
                   : "text-ink-3 hover:text-ink hover:bg-surface-2",
@@ -415,6 +417,8 @@ export function CrossTrainerView({
               disabled={cnMode}
               className={cn(
                 "nums rounded-md px-2 py-1 text-[0.62rem] font-medium transition-colors disabled:opacity-30",
+                // Touch: bigger tap targets.
+                "max-lg:h-10 max-lg:min-w-10 max-lg:text-[0.68rem]",
                 !cnMode && activeFace === f
                   ? "bg-ink text-surface"
                   : "text-ink-3 hover:text-ink hover:bg-surface-2",
@@ -731,7 +735,7 @@ export function CrossTrainerView({
           </div>
 
           {/* Column 3: Stats + tips */}
-          <aside className="flex min-h-0 flex-col gap-4 lg:w-64 lg:shrink-0 overflow-hidden">
+          <TouchAside title="Stats">
             <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
               <div className="grid grid-cols-2 gap-2">
                 <StatChip
@@ -828,7 +832,7 @@ export function CrossTrainerView({
                 </div>
               </div>
             </div>
-          </aside>
+          </TouchAside>
         </div>
       </div>
     </div>

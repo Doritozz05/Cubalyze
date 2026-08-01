@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "zustand";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
+import { MobileTabBar } from "@/components/Layout/MobileTabBar";
+import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
@@ -22,10 +24,12 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { preferencesStore } from "@cubeforge/state";
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { globalAudioSystem } from "@/utils/audioSystem";
+import { hapticCelebrate } from "@/utils/haptics";
 import {
   generateScrambleFor,
   puzzleCategoryToType,
@@ -50,6 +54,9 @@ registerAllWidgets();
 import "@/index.css";
 
 export default function App() {
+  // Touch regime (<1024px, mobile + tablet): bottom tab bar + top toasts.
+  const isTouch = useIsTouch();
+
   const {
     session,
     sessions,
@@ -103,6 +110,10 @@ export default function App() {
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
   const [cube3DReady, setCube3DReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
+  const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
   const [currentScramble, setCurrentScramble] = useState(() =>
     generateScrambleFor("3x3"),
@@ -189,6 +200,7 @@ export default function App() {
 
       const pbResult = detectPbMilestones(solvesRef.current, time, penalty, puzzleCategoryToType(puzzle));
       if (pbResult.types.length > 0) {
+        hapticCelebrate();
         if (pbCelebrationAudio) {
           globalAudioSystem.playPbFanfare(pbResult.types);
         }
@@ -685,6 +697,7 @@ export default function App() {
             holdDelay={spacebarHoldDelay}
             lastSolve={solves[0] ?? null}
             onUpdatePenalty={(id, pen) => updateSolve(id, { penalty: pen })}
+            onDeleteSolve={handleDelete}
             className="mt-1 flex-1"
           />
         )}
@@ -701,7 +714,7 @@ export default function App() {
   };
 
   return (
-    <div className="antialiased bg-background text-foreground min-h-screen overflow-x-hidden">
+    <div className="antialiased bg-background text-foreground h-dvh w-full overflow-hidden">
       <ThemeProvider>
         <MainLayout
           sessionCount={solves.length}
@@ -727,12 +740,34 @@ export default function App() {
               solves={solves}
               sessionName={session?.name}
               onImportSolves={handleImportSolves}
+              settingsOpen={settingsOpen}
+              onSettingsOpenChange={setSettingsOpen}
+              widgetExplorerOpen={widgetExplorerOpen}
+              onWidgetExplorerOpenChange={setWidgetExplorerOpen}
+              cubeConnectorOpen={cubeConnectorOpen}
+              onCubeConnectorOpenChange={setCubeConnectorOpen}
             />
           }
           isFocused={isFocused}
-          onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
           onAddManual={() => setManualOpen(true)}
           main={renderMain()}
+        />
+
+        {/* Bottom tab bar — touch regime only (mobile + tablet <1024px). */}
+        {!isFocused && (
+          <MobileTabBar
+            activeView={activeView}
+            onNavigate={handleNavigate}
+            onOpenMore={() => setMobileMoreOpen(true)}
+          />
+        )}
+
+        {/* Mobile grid options bottom sheet (Settings, Smart Cube, Theme) */}
+        <MobileMoreSheet
+          open={mobileMoreOpen}
+          onOpenChange={setMobileMoreOpen}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenCubeConnector={() => setCubeConnectorOpen(true)}
         />
 
         {/* Manual solve sheet — mounted at App level (opened from the
@@ -778,7 +813,13 @@ export default function App() {
           />
         )}
 
-        <Toaster position="bottom-center" richColors={false} />
+        <Toaster
+          // On touch, toasts float at the top so they never collide with the
+          // fixed bottom tab bar (or the mobile Times bottom sheet). Desktop
+          // keeps the bottom-center position unchanged.
+          position={isTouch ? "top-center" : "bottom-center"}
+          richColors={false}
+        />
       </ThemeProvider>
     </div>
   );

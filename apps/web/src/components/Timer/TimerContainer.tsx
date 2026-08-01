@@ -1,12 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hapticTap } from "@/utils/haptics";
 import { TimerDisplay } from "./TimerDisplay";
 import { PbCelebrationBanner } from "./PbCelebrationBanner";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
 import type { TimerState, Solve, Penalty } from "@/types";
 import type { HintContext } from "./hintFor";
+
+import { useIsTouch } from "@/hooks/use-mobile";
 
 export interface TimerContainerProps {
   /** Current phase from the engine. */
@@ -45,6 +49,8 @@ export interface TimerContainerProps {
   lastSolve?: Solve | null;
   /** Callback to update penalty of a solve. */
   onUpdatePenalty?: (id: string, penalty: Penalty) => void;
+  /** Callback to delete a solve by id. */
+  onDeleteSolve?: (id: string) => void;
   className?: string;
 }
 
@@ -72,8 +78,13 @@ export function TimerContainer({
   holdDelay = 300,
   lastSolve,
   onUpdatePenalty,
+  onDeleteSolve,
   className,
 }: TimerContainerProps) {
+  const isTouch = useIsTouch();
+  // Touch devices always enable click/tap to start & stop because there is no keyboard.
+  const activeClickToStart = clickToStart || isTouch;
+
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
   // refs so the parent doesn't re-render on every animation frame.
   useEffect(() => {
@@ -99,26 +110,28 @@ export function TimerContainer({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!clickToStart) return; // Only respond to pointer when clickToStart is ON
+      const isTouchPointer = e.pointerType === "touch";
+      if (!activeClickToStart && !isTouchPointer) return;
       if (e.button !== 0 && e.pointerType === "mouse") return;
       e.preventDefault();
       onPress();
     },
-    [onPress, clickToStart],
+    [onPress, activeClickToStart],
   );
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!clickToStart) return; // Only respond to pointer when clickToStart is ON
+      const isTouchPointer = e.pointerType === "touch";
+      if (!activeClickToStart && !isTouchPointer) return;
       e.preventDefault();
       onRelease();
     },
-    [onRelease, clickToStart],
+    [onRelease, activeClickToStart],
   );
 
   // Click-to-start: a single click toggles the timer (start/stop like spacebar)
   const onClick = useCallback(() => {
-    if (!clickToStart) return;
+    if (!activeClickToStart) return;
     if (phase === "idle" || phase === "stopped") {
       // Simulate a full press-hold-release cycle
       onPress();
@@ -128,7 +141,7 @@ export function TimerContainer({
     } else if (phase === "running") {
       onPress(); // stops the timer
     }
-  }, [clickToStart, phase, onPress, onRelease, holdDelay]);
+  }, [activeClickToStart, phase, onPress, onRelease, holdDelay]);
 
   // Ref to read latest phase in event handlers (avoids stale closure at render time)
   const phaseRef = useRef(phase);
@@ -139,13 +152,13 @@ export function TimerContainer({
   return (
     <div
       role="button"
-      tabIndex={clickToStart ? 0 : -1}
-      aria-label={clickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
-      onPointerDown={clickToStart ? onPointerDown : undefined}
-      onPointerUp={clickToStart ? onPointerUp : undefined}
-      onClick={clickToStart ? onClick : undefined}
+      tabIndex={activeClickToStart ? 0 : -1}
+      aria-label={activeClickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
+      onPointerDown={activeClickToStart ? onPointerDown : undefined}
+      onPointerUp={activeClickToStart ? onPointerUp : undefined}
+      onClick={activeClickToStart ? onClick : undefined}
       onPointerLeave={
-        clickToStart
+        activeClickToStart
           ? (e: React.PointerEvent) => {
               if (e.buttons === 0) return;
               if (phaseRef.current === "idle" || phaseRef.current === "stopped") return;
@@ -155,9 +168,14 @@ export function TimerContainer({
       }
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full flex-col items-center justify-center rounded-lg transition-all duration-300",
-        !clickToStart && "cursor-default",
-        clickToStart && "cursor-pointer",
+        "group relative flex w-full flex-col items-center justify-center rounded-lg transition-all duration-300 select-none",
+        // Touch (<1024px): taller timer so the numbers dominate the stage and
+        // stay thumb-friendly. Desktop formula unchanged.
+        "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(340px,48vh,520px)]",
+        // Kill double-tap zoom delay on touch; no effect on mouse.
+        "touch-manipulation",
+        !activeClickToStart && "cursor-default",
+        activeClickToStart && "cursor-pointer",
         "outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}
@@ -176,7 +194,12 @@ export function TimerContainer({
 
       {/* Floating PB Victory Banner */}
       {hasPbActive && (
-        <div className="absolute top-4 z-20 w-full max-w-sm px-4">
+        <div
+          className="absolute top-4 z-20 w-full max-w-sm px-4 max-lg:max-w-[92vw]"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+        >
           <PbCelebrationBanner
             types={pbMilestone.types}
             singleTime={pbMilestone.singleTime}
@@ -203,18 +226,20 @@ export function TimerContainer({
       {/* Quick Penalty Action Bar for Last Solve (Only for solves completed in the current session) */}
       {lastTime !== null && lastSolve && onUpdatePenalty && (phase === "stopped" || phase === "idle") && (
         <div
-          className="mt-3 flex items-center gap-1 rounded-full border border-line/30 bg-surface-2/60 px-1.5 py-1 backdrop-blur-md shadow-2xs transition-all duration-200 z-10"
+          className="mt-3 flex items-center gap-1 rounded-full border border-line/30 bg-surface-2/60 px-1.5 py-1 backdrop-blur-md shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button
             type="button"
             onClick={() => {
+              hapticTap();
               const next: Penalty = lastSolve.penalty === "none" ? "+2" : lastSolve.penalty === "+2" ? "none" : "+2";
               onUpdatePenalty(lastSolve.id, next);
             }}
             className={cn(
-              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none",
+              // Touch: bigger, thumb-friendly penalty pills.
+              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
               lastSolve.penalty === "+2"
                 ? "bg-plus2-soft text-plus2 font-bold ring-1 ring-plus2/30"
                 : "text-ink-3 hover:bg-surface-3 hover:text-ink",
@@ -227,11 +252,13 @@ export function TimerContainer({
           <button
             type="button"
             onClick={() => {
+              hapticTap();
               const next: Penalty = lastSolve.penalty === "DNF" ? "none" : "DNF";
               onUpdatePenalty(lastSolve.id, next);
             }}
             className={cn(
-              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none",
+              // Touch: bigger, thumb-friendly penalty pills.
+              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
               lastSolve.penalty === "DNF"
                 ? "bg-dnf-soft text-dnf font-bold ring-1 ring-dnf/30"
                 : "text-ink-3 hover:bg-surface-3 hover:text-ink",
@@ -240,6 +267,24 @@ export function TimerContainer({
           >
             DNF
           </button>
+          {onDeleteSolve && (
+            <>
+              <div className="h-3 w-px bg-line/40" />
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  onDeleteSolve(lastSolve.id);
+                }}
+                className={cn(
+                  "h-6 px-2 rounded-full text-ink-3 hover:bg-dnf-soft hover:text-dnf transition-all duration-150 cursor-pointer outline-none select-none grid place-items-center max-lg:h-10 max-lg:px-3",
+                )}
+                title="Delete solve"
+              >
+                <Trash2 className="size-3.5 max-lg:size-4" />
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

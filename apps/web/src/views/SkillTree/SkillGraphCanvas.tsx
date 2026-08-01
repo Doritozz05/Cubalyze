@@ -1,4 +1,6 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+"use client";
+
+import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   ZoomIn,
   ZoomOut,
@@ -100,6 +102,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useIsTouch } from "@/hooks/use-mobile";
 import type { SkillNode } from "./skillTreeData";
 
 interface SkillGraphCanvasProps {
@@ -109,98 +112,125 @@ interface SkillGraphCanvasProps {
 }
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Eye,
-  EyeOff,
-  Box,
-  Key,
-  Layers,
-  Grid,
-  Grid3x3,
-  Zap,
-  Snowflake,
-  Sparkles,
-  Cpu,
-  Shield,
-  ShieldCheck,
-  Wand2,
-  Crown,
-  Activity,
-  Palette,
-  Glasses,
-  BookOpen,
-  Crosshair,
-  Pyramid,
-  Star,
-  Trophy,
-  Repeat,
-  ArrowDown,
-  Gauge,
-  Timer,
-  Compass,
-  GitMerge,
-  Workflow,
-  GitBranch,
-  Code2,
-  ScanEye,
-  ArrowUpLeft,
-  Swords,
-  RotateCcw,
-  ArrowRightLeft,
-  Music,
-  Infinity: InfinityIcon,
-  Target,
-  Play,
-  Brain,
-  Hand,
-  MoveRight,
-  ChevronsRight,
-  ChevronsDown,
-  AlignCenter,
-  Move,
-  MousePointerClick,
-  Search,
-  BrainCircuit,
-  Scan,
-  GitCompare,
-  Map: MapIcon,
-  Circle,
-  CircleDot,
-  Globe,
-  Wrench,
-  Droplets,
-  Settings2,
-  Magnet,
-  PackageSearch,
-  SlidersHorizontal,
-  RotateCw,
-  Heart,
-  PlayCircle,
-  Flag,
-  ClipboardList,
-  Microscope,
-  BarChart3,
-  Calendar,
-  TrendingUp,
-  Square,
-  LayoutTemplate,
-  Triangle,
-  ArrowUpDown,
-  MoveVertical,
-  Move3d,
-  LayoutList,
-  Shuffle,
-  Image,
-  Music2,
-  Dice6,
-  Award,
-  AlignStartVertical,
-  Gem,
-  Calculator,
-  Sigma,
-  Atom,
-  Dna,
-  Lightbulb,
+  Eye, EyeOff, Box, Key, Layers, Grid, Grid3x3, Zap, Snowflake, Sparkles,
+  Cpu, Shield, ShieldCheck, Wand2, Crown, Activity, Palette, Glasses, BookOpen,
+  Crosshair, Pyramid, Star, Trophy, Repeat, ArrowDown, Gauge, Timer, Compass,
+  GitMerge, Workflow, GitBranch, Code2, ScanEye, ArrowUpLeft, Swords, RotateCcw,
+  ArrowRightLeft, Music, Infinity: InfinityIcon, Target, Play, Brain, Hand,
+  MoveRight, ChevronsRight, ChevronsDown, AlignCenter, Move, MousePointerClick,
+  Search, BrainCircuit, Scan, GitCompare, Map: MapIcon, Circle, CircleDot,
+  Globe, Wrench, Droplets, Settings2, Magnet, PackageSearch, SlidersHorizontal,
+  RotateCw, Heart, PlayCircle, Flag, ClipboardList, Microscope, BarChart3,
+  Calendar, TrendingUp, Square, LayoutTemplate, Triangle, ArrowUpDown,
+  MoveVertical, Move3d, LayoutList, Shuffle, Image, Music2, Dice6, Award,
+  AlignStartVertical, Gem, Calculator, Sigma, Atom, Dna, Lightbulb,
 };
+
+// ── Memoized Single Node Item ───────────────────────────────────────────────
+
+interface SkillNodeItemProps {
+  node: SkillNode;
+  isHovered: boolean;
+  onMouseEnter: (id: string) => void;
+  onMouseLeave: () => void;
+  onSelectNode: (node: SkillNode) => void;
+  onToggleComplete?: (nodeId: string, e: React.MouseEvent) => void;
+}
+
+const SkillNodeItem = React.memo(function SkillNodeItem({
+  node,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+  onSelectNode,
+  onToggleComplete,
+}: SkillNodeItemProps) {
+  const isCompleted = node.status === "completed";
+  const isUnlocked = node.status === "unlocked";
+  const isLocked = node.status === "locked";
+
+  const NodeIcon = (node.iconName && ICON_MAP[node.iconName]) || Sparkles;
+
+  const handleMouseEnter = useCallback(() => onMouseEnter(node.id), [onMouseEnter, node.id]);
+  const handleSelect = useCallback(() => onSelectNode(node), [onSelectNode, node]);
+  const handleToggle = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onToggleComplete?.(node.id, e);
+    },
+    [onToggleComplete, node.id],
+  );
+
+  return (
+    <div
+      style={{ left: `${node.x}px`, top: `${node.y}px` }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className="absolute flex flex-col items-center group cursor-pointer"
+    >
+      {/* Round Skill Circle Node */}
+      <div
+        onClick={handleSelect}
+        className={cn(
+          "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-200 shadow-md",
+          isUnlocked && "bg-surface text-ink border-2 border-ink hover:border-ink hover:scale-110 hover:shadow-lg",
+          isCompleted && "bg-ink text-surface font-bold border-2 border-ink shadow-lg group-hover:scale-110",
+          isLocked && "bg-surface-2 border-2 border-line text-ink-3 group-hover:border-ink group-hover:scale-105",
+          isHovered && "z-10 ring-4 ring-ink",
+        )}
+      >
+        <NodeIcon className="w-7 h-7 stroke-2" />
+
+        {/* Status / Toggle Badge */}
+        {!isLocked && onToggleComplete ? (
+          <button
+            type="button"
+            onClick={handleToggle}
+            title={isCompleted ? "Mark as accessible" : "Mark as completed"}
+            aria-label={isCompleted ? "Mark as accessible" : "Mark as completed"}
+            className={cn(
+              "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
+              isCompleted
+                ? "border-ink bg-ink text-surface shadow-sm"
+                : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink hover:bg-surface-2",
+            )}
+          >
+            <Check className={cn("size-3.5 stroke-[2.5]", isCompleted ? "opacity-100" : "opacity-40")} />
+          </button>
+        ) : isCompleted ? (
+          <div className="absolute -top-1 -right-1 z-20 flex size-5.5 items-center justify-center rounded-full border border-ink bg-ink text-surface shadow-xs">
+            <Check className="size-3 stroke-[2.5]" />
+          </div>
+        ) : isLocked ? (
+          <div className="absolute -top-1 -right-1 z-20 flex size-5.5 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-3">
+            <Lock className="size-3" />
+          </div>
+        ) : null}
+      </div>
+
+      {/* Clean Label Under Node */}
+      <div className="mt-2 text-center w-36 space-y-0.5 pointer-events-none">
+        <h4
+          className={cn(
+            "text-xs font-bold tracking-tight leading-tight line-clamp-2 transition-colors",
+            isCompleted
+              ? "text-ink font-semibold"
+              : isUnlocked
+              ? "text-ink group-hover:text-ink"
+              : "text-ink-3",
+          )}
+        >
+          {node.title}
+        </h4>
+        <span className="text-[0.62rem] uppercase tracking-wider font-semibold text-ink-3 block">
+          {node.tier}
+        </span>
+      </div>
+    </div>
+  );
+});
+
+// ── Main Canvas Component ──────────────────────────────────────────────────
 
 export function SkillGraphCanvas({
   nodes,
@@ -209,12 +239,55 @@ export function SkillGraphCanvas({
 }: SkillGraphCanvasProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 50, y: 50 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0, pX: 0, pY: 0 });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const transformRef = useRef<HTMLDivElement>(null);
+
+  // Mutable refs for high-fps drag without React re-renders
+  const panRef = useRef({ x: 50, y: 50 });
+  const zoomRef = useRef(1);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0, pX: 50, pY: 50 });
   const rafIdRef = useRef<number | null>(null);
+
+  const isTouch = useIsTouch();
+  const didInitTouchView = useRef(false);
+
+  // Keep refs synced with React state
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  // Apply transform directly to GPU DOM layer
+  const applyTransform = useCallback((x: number, y: number, z: number) => {
+    if (transformRef.current) {
+      transformRef.current.style.transform = `translate3d(${x}px, ${y}px, 0px) scale(${z})`;
+    }
+  }, []);
+
+  // Set zoom with sync
+  const updateZoom = useCallback(
+    (newZoom: number) => {
+      const z = Math.min(Math.max(newZoom, 0.5), 1.8);
+      setZoom(z);
+      zoomRef.current = z;
+      applyTransform(panRef.current.x, panRef.current.y, z);
+    },
+    [applyTransform],
+  );
+
+  const updatePan = useCallback(
+    (newPan: { x: number; y: number }) => {
+      setPan(newPan);
+      panRef.current = newPan;
+      applyTransform(newPan.x, newPan.y, zoomRef.current);
+    },
+    [applyTransform],
+  );
 
   // Quick lookup map for nodes
   const nodeMap = useMemo(() => {
@@ -223,7 +296,7 @@ export function SkillGraphCanvas({
     return map;
   }, [nodes]);
 
-  // Generate SVG Bezier curves between parent and child nodes
+  // Connections memoized
   const connections = useMemo(() => {
     const lines: {
       id: string;
@@ -236,8 +309,7 @@ export function SkillGraphCanvas({
       target.prerequisites.forEach((reqId) => {
         const source = nodeMap.get(reqId);
         if (source) {
-          const isActive =
-            hoveredNodeId === source.id || hoveredNodeId === target.id;
+          const isActive = hoveredNodeId === source.id || hoveredNodeId === target.id;
           lines.push({
             id: `${source.id}->${target.id}`,
             from: source,
@@ -251,26 +323,48 @@ export function SkillGraphCanvas({
     return lines;
   }, [nodes, nodeMap, hoveredNodeId]);
 
-  // Smooth window mouse drag listeners with RAF batching
-  useEffect(() => {
-    if (!isDragging) return;
+  // Handle node hover
+  const handleMouseEnterNode = useCallback((id: string) => {
+    setHoveredNodeId(id);
+  }, []);
 
+  const handleMouseLeaveNode = useCallback(() => {
+    setHoveredNodeId(null);
+  }, []);
+
+  // ── Mouse Drag (Hardware-Accelerated RAF) ────────────────────────────────
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    isDraggingRef.current = true;
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      pX: panRef.current.x,
+      pY: panRef.current.y,
+    };
+  }, []);
+
+  useEffect(() => {
     const handleWindowMouseMove = (e: MouseEvent) => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
+      if (!isDraggingRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      const newX = dragStartRef.current.pX + dx;
+      const newY = dragStartRef.current.pY + dy;
+
+      panRef.current = { x: newX, y: newY };
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = requestAnimationFrame(() => {
-        const dx = e.clientX - dragStart.x;
-        const dy = e.clientY - dragStart.y;
-        setPan({ x: dragStart.pX + dx, y: dragStart.pY + dy });
+        applyTransform(newX, newY, zoomRef.current);
       });
     };
 
     const handleWindowMouseUp = () => {
-      setIsDragging(false);
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setPan({ ...panRef.current });
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
     };
 
     window.addEventListener("mousemove", handleWindowMouseMove);
@@ -279,13 +373,11 @@ export function SkillGraphCanvas({
     return () => {
       window.removeEventListener("mousemove", handleWindowMouseMove);
       window.removeEventListener("mouseup", handleWindowMouseUp);
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
     };
-  }, [isDragging, dragStart]);
+  }, [applyTransform]);
 
-  // Touch Gesture Handling: 1 & 2-finger drag + 2-finger pinch zoom without page scrolling
+  // ── Touch Drag & Pinch Zoom (Ultra-Smooth 60FPS) ─────────────────────────
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -305,8 +397,8 @@ export function SkillGraphCanvas({
       if (e.touches.length === 1) {
         const t = e.touches[0];
         touchStartInfo = {
-          pX: pan.x,
-          pY: pan.y,
+          pX: panRef.current.x,
+          pY: panRef.current.y,
           startX: t.clientX,
           startY: t.clientY,
         };
@@ -318,57 +410,64 @@ export function SkillGraphCanvas({
         const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
         touchStartInfo = {
-          pX: pan.x,
-          pY: pan.y,
+          pX: panRef.current.x,
+          pY: panRef.current.y,
           startX: midX,
           startY: midY,
           startDist: dist,
-          startZoom: zoom,
+          startZoom: zoomRef.current,
         };
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!touchStartInfo) return;
-      // Prevent browser page scrolling completely during canvas gesture!
       e.preventDefault();
 
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        const dx = t.clientX - touchStartInfo.startX;
+        const dy = t.clientY - touchStartInfo.startY;
+        const newX = touchStartInfo.pX + dx;
+        const newY = touchStartInfo.pY + dy;
+
+        panRef.current = { x: newX, y: newY };
+        if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = requestAnimationFrame(() => {
+          applyTransform(newX, newY, zoomRef.current);
+        });
+      } else if (e.touches.length === 2 && touchStartInfo.startDist && touchStartInfo.startZoom) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+        const dx = midX - touchStartInfo.startX;
+        const dy = midY - touchStartInfo.startY;
+        const newX = touchStartInfo.pX + dx;
+        const newY = touchStartInfo.pY + dy;
+
+        const scale = currentDist / touchStartInfo.startDist;
+        const newZoom = Math.min(Math.max(touchStartInfo.startZoom * scale, 0.5), 1.8);
+
+        panRef.current = { x: newX, y: newY };
+        zoomRef.current = newZoom;
+
+        if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = requestAnimationFrame(() => {
+          applyTransform(newX, newY, newZoom);
+        });
       }
-
-      rafIdRef.current = requestAnimationFrame(() => {
-        if (!touchStartInfo) return;
-
-        if (e.touches.length === 1) {
-          const t = e.touches[0];
-          const dx = t.clientX - touchStartInfo.startX;
-          const dy = t.clientY - touchStartInfo.startY;
-          setPan({ x: touchStartInfo.pX + dx, y: touchStartInfo.pY + dy });
-        } else if (e.touches.length === 2 && touchStartInfo.startDist && touchStartInfo.startZoom) {
-          const t1 = e.touches[0];
-          const t2 = e.touches[1];
-          const midX = (t1.clientX + t2.clientX) / 2;
-          const midY = (t1.clientY + t2.clientY) / 2;
-          const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-
-          const dx = midX - touchStartInfo.startX;
-          const dy = midY - touchStartInfo.startY;
-          setPan({ x: touchStartInfo.pX + dx, y: touchStartInfo.pY + dy });
-
-          // Pinch Zoom
-          const scale = currentDist / touchStartInfo.startDist;
-          const newZoom = Math.min(Math.max(touchStartInfo.startZoom * scale, 0.6), 1.6);
-          setZoom(newZoom);
-        }
-      });
     };
 
     const handleTouchEnd = () => {
-      touchStartInfo = null;
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
+      if (touchStartInfo) {
+        setPan({ ...panRef.current });
+        setZoom(zoomRef.current);
+        touchStartInfo = null;
       }
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
     };
 
     container.addEventListener("touchstart", handleTouchStart, { passive: false });
@@ -381,27 +480,34 @@ export function SkillGraphCanvas({
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
       container.removeEventListener("touchcancel", handleTouchEnd);
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
     };
-  }, [pan.x, pan.y, zoom]);
+  }, [applyTransform]);
 
-  // Mouse Pan controls
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("button")) return;
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY, pX: pan.x, pY: pan.y });
-  };
+  // Touch: start at centered zoom on root node
+  useEffect(() => {
+    if (!isTouch || didInitTouchView.current) return;
+    const container = containerRef.current;
+    const root = nodes.find((n) => n.prerequisites.length === 0) ?? nodes[0];
+    if (!container || !root) return;
+    didInitTouchView.current = true;
+    const scale = 0.6;
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const initialPan = {
+      x: cw / 2 - (root.x + 34) * scale,
+      y: ch / 2 - (root.y + 34) * scale,
+    };
+    updateZoom(scale);
+    updatePan(initialPan);
+  }, [isTouch, nodes, updatePan, updateZoom]);
 
-  const handleZoom = (delta: number) => {
-    setZoom((prev) => Math.min(Math.max(prev + delta, 0.6), 1.6));
-  };
+  const resetView = useCallback(() => {
+    updateZoom(1);
+    updatePan({ x: 50, y: 50 });
+  }, [updatePan, updateZoom]);
 
-  const resetView = () => {
-    setZoom(1);
-    setPan({ x: 50, y: 50 });
-  };
+  const handleZoomIn = useCallback(() => updateZoom(zoomRef.current + 0.15), [updateZoom]);
+  const handleZoomOut = useCallback(() => updateZoom(zoomRef.current - 0.15), [updateZoom]);
 
   return (
     <div
@@ -416,12 +522,12 @@ export function SkillGraphCanvas({
       <div className="absolute inset-0 bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-size-[24px_24px] opacity-35 pointer-events-none" />
 
       {/* Floating Viewport Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono max-lg:top-auto max-lg:bottom-4">
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink"
-          onClick={() => handleZoom(0.15)}
+          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+          onClick={handleZoomIn}
           title="Zoom in"
         >
           <ZoomIn className="w-3.5 h-3.5" />
@@ -429,8 +535,8 @@ export function SkillGraphCanvas({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink"
-          onClick={() => handleZoom(-0.15)}
+          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+          onClick={handleZoomOut}
           title="Zoom out"
         >
           <ZoomOut className="w-3.5 h-3.5" />
@@ -439,7 +545,7 @@ export function SkillGraphCanvas({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink"
+          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
           onClick={resetView}
           title="Reset view"
         >
@@ -450,8 +556,9 @@ export function SkillGraphCanvas({
         </span>
       </div>
 
-      {/* Canvas Viewport */}
+      {/* Hardware-Accelerated Canvas Viewport Layer */}
       <div
+        ref={transformRef}
         className="absolute inset-0 origin-top-left will-change-transform"
         style={{
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0px) scale(${zoom})`,
@@ -467,9 +574,7 @@ export function SkillGraphCanvas({
 
             const dx = Math.abs(x2 - x1) * 0.5;
             const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-
-            const isUnlockedLink =
-              c.from.status === "completed" || c.from.status === "unlocked";
+            const isUnlockedLink = c.from.status === "completed" || c.from.status === "unlocked";
 
             return (
               <g key={c.id}>
@@ -483,7 +588,6 @@ export function SkillGraphCanvas({
                     strokeLinecap="round"
                   />
                 )}
-
                 <path
                   d={pathD}
                   fill="none"
@@ -496,7 +600,6 @@ export function SkillGraphCanvas({
                   }
                   strokeWidth={c.isActive ? 2.5 : isUnlockedLink ? 1.75 : 1.25}
                   strokeDasharray={c.to.status === "locked" ? "4,4" : undefined}
-                  className="transition-all duration-300"
                 />
               </g>
             );
@@ -505,106 +608,25 @@ export function SkillGraphCanvas({
 
         {/* Round Nodes Layer */}
         <div className="absolute inset-0 w-[7200px] h-[3400px]">
-          {nodes.map((node) => {
-            const isCompleted = node.status === "completed";
-            const isUnlocked = node.status === "unlocked";
-            const isLocked = node.status === "locked";
-            const isHovered = hoveredNodeId === node.id;
-
-            const NodeIcon =
-              (node.iconName && ICON_MAP[node.iconName]) || Sparkles;
-
-            return (
-              <div
-                key={node.id}
-                style={{
-                  left: `${node.x}px`,
-                  top: `${node.y}px`,
-                }}
-                onMouseEnter={() => setHoveredNodeId(node.id)}
-                onMouseLeave={() => setHoveredNodeId(null)}
-                className="absolute flex flex-col items-center group cursor-pointer"
-              >
-                {/* Round Skill Circle Node */}
-                <div
-                  onClick={() => onSelectNode(node)}
-                  className={cn(
-                    "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
-                    // 1. ACCESIBLE (unlocked, not completed): Solid background, dark text/icon, crisp border
-                    isUnlocked &&
-                      "bg-surface text-ink border-2 border-ink hover:border-ink hover:scale-110 hover:shadow-lg",
-                    // 2. COMPLETADO (completed): Solid high contrast style
-                    isCompleted &&
-                      "bg-ink text-surface font-bold border-2 border-ink shadow-lg group-hover:scale-110",
-                    // 3. INACCESIBLE (locked): Solid muted background with lock icon
-                    isLocked &&
-                      "bg-surface-2 border-2 border-line text-ink-3 group-hover:border-ink group-hover:scale-105",
-                    isHovered && "z-10 ring-4 ring-ink",
-                  )}
-                >
-                  {/* Icon */}
-                  <NodeIcon className="w-7 h-7 stroke-2" />
-
-                  {/* Status Indicator */}
-                  {isCompleted && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-canvas border-2 border-ink text-ink flex items-center justify-center text-[0.62rem] font-bold shadow-sm">
-                      <Check className="w-3 h-3 stroke-3" />
-                    </div>
-                  )}
-
-                  {isLocked && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-surface-2 border border-line text-ink-3 flex items-center justify-center text-[0.62rem]">
-                      <Lock className="w-3 h-3" />
-                    </div>
-                  )}
-
-                  {/* Hover Quick Toggle Action for accessible nodes */}
-                  {onToggleComplete && !isLocked && (
-                    <button
-                      onClick={(e) => onToggleComplete(node.id, e)}
-                      title={isCompleted ? "Mark as accessible" : "Mark as completed"}
-                      className={cn(
-                        "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-surface border border-ink flex items-center justify-center text-ink opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ink hover:text-surface shadow-md",
-                      )}
-                    >
-                      <Check className="w-3 h-3 stroke-3" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Clean Label Under Node */}
-                <div className="mt-2 text-center w-36 space-y-0.5 pointer-events-none">
-                  <h4
-                    className={cn(
-                      "text-xs font-bold tracking-tight leading-tight line-clamp-2 transition-colors",
-                      isCompleted
-                        ? "text-ink font-semibold"
-                        : isUnlocked
-                        ? "text-ink group-hover:text-ink"
-                        : "text-ink-3",
-                    )}
-                  >
-                    {node.title}
-                  </h4>
-                  <span className="text-[0.62rem] uppercase tracking-wider font-semibold text-ink-3 block">
-                    {node.tier}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {nodes.map((node) => (
+            <SkillNodeItem
+              key={node.id}
+              node={node}
+              isHovered={hoveredNodeId === node.id}
+              onMouseEnter={handleMouseEnterNode}
+              onMouseLeave={handleMouseLeaveNode}
+              onSelectNode={onSelectNode}
+              onToggleComplete={onToggleComplete}
+            />
+          ))}
         </div>
       </div>
 
       {/* Footer Info Legend */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm">
+      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
         <Info className="w-3.5 h-3.5 text-ink shrink-0" />
         <span>Click an accessible node for full explanations or to mark as completed</span>
       </div>
     </div>
   );
 }
-
-
-
-

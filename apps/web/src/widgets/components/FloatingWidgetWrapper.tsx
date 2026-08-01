@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { useDraggable, type SnapRect } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { dockZoneState } from "@/widgets/dock/dockZoneState";
@@ -32,6 +33,14 @@ export interface FloatingWidgetWrapperProps {
 
 /** Threshold (px from top) for entering the dock zone. */
 const DOCK_THRESHOLD = 30;
+
+/**
+ * Proportional scale applied to floating widgets in the touch regime: the
+ * whole panel (fonts, content, spacing) is shrunk so widgets read as small
+ * glanceable mini-panels instead of full-width sheets (user feedback:
+ * "son gigantes… reducirse proporcionalmente a chiquitito").
+ */
+const TOUCH_SCALE = 0.72;
 
 /**
  * Floating widget with professional, deterministic drag behavior.
@@ -74,6 +83,13 @@ export function FloatingWidgetWrapper({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Touch regime (<1024px): floating widgets become compact mini-panels.
+  const isTouch = useIsTouch();
+  // Stable ref so the drag callbacks can read the current touch mode without
+  // re-creating themselves when the media query flips after mount.
+  const isTouchRef = useRef(isTouch);
+  isTouchRef.current = isTouch;
+
   // ── Widget store subscriptions ─────────────────────────────────────────
   const instance = useWidgetStore((s) => s.instances[widgetId]);
   const storePosition = instance?.position ?? defaultPosition;
@@ -95,20 +111,63 @@ export function FloatingWidgetWrapper({
 
   // ── Snap targets (other floating widgets) ────────────────────────────
   const allInstances = useWidgetStore((s) => s.instances);
+
+  // ── Touch stack offset ────────────────────────────────────────────────
+  // Sheets stack upward (like iOS notifications): each subsequent open
+  // widget sits a little higher so its header stays reachable.
+  const stackIndex = useMemo(() => {
+    const ids = Object.keys(allInstances);
+    const myIndex = ids.indexOf(widgetId);
+    let count = 0;
+    for (let i = 0; i < myIndex; i++) {
+      const s = allInstances[ids[i]]?.status;
+      if (s === "floating" || s === "minimized") count++;
+    }
+    return count;
+  }, [allInstances, widgetId]);
+
+  // Set once the user actually drags the widget on touch — after that, keep
+  // whatever position they chose (no snap-back to the default on later drags).
+  const userPositionedRef = useRef(false);
+
+  // ── Touch default position ────────────────────────────────────────────
+  // Anchor bottom-left, slightly cascading per widget so several open
+  // widgets don't pile exactly on top of each other. Keeps a position the
+  // user already placed if it's reasonable (below the header, on-screen).
+  const touchDefaultPos = useMemo(() => {
+    if (typeof window === "undefined") return { x: 12, y: 96 };
+    // Once dragged by the user, keep their choice unconditionally.
+    if (userPositionedRef.current) return storePosition;
+    const cascade = (stackIndex % 3) * 24;
+    const p = storePosition;
+    if (p.x >= 0 && p.y >= 96 && p.x <= window.innerWidth - 60) return p;
+    return {
+      x: 12 + cascade,
+      y: Math.max(96, window.innerHeight - 320 - cascade),
+    };
+  }, [storePosition, stackIndex]);
+
   const snapTargets = useMemo<SnapRect[]>(() => {
+    // On touch the panels are scaled, so snap rects must use the SCALED
+    // visual size too — otherwise edge snapping between two mini-panels
+    // would nudge ~1/scale off from the other widget's actual visual edge.
+    const scale = isTouch ? TOUCH_SCALE : 1;
     return Object.entries(allInstances)
       .filter(([id, inst]) => {
         if (id === widgetId) return false;
         const s = inst?.status;
         return s === "floating" || s === "minimized";
       })
-      .map(([, inst]) => ({
-        x: inst.position.x,
-        y: inst.position.y,
-        w: inst.panelWidth ?? 340,
-        h: Math.round((inst.panelWidth ?? 340) * 0.85),
-      }));
-  }, [allInstances, widgetId]);
+      .map(([, inst]) => {
+        const w = Math.round((inst.panelWidth ?? 340) * scale);
+        return {
+          x: inst.position.x,
+          y: inst.position.y,
+          w,
+          h: Math.round(w * 0.85),
+        };
+      });
+  }, [allInstances, widgetId, isTouch]);
 
   // ── Dock zone visual state (throttled — only updated on threshold cross) ──
   const [isNearDock, setIsNearDock] = useState(false);
@@ -118,6 +177,13 @@ export function FloatingWidgetWrapper({
   const handlePositionChange = useCallback(
     (pos: { x: number; y: number }) => {
       const store = widgetStore.getState();
+
+      if (isTouchRef.current) {
+        // Touch: free-floating mini-panels — never dock (no dock on touch).
+        userPositionedRef.current = true;
+        store.setPosition(widgetId, pos);
+        return;
+      }
 
       // IMPORTANT: Read dropIndex BEFORE calling dockZoneState.leave(),
       // because leave() clears _dropIndex when _nearIds becomes empty.
@@ -137,11 +203,16 @@ export function FloatingWidgetWrapper({
   );
 
   // ── Drag hook ─────────────────────────────────────────────────────────
-  const drag = useDraggable<HTMLDivElement>(storePosition, {
+  const drag = useDraggable<HTMLDivElement>(
+    isTouch ? touchDefaultPos : storePosition,
+    {
     clickThreshold: 4,
     onPositionChange: handlePositionChange,
     onDrag: useCallback(
       (pos) => {
+        // Touch: free-floating mini-panels — no dock zone.
+        if (isTouchRef.current) return;
+
         // ── Throttled dock zone state: only update React state when the
         //    threshold is actually crossed, not on every frame.
         const nearDock = pos.y < DOCK_THRESHOLD;
@@ -177,7 +248,195 @@ export function FloatingWidgetWrapper({
     store.setStatus(widgetId, newStatus);
   }, [widgetId]);
 
+  // ── Close (touch sheets): back to inactive ────────────────────────────
+  const closeWidget = useCallback(() => {
+    widgetStore.getState().setStatus(widgetId, "inactive");
+  }, [widgetId]);
+
   if (!mounted) return null;
+
+  // ── Touch regime: compact draggable mini-panels ──────────────────────
+  //     Same floating-panel metaphor as desktop, proportionally scaled down
+  //     (TOUCH_SCALE) so fonts and inner content stay small and the app stays
+  //     visible (user feedback: full-width sheets were too big). Draggable via
+  //     the header — pointer events work on touch. No dock zone on touch:
+  //     dragging to the top would hide the widget. Desktop (>=1024px) is
+  //     untouched: this branch is gated by useIsTouch.
+  if (isTouch) {
+    // Always above the z-40 tab bar, still below every z-50 surface.
+    const z = Math.max(zIndex, 45);
+
+    if (minimized) {
+      return createPortal(
+        <div
+          ref={drag.elementRef}
+          data-widget-id={widgetId}
+          onPointerDown={handleFocus}
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
+            transformOrigin: "0 0",
+            zIndex: z,
+            willChange: drag.isDragging ? "transform" : undefined,
+          }}
+          className={cn(
+            "animate-widget-mount rounded-lg border border-line bg-surface shadow-xl",
+            className,
+          )}
+        >
+          {/* Draggable row; the expand + close buttons stop propagation so
+              drag works from the rest of the pill. */}
+          <div
+            onPointerDown={(e) => {
+              handleFocus();
+              drag.onPointerDown(e);
+            }}
+            onPointerMove={drag.onPointerMove}
+            onPointerUp={drag.onPointerUp}
+            onPointerCancel={drag.onPointerCancel}
+            className="flex touch-none select-none cursor-grab items-center gap-2 py-2 pl-3 pr-1.5"
+          >
+            <Icon className="size-4 shrink-0 text-ink-3" />
+            <span className="truncate text-xs font-medium text-ink">{label}</span>
+            {pillBadge && (
+              <span className="nums shrink-0 text-[0.65rem] text-ink-3">{pillBadge}</span>
+            )}
+            {pillBadge2 && (
+              <span className="nums shrink-0 text-[0.55rem] text-ink-3">{pillBadge2}</span>
+            )}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMinimized();
+              }}
+              aria-label={`Expand ${label}`}
+              className="grid size-6 shrink-0 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+            >
+              <ChevronUp className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                closeWidget();
+              }}
+              aria-label={`Close ${label}`}
+              className="grid size-6 shrink-0 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        </div>,
+        document.body,
+      );
+    }
+
+    return createPortal(
+      // Outer: drag transform + pointer-events-none so the invisible
+      // footprint never blocks the app content behind it. IMPORTANT: its
+      // width must be the SCALED visual width (panelWidth × TOUCH_SCALE) —
+      // the drag hook clamps to the viewport using el.offsetWidth, so an
+      // unscaled width would wrongly reserve 320px and make the right side
+      // of the screen unreachable (the panel could never be dragged there).
+      <div
+        ref={drag.elementRef}
+        data-widget-id={widgetId}
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 0,
+          transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
+          transformOrigin: "0 0",
+          zIndex: z,
+          width: Math.round(panelWidth * TOUCH_SCALE),
+          pointerEvents: "none",
+          willChange: drag.isDragging ? "transform" : undefined,
+        }}
+      >
+        {/* Inner: the panel, proportionally scaled down */}
+        <div
+          onPointerDown={handleFocus}
+          className={cn(
+            "animate-widget-mount flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-xl",
+            className,
+          )}
+          style={{
+            width: panelWidth,
+            transform: `scale(${TOUCH_SCALE})`,
+            transformOrigin: "0 0",
+            pointerEvents: "auto",
+          }}
+        >
+          {/* Compact header — the drag handle */}
+          <div
+            onPointerDown={(e) => {
+              handleFocus();
+              drag.onPointerDown(e);
+            }}
+            onPointerMove={drag.onPointerMove}
+            onPointerUp={drag.onPointerUp}
+            onPointerCancel={drag.onPointerCancel}
+            className={cn(
+              "flex shrink-0 touch-none select-none items-center justify-between gap-2 border-b border-line/60 px-2.5 py-1.5",
+              drag.isDragging ? "cursor-grabbing" : "cursor-grab",
+            )}
+          >
+            <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+              <Icon className="size-3.5 shrink-0 text-ink-3" />
+              <span className="truncate text-[0.68rem] font-medium text-ink">{label}</span>
+              {pillBadge && (
+                <span className="nums shrink-0 text-[0.6rem] text-ink-3">{pillBadge}</span>
+              )}
+              {pillBadge2 && (
+                <span className="nums shrink-0 text-[0.5rem] text-ink-3">{pillBadge2}</span>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
+              {headerActions}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMinimized();
+                }}
+                aria-label="Minimize"
+                className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+              >
+                <ChevronDown className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeWidget();
+                }}
+                aria-label={`Close ${label}`}
+                className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Body: scrollable */}
+          <div
+            className="min-h-0 overflow-y-auto overscroll-contain"
+            style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+          >
+            {children}
+          </div>
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   // ── Positioning: transform for GPU-composited + left/top to anchor ────
   //     position:fixed with ONLY transform and no left/top can place the

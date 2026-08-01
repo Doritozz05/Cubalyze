@@ -11,7 +11,7 @@ export const timesLogDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: true,
+  defaultActive: false,
   defaultPosition: { x: 24, y: 72 },
   defaultMinimized: true,
   tags: ["solves", "history", "times", "log", "list"],

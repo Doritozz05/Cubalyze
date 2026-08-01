@@ -4,6 +4,7 @@ import { memo, useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
   X,
+  ChevronLeft,
   Play,
   Plus,
 } from "lucide-react";
@@ -44,6 +45,12 @@ export interface CaseDetailPanelProps {
   /** Called when the user wants to practice this case in the Training tab. */
   onPracticeCase?: (subsetId: string, caseId: string) => void;
   className?: string;
+  /**
+   * 'panel' renders the desktop side panel (>=1024px, default).
+   * 'overlay' renders the touch full-screen sheet (<1024px): back button in
+   * the header and a sticky bottom "Practice this case" CTA.
+   */
+  variant?: "panel" | "overlay";
 }
 
 export const CaseDetailPanel = memo(function CaseDetailPanel({
@@ -53,6 +60,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   visualizationStyle,
   onPracticeCase,
   className,
+  variant = "panel",
 }: CaseDetailPanelProps) {
   // ── Algorithms from hook (seed + custom, ordered) ──────────────────
   const { algorithms, primaryAlgorithm } = useCaseAlgorithms(caseData.id);
@@ -141,6 +149,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
         onClose={onClose}
         onPracticeCase={onPracticeCase}
         className={className}
+        variant={variant}
       />
     );
   }
@@ -149,14 +158,24 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   return (
     <>
       <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
-        {/* Header */}
+        {/* Header — overlay variant swaps X for a back button (touch) */}
         <div className="flex items-center justify-between shrink-0 px-4 py-3 border-b border-line">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {variant === "overlay" && (
+              <button
+                onClick={onClose}
+                className="flex h-10 shrink-0 items-center gap-1 rounded-lg px-2 -ml-2 text-[0.72rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors touch-manipulation"
+                aria-label="Back to cases"
+              >
+                <ChevronLeft className="size-4" />
+                Back
+              </button>
+            )}
             <span className="nums text-[0.85rem] font-semibold text-ink">
               {caseData.caseNumber}
             </span>
             {caseData.name && caseData.name !== caseData.caseNumber && (
-              <span className="text-[0.75rem] text-ink-2">
+              <span className="text-[0.75rem] text-ink-2 truncate">
                 {caseData.name}
               </span>
             )}
@@ -168,13 +187,15 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                 </span>
               )}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-            aria-label="Close"
-          >
-            <X className="size-4" />
-          </button>
+          {variant !== "overlay" && (
+            <button
+              onClick={onClose}
+              className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
+              aria-label="Close"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
 
         {/* Scrollable content */}
@@ -280,8 +301,8 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             </DndContext>
           </div>
 
-          {/* Practice this case button */}
-          {onPracticeCase && (
+          {/* Practice this case button — inline in panel variant only */}
+          {onPracticeCase && variant !== "overlay" && (
             <button
               onClick={() =>
                 onPracticeCase(caseData.subsetId, caseData.id)
@@ -319,6 +340,21 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             </div>
           )}
         </div>
+
+        {/* Overlay footer: sticky practice CTA (touch only) */}
+        {variant === "overlay" && onPracticeCase && (
+          <div className="shrink-0 border-t border-line bg-surface px-4 py-3 pb-safe">
+            <button
+              onClick={() =>
+                onPracticeCase(caseData.subsetId, caseData.id)
+              }
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-ink text-[0.8rem] font-semibold text-surface hover:bg-ink/90 transition-colors touch-manipulation"
+            >
+              <Play className="size-4" />
+              Practice this case
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Algorithm Editor Dialog */}

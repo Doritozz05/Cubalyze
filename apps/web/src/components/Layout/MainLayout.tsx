@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { PuzzleCategory } from "@/types";
@@ -33,8 +33,6 @@ export interface MainLayoutProps {
   main: React.ReactNode;
   /** Left navigation sidebar (fixed position, hover-to-expand). */
   leftSidebar?: React.ReactNode;
-  /** Toggle mobile nav sheet. */
-  onToggleMobileNav?: () => void;
   /** Open the manual solve entry sheet (the "+" button in the header). */
   onAddManual?: () => void;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
@@ -75,7 +73,6 @@ export interface MainLayoutProps {
 export function MainLayout({
   main,
   leftSidebar,
-  onToggleMobileNav,
   onAddManual,
   cube3D,
   cube3DActive,
@@ -93,11 +90,11 @@ export function MainLayout({
   onPuzzleChange,
   className,
 }: MainLayoutProps) {
-  // Defer useIsMobile to post-mount to avoid SSR/hydration flash.
+  // Defer useIsTouch to post-mount to avoid SSR/hydration flash.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const rawIsMobile = useIsMobile();
-  const isMobile = mounted ? rawIsMobile : false;
+  const rawIsTouch = useIsTouch();
+  const isTouch = mounted ? rawIsTouch : false;
 
   // Track viewport width so the cube panel can derive a responsive width
   const [vw, setVw] = useState(() =>
@@ -196,7 +193,20 @@ export function MainLayout({
         {!isFocused && leftSidebar}
       </AnimatePresence>
 
-      <div className={cn("flex flex-1 flex-col", !isFocused && !hideHeader && "pt-14", !isFocused && "md:pl-14")}>
+      <div className={cn(
+        "flex flex-1 flex-col min-h-0 overflow-hidden",
+        // Header offset: desktop reserves exactly 3.5rem; touch also adds the
+        // iOS top safe-area so the header (which grows on iOS) never overlaps.
+        !isFocused && !hideHeader && "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-14",
+        // Rail padding only where the desktop rail actually renders (>=1024px).
+        // Tablets (<1024px) use the touch regime with the bottom tab bar.
+        !isFocused && "lg:pl-14",
+        // Reserve room for the fixed bottom tab bar on touch (<1024px). This
+        // lives on the wrapper (not <main>) because <main> is flex-1 — its
+        // used height comes from flex layout, so an explicit height on it
+        // would be ignored. Desktop has no bottom bar, so no padding.
+        !isFocused && "max-lg:pb-[calc(3.5rem+env(safe-area-inset-bottom))]",
+      )}>
         <AnimatePresence>
           {!isFocused && !hideHeader && (
             <Header
@@ -208,7 +218,6 @@ export function MainLayout({
               onNewSession={onNewSession}
               onRenameSession={onRenameSession}
               onDeleteSession={onDeleteSession}
-              onToggleMobileNav={onToggleMobileNav}
               onAddManual={onAddManual}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
@@ -217,16 +226,16 @@ export function MainLayout({
         </AnimatePresence>
 
         <main className={cn(
-          "mx-auto flex w-full flex-1 flex-col overflow-hidden lg:flex-row",
-          !isFocused && !hideHeader && "h-[calc(100dvh-3.5rem)]",
-          !isFocused && hideHeader && "h-dvh"
+          "mx-auto flex w-full flex-1 flex-col min-h-0 overflow-hidden lg:flex-row h-full",
+          // NOTE: no height override — <main> is flex-1 min-h-0, so flex layout
+          // sizes it. Bottom-bar and top header spaces are reserved on the wrapper.
         )}>
           <section
             id="timer-section"
             className={cn(
               "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-out",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
-              hideHeader && "p-3 sm:p-4 gap-3 h-full",
+              hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
               isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : ""
             )}
           >
@@ -237,8 +246,10 @@ export function MainLayout({
             <motion.aside
               initial={false}
               animate={{
-                width: isMobile ? "100%" : rightVisible ? effectiveWidth : 0,
-                height: isMobile ? (rightVisible ? "auto" : 0) : "",
+                // Touch (<1024px): full-screen sheet — the cube covers the whole
+                // stage (the timer section collapses). Desktop: side panel width.
+                width: isTouch ? "100%" : rightVisible ? effectiveWidth : 0,
+                height: isTouch ? (rightVisible ? "100%" : 0) : "",
                 opacity: rightVisible ? 1 : 0,
               }}
               transition={isResizingPanel ? { duration: 0 } : SIDEBAR_MOTION.panel}
@@ -247,13 +258,13 @@ export function MainLayout({
                 "relative flex shrink-0 flex-col bg-surface overflow-hidden",
                 !isFocused && "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
                 !isFocused && "border-line max-lg:border-t max-lg:border-l-0 lg:border-l lg:border-t-0",
-                cubeShown && "min-h-[50vh] lg:min-h-0",
+                cubeShown && "min-h-0",
                 !rightVisible && "pointer-events-none",
               )}
               aria-hidden={!rightVisible}
             >
               {/* Drag handle on left border (Desktop only) */}
-              {rightVisible && !isMobile && (
+              {rightVisible && !isTouch && (
                 <div
                   onPointerDown={handleResizeStart}
                   onPointerMove={handleResizeMove}

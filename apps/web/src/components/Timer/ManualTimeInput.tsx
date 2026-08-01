@@ -184,7 +184,7 @@ export function ManualTimeInput({
   return (
     <div className={cn("relative flex flex-col items-center justify-center gap-7 overflow-visible", className)}>
       {/* Big time input — replaces the timer number */}
-      <div className="relative flex items-center">
+      <div className="relative flex items-center max-lg:w-full max-lg:max-w-2xl">
         <input
           ref={inputRef}
           type="text"
@@ -197,7 +197,9 @@ export function ManualTimeInput({
           onKeyDown={handleKeyDown}
           placeholder="0.00"
           className={cn(
-            "nums w-[clamp(320px,70vw,900px)] rounded-xl border-2 bg-transparent py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
+            // Desktop: fluid clamp. Touch (<1024px): fill the stage width so the
+            // input + on-screen keyboard stay comfortable on phones/tablets.
+            "nums w-[clamp(320px,70vw,900px)] max-lg:w-full rounded-xl border-2 bg-transparent py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
             "border-line text-ink placeholder:text-ink-3/20",
             "focus:border-ink-2 focus:bg-surface/50",
           )}
@@ -221,6 +223,8 @@ export function ManualTimeInput({
             onClick={() => setPenalty(p)}
             className={cn(
               "rounded-md px-3 py-1.5 text-[0.62rem] font-medium uppercase tracking-[0.08em] transition-all",
+              // Touch: larger thumb targets.
+              "max-lg:px-5 max-lg:py-2.5 max-lg:text-[0.7rem]",
               penalty === p
                 ? p === "DNF"
                   ? "bg-dnf-soft text-dnf ring-1 ring-dnf/30"

@@ -18,6 +18,7 @@ import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
 import {
   TrainingBreadcrumb,
+  TouchAside,
 } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
@@ -279,7 +280,7 @@ export function AlgorithmRecognizeView({
           </div>
 
           {/* Right: Progress sidebar */}
-          <aside className="flex min-h-0 flex-col gap-3 lg:w-56 lg:shrink-0 overflow-hidden">
+          <TouchAside title="Progress" className="flex min-h-0 flex-col gap-3 lg:w-56 lg:shrink-0 overflow-hidden">
             <RecognizeStatsPanel
               completedCount={seenCaseIds.size}
               totalCount={subsetCases.length}
@@ -287,7 +288,7 @@ export function AlgorithmRecognizeView({
               correct={score.correct}
               incorrect={score.total - score.correct}
             />
-          </aside>
+          </TouchAside>
         </div>
       </div>
     </div>
@@ -326,6 +327,8 @@ function RecognizeHeader({
             onClick={() => onModeChange("weakest")}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.65rem] font-medium transition-all",
+              // Touch: bigger tap targets for the mode chips.
+              "max-lg:h-10 max-lg:px-3.5 max-lg:text-[0.7rem]",
               mode === "weakest"
                 ? "bg-ink text-surface shadow-sm"
                 : "text-ink-3 hover:text-ink",
@@ -338,6 +341,8 @@ function RecognizeHeader({
             onClick={() => onModeChange("random")}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.65rem] font-medium transition-all",
+              // Touch: bigger tap targets for the mode chips.
+              "max-lg:h-10 max-lg:px-3.5 max-lg:text-[0.7rem]",
               mode === "random"
                 ? "bg-ink text-surface shadow-sm"
                 : "text-ink-3 hover:text-ink",

@@ -8,6 +8,7 @@ import { PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
 import type { Solve, PuzzleCategory } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { TOUCH_FULL_BLEED } from '@/lib/touch';
 
 export interface DataSectionProps {
   solves: Solve[];
@@ -185,7 +186,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
           <button
             onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); }}
             disabled={!onImportSolves}
-            className="shrink-0 rounded-lg border border-line bg-surface-2/50 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
+            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
           >
             Import data
           </button>
@@ -208,7 +209,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
           <button
             onClick={handleExportCSV}
             disabled={isEmpty}
-            className="shrink-0 rounded-lg border border-line bg-surface-2/50 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Export CSV
           </button>
@@ -232,7 +233,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
           <button
             onClick={handleExportCsTimer}
             disabled={isEmpty}
-            className="shrink-0 rounded-lg border border-line bg-surface-2/50 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Export csTimer
           </button>
@@ -255,7 +256,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
           <button
             onClick={handleExportJSON}
             disabled={isEmpty}
-            className="shrink-0 rounded-lg border border-line bg-surface-2/50 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Export JSON
           </button>
@@ -270,7 +271,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
 
       {/* ── Import Dialog ──────────────────────────────────────────────── */}
       <Dialog open={importOpen} onOpenChange={(open) => { if (!open) { setImportOpen(false); if (importState === 'done') window.location.reload(); } }}>
-        <DialogContent className="sm:max-w-lg overflow-hidden p-0 gap-0" showCloseButton={false}>
+        <DialogContent className={`sm:max-w-lg overflow-hidden p-0 gap-0 ${TOUCH_FULL_BLEED} max-lg:pb-safe`} showCloseButton={false}>
           <DialogHeader className="sr-only">
             <DialogTitle>Import solves</DialogTitle>
           </DialogHeader>

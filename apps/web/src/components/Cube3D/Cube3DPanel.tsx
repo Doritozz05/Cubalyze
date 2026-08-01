@@ -65,9 +65,10 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 size="sm"
                 onClick={() => applyScramble(scramble)}
                 disabled={!isReady}
-                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+                // Touch: bigger thumb targets inside the full-screen sheet.
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
-                <Shuffle className="size-3 shrink-0" />
+                <Shuffle className="size-3 shrink-0 max-lg:size-4" />
                 <span className="hidden sm:inline">Scramble</span>
               </Button>
             </TooltipTrigger>
@@ -80,9 +81,10 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 size="sm"
                 onClick={reset}
                 disabled={!isReady}
-                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+                // Touch: bigger thumb targets inside the full-screen sheet.
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
-                <RotateCcw className="size-3 shrink-0" />
+                <RotateCcw className="size-3 shrink-0 max-lg:size-4" />
                 <span className="hidden sm:inline">Reset</span>
               </Button>
             </TooltipTrigger>
@@ -95,9 +97,10 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 size="sm"
                 onClick={calibrate}
                 disabled={!isReady}
-                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+                // Touch: bigger thumb targets inside the full-screen sheet.
+                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
-                <RefreshCw className="size-3 shrink-0" />
+                <RefreshCw className="size-3 shrink-0 max-lg:size-4" />
                 <span className="hidden sm:inline">Calibrate</span>
               </Button>
             </TooltipTrigger>
@@ -110,10 +113,11 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                   variant="ghost"
                   size="sm"
                   onClick={onClose}
-                  className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
+                  // Touch: bigger close target inside the full-screen sheet.
+                  className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
                   aria-label="Close 3D view"
                 >
-                  <X className="size-3 shrink-0" />
+                  <X className="size-3 shrink-0 max-lg:size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Close 3D view</TooltipContent>

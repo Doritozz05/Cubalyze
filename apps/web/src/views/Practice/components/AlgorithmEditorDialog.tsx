@@ -327,7 +327,10 @@ export function AlgorithmEditorDialog({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 420, opacity: 0 }}
             transition={{ type: "spring", stiffness: 360, damping: 32 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-105 flex-col border-l border-line bg-canvas shadow-2xl"
+            // w-105 (420px) overflows on screens <420px; below `sm` it becomes
+            // a full-width sheet (no side border), >=640px stays w-105.
+            // Desktop (>=1024px) is unchanged.
+            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-full flex-col border-l border-line bg-canvas shadow-2xl sm:w-105 max-sm:border-l-0"
             aria-label={
               existingAlgorithm ? "Edit algorithm" : "Add custom algorithm"
             }
@@ -550,7 +553,7 @@ export function AlgorithmEditorDialog({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center gap-3 border-t border-line bg-canvas px-5 py-3.5">
+            <div className="flex shrink-0 items-center gap-3 border-t border-line bg-canvas px-5 py-3.5 pb-safe max-lg:pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <p className="min-w-0 flex-1 truncate text-[0.6rem] text-ink-3">
                 {canSave
                   ? `${parsedMoves.length} move${parsedMoves.length !== 1 ? "s" : ""} — ready to save`

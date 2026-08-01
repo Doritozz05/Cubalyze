@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { orientationStore, connectionStore } from "@cubeforge/state";
@@ -67,6 +68,8 @@ export interface CubeConnectorProps {
   variant?: "header" | "rail";
   /** When variant="rail", toggles the text label visibility (sidebar expanded). */
   expanded?: boolean;
+  /** Controlled open state. */
+  open?: boolean;
   /** Callback fired when the dialog opens or closes. */
   onOpenChange?: (open: boolean) => void;
 }
@@ -75,9 +78,12 @@ export function CubeConnector({
   className,
   variant = "header",
   expanded = false,
+  open: externalOpen,
   onOpenChange,
 }: CubeConnectorProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen ?? internalOpen;
+
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">(
     globalCubeAdapter.isConnected ? "connected" : "disconnected"
   );
@@ -87,7 +93,7 @@ export function CubeConnector({
 
   const handleOpenChange = (newOpen: boolean) => {
     console.log("[CubeConnector] handleOpenChange called with newOpen:", newOpen);
-    setOpen(newOpen);
+    setInternalOpen(newOpen);
     onOpenChange?.(newOpen);
     if (newOpen) {
       setStatus(globalCubeAdapter.isConnected ? "connected" : "disconnected");
@@ -111,7 +117,7 @@ export function CubeConnector({
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
 
-      setOpen(false); // Close dialog on success
+      handleOpenChange(false); // Close dialog on success
       onOpenChange?.(false);
     } catch (e: unknown) {
       console.error(e);
@@ -145,7 +151,7 @@ export function CubeConnector({
       await globalCubeAdapter.disconnect();
       setStatus("disconnected");
       toast.success("Cube disconnected");
-      setOpen(false);
+      handleOpenChange(false);
     } catch (e) {
       console.error(e);
       toast.error("Failed to disconnect");
@@ -216,7 +222,7 @@ export function CubeConnector({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger}
-      <DialogContent className="sm:max-w-md bg-surface text-ink border-line">
+      <DialogContent className={`sm:max-w-md bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>Connect smart cube</DialogTitle>
           <DialogDescription>

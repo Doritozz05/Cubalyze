@@ -1,10 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { ListOrdered } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useWidgetStore } from "@/widgets/widgetStore";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { TimesList } from "@/components/Stats/TimesList";
 import type { Solve } from "@/types";
@@ -25,21 +21,11 @@ export interface FloatingTimesPanelProps {
 /**
  * Floating solve-log panel — always open, draggable, minimizable.
  *
- * - **Desktop**: uses FloatingWidgetWrapper for portal/drag/minimize.
- * - **Mobile**: fixed bottom bar (not draggable). Minimize collapses to header only.
+ * - **Desktop (>=1024px)**: FloatingWidgetWrapper for portal/drag/minimize.
+ * - **Touch (<1024px)**: the same wrapper renders a bottom sheet anchored
+ *   above the tab bar (drag handle, minimize, close) — desktop is untouched.
  */
-export function FloatingTimesPanel(props: FloatingTimesPanelProps) {
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return <MobileTimesPanel {...props} />;
-  }
-
-  return <DesktopTimesPanel {...props} />;
-}
-
-/** Desktop: uses the shared FloatingWidgetWrapper. */
-function DesktopTimesPanel({
+export function FloatingTimesPanel({
   solves,
   onUpdate,
   onDelete,
@@ -47,18 +33,19 @@ function DesktopTimesPanel({
   onAnalyze,
   onReplay,
 }: FloatingTimesPanelProps) {
-  const headerActions = solves.length > 0 && onClear ? (
-    <button
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClear();
-      }}
-      className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
-    >
-      Clear
-    </button>
-  ) : null;
+  const headerActions =
+    solves.length > 0 && onClear ? (
+      <button
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClear();
+        }}
+        className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+      >
+        Clear
+      </button>
+    ) : null;
 
   return (
     <FloatingWidgetWrapper
@@ -82,74 +69,5 @@ function DesktopTimesPanel({
         />
       </div>
     </FloatingWidgetWrapper>
-  );
-}
-
-/** Mobile: fixed bottom bar — NOT using the wrapper (different layout). */
-function MobileTimesPanel({
-  solves,
-  onUpdate,
-  onDelete,
-  onClear,
-  onAnalyze,
-  onReplay,
-}: FloatingTimesPanelProps) {
-  const [mounted, setMounted] = useState(false);
-  const [minimized, setMinimized] = useState(true);
-
-  useEffect(() => setMounted(true), []);
-
-  // Read status from widgetStore — hide if inactive
-  const status = useWidgetStore(
-    useCallback((s) => s.instances["times-log"]?.status, []),
-  );
-  const isInactive = status === "inactive";
-
-  if (!mounted || isInactive) return null;
-
-  return createPortal(
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-surface shadow-xl">
-      <div
-        className="flex items-center justify-between px-3 py-2 select-none"
-        onClick={() => setMinimized((m) => !m)}
-      >
-        <div className="flex items-center gap-2">
-          <ListOrdered className="size-3.5 text-ink-3" />
-          <span className="text-xs font-medium text-ink">Times</span>
-          <span className="nums text-[0.6rem] text-ink-3">{solves.length}</span>
-        </div>
-        <div className="flex items-center gap-0.5">
-          {solves.length > 0 && onClear && !minimized && (
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                onClear();
-              }}
-              className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
-            >
-              Clear
-            </button>
-          )}
-          <span className="text-[0.6rem] text-ink-3">
-            {minimized ? "▲" : "▼"}
-          </span>
-        </div>
-      </div>
-      {!minimized && (
-        <div style={{ height: "50vh" }} className="min-h-0">
-          <TimesList
-            solves={solves}
-            onUpdate={onUpdate}
-            onDelete={onDelete}
-            onAnalyze={onAnalyze}
-            onReplay={onReplay}
-            hideHeader
-            className="h-full"
-          />
-        </div>
-      )}
-    </div>,
-    document.body,
   );
 }

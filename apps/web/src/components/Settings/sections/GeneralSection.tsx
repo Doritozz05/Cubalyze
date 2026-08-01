@@ -3,6 +3,7 @@
 import { Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
+import { SettingToggle } from '../components/SettingToggle';
 import {
   Select,
   SelectContent,
@@ -16,6 +17,8 @@ export function GeneralSection() {
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const setTimePrecision = useStore(preferencesStore, (s) => s.setTimePrecision);
+  const haptics = useStore(preferencesStore, (s) => s.haptics);
+  const setHaptics = useStore(preferencesStore, (s) => s.setHaptics);
 
   return (
     <div className="flex flex-col gap-5">
@@ -83,6 +86,13 @@ export function GeneralSection() {
           </Select>
         </div>
       </div>
+
+      <SettingToggle
+        title="Haptic feedback"
+        description="Subtle vibration feedback on touch devices (tab switches, sheets, timer start/stop, penalties, and PB celebrations). No effect on desktop."
+        checked={haptics}
+        onCheckedChange={setHaptics}
+      />
     </div>
   );
 }

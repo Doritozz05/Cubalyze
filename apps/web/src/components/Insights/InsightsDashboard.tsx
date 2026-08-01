@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { BarChart3, ChevronLeft, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Penalty, Solve } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 import { useStatsFilters } from "@/hooks/useStatsFilters";
+import { useIsTouch } from "@/hooks/use-mobile";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import { SolveListPanel } from "./SolveListPanel";
 import { OverviewPanel } from "./OverviewPanel";
@@ -67,6 +70,12 @@ export function InsightsDashboard({
   className,
 }: InsightsDashboardProps) {
   void sessionId;
+
+  // ── Touch regime (<1024px): master-detail pages ─────────────────────
+  // "list" = solve list page + full-screen detail overlay;
+  // "stats" = OverviewPanel page. Desktop shows both side-by-side.
+  const isTouch = useIsTouch();
+  const [touchSection, setTouchSection] = useState<"list" | "stats">("list");
 
   // ── Two filter dimensions ───────────────────────────────────────────
   // Session: null = "All sessions", string = specific session id
@@ -216,9 +225,9 @@ export function InsightsDashboard({
   }, []);
 
   return (
-    <div className="relative flex-1 min-h-0 w-full">
+    <div className="relative flex-1 min-h-0 w-full flex flex-col">
       {/* ── Top bar: session + cube dropdowns ────────────────────────── */}
-      <div className="flex items-center gap-3 px-1 pb-3">
+      <div className="flex shrink-0 items-center gap-3 px-1 pb-3">
         {/* Session selector */}
         <div className="flex items-center gap-1.5">
           <span className="text-[0.6rem] uppercase tracking-[0.16em] text-ink-3">
@@ -290,9 +299,44 @@ export function InsightsDashboard({
         </span>
       </div>
 
+      {/* ── Touch: Solves | Stats page toggle ─────────────────────────── */}
+      {isTouch && (
+        <div className="flex shrink-0 items-center gap-1 pb-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setTouchSection("list")}
+            className={cn(
+              "flex h-9 max-lg:h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
+              touchSection === "list"
+                ? "bg-ink text-surface shadow-sm"
+                : "border border-line bg-surface text-ink-3 hover:text-ink",
+            )}
+          >
+            <List className="size-3.5" />
+            Solves
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTouchSection("stats");
+              setSelectedId(null);
+            }}
+            className={cn(
+              "flex h-9 max-lg:h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
+              touchSection === "stats"
+                ? "bg-ink text-surface shadow-sm"
+                : "border border-line bg-surface text-ink-3 hover:text-ink",
+            )}
+          >
+            <BarChart3 className="size-3.5" />
+            Stats
+          </button>
+        </div>
+      )}
+
       <div
         className={cn(
-          "absolute inset-0 top-10 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5",
+          "relative min-h-0 flex-1 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5",
           className,
         )}
       >
@@ -307,12 +351,22 @@ export function InsightsDashboard({
           filteredCount={filteredCount}
           totalCount={totalCount}
           reset={reset}
-          className="lg:w-85 lg:shrink-0"
+          className={cn(
+            "lg:w-85 lg:shrink-0",
+            // Touch: the list is the master page (hidden while in Stats).
+            isTouch && touchSection === "stats" && "hidden",
+          )}
         />
 
-        {/* Column B: content */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-canvas">
-          {selected ? (
+        {/* Column B: content — hidden on touch while in the Solves section
+            (the detail renders as a full-screen overlay instead) */}
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-canvas",
+            isTouch && touchSection === "list" && "hidden",
+          )}
+        >
+          {selected && !isTouch ? (
             <SolveAnalysisPanel
               solve={selected}
               liveMetrics={liveMetrics}
@@ -326,6 +380,48 @@ export function InsightsDashboard({
           )}
         </div>
       </div>
+
+      {/* ── Touch: solve detail as full-screen overlay ────────────────── */}
+      {isTouch && touchSection === "list" && (
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              key="touch-solve-detail"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed inset-0 z-50 flex flex-col bg-canvas lg:hidden"
+            >
+              {/* Sticky header with back button (safe-area aware) */}
+              <div className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-3 pt-safe pb-2">
+                <button
+                  type="button"
+                  onClick={handleBackToOverview}
+                  aria-label="Back to solves"
+                  className="flex h-10 items-center gap-1.5 rounded-lg pr-2 text-sm font-medium text-ink-2 transition-colors hover:text-ink"
+                >
+                  <ChevronLeft className="size-5" />
+                  <span>Back</span>
+                </button>
+                <span className="truncate text-xs text-ink-3">Solve details</span>
+              </div>
+              {/* Scrollable content */}
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-safe">
+                <SolveAnalysisPanel
+                  solve={selected}
+                  liveMetrics={liveMetrics}
+                  isLive={isLive}
+                  onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
+                  onDeleteSolve={() => handleDelete(selected.id)}
+                  onBackToOverview={handleBackToOverview}
+                  className="px-3"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

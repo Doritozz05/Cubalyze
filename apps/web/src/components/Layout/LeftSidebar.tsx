@@ -13,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsTouch } from "@/hooks/use-mobile";
 import {
   COLLAPSED_WIDTH,
   EXPANDED_WIDTH,
@@ -47,6 +47,12 @@ export interface LeftSidebarProps {
   sessionName?: string;
   /** Batch import callback for importing solves from files. */
   onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
+  settingsOpen?: boolean;
+  onSettingsOpenChange?: (open: boolean) => void;
+  widgetExplorerOpen?: boolean;
+  onWidgetExplorerOpenChange?: (open: boolean) => void;
+  cubeConnectorOpen?: boolean;
+  onCubeConnectorOpenChange?: (open: boolean) => void;
 }
 
 export function LeftSidebar({
@@ -58,14 +64,32 @@ export function LeftSidebar({
   solves,
   sessionName,
   onImportSolves,
+  settingsOpen: externalSettingsOpen,
+  onSettingsOpenChange,
+  widgetExplorerOpen: externalWidgetExplorerOpen,
+  onWidgetExplorerOpenChange,
+  cubeConnectorOpen: externalCubeConnectorOpen,
+  onCubeConnectorOpenChange,
 }: LeftSidebarProps) {
-  const isMobile = useIsMobile();
+  // Touch regime (mobile + tablet <1024px) renders the Sheet variant.
+  // Desktop (>=1024px) keeps the hover-to-expand rail untouched.
+  const isTouch = useIsTouch();
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
+  const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
+  const [internalWidgetExplorerOpen, setInternalWidgetExplorerOpen] = useState(false);
+  const [internalCubeConnectorOpen, setInternalCubeConnectorOpen] = useState(false);
+
+  const settingsOpen = externalSettingsOpen ?? internalSettingsOpen;
+  const setSettingsOpen = onSettingsOpenChange ?? setInternalSettingsOpen;
+
+  const widgetExplorerOpen = externalWidgetExplorerOpen ?? internalWidgetExplorerOpen;
+  const setWidgetExplorerOpen = onWidgetExplorerOpenChange ?? setInternalWidgetExplorerOpen;
+
+  const cubeConnectorOpen = externalCubeConnectorOpen ?? internalCubeConnectorOpen;
+  const setCubeConnectorOpen = onCubeConnectorOpenChange ?? setInternalCubeConnectorOpen;
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Timestamp until which hover-expansion is suppressed (set when the window
@@ -76,9 +100,9 @@ export function LeftSidebar({
 
   const isDark = mounted && resolvedTheme === "dark";
   // Labels/titles are visible whenever the rail is expanded: on hover (desktop)
-  // or always (the mobile sheet has a fixed wide width). This also fixes a
+  // or always (the touch sheet has a fixed wide width). This also fixes a
   // pre-existing issue where the mobile sheet showed icon-only items.
-  const labelVisible = isMobile || isHovered;
+  const labelVisible = isTouch || isHovered;
 
   /**
    * Guards the hover-to-expand behaviour against synthetic mouse events.
@@ -102,7 +126,7 @@ export function LeftSidebar({
    *    the rail and we are outside the suppression window.
    */
   useEffect(() => {
-    if (isMobile) return;
+    if (isTouch) return;
 
     const clearHoverTimer = () => {
       if (hoverTimer.current) {
@@ -131,7 +155,7 @@ export function LeftSidebar({
       window.removeEventListener("focus", handleWindowFocus);
       clearHoverTimer();
     };
-  }, [isMobile]);
+  }, [isTouch]);
 
   const handleMouseEnter = useCallback(() => {
     // Suppress hover if a native dialog (e.g. Web Bluetooth) just closed.
@@ -166,7 +190,7 @@ export function LeftSidebar({
       }
       handleNavigateItem(id as ViewId);
     },
-    [handleNavigateItem],
+    [handleNavigateItem, setWidgetExplorerOpen],
   );
 
   const sidebarContent = (
@@ -220,7 +244,9 @@ export function LeftSidebar({
         <CubeConnector 
           variant="rail" 
           expanded={labelVisible} 
+          open={cubeConnectorOpen}
           onOpenChange={(open) => {
+            setCubeConnectorOpen(open);
             if (!open) {
               onMobileOpenChange?.(false);
               setIsHovered(false);
@@ -243,8 +269,9 @@ export function LeftSidebar({
     </>
   );
 
-  // Mobile: render as Sheet (trigger rendered in header)
-  if (isMobile) {
+  // Touch (mobile + tablet): render as Sheet (opened from the bottom tab bar's
+  // "More" button, or the header hamburger on older builds).
+  if (isTouch) {
     return (
       <>
         <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
@@ -277,6 +304,15 @@ export function LeftSidebar({
           solves={solves}
           sessionName={sessionName}
           onImportSolves={onImportSolves}
+        />
+        <CubeConnector
+          open={cubeConnectorOpen}
+          onOpenChange={(open) => {
+            setCubeConnectorOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+            }
+          }}
         />
       </>
     );

@@ -16,6 +16,7 @@ import {
   Pie,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { computeStats, formatTime, formatDuration, statLabel } from "@/utils/formatTime";
 import {
@@ -78,7 +79,14 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
     }
     return { isModal: modal, meanBinLabel: meanLabel };
   }, [histogram, stats.mean]);
-  const activity = useMemo(() => deriveActivityHeatmap(solves, 12), [solves]);
+  // Touch (<1024px): fewer heatmap weeks so the grid never overflows the
+  // narrower column. Desktop keeps the full 12 weeks.
+  const isTouch = useIsTouch();
+  const heatmapWeeks = isTouch ? 8 : 12;
+  const activity = useMemo(
+    () => deriveActivityHeatmap(solves, heatmapWeeks),
+    [solves, heatmapWeeks],
+  );
   const phaseDist = useMemo(() => derivePhaseDistribution(solves), [solves]);
 
   const analysedCount = useMemo(
@@ -273,10 +281,10 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
         <div className="rounded-lg border border-line bg-surface px-5 py-4">
           <SectionHeader
             title="Activity"
-            eyebrow="last 12 weeks"
+            eyebrow={`last ${heatmapWeeks} weeks`}
             className="mb-3"
           />
-          <ActivityHeatmap counts={activity} weeks={12} />
+          <ActivityHeatmap counts={activity} weeks={heatmapWeeks} />
         </div>
 
         {/* Phase distribution donut */}

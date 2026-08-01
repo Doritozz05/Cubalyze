@@ -30,6 +30,7 @@ import {
   TrainingBreadcrumb,
   VerdictOverlay,
   StatChip,
+  TouchAside,
 } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
@@ -521,7 +522,7 @@ export function AlgorithmDrillView({
           </div>
 
           {/* Right: Sidebar */}
-          <aside className="flex min-h-0 flex-col gap-4 lg:w-80 lg:shrink-0 overflow-hidden">
+          <TouchAside title="Cases & Stats" className="flex min-h-0 flex-col gap-4 lg:w-80 lg:shrink-0 overflow-hidden">
             {/* Mini 3D Cube Panel — only when smart cube is connected */}
             {hasSmartCube && (
               <MiniCube3DPanel className="shrink-0" />
@@ -543,7 +544,7 @@ export function AlgorithmDrillView({
             </div>
 
             <SessionStatsPanel totalAttempts={attempts.length} correctCount={correctAttempts.length} streak={streak} avgTime={avgTime} />
-          </aside>
+          </TouchAside>
         </div>
       </div>
     </div>
@@ -578,7 +579,7 @@ function DrillHeader({
       <div className="flex gap-1">
         {DRILL_MODES.map((mode) => (
           <button key={mode.id} onClick={() => onModeChange(mode.id)}
-            className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
+            className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:min-w-16 max-lg:px-3.5",
               drillMode === mode.id ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")} title={mode.description}>
             {mode.label}
             {drillMode === mode.id && <motion.div layoutId="drill-mode-active" className="absolute inset-0 rounded-md bg-ink -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
