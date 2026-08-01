@@ -61,16 +61,16 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
   const interactive = !!onExpand;
 
   return (
-    <div className="relative w-full flex flex-col items-center">
-      <AnimatePresence initial={false} mode="wait">
+    <div className="relative w-full flex flex-col items-center justify-center h-[58px] shrink-0">
+      <AnimatePresence initial={false}>
         {isMinimized ? (
           <motion.div
             key="minimized-pill"
-            initial={{ opacity: 0, y: -4, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.95 }}
-            transition={{ duration: 0.18 }}
-            className="flex justify-center py-0.5"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 flex items-center justify-center"
           >
             <Tooltip>
               <TooltipTrigger asChild>
@@ -90,13 +90,13 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
         ) : (
           <motion.div
             key="full-stats"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 w-full"
           >
-            <div className="relative flex flex-col items-center w-full">
+            <div className="relative flex flex-col items-center w-full h-full justify-center">
               {bpaWpa != null && (
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface/95 px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
                   <span className="font-mono">
