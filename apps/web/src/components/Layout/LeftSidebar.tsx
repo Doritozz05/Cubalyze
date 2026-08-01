@@ -190,7 +190,7 @@ export function LeftSidebar({
       }
       handleNavigateItem(id as ViewId);
     },
-    [handleNavigateItem],
+    [handleNavigateItem, setWidgetExplorerOpen],
   );
 
   const sidebarContent = (
