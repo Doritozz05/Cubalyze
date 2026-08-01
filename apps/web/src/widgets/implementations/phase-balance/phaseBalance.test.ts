@@ -109,6 +109,30 @@ describe("Phase Balance data", () => {
     expect(data.rows.reduce((sum, row) => sum + row.share, 0)).toBeCloseTo(1);
   });
 
+  it("uses pending analysis immediately when the solve is already in state", () => {
+    const solve = makeSolve("pending", undefined, "none", 100);
+    const pending = makeAnalysis("pending", 1, [1000, 4000, 1500, 2000], "PLL");
+    const data = buildPhaseBalance([solve], pending);
+
+    expect(data.analysedSolves).toBe(1);
+    expect(data.rows.find((row) => row.phaseName === "PLL")?.latestSkipped).toBe(true);
+  });
+
+  it("does not invent a solve for an analysis whose solve is absent", () => {
+    const existing = makeSolve("existing", undefined, "none", 100);
+    const pending = makeAnalysis("missing", 1, [1000, 4000, 1500, 2000], "PLL");
+
+    expect(buildPhaseBalance([existing], pending).analysedSolves).toBe(0);
+  });
+
+  it("does not let an older pending analysis contaminate the newest solve", () => {
+    const older = makeSolve("older", undefined, "none", 100);
+    const newest = makeSolve("newest", undefined, "none", 200);
+    const pendingForOlder = makeAnalysis("older", 1, [1000, 4000, 1500, 2000], "PLL");
+
+    expect(buildPhaseBalance([newest, older], pendingForOlder).analysedSolves).toBe(0);
+  });
+
   it("computes shares from the recent self-baseline and latest deltas", () => {
     const first = makeSolve("first", makeAnalysis("first"));
     const latestAnalysis = makeAnalysis("latest", 2);

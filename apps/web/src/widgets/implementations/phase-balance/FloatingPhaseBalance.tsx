@@ -42,17 +42,22 @@ function PhaseBar({
   share,
   colorIndex,
   muted = false,
+  skipped = false,
 }: {
   phaseName: CfopPhaseName;
   share: number;
   colorIndex: number;
   muted?: boolean;
+  skipped?: boolean;
 }) {
   const color = phaseColorHex(phaseName, colorIndex);
   return (
     <div className="flex items-center gap-2">
       <span className="w-9 shrink-0 text-[0.58rem] font-medium text-ink-2">{phaseName}</span>
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+      <div className={cn(
+        "h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2",
+        skipped && "border border-dashed border-ink-3/35 bg-transparent",
+      )}>
         <div
           className="h-full rounded-full transition-[width] duration-300"
           style={{ width: `${Math.max(share * 100, share > 0 ? 1 : 0)}%`, backgroundColor: color, opacity: muted ? 0.35 : 0.85 }}
@@ -62,6 +67,14 @@ function PhaseBar({
         {pct(share)}
       </span>
     </div>
+  );
+}
+
+function SkipBadge() {
+  return (
+    <span className="rounded border border-ink-3/25 bg-surface-2 px-1 py-0.5 text-[0.48rem] font-semibold uppercase tracking-wide text-ink-3">
+      Skip
+    </span>
   );
 }
 
@@ -82,7 +95,17 @@ function LatestBreakdown({ analysis }: { analysis: SolveMetrics }) {
         ))}
       </div>
       {segments.map((segment, index) => (
-        <PhaseBar key={segment.phaseName} phaseName={segment.phaseName} share={segment.share} colorIndex={index} />
+        <div key={segment.phaseName} className="flex items-center gap-1.5">
+          <div className="min-w-0 flex-1">
+            <PhaseBar
+              phaseName={segment.phaseName}
+              share={segment.share}
+              colorIndex={index}
+              skipped={segment.skipped}
+            />
+          </div>
+          {segment.skipped && <SkipBadge />}
+        </div>
       ))}
     </div>
   );
@@ -101,7 +124,10 @@ function AverageBreakdown({ rows }: { rows: PhaseBalanceRow[] }) {
         return (
           <div key={row.phaseName} className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[0.58rem] font-medium text-ink-2">{row.phaseName}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[0.58rem] font-medium text-ink-2">{row.phaseName}</span>
+                {row.latestSkipped && <SkipBadge />}
+              </div>
               <div className="flex items-center gap-2 nums text-[0.58rem]">
                 <span className="text-ink-3">{formatTime(row.avgDurationMs)}</span>
                 <span className="font-medium text-ink">{pct(row.share)}</span>
@@ -113,7 +139,12 @@ function AverageBreakdown({ rows }: { rows: PhaseBalanceRow[] }) {
                 )}
               </div>
             </div>
-            <PhaseBar phaseName={row.phaseName} share={row.share} colorIndex={index} />
+            <PhaseBar
+              phaseName={row.phaseName}
+              share={row.share}
+              colorIndex={index}
+              skipped={row.latestSkipped}
+            />
           </div>
         );
       })}
