@@ -148,19 +148,26 @@ export function FloatingWidgetWrapper({
   }, [storePosition, stackIndex]);
 
   const snapTargets = useMemo<SnapRect[]>(() => {
+    // On touch the panels are scaled, so snap rects must use the SCALED
+    // visual size too — otherwise edge snapping between two mini-panels
+    // would nudge ~1/scale off from the other widget's actual visual edge.
+    const scale = isTouch ? TOUCH_SCALE : 1;
     return Object.entries(allInstances)
       .filter(([id, inst]) => {
         if (id === widgetId) return false;
         const s = inst?.status;
         return s === "floating" || s === "minimized";
       })
-      .map(([, inst]) => ({
-        x: inst.position.x,
-        y: inst.position.y,
-        w: inst.panelWidth ?? 340,
-        h: Math.round((inst.panelWidth ?? 340) * 0.85),
-      }));
-  }, [allInstances, widgetId]);
+      .map(([, inst]) => {
+        const w = Math.round((inst.panelWidth ?? 340) * scale);
+        return {
+          x: inst.position.x,
+          y: inst.position.y,
+          w,
+          h: Math.round(w * 0.85),
+        };
+      });
+  }, [allInstances, widgetId, isTouch]);
 
   // ── Dock zone visual state (throttled — only updated on threshold cross) ──
   const [isNearDock, setIsNearDock] = useState(false);
@@ -331,7 +338,11 @@ export function FloatingWidgetWrapper({
 
     return createPortal(
       // Outer: drag transform + pointer-events-none so the invisible
-      // unscaled footprint never blocks the app content behind it.
+      // footprint never blocks the app content behind it. IMPORTANT: its
+      // width must be the SCALED visual width (panelWidth × TOUCH_SCALE) —
+      // the drag hook clamps to the viewport using el.offsetWidth, so an
+      // unscaled width would wrongly reserve 320px and make the right side
+      // of the screen unreachable (the panel could never be dragged there).
       <div
         ref={drag.elementRef}
         data-widget-id={widgetId}
@@ -342,7 +353,7 @@ export function FloatingWidgetWrapper({
           transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
           transformOrigin: "0 0",
           zIndex: z,
-          width: panelWidth,
+          width: Math.round(panelWidth * TOUCH_SCALE),
           pointerEvents: "none",
           willChange: drag.isDragging ? "transform" : undefined,
         }}
