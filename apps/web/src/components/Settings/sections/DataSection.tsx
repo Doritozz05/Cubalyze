@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
+import { useStorageStatusStore } from '@/stores/storageStatus';
 import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToJSON, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
 import { PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
@@ -44,6 +45,10 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
   const fileContentRef = useRef<string>('');
 
   const isEmpty = solves.length === 0;
+  // Volatile (in-memory) storage means all data is wiped on reload — show a
+  // persistent warning here so the user knows to export regularly.
+  const storageType = useStorageStatusStore((s) => s.storageType);
+  const volatileStorage = storageType === 'memory';
 
   // ── Reset import state on close ──────────────────────────────────────
   useEffect(() => {
@@ -163,6 +168,22 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
   return (
     <>
       <div className="flex flex-col gap-5">
+        {volatileStorage && (
+          <div className="flex items-start gap-3 rounded-xl border border-dnf/30 bg-dnf/5 p-4">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-dnf/20 bg-surface">
+              <AlertTriangle className="size-4 text-dnf" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[0.82rem] font-medium text-ink">Volatile storage detected</p>
+              <p className="mt-1 text-[0.72rem] text-ink-2 leading-relaxed">
+                This browser could not open persistent storage (OPFS), so the app is running in-memory.
+                <strong> All solves and progress will be lost when you close or reload the page.</strong>{' '}
+                Export your data now and consider using a supported browser (Chrome/Edge/Firefox) or the desktop app.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-3 rounded-xl border border-line/40 bg-surface-2/50 p-4">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
             <Download className="size-4 text-ink-2" />

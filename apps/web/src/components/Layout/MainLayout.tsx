@@ -350,7 +350,7 @@ export function MainLayout({
                     "absolute left-0 top-0 bottom-0 z-20 w-3 -ml-1.5 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
                     isResizingWidth && "cursor-grabbing"
                   )}
-                  title="Arrastrar para ajustar ancho (Doble clic para restablecer)"
+                  title="Drag to resize width (Double-click to reset)"
                 >
                   <div
                     className={cn(
@@ -373,7 +373,7 @@ export function MainLayout({
                     "absolute top-0 left-0 right-0 z-20 h-6 -mt-3 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
                     isResizingHeight && "cursor-grabbing"
                   )}
-                  title="Deslizar para encoger o cerrar (Doble clic para restablecer)"
+                  title="Drag to resize or close (Double-click to reset)"
                 >
                   <div
                     className={cn(

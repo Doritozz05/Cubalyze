@@ -43,6 +43,14 @@ export class Cube3DEngine {
   private isRunning: boolean = false;
   private animFrameId: number | null = null;
 
+  /**
+   * Dirty-flag rendering: the rAF loop only runs while there is active
+   * animation (layer rotation, gyro smoothing, orientation transition) OR a
+   * pending explicit render request. When the scene is static, the loop
+   * stops entirely, saving CPU/GPU/battery on an idle but mounted cube.
+   */
+  private needsRender = false;
+
   /** Track grayed-out sticker meshes so we can restore + dispose them. */
   private grayedStickers: { mesh: Mesh; originalMat: Material }[] = [];
 
@@ -80,13 +88,33 @@ export class Cube3DEngine {
     });
 
     this.isRunning = true;
+    // Render the first frame immediately, then let the dirty-flag loop
+    // pause when the scene becomes static.
     this.lastTime = performance.now();
-    this.loop(this.lastTime);
+    this.needsRender = true;
+    this.animFrameId = requestAnimationFrame(this.loop);
+  }
+
+  /**
+   * Schedule a single render on the next animation frame.
+   *
+   * Called by every public method that mutates the scene (camera moves,
+   * facelet syncs, style changes, sticker graying, rotations, …). If the
+   * render loop is paused, this restarts it for one frame.
+   */
+  public requestRender(): void {
+    if (!this.isRunning) return;
+    this.needsRender = true;
+    if (this.animFrameId === null) {
+      this.lastTime = performance.now();
+      this.animFrameId = requestAnimationFrame(this.loop);
+    }
   }
 
   public resize(width: number, height: number): void {
     if (this.sceneManager && width > 0 && height > 0) {
       this.sceneManager.resize(width, height);
+      this.requestRender();
     }
   }
 
@@ -99,6 +127,7 @@ export class Cube3DEngine {
     easingStrategy?: string,
   ): Promise<void> {
     if (!this.rotationEngine) return;
+    this.requestRender();
     await this.rotationEngine.rotateLayers(
       axis,
       layerValues,
@@ -113,18 +142,21 @@ export class Cube3DEngine {
     if (this.model) {
       this.model.resetCube();
     }
+    this.requestRender();
   }
 
   public syncFacelets(facelets: string): void {
     if (this.model) {
       this.model.applyFacelets(facelets);
     }
+    this.requestRender();
   }
 
   public rotateCamera(dx: number, dy: number): void {
     if (this.sceneManager) {
       this.sceneManager.rotateCamera(dx, dy);
     }
+    this.requestRender();
   }
 
   public updateGyro(x: number, y: number, z: number, w: number): void {
@@ -137,6 +169,7 @@ export class Cube3DEngine {
     }
 
     this.orientationTracker.update({ x, y: z, z: -y, w });
+    this.requestRender();
   }
 
   public disableGyro(): void {
@@ -150,6 +183,7 @@ export class Cube3DEngine {
       this.sceneManager.resetCamera();
     }
     this.gyroFusion.calibrate();
+    this.requestRender();
   }
 
   public setGyroSupported(supported: boolean): void {
@@ -212,6 +246,7 @@ export class Cube3DEngine {
   public setIsometricView(): void {
     if (!this.sceneManager) return;
     this.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+    this.requestRender();
   }
 
   public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): void {
@@ -224,6 +259,7 @@ export class Cube3DEngine {
     if (duration <= 0) {
       this.orientationAnim = null;
       this.model.root.quaternion.copy(entry.quaternion);
+      this.requestRender();
       return;
     }
 
@@ -233,18 +269,22 @@ export class Cube3DEngine {
       startTime: performance.now(),
       durationMs: duration,
     };
+    // Kick off the render loop — the orientation animation keeps it alive.
+    this.requestRender();
   }
 
   public setFaceColor(face: string, color: string): void {
     if (this.factory) {
       this.factory.setFaceColor(face as CubeFace | 'Inner', color);
     }
+    this.requestRender();
   }
 
   public setFaceEmissive(face: string, emissiveColor: string, intensity: number): void {
     if (this.factory) {
       this.factory.setFaceEmissive(face as CubeFace | 'Inner', emissiveColor, intensity);
     }
+    this.requestRender();
   }
 
   /**
@@ -261,12 +301,14 @@ export class Cube3DEngine {
       radians,
     );
     this.model.root.quaternion.copy(q);
+    this.requestRender();
   }
 
   public updateStyle(newStyle: Partial<CubeStyleOptions>): void {
     if (this.factory) {
       this.factory.updateStyle(newStyle);
     }
+    this.requestRender();
   }
 
   // ── Stickering system ──────────────────────────────────────────────────
@@ -296,6 +338,7 @@ export class Cube3DEngine {
       }
     }
     this.grayedStickers = [];
+    this.requestRender();
   }
 
   /**
@@ -347,6 +390,7 @@ export class Cube3DEngine {
     for (const cubieGroup of cubies) {
       this.grayCubieGroup(cubieGroup, grayColor);
     }
+    this.requestRender();
   }
 
   /**
@@ -382,6 +426,7 @@ export class Cube3DEngine {
         this.grayCubieGroup(cubie.mesh, grayColor);
       }
     }
+    this.requestRender();
   }
 
   /**
@@ -433,11 +478,22 @@ export class Cube3DEngine {
       if (targetKeys.has(key)) continue; // keep this cubie colored
       this.grayCubieGroup(cubie.mesh, grayColor);
     }
+    this.requestRender();
+  }
+
+  /**
+   * True when any animation system still has work to do on the next frame.
+   * Used by {@link loop} to decide whether to keep the rAF cycle alive.
+   */
+  private hasActiveAnimation(): boolean {
+    if (this.orientationAnim) return true;
+    if (this.rotationEngine?.isAnimating()) return true;
+    if (this.gyroFusion?.isEnabled()) return true;
+    return false;
   }
 
   private loop = (timeMs: number) => {
     if (!this.isRunning) return;
-    this.animFrameId = requestAnimationFrame(this.loop);
 
     const deltaMs = timeMs - this.lastTime;
     this.lastTime = timeMs;
@@ -462,7 +518,18 @@ export class Cube3DEngine {
       }
     }
 
-    if (this.sceneManager) this.sceneManager.render();
+    const animating = this.hasActiveAnimation();
+    if (this.needsRender || animating) {
+      if (this.sceneManager) this.sceneManager.render();
+      this.needsRender = false;
+    }
+
+    if (this.needsRender || animating) {
+      this.animFrameId = requestAnimationFrame(this.loop);
+    } else {
+      // Idle: pause the loop until the next requestRender() call.
+      this.animFrameId = null;
+    }
   };
 
   public dispose(): void {
@@ -471,6 +538,7 @@ export class Cube3DEngine {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
+    this.needsRender = false;
     this.orientationSub?.unsubscribe();
     this.rotationEventSub?.unsubscribe();
     if (this.orientationTracker) this.orientationTracker.dispose();

@@ -101,7 +101,6 @@ export function CubeConnector({
   const [manualMac, setManualMac] = useState("");
 
   const handleOpenChange = (newOpen: boolean) => {
-    console.log("[CubeConnector] handleOpenChange called with newOpen:", newOpen);
     setInternalOpen(newOpen);
     onOpenChange?.(newOpen);
     if (newOpen) {

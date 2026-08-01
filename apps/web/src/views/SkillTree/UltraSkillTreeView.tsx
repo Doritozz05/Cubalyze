@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Search, SlidersHorizontal, Map, LayoutList, Check, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
 import { SkillNodeModal } from "./SkillNodeModal";
 import { ALL_SKILL_NODES, type SkillNode } from "./skillTreeData";
+import { useSkillProgress } from "@/hooks/useSkillProgress";
 
 interface UltraSkillTreeViewProps {
   onNavigate?: (view: string) => void;
@@ -31,38 +32,18 @@ const CATEGORY_ITEMS = [
   { id: "theory", label: "Theory" },
 ];
 
-const LOCAL_STORAGE_KEY = "cubeforge_completed_skills_v2";
-
 export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   // View mode: 'graph' (interactive tree) or 'list' (compact card grid)
   const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
 
-  // Set of completed skill IDs
-  const [completedIds, setCompletedIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {
-      // Fallback
-    }
-    return ["cube-anatomy", "standard-notation", "first-cross"];
-  });
+  // Set of completed skill IDs — SQLite is the single source of truth;
+  // the hook keeps a localStorage cache + one-time migration for fallback.
+  const { completedIds, setCompletedIds } = useSkillProgress();
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-
-  // Save to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(completedIds));
-    } catch {
-      // Ignore
-    }
-  }, [completedIds]);
 
   // Compute dynamic nodes with calculated statuses (completed, unlocked/accessible, locked)
   const skillNodes = useMemo(() => {
@@ -125,7 +106,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         return [...prev, nodeId];
       }
     });
-  }, []);
+  }, [setCompletedIds]);
 
   const handleStartDrill = (_node: SkillNode) => {
     onNavigate?.("training");

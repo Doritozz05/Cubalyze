@@ -20,6 +20,7 @@ import { FloatingCubeButton } from "@/widgets/implementations/cube-button/Floati
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast, Toaster } from "sonner";
+import { useStorageStatusStore } from "@/stores/storageStatus";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
@@ -36,6 +37,7 @@ import {
   puzzleCategoryToOrder,
   preloadSolvers,
 } from "@/utils/puzzleUtils";
+import { isDev } from "@/utils/env";
 import { ThemeProvider } from "@/components/theme-provider";
 import { v4 as uuidv4 } from "uuid";
 import type { Penalty, PuzzleCategory, Solve, SolveMethod, SolveSource } from "@/types";
@@ -120,11 +122,26 @@ export default function App() {
   );
 
   // ── Preload solvers at app startup ─────────────────────────────────────
-  // Builds the 2×2 combined table (~800ms) and warms up Min2Phase WASM
-  // (~150-350ms) so the first scramble of either type is instant.
+  // Deferred to browser idle time (see preloadSolvers) so the first paint
+  // and interaction are never blocked by the ~1s WASM/table warmup.
   useEffect(() => {
     preloadSolvers();
   }, []);
+
+  // ── Volatile-storage warning ──────────────────────────────────────────
+  // When the DB falls back to in-memory storage (OPFS unavailable), all data
+  // is lost on reload. Warn the user once per session so they can export.
+  const storageWarnedRef = useRef(false);
+  const storageType = useStore(useStorageStatusStore, (s) => s.storageType);
+  useEffect(() => {
+    if (storageType === "memory" && !storageWarnedRef.current) {
+      storageWarnedRef.current = true;
+      toast.warning(
+        "Storage is volatile — solves will be lost on reload. Export your data in Settings → Data.",
+        { duration: 8000 },
+      );
+    }
+  }, [storageType]);
 
   // ── Widget lifecycle connection (avoids stale closure via refs) ────────
   useEffect(() => {
@@ -255,13 +272,15 @@ export default function App() {
                   if (latestSavedTokenRef.current === completionToken) {
                     setLastAnalysis(analysis);
                   }
-                  console.log(
-                    '%c[App] Persisting moves+analysis to solve %s · %d raw → %d compacted',
-                    'color:#38bdf8',
-                    solveId.slice(0, 8),
-                    rawMoves.length,
-                    compactedMoves.length,
-                  );
+                  if (isDev()) {
+                    console.log(
+                      '%c[App] Persisting moves+analysis to solve %s · %d raw → %d compacted',
+                      'color:#38bdf8',
+                      solveId.slice(0, 8),
+                      rawMoves.length,
+                      compactedMoves.length,
+                    );
+                  }
                   await updateSolve(solveId, {
                     moves: compactedMoves,
                     orientationTimeline: compactedOrientationTimeline,

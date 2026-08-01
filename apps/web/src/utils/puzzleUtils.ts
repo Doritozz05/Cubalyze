@@ -86,28 +86,54 @@ export function getTwoByTwoScrambler(): TwoByTwoScrambler {
 }
 
 /**
- * Pre-initialise all solvers at app startup.
+ * Schedule a callback during browser idle time, falling back to a short
+ * timeout when requestIdleCallback is unavailable (SSR, older browsers).
+ */
+type IdleCallbackWindow = Window & {
+  requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void;
+};
+
+function scheduleIdle(fn: () => void): void {
+  const w = typeof window !== 'undefined' ? (window as IdleCallbackWindow) : null;
+  if (w?.requestIdleCallback) {
+    w.requestIdleCallback(fn, { timeout: 4000 });
+  } else if (w) {
+    w.setTimeout(fn, 200);
+  }
+}
+
+/**
+ * Pre-initialise all solvers at app startup — without blocking the main
+ * thread.
  *
- * Call once from an App-level effect. After this, the first scramble for
- * either puzzle type is instant (< 1 ms) instead of paying the 150-800 ms
- * initialisation cost at that moment.
+ * The combined 2×2 table takes ~800 ms and Min2Phase WASM ~150-350 ms. Running
+ * them synchronously on mount janks the first paint, so this version:
+ *  1. Defers the heavy work to browser idle time (requestIdleCallback).
+ *  2. Splits the two heavy inits across two idle slots so the main thread
+ *     breathes between them.
  *
- * This is safe to call multiple times (idempotent).
+ * The getters remain lazy, so a scramble generated before the idle work
+ * completes still works (it just pays the init cost at that moment).
+ *
+ * Safe to call multiple times (idempotent).
  */
 export function preloadSolvers(): void {
   if (preloaded) return;
   preloaded = true;
 
   // Warm up the 3×3 Min2Phase WASM tables (~150-350 ms)
-  getMin2PhaseSolver().init();
+  scheduleIdle(() => {
+    getMin2PhaseSolver().init();
+  });
 
-  // Warm up the 2×2 combined BFS table (~800 ms)
-  // We need to init the solver before wrapping it in the scrambler
-  const solver = new TwoByTwoSolver();
-  solver.init();
-  twoByTwoScrambler = new TwoByTwoScrambler(solver);
-
-  console.log('[puzzleUtils] Solvers preloaded: 3×3 Min2Phase + 2×2 combined table');
+  // Warm up the 2×2 combined BFS table (~800 ms) in a separate idle slot.
+  // We need to init the solver before wrapping it in the scrambler.
+  scheduleIdle(() => {
+    if (twoByTwoScrambler) return; // already created lazily
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    twoByTwoScrambler = new TwoByTwoScrambler(solver);
+  });
 }
 
 /**

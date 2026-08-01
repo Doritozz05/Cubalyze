@@ -121,6 +121,14 @@ export class RotationEngine {
     task.endQuat.copy(task.rotationOffset).multiply(task.startQuat);
   }
 
+  /**
+   * True when at least one pivot task is still animating.
+   * Lets the render loop know whether to keep rendering or pause (dirty-flag).
+   */
+  public isAnimating(): boolean {
+    return this.pool.some((t) => t.inUse);
+  }
+
   public update(timeNowMs: number): void {
     for (const task of this.pool) {
       if (!task.inUse) continue;

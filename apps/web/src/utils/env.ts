@@ -1,4 +1,13 @@
 /**
+ * True when running under Vite's dev server (local development), regardless
+ * of host. Used to gate verbose per-solve debug logs so production consoles
+ * stay clean.
+ */
+export function isDev(): boolean {
+  return import.meta.env.DEV === true;
+}
+
+/**
  * Detects if the current window context is running inside the Tauri desktop app.
  */
 export function isTauri(): boolean {

@@ -5,6 +5,8 @@ import type { Solve as UISolve, Penalty, SolveSource } from "@/types";
 import { normalizePenalty } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
+import { isDev } from "@/utils/env";
+import { useStorageStatusStore } from "@/stores/storageStatus";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { seedDemoDataIfEmpty } from "@/utils/seedDemoData";
@@ -127,6 +129,14 @@ export function usePersistentSession(): UsePersistentSessionResult {
         const dbExecutor = async (sql: string, bind?: unknown[]) => {
           return await dbClient.execute(sql, bind);
         };
+        // Surface the storage backend so the UI can warn about volatile
+        // (memory) storage that loses data on reload.
+        try {
+          const storageType = await dbClient.getStorageType();
+          useStorageStatusStore.getState().setStorageType(storageType);
+        } catch {
+          // storage type check is best-effort
+        }
         const sessionsRepo = new SessionsRepository(dbExecutor);
         const solvesRepo = new SolvesRepository(dbExecutor);
         reposRef.current = { sessions: sessionsRepo, solves: solvesRepo };
@@ -143,7 +153,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
                 updatedAt: new Date().toISOString(),
               };
               await sessionsRepo.insert(defaultSession);
-              console.log('[usePersistentSession] Created default session:', defaultSession.id);
+              if (isDev()) console.log('[usePersistentSession] Created default session:', defaultSession.id);
             }
             // Seed demo data if DB is empty and flag is set
             await seedDemoDataIfEmpty(sessionsRepo, solvesRepo);
@@ -267,13 +277,15 @@ export function usePersistentSession(): UsePersistentSessionResult {
     
     try {
       await solvesRepo.insert(dbSolve);
-      console.log(
-        '%c[addSolve] ✓ Saved solve %s · %dms · session=%s',
-        'color:#4ade80;font-weight:bold',
-        solveId.slice(0, 8),
-        input.time,
-        session.id.slice(0, 8),
-      );
+      if (isDev()) {
+        console.log(
+          '%c[addSolve] ✓ Saved solve %s · %dms · session=%s',
+          'color:#4ade80;font-weight:bold',
+          solveId.slice(0, 8),
+          input.time,
+          session.id.slice(0, 8),
+        );
+      }
     } catch (err) {
       console.error('%c[addSolve] DB write FAILED:', 'color:#f87171;font-weight:bold', err);
       return null;
@@ -355,13 +367,15 @@ export function usePersistentSession(): UsePersistentSessionResult {
       }
 
       await solvesRepo.update(existing);
-      console.log(
-        '%c[updateSolve] ✓ Persisted solve %s · moves=%d · analysis=%s',
-        'color:#4ade80;font-weight:bold',
-        id.slice(0, 8),
-        updates.moves?.length ?? -1,
-        updates.analysis ? 'yes' : 'no',
-      );
+      if (isDev()) {
+        console.log(
+          '%c[updateSolve] ✓ Persisted solve %s · moves=%d · analysis=%s',
+          'color:#4ade80;font-weight:bold',
+          id.slice(0, 8),
+          updates.moves?.length ?? -1,
+          updates.analysis ? 'yes' : 'no',
+        );
+      }
     } catch (err) {
       console.error(
         '%c[updateSolve] DB persist FAILED for solve %s (state already patched):',

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, parse, getDay } from "date-fns";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Repeat, X, Check, Pencil, FileText, Palette, Timer, MoreHorizontal, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCalendarTasks } from "@/hooks/useCalendarTasks";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Types
@@ -28,8 +29,6 @@ interface TrainingTask {
 type PanelMode = "list" | "add" | "edit";
 
 /* ── Constants ────────────────────────────────────────────────────────── */
-
-const STORAGE_KEY = "cubeforge-training-calendar";
 
 const TASK_COLORS: { value: TaskColor; label: string; dot: string }[] = [
   { value: "blue",    label: "Blue",    dot: "bg-phase-blue" },
@@ -67,25 +66,6 @@ const REPEAT_OPTIONS: { value: RepeatType; label: string; icon: React.ElementTyp
   { value: "monthly",  label: "Monthly",   icon: Calendar },
   { value: "custom",   label: "Custom…",   icon: MoreHorizontal },
 ];
-
-/* ── Storage helpers ──────────────────────────────────────────────────── */
-
-function loadTasks(): TrainingTask[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as TrainingTask[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveTasks(tasks: TrainingTask[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  } catch {
-    // silently ignore
-  }
-}
 
 let _taskId = 0;
 function nextTaskId(): string {
@@ -149,13 +129,13 @@ function emptyDraft(date: Date): Omit<TrainingTask, "id" | "createdAt"> {
 export function TrainingCalendar() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [tasks, setTasks] = useState<TrainingTask[]>(loadTasks);
+  // Tasks live in SQLite (single source of truth); the hook keeps a
+  // localStorage cache + one-time migration for zero-regression fallback.
+  const { tasks, setTasks } = useCalendarTasks();
   const [panelMode, setPanelMode] = useState<PanelMode>("list");
   const [draft, setDraft] = useState<Omit<TrainingTask, "id" | "createdAt"> | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { saveTasks(tasks); }, [tasks]);
 
   const calendarDays = useMemo(() => {
     const ms = startOfMonth(currentMonth);
@@ -260,14 +240,14 @@ export function TrainingCalendar() {
       ]);
     }
     closePanel();
-  }, [draft, editingTaskId, selectedDate, closePanel]);
+  }, [draft, editingTaskId, selectedDate, closePanel, setTasks]);
 
   const handleDeleteTask = useCallback(
     (taskId: string) => {
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
       if (editingTaskId === taskId) closePanel();
     },
-    [editingTaskId, closePanel],
+    [editingTaskId, closePanel, setTasks],
   );
 
   const updateDraft = useCallback(

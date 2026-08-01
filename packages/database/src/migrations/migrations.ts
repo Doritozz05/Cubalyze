@@ -261,4 +261,32 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_exercise_progress_method ON exercise_progress(method_id);
     `,
   },
+  {
+    id: '012_create_training_tasks',
+    description: 'Create training_tasks table (calendar tasks) — single source of truth replacing localStorage',
+    sql: `
+      CREATE TABLE IF NOT EXISTS training_tasks (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        start_date TEXT NOT NULL,
+        repeat TEXT NOT NULL DEFAULT 'none',
+        days_of_week TEXT NOT NULL DEFAULT '[]',
+        color TEXT NOT NULL DEFAULT 'blue',
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_training_tasks_start_date ON training_tasks(start_date);
+    `,
+  },
+  {
+    id: '013_create_skill_progress',
+    description: 'Create skill_progress table (skill tree completion) — single source of truth replacing localStorage',
+    sql: `
+      CREATE TABLE IF NOT EXISTS skill_progress (
+        skill_id TEXT PRIMARY KEY,
+        completed_at INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_skill_progress_completed_at ON skill_progress(completed_at);
+    `,
+  },
 ];

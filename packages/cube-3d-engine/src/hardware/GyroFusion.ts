@@ -37,6 +37,14 @@ export class GyroFusion {
   }
 
   /**
+   * True while the gyro is actively driving the scene orientation.
+   * Lets the render loop know whether to keep rendering or pause (dirty-flag).
+   */
+  public isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  /**
    * Receives the latest raw quaternion from the hardware gyroscope.
    * Normalizes it as a safety measure against noisy BLE data.
    */

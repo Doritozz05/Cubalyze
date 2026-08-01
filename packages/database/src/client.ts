@@ -42,6 +42,19 @@ export const getDB = () => {
   return db;
 };
 
+/**
+ * Whether the database is backed by OPFS (persistent) or volatile memory.
+ * Returns 'unknown' when the DB has not been initialized yet.
+ */
+export const getStorageType = async (): Promise<'opfs' | 'memory' | 'unknown'> => {
+  try {
+    const client = await initDB();
+    return await client.getStorageType();
+  } catch {
+    return 'unknown';
+  }
+};
+
 export const closeDB = async () => {
   if (db) {
     await db.close();
