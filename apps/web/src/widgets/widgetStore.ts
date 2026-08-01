@@ -83,7 +83,8 @@ function statusFromPreviousLayout(
 
 // Widgets that are NOT part of the dock system. They use their own
 // rendering (e.g., cube-button is a standalone circular launcher).
-const NO_DOCK_WIDGETS = new Set(["cube-button"]);
+// Exported so touch UI (e.g. the explorer card toggle) can reuse the rule.
+export const NO_DOCK_WIDGETS = new Set(["cube-button"]);
 
 function clampStatus(id: WidgetId, status: WidgetStatus): WidgetStatus {
   if (NO_DOCK_WIDGETS.has(id) && (status === "floating" || status === "minimized")) {

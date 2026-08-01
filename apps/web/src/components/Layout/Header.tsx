@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, History, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, History, Pencil, Trash2, Check, X, Puzzle } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
@@ -9,6 +9,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
+import { WidgetExplorer } from "@/widgets/explorer";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -134,6 +136,10 @@ export function Header({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
+  // Touch regime: the dock collapses into a single "Widgets" button that
+  // opens the explorer (desktop uses the LeftSidebar-owned explorer).
+  const isTouch = useIsTouch();
+  const [widgetsOpen, setWidgetsOpen] = useState(false);
 
   const connectionStatus = useStore(connectionStore, (s) => s.status);
   const batteryLevel = useStore(connectionStore, (s) => s.batteryLevel);
@@ -202,9 +208,24 @@ export function Header({
           )}
         </div>
 
-        {/* Center: Widget dock — dynamic flowing row in header center */}
+        {/* Center: Widget dock — desktop keeps the flowing pill row; the
+            touch regime collapses it into a single "Widgets" button that
+            opens the explorer (no drag/dock pills on touch). */}
         <div className="flex flex-1 items-center justify-center min-w-0 px-4">
-          <WidgetDock />
+          <div className="hidden w-full lg:block">
+            <WidgetDock />
+          </div>
+          <div className="lg:hidden">
+            <button
+              type="button"
+              onClick={() => setWidgetsOpen(true)}
+              aria-label="Open widgets"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+            >
+              <Puzzle className="size-3.5" />
+              <span className="nums">Widgets</span>
+            </button>
+          </div>
         </div>
 
         {/* Right: PB + session + manual + puzzle grouped together */}
@@ -357,6 +378,15 @@ export function Header({
           </Select>
         </div>
       </div>
+
+      {/* Touch-only widgets explorer — mounted only in the touch regime
+          (desktop opens the LeftSidebar-owned explorer instead). */}
+      {isTouch && (
+        <WidgetExplorer
+          open={widgetsOpen}
+          onOpenChange={setWidgetsOpen}
+        />
+      )}
 
       {/* Delete-session confirmation */}
       <AlertDialog

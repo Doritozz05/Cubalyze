@@ -4,7 +4,8 @@ import { useCallback } from "react";
 import { PanelTop } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
+import { useIsTouch } from "@/hooks/use-mobile";
+import { useWidgetStore, widgetStore, NO_DOCK_WIDGETS } from "@/widgets/widgetStore";
 import { CATEGORY_LABEL } from "@/widgets/registry";
 import { WidgetPreview } from "@/widgets/explorer/WidgetPreviews";
 import type { WidgetDefinition } from "@/widgets/types";
@@ -26,10 +27,26 @@ export interface WidgetCardProps {
 export function WidgetCard({ widget, className }: WidgetCardProps) {
   const status = useWidgetStore((s) => s.instances[widget.id]?.status);
   const active = status !== "inactive";
+  const isTouch = useIsTouch();
 
   const handleToggle = useCallback(() => {
-    widgetStore.getState().toggleWidget(widget.id);
-  }, [widget.id]);
+    const store = widgetStore.getState();
+    if (isTouch) {
+      // Touch regime: the dock is collapsed, so toggling directly opens the
+      // widget as a floating bottom sheet (or closes it) — no dock pills.
+      // `docked` counts as "closed" here: a widget persisted from a desktop
+      // layout opens as a sheet on the first tap (plan: "abre sheet directo").
+      // Exception: no-dock widgets (cube-button) can never float (store
+      // clampStatus), so they keep their plain inactive ↔ docked toggle.
+      const inst = store.instances[widget.id];
+      const willOpen =
+        inst?.status === "inactive" ||
+        (inst?.status === "docked" && !NO_DOCK_WIDGETS.has(widget.id));
+      store.setStatus(widget.id, willOpen ? "floating" : "inactive");
+    } else {
+      store.toggleWidget(widget.id);
+    }
+  }, [widget.id, isTouch]);
 
   const Icon = widget.icon;
 
@@ -102,7 +119,10 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
               <span>·</span>
               <span className="flex items-center gap-0.5 text-ink-2 font-medium">
                 <PanelTop className="size-2.5" />
-                Pinned to header
+                {/* Desktop: widgets pin to the header dock. Touch: they open
+                    as a floating bottom sheet instead. */}
+                <span className="max-lg:hidden">Pinned to header</span>
+                <span className="lg:hidden">Opens as panel</span>
               </span>
             </>
           )}

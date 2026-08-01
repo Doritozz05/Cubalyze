@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { useDraggable, type SnapRect } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { dockZoneState } from "@/widgets/dock/dockZoneState";
@@ -32,6 +33,11 @@ export interface FloatingWidgetWrapperProps {
 
 /** Threshold (px from top) for entering the dock zone. */
 const DOCK_THRESHOLD = 30;
+
+/** MobileTabBar is h-14 (56px) + 4px breathing room — sheets anchor above it. */
+const TAB_BAR_OFFSET = 60;
+/** Gap between the sheet's top edge and the viewport top when maximized. */
+const SHEET_TOP_GAP = 12;
 
 /**
  * Floating widget with professional, deterministic drag behavior.
@@ -74,6 +80,9 @@ export function FloatingWidgetWrapper({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Touch regime (<1024px): floating widgets become bottom sheets.
+  const isTouch = useIsTouch();
+
   // ── Widget store subscriptions ─────────────────────────────────────────
   const instance = useWidgetStore((s) => s.instances[widgetId]);
   const storePosition = instance?.position ?? defaultPosition;
@@ -95,6 +104,21 @@ export function FloatingWidgetWrapper({
 
   // ── Snap targets (other floating widgets) ────────────────────────────
   const allInstances = useWidgetStore((s) => s.instances);
+
+  // ── Touch stack offset ────────────────────────────────────────────────
+  // Sheets stack upward (like iOS notifications): each subsequent open
+  // widget sits a little higher so its header stays reachable.
+  const stackIndex = useMemo(() => {
+    const ids = Object.keys(allInstances);
+    const myIndex = ids.indexOf(widgetId);
+    let count = 0;
+    for (let i = 0; i < myIndex; i++) {
+      const s = allInstances[ids[i]]?.status;
+      if (s === "floating" || s === "minimized") count++;
+    }
+    return count;
+  }, [allInstances, widgetId]);
+
   const snapTargets = useMemo<SnapRect[]>(() => {
     return Object.entries(allInstances)
       .filter(([id, inst]) => {
@@ -177,7 +201,130 @@ export function FloatingWidgetWrapper({
     store.setStatus(widgetId, newStatus);
   }, [widgetId]);
 
+  // ── Close (touch sheets): back to inactive ────────────────────────────
+  const closeWidget = useCallback(() => {
+    widgetStore.getState().setStatus(widgetId, "inactive");
+  }, [widgetId]);
+
   if (!mounted) return null;
+
+  // ── Touch regime: bottom sheet above the tab bar ──────────────────────
+  //     No drag / dock zone — a clean native-style sheet with a drag handle,
+  //     minimize (chevron) and close (X). The tab bar is h-14 (56px) + safe
+  //     area, so sheets anchor 60px above the bottom edge and stack upward.
+  //     Desktop (>=1024px) is untouched: this branch is gated by useIsTouch.
+  if (isTouch) {
+    const stackOffset = Math.min(stackIndex, 2) * 48;
+    // Always above the z-40 tab bar, still below every z-50 surface.
+    const z = Math.max(zIndex, 45);
+    const bottom = `calc(env(safe-area-inset-bottom) + ${TAB_BAR_OFFSET + stackOffset}px)`;
+    // dvh is universally supported (2022+) and mobile-correct: it tracks the
+    // visible viewport behind the browser chrome.
+    const sheetMaxHeight = `calc(100dvh - env(safe-area-inset-bottom) - ${TAB_BAR_OFFSET + SHEET_TOP_GAP + stackOffset}px)`;
+
+    if (minimized) {
+      return createPortal(
+        <div
+          data-widget-id={widgetId}
+          onPointerDown={handleFocus}
+          style={{ bottom, zIndex: z }}
+          className={cn(
+            "fixed inset-x-3 animate-widget-mount rounded-xl border border-line bg-surface shadow-xl",
+            className,
+          )}
+        >
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            <button
+              type="button"
+              onClick={toggleMinimized}
+              aria-label={`Expand ${label}`}
+              className="flex min-w-0 flex-1 items-center gap-2 text-left select-none"
+            >
+              <Icon className="size-4 shrink-0 text-ink-3" />
+              <span className="truncate text-xs font-medium text-ink">{label}</span>
+              {pillBadge && (
+                <span className="nums shrink-0 text-[0.65rem] text-ink-3">{pillBadge}</span>
+              )}
+              {pillBadge2 && (
+                <span className="nums shrink-0 text-[0.55rem] text-ink-3">{pillBadge2}</span>
+              )}
+              <ChevronUp className="ml-auto size-4 shrink-0 text-ink-3" />
+            </button>
+            <button
+              type="button"
+              onClick={closeWidget}
+              aria-label={`Close ${label}`}
+              className="grid size-9 shrink-0 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>,
+        document.body,
+      );
+    }
+
+    return createPortal(
+      <div
+        data-widget-id={widgetId}
+        onPointerDown={handleFocus}
+        style={{
+          bottom,
+          zIndex: z,
+          maxHeight: sheetMaxHeight,
+        }}
+        className={cn(
+          "fixed inset-x-0 flex animate-widget-mount flex-col overflow-hidden rounded-t-2xl border-t border-line bg-surface shadow-2xl",
+          className,
+        )}
+      >
+        {/* Drag-handle affordance */}
+        <div className="flex shrink-0 justify-center pt-2 pb-0.5">
+          <span className="h-1 w-10 rounded-full bg-ink-3/20" />
+        </div>
+
+        {/* Header: icon + label + badges + actions */}
+        <div className="flex shrink-0 items-center gap-2 px-4 py-2">
+          <Icon className="size-4 shrink-0 text-ink-3" />
+          <span className="truncate text-xs font-medium text-ink">{label}</span>
+          {pillBadge && (
+            <span className="nums shrink-0 text-[0.65rem] text-ink-3">{pillBadge}</span>
+          )}
+          {pillBadge2 && (
+            <span className="nums shrink-0 text-[0.55rem] text-ink-3">{pillBadge2}</span>
+          )}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            {headerActions}
+            <button
+              type="button"
+              onClick={toggleMinimized}
+              aria-label="Minimize"
+              className="grid size-9 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+            >
+              <ChevronDown className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={closeWidget}
+              aria-label={`Close ${label}`}
+              className="grid size-9 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Body: scrollable */}
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4"
+          style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+        >
+          {children}
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   // ── Positioning: transform for GPU-composited + left/top to anchor ────
   //     position:fixed with ONLY transform and no left/top can place the

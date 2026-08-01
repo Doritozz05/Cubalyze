@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { WidgetExplorerSidebar } from "./WidgetExplorerSidebar";
 import { WidgetCard } from "./WidgetCard";
-import { getAllWidgets } from "@/widgets/registry";
+import { getAllWidgets, WIDGET_CATEGORIES } from "@/widgets/registry";
 import type { WidgetCategoryId } from "@/widgets/types";
 
 export const EXPLORER_DIALOG_WIDTH = "sm:max-w-[900px]";
@@ -163,8 +163,16 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Below 1024px the dialog is a full-bleed bottom sheet (inset-x-0 +
+          bottom-anchored). max-lg:max-w-none! (important) is REQUIRED: the
+          base max-w-[calc(100%-2rem)] / sm:max-w-lg / sm:max-w-[900px] would
+          otherwise cap the width of the left-anchored sheet (Tailwind emits
+          max-lg before sm in the max-w group, so a plain max-lg:max-w-none
+          loses to sm:max-w-[900px] on tablets) — leaving an asymmetric gap on
+          the right (looked off-center) and clipping the category chips. The !
+          is scoped to <1024px, so desktop >=1024px is untouched. */}
       <DialogContent
-        className={`${EXPLORER_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line`}
+        className={`${EXPLORER_DIALOG_WIDTH} h-145 max-h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:translate-x-0 max-lg:translate-y-0 max-lg:max-w-none! max-lg:rounded-b-none max-lg:rounded-t-2xl`}
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
@@ -172,16 +180,18 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
         </DialogHeader>
 
         <div className="flex h-full min-h-0">
-          {/* ── Sidebar ────────────────────────────────────────────────── */}
-          <WidgetExplorerSidebar
-            activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
-          />
+          {/* ── Sidebar (desktop only; touch uses scrollable category chips) ── */}
+          <div className="hidden lg:block">
+            <WidgetExplorerSidebar
+              activeCategory={activeCategory}
+              onSelectCategory={handleSelectCategory}
+            />
+          </div>
 
           {/* ── Main Area ──────────────────────────────────────────────── */}
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             {/* Header */}
-            <div className="shrink-0 border-b border-line px-6 py-5">
+            <div className="shrink-0 border-b border-line px-6 py-5 max-lg:px-4 max-lg:py-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="flex items-center gap-2 text-[0.95rem] font-semibold text-ink">
@@ -215,8 +225,31 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
               </div>
             </div>
 
+            {/* Category chips — touch only (sidebar is hidden <1024px).
+                Wrap instead of scroll so every category is always fully
+                visible and nothing gets clipped at the edge. */}
+            <div className="shrink-0 border-b border-line/50 px-4 py-2 lg:hidden">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {WIDGET_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleSelectCategory(cat.id)}
+                    className={cn(
+                      "h-8 shrink-0 touch-manipulation rounded-full border px-3 text-xs font-medium transition-colors duration-150 select-none",
+                      activeCategory === cat.id
+                        ? "border-ink-2/40 bg-surface-2 text-ink"
+                        : "border-line bg-surface text-ink-3 hover:text-ink-2",
+                    )}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Search bar */}
-            <div className="shrink-0 border-b border-line/50 px-6 py-3">
+            <div className="shrink-0 border-b border-line/50 px-6 py-3 max-lg:px-4">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-ink-3" />
                 <input
@@ -234,7 +267,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             </div>
 
             {/* Widget grid */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 max-lg:px-4">
               {filteredWidgets.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
                   <Puzzle className="size-8 text-ink-3/30" />
