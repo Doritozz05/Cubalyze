@@ -508,7 +508,7 @@ export function ReplaySection({
                       <button
                         onClick={handleRestart}
                         disabled={!canPlay}
-                        className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
                         aria-label="Restart replay"
                       >
                         <RotateCcw className="size-3.5" />
@@ -523,7 +523,7 @@ export function ReplaySection({
                       <button
                         onClick={handleSeekBackward}
                         disabled={!canPlay}
-                        className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
                         aria-label="Step backward one move"
                       >
                         <SkipBack className="size-3.5" />
@@ -539,7 +539,7 @@ export function ReplaySection({
                         onClick={handlePlayPause}
                         disabled={!canPlay}
                         className={cn(
-                          "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
+                          "grid size-9 max-lg:size-11 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
                           replayState === "playing"
                             ? "bg-ink text-background hover:bg-ink/80 hover:scale-105"
                             : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
@@ -566,7 +566,7 @@ export function ReplaySection({
                       <button
                         onClick={handleSeekForward}
                         disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
-                        className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
                         aria-label="Step forward one move"
                       >
                         <SkipForward className="size-3.5" />
@@ -586,7 +586,7 @@ export function ReplaySection({
                           <button
                             onClick={() => handleSetSpeed(s)}
                             className={cn(
-                              "rounded px-2 py-1 text-[0.62rem] font-medium uppercase tracking-wider transition-all duration-150",
+                              "rounded px-2 py-1 max-lg:px-3 max-lg:py-2 text-[0.62rem] font-medium uppercase tracking-wider transition-all duration-150",
                               speed === s
                                 ? "bg-ink text-background"
                                 : "text-ink-3 hover:text-ink hover:bg-surface-2",

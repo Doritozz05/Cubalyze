@@ -151,7 +151,7 @@ export function SolveAnalysisPanel({
           variant="ghost"
           size="sm"
           onClick={onDeleteSolve}
-          className="h-7 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
+          className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
         >
           <Trash2 className="size-3" />
           Delete

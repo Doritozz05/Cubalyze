@@ -306,7 +306,7 @@ export function InsightsDashboard({
             type="button"
             onClick={() => setTouchSection("list")}
             className={cn(
-              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
+              "flex h-9 max-lg:h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
               touchSection === "list"
                 ? "bg-ink text-surface shadow-sm"
                 : "border border-line bg-surface text-ink-3 hover:text-ink",
@@ -322,7 +322,7 @@ export function InsightsDashboard({
               setSelectedId(null);
             }}
             className={cn(
-              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
+              "flex h-9 max-lg:h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
               touchSection === "stats"
                 ? "bg-ink text-surface shadow-sm"
                 : "border border-line bg-surface text-ink-3 hover:text-ink",
