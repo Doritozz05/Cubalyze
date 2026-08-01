@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
 import {
@@ -41,18 +40,10 @@ export function TouchPanel({ open, onOpenChange, title, children, className }: T
           className,
         )}
       >
-        <DrawerHeader className="relative border-b border-line px-5 py-3 text-left">
+        <DrawerHeader className="border-b border-line px-5 py-3 text-left">
           <DrawerTitle className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
             {title ?? "Panel"}
           </DrawerTitle>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close panel"
-            className="absolute right-4 top-2.5 grid size-7 place-items-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
-          >
-            <X className="size-4" />
-          </button>
         </DrawerHeader>
 
         {/* Scrollable body */}

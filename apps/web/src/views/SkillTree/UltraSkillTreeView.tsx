@@ -132,9 +132,9 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto h-full flex flex-col min-h-0 space-y-3">
+    <div className="w-full max-w-7xl mx-auto h-full min-h-0 flex flex-col overflow-hidden gap-3">
       {/* Clean Toolbar Header */}
-      <div className="p-3 sm:p-4 rounded-xl bg-surface border border-line space-y-3">
+      <div className="p-3 sm:p-4 rounded-xl bg-surface border border-line space-y-3 shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Title & Description */}
           <div>
@@ -230,14 +230,16 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
 
       {/* Main View Area */}
       {viewMode === "graph" ? (
-        <SkillGraphCanvas
-          nodes={filteredNodes}
-          onSelectNode={handleSelectNode}
-          onToggleComplete={handleToggleComplete}
-        />
+        <div className="min-h-0 flex-1 w-full relative flex flex-col overflow-hidden">
+          <SkillGraphCanvas
+            nodes={filteredNodes}
+            onSelectNode={handleSelectNode}
+            onToggleComplete={handleToggleComplete}
+          />
+        </div>
       ) : (
         /* ── Fast Card Grid View (Ideal for mobile & quick browsing) ── */
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-line/80 bg-surface p-4">
+        <div className="min-h-0 flex-1 w-full overflow-y-auto rounded-xl border border-line/80 bg-surface p-4 touch-pan-y overscroll-contain">
           {filteredNodes.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center text-center text-ink-3">
               <Sparkles className="size-8 text-ink-3/40 mb-2" />

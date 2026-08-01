@@ -164,7 +164,7 @@ export function TimerContainer({
       }
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        "group relative flex w-full flex-col items-center justify-center rounded-lg transition-all duration-300",
+        "group relative flex w-full flex-col items-center justify-center rounded-lg transition-all duration-300 select-none",
         // Touch (<1024px): taller timer so the numbers dominate the stage and
         // stay thumb-friendly. Desktop formula unchanged.
         "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(340px,48vh,520px)]",
@@ -190,7 +190,12 @@ export function TimerContainer({
 
       {/* Floating PB Victory Banner */}
       {hasPbActive && (
-        <div className="absolute top-4 z-20 w-full max-w-sm px-4 max-lg:max-w-[92vw]">
+        <div
+          className="absolute top-4 z-20 w-full max-w-sm px-4 max-lg:max-w-[92vw]"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+        >
           <PbCelebrationBanner
             types={pbMilestone.types}
             singleTime={pbMilestone.singleTime}

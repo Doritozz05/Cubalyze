@@ -194,7 +194,7 @@ export function MainLayout({
       </AnimatePresence>
 
       <div className={cn(
-        "flex flex-1 flex-col",
+        "flex flex-1 flex-col min-h-0 overflow-hidden",
         // Header offset: desktop reserves exactly 3.5rem; touch also adds the
         // iOS top safe-area so the header (which grows on iOS) never overlaps.
         !isFocused && !hideHeader && "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-14",
@@ -226,17 +226,16 @@ export function MainLayout({
         </AnimatePresence>
 
         <main className={cn(
-          "mx-auto flex w-full flex-1 flex-col min-h-0 overflow-hidden lg:flex-row",
+          "mx-auto flex w-full flex-1 flex-col min-h-0 overflow-hidden lg:flex-row h-full",
           // NOTE: no height override — <main> is flex-1 min-h-0, so flex layout
           // sizes it. Bottom-bar and top header spaces are reserved on the wrapper.
-          hideHeader ? "h-dvh" : "h-full"
         )}>
           <section
             id="timer-section"
             className={cn(
               "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-out",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
-              hideHeader && "p-3 sm:p-4 gap-3 h-full",
+              hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
               isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : ""
             )}
           >

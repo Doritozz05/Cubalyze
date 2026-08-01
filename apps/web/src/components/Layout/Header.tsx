@@ -41,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
@@ -142,6 +143,7 @@ export function Header({
   // opens the explorer (desktop uses the LeftSidebar-owned explorer).
   const isTouch = useIsTouch();
   const [widgetsOpen, setWidgetsOpen] = useState(false);
+  const [sessionDrawerOpen, setSessionDrawerOpen] = useState(false);
   // Number of widgets currently active — shown as a badge on the touch
   // "Widgets" button so users can see how many are live (no dock on touch).
   const activeWidgetCount = useWidgetStore(
@@ -261,109 +263,132 @@ export function Header({
 
           {/* Session switcher — next to the puzzle selector */}
           {sessions && sessions.length > 0 ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            isTouch ? (
+              <>
                 <Button
                   variant="ghost"
-                  className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
+                  onClick={() => setSessionDrawerOpen(true)}
+                  className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink cursor-pointer"
                   aria-label="Switch session"
                 >
                   <History className="size-3.5 text-ink-3" />
-                  {/* Session name is hidden on touch to keep the header compact;
-                      the count stays as the identity hint. */}
-                  <span className="nums max-w-28 truncate max-lg:hidden">
-                    {active?.name ?? "Session"}
-                  </span>
-                  <span className="text-ink-3 max-lg:hidden">·</span>
-                  <span className="nums text-ink-3">{sessionCount ?? 0}</span>
+                  <span className="nums font-medium text-ink-3">{sessionCount ?? 0}</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
-                <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
-                  Sessions
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {sessions.map((s) => (
-                  <div
-                    key={s.id}
-                    className="group/sess flex items-center"
+
+                <MobileSessionSheet
+                  open={sessionDrawerOpen}
+                  onOpenChange={setSessionDrawerOpen}
+                  sessions={sessions}
+                  activeSessionId={activeSessionId}
+                  onSwitchSession={onSwitchSession}
+                  onNewSession={onNewSession}
+                  onRenameSession={onRenameSession}
+                  onDeleteSession={onDeleteSession}
+                />
+              </>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
+                    aria-label="Switch session"
                   >
-                    {renamingId === s.id ? (
-                      <div className="flex flex-1 items-center gap-1 px-2 py-1">
-                        <input
-                          autoFocus
-                          value={renameValue}
-                          onChange={(e) => setRenameValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitRename();
-                            if (e.key === "Escape") setRenamingId(null);
-                          }}
-                          className="nums h-7 min-w-0 flex-1 rounded-sm border border-line bg-surface px-1.5 text-xs text-ink outline-none focus:border-ink-2"
-                        />
-                        <button
-                          onClick={commitRename}
-                          className="grid size-6 place-items-center rounded text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
-                          aria-label="Confirm rename"
-                        >
-                          <Check className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setRenamingId(null)}
-                          className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                          aria-label="Cancel rename"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => onSwitchSession?.(s.id)}
-                          className={cn(
-                            "flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors hover:bg-surface-2",
-                            s.id === activeSessionId && "bg-surface-2",
-                          )}
-                        >
-                          <span className="nums min-w-0 flex-1 truncate text-ink">
-                            {s.name}
-                          </span>
-                          <span className="nums shrink-0 text-[0.65rem] text-ink-3">
-                            {s.solveCount}
-                          </span>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-0.5 pr-1 text-ink-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startRename(s);
+                    <History className="size-3.5 text-ink-3" />
+                    <span className="nums max-w-28 truncate">
+                      {active?.name ?? "Session"}
+                    </span>
+                    <span className="text-ink-3">·</span>
+                    <span className="nums text-ink-3">{sessionCount ?? 0}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
+                    Sessions
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {sessions.map((s) => (
+                    <div
+                      key={s.id}
+                      className="group/sess flex items-center"
+                    >
+                      {renamingId === s.id ? (
+                        <div className="flex flex-1 items-center gap-1 px-2 py-1">
+                          <input
+                            autoFocus
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitRename();
+                              if (e.key === "Escape") setRenamingId(null);
                             }}
-                            className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-ink transition-colors"
-                            aria-label={`Rename ${s.name}`}
+                            className="nums h-7 min-w-0 flex-1 rounded-sm border border-line bg-surface px-1.5 text-xs text-ink outline-none focus:border-ink-2"
+                          />
+                          <button
+                            onClick={commitRename}
+                            className="grid size-6 place-items-center rounded text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+                            aria-label="Confirm rename"
                           >
-                            <Pencil className="size-3" />
+                            <Check className="size-3.5" />
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteTarget(s);
-                            }}
-                            className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-dnf transition-colors"
-                            aria-label={`Delete ${s.name}`}
+                            onClick={() => setRenamingId(null)}
+                            className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
+                            aria-label="Cancel rename"
                           >
-                            <Trash2 className="size-3" />
+                            <X className="size-3.5" />
                           </button>
                         </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onNewSession?.()}>
-                  <Plus className="size-3.5" />
-                  New session
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onSwitchSession?.(s.id)}
+                            className={cn(
+                              "flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors hover:bg-surface-2",
+                              s.id === activeSessionId && "bg-surface-2",
+                            )}
+                          >
+                            <span className="nums min-w-0 flex-1 truncate text-ink">
+                              {s.name}
+                            </span>
+                            <span className="nums shrink-0 text-[0.65rem] text-ink-3">
+                              {s.solveCount}
+                            </span>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-0.5 pr-1 text-ink-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startRename(s);
+                              }}
+                              className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-ink transition-colors"
+                              aria-label={`Rename ${s.name}`}
+                            >
+                              <Pencil className="size-3" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget(s);
+                              }}
+                              className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-dnf transition-colors"
+                              aria-label={`Delete ${s.name}`}
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onNewSession?.()}>
+                    <Plus className="size-3.5" />
+                    New session
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
           ) : null}
 
           <Select value={puzzle} onValueChange={(v) => {

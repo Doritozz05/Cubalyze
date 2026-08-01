@@ -96,9 +96,9 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
             transition={{ duration: 0.2 }}
             className="relative w-full"
           >
-            <div className="flex flex-col gap-2">
+            <div className="relative flex flex-col items-center w-full">
               {bpaWpa != null && (
-                <div className="flex items-center justify-center gap-3 text-[0.68rem] text-ink-3">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface/95 px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
                   <span className="font-mono">
                     Ao{bpaWpa.targetN} BPA: <strong className="text-ready font-semibold">{formatTime(bpaWpa.bpa ?? 0)}</strong>
                   </span>

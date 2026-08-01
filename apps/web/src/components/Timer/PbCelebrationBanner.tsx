@@ -64,11 +64,14 @@ export function PbCelebrationBanner({
 
         <button
           type="button"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             setVisible(false);
             onClose?.();
           }}
-          className="rounded-md p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          className="rounded-md p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
           aria-label="Close celebration banner"
         >
           <X className="size-3.5" />

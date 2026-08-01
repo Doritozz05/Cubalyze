@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon, X } from "lucide-react";
+import { Settings, Bluetooth, Sun, Moon } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -50,18 +50,10 @@ export function MobileMoreSheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] p-0 pb-safe focus:outline-none">
-        <DrawerHeader className="relative border-b border-line px-5 py-3.5 text-left">
+        <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
           <DrawerTitle className="text-sm font-semibold text-ink">
             More options
           </DrawerTitle>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="absolute right-4 top-3.5 grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink"
-            aria-label="Close"
-          >
-            <X className="size-4" />
-          </button>
         </DrawerHeader>
 
         {/* Grid of secondary action cards */}
