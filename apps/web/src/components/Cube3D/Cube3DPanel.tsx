@@ -51,13 +51,13 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
   };
 
   return (
-    <div className={cn("flex flex-1 h-full min-h-0 flex-col", className)}>
+    <div className={cn("@container flex flex-1 h-full min-h-0 flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5 min-w-0 overflow-hidden whitespace-nowrap select-none">
-        <div className="flex items-baseline gap-2 shrink-0">
-          <h3 className="text-sm font-medium text-ink">Cube</h3>
+      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5 min-w-0 select-none">
+        <div className="flex items-baseline gap-2 min-w-0 overflow-hidden">
+          <h3 className="text-sm font-medium text-ink truncate">Cube</h3>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -65,11 +65,10 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 size="sm"
                 onClick={() => applyScramble(scramble)}
                 disabled={!isReady}
-                // Touch: bigger thumb targets inside the full-screen sheet.
-                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
+                className="h-7 gap-1 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
                 <Shuffle className="size-3 shrink-0 max-lg:size-4" />
-                <span className="hidden sm:inline">Scramble</span>
+                <span className="hidden @sm:inline">Scramble</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Apply scramble to 3D cube</TooltipContent>
@@ -81,11 +80,10 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 size="sm"
                 onClick={reset}
                 disabled={!isReady}
-                // Touch: bigger thumb targets inside the full-screen sheet.
-                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
+                className="h-7 gap-1 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
                 <RotateCcw className="size-3 shrink-0 max-lg:size-4" />
-                <span className="hidden sm:inline">Reset</span>
+                <span className="hidden @sm:inline">Reset</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Reset cube pieces to solved state</TooltipContent>
@@ -97,11 +95,10 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 size="sm"
                 onClick={calibrate}
                 disabled={!isReady}
-                // Touch: bigger thumb targets inside the full-screen sheet.
-                className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
+                className="h-7 gap-1 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
                 <RefreshCw className="size-3 shrink-0 max-lg:size-4" />
-                <span className="hidden sm:inline">Calibrate</span>
+                <span className="hidden @sm:inline">Calibrate</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Calibrate gyroscope orientation</TooltipContent>
@@ -113,8 +110,7 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                   variant="ghost"
                   size="sm"
                   onClick={onClose}
-                  // Touch: bigger close target inside the full-screen sheet.
-                  className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
+                  className="h-7 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
                   aria-label="Close 3D view"
                 >
                   <X className="size-3 shrink-0 max-lg:size-4" />
@@ -149,8 +145,8 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
           </div>
         )}
 
-        {/* Moves overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2">
+        {/* Moves overlay at bottom — hidden when panel is too narrow */}
+        <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2 hidden @xs:block">
           {recentMoves.length === 0 ? (
             <p className="text-center text-[0.7rem] text-ink-3 italic">Waiting for cube...</p>
           ) : (

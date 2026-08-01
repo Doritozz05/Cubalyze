@@ -324,7 +324,11 @@ export function MainLayout({
                 opacity: rightVisible ? 1 : 0,
               }}
               transition={isResizing ? { duration: 0 } : SIDEBAR_MOTION.panel}
-              style={{ overflow: "hidden" }}
+              style={{
+                overflow: "hidden",
+                // Hard floor so buttons/close icon never clip off-screen during drag
+                minWidth: !isTouch && rightVisible ? CUBE_RESIZE_MIN_WIDTH : undefined,
+              }}
               className={cn(
                 "relative flex shrink-0 flex-col bg-surface overflow-hidden",
                 !isFocused && "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
