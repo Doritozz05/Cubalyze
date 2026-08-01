@@ -19,13 +19,14 @@ import {
   EXPANDED_WIDTH,
   HOVER_DELAY,
   UNHOVER_DELAY,
-  HOVER_SUPPRESS_MS,
   SIDEBAR_MOTION,
   ACTIVE_PILL_SPRING,
   NAV_GROUPS,
   Grid3x3,
   type ViewId,
 } from "./sidebar.constants";
+
+const HOVER_SUPPRESS_MS = 500;
 import { SettingsDialog } from "@/components/Settings/SettingsDialog";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
@@ -67,20 +68,9 @@ export function LeftSidebar({
   const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Ref mirror of isHovered so the window-level guard handlers (registered
-  // once, not per render) always read the latest value.
-  const isHoveredRef = useRef(isHovered);
-  // Last REAL pointer coordinates, kept up to date by a window pointermove
-  // listener. Used to verify that a mouseenter is backed by an actual cursor
-  // position over the rail instead of a synthetic event from a native dialog.
-  const lastPointerRef = useRef({ x: -1, y: -1 });
   // Timestamp until which hover-expansion is suppressed (set when the window
   // regains focus after a native dialog, e.g. the Web Bluetooth chooser, closed).
   const suppressExpandUntilRef = useRef(0);
-
-  useEffect(() => {
-    isHoveredRef.current = isHovered;
-  }, [isHovered]);
 
   useEffect(() => setMounted(true), []);
 
@@ -89,15 +79,6 @@ export function LeftSidebar({
   // or always (the mobile sheet has a fixed wide width). This also fixes a
   // pre-existing issue where the mobile sheet showed icon-only items.
   const labelVisible = isMobile || isHovered;
-
-  const isPointerOverRail = useCallback((x: number, y: number) => {
-    // The rail hugs the left edge and spans the full viewport height. The
-    // real hover zone is the current rendered width: COLLAPSED_WIDTH when
-    // collapsed, EXPANDED_WIDTH once expanded (mirrors the old element-bounds
-    // mouseenter semantics).
-    const zoneWidth = isHoveredRef.current ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
-    return x >= 0 && x <= zoneWidth && y >= 0 && y <= window.innerHeight;
-  }, []);
 
   /**
    * Guards the hover-to-expand behaviour against synthetic mouse events.
@@ -131,58 +112,34 @@ export function LeftSidebar({
     };
 
     const handleWindowBlur = () => {
-      // Native dialog opened (page lost focus) — collapse and stop any pending
-      // expand so a synthetic enter on close can't run later.
+      // Native dialog opened (page lost focus) — collapse and stop any pending expand.
       clearHoverTimer();
       setIsHovered(false);
     };
 
     const handleWindowFocus = () => {
-      // Native dialog closed and focus returned. Ignore hover-expansion for a
-      // short beat: Chromium may dispatch synthetic mouse events at (0,0) now.
+      // Native dialog closed and focus returned. Suppress expansion briefly.
       suppressExpandUntilRef.current = performance.now() + HOVER_SUPPRESS_MS;
-      // Re-verify against the last real pointer: only keep expanded if the
-      // cursor is genuinely over the rail.
-      const { x, y } = lastPointerRef.current;
-      if (x >= 0 && !isPointerOverRail(x, y)) {
-        clearHoverTimer();
-        setIsHovered(false);
-      }
-    };
-
-    const handleWindowPointerMove = (e: PointerEvent) => {
-      lastPointerRef.current = { x: e.clientX, y: e.clientY };
-      // Self-heal: if we think the rail is hovered but the real cursor is not
-      // over it (e.g. a synthetic mouseenter fired earlier), collapse.
-      if (isHoveredRef.current && !isPointerOverRail(e.clientX, e.clientY)) {
-        clearHoverTimer();
-        setIsHovered(false);
-      }
+      clearHoverTimer();
+      setIsHovered(false);
     };
 
     window.addEventListener("blur", handleWindowBlur);
     window.addEventListener("focus", handleWindowFocus);
-    window.addEventListener("pointermove", handleWindowPointerMove, { passive: true });
     return () => {
       window.removeEventListener("blur", handleWindowBlur);
       window.removeEventListener("focus", handleWindowFocus);
-      window.removeEventListener("pointermove", handleWindowPointerMove);
       clearHoverTimer();
     };
-  }, [isMobile, isPointerOverRail]);
+  }, [isMobile]);
 
   const handleMouseEnter = useCallback(() => {
-    // Only expand if this mouseenter is backed by a REAL pointer position over
-    // the rail and we're outside the post-native-dialog suppression window.
-    const { x, y } = lastPointerRef.current;
-    const verified =
-      x >= 0 &&
-      isPointerOverRail(x, y) &&
-      performance.now() > suppressExpandUntilRef.current;
-    if (!verified) return;
+    // Suppress hover if a native dialog (e.g. Web Bluetooth) just closed.
+    if (performance.now() <= suppressExpandUntilRef.current) return;
+
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = setTimeout(() => setIsHovered(true), HOVER_DELAY);
-  }, [isPointerOverRail]);
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
