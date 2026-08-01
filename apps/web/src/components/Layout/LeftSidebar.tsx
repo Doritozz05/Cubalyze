@@ -305,6 +305,15 @@ export function LeftSidebar({
           sessionName={sessionName}
           onImportSolves={onImportSolves}
         />
+        <CubeConnector
+          open={cubeConnectorOpen}
+          onOpenChange={(open) => {
+            setCubeConnectorOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+            }
+          }}
+        />
       </>
     );
   }
