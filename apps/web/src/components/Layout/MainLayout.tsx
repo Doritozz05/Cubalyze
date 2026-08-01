@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { PuzzleCategory } from "@/types";
 
@@ -19,6 +20,7 @@ import type { PuzzleCategory } from "@/types";
 const LEFT_NAV_WIDTH = 56; // matches md:pl-14 on the row
 const CUBE_MIN_WIDTH = 510;
 const CUBE_MAX_WIDTH = 800;
+const CUBE_RESIZE_MIN_WIDTH = 220; // Minimum width when user resizes to the right
 
 /** Padding applied around the cube canvas. Lives on the inner wrapper (NOT on
  *  the animated <motion.aside>) so the container can collapse to width=0 /
@@ -69,13 +71,6 @@ export interface MainLayoutProps {
 /**
  * Top-level shell: sticky header and a two-region body (main stage + optional
  * 3D-cube split) that collapses to a single column on small screens.
- *
- * The old right sidebar (Times/Stats/Analysis tabs) has been removed — those
- * views now live in the main stage and are switched via the LeftSidebar nav.
- * The right aside only ever hosts the 3D cube, sliding in/out with the same
- * easing curve as the left sidebar (see SIDEBAR_MOTION.panel). Once the cube
- * has been activated once (`cube3DReady`), it stays mounted so its worker +
- * OffscreenCanvas aren't re-initialized on every toggle.
  */
 export function MainLayout({
   main,
@@ -104,9 +99,7 @@ export function MainLayout({
   const rawIsMobile = useIsMobile();
   const isMobile = mounted ? rawIsMobile : false;
 
-  // Track viewport width so the cube panel can derive a responsive
-  // (~half-screen) width on desktop. framer-motion then animates between 0
-  // (hidden) and this numeric value smoothly. Coalesced via rAF.
+  // Track viewport width so the cube panel can derive a responsive width
   const [vw, setVw] = useState(() =>
     typeof window === "undefined" ? 0 : window.innerWidth,
   );
@@ -128,16 +121,67 @@ export function MainLayout({
 
   const cubeShown = !!cube3DActive && !isFocused;
   const rightVisible = cubeShown;
-  // Keep the panel mounted after the first cube activation so the worker
-  // (and its OffscreenCanvas transfer) survives subsequent toggles.
   const rightMounted = rightVisible || !!cube3DReady;
 
-  const asideWidth = cubeShown
+  const maxPanelWidth = cubeShown
     ? Math.max(
-      CUBE_MIN_WIDTH,
-      Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
-    )
+        CUBE_MIN_WIDTH,
+        Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
+      )
     : 0;
+
+  // User-defined width resize state
+  const [userPanelWidth, setUserPanelWidth] = useState<number | null>(null);
+  const [isResizingPanel, setIsResizingPanel] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  // Pin global DMZ grabbing hand cursor while resizing
+  useGlobalDragCursor(isResizingPanel);
+
+  // Upper bound is strictly maxPanelWidth (current default size)
+  const effectiveWidth = Math.min(
+    maxPanelWidth,
+    Math.max(CUBE_RESIZE_MIN_WIDTH, userPanelWidth ?? maxPanelWidth),
+  );
+
+  const handleResizeStart = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsResizingPanel(true);
+      dragStartRef.current = { startX: e.clientX, startWidth: effectiveWidth };
+      (e.target as HTMLDivElement).setPointerCapture(e.pointerId);
+    },
+    [effectiveWidth],
+  );
+
+  const handleResizeMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!dragStartRef.current) return;
+      const deltaX = e.clientX - dragStartRef.current.startX;
+      // Moving right (+deltaX) reduces width because panel is anchored to the right
+      const newWidth = Math.min(
+        maxPanelWidth,
+        Math.max(CUBE_RESIZE_MIN_WIDTH, dragStartRef.current.startWidth - deltaX),
+      );
+      setUserPanelWidth(newWidth);
+    },
+    [maxPanelWidth],
+  );
+
+  const handleResizeEnd = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      setIsResizingPanel(false);
+      dragStartRef.current = null;
+      try {
+        (e.target as HTMLDivElement).releasePointerCapture(e.pointerId);
+      } catch (_) {}
+    },
+    [],
+  );
+
+  const handleResizeReset = useCallback(() => {
+    setUserPanelWidth(null);
+  }, []);
 
   return (
     <div
@@ -191,17 +235,14 @@ export function MainLayout({
             <motion.aside
               initial={false}
               animate={{
-                // Desktop: width is animated, height falls back to Tailwind CSS.
-                // Mobile: width is fluid (full container), height animates between
-                // 0 and "auto" to slide the panel up/down smoothly.
-                width: isMobile ? "100%" : rightVisible ? asideWidth : 0,
+                width: isMobile ? "100%" : rightVisible ? effectiveWidth : 0,
                 height: isMobile ? (rightVisible ? "auto" : 0) : "",
                 opacity: rightVisible ? 1 : 0,
               }}
-              transition={SIDEBAR_MOTION.panel}
+              transition={isResizingPanel ? { duration: 0 } : SIDEBAR_MOTION.panel}
               style={{ overflow: "hidden" }}
               className={cn(
-                "flex shrink-0 flex-col bg-surface",
+                "relative flex shrink-0 flex-col bg-surface overflow-hidden",
                 !isFocused && "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
                 !isFocused && "border-line max-lg:border-t max-lg:border-l-0 lg:border-l lg:border-t-0",
                 cubeShown && "min-h-[50vh] lg:min-h-0",
@@ -209,11 +250,30 @@ export function MainLayout({
               )}
               aria-hidden={!rightVisible}
             >
-              {/* Padding lives on the inner wrapper (NOT on the animated
-                  <motion.aside>). With box-sizing: border-box, padding on the
-                  container would prevent it from collapsing to width=0 /
-                  height=0 when closed, leaving a residual strip in the DOM. */}
-              <div className={cn("h-full min-h-0 w-full", INNER_PADDING)}>
+              {/* Drag handle on left border (Desktop only) */}
+              {rightVisible && !isMobile && (
+                <div
+                  onPointerDown={handleResizeStart}
+                  onPointerMove={handleResizeMove}
+                  onPointerUp={handleResizeEnd}
+                  onPointerCancel={handleResizeEnd}
+                  onDoubleClick={handleResizeReset}
+                  className={cn(
+                    "absolute left-0 top-0 bottom-0 z-20 w-3 -ml-1.5 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
+                    isResizingPanel && "cursor-grabbing"
+                  )}
+                  title="Arrastrar para ajustar ancho (Doble clic para restablecer)"
+                >
+                  <div
+                    className={cn(
+                      "h-10 w-1 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:w-1.5",
+                      isResizingPanel && "bg-ink w-1.5 h-16"
+                    )}
+                  />
+                </div>
+              )}
+
+              <div className={cn("h-full min-h-0 w-full overflow-hidden", INNER_PADDING)}>
                 {cube3DReady && cube3D}
               </div>
             </motion.aside>

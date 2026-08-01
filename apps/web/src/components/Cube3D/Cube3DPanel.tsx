@@ -53,11 +53,11 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
   return (
     <div className={cn("flex flex-1 h-full min-h-0 flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
-        <div className="flex items-baseline gap-2">
+      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5 min-w-0 overflow-hidden whitespace-nowrap select-none">
+        <div className="flex items-baseline gap-2 shrink-0">
           <h3 className="text-sm font-medium text-ink">Cube</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -67,8 +67,8 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 disabled={!isReady}
                 className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
               >
-                <Shuffle className="size-3" />
-                Scramble
+                <Shuffle className="size-3 shrink-0" />
+                <span className="hidden sm:inline">Scramble</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Apply scramble to 3D cube</TooltipContent>
@@ -82,8 +82,8 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 disabled={!isReady}
                 className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
               >
-                <RotateCcw className="size-3" />
-                Reset
+                <RotateCcw className="size-3 shrink-0" />
+                <span className="hidden sm:inline">Reset</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Reset cube pieces to solved state</TooltipContent>
@@ -97,8 +97,8 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                 disabled={!isReady}
                 className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
               >
-                <RefreshCw className="size-3" />
-                Calibrate
+                <RefreshCw className="size-3 shrink-0" />
+                <span className="hidden sm:inline">Calibrate</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Calibrate gyroscope orientation</TooltipContent>
@@ -113,7 +113,7 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
                   className="h-7 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink"
                   aria-label="Close 3D view"
                 >
-                  <X className="size-3" />
+                  <X className="size-3 shrink-0" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Close 3D view</TooltipContent>
