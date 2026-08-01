@@ -210,7 +210,7 @@ export function FloatingWidgetWrapper({
       }}
       onPointerDown={handleFocus}
       className={cn(
-        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface/95 backdrop-blur-md shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
+        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
         isNearDock
           ? "h-8 rounded-md px-2.5 text-xs font-medium cursor-grabbing"
           : minimized

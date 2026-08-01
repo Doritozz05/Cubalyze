@@ -46,7 +46,7 @@ export function PbCelebrationBanner({
   return (
     <div
       className={cn(
-        "relative flex flex-col items-center justify-center gap-2.5 rounded-xl border border-line bg-surface/95 px-4 py-3 shadow-lg backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-top-2",
+        "relative flex flex-col items-center justify-center gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 shadow-lg transition-all duration-200 animate-in fade-in slide-in-from-top-2",
         className,
       )}
     >

@@ -275,7 +275,7 @@ export function FloatingLayoutOrganizer() {
           {/* Scrollable content */}
           <div className="flex flex-col gap-0 max-h-[380px] overflow-y-auto">
             {/* Header bar + save layout button */}
-            <div className="sticky top-0 z-[1] flex items-center justify-between border-b border-line bg-surface-2/90 backdrop-blur-xs px-3 py-1.5">
+            <div className="sticky top-0 z-[1] flex items-center justify-between border-b border-line bg-surface-2 px-3 py-1.5">
               <p className="text-[0.65rem] text-ink-3">
                 <span className="font-semibold text-ink">{activeCount}</span> active widget{activeCount !== 1 ? "s" : ""}
               </p>
@@ -379,7 +379,7 @@ export function FloatingLayoutOrganizer() {
                           <div className="relative overflow-hidden rounded border border-line/50 bg-surface-2/50">
                             <LayoutPreviewSvg rects={rects} ids={requiredIds} />
                             {!isFullyActive && (
-                              <div className="absolute inset-0 bg-surface/70 backdrop-blur-[1px] flex items-center justify-center gap-1 text-ink-3">
+                              <div className="absolute inset-0 bg-surface/85 flex items-center justify-center gap-1 text-ink-3">
                                 <Lock className="size-3 text-ink-3/80" />
                               </div>
                             )}
