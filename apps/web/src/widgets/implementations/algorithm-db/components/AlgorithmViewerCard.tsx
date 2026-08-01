@@ -6,7 +6,11 @@ import { cn } from "@/lib/utils";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
-import { SUBSET_VISUALIZATION, getSubset } from "@cubeforge/algorithm-db";
+import {
+  getSubset,
+  resolveAlgorithmDiagramRotation,
+  resolveCaseVisualizationStyle,
+} from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +59,7 @@ export function AlgorithmViewerCard({
     algorithms.find((a) => a.id === selectedAlgId) ?? defaultAlg;
 
   // Fix: Use targetSubsetName to index SUBSET_VISUALIZATION (OLL -> yellow-gray, PLL -> full-color)
-  const visStyle: VisualizationStyle =
-    SUBSET_VISUALIZATION[targetSubsetName]?.style ??
-    (lowerSubsetName.includes("oll") ? "yellow-gray" : "full-color");
+  const visStyle: VisualizationStyle = resolveCaseVisualizationStyle(caseData);
 
   const handleCopySetup = () => {
     if (!caseData.setupScramble) return;
@@ -99,26 +101,25 @@ export function AlgorithmViewerCard({
             <Case2x2Diagram
               faceletColors={caseData.diagram2D?.faceletColors}
               setupScramble={caseData.setupScramble}
-              moves={activeAlg?.moves}
+              moves={undefined}
               style={visStyle}
-              rotation={activeAlg?.customDiagramRotation}
+              rotation={resolveAlgorithmDiagramRotation(activeAlg)}
               className="w-32 max-h-30"
             />
           ) : (
             <CaseDiagram
               setupScramble={caseData.setupScramble}
-              moves={activeAlg?.moves}
+              moves={undefined}
               style={visStyle}
               arrows={caseData.diagram2D?.arrows}
-              rotation={activeAlg?.customDiagramRotation}
+              rotation={resolveAlgorithmDiagramRotation(activeAlg)}
               className="w-32 max-h-30"
             />
           )
         ) : (
           <Case3DDiagram
             caseData={caseData}
-            moves={activeAlg?.moves}
-            customViewAngle={activeAlg?.customViewAngle}
+            algorithm={activeAlg}
             interactive={true}
             className="w-full h-28"
           />

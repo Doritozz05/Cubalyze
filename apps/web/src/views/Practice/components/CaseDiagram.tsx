@@ -98,39 +98,29 @@ export function CaseDiagram({
   className,
   rotation = 0,
 }: CaseDiagramProps) {
-  // Dynamic facelet generation:
-  //   Priority 1: faceletColors (pre-computed)
-  //   Priority 2: setupScramble (canonical — matches SpeedCubeDB visuals)
-  //   Priority 3: moves (algorithm-inverse — fallback, may differ from canonical)
+  // Canonical priority: setupScramble + subset policy always wins. Explicit
+  // facelets and algorithm moves are compatibility fallbacks only.
   const faceletColors = useMemo(() => {
-    if (faceletColorsProp) return faceletColorsProp;
-    if (moves && moves.length > 0) {
-      try {
-        const { diagramColors } = CaseStateGenerator.generateCaseVisualization(
-          moves,
-          style,
-        );
-        return diagramColors;
-      } catch {
-        // Fallback to setupScramble below
-      }
-    }
     if (setupScramble) {
       try {
-        const { diagramColors } =
-          CaseStateGenerator.generateFromScrambleVisualization(
-            setupScramble,
-            style,
-          );
-        return diagramColors;
-      } catch (e) {
-        // setupScramble is the canonical source — if it fails, warn loudly
-        // so the bug is visible.
-        console.warn(
-          `[CaseDiagram] setupScramble failed for case:`,
+        return CaseStateGenerator.generateFromScrambleVisualization(
           setupScramble,
-          e,
-        );
+          style,
+        ).diagramColors;
+      } catch (error) {
+        console.warn("[CaseDiagram] setupScramble failed:", setupScramble, error);
+      }
+    }
+    if (faceletColorsProp) {
+      return style === "yellow-gray"
+        ? faceletColorsProp.map((color) => color === "Y" ? "Y" : "#")
+        : faceletColorsProp;
+    }
+    if (moves && moves.length > 0) {
+      try {
+        return CaseStateGenerator.generateCaseVisualization(moves, style).diagramColors;
+      } catch {
+        // Fall through to an empty diagram for malformed legacy data.
       }
     }
     return [];

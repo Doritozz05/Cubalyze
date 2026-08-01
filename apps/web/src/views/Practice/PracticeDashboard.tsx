@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getSeedData, SUBSETS, SUBSET_VISUALIZATION } from "@cubeforge/algorithm-db";
+import { getSeedData, SUBSETS, resolveVisualizationStyleForSubset } from "@cubeforge/algorithm-db";
 import type { VisualizationStyle } from "@cubeforge/algorithm-db";
 import { MethodTree } from "./components/MethodTree";
 import { CaseGrid } from "./components/CaseGrid";
@@ -79,7 +79,7 @@ export function PracticeDashboard({
     if (!selectedSubsetId) return "full-color";
     const subset = SUBSETS.find((s) => s.id === selectedSubsetId);
     if (!subset) return "full-color";
-    return SUBSET_VISUALIZATION[subset.name]?.style ?? "full-color";
+    return resolveVisualizationStyleForSubset(subset.name);
   }, [selectedSubsetId]);
 
   // ── Render ────────────────────────────────────────────────────────────

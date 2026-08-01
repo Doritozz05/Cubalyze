@@ -3,8 +3,15 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+import {
+  METHODS,
+  SUBSETS,
+  getSeedData,
+  getChildSubsets,
+  resolveVisualizationStyleForSubset,
+  resolveAlgorithmDiagramRotation,
+} from "@cubeforge/algorithm-db";
+import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { useCaseAlgorithms, getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
@@ -154,8 +161,7 @@ export function AlgorithmDrillView({
 
   // ── Visualization style (yellow-gray for OLL, full-color for PLL, etc.) ─
   const visualizationStyle = useMemo<VisualizationStyle>(() => {
-    const config = subset?.name ? SUBSET_VISUALIZATION[subset.name] : undefined;
-    return config?.style ?? 'full-color';
+    return resolveVisualizationStyleForSubset(subset?.name);
   }, [subset]);
 
   // ── Timer hint context (controls TimerDisplay hint text) ─────────────
@@ -402,24 +408,24 @@ export function AlgorithmDrillView({
               {/* Left: Case diagram */}
               <div className="shrink-0 flex items-center justify-center">
                 {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d" || (!selectedCase.diagram2D && selectedCase.setupScramble)) ? (
-                  <Case3DDiagram caseData={selectedCase} customViewAngle={defaultAlgorithm?.customViewAngle} className="w-28 sm:w-36" />
+                  <Case3DDiagram caseData={selectedCase} algorithm={defaultAlgorithm} className="w-28 sm:w-36" />
                 ) : selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
                   selectedCase.puzzleType === '2x2x2' ? (
                     <Case2x2Diagram
                       faceletColors={selectedCase.diagram2D.faceletColors}
                       setupScramble={selectedCase.setupScramble}
-                      moves={defaultAlgorithm?.moves}
+                      moves={undefined}
                       style={visualizationStyle}
-                      rotation={defaultAlgorithm?.customDiagramRotation}
+                      rotation={resolveAlgorithmDiagramRotation(defaultAlgorithm)}
                       className="w-28 sm:w-36"
                     />
                   ) : (
                     <CaseDiagram
                       arrows={selectedCase.diagram2D.arrows}
                       setupScramble={selectedCase.setupScramble}
-                      moves={defaultAlgorithm?.moves}
+                      moves={undefined}
                       style={visualizationStyle}
-                      rotation={defaultAlgorithm?.customDiagramRotation}
+                      rotation={resolveAlgorithmDiagramRotation(defaultAlgorithm)}
                       className="w-28 sm:w-36"
                     />
                   )

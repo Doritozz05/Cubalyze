@@ -1,38 +1,12 @@
-import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
-import { CaseStateGenerator } from "@cubeforge/algorithm-db";
-import { Cube2x2State, Cube2x2FaceletConverter } from "@cubeforge/math-core";
-import type { AlgorithmCase } from "@cubeforge/algorithm-db";
-
-const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
-const F2L_SUBSET_IDS = new Set([
-  "00000000-0000-4000-9000-000000000003", // Basic F2L
-  F2L_ADVANCED_SUBSET_ID, // Advanced F2L
-]);
-
-const SLOT_LABELS = [
-  { id: 0, key: "FR", name: "Front Right", modelYRot: 0 },
-  { id: 1, key: "FL", name: "Front Left", modelYRot: -Math.PI / 2 },
-  { id: 2, key: "BL", name: "Back Left", modelYRot: Math.PI },
-  { id: 3, key: "BR", name: "Back Right", modelYRot: Math.PI / 2 },
-];
-
-const F2L_GRAY = "#808080";
+import { Cube3DEngine } from "@cubeforge/cube-3d-engine";
+import {
+  buildCaseRenderPlan,
+  type AlgorithmCase,
+  type F2LSlotId,
+} from "@cubeforge/algorithm-db";
+import { applyCaseRenderPlan } from "@/services/Case3DRenderAdapter";
 const STORAGE_PREFIX = "cubeforge_snap_3d_v8_";
 const CANV_SIZE = 256;
-
-function buildF2LSkinStyle() {
-  const base = getSkinStyle("default");
-  return {
-    ...base,
-    stickerColors: {
-      ...base.stickerColors,
-      U: base.stickerColors.D, // yellow on top
-      D: base.stickerColors.U, // white on bottom
-      R: base.stickerColors.L, // orange on right (FR slot: Green/Orange)
-      L: base.stickerColors.R, // red on left
-    },
-  };
-}
 
 
 type RenderTask = {
@@ -106,7 +80,9 @@ export class Global3DSnapshotService {
         order,
       });
 
-      engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+      // The plan supplies the camera for each render; this is only a safe
+      // initialization before the first task is applied.
+      engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6, 7);
 
       if (is2x2) {
         this.canvas2x2 = canvas;
@@ -189,48 +165,12 @@ export class Global3DSnapshotService {
           return;
         }
 
-        const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
-        const modelYRot = SLOT_LABELS[selectedSlot]?.modelYRot ?? 0;
+        const plan = buildCaseRenderPlan(caseData, {
+          selectedF2LSlot: selectedSlot as F2LSlotId,
+        });
 
-        if (isF2L || is2x2) {
-          engine.updateStyle(buildF2LSkinStyle());
-        } else {
-          engine.updateStyle(getSkinStyle("default"));
-        }
-
-        engine.clearLayerGray();
-
-        if (caseData.setupScramble) {
-          if (is2x2) {
-            const state = new Cube2x2State();
-            state.applySequence(caseData.setupScramble);
-            const facelets = Cube2x2FaceletConverter.toFaceletString(state);
-            engine.syncFacelets(facelets);
-          } else {
-            const rawState = CaseStateGenerator.generateFromScramble(
-              caseData.setupScramble,
-            );
-            const faceletString = CaseStateGenerator.toFaceletString(rawState);
-            engine.syncFacelets(faceletString);
-          }
-        } else {
-          engine.resetCube();
-        }
-
-        if (!is2x2) {
-          engine.rotateModelY(modelYRot);
-        }
-
-        const isAdvancedF2L =
-          caseData.subsetId === F2L_ADVANCED_SUBSET_ID ||
-          Boolean(caseData.tags?.includes("af2l"));
-
-        if (isF2L) {
-          engine.setF2LMaskGray(F2L_GRAY, isAdvancedF2L);
-        }
-
-        // Synchronous single-frame render
-        engine.sceneManager.render();
+        // Snapshot and interactive canvas now execute the same render plan.
+        applyCaseRenderPlan(engine, plan);
 
         const dataUrl = canvas.toDataURL("image/png");
         if (dataUrl && dataUrl.length > 100) {

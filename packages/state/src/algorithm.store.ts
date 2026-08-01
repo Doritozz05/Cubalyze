@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { persist } from 'zustand/middleware';
-import type { Algorithm } from '@cubeforge/algorithm-db';
+import type { Algorithm, AlgorithmViewPreferences } from '@cubeforge/algorithm-db';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -49,6 +49,47 @@ function ensureCaseOrder(
   caseId: string,
 ): string[] {
   return state.caseOrder[caseId] ?? [];
+}
+
+/**
+ * One-time migration for custom algorithms saved before viewPreferences.
+ * Legacy fields remain readable for rollback compatibility, but all current
+ * consumers use the normalized viewPreferences object.
+ */
+function migrateAlgorithmViewPreferences(algorithm: Algorithm): Algorithm {
+  const legacyCamera = algorithm.customViewAngle
+    ? {
+        theta: algorithm.customViewAngle[0],
+        phi: algorithm.customViewAngle[1],
+        radius: algorithm.customViewAngle[2],
+      }
+    : undefined;
+  const legacyDiagramRotation = algorithm.customDiagramRotation;
+  const current = algorithm.viewPreferences;
+
+  // Merge by field: normalized preferences always win over legacy fields.
+  const viewPreferences: AlgorithmViewPreferences = {
+    camera: current?.camera ?? legacyCamera,
+    diagramRotation: current?.diagramRotation ?? legacyDiagramRotation,
+    preferredF2LSlot: current?.preferredF2LSlot,
+  };
+
+  return { ...algorithm, viewPreferences };
+}
+
+function migratePersistedState(persistedState: unknown): Partial<AlgorithmStoreState> {
+  if (!persistedState || typeof persistedState !== 'object') return {};
+  const state = persistedState as Partial<AlgorithmStoreState>;
+  const customAlgorithms = Object.fromEntries(
+    Object.entries(state.customAlgorithms ?? {}).map(([id, algorithm]) => [
+      id,
+      migrateAlgorithmViewPreferences(algorithm),
+    ]),
+  );
+  return {
+    customAlgorithms,
+    caseOrder: state.caseOrder ?? {},
+  };
 }
 
 // ─── Store ──────────────────────────────────────────────────────────────
@@ -182,7 +223,8 @@ export const createAlgorithmStore = () => {
       }),
       {
         name: 'cubeforge:custom-algs',
-        version: 1,
+        version: 2,
+        migrate: (persistedState) => migratePersistedState(persistedState),
         partialize: (state) => ({
           customAlgorithms: state.customAlgorithms,
           caseOrder: state.caseOrder,

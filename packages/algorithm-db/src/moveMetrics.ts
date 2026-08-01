@@ -30,12 +30,6 @@ export function computeMoveMetricsFromTokens(moves: string[]): MoveCountResult {
     t = t.replace(/[()]/g, "").replace(/2'/g, "2");
     const base = t[0] ?? "";
     const isRotation = base === "x" || base === "y" || base === "z";
-    const isSlice =
-      base === "M" || base === "S" || base === "E" ||
-      (base === "m" && t.length === 1) ||
-      (base === "s" && t.length === 1) ||
-      (base === "e" && t.length === 1);
-
     // STM: every non-rotation token = 1
     if (!isRotation) stm++;
 

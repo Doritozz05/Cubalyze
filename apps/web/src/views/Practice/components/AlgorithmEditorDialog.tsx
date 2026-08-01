@@ -23,8 +23,15 @@ import {
 } from "@cubeforge/math-core";
 import {
   computeMoveMetricsFromString,
+  resolveAlgorithmViewPreferences,
+  resolveCaseVisualizationStyle,
 } from "@cubeforge/algorithm-db";
-import type { Algorithm, AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
+import type {
+  Algorithm,
+  AlgorithmCase,
+  AlgorithmViewPreferences,
+  VisualizationStyle,
+} from "@cubeforge/algorithm-db";
 import { algorithmStore } from "@cubeforge/state";
 import { getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
 
@@ -66,10 +73,7 @@ function detectDiagramVariant(caseData: AlgorithmCase): DiagramVariant {
   }
 
   // 2D cases: PLL, OLL, Ortega OLL, etc.
-  // Use word-boundary regex on case name to distinguish OLL from PLL
-  // (same result as panels' SUBSET_VISUALIZATION["OLL"] / ["PLL"])
-  const isOLL = /\boll\b/i.test(caseData.name ?? "");
-  const style: VisualizationStyle = isOLL ? "yellow-gray" : "full-color";
+  const style: VisualizationStyle = resolveCaseVisualizationStyle(caseData);
 
   return {
     type: is2x2 ? "2d-2x2" : "2d-3x3",
@@ -124,6 +128,7 @@ export function AlgorithmEditorDialog({
   const [difficulty, setDifficulty] = useState<Difficulty>("intermediate");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [engineReady, setEngineReady] = useState(false);
 
   // ── Orientation / Rotation state ─────────────────────────────────────
   const [capturedOrientation, setCapturedOrientation] =
@@ -141,38 +146,46 @@ export function AlgorithmEditorDialog({
   const is3D = variant.type.startsWith("3d");
   const is2x2 = caseData.puzzleType === "2x2x2";
 
-  // ── Seed algorithm moves (for diagram rendering — matches what panels use) ──
+  // ── Seed algorithm moves are notation only; setupScramble remains canonical ──
   const seedAlgMoves = useMemo(
-    () => getAlgorithmsForCase(caseData.id)[0]?.moves,
+    () => getAlgorithmsForCase(caseData.id)[0]?.moves ?? [],
     [caseData.id],
   );
+
+  const previewAlgorithm = useMemo<Pick<Algorithm, "moves" | "viewPreferences">>(() => ({
+    moves: seedAlgMoves,
+    viewPreferences: capturedOrientation || capturedRotation2D != null
+      ? {
+          ...(capturedOrientation ? { camera: capturedOrientation } : {}),
+          ...(capturedRotation2D != null ? { diagramRotation: capturedRotation2D } : {}),
+        }
+      : undefined,
+  }), [seedAlgMoves, capturedOrientation, capturedRotation2D]);
 
   // Stable callback for Case3DCanvas to avoid re-fire loops
   const handleEngineReady = useCallback((engine: Cube3DEngine) => {
     engineRef.current = engine;
+    setEngineReady(true);
   }, []);
 
   // ── Reset form when opening ──────────────────────────────────────────
   useEffect(() => {
     if (open) {
       if (existingAlgorithm) {
+        const viewPreferences = resolveAlgorithmViewPreferences(existingAlgorithm);
         setNotation(existingAlgorithm.moves.join(" "));
         setDifficulty(existingAlgorithm.difficulty);
         setNotes(existingAlgorithm.notes ?? "");
-        // Restore 3D orientation
-        if (existingAlgorithm.customViewAngle) {
-          setCapturedOrientation({
-            theta: existingAlgorithm.customViewAngle[0],
-            phi: existingAlgorithm.customViewAngle[1],
-            radius: existingAlgorithm.customViewAngle[2],
-          });
+        // Restore the canonical view preferences. The resolver only falls
+        // back to legacy fields for already-persisted historical records.
+        if (viewPreferences.camera) {
+          setCapturedOrientation(viewPreferences.camera);
         } else {
           setCapturedOrientation(null);
         }
-        // Restore 2D rotation
-        if (existingAlgorithm.customDiagramRotation != null) {
-          setRotation2D(existingAlgorithm.customDiagramRotation);
-          setCapturedRotation2D(existingAlgorithm.customDiagramRotation);
+        if (viewPreferences.diagramRotation != null) {
+          setRotation2D(viewPreferences.diagramRotation);
+          setCapturedRotation2D(viewPreferences.diagramRotation);
         } else {
           setRotation2D(0);
           setCapturedRotation2D(null);
@@ -187,6 +200,7 @@ export function AlgorithmEditorDialog({
       }
       setSaving(false);
       engineRef.current = null;
+      setEngineReady(false);
     }
   }, [open, existingAlgorithm]);
 
@@ -242,6 +256,14 @@ export function AlgorithmEditorDialog({
     try {
       const id = existingAlgorithm?.id ?? generateUuid();
 
+      const viewPreferences: AlgorithmViewPreferences = {
+        ...(capturedOrientation ? { camera: capturedOrientation } : {}),
+        ...(capturedRotation2D != null ? { diagramRotation: capturedRotation2D } : {}),
+        ...(existingAlgorithm?.viewPreferences?.preferredF2LSlot != null
+          ? { preferredF2LSlot: existingAlgorithm.viewPreferences.preferredF2LSlot }
+          : {}),
+      };
+
       const alg: Algorithm = {
         id,
         caseId: caseData.id,
@@ -256,20 +278,7 @@ export function AlgorithmEditorDialog({
         isMirror: false,
         isInverse: false,
         sortOrder: existingAlgorithm?.sortOrder ?? Date.now(),
-        // 3D orientation
-        ...(capturedOrientation
-          ? {
-              customViewAngle: [
-                capturedOrientation.theta,
-                capturedOrientation.phi,
-                capturedOrientation.radius,
-              ] as [number, number, number],
-            }
-          : {}),
-        // 2D rotation
-        ...(capturedRotation2D != null
-          ? { customDiagramRotation: capturedRotation2D }
-          : {}),
+        viewPreferences,
       };
 
       if (existingAlgorithm) {
@@ -378,7 +387,8 @@ export function AlgorithmEditorDialog({
                   {is3D ? (
                     <Case3DCanvas
                       caseData={caseData}
-                      selectedSlot={0}
+                      algorithm={is3D ? previewAlgorithm : undefined}
+                      selectedSlot={previewAlgorithm.viewPreferences?.preferredF2LSlot ?? 0}
                       className="w-full h-full"
                       order={is2x2 ? 2 : 3}
                       onEngineReady={handleEngineReady}
@@ -414,7 +424,7 @@ export function AlgorithmEditorDialog({
                       variant="ghost"
                       size="sm"
                       onClick={handleCaptureOrientation}
-                      disabled={!engineRef.current}
+                      disabled={!engineReady}
                       className="h-7 gap-1.5 px-2.5 text-[0.62rem] text-ink-3 hover:text-ink"
                     >
                       <Camera className="size-3" />

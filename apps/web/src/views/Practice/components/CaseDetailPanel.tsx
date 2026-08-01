@@ -27,6 +27,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
 import type {
   AlgorithmCase,
   Algorithm,
@@ -178,18 +179,18 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                 <Case2x2Diagram
                   faceletColors={caseData.diagram2D.faceletColors}
                   setupScramble={caseData.setupScramble}
-                  moves={activeAlg?.moves}
+                  moves={undefined}
                   style={visualizationStyle ?? "full-color"}
-                  rotation={activeAlg?.customDiagramRotation}
+                  rotation={resolveAlgorithmDiagramRotation(activeAlg)}
                   className="w-48"
                 />
               ) : (
                 <CaseDiagram
                   arrows={caseData.diagram2D.arrows}
                   setupScramble={caseData.setupScramble}
-                  moves={activeAlg?.moves}
+                  moves={undefined}
                   style={visualizationStyle ?? "full-color"}
-                  rotation={activeAlg?.customDiagramRotation}
+                  rotation={resolveAlgorithmDiagramRotation(activeAlg)}
                   className="w-48"
                 />
               )}

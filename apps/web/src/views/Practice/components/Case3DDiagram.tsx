@@ -1,81 +1,79 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useCube3D } from "@/hooks/useCube3D";
-import { CaseStateGenerator } from "@cubeforge/algorithm-db";
-import { Cube2x2State, Cube2x2FaceletConverter } from "@cubeforge/math-core";
-import { getSkinStyle, Cube3DEngine } from "@cubeforge/cube-3d-engine";
+import {
+  buildCaseRenderPlan,
+  resolveAlgorithmViewPreferences,
+  type Algorithm,
+  type AlgorithmCase,
+  type F2LSlotId,
+} from "@cubeforge/algorithm-db";
+import { Cube3DEngine } from "@cubeforge/cube-3d-engine";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
-import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import { applyCaseRenderPlan } from "@/services/Case3DRenderAdapter";
 
-const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
-const F2L_SUBSET_IDS = new Set([
-  "00000000-0000-4000-9000-000000000003", // Basic F2L
-  F2L_ADVANCED_SUBSET_ID, // Advanced F2L
-]);
-
-const SLOT_LABELS = [
-  { id: 0, key: "FR", name: "Front Right", modelYRot: 0 },
-  { id: 1, key: "FL", name: "Front Left", modelYRot: -Math.PI / 2 },
-  { id: 2, key: "BL", name: "Back Left", modelYRot: Math.PI },
-  { id: 3, key: "BR", name: "Back Right", modelYRot: Math.PI / 2 },
-];
-
-const F2L_GRAY = "#808080";
-
-function buildF2LSkinStyle() {
-  const base = getSkinStyle("default");
-  return {
-    ...base,
-    stickerColors: {
-      ...base.stickerColors,
-      U: base.stickerColors.D, // yellow on top
-      D: base.stickerColors.U, // white on bottom
-      R: base.stickerColors.L, // orange on right (FR slot: Green/Orange)
-      L: base.stickerColors.R, // red on left
-    },
-  };
-}
+type ViewAlgorithm = Pick<
+  Algorithm,
+  "moves" | "viewPreferences" | "customViewAngle" | "customDiagramRotation"
+>;
 
 export interface Case3DDiagramProps {
   caseData: AlgorithmCase;
+  /** The selected algorithm contributes view preferences, never case state. */
+  algorithm?: ViewAlgorithm | null;
+  /** @deprecated Use algorithm.viewPreferences.camera. */
+  customViewAngle?: [number, number, number];
+  /** @deprecated Kept for source compatibility; moves never define the case view. */
   moves?: string[];
   selectedSlot?: number;
   resetCameraTrigger?: number;
   className?: string;
   showSetup?: boolean;
-  /** If true, keeps live WebGL engine running (for detail view). Default: false (uses 3D image snapshot). */
+  /** Live WebGL mode. Without this, the canonical snapshot path is used. */
   interactive?: boolean;
-  /** Custom camera orbit [theta, phi, radius] from a user-created algorithm.
-   *  When set, forces interactive mode and overrides the default isometric view. */
-  customViewAngle?: [number, number, number];
+}
+
+function legacyAlgorithm(customViewAngle?: [number, number, number]): ViewAlgorithm | undefined {
+  return customViewAngle
+    ? { moves: [], customViewAngle }
+    : undefined;
 }
 
 export function Case3DDiagram({
   caseData,
-  moves,
-  selectedSlot = 0,
+  algorithm,
+  customViewAngle,
+  selectedSlot,
   resetCameraTrigger,
   className,
   showSetup = false,
   interactive = false,
-  customViewAngle,
 }: Case3DDiagramProps) {
-  // Custom orientation → force interactive (snapshots are at fixed angles)
-  const effectiveInteractive = interactive || !!customViewAngle;
+  const effectiveAlgorithm = algorithm ?? legacyAlgorithm(customViewAngle);
+  const effectiveSlot = selectedSlot ?? resolveAlgorithmViewPreferences(effectiveAlgorithm).preferredF2LSlot ?? 0;
+  const effectiveCamera = effectiveAlgorithm?.viewPreferences?.camera
+    ?? (effectiveAlgorithm?.customViewAngle
+      ? {
+          theta: effectiveAlgorithm.customViewAngle[0],
+          phi: effectiveAlgorithm.customViewAngle[1],
+          radius: effectiveAlgorithm.customViewAngle[2],
+        }
+      : undefined);
+  const effectiveInteractive = interactive || !!effectiveCamera;
+
   if (effectiveInteractive) {
-    const is2x2 = caseData.puzzleType === '2x2x2';
+    const order = caseData.puzzleType === "2x2x2" ? 2 : 3;
     return (
       <div className="flex flex-col items-center w-full">
         <Case3DCanvas
           caseData={caseData}
-          moves={moves}
-          selectedSlot={selectedSlot}
+          algorithm={effectiveAlgorithm}
+          selectedSlot={effectiveSlot}
           resetCameraTrigger={resetCameraTrigger}
           className={className}
-          order={is2x2 ? 2 : 3}
-          customViewAngle={customViewAngle}
+          order={order}
         />
         {showSetup && caseData.setupScramble && (
           <div className="mt-2 text-center text-[0.65rem] text-ink-3">
@@ -90,7 +88,7 @@ export function Case3DDiagram({
   return (
     <Case3DSnapshotView
       caseData={caseData}
-      selectedSlot={selectedSlot}
+      selectedSlot={effectiveSlot}
       className={className}
       showSetup={showSetup}
     />
@@ -102,7 +100,7 @@ function Case3DSnapshotView({
   selectedSlot = 0,
   className,
   showSetup = false,
-}: Omit<Case3DDiagramProps, "interactive">) {
+}: Pick<Case3DDiagramProps, "caseData" | "selectedSlot" | "className" | "showSetup">) {
   const cacheKey = `${caseData.id}_${caseData.setupScramble}_${selectedSlot}`;
   const service = Global3DSnapshotService.getInstance();
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
@@ -117,43 +115,29 @@ function Case3DSnapshotView({
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Request snapshot when element is visible in/near viewport
   useEffect(() => {
     if (snapshotUrl) return;
-
     let isMounted = true;
     const el = wrapperRef.current;
-
     const fetchSnapshot = () => {
-      service
-        .requestSnapshot(caseData, selectedSlot)
-        .then((url) => {
-          if (isMounted) setSnapshotUrl(url);
-        })
-        .catch(() => {
-          // Fallback handled via UI
-        });
+      service.requestSnapshot(caseData, selectedSlot).then((url) => {
+        if (isMounted) setSnapshotUrl(url);
+      }).catch(() => {
+        // The loading placeholder remains visible when WebGL is unavailable.
+      });
     };
 
     if (!el || !("IntersectionObserver" in window)) {
       fetchSnapshot();
-      return () => {
-        isMounted = false;
-      };
+      return () => { isMounted = false; };
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            fetchSnapshot();
-            observer.disconnect();
-          }
-        });
-      },
-      { rootMargin: "200px" },
-    );
-
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        fetchSnapshot();
+        observer.disconnect();
+      }
+    }, { rootMargin: "200px" });
     observer.observe(el);
 
     return () => {
@@ -164,23 +148,15 @@ function Case3DSnapshotView({
 
   return (
     <div ref={wrapperRef} className="flex flex-col items-center w-full">
-      <div
-        className={cn(
-          "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs flex items-center justify-center p-1",
-          className,
-        )}
-      >
+      <div className={cn(
+        "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs flex items-center justify-center p-1",
+        className,
+      )}>
         {snapshotUrl ? (
-          <img
-            src={snapshotUrl}
-            alt={caseData.name}
-            className="h-full w-full object-contain pointer-events-none"
-          />
+          <img src={snapshotUrl} alt={caseData.name} className="h-full w-full object-contain pointer-events-none" />
         ) : (
           <div className="relative w-full h-full animate-pulse flex items-center justify-center bg-surface-2/20 rounded-lg">
-            <span className="text-[0.6rem] font-medium text-ink-3/40 font-mono">
-              3D
-            </span>
+            <span className="text-[0.6rem] font-medium text-ink-3/40 font-mono">3D</span>
           </div>
         )}
       </div>
@@ -196,137 +172,67 @@ function Case3DSnapshotView({
 
 export function Case3DCanvas({
   caseData,
-  moves,
+  algorithm,
   selectedSlot,
   resetCameraTrigger,
   className,
   order = 3,
-  customViewAngle,
   onEngineReady,
 }: {
   caseData: AlgorithmCase;
-  moves?: string[];
+  algorithm?: ViewAlgorithm;
   selectedSlot: number;
   resetCameraTrigger?: number;
   className?: string;
   order?: number;
-  customViewAngle?: [number, number, number];
-  /** Called when the engine is initialized, so parent can access camera for capture. */
+  /** Called when the engine is initialized, so the editor can capture camera state. */
   onEngineReady?: (engine: Cube3DEngine) => void;
 }) {
   const { canvasRef, containerRef, isReady, engineRef, rotateCamera } = useCube3D({
     maxRecentMoves: 0,
     order,
   });
-
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
+  const plan = useMemo(
+    () => buildCaseRenderPlan(caseData, {
+      selectedF2LSlot: selectedSlot as F2LSlotId,
+      algorithm,
+    }),
+    [caseData, selectedSlot, algorithm],
+  );
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     setIsDragging(true);
-    lastPos.current = { x: e.clientX, y: e.clientY };
-    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    lastPos.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDragging) return;
-    const dx = e.clientX - lastPos.current.x;
-    const dy = e.clientY - lastPos.current.y;
-    lastPos.current = { x: e.clientX, y: e.clientY };
+    const dx = event.clientX - lastPos.current.x;
+    const dy = event.clientY - lastPos.current.y;
+    lastPos.current = { x: event.clientX, y: event.clientY };
     rotateCamera(dx, dy);
   };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
     setIsDragging(false);
     try {
-      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+      event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
-      // Ignore if pointer capture was already lost
+      // Pointer capture can already be released by the browser.
     }
   };
 
-  const is2x2 = order === 2;
-  const isF2L = !is2x2 && F2L_SUBSET_IDS.has(caseData.subsetId);
-
-  // Notify parent when engine is ready
   useEffect(() => {
-    if (isReady && engineRef.current) {
-      onEngineReady?.(engineRef.current);
-    }
+    if (isReady && engineRef.current) onEngineReady?.(engineRef.current);
   }, [isReady, engineRef, onEngineReady]);
 
   useEffect(() => {
     if (!isReady || !engineRef.current) return;
-
-    const engine = engineRef.current;
-    const modelYRot = is2x2 ? 0 : (SLOT_LABELS[selectedSlot]?.modelYRot ?? 0);
-
     try {
-      if (isF2L || is2x2) {
-        engine.updateStyle(buildF2LSkinStyle());
-      } else {
-        engine.updateStyle(getSkinStyle("default"));
-      }
-
-      // Reset camera to custom or default isometric view angle
-      if (customViewAngle) {
-        engine.sceneManager.setOrbitAngles(
-          customViewAngle[0],
-          customViewAngle[1],
-        );
-      } else {
-        engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
-      }
-
-      engine.clearLayerGray();
-      if (moves && moves.length > 0) {
-        if (is2x2) {
-          const state = new Cube2x2State();
-          const inverseMoves = moves.slice().reverse().map(m => {
-            if (m.endsWith("'")) return m.slice(0, -1);
-            if (m.endsWith("2") || m.endsWith("2'")) return m.endsWith("'") ? m.slice(0, -1) : m;
-            return m + "'";
-          });
-          state.applySequence(inverseMoves.join(" "));
-          const facelets = Cube2x2FaceletConverter.toFaceletString(state);
-          engine.syncFacelets(facelets);
-        } else {
-          const rawState = CaseStateGenerator.generateCaseState(moves);
-          const faceletString = CaseStateGenerator.toFaceletString(rawState);
-          engine.syncFacelets(faceletString);
-        }
-      } else if (caseData.setupScramble) {
-        if (is2x2) {
-          const state = new Cube2x2State();
-          state.applySequence(caseData.setupScramble);
-          const facelets = Cube2x2FaceletConverter.toFaceletString(state);
-          engine.syncFacelets(facelets);
-        } else {
-          const rawState = CaseStateGenerator.generateFromScramble(
-            caseData.setupScramble,
-          );
-          const faceletString = CaseStateGenerator.toFaceletString(rawState);
-          engine.syncFacelets(faceletString);
-        }
-      } else {
-        engine.resetCube();
-      }
-
-      if (!is2x2) {
-        engine.rotateModelY(modelYRot);
-      }
-
-      const isAdvancedF2L =
-        caseData.subsetId === F2L_ADVANCED_SUBSET_ID ||
-        Boolean(caseData.tags?.includes("af2l"));
-
-      if (isF2L) {
-        engine.setF2LMaskGray(F2L_GRAY, isAdvancedF2L);
-      }
-
-      engine.sceneManager.render();
+      applyCaseRenderPlan(engineRef.current, plan);
     } catch {
-      engine.resetCube();
+      engineRef.current.resetCube();
     }
   }, [
     isReady,
@@ -336,29 +242,26 @@ export function Case3DCanvas({
     caseData.subsetId,
     selectedSlot,
     resetCameraTrigger,
-    isF2L,
-    is2x2,
-    caseData.tags,
     order,
-    moves ? moves.join(" ") : "",
-    customViewAngle,
+    plan.engineFacelets,
+    plan.camera.theta,
+    plan.camera.phi,
+    plan.camera.radius,
+    plan.modelRotationY,
+    plan.isF2L,
+    plan.isAdvancedF2L,
   ]);
 
   useEffect(() => {
     const engine = engineRef.current;
-    return () => {
-      engine?.clearLayerGray();
-    };
+    return () => engine?.clearLayerGray();
   }, [engineRef]);
 
   return (
-    <div
-      ref={containerRef as React.RefObject<HTMLDivElement>}
-      className={cn(
-        "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs",
-        className,
-      )}
-    >
+    <div ref={containerRef as React.RefObject<HTMLDivElement>} className={cn(
+      "relative w-full aspect-square rounded-xl border border-line bg-surface-2/30 overflow-hidden shadow-xs",
+      className,
+    )}>
       <canvas
         ref={canvasRef as React.RefObject<HTMLCanvasElement>}
         onPointerDown={handlePointerDown}
@@ -369,9 +272,7 @@ export function Case3DCanvas({
       />
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
-          <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
-            Rendering 3D...
-          </span>
+          <span className="text-[0.6rem] text-ink-3/50 animate-pulse">Rendering 3D...</span>
         </div>
       )}
     </div>

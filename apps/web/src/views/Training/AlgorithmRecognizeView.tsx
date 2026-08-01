@@ -3,7 +3,14 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData, SUBSET_VISUALIZATION, getChildSubsets } from "@cubeforge/algorithm-db";
+import {
+  METHODS,
+  SUBSETS,
+  getSeedData,
+  getChildSubsets,
+  resolveVisualizationStyleForSubset,
+  resolveAlgorithmDiagramRotation,
+} from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
@@ -142,8 +149,7 @@ export function AlgorithmRecognizeView({
 
   // ── Visualization style ────────────────────────────────────────────────
   const visualizationStyle = useMemo<VisualizationStyle>(() => {
-    const config = subset?.name ? SUBSET_VISUALIZATION[subset.name] : undefined;
-    return config?.style ?? 'full-color';
+    return resolveVisualizationStyleForSubset(subset?.name);
   }, [subset]);
 
   // ── State ─────────────────────────────────────────────────────────────
@@ -407,14 +413,14 @@ function QuizPanel({
           >
             <div className="relative" style={{ transform: `rotate(${diagramRotation}deg)`, transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" || (!currentCase.diagram2D && currentCase.setupScramble) ? (
-                <Case3DDiagram caseData={currentCase} customViewAngle={currentAlgorithm?.customViewAngle} className="w-44 sm:w-52 lg:w-60" />
+                <Case3DDiagram caseData={currentCase} algorithm={algorithm} className="w-44 sm:w-52 lg:w-60" />
               ) : currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
                 currentCase.puzzleType === '2x2x2' ? (
                   <Case2x2Diagram
                     faceletColors={currentCase.diagram2D.faceletColors}
                     setupScramble={currentCase.setupScramble}
                     style={visualizationStyle}
-                    rotation={currentAlgorithm?.customDiagramRotation}
+                    rotation={resolveAlgorithmDiagramRotation(algorithm)}
                     className="w-44 sm:w-52 lg:w-60"
                   />
                 ) : (
@@ -422,12 +428,12 @@ function QuizPanel({
                     arrows={currentCase.diagram2D.arrows}
                     setupScramble={currentCase.setupScramble}
                     style={visualizationStyle}
-                    rotation={currentAlgorithm?.customDiagramRotation}
+                    rotation={resolveAlgorithmDiagramRotation(algorithm)}
                     className="w-44 sm:w-52 lg:w-60"
                   />
                 )
               ) : currentCase.setupScramble ? (
-                <Case3DDiagram caseData={currentCase} customViewAngle={currentAlgorithm?.customViewAngle} className="w-44 sm:w-52 lg:w-60" />
+                <Case3DDiagram caseData={currentCase} algorithm={algorithm} className="w-44 sm:w-52 lg:w-60" />
               ) : (
                 <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 flex items-center justify-center rounded-lg bg-surface-2">
                   <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>

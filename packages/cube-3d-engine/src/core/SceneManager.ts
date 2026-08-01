@@ -22,6 +22,8 @@ export class SceneManager {
   private height: number;
 
   private readonly orbitRadius: number = 7;
+  private readonly minOrbitRadius: number = 2;
+  private readonly maxOrbitRadius: number = 20;
 
   private ambientLight: AmbientLight;
   private directionalLight: DirectionalLight;
@@ -90,7 +92,10 @@ export class SceneManager {
     spherical.phi -= dy * SPEED; 
 
     spherical.phi = Math.max(MIN_PHI, Math.min(MAX_PHI, spherical.phi));
-    spherical.radius = this.orbitRadius;
+    spherical.radius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, spherical.radius),
+    );
 
     this.camera.position.setFromSpherical(spherical);
     this.camera.lookAt(0, 0, 0);
@@ -107,14 +112,18 @@ export class SceneManager {
    * `theta` = azimuth around Y axis.  `phi` = elevation from horizontal plane.
    * Elevation is clamped to avoid flipping.
    */
-  public setOrbitAngles(theta: number, phi: number): void {
+  public setOrbitAngles(theta: number, phi: number, radius = this.orbitRadius): void {
     const MAX_ELEVATION = Math.PI / 2 - 0.1;
-    const clamped = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, phi));
-    const cosPhi = Math.cos(clamped);
+    const clampedPhi = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, phi));
+    const clampedRadius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, Number.isFinite(radius) ? radius : this.orbitRadius),
+    );
+    const cosPhi = Math.cos(clampedPhi);
     this.camera.position.set(
-      this.orbitRadius * cosPhi * Math.sin(theta),
-      this.orbitRadius * Math.sin(clamped),
-      this.orbitRadius * cosPhi * Math.cos(theta),
+      clampedRadius * cosPhi * Math.sin(theta),
+      clampedRadius * Math.sin(clampedPhi),
+      clampedRadius * cosPhi * Math.cos(theta),
     );
     this.camera.lookAt(0, 0, 0);
   }

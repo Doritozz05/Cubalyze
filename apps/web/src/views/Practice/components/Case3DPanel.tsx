@@ -21,6 +21,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { isF2LCase } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
 
 export interface Case3DPanelProps {
@@ -92,11 +93,28 @@ export function Case3DPanel({
   const activeAlg =
     algorithms.find((a) => a.id === selectedAlgId) ?? primaryAlgorithm;
 
-  const isF2L =
-    caseData.subsetId === "00000000-0000-4000-9000-000000000003" ||
-    caseData.subsetId === "00000000-0000-4000-9000-000000000004" ||
-    caseData.subsetId.toLowerCase().includes("f2l") ||
-    Boolean(caseData.category?.toLowerCase().includes("f2l"));
+  const isF2L = isF2LCase(caseData);
+
+  useEffect(() => {
+    const preferredSlot = activeAlg?.viewPreferences?.preferredF2LSlot;
+    if (preferredSlot != null) setSelectedSlot(preferredSlot);
+  }, [activeAlg?.id, activeAlg?.viewPreferences?.preferredF2LSlot]);
+
+  const handleSlotSelect = useCallback((slotId: number) => {
+    setSelectedSlot(slotId);
+    setResetCameraTrigger((previous) => previous + 1);
+
+    // Slot orientation is a view preference of a custom algorithm, not part
+    // of the canonical case state. Seed algorithms remain immutable.
+    if (activeAlg?.isCustom && (slotId === 0 || slotId === 1 || slotId === 2 || slotId === 3)) {
+      algorithmStore.getState().updateCustomAlgorithm(activeAlg.id, {
+        viewPreferences: {
+          ...activeAlg.viewPreferences,
+          preferredF2LSlot: slotId as 0 | 1 | 2 | 3,
+        },
+      });
+    }
+  }, [activeAlg]);
 
   // ── Handlers ────────────────────────────────────────────────────────
   const handleOpenAddDialog = useCallback(() => {
@@ -164,10 +182,7 @@ export function Case3DPanel({
                 {SLOT_LABELS.map((slot) => (
                   <button
                     key={slot.id}
-                    onClick={() => {
-                      setSelectedSlot(slot.id);
-                      setResetCameraTrigger((prev) => prev + 1);
-                    }}
+                    onClick={() => handleSlotSelect(slot.id)}
                     className={cn(
                       "py-1 text-[0.65rem] font-medium rounded transition-colors text-center",
                       selectedSlot === slot.id
@@ -185,10 +200,9 @@ export function Case3DPanel({
           {/* 3D Isometric Cube Component */}
           <Case3DDiagram
             caseData={caseData}
-            moves={activeAlg?.moves}
+            algorithm={activeAlg}
             selectedSlot={selectedSlot}
             resetCameraTrigger={resetCameraTrigger}
-            customViewAngle={activeAlg?.customViewAngle}
             className="max-w-60"
             showSetup
             interactive

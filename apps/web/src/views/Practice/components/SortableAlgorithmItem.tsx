@@ -155,9 +155,9 @@ export function AlgorithmSourceLink({
 }) {
   const sourceUrl =
     alg.attributionUrl ||
-    (alg.source.startsWith("http")
+    (alg.source?.startsWith("http")
       ? alg.source
-      : alg.source.toLowerCase().includes("speedcubedb")
+      : alg.source?.toLowerCase().includes("speedcubedb")
         ? subsetId.toLowerCase().includes("oll")
           ? "https://speedcubedb.com/a/3x3/OLL"
           : subsetId.toLowerCase().includes("pll")
@@ -171,7 +171,7 @@ export function AlgorithmSourceLink({
     return (
       <span className="flex items-center gap-1">
         <ExternalLink className="size-2.5" />
-        {alg.source}
+        {alg.source ?? "Unknown source"}
       </span>
     );
   }
@@ -185,7 +185,7 @@ export function AlgorithmSourceLink({
       onClick={(e) => e.stopPropagation()}
     >
       <ExternalLink className="size-2.5" />
-      {alg.source}
+      {alg.source ?? "Source"}
     </a>
   );
 }
