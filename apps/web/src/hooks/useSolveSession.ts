@@ -6,6 +6,7 @@ import type { TimerState, Penalty, SolveMethod } from "@/types";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
+import { hapticStart, hapticStop } from "@/utils/haptics";
 import { preferencesStore, orientationStore } from "@cubeforge/state";
 import {
   StackmatAdapter,
@@ -803,6 +804,8 @@ export function useSolveSession(
       // running. realCubeStateRef tracks all moves from connect, so this
       // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
+        // Subtle tactile pulse when the solve starts (touch regime only).
+        hapticStart();
         // Replay ALL pending first solve moves that arrived during the
         // IDLE race window (if any). The move subscriber already took a
         // pre-apply snapshot for them (after undoing the buffered moves'
@@ -822,6 +825,8 @@ export function useSolveSession(
     });
     const sub2 = engine.tick$.subscribe((t) => setTime(t));
     const sub3 = engine.stop$.subscribe((ev) => {
+      // Short double-tap when the solve is finalized (touch regime only).
+      hapticStop();
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
       lastSolveMovesRef.current = [...collectedMovesRef.current];

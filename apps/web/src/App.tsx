@@ -28,6 +28,7 @@ import { preferencesStore } from "@cubeforge/state";
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { globalAudioSystem } from "@/utils/audioSystem";
+import { hapticCelebrate } from "@/utils/haptics";
 import {
   generateScrambleFor,
   puzzleCategoryToType,
@@ -194,6 +195,7 @@ export default function App() {
 
       const pbResult = detectPbMilestones(solvesRef.current, time, penalty, puzzleCategoryToType(puzzle));
       if (pbResult.types.length > 0) {
+        hapticCelebrate();
         if (pbCelebrationAudio) {
           globalAudioSystem.playPbFanfare(pbResult.types);
         }

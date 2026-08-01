@@ -3,6 +3,7 @@
 import { motion, LayoutGroup } from "framer-motion";
 import { Timer, Dumbbell, BookOpen, BarChart3, Network, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hapticTap } from "@/utils/haptics";
 import { ACTIVE_PILL_SPRING } from "./sidebar.constants";
 import type { ViewId } from "./sidebar.constants";
 
@@ -63,7 +64,10 @@ export function MobileTabBar({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onNavigate(tab.id)}
+                onClick={() => {
+                  hapticTap();
+                  onNavigate(tab.id);
+                }}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={tab.label}
                 className={cn(
@@ -89,7 +93,10 @@ export function MobileTabBar({
           {/* More — opens the touch sheet (Settings, Widgets, theme, cube…) */}
           <button
             type="button"
-            onClick={onOpenMore}
+            onClick={() => {
+              hapticTap();
+              onOpenMore?.();
+            }}
             aria-label="More options"
             className={cn(
               "relative flex min-h-11 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md text-[0.58rem] font-medium text-ink-3 transition-colors select-none outline-none hover:text-ink-2 focus-visible:ring-1 focus-visible:ring-ring",

@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hapticTap } from "@/utils/haptics";
 
 export interface TouchPanelProps {
   open: boolean;
@@ -22,6 +24,11 @@ export interface TouchPanelProps {
  * `lg:hidden` as a safety net.
  */
 export function TouchPanel({ open, onOpenChange, title, children, className }: TouchPanelProps) {
+  // Light tap when the sheet opens (touch regime only).
+  useEffect(() => {
+    if (open) hapticTap();
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open && (

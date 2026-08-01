@@ -266,6 +266,10 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Kill the grey flash on tap in mobile Chrome/Android and let the
+       app's own pressed states (not the UA highlight) own the feedback.
+       Desktop is unaffected (no touch highlight is ever painted). */
+    -webkit-tap-highlight-color: transparent;
     /* DMZ cursor pack — coherent arrow everywhere, not just on elements
        with an explicit cursor-* class (the OS default can render as a
        white, borderless arrow that vanishes on the light canvas). */
@@ -397,6 +401,21 @@ input[type="image"],
 }
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
+}
+
+/* Touch regime (<1024px): keep overscroll/rubber-banding from pulling the
+   page past its edge (which fights the bottom tab bar and fixed sheets) and
+   prevent double-tap-to-zoom delays on buttons. Desktop: untouched. */
+@media (max-width: 1023px) {
+  html,
+  body {
+    overscroll-behavior-y: contain;
+  }
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
 }
 
 /* ── Widget mount & expansion animations ────────────────────────────────

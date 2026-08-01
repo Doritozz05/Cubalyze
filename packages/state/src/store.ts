@@ -113,6 +113,10 @@ export interface PreferencesState {
   /** When enabled, clicking the timer area starts/stops the timer (like spacebar). Default OFF. */
   clickToStart: boolean;
   setClickToStart: (value: boolean) => void;
+
+  /** Optional haptic feedback (navigator.vibrate) on the touch regime. Default ON. */
+  haptics: boolean;
+  setHaptics: (value: boolean) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -203,6 +207,9 @@ export const createPreferencesStore = () => {
 
         clickToStart: false,
         setClickToStart: (value) => set({ clickToStart: value }),
+
+        haptics: true,
+        setHaptics: (value) => set({ haptics: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -228,6 +235,7 @@ export const createPreferencesStore = () => {
           timePrecision: state.timePrecision,
           inputMode: state.inputMode,
           clickToStart: state.clickToStart,
+          haptics: state.haptics,
         }),
         version: 1,
       },

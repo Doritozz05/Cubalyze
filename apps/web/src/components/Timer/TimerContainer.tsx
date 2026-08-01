@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { hapticTap } from "@/utils/haptics";
 import { TimerDisplay } from "./TimerDisplay";
 import { PbCelebrationBanner } from "./PbCelebrationBanner";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
@@ -215,6 +216,7 @@ export function TimerContainer({
           <button
             type="button"
             onClick={() => {
+              hapticTap();
               const next: Penalty = lastSolve.penalty === "none" ? "+2" : lastSolve.penalty === "+2" ? "none" : "+2";
               onUpdatePenalty(lastSolve.id, next);
             }}
@@ -233,6 +235,7 @@ export function TimerContainer({
           <button
             type="button"
             onClick={() => {
+              hapticTap();
               const next: Penalty = lastSolve.penalty === "DNF" ? "none" : "DNF";
               onUpdatePenalty(lastSolve.id, next);
             }}
