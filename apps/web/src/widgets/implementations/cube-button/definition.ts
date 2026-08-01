@@ -14,7 +14,7 @@ export const cubeButtonDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: true,
+  defaultActive: false,
   defaultPosition: { ...CUBE_BUTTON_SENTINEL },
   defaultMinimized: false,
   tags: ["3d", "launcher", "button", "smart", "cube"],
