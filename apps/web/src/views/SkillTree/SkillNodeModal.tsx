@@ -60,7 +60,7 @@ export function SkillNodeModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="max-w-xl bg-surface text-ink border-line rounded-xl p-6 shadow-2xl space-y-4"
+        className="max-w-xl bg-surface text-ink border-line rounded-xl p-6 shadow-2xl space-y-4 max-lg:max-h-[85vh] max-lg:overflow-y-auto max-lg:pb-safe"
       >
         {/* Header */}
         <DialogHeader className="space-y-1 text-left pr-8">

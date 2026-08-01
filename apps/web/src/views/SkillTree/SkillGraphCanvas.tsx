@@ -100,6 +100,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useIsTouch } from "@/hooks/use-mobile";
 import type { SkillNode } from "./skillTreeData";
 
 interface SkillGraphCanvasProps {
@@ -215,6 +216,8 @@ export function SkillGraphCanvas({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
+  const isTouch = useIsTouch();
+  const didInitTouchView = useRef(false);
 
   // Quick lookup map for nodes
   const nodeMap = useMemo(() => {
@@ -387,6 +390,23 @@ export function SkillGraphCanvas({
     };
   }, [pan.x, pan.y, zoom]);
 
+  // Touch: start at 0.6x zoom, centered on the root node (mount-only)
+  useEffect(() => {
+    if (!isTouch || didInitTouchView.current) return;
+    const container = containerRef.current;
+    const root = nodes.find((n) => n.prerequisites.length === 0) ?? nodes[0];
+    if (!container || !root) return;
+    didInitTouchView.current = true;
+    const scale = 0.6;
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    setZoom(scale);
+    setPan({
+      x: cw / 2 - (root.x + 34) * scale,
+      y: ch / 2 - (root.y + 34) * scale,
+    });
+  }, [isTouch, nodes]);
+
   // Mouse Pan controls
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
@@ -416,11 +436,11 @@ export function SkillGraphCanvas({
       <div className="absolute inset-0 bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-size-[24px_24px] opacity-35 pointer-events-none" />
 
       {/* Floating Viewport Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono max-lg:top-auto max-lg:bottom-4">
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink"
+          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9"
           onClick={() => handleZoom(0.15)}
           title="Zoom in"
         >
@@ -429,7 +449,7 @@ export function SkillGraphCanvas({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink"
+          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9"
           onClick={() => handleZoom(-0.15)}
           title="Zoom out"
         >
@@ -439,7 +459,7 @@ export function SkillGraphCanvas({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink"
+          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9"
           onClick={resetView}
           title="Reset view"
         >
@@ -558,13 +578,14 @@ export function SkillGraphCanvas({
                     </div>
                   )}
 
-                  {/* Hover Quick Toggle Action for accessible nodes */}
+                  {/* Hover Quick Toggle Action for accessible nodes (desktop only; touch uses overlay checks below) */}
                   {onToggleComplete && !isLocked && (
                     <button
                       onClick={(e) => onToggleComplete(node.id, e)}
                       title={isCompleted ? "Mark as accessible" : "Mark as completed"}
                       className={cn(
                         "absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-surface border border-ink flex items-center justify-center text-ink opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ink hover:text-surface shadow-md",
+                        "max-lg:hidden",
                       )}
                     >
                       <Check className="w-3 h-3 stroke-3" />
@@ -596,8 +617,34 @@ export function SkillGraphCanvas({
         </div>
       </div>
 
+      {/* Touch: always-visible ≥36px complete checks, rendered OUTSIDE the scaled canvas so real size stays 36px */}
+      {isTouch && (
+        <div className="pointer-events-none absolute inset-0 z-10">
+          {nodes.map((node) => {
+            if (!onToggleComplete || node.status === "locked") return null;
+            const isCompleted = node.status === "completed";
+            return (
+              <button
+                key={`touch-check-${node.id}`}
+                onClick={(e) => onToggleComplete(node.id, e)}
+                title={isCompleted ? "Mark as accessible" : "Mark as completed"}
+                aria-label={isCompleted ? "Mark as accessible" : "Mark as completed"}
+                style={{
+                  // 61 = node corner (68) + 4px offset − half of the original 22px button
+                  left: pan.x + (node.x + 61) * zoom,
+                  top: pan.y + (node.y + 61) * zoom,
+                }}
+                className="pointer-events-auto absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink bg-surface text-ink shadow-md transition-colors active:scale-90 hover:bg-ink hover:text-surface"
+              >
+                <Check className="size-4 stroke-[2.5]" />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Footer Info Legend */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm">
+      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
         <Info className="w-3.5 h-3.5 text-ink shrink-0" />
         <span>Click an accessible node for full explanations or to mark as completed</span>
       </div>
