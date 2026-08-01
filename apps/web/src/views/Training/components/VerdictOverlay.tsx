@@ -35,23 +35,25 @@ export function VerdictOverlay({
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 rounded-xl bg-surface/98"
     >
-      <span className="nums text-[2.5rem] sm:text-[3rem] font-bold text-ink tracking-tight">
+      {/* Touch: fluid clamp so the big numeral never overflows narrow screens. */}
+      <span className="nums text-[2.5rem] sm:text-[3rem] max-lg:text-[clamp(2rem,12vw,3rem)] font-bold text-ink tracking-tight">
         {timeDisplay}
       </span>
       <span className="nums text-[0.75rem] text-ink-3">
         TPS {tpsDisplay}
       </span>
-      <div className="flex gap-3 mt-2">
+      {/* Touch: full-width equal buttons; desktop keeps natural width. */}
+      <div className="flex gap-3 mt-2 max-lg:w-full max-lg:max-w-xs">
         <button
           onClick={onIncorrect}
-          className="inline-flex items-center gap-2 rounded-xl border-2 border-hold/30 bg-hold-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-hold hover:bg-hold-soft/60 hover:border-hold/50 transition-all"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-hold/30 bg-hold-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-hold hover:bg-hold-soft/60 hover:border-hold/50 transition-all max-lg:flex-1 max-lg:px-4 max-lg:h-12 max-lg:text-[0.8rem]"
         >
           <X className="size-5" />
           Incorrect
         </button>
         <button
           onClick={onCorrect}
-          className="inline-flex items-center gap-2 rounded-xl border-2 border-ready/30 bg-ready-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-ready hover:bg-ready-soft/60 hover:border-ready/50 transition-all"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-ready/30 bg-ready-soft/40 px-6 py-3 text-[0.85rem] font-semibold text-ready hover:bg-ready-soft/60 hover:border-ready/50 transition-all max-lg:flex-1 max-lg:px-4 max-lg:h-12 max-lg:text-[0.8rem]"
         >
           <Check className="size-5" />
           Correct

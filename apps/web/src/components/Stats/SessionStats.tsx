@@ -77,10 +77,11 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                 <button
                   type="button"
                   onClick={() => setIsMinimized(false)}
-                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  // Touch: bigger restore pill for thumb use.
+                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-9"
                   aria-label="Restore Session Stats"
                 >
-                  <ChevronUp className="size-4" />
+                  <ChevronUp className="size-4 max-lg:size-5" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Show stats</TooltipContent>
@@ -135,16 +136,20 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                       key={c.label}
                       className={cn(
                         "flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-3 sm:px-3",
+                        // Touch: slightly tighter rows but larger numerals so the
+                        // strip stays readable at a glance. Desktop unchanged.
+                        "max-lg:gap-0.5 max-lg:px-1.5 max-lg:py-2.5",
                         i !== 0 && "border-l border-line",
                         c.accent && "bg-ready-soft/40",
                       )}
                     >
-                      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+                      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3 max-lg:text-[0.62rem]">
                         {c.label}
                       </span>
                       <span
                         className={cn(
                           "nums text-sm tabular-nums text-ink sm:text-[0.95rem]",
+                          "max-lg:text-base",
                           c.accent && "text-ready",
                         )}
                       >
@@ -164,10 +169,11 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                           e.stopPropagation();
                           setIsMinimized(true);
                         }}
-                        className="flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      // Touch: bigger hit area for thumb use.
+                      className="flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-7"
                         aria-label="Minimize Stats"
                       >
-                        <ChevronDown className="size-3" />
+                        <ChevronDown className="size-3 max-lg:size-4" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">Minimize stats</TooltipContent>

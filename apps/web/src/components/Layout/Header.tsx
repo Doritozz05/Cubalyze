@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, History, Pencil, Trash2, Check, X, Menu } from "lucide-react";
+import { Plus, History, Pencil, Trash2, Check, X } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
@@ -101,8 +101,6 @@ export interface HeaderProps {
   onRenameSession?: (id: string, name: string) => void;
   /** Delete a session entirely. */
   onDeleteSession?: (id: string) => void;
-  /** Toggle the mobile nav sheet. */
-  onToggleMobileNav?: () => void;
   /** Open the manual solve entry sheet (the "+" button). */
   onAddManual?: () => void;
   /** Currently selected puzzle category. */
@@ -127,7 +125,6 @@ export function Header({
   onNewSession,
   onRenameSession,
   onDeleteSession,
-  onToggleMobileNav,
   onAddManual,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
@@ -165,28 +162,24 @@ export function Header({
       exit={{ y: "-100%", opacity: 0 }}
       transition={SIDEBAR_MOTION.panel}
       className={cn(
-        "fixed inset-x-0 md:left-14 top-0 z-20 h-14 border-b bg-surface transition-[border-color,box-shadow] duration-200",
+        // `lg:left-14` keeps the desktop header aligned with the rail.
+        // Below 1024px the header spans the full width (touch regime).
+        // On iOS with viewport-fit=cover the header grows by the top safe-area
+        // so its content never hides under the status bar (desktop: h-14).
+        "fixed inset-x-0 lg:left-14 top-0 z-20 border-b bg-surface transition-[border-color,box-shadow] duration-200",
+        "max-lg:h-[calc(3.5rem+env(safe-area-inset-top))] lg:h-14",
         isDockZoneActive
           ? "border-ink-2/40 shadow-xs"
           : "border-line",
         className,
       )}
     >
-      <div className="mx-auto flex h-full w-full items-center justify-between px-4 sm:px-6">
-        {/* Left: mobile nav trigger + Smart Cube battery indicator */}
+      {/* pt-safe pushes content below the notch/status bar on iOS; it is
+          0 everywhere else, so desktop layout is identical. */}
+      <div className="mx-auto flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6">
+        {/* Left: Smart Cube battery indicator (the hamburger is replaced by
+            the bottom tab bar's "More" button in the touch regime) */}
         <div className="flex items-center gap-2.5">
-          {onToggleMobileNav && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleMobileNav}
-              className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink md:hidden"
-              aria-label="Open navigation"
-            >
-              <Menu className="size-4" />
-            </Button>
-          )}
-
           {/* Battery % chip — only shown when a Smart Cube is connected */}
           {isCubeConnected && (
             <Tooltip>
@@ -243,10 +236,12 @@ export function Header({
                   aria-label="Switch session"
                 >
                   <History className="size-3.5 text-ink-3" />
-                  <span className="nums max-w-28 truncate">
+                  {/* Session name is hidden on touch to keep the header compact;
+                      the count stays as the identity hint. */}
+                  <span className="nums max-w-28 truncate max-lg:hidden">
                     {active?.name ?? "Session"}
                   </span>
-                  <span className="text-ink-3">·</span>
+                  <span className="text-ink-3 max-lg:hidden">·</span>
                   <span className="nums text-ink-3">{sessionCount ?? 0}</span>
                 </Button>
               </DropdownMenuTrigger>
@@ -347,7 +342,7 @@ export function Header({
               size="sm"
               // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`
               // so the chip matches the sibling PB / session chips in dark mode.
-              className="w-30 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
+              className="w-30 max-lg:w-24 gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
               aria-label="Puzzle category"
             >
               <SelectValue />

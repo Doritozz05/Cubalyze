@@ -39,7 +39,9 @@ export const CaseGrid = memo(function CaseGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3.5",
+        // Touch (<1024px): always 2 compact columns; desktop keeps its
+        // lg/xl column counts untouched.
+        "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 max-lg:grid-cols-2 gap-3.5 max-lg:gap-3",
         className,
       )}
     >
@@ -81,15 +83,17 @@ function CaseCard({
       onClick={onClick}
       className={cn(
         "group relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-all duration-150 text-left w-full",
+        // Touch: compact cards so 2 columns fit on 360px screens.
+        "max-lg:p-2.5 max-lg:gap-1.5",
         isSelected
           ? "border-ink/30 bg-surface-2 ring-1 ring-ink/20 shadow-xs"
           : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2/60",
       )}
     >
       {/* Diagram — supports 3D isometric & 2D top diagrams */}
-      <div className="flex items-center justify-center w-full min-h-35 pt-1">
+      <div className="flex items-center justify-center w-full min-h-35 max-lg:min-h-30 pt-1">
         {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
-          <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44" />
+          <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44 max-lg:max-w-36" />
         ) : caseData.diagramType === "2d-top" && caseData.diagram2D ? (
           caseData.puzzleType === '2x2x2' ? (
             <Case2x2Diagram
@@ -111,7 +115,7 @@ function CaseCard({
             />
           )
         ) : caseData.setupScramble ? (
-          <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44" />
+          <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44 max-lg:max-w-36" />
         ) : (
           <div className="w-36 h-36 flex items-center justify-center rounded-lg bg-surface-2">
             <span className="text-ink-3/40 text-[0.65rem]">No diagram</span>

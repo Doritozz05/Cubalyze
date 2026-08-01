@@ -16,6 +16,7 @@ import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import {
   TrainingBreadcrumb,
+  TouchAside,
 } from "./components";
 import {
   Target,
@@ -267,13 +268,13 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
           </div>
 
           {/* Mode tabs */}
-          <div className="flex gap-1 flex-wrap items-center">
+          <div className="flex gap-1 flex-wrap items-center max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:snap-x max-lg:pb-1">
             {SOLVE_MODES.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => setSolveMode(mode.id)}
                 className={cn(
-                  "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
+                  "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:shrink-0 max-lg:px-3.5",
                   solveMode === mode.id
                     ? "bg-ink text-surface"
                     : "text-ink-3 hover:text-ink hover:bg-surface-2",
@@ -610,7 +611,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             </div>
 
             {/* Right: phase detail panel */}
-            <aside className="min-h-0 lg:w-64 lg:shrink-0 flex flex-col gap-3">
+            <TouchAside title="Targets" className="min-h-0 lg:w-64 lg:shrink-0 flex flex-col gap-3">
               {/* Mini 3D Cube */}
               {hasSmartCube && (
                 <MiniCube3DPanel className="shrink-0" />
@@ -654,7 +655,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                   </div>
                 </div>
               </div>
-            </aside>
+            </TouchAside>
           </div>
         </div>
       </div>

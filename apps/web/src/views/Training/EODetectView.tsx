@@ -8,7 +8,7 @@ import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import { usePracticeSession, formatTime } from "@/hooks/usePracticeSession";
-import { TrainingBreadcrumb, VerdictOverlay, StatChip } from "./components";
+import { TrainingBreadcrumb, VerdictOverlay, StatChip, TouchAside } from "./components";
 import { Target, Clock, Flame, RotateCcw, Lightbulb, Eye } from "lucide-react";
 
 export interface EODetectViewProps {
@@ -71,7 +71,7 @@ export function EODetectView({ methodId, phaseId, phaseName, onBack }: EODetectV
             </div>
           </div>
 
-          <aside className="flex min-h-0 flex-col gap-4 lg:w-64 lg:shrink-0 overflow-hidden">
+          <TouchAside title="Stats & Tips">
             {hasSmartCube && <MiniCube3DPanel className="shrink-0" />}
             <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
               <div className="grid grid-cols-2 gap-2">
@@ -90,7 +90,7 @@ export function EODetectView({ methodId, phaseId, phaseName, onBack }: EODetectV
                 <li className="flex gap-2"><span className="text-caution/60 shrink-0 mt-0.5">•</span>Aim to identify in {'<'} 2 seconds</li>
               </ul>
             </div>
-          </aside>
+          </TouchAside>
         </div>
       </div>
     </div>

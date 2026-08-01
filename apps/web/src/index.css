@@ -389,6 +389,16 @@ input[type="image"],
   cursor: var(--cursor-not-allowed), not-allowed;
 }
 
+/* ── Safe-area helpers (iOS notch / home indicator) ─────────────────────
+   Used by the touch bottom tab bar and any touch sheet so content never
+   hides behind the device chrome. No effect on desktop (env() = 0). */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
 /* ── Widget mount & expansion animations ────────────────────────────────
    Uses independent `scale` and `opacity` so `transform: translate3d()` inline
    positioning is never overridden while providing a clean 100% flicker-free entry. */

@@ -155,7 +155,12 @@ export function TimerContainer({
       }
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        "group relative flex min-h-[clamp(280px,42vh,460px)] w-full flex-col items-center justify-center rounded-lg transition-all duration-300",
+        "group relative flex w-full flex-col items-center justify-center rounded-lg transition-all duration-300",
+        // Touch (<1024px): taller timer so the numbers dominate the stage and
+        // stay thumb-friendly. Desktop formula unchanged.
+        "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(340px,48vh,520px)]",
+        // Kill double-tap zoom delay on touch; no effect on mouse.
+        "touch-manipulation",
         !clickToStart && "cursor-default",
         clickToStart && "cursor-pointer",
         "outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -176,7 +181,7 @@ export function TimerContainer({
 
       {/* Floating PB Victory Banner */}
       {hasPbActive && (
-        <div className="absolute top-4 z-20 w-full max-w-sm px-4">
+        <div className="absolute top-4 z-20 w-full max-w-sm px-4 max-lg:max-w-[92vw]">
           <PbCelebrationBanner
             types={pbMilestone.types}
             singleTime={pbMilestone.singleTime}
@@ -203,7 +208,7 @@ export function TimerContainer({
       {/* Quick Penalty Action Bar for Last Solve (Only for solves completed in the current session) */}
       {lastTime !== null && lastSolve && onUpdatePenalty && (phase === "stopped" || phase === "idle") && (
         <div
-          className="mt-3 flex items-center gap-1 rounded-full border border-line/30 bg-surface-2/60 px-1.5 py-1 backdrop-blur-md shadow-2xs transition-all duration-200 z-10"
+          className="mt-3 flex items-center gap-1 rounded-full border border-line/30 bg-surface-2/60 px-1.5 py-1 backdrop-blur-md shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -214,7 +219,8 @@ export function TimerContainer({
               onUpdatePenalty(lastSolve.id, next);
             }}
             className={cn(
-              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none",
+              // Touch: bigger, thumb-friendly penalty pills.
+              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
               lastSolve.penalty === "+2"
                 ? "bg-plus2-soft text-plus2 font-bold ring-1 ring-plus2/30"
                 : "text-ink-3 hover:bg-surface-3 hover:text-ink",
@@ -231,7 +237,8 @@ export function TimerContainer({
               onUpdatePenalty(lastSolve.id, next);
             }}
             className={cn(
-              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none",
+              // Touch: bigger, thumb-friendly penalty pills.
+              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
               lastSolve.penalty === "DNF"
                 ? "bg-dnf-soft text-dnf font-bold ring-1 ring-dnf/30"
                 : "text-ink-3 hover:bg-surface-3 hover:text-ink",

@@ -13,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsTouch } from "@/hooks/use-mobile";
 import {
   COLLAPSED_WIDTH,
   EXPANDED_WIDTH,
@@ -59,7 +59,9 @@ export function LeftSidebar({
   sessionName,
   onImportSolves,
 }: LeftSidebarProps) {
-  const isMobile = useIsMobile();
+  // Touch regime (mobile + tablet <1024px) renders the Sheet variant.
+  // Desktop (>=1024px) keeps the hover-to-expand rail untouched.
+  const isTouch = useIsTouch();
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
@@ -76,9 +78,9 @@ export function LeftSidebar({
 
   const isDark = mounted && resolvedTheme === "dark";
   // Labels/titles are visible whenever the rail is expanded: on hover (desktop)
-  // or always (the mobile sheet has a fixed wide width). This also fixes a
+  // or always (the touch sheet has a fixed wide width). This also fixes a
   // pre-existing issue where the mobile sheet showed icon-only items.
-  const labelVisible = isMobile || isHovered;
+  const labelVisible = isTouch || isHovered;
 
   /**
    * Guards the hover-to-expand behaviour against synthetic mouse events.
@@ -102,7 +104,7 @@ export function LeftSidebar({
    *    the rail and we are outside the suppression window.
    */
   useEffect(() => {
-    if (isMobile) return;
+    if (isTouch) return;
 
     const clearHoverTimer = () => {
       if (hoverTimer.current) {
@@ -131,7 +133,7 @@ export function LeftSidebar({
       window.removeEventListener("focus", handleWindowFocus);
       clearHoverTimer();
     };
-  }, [isMobile]);
+  }, [isTouch]);
 
   const handleMouseEnter = useCallback(() => {
     // Suppress hover if a native dialog (e.g. Web Bluetooth) just closed.
@@ -243,8 +245,9 @@ export function LeftSidebar({
     </>
   );
 
-  // Mobile: render as Sheet (trigger rendered in header)
-  if (isMobile) {
+  // Touch (mobile + tablet): render as Sheet (opened from the bottom tab bar's
+  // "More" button, or the header hamburger on older builds).
+  if (isTouch) {
     return (
       <>
         <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>

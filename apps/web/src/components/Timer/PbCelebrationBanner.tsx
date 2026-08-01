@@ -47,6 +47,8 @@ export function PbCelebrationBanner({
     <div
       className={cn(
         "relative flex flex-col items-center justify-center gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 shadow-lg transition-all duration-200 animate-in fade-in slide-in-from-top-2",
+        // Touch: tighter gutters so 3 badges fit the narrow stage width.
+        "max-lg:gap-2 max-lg:px-3 max-lg:py-2.5",
         className,
       )}
     >
@@ -73,13 +75,10 @@ export function PbCelebrationBanner({
         </button>
       </div>
 
-      {/* Monochromatic badges for achieved categories */}
-      <div className="flex flex-wrap items-center justify-center gap-2 w-full pt-0.5">
+      {/* Monochromatic badges for achieved categories */}          <div className="flex flex-wrap items-center justify-center gap-2 w-full pt-0.5 max-lg:gap-1.5">
         {types.includes("Single") && singleTime != null && (
           <Badge
-            variant="outline"
-            className="border-line bg-surface-2 text-ink px-2.5 py-1 text-xs font-mono font-medium gap-1.5 shadow-none"
-          >
+            variant="outline"            className="border-line bg-surface-2 text-ink px-2.5 py-1 text-xs font-mono font-medium gap-1.5 shadow-none max-lg:px-2 max-lg:py-0.5 max-lg:text-[0.7rem]">
             <span className="font-semibold text-[0.62rem] tracking-wider uppercase text-ink-3 font-sans">Single</span>
             <span className="text-ink">{formatTime(singleTime)}</span>
             {prevSingleTime != null && prevSingleTime > singleTime && (
@@ -93,9 +92,7 @@ export function PbCelebrationBanner({
 
         {types.includes("Ao5") && ao5Time != null && (
           <Badge
-            variant="outline"
-            className="border-line bg-surface-2 text-ink px-2.5 py-1 text-xs font-mono font-medium gap-1.5 shadow-none"
-          >
+            variant="outline"            className="border-line bg-surface-2 text-ink px-2.5 py-1 text-xs font-mono font-medium gap-1.5 shadow-none max-lg:px-2 max-lg:py-0.5 max-lg:text-[0.7rem]">
             <span className="font-semibold text-[0.62rem] tracking-wider uppercase text-ink-3 font-sans">Ao5</span>
             <span className="text-ink">{formatTime(ao5Time)}</span>
             {prevAo5Time != null && prevAo5Time > ao5Time && (
@@ -109,9 +106,7 @@ export function PbCelebrationBanner({
 
         {types.includes("Ao12") && ao12Time != null && (
           <Badge
-            variant="outline"
-            className="border-line bg-surface-2 text-ink px-2.5 py-1 text-xs font-mono font-medium gap-1.5 shadow-none"
-          >
+            variant="outline"            className="border-line bg-surface-2 text-ink px-2.5 py-1 text-xs font-mono font-medium gap-1.5 shadow-none max-lg:px-2 max-lg:py-0.5 max-lg:text-[0.7rem]">
             <span className="font-semibold text-[0.62rem] tracking-wider uppercase text-ink-3 font-sans">Ao12</span>
             <span className="text-ink">{formatTime(ao12Time)}</span>
             {prevAo12Time != null && prevAo12Time > ao12Time && (

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "zustand";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
+import { MobileTabBar } from "@/components/Layout/MobileTabBar";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
@@ -22,6 +23,7 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
+import { useIsTouch } from "@/hooks/use-mobile";
 import { preferencesStore } from "@cubeforge/state";
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
@@ -50,6 +52,9 @@ registerAllWidgets();
 import "@/index.css";
 
 export default function App() {
+  // Touch regime (<1024px, mobile + tablet): bottom tab bar + top toasts.
+  const isTouch = useIsTouch();
+
   const {
     session,
     sessions,
@@ -730,10 +735,22 @@ export default function App() {
             />
           }
           isFocused={isFocused}
-          onToggleMobileNav={() => setMobileNavOpen((a) => !a)}
           onAddManual={() => setManualOpen(true)}
           main={renderMain()}
         />
+
+        {/* Bottom tab bar — touch regime only (mobile + tablet <1024px).
+            `lg:hidden` keeps the desktop rail layout pixel-identical. The
+            "More" button opens the same navigation sheet that the old
+            hamburger used to (LeftSidebar renders its Sheet variant on
+            touch). Hidden in focus mode, like the rest of the chrome. */}
+        {!isFocused && (
+          <MobileTabBar
+            activeView={activeView}
+            onNavigate={handleNavigate}
+            onOpenMore={() => setMobileNavOpen(true)}
+          />
+        )}
 
         {/* Manual solve sheet — mounted at App level (opened from the
             Header "+" button). A manual entry is a session action, not an
@@ -778,7 +795,13 @@ export default function App() {
           />
         )}
 
-        <Toaster position="bottom-center" richColors={false} />
+        <Toaster
+          // On touch, toasts float at the top so they never collide with the
+          // fixed bottom tab bar (or the mobile Times bottom sheet). Desktop
+          // keeps the bottom-center position unchanged.
+          position={isTouch ? "top-center" : "bottom-center"}
+          richColors={false}
+        />
       </ThemeProvider>
     </div>
   );

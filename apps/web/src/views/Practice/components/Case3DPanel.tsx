@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { X, Plus } from "lucide-react";
+import { X, ChevronLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Case3DDiagram } from "./Case3DDiagram";
 import { AlgorithmEditorDialog } from "./AlgorithmEditorDialog";
@@ -31,6 +31,11 @@ export interface Case3DPanelProps {
   onClose: () => void;
   onPracticeCase?: (subsetId: string, caseId: string) => void;
   className?: string;
+  /**
+   * 'panel' = desktop side panel (>=1024px). 'overlay' = touch full-screen
+   * sheet (<1024px) with a back button + sticky bottom CTA.
+   */
+  variant?: "panel" | "overlay";
 }
 
 const SLOT_LABELS = [
@@ -46,6 +51,7 @@ export function Case3DPanel({
   onClose,
   onPracticeCase,
   className,
+  variant = "panel",
 }: Case3DPanelProps) {
   // ── Algorithms from hook (seed + custom, ordered) ──────────────────
   const { algorithms, primaryAlgorithm } = useCaseAlgorithms(caseData.id);
@@ -144,14 +150,24 @@ export function Case3DPanel({
   return (
     <>
       <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
-        {/* Header */}
+        {/* Header — overlay variant swaps X for a back button (touch) */}
         <div className="flex items-center justify-between shrink-0 px-4 py-3 border-b border-line">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {variant === "overlay" && (
+              <button
+                onClick={onClose}
+                className="flex h-10 shrink-0 items-center gap-1 rounded-lg px-2 -ml-2 text-[0.72rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors touch-manipulation"
+                aria-label="Back to cases"
+              >
+                <ChevronLeft className="size-4" />
+                Back
+              </button>
+            )}
             <span className="nums text-[0.85rem] font-semibold text-ink">
               {caseData.caseNumber}
             </span>
             {caseData.name && caseData.name !== caseData.caseNumber && (
-              <span className="text-[0.75rem] text-ink-2">
+              <span className="text-[0.75rem] text-ink-2 truncate">
                 {caseData.name}
               </span>
             )}
@@ -163,13 +179,15 @@ export function Case3DPanel({
                 </span>
               )}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-            aria-label="Close"
-          >
-            <X className="size-4" />
-          </button>
+          {variant !== "overlay" && (
+            <button
+              onClick={onClose}
+              className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
+              aria-label="Close"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
 
         {/* Scrollable body */}
@@ -254,8 +272,8 @@ export function Case3DPanel({
             </DndContext>
           </div>
 
-          {/* Practice button */}
-          {onPracticeCase && (
+          {/* Practice button — inline in panel variant only */}
+          {onPracticeCase && variant !== "overlay" && (
             <button
               onClick={() =>
                 onPracticeCase(caseData.subsetId, caseData.id)
@@ -266,6 +284,20 @@ export function Case3DPanel({
             </button>
           )}
         </div>
+
+        {/* Overlay footer: sticky practice CTA (touch only) */}
+        {variant === "overlay" && onPracticeCase && (
+          <div className="shrink-0 border-t border-line bg-surface px-4 py-3 pb-safe">
+            <button
+              onClick={() =>
+                onPracticeCase(caseData.subsetId, caseData.id)
+              }
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-ink text-[0.8rem] font-semibold text-surface hover:bg-ink/90 transition-colors touch-manipulation"
+            >
+              Practice this case
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Algorithm Editor Dialog */}

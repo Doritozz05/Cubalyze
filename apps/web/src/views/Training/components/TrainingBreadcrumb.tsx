@@ -37,9 +37,10 @@ export function TrainingBreadcrumb({
     <div className="flex items-center gap-3">
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0"
+        // Touch: bigger back target for thumb use.
+        className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0 max-lg:h-10 max-lg:px-2 max-lg:-ml-2 max-lg:rounded-lg max-lg:hover:bg-surface-2"
       >
-        <ArrowLeft className="size-3" />
+        <ArrowLeft className="size-3 max-lg:size-4" />
         {backLabel}
       </button>
       {segments.map((seg, i) => (

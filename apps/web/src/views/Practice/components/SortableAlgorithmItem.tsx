@@ -54,7 +54,8 @@ export function SortableAlgorithmItem({
       style={style}
       onClick={onSelect}
       className={cn(
-        "group flex gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors relative",
+        // Touch (<1024px): taller rows for thumb targets.
+        "group flex gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors relative max-lg:p-3",
         isSelected
           ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"
           : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2/60",
@@ -65,11 +66,11 @@ export function SortableAlgorithmItem({
       <button
         {...attributes}
         {...listeners}
-        className="shrink-0 grid place-items-center self-start mt-0.5 text-ink-3/30 hover:text-ink-2 transition-colors cursor-grab active:cursor-grabbing touch-none"
+        className="shrink-0 grid place-items-center self-start mt-0.5 text-ink-3/30 hover:text-ink-2 transition-colors cursor-grab active:cursor-grabbing touch-none max-lg:size-9 max-lg:mt-0 max-lg:rounded-md max-lg:hover:bg-surface-2"
         aria-label="Drag to reorder"
         onClick={(e) => e.stopPropagation()}
       >
-        <GripVertical className="size-3.5" />
+        <GripVertical className="size-3.5 max-lg:size-4" />
       </button>
 
       {/* Content */}
@@ -101,26 +102,29 @@ export function SortableAlgorithmItem({
           )}
 
           {isCustom && (
-            <span className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            // Touch: edit/delete always visible (no hover-only) + larger targets.
+            <span className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity max-lg:opacity-100 max-lg:gap-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit();
                 }}
-                className="grid size-4 place-items-center rounded text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors"
+                className="grid size-4 place-items-center rounded text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors max-lg:size-9"
                 title="Edit algorithm"
+                aria-label="Edit algorithm"
               >
-                <Pencil className="size-2.5" />
+                <Pencil className="size-2.5 max-lg:size-3.5" />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="grid size-4 place-items-center rounded text-ink-3 hover:text-dnf hover:bg-dnf/5 transition-colors"
+                className="grid size-4 place-items-center rounded text-ink-3 hover:text-dnf hover:bg-dnf/5 transition-colors max-lg:size-9"
                 title="Delete algorithm"
+                aria-label="Delete algorithm"
               >
-                <Trash2 className="size-2.5" />
+                <Trash2 className="size-2.5 max-lg:size-3.5" />
               </button>
             </span>
           )}
