@@ -66,22 +66,21 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
         {isMinimized ? (
           <motion.div
             key="minimized-pill"
-            initial={{ opacity: 0, y: -6, scale: 0.95 }}
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="flex justify-center"
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.18 }}
+            className="flex justify-center py-0.5"
           >
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   onClick={() => setIsMinimized(false)}
-                  className="group flex items-center gap-1.5 rounded-full border border-line/60 bg-surface/70 px-3 py-1 text-xs text-ink-3 shadow-xs hover:border-line hover:bg-surface hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label="Restore Session Stats"
                 >
-                  <ChevronUp className="size-3.5 text-ink-3 group-hover:text-ink transition-colors" />
-                  <span className="text-[0.7rem] font-medium tracking-wide">Stats</span>
+                  <ChevronUp className="size-4" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Show stats</TooltipContent>
@@ -94,26 +93,8 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="group/stats relative w-full"
+            className="relative w-full"
           >
-            {/* Subtle Minimize Button positioned on the top right / floating tab */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMinimized(true);
-                  }}
-                  className="absolute -top-2.5 right-3 z-10 flex size-5 items-center justify-center rounded-full border border-line/60 bg-surface text-ink-3 opacity-0 group-hover/stats:opacity-100 focus-visible:opacity-100 hover:border-line hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer shadow-xs"
-                  aria-label="Minimize Stats"
-                >
-                  <ChevronDown className="size-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Minimize stats</TooltipContent>
-            </Tooltip>
-
             <div className="flex flex-col gap-2">
               {bpaWpa != null && (
                 <div className="flex items-center justify-center gap-3 text-[0.68rem] text-ink-3">
@@ -127,49 +108,71 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                 </div>
               )}
 
-              <div
-                className={cn(
-                  "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
-                  interactive &&
-                    "cursor-pointer hover:border-ink-2/40 focus-visible:border-ink-2 focus-visible:outline-none",
-                  className,
-                )}
-                onClick={interactive ? onExpand : undefined}
-                onKeyDown={
-                  interactive
-                    ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          onExpand();
+              <div className="relative w-full">
+                <div
+                  className={cn(
+                    "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
+                    interactive &&
+                      "cursor-pointer hover:border-ink-2/40 focus-visible:border-ink-2 focus-visible:outline-none",
+                    className,
+                  )}
+                  onClick={interactive ? onExpand : undefined}
+                  onKeyDown={
+                    interactive
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onExpand();
+                          }
                         }
-                      }
-                    : undefined
-                }
-                role={interactive ? "button" : undefined}
-                tabIndex={interactive ? 0 : undefined}
-              >
-                {cells.map((c, i) => (
-                  <div
-                    key={c.label}
-                    className={cn(
-                      "flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-3 sm:px-3",
-                      i !== 0 && "border-l border-line",
-                      c.accent && "bg-ready-soft/40",
-                    )}
-                  >
-                    <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
-                      {c.label}
-                    </span>
-                    <span
+                      : undefined
+                  }
+                  role={interactive ? "button" : undefined}
+                  tabIndex={interactive ? 0 : undefined}
+                >
+                  {cells.map((c, i) => (
+                    <div
+                      key={c.label}
                       className={cn(
-                        "nums text-sm tabular-nums text-ink sm:text-[0.95rem]",
-                        c.accent && "text-ready",
+                        "flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-3 sm:px-3",
+                        i !== 0 && "border-l border-line",
+                        c.accent && "bg-ready-soft/40",
                       )}
                     >
-                      {c.value}
-                    </span>
-                  </div>
-                ))}
+                      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+                        {c.label}
+                      </span>
+                      <span
+                        className={cn(
+                          "nums text-sm tabular-nums text-ink sm:text-[0.95rem]",
+                          c.accent && "text-ready",
+                        )}
+                      >
+                        {c.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Subtle Icon-Only Minimize Button in top right corner of stats panel */}
+                <div className="absolute right-1 top-1 z-10 pointer-events-auto">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsMinimized(true);
+                        }}
+                        className="flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        aria-label="Minimize Stats"
+                      >
+                        <ChevronDown className="size-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Minimize stats</TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
             </div>
           </motion.div>
