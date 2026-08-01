@@ -136,21 +136,23 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
           onPointerCancel={handlePointerUp}
         />
 
-        {/* Loading state overlay */}
+        {/* Loading state overlay — pointer-events-none so the canvas can still
+            receive pointer events during the initializing phase */}
         {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
-            <span className="text-xs text-ink-3/50 animate-pulse">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80">
+            <span className="text-xs text-ink-3/50 animate-pulse select-none">
               Initializing 3D Cube...
             </span>
           </div>
         )}
 
-        {/* Moves overlay at bottom — hidden when panel is too narrow */}
-        <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2 hidden @xs:block">
+        {/* Moves overlay at bottom — pointer-events-none so drags on the label
+            pass through to the canvas; hidden when the panel is too narrow */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2 hidden @xs:block">
           {recentMoves.length === 0 ? (
-            <p className="text-center text-[0.7rem] text-ink-3 italic">Waiting for cube...</p>
+            <p className="text-center text-[0.7rem] text-ink-3 italic select-none">Waiting for cube...</p>
           ) : (
-            <div className="flex justify-center gap-2 font-mono text-[0.8rem] font-semibold text-ink">
+            <div className="flex justify-center gap-2 font-mono text-[0.8rem] font-semibold text-ink select-none">
               {recentMoves.map((m, i) => (
                 <span key={i} className="animate-in fade-in slide-in-from-right-2">
                   {m}
