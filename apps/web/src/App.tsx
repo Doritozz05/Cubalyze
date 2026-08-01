@@ -697,6 +697,7 @@ export default function App() {
             holdDelay={spacebarHoldDelay}
             lastSolve={solves[0] ?? null}
             onUpdatePenalty={(id, pen) => updateSolve(id, { penalty: pen })}
+            onDeleteSolve={handleDelete}
             className="mt-1 flex-1"
           />
         )}

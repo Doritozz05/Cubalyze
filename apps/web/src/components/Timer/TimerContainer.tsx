@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
 import { TimerDisplay } from "./TimerDisplay";
@@ -48,6 +49,8 @@ export interface TimerContainerProps {
   lastSolve?: Solve | null;
   /** Callback to update penalty of a solve. */
   onUpdatePenalty?: (id: string, penalty: Penalty) => void;
+  /** Callback to delete a solve by id. */
+  onDeleteSolve?: (id: string) => void;
   className?: string;
 }
 
@@ -75,6 +78,7 @@ export function TimerContainer({
   holdDelay = 300,
   lastSolve,
   onUpdatePenalty,
+  onDeleteSolve,
   className,
 }: TimerContainerProps) {
   const isTouch = useIsTouch();
@@ -263,6 +267,24 @@ export function TimerContainer({
           >
             DNF
           </button>
+          {onDeleteSolve && (
+            <>
+              <div className="h-3 w-px bg-line/40" />
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  onDeleteSolve(lastSolve.id);
+                }}
+                className={cn(
+                  "h-6 px-2 rounded-full text-ink-3 hover:bg-dnf-soft hover:text-dnf transition-all duration-150 cursor-pointer outline-none select-none grid place-items-center max-lg:h-10 max-lg:px-3",
+                )}
+                title="Delete solve"
+              >
+                <Trash2 className="size-3.5 max-lg:size-4" />
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
