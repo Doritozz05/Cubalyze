@@ -549,7 +549,7 @@ export function CrossTrainerView({
                 </button>
               </div>
               {showOptimal ? (
-                <p className="font-mono text-[0.72rem] text-ink leading-relaxed break-words">
+                <p className="font-mono text-[0.72rem] text-ink leading-relaxed wrap-break-word">
                   {cross.optimalSolution || "—"}
                 </p>
               ) : (

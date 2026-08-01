@@ -321,7 +321,7 @@ export function AlgorithmEditorDialog({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 420, opacity: 0 }}
             transition={{ type: "spring", stiffness: 360, damping: 32 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-[420px] flex-col border-l border-line bg-canvas shadow-2xl"
+            className="fixed right-0 top-0 z-50 flex h-screen w-105 flex-col border-l border-line bg-canvas shadow-2xl"
             aria-label={
               existingAlgorithm ? "Edit algorithm" : "Add custom algorithm"
             }
@@ -477,7 +477,7 @@ export function AlgorithmEditorDialog({
                   value={notation}
                   onChange={(e) => setNotation(e.target.value)}
                   placeholder="e.g. R U R' U' R' F R2 U' R' U' R U R' F'"
-                  className="min-h-[72px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2.5 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
+                  className="min-h-18 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2.5 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                   autoFocus
                 />
                 <p className="mt-1.5 text-[0.58rem] text-ink-3/70">
@@ -526,7 +526,7 @@ export function AlgorithmEditorDialog({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. use left index push for the F'"
-                  className="min-h-[52px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
+                  className="min-h-13 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                 />
               </section>
 
