@@ -37,7 +37,7 @@ export { deriveSparkline, deriveHistogram, deriveActivityHeatmap } from './distr
 export type { HistogramBin, DistribSolve } from './distribution';
 
 // ─── Series ──────────────────────────────────────────────────────────────
-export { deriveTpsSeries, derivePhaseDistribution } from './series';
+export { deriveTpsSeries, derivePhaseDistribution, isComparablePhaseAnalysis } from './series';
 export type { TpsPoint, PhaseShare, SeriesSolve } from './series';
 
 // ─── Aggregates ──────────────────────────────────────────────────────────

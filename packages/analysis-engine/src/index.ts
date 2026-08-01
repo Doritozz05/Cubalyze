@@ -15,6 +15,7 @@
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
 export { TimelineBuilder } from './timeline/TimelineBuilder';
+export { ANALYSIS_PIPELINE_VERSION } from './version';
 
 // ─── Phase Recognition ───────────────────────────────────────────────────────
 export { PhaseSplitter } from './phases/PhaseSplitter';

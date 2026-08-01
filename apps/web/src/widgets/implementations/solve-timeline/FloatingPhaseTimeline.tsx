@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { formatTime } from "@/utils/formatTime";
-import { deriveTimeline } from "@/utils/insights";
+import { deriveTimeline, isComparablePhaseAnalysis } from "@/utils/insights";
 import { phaseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import type { Solve } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
@@ -51,9 +51,11 @@ export function FloatingPhaseTimeline({
 
     if (!solve) return { selectedSolve: null, derived: null };
 
-    const effectiveSolve: Solve = hasPending
-      ? { ...solve, analysis: lastAnalysis! }
-      : solve;
+    const effectiveAnalysis = hasPending ? lastAnalysis! : solve.analysis;
+    if (!isComparablePhaseAnalysis(effectiveAnalysis)) {
+      return { selectedSolve: solve, derived: null };
+    }
+    const effectiveSolve: Solve = { ...solve, analysis: effectiveAnalysis };
     const tl = deriveTimeline(effectiveSolve);
     return { selectedSolve: solve, derived: tl };
   }, [solves, selectedIdx, lastAnalysis]);
@@ -138,13 +140,15 @@ export function FloatingPhaseTimeline({
             <p className="text-sm text-ink-2">No solves yet</p>
             <p className="text-xs text-ink-3">Complete a solve to see the phase timeline.</p>
           </div>
-        ) : !selectedSolve.analysis && !(selectedIdx === 0 && lastAnalysis) ? (
+        ) : !derived ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <Activity className="size-8 text-ink-3/30" />
             <p className="text-sm text-ink-2">No analysis yet</p>
             <p className="text-xs text-ink-3">
               {selectedSolve.source === "smart"
-                ? "The analysis pipeline is running. Check back shortly."
+                ? selectedSolve.analysis
+                  ? "This solve uses an older or incomplete analysis contract. Re-analyze it to show comparable phases."
+                  : "The analysis pipeline is running. Check back shortly."
                 : "Manual entry. Connect a Smart Cube to get phase analysis."}
             </p>
           </div>
@@ -227,7 +231,7 @@ export function FloatingPhaseTimeline({
               </>
             )}
 
-            {timelinePhaseEntries.length === 0 && selectedSolve.analysis && (
+            {timelinePhaseEntries.length === 0 && derived && (
               <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
                 <p className="text-xs text-ink-3">Timeline data unavailable for this solve.</p>
               </div>

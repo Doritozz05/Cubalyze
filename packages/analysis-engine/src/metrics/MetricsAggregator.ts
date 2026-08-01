@@ -40,9 +40,9 @@ export class MetricsAggregator {
     timeline: SolveTimeline,
     scramble: string,
   ): Promise<SolveMetrics> {
-    const { entries, phases, startTimestamp, endTimestamp } = timeline;
+    const { entries, phases } = timeline;
 
-    const totalTimeMs = Math.max(0, endTimestamp - startTimestamp);
+    const totalTimeMs = MetricsAggregator.totalTimeMs(timeline);
     const totalMoves = entries.length;
 
     // ─── Phase-level metrics ────────────────────────────────────────────
@@ -56,6 +56,10 @@ export class MetricsAggregator {
       .map((p) => ({
         phaseName: p.phaseName,
         durationMs: p.durationMs,
+        executionMs: p.executionMs,
+        recognitionMs: p.recognitionMs,
+        transitionMs: p.transitionMs,
+        skipped: p.skipped,
         moveCount: p.moveCount,
         tps: p.durationMs > 0
           ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
@@ -104,6 +108,7 @@ export class MetricsAggregator {
       totalTimeMs,
       totalMoves,
       phases: phasesMetrics,
+      detectionReport: timeline.detectionReport,
       tps,
       pauses,
       fluidity,
@@ -126,10 +131,11 @@ export class MetricsAggregator {
     pauses: PauseMetrics;
     fluidity: FluidityMetrics;
     rotation: RotationMetrics;
+    detectionReport?: SolveMetrics['detectionReport'];
   } {
-    const { entries, phases, startTimestamp, endTimestamp } = timeline;
+    const { entries, phases } = timeline;
 
-    const totalTimeMs = Math.max(0, endTimestamp - startTimestamp);
+    const totalTimeMs = MetricsAggregator.totalTimeMs(timeline);
     const totalMoves = entries.length;
     const pauses: PauseMetrics = PauseDetector.detect(timeline);
     const tps: TPSMetrics = TPSCalculator.compute(timeline, pauses.totalPauseTimeMs);
@@ -142,6 +148,10 @@ export class MetricsAggregator {
       .map((p) => ({
         phaseName: p.phaseName,
         durationMs: p.durationMs,
+        executionMs: p.executionMs,
+        recognitionMs: p.recognitionMs,
+        transitionMs: p.transitionMs,
+        skipped: p.skipped,
         moveCount: p.moveCount,
         tps: p.durationMs > 0
           ? Math.round((p.moveCount / (p.durationMs / 1000)) * 100) / 100
@@ -158,6 +168,23 @@ export class MetricsAggregator {
       }
     }
 
-    return { totalTimeMs, totalMoves, phases: phasesMetrics, tps, pauses, fluidity, rotation };
+    return {
+      totalTimeMs,
+      totalMoves,
+      phases: phasesMetrics,
+      tps,
+      pauses,
+      fluidity,
+      rotation,
+      detectionReport: timeline.detectionReport,
+    };
+  }
+
+  /** Prefer the timer's authoritative duration over move-event timestamps. */
+  private static totalTimeMs(timeline: SolveTimeline): number {
+    if (timeline.solveTimeMs !== undefined && Number.isFinite(timeline.solveTimeMs)) {
+      return Math.max(0, timeline.solveTimeMs);
+    }
+    return Math.max(0, timeline.endTimestamp - timeline.startTimestamp);
   }
 }

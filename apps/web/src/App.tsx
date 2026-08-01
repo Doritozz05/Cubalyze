@@ -305,7 +305,7 @@ export default function App() {
         );
         // Defer to next tick to avoid blocking the UI
         setTimeout(() => {
-          runAnalysis(moves, scr, m, lastSolveOrientations).then((result) => {
+          runAnalysis(moves, scr, m, lastSolveOrientations, timerLastTime).then((result) => {
             if (result) {
               const { metrics: analysis, compactedMoves, compactedOrientationTimeline } = result;
               lastSolveRef.current = { solve: null, analysis };

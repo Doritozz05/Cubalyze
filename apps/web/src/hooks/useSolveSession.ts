@@ -577,6 +577,7 @@ async function runAnalysis(
   scramble: string,
   method: SolveMethod,
   orientations?: (CubeOrientation | undefined)[],
+  solveTimeMs?: number,
 ): Promise<{ metrics: SolveMetrics; compactedMoves: CubeMoveEvent[]; compactedOrientationTimeline: OrientationTimeline | undefined } | null> {
   if (moves.length === 0) return null;
 
@@ -608,6 +609,9 @@ async function runAnalysis(
       compacted.orientations,
       scramble,
     );
+    if (solveTimeMs !== undefined && Number.isFinite(solveTimeMs)) {
+      timeline.solveTimeMs = Math.max(0, solveTimeMs);
+    }
     PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
     const metrics = await MetricsAggregator.computeAll(timeline, scramble);
 

@@ -58,7 +58,9 @@ export class PauseDetector {
     }
 
     const pauses: PauseDetail[] = [];
-    const totalTimeMs = timeline.endTimestamp - timeline.startTimestamp;
+    const totalTimeMs = timeline.solveTimeMs !== undefined && Number.isFinite(timeline.solveTimeMs)
+      ? Math.max(0, timeline.solveTimeMs)
+      : Math.max(0, timeline.endTimestamp - timeline.startTimestamp);
     let totalPauseTimeMs = 0;
 
     // Scan for gaps between consecutive moves
@@ -66,6 +68,9 @@ export class PauseDetector {
       const current = entries[i];
       const next = entries[i + 1];
       const gapMs = next.hostTimestamp - current.hostTimestamp;
+      // Out-of-order events are reported by PhaseSplitter and must not create
+      // negative pause durations or corrupt aggregate pause time.
+      if (!Number.isFinite(gapMs) || gapMs < 0) continue;
 
       // A gap between moves could be a deliberate pause or just slow turning.
       // We subtract a "reasonable turn time" of ~100ms to avoid flagging
@@ -123,7 +128,7 @@ export class PauseDetector {
       byPhase,
       totalPauseTimeMs,
       pauseRatio: totalTimeMs > 0
-        ? Math.round((totalPauseTimeMs / totalTimeMs) * 1000) / 1000
+        ? Math.min(1, Math.round((totalPauseTimeMs / totalTimeMs) * 1000) / 1000)
         : 0,
       pauses,
     };

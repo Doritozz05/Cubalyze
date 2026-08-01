@@ -79,13 +79,23 @@ export class CFOPMetricsCalculator {
 
     // ─── OLL metrics ────────────────────────────────────────────────────
     const ollPhase = phases.find((p) => p.phaseName === 'OLL');
-    if (ollPhase && ollPhase.startIndex > 0) {
-      // Recognition = gap between last F2L move and first OLL move
+    if (
+      ollPhase &&
+      !ollPhase.skipped &&
+      ollPhase.startIndex >= 0 &&
+      ollPhase.startIndex < entries.length
+    ) {
+      // Recognition = gap between last F2L move and first OLL move. The
+      // previous entry may not exist when OLL was already complete at the
+      // first captured move, so recognition is then reported as unknown/0.
       const preOLLEntry = entries[ollPhase.startIndex - 1];
       const firstOLLEntry = entries[ollPhase.startIndex];
+      if (!firstOLLEntry) return defaultResult;
       defaultResult.ollRecognitionMs = Math.max(
         0,
-        firstOLLEntry.hostTimestamp - preOLLEntry.hostTimestamp,
+        preOLLEntry
+          ? firstOLLEntry.hostTimestamp - preOLLEntry.hostTimestamp
+          : 0,
       );
       // Execution = OLL phase duration minus recognition
       defaultResult.ollExecutionMs = Math.max(
@@ -99,12 +109,20 @@ export class CFOPMetricsCalculator {
 
     // ─── PLL metrics ────────────────────────────────────────────────────
     const pllPhase = phases.find((p) => p.phaseName === 'PLL');
-    if (pllPhase && pllPhase.startIndex > 0) {
+    if (
+      pllPhase &&
+      !pllPhase.skipped &&
+      pllPhase.startIndex >= 0 &&
+      pllPhase.startIndex < entries.length
+    ) {
       const prePLLEntry = entries[pllPhase.startIndex - 1];
       const firstPLLEntry = entries[pllPhase.startIndex];
+      if (!firstPLLEntry) return defaultResult;
       defaultResult.pllRecognitionMs = Math.max(
         0,
-        firstPLLEntry.hostTimestamp - prePLLEntry.hostTimestamp,
+        prePLLEntry
+          ? firstPLLEntry.hostTimestamp - prePLLEntry.hostTimestamp
+          : 0,
       );
       defaultResult.pllExecutionMs = Math.max(
         0,

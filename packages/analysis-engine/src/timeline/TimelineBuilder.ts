@@ -57,6 +57,7 @@ export class TimelineBuilder {
         method: methodName,
         entries: [],
         phases: [],
+        initialStateSource: 'solved-fallback',
         startTimestamp: 0,
         endTimestamp: 0,
       };
@@ -80,6 +81,7 @@ export class TimelineBuilder {
     // removed because BLE move tracking can diverge from the physical
     // scramble state (dropped moves, race conditions). The scramble
     // notation is deterministic and what the user actually executed.
+    let initialStateSource: SolveTimeline['initialStateSource'] = 'solved-fallback';
     const hasValidFacelets =
       !!initialFacelets && initialFacelets.length === 54;
     const faceletsAreSolved =
@@ -88,29 +90,43 @@ export class TimelineBuilder {
       hasValidFacelets && !(faceletsAreSolved && scramble);
 
     if (useRealFacelets) {
-      const realState = FaceletStringConverter.fromFaceletString(initialFacelets!);
-      state.cp.set(realState.cp);
-      state.co.set(realState.co);
-      state.ep.set(realState.ep);
-      state.eo.set(realState.eo);
+      try {
+        const realState = FaceletStringConverter.fromFaceletString(initialFacelets!);
+        state.cp.set(realState.cp);
+        state.co.set(realState.co);
+        state.ep.set(realState.ep);
+        state.eo.set(realState.eo);
+        initialStateSource = 'initial-facelets';
+      } catch {
+        // Invalid facelets must not make the whole solve unanalyzable. Fall
+        // back to the deterministic scramble below when it is available.
+        if (scramble) {
+          state.applySequence(scramble);
+          initialStateSource = 'scramble';
+        }
+      }
     } else if (scramble) {
       // Apply scramble so the initial cube state matches what the
       // solver actually sees. Without this, phase detection starts from
       // a solved cube and cannot detect when phases are completed.
       state.applySequence(scramble);
+      initialStateSource = 'scramble';
     }
 
     const entries: TimelineEntry[] = [];
-    let startTimestamp = Infinity;
-    let endTimestamp = 0;
+    // Preserve event order for temporal diagnostics. If a device delivers an
+    // out-of-order event, the report will flag it instead of silently hiding
+    // the problem by taking min/max timestamps.
+    const startTimestamp = Number.isFinite(moves[0].hostTimestamp)
+      ? moves[0].hostTimestamp
+      : 0;
+    const endTimestamp = Number.isFinite(moves[moves.length - 1].hostTimestamp)
+      ? moves[moves.length - 1].hostTimestamp
+      : startTimestamp;
 
     for (let i = 0; i < moves.length; i++) {
       const move = moves[i];
       const hostTs = move.hostTimestamp;
-
-      // Track time boundaries
-      if (hostTs < startTimestamp) startTimestamp = hostTs;
-      if (hostTs > endTimestamp) endTimestamp = hostTs;
 
       // Apply the move to the cube state using move notation
       const moveNotation = MoveTransformer.moveToNotation(move.face, move.direction);
@@ -146,8 +162,9 @@ export class TimelineBuilder {
       method: methodName,
       entries,
       phases: [],
-      startTimestamp: startTimestamp === Infinity ? 0 : startTimestamp,
-      endTimestamp,
+      initialStateSource,
+      startTimestamp: Number.isFinite(startTimestamp) ? startTimestamp : 0,
+      endTimestamp: Number.isFinite(endTimestamp) ? endTimestamp : 0,
     };
   }
 
@@ -208,11 +225,20 @@ export class TimelineBuilder {
     timeline: SolveTimeline,
     phases: PhaseSegment[],
   ): SolveTimeline {
-    // Assign phaseId and phaseName to each entry
+    // Clear previous annotations so repeated analysis cannot leave stale
+    // phase IDs on entries that no longer belong to a detected segment.
+    for (const entry of timeline.entries) {
+      delete entry.phaseId;
+      delete entry.phaseName;
+    }
+
+    // Skipped phases have no owning move and must not steal the completion
+    // move's phase label from the preceding phase.
     for (let p = 0; p < phases.length; p++) {
       const phase = phases[p];
+      if (phase.skipped || phase.startIndex > phase.endIndex) continue;
       for (let i = phase.startIndex; i <= phase.endIndex; i++) {
-        if (i < timeline.entries.length) {
+        if (i >= 0 && i < timeline.entries.length) {
           timeline.entries[i].phaseId = p;
           timeline.entries[i].phaseName = phase.phaseName;
         }

@@ -23,6 +23,7 @@ import {
   deriveHistogram,
   deriveActivityHeatmap,
   derivePhaseDistribution,
+  isComparablePhaseAnalysis,
 } from "@/utils/insights";
 import type { Solve } from "@/types";
 import { MetricTile } from "../Stats/atoms/MetricTile";
@@ -81,7 +82,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
   const phaseDist = useMemo(() => derivePhaseDistribution(solves), [solves]);
 
   const analysedCount = useMemo(
-    () => solves.filter((s) => s.analysis && s.analysis.phases.length > 0).length,
+    () => solves.filter((s) => isComparablePhaseAnalysis(s.analysis)).length,
     [solves],
   );
 

@@ -49,6 +49,16 @@ export class FluidityCalculator {
 
     // ─── Global inter-move times ──────────────────────────────────────────
     const intervals = FluidityCalculator.getIntervals(entries);
+    if (intervals.length === 0) {
+      return {
+        stdDevMs: 0,
+        coefficientOfVariation: 0,
+        byPhase: {},
+        burstCount: 0,
+        accelerationCount: 0,
+        decelerationCount: 0,
+      };
+    }
 
     const meanInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
     const variance =
@@ -135,7 +145,8 @@ export class FluidityCalculator {
   ): number[] {
     const intervals: number[] = [];
     for (let i = 1; i < entries.length; i++) {
-      intervals.push(entries[i].hostTimestamp - entries[i - 1].hostTimestamp);
+      const interval = entries[i].hostTimestamp - entries[i - 1].hostTimestamp;
+      if (Number.isFinite(interval) && interval >= 0) intervals.push(interval);
     }
     return intervals;
   }
