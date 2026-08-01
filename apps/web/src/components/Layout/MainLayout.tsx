@@ -41,6 +41,8 @@ export interface MainLayoutProps {
   cube3DActive?: boolean;
   /** Whether the 3D cube has been activated at least once (keeps it mounted). */
   cube3DReady?: boolean;
+  /** Callback when user closes or drags down to dismiss the 3D cube view. */
+  onCloseCube?: () => void;
   /** Current session solve count, shown as a chip in the header. */
   sessionCount?: number;
   /** All known sessions (for the switcher). */
@@ -77,6 +79,7 @@ export function MainLayout({
   cube3D,
   cube3DActive,
   cube3DReady,
+  onCloseCube,
   sessionCount,
   sessions,
   activeSessionId,
@@ -96,10 +99,14 @@ export function MainLayout({
   const rawIsTouch = useIsTouch();
   const isTouch = mounted ? rawIsTouch : false;
 
-  // Track viewport width so the cube panel can derive a responsive width
+  // Track viewport width and height so the cube panel can derive responsive bounds
   const [vw, setVw] = useState(() =>
     typeof window === "undefined" ? 0 : window.innerWidth,
   );
+  const [vh, setVh] = useState(() =>
+    typeof window === "undefined" ? 0 : window.innerHeight,
+  );
+
   useEffect(() => {
     let rafId: number | null = null;
     const update = () => {
@@ -107,6 +114,7 @@ export function MainLayout({
       rafId = requestAnimationFrame(() => {
         rafId = null;
         setVw(window.innerWidth);
+        setVh(window.innerHeight);
       });
     };
     window.addEventListener("resize", update);
@@ -120,6 +128,7 @@ export function MainLayout({
   const rightVisible = cubeShown;
   const rightMounted = rightVisible || !!cube3DReady;
 
+  // Desktop width resize state
   const maxPanelWidth = cubeShown
     ? Math.max(
         CUBE_MIN_WIDTH,
@@ -127,48 +136,42 @@ export function MainLayout({
       )
     : 0;
 
-  // User-defined width resize state
   const [userPanelWidth, setUserPanelWidth] = useState<number | null>(null);
-  const [isResizingPanel, setIsResizingPanel] = useState(false);
-  const dragStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [isResizingWidth, setIsResizingWidth] = useState(false);
+  const widthDragStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
-  // Pin global DMZ grabbing hand cursor while resizing
-  useGlobalDragCursor(isResizingPanel);
-
-  // Upper bound is strictly maxPanelWidth (current default size)
   const effectiveWidth = Math.min(
     maxPanelWidth,
     Math.max(CUBE_RESIZE_MIN_WIDTH, userPanelWidth ?? maxPanelWidth),
   );
 
-  const handleResizeStart = useCallback(
+  const handleWidthResizeStart = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault();
-      setIsResizingPanel(true);
-      dragStartRef.current = { startX: e.clientX, startWidth: effectiveWidth };
+      setIsResizingWidth(true);
+      widthDragStartRef.current = { startX: e.clientX, startWidth: effectiveWidth };
       (e.target as HTMLDivElement).setPointerCapture(e.pointerId);
     },
     [effectiveWidth],
   );
 
-  const handleResizeMove = useCallback(
+  const handleWidthResizeMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragStartRef.current) return;
-      const deltaX = e.clientX - dragStartRef.current.startX;
-      // Moving right (+deltaX) reduces width because panel is anchored to the right
+      if (!widthDragStartRef.current) return;
+      const deltaX = e.clientX - widthDragStartRef.current.startX;
       const newWidth = Math.min(
         maxPanelWidth,
-        Math.max(CUBE_RESIZE_MIN_WIDTH, dragStartRef.current.startWidth - deltaX),
+        Math.max(CUBE_RESIZE_MIN_WIDTH, widthDragStartRef.current.startWidth - deltaX),
       );
       setUserPanelWidth(newWidth);
     },
     [maxPanelWidth],
   );
 
-  const handleResizeEnd = useCallback(
+  const handleWidthResizeEnd = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      setIsResizingPanel(false);
-      dragStartRef.current = null;
+      setIsResizingWidth(false);
+      widthDragStartRef.current = null;
       try {
         (e.target as HTMLDivElement).releasePointerCapture(e.pointerId);
       } catch {
@@ -178,9 +181,79 @@ export function MainLayout({
     [],
   );
 
-  const handleResizeReset = useCallback(() => {
+  const handleWidthResizeReset = useCallback(() => {
     setUserPanelWidth(null);
   }, []);
+
+  // Mobile height resize & shrink/close state
+  const defaultMobileHeight = Math.min(420, Math.max(280, Math.round((vh || 800) * 0.45)));
+  const maxMobileHeight = Math.min(650, Math.max(340, Math.round((vh || 800) * 0.75)));
+  const minMobileHeight = 160;
+  const closeThresholdHeight = 110;
+
+  const [userPanelHeight, setUserPanelHeight] = useState<number | null>(null);
+  const [isResizingHeight, setIsResizingHeight] = useState(false);
+  const heightDragStartRef = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const currentHeightValue = userPanelHeight ?? defaultMobileHeight;
+  const effectiveHeight = Math.min(
+    maxMobileHeight,
+    Math.max(minMobileHeight, currentHeightValue),
+  );
+
+  const handleHeightResizeStart = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsResizingHeight(true);
+      heightDragStartRef.current = { startY: e.clientY, startHeight: currentHeightValue };
+      (e.target as HTMLDivElement).setPointerCapture(e.pointerId);
+    },
+    [currentHeightValue],
+  );
+
+  const handleHeightResizeMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!heightDragStartRef.current) return;
+      const deltaY = e.clientY - heightDragStartRef.current.startY;
+      // Moving down (+deltaY) shrinks height
+      const rawHeight = heightDragStartRef.current.startHeight - deltaY;
+      if (rawHeight < closeThresholdHeight) {
+        setUserPanelHeight(rawHeight);
+      } else {
+        const clampedHeight = Math.min(
+          maxMobileHeight,
+          Math.max(minMobileHeight, rawHeight),
+        );
+        setUserPanelHeight(clampedHeight);
+      }
+    },
+    [maxMobileHeight],
+  );
+
+  const handleHeightResizeEnd = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      setIsResizingHeight(false);
+      if (userPanelHeight !== null && userPanelHeight < closeThresholdHeight) {
+        onCloseCube?.();
+        setUserPanelHeight(null);
+      }
+      heightDragStartRef.current = null;
+      try {
+        (e.target as HTMLDivElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore if pointer capture was already lost
+      }
+    },
+    [userPanelHeight, onCloseCube],
+  );
+
+  const handleHeightResizeReset = useCallback(() => {
+    setUserPanelHeight(null);
+  }, []);
+
+  // Pin global DMZ grabbing hand cursor while resizing
+  const isResizing = isResizingWidth || isResizingHeight;
+  useGlobalDragCursor(isResizing);
 
   return (
     <div
@@ -246,13 +319,11 @@ export function MainLayout({
             <motion.aside
               initial={false}
               animate={{
-                // Touch (<1024px): full-screen sheet — the cube covers the whole
-                // stage (the timer section collapses). Desktop: side panel width.
                 width: isTouch ? "100%" : rightVisible ? effectiveWidth : 0,
-                height: isTouch ? (rightVisible ? "100%" : 0) : "",
+                height: isTouch ? (rightVisible ? effectiveHeight : 0) : "",
                 opacity: rightVisible ? 1 : 0,
               }}
-              transition={isResizingPanel ? { duration: 0 } : SIDEBAR_MOTION.panel}
+              transition={isResizing ? { duration: 0 } : SIDEBAR_MOTION.panel}
               style={{ overflow: "hidden" }}
               className={cn(
                 "relative flex shrink-0 flex-col bg-surface overflow-hidden",
@@ -263,24 +334,47 @@ export function MainLayout({
               )}
               aria-hidden={!rightVisible}
             >
-              {/* Drag handle on left border (Desktop only) */}
+              {/* Drag handle on left border (Desktop only: width resize) */}
               {rightVisible && !isTouch && (
                 <div
-                  onPointerDown={handleResizeStart}
-                  onPointerMove={handleResizeMove}
-                  onPointerUp={handleResizeEnd}
-                  onPointerCancel={handleResizeEnd}
-                  onDoubleClick={handleResizeReset}
+                  onPointerDown={handleWidthResizeStart}
+                  onPointerMove={handleWidthResizeMove}
+                  onPointerUp={handleWidthResizeEnd}
+                  onPointerCancel={handleWidthResizeEnd}
+                  onDoubleClick={handleWidthResizeReset}
                   className={cn(
                     "absolute left-0 top-0 bottom-0 z-20 w-3 -ml-1.5 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
-                    isResizingPanel && "cursor-grabbing"
+                    isResizingWidth && "cursor-grabbing"
                   )}
                   title="Arrastrar para ajustar ancho (Doble clic para restablecer)"
                 >
                   <div
                     className={cn(
                       "h-10 w-1 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:w-1.5",
-                      isResizingPanel && "bg-ink w-1.5 h-16"
+                      isResizingWidth && "bg-ink w-1.5 h-16"
+                    )}
+                  />
+                </div>
+              )}
+
+              {/* Drag handle on top border (Touch/Mobile only: height resize & shrink/close) */}
+              {rightVisible && isTouch && (
+                <div
+                  onPointerDown={handleHeightResizeStart}
+                  onPointerMove={handleHeightResizeMove}
+                  onPointerUp={handleHeightResizeEnd}
+                  onPointerCancel={handleHeightResizeEnd}
+                  onDoubleClick={handleHeightResizeReset}
+                  className={cn(
+                    "absolute top-0 left-0 right-0 z-20 h-6 -mt-3 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
+                    isResizingHeight && "cursor-grabbing"
+                  )}
+                  title="Deslizar para encoger o cerrar (Doble clic para restablecer)"
+                >
+                  <div
+                    className={cn(
+                      "h-1.5 w-12 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:h-2",
+                      isResizingHeight && "bg-ink h-2 w-16"
                     )}
                   />
                 </div>
