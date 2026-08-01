@@ -19,6 +19,7 @@ vi.mock('three', async (importOriginal) => {
       setSize: mockSetSize,
       render: mockRender,
       dispose: mockDispose,
+      getContext: () => null,
       domElement: {},
     })),
   };

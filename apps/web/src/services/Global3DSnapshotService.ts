@@ -62,9 +62,28 @@ export class Global3DSnapshotService {
 
   private getOrCreateEngine(order: number): Cube3DEngine | null {
     const is2x2 = order === 2;
-    const existing = is2x2 ? this.engine2x2 : this.engine;
+    let existing = is2x2 ? this.engine2x2 : this.engine;
 
-    if (existing) return existing;
+    if (existing) {
+      try {
+        if (existing.sceneManager?.renderer?.getContext()?.isContextLost()) {
+          existing.dispose();
+          existing = null;
+          if (is2x2) {
+            this.engine2x2 = null;
+            this.canvas2x2 = null;
+          } else {
+            this.engine = null;
+            this.canvas = null;
+          }
+        } else {
+          return existing;
+        }
+      } catch {
+        existing = null;
+      }
+    }
+
     if (typeof window === "undefined" || typeof document === "undefined") return null;
 
     try {

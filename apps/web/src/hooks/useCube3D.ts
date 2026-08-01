@@ -67,6 +67,9 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Cube3DEngine | null>(null);
+  // Prevents the ResizeObserver from hammering initEngineIfNeeded in an infinite
+  // loop after a WebGL failure. Reset on unmount so a fresh mount can retry.
+  const initFailedRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
   const [recentMoves, setRecentMoves] = useState<string[]>([]);
@@ -105,83 +108,91 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     let connSub: Subscription | null = null;
 
     const initEngineIfNeeded = (w: number, h: number) => {
-      if (engineRef.current || w <= 0 || h <= 0) return;
+      if (engineRef.current || initFailedRef.current || w <= 0 || h <= 0) return;
 
-      const engine = new Cube3DEngine({
-        canvas,
-        width: w,
-        height: h,
-        pixelRatio: window.devicePixelRatio || 1,
-        gyroSupported: globalCubeAdapter.gyroSupported,
-        order,
-      });
+      try {
+        const engine = new Cube3DEngine({
+          canvas,
+          width: w,
+          height: h,
+          pixelRatio: window.devicePixelRatio || 1,
+          gyroSupported: globalCubeAdapter.gyroSupported,
+          order,
+        });
 
-      engineRef.current = engine;
+        engineRef.current = engine;
 
-      // Apply current skin style
-      const skin = getSkinStyle(preferencesStore.getState().appearance3d);
-      engine.updateStyle(skin);
+        // Apply current skin style
+        const skin = getSkinStyle(preferencesStore.getState().appearance3d);
+        engine.updateStyle(skin);
 
-      // Register callbacks to feed orientationStore
-      engine.onOrientationChange((o: CubeOrientation) => {
-        orientationStore.getState().setOrientation(o);
-        const caps = orientationStore.getState().capabilities;
-        if (!caps.gyroSupported) {
-          orientationStore.getState().setCapabilities({
-            hasIMU: true,
-            gyroSupported: true,
-          });
-        }
-        if (!globalCubeAdapter.gyroSupported) {
-          globalCubeAdapter.gyroSupported = true;
-        }
-      });
+        // Register callbacks to feed orientationStore
+        engine.onOrientationChange((o: CubeOrientation) => {
+          orientationStore.getState().setOrientation(o);
+          const caps = orientationStore.getState().capabilities;
+          if (!caps.gyroSupported) {
+            orientationStore.getState().setCapabilities({
+              hasIMU: true,
+              gyroSupported: true,
+            });
+          }
+          if (!globalCubeAdapter.gyroSupported) {
+            globalCubeAdapter.gyroSupported = true;
+          }
+        });
 
-      engine.onRotationEvent((e: RotationEvent) => {
-        const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
-        appendRecentMove(notation);
-      });
-
-      // Update orientation store capabilities
-      orientationStore.getState().setCapabilities({
-        hasIMU: globalCubeAdapter.gyroSupported,
-        gyroSupported: globalCubeAdapter.gyroSupported,
-      });
-
-      // Bind Bluetooth / Hardware streams
-      if (globalCubeAdapter.moves$) {
-        movesSub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
-          const orientation = orientationStore.getState().orientation;
-          const notation = MoveTransformer.toDisplayNotation(ev, orientation);
+        engine.onRotationEvent((e: RotationEvent) => {
+          const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
           appendRecentMove(notation);
         });
-      }
 
-      if (globalCubeAdapter.gyro$) {
-        gyroSub = globalCubeAdapter.gyro$.subscribe((q) => {
-          engine.updateGyro(q.x, q.y, q.z, q.w);
+        // Update orientation store capabilities
+        orientationStore.getState().setCapabilities({
+          hasIMU: globalCubeAdapter.gyroSupported,
+          gyroSupported: globalCubeAdapter.gyroSupported,
         });
-      }
 
-      if (globalCubeAdapter.facelets$) {
-        faceletsSub = globalCubeAdapter.facelets$.subscribe((facelets: string) => {
-          engine.syncFacelets(facelets);
+        // Bind Bluetooth / Hardware streams
+        if (globalCubeAdapter.moves$) {
+          movesSub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
+            const orientation = orientationStore.getState().orientation;
+            const notation = MoveTransformer.toDisplayNotation(ev, orientation);
+            appendRecentMove(notation);
+          });
+        }
+
+        if (globalCubeAdapter.gyro$) {
+          gyroSub = globalCubeAdapter.gyro$.subscribe((q) => {
+            engine.updateGyro(q.x, q.y, q.z, q.w);
+          });
+        }
+
+        if (globalCubeAdapter.facelets$) {
+          faceletsSub = globalCubeAdapter.facelets$.subscribe((facelets: string) => {
+            engine.syncFacelets(facelets);
+          });
+        }
+
+        connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
+          if (status === "connected") {
+            globalCubeAdapter.requestFacelets().catch(console.error);
+            engine.calibrateGyro();
+          }
         });
-      }
 
-      connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
-        if (status === "connected") {
+        if (globalCubeAdapter.isConnected) {
           globalCubeAdapter.requestFacelets().catch(console.error);
           engine.calibrateGyro();
         }
-      });
 
-      if (globalCubeAdapter.isConnected) {
-        globalCubeAdapter.requestFacelets().catch(console.error);
-        engine.calibrateGyro();
+        setIsReady(true);
+      } catch (err) {
+        // WebGL context creation failed (e.g. browser context limit reached).
+        // Set initFailedRef so the ResizeObserver stops retrying — showing the
+        // 'Initializing 3D Cube...' overlay is better than an infinite error loop.
+        initFailedRef.current = true;
+        console.warn("[useCube3D] Failed to initialize WebGL engine:", err);
       }
-
-      setIsReady(true);
     };
 
     // Initial check on mount
@@ -217,6 +228,8 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
         engineRef.current.dispose();
         engineRef.current = null;
       }
+      // Reset so the next mount (e.g. re-opening the panel) can try again.
+      initFailedRef.current = false;
       setIsReady(false);
     };
   }, [appendRecentMove, order]);

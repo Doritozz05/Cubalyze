@@ -38,7 +38,8 @@ export class SceneManager {
 
     this.scene = new Scene();
 
-    this.camera = new PerspectiveCamera(this.baseFov, this.width / this.height, 0.1, 100);
+    const safeAspect = width > 0 && height > 0 ? width / height : 1;
+    this.camera = new PerspectiveCamera(this.baseFov, safeAspect, 0.1, 100);
     this.updateCameraAspectAndFov(width, height);
     this.camera.position.set(0, 0, this.orbitRadius);
     this.camera.lookAt(0, 0, 0);
@@ -47,9 +48,28 @@ export class SceneManager {
     this.scene.add(this.cameraGroup);
     this.cameraGroup.add(this.camera);
 
-    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
+    // Three.js throws "Cannot read properties of null (reading 'precision')" when
+    // canvas.getContext() returns null (browser WebGL context limit reached).
+    // Wrap the constructor so callers get a meaningful error they can catch gracefully.
+    try {
+      this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
+    } catch (err) {
+      throw new Error(
+        `[SceneManager] WebGL context creation failed — browser may have reached its context limit. ` +
+        `Original error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
     this.renderer.setPixelRatio(Math.min(pixelRatio, 2));
     this.renderer.setSize(width, height, false);
+
+    // Prevent the browser from escalating a context-lost event into an uncaught error.
+    // e.preventDefault() is required for Three.js's own context-restore path to work.
+    if ('addEventListener' in canvas) {
+      canvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+      }, false);
+    }
 
     [this.ambientLight, this.directionalLight] = this.setupLighting();
   }
@@ -74,15 +94,19 @@ export class SceneManager {
   }
 
   private updateCameraAspectAndFov(width: number, height: number): void {
+    if (width <= 0 || height <= 0) return;
     const aspect = width / height;
+    if (!Number.isFinite(aspect) || aspect <= 0) return;
+
     this.camera.aspect = aspect;
 
     // On narrow viewports (aspect < 1.0), widen the vertical FOV proportionally
     // so the horizontal FOV remains constant and the 3D cube scales down to fit.
     if (aspect < 1.0) {
       const baseFovRad = (this.baseFov * Math.PI) / 180;
-      const targetFovRad = 2 * Math.atan(Math.tan(baseFovRad / 2) / aspect);
-      this.camera.fov = (targetFovRad * 180) / Math.PI;
+      const safeAspect = Math.max(0.05, aspect);
+      const targetFovRad = 2 * Math.atan(Math.tan(baseFovRad / 2) / safeAspect);
+      this.camera.fov = Math.min(140, (targetFovRad * 180) / Math.PI);
     } else {
       this.camera.fov = this.baseFov;
     }
@@ -108,7 +132,7 @@ export class SceneManager {
     const spherical = new Spherical().setFromVector3(this.camera.position);
 
     spherical.theta -= dx * SPEED;
-    spherical.phi -= dy * SPEED; 
+    spherical.phi -= dy * SPEED;
 
     spherical.phi = Math.max(MIN_PHI, Math.min(MAX_PHI, spherical.phi));
     spherical.radius = Math.max(
@@ -148,15 +172,21 @@ export class SceneManager {
   }
 
   public render(): void {
+    // Skip render if the WebGL context has been lost (e.g. tab hidden, GPU reset).
+    if (this.renderer.getContext?.()?.isContextLost?.()) return;
     this.renderer.render(this.scene, this.camera);
     this.onRender?.();
   }
 
   public dispose(): void {
-    // Only dispose the WebGL renderer.
-    // Do NOT traverse this.scene and dispose geometries/materials of external
-    // meshes (like CubeModel.root), as they are owned by CubeMeshFactory and
-    // must survive canvas reconnects when reopening 3D panels.
-    this.renderer.dispose();
+    try {
+      // renderer.dispose() frees GPU resources (textures, buffers, programs).
+      // Do NOT call forceContextLoss() here: it permanently marks the canvas DOM
+      // node's context as lost, which prevents re-creating an engine on the same
+      // canvas element (React reuses the same <canvas> node across mount cycles).
+      this.renderer.dispose();
+    } catch {
+      // Ignore if context was already lost or renderer was never initialised.
+    }
   }
 }
