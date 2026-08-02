@@ -3,11 +3,12 @@ import { detectPbMilestones } from "../pbDetection";
 import type { MinimalSolve } from "../pbDetection";
 
 describe("pbDetection", () => {
-  it("should NOT detect single PB on first solve (sets baseline)", () => {
+  it("should detect single PB on first valid solve in session", () => {
     const existing: MinimalSolve[] = [];
     const result = detectPbMilestones(existing, 10000, "none");
-    expect(result.isSinglePB).toBe(false);
-    expect(result.types).toEqual([]);
+    expect(result.isSinglePB).toBe(true);
+    expect(result.types).toEqual(["Single"]);
+    expect(result.prevSingleTime).toBeNull();
   });
 
   it("should detect single PB when new solve is faster than previous best", () => {
