@@ -385,10 +385,8 @@ export function CrossTrainerView({
           />
           <span
             className={cn(
-              "shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border",
-              cnMode
-                ? "border-phase-purple-500/20 bg-phase-purple-500/5 text-phase-purple"
-                : "border-phase-blue-500/20 bg-phase-blue-500/5 text-phase-blue",
+              "shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold text-white",
+              cnMode ? "bg-phase-purple" : "bg-phase-blue",
             )}
           >
             {cnMode ? "CN" : `${cross.face}-cross`} · {cross.optimalDepth} opt
@@ -444,7 +442,7 @@ export function CrossTrainerView({
             className={cn(
               "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.62rem] font-medium transition-colors",
               cnMode
-                ? "bg-phase-purple-500/15 text-phase-purple"
+                ? "bg-phase-purple text-white font-semibold"
                 : "text-ink-3 hover:text-ink hover:bg-surface-2",
             )}
             title="Color-neutral: picks the best cross face automatically"

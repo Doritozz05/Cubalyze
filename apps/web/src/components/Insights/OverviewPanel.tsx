@@ -119,7 +119,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
             </span>
           </div>
           {isPb ? (
-            <span className="rounded bg-ready-soft px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-ready">
+            <span className="rounded-full bg-ready px-2 py-0.5 text-[0.58rem] font-semibold uppercase tracking-wide text-white">
               PB
             </span>
           ) : null}
