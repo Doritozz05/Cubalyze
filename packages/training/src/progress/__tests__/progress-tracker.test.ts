@@ -181,6 +181,73 @@ describe('ProgressTracker — recordAttempt', () => {
     expect(latest?.avgTimeMs).toBe(1167);
   });
 
+  it('recognition with advanceSRS advances the FSRS state machine (correct → good)', async () => {
+    const { repo } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const now = 1_700_000_000_000;
+
+    const result = await tracker.recordAttempt({
+      ...baseParams,
+      timeMs: 0,
+      verdict: 'correct',
+      metricKind: 'recognition',
+      advanceSRS: true,
+    });
+
+    // First FSRS review with grade "good": new → review, stability 3, interval 3.
+    expect(result?.srsState).toBe('review');
+    expect(result?.srsReviewCount).toBe(1);
+    expect(result?.srsStability).toBe(3);
+    expect(result?.srsIntervalDays).toBe(3);
+    expect(result?.srsLapses).toBe(0);
+    expect(result?.lastReviewAt).toBeGreaterThan(0);
+    expect(result?.srsNextReviewAt).toBeGreaterThan(now);
+    // Recognition metrics still tracked; execution times untouched.
+    expect(result?.recognitionAccuracy).toBe(100);
+    expect(result?.bestTimeMs).toBe(0);
+  });
+
+  it('recognition with advanceSRS maps a miss to grade again (learning, 1d interval)', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+
+    await tracker.recordAttempt({
+      ...baseParams,
+      timeMs: 0,
+      verdict: 'incorrect',
+      metricKind: 'recognition',
+      advanceSRS: true,
+    });
+
+    const latest = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    // First FSRS review with grade "again": new → learning, 1-day interval.
+    expect(latest?.srsState).toBe('learning');
+    expect(latest?.srsReviewCount).toBe(1);
+    expect(latest?.srsIntervalDays).toBe(1);
+    expect(latest?.srsStability).toBe(0.4);
+    expect(latest?.recognitionAccuracy).toBe(0);
+  });
+
+  it('recognition WITHOUT advanceSRS leaves the FSRS state machine untouched', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+
+    await tracker.recordAttempt({
+      ...baseParams,
+      timeMs: 0,
+      verdict: 'correct',
+      metricKind: 'recognition',
+    });
+
+    const latest = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    // Legacy recognition path: only recognition accuracy + a light SM-2 schedule;
+    // srsState/reviewCount/stability must NOT advance (grading owns FSRS there).
+    expect(latest?.srsState).toBe('new');
+    expect(latest?.srsReviewCount).toBe(0);
+    expect(latest?.srsStability).toBe(0);
+    expect(latest?.recognitionAccuracy).toBe(100);
+  });
+
   it('recognition attempt as the very first attempt does not set bestTimeMs=0', async () => {
     const { repo, savedAlgorithmProgress, savedExerciseProgress } = createFakeRepo();
     const tracker = new ProgressTracker(repo);

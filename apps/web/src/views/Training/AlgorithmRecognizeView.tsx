@@ -213,8 +213,10 @@ export function AlgorithmRecognizeView({
     setSeenCaseIds((prev) => new Set(prev).add(round.caseId));
 
     // Persist to DB for progress tracking + SRS.
-    // metricKind: 'recognition' — updates ONLY recognition accuracy + mastery;
+    // metricKind: 'recognition' — updates recognition accuracy + mastery;
     // never touches execution best/avg time (which timeMs: 0 would corrupt).
+    // advanceSRS: recognition also advances the FSRS state machine so the
+    // quiz feeds the SRS stats (correct → good, miss → again), not just accuracy.
     dbPersistAttempt({
       exerciseId: `recognize-${subsetId}`,
       methodId,
@@ -225,6 +227,7 @@ export function AlgorithmRecognizeView({
       playMode: "manual",
       scramble: "",
       metricKind: "recognition",
+      advanceSRS: true,
     }).catch((err) => {
       console.error("[RecognizeView] Failed to persist attempt:", err);
     });

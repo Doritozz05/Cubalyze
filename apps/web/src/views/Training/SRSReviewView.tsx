@@ -340,11 +340,17 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
               <Flame className="size-4 text-ink-2" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="nums text-[1rem] font-semibold text-ink">{current.caseNumber}</span>
-                <span className={cn("size-2 shrink-0 rounded-full", REASON_DOT[current.reason] ?? "bg-ink-3")} />
-              </div>
-              <p className="text-[0.7rem] text-ink-2 mt-0.5">{current.name}</p>
+              {/* During the recognition flash the answer must stay hidden — the
+                  user has to identify the case from the diagram alone. */}
+              {stage !== "recognition" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="nums text-[1rem] font-semibold text-ink">{current.caseNumber}</span>
+                    <span className={cn("size-2 shrink-0 rounded-full", REASON_DOT[current.reason] ?? "bg-ink-3")} />
+                  </div>
+                  <p className="text-[0.7rem] text-ink-2 mt-0.5">{current.name}</p>
+                </>
+              )}
               <p className="text-[0.6rem] text-ink-3 mt-0.5">
                 {methodName(current.methodId)} ·{" "}
                 <span className="capitalize">{REASON_LABEL[current.reason] ?? current.reason}</span>

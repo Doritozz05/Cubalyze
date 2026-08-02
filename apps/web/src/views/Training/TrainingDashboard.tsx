@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, type AlgorithmMethod } from "@cubeforge/algorithm-db";
@@ -217,6 +217,7 @@ function FlatDashboard({
   onFullSolve,
   onStartReview,
   onOpenInsights,
+  onDueCountChange,
   dueCount,
   dbReady,
 }: {
@@ -233,6 +234,7 @@ function FlatDashboard({
   onFullSolve: (methodId: string) => void;
   onStartReview: (methodId?: string) => void;
   onOpenInsights: (methodId?: string) => void;
+  onDueCountChange: (due: number) => void;
   dueCount: number;
   dbReady: boolean;
 }) {
@@ -420,7 +422,13 @@ function FlatDashboard({
           </div>
 
           {/* Quick Start — SRS daily review queue */}
-          {dbReady && <ReviewQueueSection onStartReview={onStartReview} onOpenInsights={onOpenInsights} />}
+          {dbReady && (
+            <ReviewQueueSection
+              onStartReview={onStartReview}
+              onOpenInsights={onOpenInsights}
+              onDueCountChange={onDueCountChange}
+            />
+          )}
         </div>
       )}
     </>
@@ -602,13 +610,16 @@ export function TrainingDashboard({
   const [insightsView, setInsightsView] = useState<{ methodId?: string } | null>(null);
 
   // Progress tracking
-  const { ready: dbReady, getMethodMastery, getDueForReview } = useTrainingProgress();
+  const { ready: dbReady, getMethodMastery } = useTrainingProgress();
   const [methodMasteries, setMethodMasteries] = useState<Record<string, number>>({});
   const [dueCount, setDueCount] = useState(0);
+  const [masteriesKey, setMasteriesKey] = useState(0);
 
-  // Load method masteries and SRS due count
+  // Load method masteries. Re-runs on `masteriesKey` bump so the tab percentages
+  // reflect drills/recognize/review sessions the moment the user returns.
   useEffect(() => {
     if (!dbReady) return;
+    let cancelled = false;
     async function load() {
       const masteries: Record<string, number> = {};
       for (const method of METHODS) {
@@ -619,17 +630,17 @@ export function TrainingDashboard({
           masteries[method.name] = FALLBACK_MASTERY[method.name] ?? 0;
         }
       }
-      setMethodMasteries(masteries);
-
-      try {
-        const due = await getDueForReview(50);
-        setDueCount(due.length);
-      } catch {
-        setDueCount(0);
-      }
+      if (!cancelled) setMethodMasteries(masteries);
     }
-    load();
-  }, [dbReady, getMethodMastery, getDueForReview]);
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [dbReady, getMethodMastery, masteriesKey]);
+
+  // The "N due for review" badge is derived from the live review queue
+  // (ReviewQueueSection reports it) — single source of truth, never stale.
+  const handleDueCountChange = useCallback((due: number) => setDueCount(due), []);
 
   // ── Algorithms → Training bridge ─────────────────────────────────────
   const [drillPresetCaseId, setDrillPresetCaseId] = useState<string | null>(
@@ -706,6 +717,8 @@ export function TrainingDashboard({
     setFullSolveView(null);
     setReviewView(null);
     setInsightsView(null);
+    // Refresh the method mastery tabs after any drill/recognize/review session.
+    setMasteriesKey((k) => k + 1);
   };
 
   // ── L3 Sub-views ────────────────────────────────────────────────────
@@ -846,6 +859,7 @@ export function TrainingDashboard({
           onFullSolve={handleFullSolve}
           onStartReview={handleStartReview}
           onOpenInsights={handleOpenInsights}
+          onDueCountChange={handleDueCountChange}
           dueCount={dueCount}
           dbReady={dbReady}
         />

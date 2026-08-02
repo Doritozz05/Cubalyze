@@ -57,6 +57,7 @@ export interface UseTrainingProgressResult {
     playMode: PlayMode;
     scramble: string;
     metricKind?: MetricKind;
+    advanceSRS?: boolean;
     moveCount?: number;
     optimalMoves?: number;
     tps?: number;
@@ -116,6 +117,7 @@ export function useTrainingProgress(): UseTrainingProgressResult {
       playMode: PlayMode;
       scramble: string;
       metricKind?: MetricKind;
+      advanceSRS?: boolean;
       moveCount?: number;
       optimalMoves?: number;
       tps?: number;

@@ -220,6 +220,8 @@ export class ProgressTracker {
     playMode: PlayMode;
     scramble: string;
     metricKind?: MetricKind;
+    /** Standalone recognition also advances the FSRS state machine (Recognize quiz). */
+    advanceSRS?: boolean;
     moveCount?: number;
     optimalMoves?: number;
     tps?: number;
@@ -229,7 +231,7 @@ export class ProgressTracker {
   }): Promise<AlgorithmProgressRecord | null> {
     const {
       exerciseId, methodId, phaseId, caseId, timeMs, verdict, playMode, scramble,
-      metricKind = 'execution', moveCount, optimalMoves, tps, rotationCount, reviewGrade,
+      metricKind = 'execution', advanceSRS = false, moveCount, optimalMoves, tps, rotationCount, reviewGrade,
     } = params;
 
     // Insert the raw attempt record (with efficiency metadata when available)
@@ -300,6 +302,36 @@ export class ProgressTracker {
       // Mastery blends recognition accuracy (speed weight neutralized).
       const mastery = computeMastery(recCorrect, recAttempts, correctStreak, 1);
 
+      // When advanceSRS is set (standalone Recognize quiz), a recognition also
+      // advances the FSRS state machine — correct → "good", miss → "again" —
+      // so recognizing cases moves the SRS stats, not just recognitionAccuracy.
+      // In the SRS review flow this stays OFF: grading (recordReview) owns FSRS.
+      let fsrs: {
+        srsNextReviewAt?: number;
+        srsIntervalDays?: number;
+        srsStability?: number;
+        srsDifficulty?: number;
+        srsState?: AlgorithmProgressRecord["srsState"];
+        srsLapses?: number;
+        srsReviewCount?: number;
+        lastReviewAt?: number;
+      } = {};
+      if (advanceSRS) {
+        const grade: SRSGrade = verdict === "correct" ? "good" : "again";
+        const record: FSRSRecord = prev ? toFSRSRecord(prev) : { ...FSRS_DEFAULTS };
+        const next = fsrsReview(record, grade, now);
+        fsrs = {
+          srsNextReviewAt: next.nextReviewAt,
+          srsIntervalDays: next.intervalDays,
+          srsStability: next.stability,
+          srsDifficulty: next.difficulty,
+          srsState: next.state,
+          srsLapses: next.lapses,
+          srsReviewCount: next.reviewCount,
+          lastReviewAt: next.lastReviewAt,
+        };
+      }
+
       const progress: AlgorithmProgressRecord = {
         algorithmId: caseId,
         mastery,
@@ -309,17 +341,17 @@ export class ProgressTracker {
         totalAttempts,
         correctStreak,
         lastPracticedAt: now,
-        srsNextReviewAt: verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now,
-        srsIntervalDays: interval,
+        srsNextReviewAt: fsrs.srsNextReviewAt ?? (verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now),
+        srsIntervalDays: fsrs.srsIntervalDays ?? interval,
         srsEaseFactor: ease,
         recognitionAccuracy,
         recognitionAttempts: recAttempts,
-        srsStability: prev?.srsStability ?? 0,
-        srsDifficulty: prev?.srsDifficulty ?? 5,
-        srsState: prev?.srsState ?? "new",
-        srsLapses: prev?.srsLapses ?? 0,
-        srsReviewCount: prev?.srsReviewCount ?? 0,
-        lastReviewAt: prev?.lastReviewAt ?? 0,
+        srsStability: fsrs.srsStability ?? prev?.srsStability ?? 0,
+        srsDifficulty: fsrs.srsDifficulty ?? prev?.srsDifficulty ?? 5,
+        srsState: fsrs.srsState ?? prev?.srsState ?? "new",
+        srsLapses: fsrs.srsLapses ?? prev?.srsLapses ?? 0,
+        srsReviewCount: fsrs.srsReviewCount ?? prev?.srsReviewCount ?? 0,
+        lastReviewAt: fsrs.lastReviewAt ?? prev?.lastReviewAt ?? 0,
       };
 
       await this.repo.upsertAlgorithmProgress(progress);

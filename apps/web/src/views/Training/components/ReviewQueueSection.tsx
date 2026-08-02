@@ -11,7 +11,7 @@
  *  - a Start Review button that opens the full review session (SRSReviewView)
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { METHODS } from "@cubeforge/algorithm-db";
@@ -48,9 +48,14 @@ export interface ReviewQueueSectionProps {
   onStartReview: (methodId?: string) => void;
   /** Opens the SRS insights dashboard, seeding it with the current method filter. */
   onOpenInsights?: (methodId?: string) => void;
+  /**
+   * Reports the live count of due/overdue queue items so the dashboard
+   * "N due for review" badge always matches this queue (single source of truth).
+   */
+  onDueCountChange?: (due: number) => void;
 }
 
-export function ReviewQueueSection({ onStartReview, onOpenInsights }: ReviewQueueSectionProps) {
+export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountChange }: ReviewQueueSectionProps) {
   const { ready, loading, error, queue } = useSRSQueue();
   const [methodFilter, setMethodFilter] = useState<string>("all");
 
@@ -69,6 +74,13 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights }: ReviewQueu
     const by = (r: QueueReason) => queue.filter((q) => q.reason === r).length;
     return { total: queue.length, overdue: by("overdue"), weak: by("weak"), fresh: by("new") };
   }, [queue]);
+
+  // Report the live due count (overdue + review reasons) to the dashboard so
+  // the header badge is always derived from the same queue the user sees.
+  useEffect(() => {
+    const due = queue.filter((q) => q.reason === "overdue" || q.reason === "review").length;
+    onDueCountChange?.(due);
+  }, [queue, onDueCountChange]);
 
   const methodName = (methodId: string) =>
     METHODS.find((m) => m.id === methodId)?.name ?? methodId;
