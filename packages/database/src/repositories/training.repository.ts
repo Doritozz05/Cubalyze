@@ -689,6 +689,12 @@ export class TrainingRepository {
   /**
    * Aggregate per-phase stats from training_attempts. Used for
    * phase-level weakness detection (avg time, accuracy, efficiency).
+   *
+   * Recognition attempts ARE included: they carry a real verdict (correct /
+   * incorrect) so they contribute to accuracy/fail-rate/attempt counts, which
+   * is what the Quick Summary and phase stats report. Time and efficiency
+   * aggregates are already guarded (time_ms > 0 / optimal_moves > 0) so the
+   * recognition attempts' time_ms=0 rows never corrupt them.
    */
   async getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStats | null> {
     const rows = await this.db(
@@ -701,7 +707,7 @@ export class TrainingRepository {
          AVG(CASE WHEN optimal_moves > 0 AND move_count > 0 THEN optimal_moves * 1.0 / move_count END) as efficiency,
          MAX(timestamp) as last_practiced_at
        FROM training_attempts
-       WHERE method_id = ? AND phase_id = ? AND metric_kind = 'execution'`,
+       WHERE method_id = ? AND phase_id = ?`,
       [methodId, phaseId],
     );
     const r = rows[0] as Record<string, unknown>;

@@ -184,4 +184,107 @@ export class AlgorithmsRepository {
       ],
     );
   }
+
+  // ── Bulk seeding ─────────────────────────────────────────────────────
+
+  /**
+   * Seed the whole canonical catalog in a handful of statements instead of
+   * ~450 individual INSERT round-trips. Each table is inserted with one
+   * multi-row `INSERT OR IGNORE`, so the Comlink worker boundary is crossed
+   * only 4 times instead of once per row. This is the dominant startup cost
+   * for the Training tab on a local SQLite DB.
+   */
+  async seedAll(data: {
+    methods: AlgorithmMethod[];
+    subsets: AlgorithmSubset[];
+    cases: AlgorithmCase[];
+    algorithms: NewAlgorithm[];
+  }): Promise<number> {
+    const now = new Date().toISOString();
+    let total = 0;
+
+    if (data.methods.length > 0) {
+      const cols = '(id, name, description, sort_order, puzzle_type)';
+      const rows = data.methods
+        .map(() => '(?, ?, ?, ?, ?)')
+        .join(', ');
+      const bind: unknown[] = data.methods.flatMap((m) => [m.id, m.name, m.description, m.sortOrder, m.puzzleType]);
+      await this.db(`INSERT OR IGNORE INTO algorithm_methods ${cols} VALUES ${rows}`, bind);
+      total += data.methods.length;
+    }
+
+    if (data.subsets.length > 0) {
+      const cols = '(id, method_id, parent_id, name, description, sort_order, puzzle_type)';
+      const rows = data.subsets
+        .map(() => '(?, ?, ?, ?, ?, ?, ?)')
+        .join(', ');
+      const bind: unknown[] = data.subsets.flatMap((s) => [s.id, s.methodId, s.parentId ?? null, s.name, s.description, s.sortOrder, s.puzzleType]);
+      await this.db(`INSERT OR IGNORE INTO algorithm_subsets ${cols} VALUES ${rows}`, bind);
+      total += data.subsets.length;
+    }
+
+    if (data.cases.length > 0) {
+      const cols = `(id, subset_id, case_number, name, recognition_patterns,
+         setup_scramble, setup_algorithm, diagram_type, diagram_2d, diagram_3d,
+         probability, difficulty, category, tags, puzzle_type, created_at, updated_at)`;
+      const rows = data.cases
+        .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .join(', ');
+      const bind: unknown[] = data.cases.flatMap((c) => [
+        c.id,
+        c.subsetId,
+        c.caseNumber,
+        c.name,
+        JSON.stringify(c.recognitionPatterns),
+        c.setupScramble,
+        c.setupAlgorithm ?? null,
+        c.diagramType,
+        c.diagram2D ? JSON.stringify(c.diagram2D) : null,
+        c.diagram3D ? JSON.stringify(c.diagram3D) : null,
+        c.probability ?? null,
+        c.difficulty,
+        c.category ?? null,
+        JSON.stringify(c.tags),
+        c.puzzleType,
+        now,
+        now,
+      ]);
+      await this.db(`INSERT OR IGNORE INTO algorithm_cases ${cols} VALUES ${rows}`, bind);
+      total += data.cases.length;
+    }
+
+    if (data.algorithms.length > 0) {
+      const cols = `(id, case_id, moves, move_count_htm, move_count_qtm, move_count_stm,
+         is_default, source, attribution_name, attribution_url, difficulty,
+         triggers, notes, is_mirror, mirror_of, is_inverse, votes, created_at, updated_at)`;
+      const rows = data.algorithms
+        .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .join(', ');
+      const bind: unknown[] = data.algorithms.flatMap((a) => [
+        a.id,
+        a.caseId,
+        JSON.stringify(a.moves),
+        a.moveCount.htm,
+        a.moveCount.qtm,
+        a.moveCount.stm,
+        a.isDefault ? 1 : 0,
+        a.source ?? null,
+        a.attributionName ?? null,
+        a.attributionUrl ?? null,
+        a.difficulty,
+        JSON.stringify(a.triggers ?? []),
+        a.notes ?? null,
+        a.isMirror ? 1 : 0,
+        a.mirrorOf ?? null,
+        a.isInverse ? 1 : 0,
+        a.votes ?? null,
+        now,
+        now,
+      ]);
+      await this.db(`INSERT OR IGNORE INTO algorithm_records ${cols} VALUES ${rows}`, bind);
+      total += data.algorithms.length;
+    }
+
+    return total;
+  }
 }

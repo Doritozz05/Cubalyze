@@ -235,6 +235,35 @@ describe('AlgorithmsRepository', () => {
     const cnt = await repo.count();
     expect(cnt).toBe(10);
   });
+
+  it('seedAll bulk-inserts the whole catalog in 4 multi-row statements (not ~450 round-trips)', async () => {
+    const db = mockDb();
+    repo = new AlgorithmsRepository(db);
+
+    const count = await repo.seedAll({
+      methods: [{ id: 'm1', name: 'CFOP', description: '', sortOrder: 1, puzzleType: '3x3x3' }],
+      subsets: [{ id: 's1', methodId: 'm1', name: 'PLL', description: '', sortOrder: 1, puzzleType: '3x3x3' }],
+      cases: [{
+        id: 'c1', subsetId: 's1', caseNumber: 'PLL 1', name: 'Aa', recognitionPatterns: [],
+        setupScramble: '', diagramType: '2d-top', difficulty: 'intermediate', tags: [], puzzleType: '3x3x3',
+      }],
+      algorithms: [{
+        id: 'a1', caseId: 'c1', moves: ["R", "U"], moveCount: { htm: 2, qtm: 2, stm: 2 },
+        isDefault: true, isCustom: false, sortOrder: 0, difficulty: 'intermediate',
+        triggers: [], isMirror: false, isInverse: false,
+      }],
+    });
+
+    expect(count).toBe(4);
+    // One statement per table — the Comlink worker boundary is crossed 4 times,
+    // not once per row (~450 for the full catalog).
+    expect(db.mock.calls).toHaveLength(4);
+    expect(db.mock.calls[0][0]).toContain('INSERT OR IGNORE INTO algorithm_methods');
+    expect(db.mock.calls[0][0]).toContain('VALUES (?, ?, ?, ?, ?)');
+    expect(db.mock.calls[1][0]).toContain('INSERT OR IGNORE INTO algorithm_subsets');
+    expect(db.mock.calls[2][0]).toContain('INSERT OR IGNORE INTO algorithm_cases');
+    expect(db.mock.calls[3][0]).toContain('INSERT OR IGNORE INTO algorithm_records');
+  });
 });
 
 describe('Database Client', () => {

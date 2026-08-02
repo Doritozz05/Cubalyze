@@ -49,8 +49,9 @@ export interface ReviewQueueSectionProps {
   /** Opens the SRS insights dashboard, seeding it with the current method filter. */
   onOpenInsights?: (methodId?: string) => void;
   /**
-   * Reports the live count of due/overdue queue items so the dashboard
-   * "N due for review" badge always matches this queue (single source of truth).
+   * Reports the live total of reviewable queue items so the dashboard
+   * "N due for review" badge always matches this queue — and the
+   * "Start Review (N)" button — (single source of truth).
    */
   onDueCountChange?: (due: number) => void;
 }
@@ -75,11 +76,11 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
     return { total: queue.length, overdue: by("overdue"), weak: by("weak"), fresh: by("new") };
   }, [queue]);
 
-  // Report the live due count (overdue + review reasons) to the dashboard so
-  // the header badge is always derived from the same queue the user sees.
+  // Report the live reviewable total to the dashboard so the header badge is
+  // always derived from the same queue the user sees AND matches the
+  // "Start Review (N)" button (weak/overdue/review items are all reviewable).
   useEffect(() => {
-    const due = queue.filter((q) => q.reason === "overdue" || q.reason === "review").length;
-    onDueCountChange?.(due);
+    onDueCountChange?.(queue.length);
   }, [queue, onDueCountChange]);
 
   const methodName = (methodId: string) =>

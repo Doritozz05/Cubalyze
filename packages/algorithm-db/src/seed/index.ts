@@ -82,6 +82,13 @@ export async function seedIfEmpty(
     insertSubset?(subset: (typeof SUBSETS)[number]): Promise<void>;
     insertCase?(c: AlgorithmCase): Promise<void>;
     insertAlgorithm?(a: Algorithm): Promise<void>;
+    /** Bulk path: seed the whole catalog in a handful of statements. */
+    seedAll?(data: {
+      methods: (typeof METHODS)[number][];
+      subsets: (typeof SUBSETS)[number][];
+      cases: AlgorithmCase[];
+      algorithms: Algorithm[];
+    }): Promise<number>;
   },
 ): Promise<number> {
   // The old count-only fast path was unsafe: a partially seeded database could
@@ -93,6 +100,15 @@ export async function seedIfEmpty(
   }
 
   const { cases, algorithms } = getSeedData();
+
+  // Fast path: when the repository supports bulk seeding, cross the worker
+  // boundary 4 times (one multi-row INSERT per table) instead of ~450 times
+  // (once per method/subset/case/algorithm). This is the dominant startup
+  // cost for the Training tab on a local SQLite DB.
+  if (algorithmsRepo.seedAll) {
+    return algorithmsRepo.seedAll({ methods: METHODS, subsets: SUBSETS, cases, algorithms });
+  }
+
   let reconciled = 0;
 
   for (const method of METHODS) {

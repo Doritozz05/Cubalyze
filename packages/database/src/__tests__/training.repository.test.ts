@@ -648,6 +648,28 @@ describe('TrainingRepository — Phase Stats', () => {
     expect(db.mock.calls[0][0]).toContain('WHERE method_id = ? AND phase_id = ?');
     expect(db.mock.calls[0][1]).toEqual(['m1', 'cross']);
   });
+
+  it('getPhaseStats includes recognition attempts (no metric_kind filter)', async () => {
+    // 42 Recognize attempts on F2L must show up in the phase stats — previously
+    // the metric_kind = 'execution' filter hid them and the Quick Summary
+    // rendered "—" despite real practice data.
+    const db = mockDb([{ total_attempts: 42 }]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getPhaseStats('cfop', 'f2l');
+    expect(db.mock.calls[0][0]).not.toContain('metric_kind');
+    expect(result?.totalAttempts).toBe(42);
+  });
+
+  it('getPhaseStats still guards time aggregates from recognition time_ms=0 rows', async () => {
+    const db = mockDb([]);
+    repo = new TrainingRepository(db);
+    await repo.getPhaseStats('cfop', 'f2l');
+    const sql = db.mock.calls[0][0];
+    // Time and efficiency aggregates must remain guarded so recognition
+    // attempts (time_ms=0, no moves) never corrupt avg/best time.
+    expect(sql).toContain('time_ms > 0');
+    expect(sql).toContain('optimal_moves > 0 AND move_count > 0');
+  });
 });
 
 describe('TrainingRepository — Reset / Maintenance', () => {
