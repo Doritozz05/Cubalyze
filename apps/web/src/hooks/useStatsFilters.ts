@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
+import { useDebounce } from "use-debounce";
 import type { Solve, Penalty, SolveMethod } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime } from "@/utils/formatTime";
@@ -54,6 +55,10 @@ export function useStatsFilters(
     ...initial,
   });
 
+  // Debounce the search string so typing doesn't re-filter thousands of
+  // solves on every keystroke (filtering still feels instant on submit).
+  const [debouncedSearch] = useDebounce(filters.search, 200);
+
   /** Allow toggleSet-style setFilters updates. */
   const setFilters = useCallback(
     (next: Partial<StatsFilters>) =>
@@ -75,8 +80,8 @@ export function useStatsFilters(
         !filters.methods.has(s.method)
       )
         return false;
-      if (filters.search.trim().length > 0) {
-        const q = filters.search.trim().toLowerCase();
+      if (debouncedSearch.trim().length > 0) {
+        const q = debouncedSearch.trim().toLowerCase();
         const noteOk = s.note?.toLowerCase().includes(q) ?? false;
         const scrOk = s.scramble.toLowerCase().includes(q);
         const penOk = normalizedPen.toLowerCase().includes(q);
@@ -93,7 +98,7 @@ export function useStatsFilters(
     filters.dateTo,
     filters.penalties,
     filters.methods,
-    filters.search,
+    debouncedSearch,
     filters.smartCubeOnly,
     filters.puzzleType,
   ]);

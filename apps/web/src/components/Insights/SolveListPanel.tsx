@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime, normalizePenalty } from "@/types";
@@ -105,6 +106,17 @@ export const SolveListPanel = memo(function SolveListPanel({
   reset,
   className,
 }: SolveListPanelProps) {
+  // ── Virtualized list ──────────────────────────────────────────────────
+  // Power users accumulate thousands of solves; virtualize the list so we
+  // only mount the ~20 visible rows + overscan instead of the whole array.
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: solves.length,
+    getScrollElement: () => viewportRef.current,
+    estimateSize: () => 40,
+    overscan: 8,
+  });
+
   // ── Derived data ──────────────────────────────────────────────────────
   const stats = useMemo(() => computeStats(solves), [solves]);
   const bestTime = Number.isFinite(stats.best) ? stats.best : null;
@@ -296,9 +308,14 @@ export const SolveListPanel = memo(function SolveListPanel({
           className="m-3 flex-1"
         />
       ) : (
-        <ScrollArea className="min-h-0 flex-1">
-          <ul>
-            {solves.map((s, i) => {
+        <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1">
+          <ul
+            className="relative w-full"
+            style={{ height: virtualizer.getTotalSize() }}
+          >
+            {virtualizer.getVirtualItems().map((vi) => {
+              const s = solves[vi.index];
+              const i = vi.index;
               const eff = effectiveTime(s);
               const isDnf = !Number.isFinite(eff);
               const isBest = bestTime !== null && eff === bestTime && !isDnf;
@@ -315,9 +332,12 @@ export const SolveListPanel = memo(function SolveListPanel({
               return (
                 <li
                   key={s.id}
+                  ref={virtualizer.measureElement}
+                  data-index={vi.index}
                   role="button"
                   tabIndex={0}
                   onClick={() => onSelect(isSelected ? null : s.id)}
+                  onFocus={() => virtualizer.scrollToIndex(vi.index)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -326,9 +346,11 @@ export const SolveListPanel = memo(function SolveListPanel({
                   }}
                   aria-label={`Solve ${solves.length - i}: ${isDnf ? "DNF" : formatTime(eff)}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
-                    "relative cursor-pointer border-b border-line/70 outline-none transition-colors last:border-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ink/30",
+                    "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none transition-colors focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ink/30",
                     isSelected ? "bg-surface-2" : "hover:bg-surface-2/60",
+                    vi.index === solves.length - 1 && "border-b-0",
                   )}
+                  style={{ transform: `translateY(${vi.start}px)` }}
                >
                   {/* Selection accent bar (no layout shift) */}
                   <span

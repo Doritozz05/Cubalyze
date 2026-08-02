@@ -120,3 +120,69 @@ export function downloadFile(content: string, filename: string, mimeType: string
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Export solves to a real Excel (.xlsx) workbook via SheetJS.
+ *
+ * SheetJS is lazily loaded (dynamic import) so the ~900KB library only hits
+ * the network/bundle the first time a user actually exports — the main app
+ * bundle stays unchanged.
+ */
+export async function exportSolvesToXLSX(
+  solves: Solve[],
+  sessionName: string = "session",
+): Promise<void> {
+  const XLSX = await import("xlsx");
+
+  const rows = solves.map((solve, i) => {
+    const pen = normalizePenalty(solve.penalty);
+    const eff = effectiveTime(solve);
+    const no = solves.length - i;
+    return {
+      No: no,
+      Time: pen === "DNF" ? "DNF" : formatTime(eff),
+      "Time (s)": Number.isFinite(eff) ? Number((eff / 1000).toFixed(2)) : "DNF",
+      Penalty: solve.penalty,
+      Scramble: solve.scramble,
+      Date: new Date(solve.timestamp).toISOString(),
+      Method: solve.method ?? "",
+      Note: solve.note ?? "",
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Readable column widths.
+  ws["!cols"] = [
+    { wch: 5 }, // No
+    { wch: 10 }, // Time
+    { wch: 10 }, // Time (s)
+    { wch: 8 }, // Penalty
+    { wch: 60 }, // Scramble
+    { wch: 24 }, // Date
+    { wch: 8 }, // Method
+    { wch: 20 }, // Note
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Solves");
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet([
+      {
+        App: "CubeForge",
+        Session: sessionName,
+        ExportedAt: new Date().toISOString(),
+        SolveCount: solves.length,
+      },
+    ]),
+    "Info",
+  );
+
+  XLSX.writeFile(wb, `cubeforge-${sanitizeFilename(sessionName)}.xlsx`);
+}
+
+/** Keep session names filesystem-safe for downloads. */
+function sanitizeFilename(name: string): string {
+  const safe = name.replace(/[^a-z0-9_-]/gi, "_");
+  return safe.length > 0 ? safe : "session";
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useDebouncedCallback } from "use-debounce";
 import { useStore } from "zustand";
 import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
 import type { Subscription } from "rxjs";
@@ -89,6 +90,15 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
   const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
+
+  // Debounced engine resize: ResizeObserver fires on every layout frame during
+  // drag-resize; throttling the WebGL viewport re-render keeps the UI smooth.
+  const debouncedResize = useDebouncedCallback(
+    (width: number, height: number) => {
+      engineRef.current?.resize(width, height);
+    },
+    80,
+  );
 
   // Helper to push move notation to state
   const appendRecentMove = useCallback((notation: string) => {
@@ -233,7 +243,9 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       initEngineIfNeeded(rect.width, rect.height);
     }
 
-    // ResizeObserver guards against tiny or 0x0 container size during collapse
+    // ResizeObserver guards against tiny or 0x0 container size during collapse.
+    // `engine.resize()` is a WebGL viewport re-render — debouncing avoids
+    // hammering it during continuous drag-resizes (floating panels, splitters).
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
@@ -241,7 +253,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
           if (!engineRef.current) {
             initEngineIfNeeded(width, height);
           } else {
-            engineRef.current.resize(width, height);
+            debouncedResize(width, height);
           }
         }
       }
@@ -251,6 +263,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
     return () => {
       resizeObserver.disconnect();
+      debouncedResize.cancel();
       movesSub?.unsubscribe();
       gyroSub?.unsubscribe();
       faceletsSub?.unsubscribe();
@@ -266,7 +279,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       setInitFailed(false);
       setContextEvicted(false);
     };
-  }, [appendRecentMove, order]);
+  }, [appendRecentMove, order, debouncedResize]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {

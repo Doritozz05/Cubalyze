@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import { useStorageStatusStore } from '@/stores/storageStatus';
-import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToJSON, downloadFile } from '@/utils/exportSolves';
+import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToJSON, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
 import { PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
 import type { Solve, PuzzleCategory } from '@/types';
@@ -39,6 +40,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
   // Puzzle category selected before importing — solves are stored into it.
   const [importCategory, setImportCategory] = useState<PuzzleCategory | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Store the original file content so handleConfirmImport can parse the
   // full data (rawLines is truncated for preview).
@@ -165,6 +167,17 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
     downloadFile(json, `cubeforge-${name}.json`, 'application/json');
   };
 
+  const handleExportExcel = () => {
+    if (solves.length === 0 || exportingExcel) return;
+    // SheetJS is loaded on demand — only pay for it when exporting.
+    setExportingExcel(true);
+    exportSolvesToXLSX(solves, sessionName ?? 'session')
+      .catch(() => {
+        toast.error("Couldn't create the Excel file. Try again.");
+      })
+      .finally(() => setExportingExcel(false));
+  };
+
   return (
     <>
       <div className="flex flex-col gap-5">
@@ -280,6 +293,29 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
             className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Export JSON
+          </button>
+        </div>
+
+        {/* ── Excel Export ──────────────────────────────────────────── */}
+        <div className="group flex items-center justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="size-4 text-ink-2" />
+              <h4 className="text-[0.85rem] font-medium text-ink">Excel export</h4>
+            </div>
+            <p className="mt-1.5 text-[0.72rem] text-ink-3">
+              Real .xlsx workbook with columns pre-sized for analysis in Excel / Google Sheets. Includes a summary sheet.
+            </p>
+            {isEmpty && (
+              <p className="mt-1 text-[0.62rem] text-ink-3/60">No solves to export yet.</p>
+            )}
+          </div>
+          <button
+            onClick={handleExportExcel}
+            disabled={isEmpty || exportingExcel}
+            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {exportingExcel ? 'Exporting…' : 'Export Excel'}
           </button>
         </div>
 

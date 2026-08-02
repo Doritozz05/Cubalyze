@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
 import { Trophy, X, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatTime } from "@/utils/formatTime";
@@ -40,6 +41,48 @@ export function PbCelebrationBanner({
 
     return () => clearTimeout(timer);
   }, [types, singleTime, ao5Time, ao12Time, onClose]);
+
+  // Celebrate a new PB with confetti, once per banner mount. Respects the
+  // user's reduced-motion preference and auto-cleans its canvas after the
+  // burst so it never leaks DOM nodes.
+  useEffect(() => {
+    if (types.length === 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const end = Date.now() + 1200;
+    const colors = ["#22c55e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5cf6"];
+    let rafId = 0;
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 60,
+        startVelocity: 55,
+        origin: { x: 0, y: 0.75 },
+        colors,
+        zIndex: 60,
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 60,
+        startVelocity: 55,
+        origin: { x: 1, y: 0.75 },
+        colors,
+        zIndex: 60,
+      });
+      if (Date.now() < end) rafId = requestAnimationFrame(frame);
+    };
+
+    // Small initial pop + sustained side cannons for ~1.2s.
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 }, colors, zIndex: 60 });
+    frame();
+
+    return () => {
+      // Stop the loop on unmount; existing particles fade out naturally.
+      cancelAnimationFrame(rafId);
+    };
+  }, [types]);
 
   if (!visible || types.length === 0) return null;
 
