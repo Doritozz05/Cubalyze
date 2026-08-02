@@ -310,6 +310,15 @@ export class ProgressTracker {
 
     // Update algorithm progress
     const prev = await this.repo.getAlgorithmProgress(caseId);
+    // A practice attempt must never clobber an existing FSRS schedule with
+    // SM-2 math: drilling a case only updates mastery/accuracy/time. Once a
+    // case has been graded (or entered an FSRS state), its review date,
+    // interval and ease belong to the FSRS state machine (recordReview /
+    // advanceSRS). Only never-graded cases get the SM-2 bootstrap below so
+    // they can enter the daily queue.
+    const hasFSRS = prev
+      ? (prev.srsReviewCount ?? 0) > 0 || (prev.srsStability ?? 0) > 0 || (prev.srsState ?? "new") !== "new"
+      : false;
     const correctStreak = verdict === "correct" ? (prev?.correctStreak ?? 0) + 1 : 0;
     const totalAttempts = (prev?.totalAttempts ?? 0) + 1;
 
@@ -370,9 +379,13 @@ export class ProgressTracker {
         totalAttempts,
         correctStreak,
         lastPracticedAt: now,
-        srsNextReviewAt: fsrs.srsNextReviewAt ?? (verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now),
-        srsIntervalDays: fsrs.srsIntervalDays ?? interval,
-        srsEaseFactor: ease,
+        // advanceSRS writes the FSRS schedule; otherwise preserve an existing
+        // FSRS schedule, only bootstrapping SM-2 for never-graded cases.
+        srsNextReviewAt: fsrs.srsNextReviewAt ?? (hasFSRS
+          ? (prev?.srsNextReviewAt ?? now)
+          : (verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now)),
+        srsIntervalDays: fsrs.srsIntervalDays ?? (hasFSRS ? (prev?.srsIntervalDays ?? interval) : interval),
+        srsEaseFactor: hasFSRS ? (prev?.srsEaseFactor ?? ease) : ease,
         recognitionAccuracy,
         recognitionAttempts: recAttempts,
         srsStability: fsrs.srsStability ?? prev?.srsStability ?? 0,
@@ -420,9 +433,14 @@ export class ProgressTracker {
       totalAttempts,
       correctStreak,
       lastPracticedAt: now,
-      srsNextReviewAt: verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now,
-      srsIntervalDays: interval,
-      srsEaseFactor: ease,
+      // Drilling a graded case must not move its review date: the FSRS
+      // schedule is owned by recordReview. Only brand-new cases get the
+      // SM-2 bootstrap so they can enter the daily queue.
+      srsNextReviewAt: hasFSRS
+        ? (prev?.srsNextReviewAt ?? now)
+        : (verdict !== "skipped" ? now + interval * 86400000 : prev?.srsNextReviewAt ?? now),
+      srsIntervalDays: hasFSRS ? (prev?.srsIntervalDays ?? interval) : interval,
+      srsEaseFactor: hasFSRS ? (prev?.srsEaseFactor ?? ease) : ease,
       recognitionAccuracy: prev?.recognitionAccuracy ?? 0,
       recognitionAttempts: prev?.recognitionAttempts ?? 0,
       srsStability: prev?.srsStability ?? 0,

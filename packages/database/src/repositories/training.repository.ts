@@ -531,7 +531,7 @@ export class TrainingRepository {
   async getDueForReview(limit = 20): Promise<AlgorithmProgress[]> {
     const now = Date.now();
     const rows = await this.db(
-      "SELECT * FROM algorithm_progress WHERE srs_next_review_at > 0 AND srs_next_review_at <= ? ORDER BY mastery ASC LIMIT ?",
+      "SELECT * FROM algorithm_progress WHERE srs_next_review_at > 0 AND srs_next_review_at <= ? ORDER BY srs_next_review_at ASC LIMIT ?",
       [now, limit],
     );
     return rows.map((r) => rowToAlgorithmProgress(r as unknown as AlgorithmProgressRow));

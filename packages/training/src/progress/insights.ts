@@ -131,13 +131,18 @@ export function computeSRSInsights(
       bucketCounts[bucketFor(r)]++;
     }
 
-    // Interval growth curve (cross-sectional).
+    // Interval growth curve (cross-sectional) — only graded reviews shape the
+    // spacing-effect curve. Never-graded cases (reviewCount 0) carry the SM-2
+    // bootstrap interval and 0 stability, which would inject a fake 0-days
+    // point and flatten the growth signal.
     const rc = p.srsReviewCount ?? 0;
-    const g = growthByCount.get(rc) ?? { stabilitySum: 0, intervalSum: 0, count: 0 };
-    g.stabilitySum += p.srsStability ?? 0;
-    g.intervalSum += p.srsIntervalDays ?? 0;
-    g.count++;
-    growthByCount.set(rc, g);
+    if (rc >= 1) {
+      const g = growthByCount.get(rc) ?? { stabilitySum: 0, intervalSum: 0, count: 0 };
+      g.stabilitySum += p.srsStability ?? 0;
+      g.intervalSum += p.srsIntervalDays ?? 0;
+      g.count++;
+      growthByCount.set(rc, g);
+    }
 
     // Due projection.
     const next = p.srsNextReviewAt ?? 0;
