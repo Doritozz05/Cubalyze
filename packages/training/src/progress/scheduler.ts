@@ -249,6 +249,9 @@ export function buildDailyQueue(
   return interleaved.slice(0, limit);
 }
 
-/** Re-exported for consumers that want the canonical default. */
-/** Off by default: brand-new (never-practiced) cases are not injected into the queue. */
+/**
+ * Canonical default for brand-new case injection: OFF. The queue only
+ * contains cases the user actually practiced — never-practiced cases are
+ * only injected when a consumer opts in explicitly via `newPerDay`.
+ */
 export const DEFAULT_NEW_PER_DAY = 0;

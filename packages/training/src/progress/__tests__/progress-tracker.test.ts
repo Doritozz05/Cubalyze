@@ -265,6 +265,82 @@ describe('ProgressTracker — recordAttempt', () => {
   });
 });
 
+describe('ProgressTracker — practice preserves the FSRS schedule', () => {
+  const DAY_MS = 86_400_000;
+
+  it('execution practice on a graded case must NOT clobber the FSRS schedule with SM-2', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const now = 1_700_000_000_000;
+
+    // Grade the case first → real FSRS schedule: review state, 3d interval, stability 3.
+    await tracker.recordReview({ caseId: 'case-ua', grade: 'good', now });
+    const scheduled = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    expect(scheduled?.srsState).toBe('review');
+    expect(scheduled?.srsNextReviewAt).toBe(now + 3 * DAY_MS);
+
+    // Now practice it with a fast time — SM-2 would stretch the interval to ~8d
+    // (round(3 × 2.5)); the FSRS schedule must stay untouched.
+    await tracker.recordAttempt({
+      ...baseParams,
+      timeMs: 1100,
+      verdict: 'correct',
+      metricKind: 'execution',
+    });
+
+    const after = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    expect(after?.srsNextReviewAt).toBe(now + 3 * DAY_MS); // unchanged
+    expect(after?.srsIntervalDays).toBe(3);
+    expect(after?.srsEaseFactor).toBe(2.5);
+    expect(after?.srsState).toBe('review');
+    expect(after?.srsReviewCount).toBe(1);
+    // Practice still updates mastery/accuracy.
+    expect(after?.accuracy).toBe(100);
+  });
+
+  it('recognition practice on a graded case also preserves the FSRS schedule', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const now = 1_700_000_000_000;
+
+    await tracker.recordReview({ caseId: 'case-ua', grade: 'good', now });
+    await tracker.recordAttempt({
+      ...baseParams,
+      timeMs: 0,
+      verdict: 'correct',
+      metricKind: 'recognition',
+      // advanceSRS off → recognition-only practice, must not move the schedule.
+    });
+
+    const after = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    expect(after?.srsNextReviewAt).toBe(now + 3 * DAY_MS);
+    expect(after?.srsIntervalDays).toBe(3);
+    expect(after?.srsState).toBe('review');
+    expect(after?.recognitionAccuracy).toBe(100);
+  });
+
+  it('execution practice on a never-graded case still bootstraps an SM-2 schedule', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const before = Date.now();
+
+    await tracker.recordAttempt({
+      ...baseParams,
+      timeMs: 1200,
+      verdict: 'correct',
+      metricKind: 'execution',
+    });
+
+    const latest = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    // Never graded → 'new' state, no FSRS counters, but a future SM-2 bootstrap
+    // review date so the case can enter the daily queue.
+    expect(latest?.srsState).toBe('new');
+    expect(latest?.srsReviewCount).toBe(0);
+    expect(latest?.srsStability).toBe(0);
+    expect(latest?.srsNextReviewAt ?? 0).toBeGreaterThanOrEqual(before);
+  });
+});
+
 describe('ProgressTracker — recordReview (FSRS grading)', () => {
   it('first good review on a brand-new case graduates to review with a 3-day interval', async () => {
     const { repo, savedAlgorithmProgress } = createFakeRepo();

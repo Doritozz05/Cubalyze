@@ -425,6 +425,13 @@ describe('TrainingRepository — Algorithm Progress', () => {
     expect(bind[1]).toBe(5);
   });
 
+  it('getDueForReview orders by next review date ASC (most overdue first)', async () => {
+    const db = mockDb([]);
+    repo = new TrainingRepository(db);
+    await repo.getDueForReview(20);
+    expect(db.mock.calls[0][0]).toContain('ORDER BY srs_next_review_at ASC');
+  });
+
   it('getQueueCandidates LEFT JOINs catalog + progress (H1: includes never-practiced)', async () => {
     const db = mockDb([]);
     repo = new TrainingRepository(db);

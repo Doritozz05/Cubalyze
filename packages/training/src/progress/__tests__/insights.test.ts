@@ -124,6 +124,27 @@ describe('SRS insights — computeSRSInsights', () => {
     }
   });
 
+  it('excludes never-graded cases (reviewCount 0) from the interval-growth curve', () => {
+    // Practiced via drills but never FSRS-graded: carries only the SM-2
+    // bootstrap interval + 0 stability. It must NOT add a fake 0-days point.
+    const practicedOnly = progress({
+      algorithmId: 'c1', srsState: 'new', srsStability: 0, srsReviewCount: 0,
+      srsIntervalDays: 3, lastReviewAt: 0, srsNextReviewAt: NOW + DAY_MS,
+    });
+    const graded = progress({
+      algorithmId: 'c2', srsState: 'review', srsStability: 3, srsReviewCount: 1,
+      srsIntervalDays: 3, lastReviewAt: NOW - DAY_MS, srsNextReviewAt: NOW + 2 * DAY_MS,
+    });
+
+    const insights = computeSRSInsights(
+      [candidate('c1', practicedOnly), candidate('c2', graded)],
+      NOW,
+    );
+
+    expect(insights.intervalGrowth.map((g) => g.reviewCount)).toEqual([1]);
+    expect(insights.intervalGrowth[0].count).toBe(1);
+  });
+
   it('aggregates due projection across 1/3/7/30 day horizons', () => {
     const dueToday = progress({
       algorithmId: 'c1', srsState: 'review', srsStability: 3, srsReviewCount: 1,
