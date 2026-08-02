@@ -1,6 +1,5 @@
 import type { Algorithm } from './types.js';
-import type { AlgorithmCase } from '@cubeforge/algorithm-db';
-import type { Algorithm as NewAlgorithm } from '@cubeforge/algorithm-db';
+import type { AlgorithmCase, Algorithm as NewAlgorithm, AlgorithmMethod, AlgorithmSubset } from '@cubeforge/algorithm-db';
 
 export interface AlgorithmRow {
   id: string;
@@ -93,7 +92,27 @@ export class AlgorithmsRepository {
 
   async count(): Promise<number> {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM algorithm_cases');
-    return (rows[0] as { cnt: number }).cnt;
+    return Number((rows[0] as { cnt: number }).cnt ?? 0);
+  }
+
+  /** Insert a canonical method idempotently. */
+  async insertMethod(method: AlgorithmMethod): Promise<void> {
+    await this.db(
+      `INSERT OR IGNORE INTO algorithm_methods
+        (id, name, description, sort_order, puzzle_type)
+       VALUES (?, ?, ?, ?, ?)`,
+      [method.id, method.name, method.description, method.sortOrder, method.puzzleType],
+    );
+  }
+
+  /** Insert a canonical subset idempotently, preserving parent relationships. */
+  async insertSubset(subset: AlgorithmSubset): Promise<void> {
+    await this.db(
+      `INSERT OR IGNORE INTO algorithm_subsets
+        (id, method_id, parent_id, name, description, sort_order, puzzle_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [subset.id, subset.methodId, subset.parentId ?? null, subset.name, subset.description, subset.sortOrder, subset.puzzleType],
+    );
   }
 
   // ── New schema: Cases and Algorithm references ──────────────────────
@@ -104,7 +123,7 @@ export class AlgorithmsRepository {
    */
   async insertCase(c: AlgorithmCase): Promise<void> {
     await this.db(
-      `INSERT INTO algorithm_cases
+      `INSERT OR IGNORE INTO algorithm_cases
         (id, subset_id, case_number, name, recognition_patterns,
          setup_scramble, setup_algorithm, diagram_type, diagram_2d, diagram_3d,
          probability, difficulty, category, tags, puzzle_type, created_at, updated_at)
@@ -137,7 +156,7 @@ export class AlgorithmsRepository {
    */
   async insertAlgorithm(a: NewAlgorithm): Promise<void> {
     await this.db(
-      `INSERT INTO algorithm_records
+      `INSERT OR IGNORE INTO algorithm_records
         (id, case_id, moves, move_count_htm, move_count_qtm, move_count_stm,
          is_default, source, attribution_name, attribution_url, difficulty,
          triggers, notes, is_mirror, mirror_of, is_inverse, votes, created_at, updated_at)

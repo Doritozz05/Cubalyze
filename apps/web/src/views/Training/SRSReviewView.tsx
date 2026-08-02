@@ -42,6 +42,7 @@ import { useOrientation } from "@/hooks/useOrientation";
 import { generateRandomSetup } from "@cubeforge/training";
 import type { SRSGrade } from "@cubeforge/training";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
+import { useTrainingSession } from "@/hooks/useTrainingSession";
 import { TrainingBreadcrumb, VerdictOverlay } from "./components";
 import {
   RotateCcw,
@@ -52,6 +53,7 @@ import {
   Eye,
   EyeOff,
   Zap,
+  TriangleAlert,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -109,14 +111,22 @@ export interface SRSReviewViewProps {
 }
 
 export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
-  const { ready, loading, error, session, startSession, recordAttempt, grade, skip } = useSRSQueue();
+  const { ready, loading, error, session, startSession, recordAttempt, grade, skip, updateAttemptReviewGrade } = useSRSQueue();
   const [started, setStarted] = useState(false);
+  const [sessionKey, setSessionKey] = useState(0);
   const [stage, setStage] = useState<ReviewStage>("recognition");
   const [currentSetup, setCurrentSetup] = useState("");
   const [showVerdict, setShowVerdict] = useState(false);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   const current = session.current;
   const caseId = current?.algorithmId;
+  const { sessionId, completeSession } = useTrainingSession({
+    exerciseId: `srs-review-${methodId ?? "all"}`,
+    methodId: methodId ?? "all",
+    phaseId: "srs-review",
+    sessionKey,
+  });
 
   // ── Case + algorithm data ────────────────────────────────────────────
   const { cases: allCases } = useMemo(() => getSeedData(), []);
@@ -160,6 +170,13 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     void startSession({ methodId });
   }, [ready, started, startSession, methodId]);
 
+  // The completion summary remains mounted after the last grade. Close the
+  // persisted training session now rather than waiting for navigation away.
+  useEffect(() => {
+    if (!started || session.total === 0 || session.active) return;
+    void completeSession().catch((err) => console.error("[SRSReview] complete session:", err));
+  }, [started, session.total, session.active, completeSession]);
+
   // ── Reset stage + timer when the item changes ────────────────────────
   useEffect(() => {
     setStage("recognition");
@@ -199,9 +216,11 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
   }, [phase, stoppedTime]);
 
   // ── Recognition handlers ─────────────────────────────────────────────
-  const handleRecognized = () => {
+  const handleRecognized = async () => {
     if (!current) return;
-    recordAttempt({
+    setPersistenceError(null);
+    try {
+      await recordAttempt({
       exerciseId: `srs-review-${current.methodId}`,
       methodId: current.methodId,
       caseId: current.algorithmId,
@@ -210,13 +229,20 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentSetup,
       metricKind: "recognition",
-    }).catch((err) => console.error("[SRSReview] recognition:", err));
-    setStage("execution");
+      sessionId: sessionId ?? undefined,
+      });
+      setStage("execution");
+    } catch (err) {
+      console.error("[SRSReview] recognition:", err);
+      setPersistenceError("Could not save recognition result. Please try again.");
+    }
   };
 
-  const handleNotRecognized = () => {
+  const handleNotRecognized = async () => {
     if (!current) return;
-    recordAttempt({
+    setPersistenceError(null);
+    try {
+      await recordAttempt({
       exerciseId: `srs-review-${current.methodId}`,
       methodId: current.methodId,
       caseId: current.algorithmId,
@@ -225,15 +251,28 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentSetup,
       metricKind: "recognition",
-    }).catch((err) => console.error("[SRSReview] recognition miss:", err));
-    // Couldn't recall → the honest grade is "again"; advance immediately.
-    void grade("again");
+      sessionId: sessionId ?? undefined,
+      });
+      // Couldn't recall → the honest grade is "again"; advance only after the
+      // recognition write has settled, avoiding a lost concurrent upsert.
+      await grade("again");
+      // Tag the attempt with the grade that drove the FSRS schedule. Best-effort:
+      // the grade itself already saved, so a tag failure must not mislead.
+      updateAttemptReviewGrade(current.algorithmId, "again").catch((err) =>
+        console.error("[SRSReview] tag recognition attempt:", err),
+      );
+    } catch (err) {
+      console.error("[SRSReview] recognition miss:", err);
+      setPersistenceError("Could not save recognition result. Please try again.");
+    }
   };
 
   // ── Execution verdict handlers ───────────────────────────────────────
-  const handleExecutionVerdict = (correct: boolean) => {
+  const handleExecutionVerdict = async (correct: boolean) => {
     if (!current) return;
-    recordAttempt({
+    setPersistenceError(null);
+    try {
+      await recordAttempt({
       exerciseId: `srs-review-${current.methodId}`,
       methodId: current.methodId,
       caseId: current.algorithmId,
@@ -242,9 +281,32 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentSetup,
       metricKind: "execution",
-    }).catch((err) => console.error("[SRSReview] execution:", err));
-    reset();
-    setStage("grading");
+      sessionId: sessionId ?? undefined,
+      });
+      reset();
+      setStage("grading");
+    } catch (err) {
+      console.error("[SRSReview] execution:", err);
+      setPersistenceError("Could not save execution result. Please try again.");
+    }
+  };
+
+  const handleGrade = async (nextGrade: SRSGrade) => {
+    setPersistenceError(null);
+    try {
+      await grade(nextGrade);
+      // Tag the attempt that produced this review with the FSRS grade so
+      // attempt history and the SRS schedule stay linked. Best-effort: the
+      // grade already saved, so a tag failure must not read as a failed grade.
+      if (current) {
+        updateAttemptReviewGrade(current.algorithmId, nextGrade).catch((err) =>
+          console.error("[SRSReview] tag attempt:", err),
+        );
+      }
+    } catch (err) {
+      console.error("[SRSReview] grade:", err);
+      setPersistenceError("Could not save the review grade. Please try again.");
+    }
   };
 
   const handleSkipExecution = () => {
@@ -266,6 +328,9 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     );
   }
 
+  // Only queue *load* failures are fatal. Transient persistence errors are
+  // rendered inline below so the current review can be retried instead of
+  // throwing away the whole session.
   if (error) {
     return (
       <Shell onBack={onBack}>
@@ -281,7 +346,16 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
 
   // ── Session complete ─────────────────────────────────────────────────
   if (!session.active || !current) {
-    return <CompletionSummary session={session} onBack={onBack} onReviewAgain={() => setStarted(false)} />;
+    return (
+      <CompletionSummary
+        session={session}
+        onBack={onBack}
+        onReviewAgain={() => {
+          setSessionKey((key) => key + 1);
+          setStarted(false);
+        }}
+      />
+    );
   }
 
   const total = session.total;
@@ -289,6 +363,13 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
 
   return (
     <Shell onBack={onBack}>
+      {persistenceError && (
+        <div className="flex shrink-0 items-center gap-2 rounded-md border border-hold/30 bg-hold/10 px-3 py-2 text-[0.62rem] text-hold">
+          <TriangleAlert className="size-3.5 shrink-0" />
+          <span className="min-w-0 flex-1">{persistenceError}</span>
+        </div>
+      )}
+
       {/* Progress */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="h-1.5 flex-1 rounded-full bg-surface-2 overflow-hidden">
@@ -396,7 +477,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
             <GradingStep
               current={current}
               defaultAlgorithm={defaultAlgorithm}
-              onGrade={(g) => void grade(g)}
+              onGrade={(g) => void handleGrade(g)}
               onSkip={skip}
             />
           )}

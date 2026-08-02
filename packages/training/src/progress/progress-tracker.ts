@@ -38,6 +38,11 @@ export interface ITrainingProgressRepo {
   getMethodMastery(methodId: string): Promise<number>;
   /** Per-phase aggregate stats (avg time, accuracy, efficiency) for phase weakness detection. */
   getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStatsRecord | null>;
+  createTrainingSession?(session: Omit<TrainingSessionProgressRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">): Promise<TrainingSessionProgressRecord>;
+  completeTrainingSession?(id: string, completedAt?: number): Promise<TrainingSessionProgressRecord | null>;
+  getTrainingSessions?(methodId: string, phaseId?: string, limit?: number): Promise<TrainingSessionProgressRecord[]>;
+  /** Stamp the FSRS grade onto the most recent attempt for a case (SRS review flow). */
+  updateAttemptReviewGrade?(caseId: string, reviewGrade: string): Promise<void>;
 }
 
 // ─── Record Types (what comes from the DB) ────────────────────────────────
@@ -58,6 +63,8 @@ export interface TrainingAttemptRecord {
   rotationCount?: number;
   /** FSRS review grade (again|hard|good|easy) — set only by the SRS review flow. */
   reviewGrade?: string;
+  metricKind?: MetricKind;
+  sessionId?: string;
   timestamp: number;
 }
 
@@ -113,6 +120,23 @@ export interface ExerciseProgressRecord {
 }
 
 /** Per-phase aggregate stats derived from training attempts. */
+export interface TrainingSessionProgressRecord {
+  id: string;
+  exerciseId: string;
+  methodId: string;
+  phaseId?: string;
+  subsetId?: string;
+  startedAt: number;
+  completedAt?: number;
+  durationMs: number;
+  smartCubeUsed: boolean;
+  status: "active" | "completed";
+  totalAttempts: number;
+  correctCount: number;
+  accuracy: number;
+  avgTimeMs: number;
+}
+
 export interface PhaseStatsRecord {
   methodId: string;
   phaseId: string;
@@ -215,6 +239,7 @@ export class ProgressTracker {
     methodId: string;
     phaseId?: string;
     caseId?: string;
+    sessionId?: string;
     timeMs: number;
     verdict: AttemptVerdict;
     playMode: PlayMode;
@@ -250,6 +275,8 @@ export class ProgressTracker {
       tps,
       rotationCount,
       reviewGrade,
+      metricKind,
+      sessionId: params.sessionId,
       timestamp: now,
     });
 
@@ -554,6 +581,26 @@ export class ProgressTracker {
    */
   async getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStatsRecord | null> {
     return this.repo.getPhaseStats(methodId, phaseId);
+  }
+
+  async createTrainingSession(session: Omit<TrainingSessionProgressRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">): Promise<TrainingSessionProgressRecord> {
+    if (!this.repo.createTrainingSession) throw new Error("Training session persistence is unavailable");
+    return this.repo.createTrainingSession(session);
+  }
+
+  async completeTrainingSession(id: string, completedAt?: number): Promise<TrainingSessionProgressRecord | null> {
+    if (!this.repo.completeTrainingSession) throw new Error("Training session persistence is unavailable");
+    return this.repo.completeTrainingSession(id, completedAt);
+  }
+
+  async updateAttemptReviewGrade(caseId: string, reviewGrade: SRSGrade): Promise<void> {
+    if (!this.repo.updateAttemptReviewGrade) throw new Error("Attempt grade persistence is unavailable");
+    return this.repo.updateAttemptReviewGrade(caseId, reviewGrade);
+  }
+
+  async getTrainingSessions(methodId: string, phaseId?: string, limit = 50): Promise<TrainingSessionProgressRecord[]> {
+    if (!this.repo.getTrainingSessions) return [];
+    return this.repo.getTrainingSessions(methodId, phaseId, limit);
   }
 
   /**

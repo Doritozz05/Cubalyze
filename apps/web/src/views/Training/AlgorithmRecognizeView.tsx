@@ -21,6 +21,7 @@ import {
   TouchAside,
 } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { useTrainingSession } from "@/hooks/useTrainingSession";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
 import {
   Check, X, ChevronRight, Target, Brain,
@@ -122,6 +123,12 @@ export function AlgorithmRecognizeView({
 
   // ── Real progress for weakness ordering ────────────────────────────────
   const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const { sessionId } = useTrainingSession({
+    exerciseId: `recognize-${subsetId}`,
+    methodId,
+    phaseId: _phaseId as string,
+    subsetId,
+  });
   const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
 
   useEffect(() => {
@@ -228,10 +235,11 @@ export function AlgorithmRecognizeView({
       scramble: "",
       metricKind: "recognition",
       advanceSRS: true,
+      sessionId: sessionId ?? undefined,
     }).catch((err) => {
       console.error("[RecognizeView] Failed to persist attempt:", err);
     });
-  }, [round, dbPersistAttempt, subsetId, methodId, _phaseId]);
+  }, [round, dbPersistAttempt, subsetId, methodId, _phaseId, sessionId]);
 
   // ── Go to next round ────────────────────────────────────────────────
   const handleNext = useCallback(() => {

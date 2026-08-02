@@ -53,6 +53,7 @@ export {
 export type {
   ITrainingProgressRepo,
   TrainingAttemptRecord,
+  TrainingSessionProgressRecord,
   AlgorithmProgressRecord,
   ExerciseProgressRecord,
   PhaseStatsRecord,

@@ -311,4 +311,41 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE training_attempts ADD COLUMN review_grade TEXT;
     `,
   },
+  {
+    id: '016_reconcile_training_catalog_and_sessions',
+    description: 'Complete canonical algorithm relationships and add persisted training sessions',
+    sql: `
+      ALTER TABLE algorithm_subsets ADD COLUMN parent_id TEXT;
+
+      CREATE TABLE IF NOT EXISTS training_sessions (
+        id TEXT PRIMARY KEY,
+        exercise_id TEXT NOT NULL,
+        method_id TEXT NOT NULL,
+        phase_id TEXT,
+        subset_id TEXT,
+        started_at INTEGER NOT NULL,
+        completed_at INTEGER,
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        smart_cube_used INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'active'
+      );
+      CREATE INDEX IF NOT EXISTS idx_training_sessions_method_phase
+        ON training_sessions(method_id, phase_id, started_at);
+      CREATE INDEX IF NOT EXISTS idx_training_sessions_completed
+        ON training_sessions(completed_at);
+
+      ALTER TABLE training_attempts ADD COLUMN session_id TEXT;
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_session
+        ON training_attempts(session_id);
+    `,
+  },
+  {
+    id: '017_add_training_metric_kind',
+    description: 'Persist whether a training attempt measures execution or recognition',
+    sql: `
+      ALTER TABLE training_attempts ADD COLUMN metric_kind TEXT NOT NULL DEFAULT 'execution';
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_metric_kind
+        ON training_attempts(metric_kind);
+    `,
+  },
 ];

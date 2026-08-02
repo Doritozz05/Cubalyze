@@ -8,6 +8,7 @@ import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { useTrainingSession } from "@/hooks/useTrainingSession";
 import { RandomStateGenerator } from "@cubeforge/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 import type { MetricKind } from "@cubeforge/training";
@@ -99,6 +100,12 @@ export function usePracticeSession({
   const smartCube = useDrillSmartCube({ engine, setupScramble: currentScramble });
   const hasSmartCube = smartCube.smartCubeConnected;
   const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const { sessionId } = useTrainingSession({
+    exerciseId,
+    methodId,
+    phaseId,
+    smartCubeUsed: hasSmartCube,
+  });
 
   // Verdict
   const [showVerdict, setShowVerdict] = useState(false);
@@ -138,13 +145,14 @@ export function usePracticeSession({
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentScramble,
       metricKind,
+      sessionId: sessionId ?? undefined,
       moveCount: moveCount ?? undefined,
       optimalMoves: optimalMoves ?? undefined,
       tps: tps ?? undefined,
       rotationCount: rotationCount ?? undefined,
     }).catch((err) => { console.error(`[${exerciseId}] Failed to persist:`, err); });
   }, [stoppedTime, dbPersistAttempt, methodId, phaseId, exerciseId, hasSmartCube, currentScramble,
-    metricKind, moveCount, optimalMoves, tps, rotationCount]);
+    metricKind, sessionId, moveCount, optimalMoves, tps, rotationCount]);
 
   const regenerateScramble = useCallback(() => {
     setCurrentScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
@@ -160,9 +168,10 @@ export function usePracticeSession({
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentScramble,
       metricKind,
+      sessionId: sessionId ?? undefined,
     }).catch((err) => { console.error(`[${exerciseId}] Failed to persist skip:`, err); });
     reset(); regenerateScramble();
-  }, [reset, regenerateScramble, dbPersistAttempt, exerciseId, methodId, phaseId, hasSmartCube, currentScramble, metricKind]);
+  }, [reset, regenerateScramble, dbPersistAttempt, exerciseId, methodId, phaseId, hasSmartCube, currentScramble, metricKind, sessionId]);
 
   return {
     phase, time, stoppedTime, press, release, reset,

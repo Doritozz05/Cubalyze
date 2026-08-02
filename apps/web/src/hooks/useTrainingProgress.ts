@@ -1,12 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { initDB, TrainingRepository } from "@cubeforge/database";
-import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueCandidateRecord, QueueItem, SRSGrade, SRSInsights } from "@cubeforge/training";
+import { initDB, AlgorithmsRepository, TrainingRepository } from "@cubeforge/database";
+import { seedIfEmpty } from "@cubeforge/algorithm-db";
+import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueCandidateRecord, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord } from "@cubeforge/training";
 import { ProgressTracker } from "@cubeforge/training";
 import type { AttemptVerdict, PlayMode } from "@cubeforge/training";
 
 // ─── Adapter: wraps TrainingRepository into ITrainingProgressRepo ──────────
+
+async function ensureTrainingCatalog(dbExecutor: (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>): Promise<void> {
+  // Seeding is idempotent. Do not cache this promise globally: closeDB() can
+  // replace the underlying SQLite database during the lifetime of the app, and
+  // a resolved module-level promise would then leave the new DB unseeded.
+  const algorithmsRepo = new AlgorithmsRepository(dbExecutor);
+  await seedIfEmpty(algorithmsRepo);
+}
 
 function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
   return {
@@ -40,18 +49,53 @@ function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
     getMethodExerciseProgress: (methodId: string) => repo.getMethodExerciseProgress(methodId),
     getMethodMastery: (methodId: string) => repo.getMethodMastery(methodId),
     getPhaseStats: (methodId: string, phaseId: string) => repo.getPhaseStats(methodId, phaseId),
+    createTrainingSession: (session) => repo.createTrainingSession(session),
+    completeTrainingSession: (id: string, completedAt?: number) => repo.completeTrainingSession(id, completedAt),
+    getTrainingSessions: (methodId: string, phaseId?: string, limit?: number) => repo.getTrainingSessions(methodId, phaseId, limit),
+    updateAttemptReviewGrade: (caseId: string, reviewGrade: SRSGrade) => repo.updateAttemptReviewGrade(caseId, reviewGrade),
   };
+}
+
+// ─── Shared tracker singleton ──────────────────────────────────────────────
+// Every training view (and useTrainingSession, which wraps this hook) used to
+// spawn its own initDB() + full catalog re-seed on mount — hundreds of
+// INSERT OR IGNORE round-trips per screen, repeated by every hook instance and
+// again by StrictMode. Share one tracker per live DB client instead.
+let sharedInit: { client: unknown; promise: Promise<ProgressTracker> } | null = null;
+
+async function getSharedTracker(): Promise<ProgressTracker> {
+  const dbClient = await initDB();
+  if (sharedInit && sharedInit.client === dbClient) return sharedInit.promise;
+  const promise = (async () => {
+    const dbExecutor = async (sql: string, bind?: unknown[]) => {
+      return await dbClient.execute(sql, bind);
+    };
+    // Seeding is idempotent (INSERT OR IGNORE) and keyed to this DB client,
+    // so closeDB() + re-init naturally produces a fresh, correctly seeded DB.
+    await ensureTrainingCatalog(dbExecutor);
+    const repo = new TrainingRepository(dbExecutor);
+    return new ProgressTracker(createRepoAdapter(repo));
+  })();
+  sharedInit = { client: dbClient, promise };
+  // If seeding/init fails, drop the cache so a later mount can retry instead
+  // of being stuck with a permanently rejected promise.
+  void promise.catch(() => {
+    if (sharedInit?.promise === promise) sharedInit = null;
+  });
+  return promise;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────
 
 export interface UseTrainingProgressResult {
   ready: boolean;
+  error: string | null;
   recordAttempt: (params: {
     exerciseId: string;
     methodId: string;
     phaseId?: string;
     caseId?: string;
+    sessionId?: string;
     timeMs: number;
     verdict: AttemptVerdict;
     playMode: PlayMode;
@@ -73,34 +117,37 @@ export interface UseTrainingProgressResult {
   getSRSInsights: (methodId?: string) => Promise<SRSInsights>;
   getMethodExerciseProgress: (methodId: string) => Promise<ExerciseProgressRecord[]>;
   getPhaseStats: (methodId: string, phaseId: string) => Promise<PhaseStatsRecord | null>;
+  createTrainingSession: (session: Omit<TrainingSessionProgressRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">) => Promise<TrainingSessionProgressRecord>;
+  completeTrainingSession: (id: string, completedAt?: number) => Promise<TrainingSessionProgressRecord | null>;
+  getTrainingSessions: (methodId: string, phaseId?: string, limit?: number) => Promise<TrainingSessionProgressRecord[]>;
+  updateAttemptReviewGrade: (caseId: string, reviewGrade: SRSGrade) => Promise<void>;
 }
 
 export function useTrainingProgress(): UseTrainingProgressResult {
   const [tracker, setTracker] = useState<ProgressTracker | null>(null);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function init() {
-      try {
-        const dbClient = await initDB();
-        const dbExecutor = async (sql: string, bind?: unknown[]) => {
-          return await dbClient.execute(sql, bind);
-        };
-        const repo = new TrainingRepository(dbExecutor);
-        const adapter = createRepoAdapter(repo);
+    getSharedTracker()
+      .then((tracker) => {
         if (!cancelled) {
-          setTracker(new ProgressTracker(adapter));
+          setTracker(tracker);
+          setError(null);
           setReady(true);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "Training database initialization failed";
         console.error("[useTrainingProgress] Failed to initialize:", err);
-        if (!cancelled) setReady(true);
-      }
-    }
+        if (!cancelled) {
+          setError(message);
+          setReady(true);
+        }
+      });
 
-    init();
     return () => {
       cancelled = true;
     };
@@ -112,6 +159,7 @@ export function useTrainingProgress(): UseTrainingProgressResult {
       methodId: string;
       phaseId?: string;
       caseId?: string;
+      sessionId?: string;
       timeMs: number;
       verdict: AttemptVerdict;
       playMode: PlayMode;
@@ -124,10 +172,12 @@ export function useTrainingProgress(): UseTrainingProgressResult {
       rotationCount?: number;
       reviewGrade?: SRSGrade;
     }) => {
-      if (!tracker) return null;
+      if (!tracker) {
+        throw new Error(error ?? "Training database is not ready");
+      }
       return tracker.recordAttempt(params);
     },
-    [tracker],
+    [tracker, error],
   );
 
   const recordReview = useCallback(
@@ -236,8 +286,41 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     [tracker],
   );
 
+  const createTrainingSession = useCallback(
+    (session: Omit<TrainingSessionProgressRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">) => {
+      if (!tracker) return Promise.reject(new Error("Training database is not ready"));
+      return tracker.createTrainingSession(session);
+    },
+    [tracker],
+  );
+
+  const completeTrainingSession = useCallback(
+    (id: string, completedAt?: number) => {
+      if (!tracker) return Promise.reject(new Error("Training database is not ready"));
+      return tracker.completeTrainingSession(id, completedAt);
+    },
+    [tracker],
+  );
+
+  const getTrainingSessions = useCallback(
+    (methodId: string, phaseId?: string, limit?: number) => {
+      if (!tracker) return Promise.resolve([] as TrainingSessionProgressRecord[]);
+      return tracker.getTrainingSessions(methodId, phaseId, limit);
+    },
+    [tracker],
+  );
+
+  const updateAttemptReviewGrade = useCallback(
+    async (caseId: string, reviewGrade: SRSGrade) => {
+      if (!tracker) throw new Error("Training database is not ready");
+      return tracker.updateAttemptReviewGrade(caseId, reviewGrade);
+    },
+    [tracker],
+  );
+
   return {
     ready,
+    error,
     recordAttempt,
     recordReview,
     getCaseProgress,
@@ -248,5 +331,9 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     getSRSInsights,
     getMethodExerciseProgress,
     getPhaseStats,
+    createTrainingSession,
+    completeTrainingSession,
+    getTrainingSessions,
+    updateAttemptReviewGrade,
   };
 }

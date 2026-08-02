@@ -3,6 +3,7 @@ import { OLL_CASES } from './cfop-oll';
 import { ALL_F2L_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES } from './cfop-f2l';
 import { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES } from './ortega';
 import type { AlgorithmCase, Algorithm } from '../schema';
+import { METHODS, SUBSETS } from '../methodRegistry';
 
 export { BASIC_F2L_CASES, ADVANCED_F2L_CASES, ALL_F2L_CASES };
 export { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES };
@@ -70,36 +71,47 @@ export async function isSeeded(algorithmsRepo: { count(): Promise<number> }): Pr
 /**
  * Seed the database if empty.
  *
- * The algorithmsRepo must implement count(), insertCase(), and insertAlgorithm().
- * If the repo doesn't support the new schema yet, the seed data can still be
- * used in-memory via `getSeedData()` directly (as PracticeDashboard does).
+ * The algorithmsRepo must implement the canonical catalog inserts. If it does
+ * not support the new schema yet, the seed data can still be used in-memory
+ * via `getSeedData()` directly.
  */
 export async function seedIfEmpty(
   algorithmsRepo: {
     count(): Promise<number>;
+    insertMethod?(method: (typeof METHODS)[number]): Promise<void>;
+    insertSubset?(subset: (typeof SUBSETS)[number]): Promise<void>;
     insertCase?(c: AlgorithmCase): Promise<void>;
     insertAlgorithm?(a: Algorithm): Promise<void>;
   },
 ): Promise<number> {
-  if (await isSeeded(algorithmsRepo)) return 0;
-
-  if (!algorithmsRepo.insertCase || !algorithmsRepo.insertAlgorithm) {
-    // Repo doesn't support the new schema yet — skip DB seeding
-    // The app will use in-memory data via getSeedData()
+  // The old count-only fast path was unsafe: a partially seeded database could
+  // have cases but no methods/subsets, making every INNER JOIN return zero.
+  // Always reconcile the canonical catalog; repository inserts are idempotent.
+  if (!algorithmsRepo.insertMethod || !algorithmsRepo.insertSubset ||
+      !algorithmsRepo.insertCase || !algorithmsRepo.insertAlgorithm) {
     return 0;
   }
 
   const { cases, algorithms } = getSeedData();
-  let seeded = 0;
+  let reconciled = 0;
 
+  for (const method of METHODS) {
+    await algorithmsRepo.insertMethod(method);
+    reconciled++;
+  }
+  // Parents must exist before children when foreign keys are enabled.
+  for (const subset of [...SUBSETS].sort((a, b) => Number(Boolean(a.parentId)) - Number(Boolean(b.parentId)))) {
+    await algorithmsRepo.insertSubset(subset);
+    reconciled++;
+  }
   for (const c of cases) {
     await algorithmsRepo.insertCase(c);
-    seeded++;
+    reconciled++;
   }
   for (const a of algorithms) {
     await algorithmsRepo.insertAlgorithm(a);
-    seeded++;
+    reconciled++;
   }
 
-  return seeded;
+  return reconciled;
 }

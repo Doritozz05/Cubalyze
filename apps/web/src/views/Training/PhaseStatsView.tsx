@@ -55,17 +55,34 @@ export function PhaseStatsView({
   const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">("overview");
 
   // ── Real progress from DB ──────────────────────────────────────────────
-  const { ready, getSubsetProgress, getPhaseStats } = useTrainingProgress();
+  const { ready, getSubsetProgress, getPhaseStats, getTrainingSessions } = useTrainingProgress();
   const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
   const [phaseStats, setPhaseStats] = useState<PhaseStatsRecord | null>(null);
+  const [sessionHistory, setSessionHistory] = useState<{ day: string; avgTime: number; accuracy: number; attempts: number }[]>([]);
 
   // Load phase-level aggregates (avg time, accuracy, efficiency) from
   // training_attempts — these cover phase-target trainings (Cross/EO/LSE)
   // that have no per-algorithm cases.
   useEffect(() => {
     if (!ready) return;
-    getPhaseStats(methodId, phaseId).then((stats) => setPhaseStats(stats));
-  }, [ready, methodId, phaseId, getPhaseStats]);
+    let cancelled = false;
+    void getPhaseStats(methodId, phaseId).then((stats) => {
+      if (!cancelled) setPhaseStats(stats);
+    });
+    void getTrainingSessions(methodId, phaseId, 50).then((sessions) => {
+      if (cancelled) return;
+      setSessionHistory(sessions
+        .filter((session) => session.totalAttempts > 0)
+        .map((session) => ({
+          day: new Date(session.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+          avgTime: session.avgTimeMs / 1000,
+          accuracy: session.accuracy,
+          attempts: session.totalAttempts,
+        }))
+        .reverse());
+    });
+    return () => { cancelled = true; };
+  }, [ready, methodId, phaseId, getPhaseStats, getTrainingSessions]);
 
   // Find subset for this phase
   const subset = useMemo(() => {
@@ -134,9 +151,6 @@ export function PhaseStatsView({
       .slice(0, 5),
     [caseStats],
   );
-
-  // Empty session history (no fake data)
-  const sessionHistory: { day: string; avgTime: number; accuracy: number; attempts: number }[] = [];
 
   return (
     <div className="relative flex-1 min-h-0 w-full h-full">

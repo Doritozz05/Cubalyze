@@ -15,6 +15,7 @@ import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { useTrainingSession } from "@/hooks/useTrainingSession";
 import {
   TrainingBreadcrumb,
   TouchAside,
@@ -49,6 +50,9 @@ interface PhaseSplit {
 interface SolveResult {
   totalMs: number;
   splits: PhaseSplit[];
+  solveMode: FullSolveMode;
+  moveLimit: number;
+  tpsThreshold: number;
   moveCount?: number;
   hadRotations?: boolean;
 }
@@ -133,7 +137,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const [moveLimit, setMoveLimit] = useState(60);
   const [tpsThreshold, setTpsThreshold] = useState(4);
   const [userMoveCount, setUserMoveCount] = useState<number | null>(null);
-  const [hadRotations, setHadRotations] = useState(false);
+  const [hadRotations, setHadRotations] = useState<boolean | null>(null);
 
   // ── Timer + Smart Cube ──────────────────────────────────────────────
   const { phase: timerPhase, time, stoppedTime, press, release, reset, engine } = useDrillTimer({ inspection: useInspection });
@@ -157,39 +161,106 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   // A single pass per solve (ref identity guards StrictMode double-invoke).
   // Per-phase splits feed phase weakness; the total row records the solve.
   const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const { sessionId } = useTrainingSession({
+    exerciseId: `full-solve-${methodId}`,
+    methodId,
+    phaseId: "full",
+    smartCubeUsed: hasSmartCube,
+  });
   const persistedSolveRef = useRef<SolveResult | null>(null);
+  const persistedTotalRef = useRef<SolveResult | null>(null);
+  const lastSolveRef = useRef<SolveResult | null>(null);
+  lastSolveRef.current = lastSolve;
 
-  useEffect(() => {
-    if (!lastSolve || persistedSolveRef.current === lastSolve) return;
-    persistedSolveRef.current = lastSolve;
+  // Persist the aggregate solve row. A solve is NEVER dropped: when the mode
+  // requires metadata (move count / rotation flag) that the user never
+  // provided, the attempt is still recorded with verdict "skipped" (completed
+  // but unjudged) instead of vanishing from the stats.
+  const persistTotal = useCallback((solve: SolveResult) => {
+    if (persistedTotalRef.current === solve) return;
+    persistedTotalRef.current = solve;
 
-    for (const split of lastSolve.splits) {
-      if (split.actualMs <= 0) continue;
-      const overTarget = split.actualMs / 1000 > split.targetS;
-      dbPersistAttempt({
-        exerciseId: `full-solve-${methodId}`,
-        methodId,
-        phaseId: split.phaseId,
-        timeMs: split.actualMs,
-        verdict: overTarget ? "incorrect" : "correct",
-        playMode: hasSmartCube ? "smart-cube" : "manual",
-        scramble: currentScramble,
-      }).catch((err) => console.error("[FullSolve] persist split failed:", err));
-    }
+    const completedMode = solve.solveMode;
+    const moveCountKnown = userMoveCount !== null;
+    const rotationsKnown = hadRotations !== null;
 
-    // Total solve (moveCount may be undefined in targets mode; in move-limit
-    // /TPS modes the user submits it in the result overlay afterwards).
+    const verdict =
+      completedMode === "targets"
+        ? solve.splits.length > 0 && solve.splits.every((s) => s.actualMs > 0 && s.actualMs / 1000 <= s.targetS)
+          ? "correct" : "incorrect"
+        : completedMode === "move-limit"
+          ? moveCountKnown ? (userMoveCount <= solve.moveLimit ? "correct" : "incorrect") : "skipped"
+          : completedMode === "tps-challenge"
+            ? moveCountKnown ? (userMoveCount / (solve.totalMs / 1000) >= solve.tpsThreshold ? "correct" : "incorrect") : "skipped"
+            : rotationsKnown ? (hadRotations ? "incorrect" : "correct") : "skipped";
+
     dbPersistAttempt({
       exerciseId: `full-solve-${methodId}`,
       methodId,
       phaseId: "full",
-      timeMs: lastSolve.totalMs,
-      verdict: "correct",
+      timeMs: solve.totalMs,
+      verdict,
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentScramble,
       moveCount: userMoveCount ?? undefined,
+      tps: userMoveCount !== null && solve.totalMs > 0 ? userMoveCount / (solve.totalMs / 1000) : undefined,
+      rotationCount: completedMode === "rotationless" ? (hadRotations ? 1 : 0) : undefined,
+      metricKind: "execution",
+      sessionId: sessionId ?? undefined,
     }).catch((err) => console.error("[FullSolve] persist total failed:", err));
-  }, [lastSolve, userMoveCount, hasSmartCube, currentScramble, methodId, dbPersistAttempt]);
+  }, [dbPersistAttempt, methodId, hasSmartCube, currentScramble, sessionId, userMoveCount, hadRotations]);
+
+  useEffect(() => {
+    if (!lastSolve) return;
+
+    // Per-phase splits are ONLY real in targets mode — the only mode that
+    // exposes a split-marking UI. In move-limit/TPS/rotationless the timer
+    // would attribute the whole solve to phase 0, so persisting them there
+    // would fabricate phase data. Persist once per solve.
+    if (lastSolve.solveMode === "targets" && persistedSolveRef.current !== lastSolve) {
+      persistedSolveRef.current = lastSolve;
+      for (const split of lastSolve.splits) {
+        if (split.actualMs <= 0) continue;
+        const overTarget = split.actualMs / 1000 > split.targetS;
+        dbPersistAttempt({
+          exerciseId: `full-solve-${methodId}`,
+          methodId,
+          phaseId: split.phaseId,
+          timeMs: split.actualMs,
+          verdict: overTarget ? "incorrect" : "correct",
+          playMode: hasSmartCube ? "smart-cube" : "manual",
+          scramble: currentScramble,
+          metricKind: "execution",
+          sessionId: sessionId ?? undefined,
+        }).catch((err) => console.error("[FullSolve] persist split failed:", err));
+      }
+    }
+
+    // Persist the total once the mode's metadata is known so the verdict is
+    // accurate. If the metadata never arrives, handleNewSolve flushes the
+    // pending solve as "skipped" instead of losing it.
+    const completedMode = lastSolve.solveMode;
+    const metadataReady = completedMode === "targets"
+      || (completedMode === "move-limit" && userMoveCount !== null)
+      || (completedMode === "tps-challenge" && userMoveCount !== null)
+      || (completedMode === "rotationless" && hadRotations !== null);
+    if (metadataReady) persistTotal(lastSolve);
+  }, [lastSolve, userMoveCount, hadRotations, hasSmartCube, currentScramble, methodId, dbPersistAttempt, sessionId, persistTotal]);
+
+  // Unmount safety net: a solve completed but never flushed (user navigates
+  // back from the result overlay instead of clicking "New Solve") must still
+  // be persisted — never drop a finished solve from the stats. The cleanup
+  // must run ONLY on unmount, so it reads the latest persistTotal through a
+  // ref instead of depending on its identity (which changes with metadata).
+  const persistTotalRef = useRef(persistTotal);
+  persistTotalRef.current = persistTotal;
+  useEffect(() => {
+    return () => {
+      const pending = lastSolveRef.current;
+      if (pending) persistTotalRef.current(pending);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hintCtx = useMemo<HintContext>(() => ({
     smartCube: hasSmartCube,
@@ -243,14 +314,14 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
       const resultSplits: PhaseSplit[] = splits.map((s, i) =>
         i === activeSplitIdx ? { ...s, actualMs: splitDuration, status: "done" as const } : s
       );
-      setLastSolve({ totalMs, splits: resultSplits });
+      setLastSolve({ totalMs, splits: resultSplits, solveMode, moveLimit, tpsThreshold });
       setActiveSplitIdx(-1);
       engine.handleDown(); // stop timer via spacebar press simulation
     } else {
       setActiveSplitIdx((prev) => prev + 1);
       splitStartRef.current = now;
     }
-  }, [activeSplitIdx, phaseTargets.length, splits, engine]);
+  }, [activeSplitIdx, phaseTargets.length, splits, engine, solveMode, moveLimit, tpsThreshold]);
 
   // ── Handle solve complete (smart cube solved or manual stop) ──────
   useEffect(() => {
@@ -264,7 +335,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
           }
           return s;
         });
-        setLastSolve({ totalMs: stoppedTime, splits: resultSplits });
+        setLastSolve({ totalMs: stoppedTime, splits: resultSplits, solveMode, moveLimit, tpsThreshold });
       }
       setActiveSplitIdx(-1);
     }
@@ -273,14 +344,18 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
 
   // ── Reset for new solve ─────────────────────────────────────────────
   const handleNewSolve = useCallback(() => {
+    // Flush a completed solve that never received its mode metadata (e.g. the
+    // user skipped the move-count input) so it is never dropped from stats.
+    const pending = lastSolveRef.current;
+    if (pending) persistTotal(pending);
     reset();
     setSplits(phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" })));
     setActiveSplitIdx(-1);
     setLastSolve(null);
     setUserMoveCount(null);
-    setHadRotations(false);
+    setHadRotations(null);
     setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
-  }, [reset, phaseTargets]);
+  }, [reset, phaseTargets, persistTotal]);
 
   // ── Render ──────────────────────────────────────────────────────────
   return (
@@ -675,7 +750,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
               )}
 
               {solveMode === "rotationless" && (
-                <RotationlessInfo hadRotations={hadRotations} />
+                <RotationlessInfo hadRotations={hadRotations ?? false} />
               )}
 
               {/* Quick tips */}

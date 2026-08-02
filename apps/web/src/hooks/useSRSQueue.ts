@@ -54,13 +54,15 @@ export interface UseSRSQueueResult {
   startSession: (options?: { methodId?: string; limit?: number }) => Promise<QueueItem[]>;
   /** Records practice metrics (recognition/execution) for the current review. */
   recordAttempt: UseTrainingProgressResult["recordAttempt"];
+  /** Tags the most recent attempt of a case with the FSRS grade (links history ↔ schedule). */
+  updateAttemptReviewGrade: UseTrainingProgressResult["updateAttemptReviewGrade"];
   grade: (grade: SRSGrade) => Promise<AlgorithmProgressRecord | null>;
   skip: () => void;
   endSession: () => void;
 }
 
 export function useSRSQueue(): UseSRSQueueResult {
-  const { ready, getTodayQueue, recordAttempt, recordReview } = useTrainingProgress();
+  const { ready, getTodayQueue, recordAttempt, recordReview, updateAttemptReviewGrade } = useTrainingProgress();
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,16 +125,18 @@ export function useSRSQueue(): UseSRSQueueResult {
       const s = sessionRef.current;
       const item = s.items[s.index];
       if (!item) return null;
+      // Re-entrancy guard: overlapping grade() calls (possible while the first is
+      // awaiting recordReview) would otherwise both grade the same item. A
+      // second click while saving is harmless — ignore it instead of failing.
       if (gradingRef.current) return null;
       gradingRef.current = true;
-      setError(null);
       try {
         const updated = await recordReview({ caseId: item.algorithmId, grade });
         setSession((prev) => {
           const nextIndex = Math.min(prev.index + 1, prev.items.length);
           const result: SRSReviewResult = {
-            algorithmId: prev.items[prev.index].algorithmId,
-            caseNumber: prev.items[prev.index].caseNumber,
+            algorithmId: item.algorithmId,
+            caseNumber: item.caseNumber,
             grade,
             timestamp: Date.now(),
             srsState: updated?.srsState ?? "new",
@@ -149,8 +153,10 @@ export function useSRSQueue(): UseSRSQueueResult {
         });
         return updated;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to record review grade");
-        return null;
+        const message = err instanceof Error ? err.message : "Failed to record review grade";
+        // Surface the error so the caller can show an inline, non-destructive
+        // message — the review session must stay usable for a retry.
+        throw err instanceof Error ? err : new Error(message);
       } finally {
         gradingRef.current = false;
       }
@@ -187,5 +193,6 @@ export function useSRSQueue(): UseSRSQueueResult {
     grade,
     skip,
     endSession,
+    updateAttemptReviewGrade,
   };
 }

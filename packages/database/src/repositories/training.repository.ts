@@ -33,6 +33,8 @@ export interface TrainingAttemptRow {
   rotation_count: number | null;
   inspection_ms: number | null;
   review_grade: string | null;
+  session_id: string | null;
+  metric_kind: string | null;
   timestamp: number;
 }
 
@@ -94,6 +96,10 @@ export interface TrainingAttempt {
   inspectionMs?: number;
   /** FSRS review grade (again|hard|good|easy) — set only by the review flow. */
   reviewGrade?: string;
+  /** Whether this attempt measures execution or recognition. */
+  metricKind?: "execution" | "recognition";
+  /** Logical training session grouping this attempt. */
+  sessionId?: string;
   timestamp: number;
 }
 
@@ -140,6 +146,23 @@ export interface ExerciseProgress {
 }
 
 /** Per-phase aggregate stats derived from training_attempts. */
+export interface TrainingSessionRecord {
+  id: string;
+  exerciseId: string;
+  methodId: string;
+  phaseId?: string;
+  subsetId?: string;
+  startedAt: number;
+  completedAt?: number;
+  durationMs: number;
+  smartCubeUsed: boolean;
+  status: "active" | "completed";
+  totalAttempts: number;
+  correctCount: number;
+  accuracy: number;
+  avgTimeMs: number;
+}
+
 export interface PhaseStats {
   methodId: string;
   phaseId: string;
@@ -176,6 +199,8 @@ function rowToAttempt(row: TrainingAttemptRow): TrainingAttempt {
     rotationCount: row.rotation_count ?? undefined,
     inspectionMs: row.inspection_ms ?? undefined,
     reviewGrade: row.review_grade ?? undefined,
+    metricKind: row.metric_kind === "recognition" ? "recognition" : "execution",
+    sessionId: row.session_id ?? undefined,
     timestamp: row.timestamp,
   };
 }
@@ -202,6 +227,29 @@ function rowToAlgorithmProgress(row: AlgorithmProgressRow): AlgorithmProgress {
     srsLapses: row.srs_lapses ?? 0,
     srsReviewCount: row.srs_review_count ?? 0,
     lastReviewAt: row.last_review_at ?? 0,
+  };
+}
+
+function rowToTrainingSession(row: Record<string, unknown>): TrainingSessionRecord {
+  const startedAt = Number(row.started_at) || 0;
+  const completedAt = row.completed_at == null ? undefined : Number(row.completed_at);
+  const totalAttempts = Number(row.total_attempts) || 0;
+  const correctCount = Number(row.correct_count) || 0;
+  return {
+    id: String(row.id),
+    exerciseId: String(row.exercise_id),
+    methodId: String(row.method_id),
+    phaseId: row.phase_id == null ? undefined : String(row.phase_id),
+    subsetId: row.subset_id == null ? undefined : String(row.subset_id),
+    startedAt,
+    completedAt,
+    durationMs: Number(row.duration_ms) || (completedAt ? completedAt - startedAt : 0),
+    smartCubeUsed: Boolean(Number(row.smart_cube_used)),
+    status: row.status === "completed" ? "completed" : "active",
+    totalAttempts,
+    correctCount,
+    accuracy: totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0,
+    avgTimeMs: Math.round(Number(row.avg_time_ms) || 0),
   };
 }
 
@@ -276,22 +324,97 @@ export class TrainingRepository {
       rotation_count: attempt.rotationCount ?? null,
       inspection_ms: attempt.inspectionMs ?? null,
       review_grade: attempt.reviewGrade ?? null,
+      session_id: attempt.sessionId ?? null,
+      metric_kind: attempt.metricKind ?? "execution",
       timestamp: attempt.timestamp || Date.now(),
     };
 
     await this.db(
-      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, review_grade, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, review_grade, session_id, metric_kind, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id, row.exercise_id, row.method_id, row.phase_id, row.subset_id,
         row.case_id, row.scramble, row.time_ms, row.verdict, row.play_mode,
         row.expected_moves, row.executed_moves, row.tps, row.move_count,
         row.optimal_moves, row.rotation_count, row.inspection_ms, row.review_grade,
-        row.timestamp,
+        row.session_id, row.metric_kind, row.timestamp,
       ],
     );
 
     return { ...attempt, id };
+  }
+
+  /**
+   * Stamp the FSRS review grade onto the most recent attempt for a case.
+   * The SRS review flow records recognition/execution attempts *before* the
+   * user picks a grade, so the grade is attached afterwards to link the
+   * attempt history to the FSRS schedule that recordReview computed.
+   */
+  async updateAttemptReviewGrade(caseId: string, reviewGrade: string): Promise<void> {
+    await this.db(
+      `UPDATE training_attempts SET review_grade = ?
+       WHERE id = (SELECT id FROM training_attempts WHERE case_id = ? ORDER BY timestamp DESC LIMIT 1)`,
+      [reviewGrade, caseId],
+    );
+  }
+
+  async createTrainingSession(session: Omit<TrainingSessionRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">): Promise<TrainingSessionRecord> {
+    const record: TrainingSessionRecord = {
+      ...session,
+      durationMs: 0,
+      status: "active",
+      totalAttempts: 0,
+      correctCount: 0,
+      accuracy: 0,
+      avgTimeMs: 0,
+    };
+    await this.db(
+      `INSERT OR IGNORE INTO training_sessions (id, exercise_id, method_id, phase_id, subset_id, started_at, smart_cube_used, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [record.id, record.exerciseId, record.methodId, record.phaseId ?? null, record.subsetId ?? null, record.startedAt, record.smartCubeUsed ? 1 : 0, record.status],
+    );
+    return record;
+  }
+
+  async completeTrainingSession(id: string, completedAt = Date.now()): Promise<TrainingSessionRecord | null> {
+    await this.db(
+      `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed' WHERE id = ?`,
+      [completedAt, completedAt, id],
+    );
+    const rows = await this.db(
+      `SELECT ts.*, COUNT(ta.id) AS total_attempts,
+         SUM(CASE WHEN ta.verdict = 'correct' THEN 1 ELSE 0 END) AS correct_count,
+         AVG(CASE WHEN ta.time_ms > 0 THEN ta.time_ms END) AS avg_time_ms
+       FROM training_sessions ts LEFT JOIN training_attempts ta ON ta.session_id = ts.id
+       WHERE ts.id = ? GROUP BY ts.id`,
+      [id],
+    );
+    if (rows.length === 0) return null;
+    return rowToTrainingSession(rows[0]);
+  }
+
+  async getTrainingSessions(methodId: string, phaseId?: string, limit = 50): Promise<TrainingSessionRecord[]> {
+    // SRS started from the global queue uses method_id = 'all', while each
+    // attempt still carries its real method. Include those sessions but only
+    // aggregate attempts for the requested method, avoiding cross-method
+    // history duplication.
+    const where = phaseId
+      ? "(ts.method_id = ? OR ts.method_id = 'all') AND ts.phase_id = ?"
+      : "(ts.method_id = ? OR ts.method_id = 'all')";
+    const bind: unknown[] = phaseId
+      ? [methodId, methodId, phaseId, limit]
+      : [methodId, methodId, limit];
+    const rows = await this.db(
+      `SELECT ts.*, COUNT(ta.id) AS total_attempts,
+         SUM(CASE WHEN ta.verdict = 'correct' THEN 1 ELSE 0 END) AS correct_count,
+         AVG(CASE WHEN ta.time_ms > 0 THEN ta.time_ms END) AS avg_time_ms
+       FROM training_sessions ts LEFT JOIN training_attempts ta
+         ON ta.session_id = ts.id AND ta.method_id = ?
+       WHERE ${where} AND ts.status = 'completed'
+       GROUP BY ts.id ORDER BY ts.started_at DESC LIMIT ?`,
+      bind,
+    );
+    return rows.map(rowToTrainingSession);
   }
 
   async getAttemptsByCase(caseId: string, limit = 50): Promise<TrainingAttempt[]> {
@@ -527,9 +650,9 @@ export class TrainingRepository {
 
   async getMethodMastery(methodId: string): Promise<number> {
     const rows = await this.db(
-      `SELECT COALESCE(AVG(mastery), 0) as avg_mastery FROM algorithm_progress ap
-       INNER JOIN algorithm_cases ac ON ap.algorithm_id = ac.id
+      `SELECT COALESCE(AVG(COALESCE(ap.mastery, 0)), 0) as avg_mastery FROM algorithm_cases ac
        INNER JOIN algorithm_subsets as2 ON ac.subset_id = as2.id
+       LEFT JOIN algorithm_progress ap ON ap.algorithm_id = ac.id
        WHERE as2.method_id = ?`,
       [methodId],
     );
@@ -562,7 +685,7 @@ export class TrainingRepository {
          AVG(CASE WHEN optimal_moves > 0 AND move_count > 0 THEN optimal_moves * 1.0 / move_count END) as efficiency,
          MAX(timestamp) as last_practiced_at
        FROM training_attempts
-       WHERE method_id = ? AND phase_id = ?`,
+       WHERE method_id = ? AND phase_id = ? AND metric_kind = 'execution'`,
       [methodId, phaseId],
     );
     const r = rows[0] as Record<string, unknown>;

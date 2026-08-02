@@ -33,6 +33,7 @@ import {
   TouchAside,
 } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { useTrainingSession } from "@/hooks/useTrainingSession";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
 import {
   Eye,
@@ -185,6 +186,13 @@ export function AlgorithmDrillView({
 
   // ── Real progress from DB ──────────────────────────────────────────────
   const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const { sessionId } = useTrainingSession({
+    exerciseId: `drill-${subsetId}`,
+    methodId,
+    phaseId: _phaseId as string,
+    subsetId,
+    smartCubeUsed: hasSmartCube,
+  });
   const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
 
   useEffect(() => {
@@ -331,11 +339,12 @@ export function AlgorithmDrillView({
         playMode: hasSmartCube ? "smart-cube" : "manual",
         scramble: currentSetup,
         metricKind: "execution",
+        sessionId: sessionId ?? undefined,
       }).catch((err) => {
         console.error("[DrillView] Failed to persist attempt:", err);
       });
     },
-    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime, dbPersistAttempt, subsetId, methodId, _phaseId, hasSmartCube, currentSetup],
+    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime, dbPersistAttempt, subsetId, methodId, _phaseId, hasSmartCube, currentSetup, sessionId],
   );
 
   const handleMarkCorrect = useCallback(() => {

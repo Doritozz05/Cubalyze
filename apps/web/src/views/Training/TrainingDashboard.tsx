@@ -20,6 +20,7 @@ import { EOEfficiencyView } from "./EOEfficiencyView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { ReviewQueueSection } from "./components";
 import type { PuzzleCategory } from "@/types";
+import type { PhaseStatsRecord } from "@cubeforge/training";
 import { puzzleCategoryToType, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
   Select,
@@ -195,9 +196,7 @@ function masteryLabel(pct: number): string {
   return "New";
 }
 
-/* ── Mock fallback (used only when DB is not ready) ──────────────────────── */
-
-const FALLBACK_MASTERY: Record<string, number> = { CFOP: 80, Roux: 70, ZZ: 30, Petrus: 45, Ortega: 60, CLL: 0, EG: 0 };
+/* ── Mastery helpers ────────────────────────────────────────────────────── */
 
 /* ──────────────────────────────────────────────────────────────────────────
    Flat Dashboard (Fase 6)
@@ -210,6 +209,7 @@ function FlatDashboard({
   activeMethodId,
   onSelectMethod,
   methodMasteries,
+  phaseStatsMap,
   onDrill,
   onRecognize,
   onPracticeMode,
@@ -227,6 +227,8 @@ function FlatDashboard({
   activeMethodId: string;
   onSelectMethod: (methodId: string) => void;
   methodMasteries: Record<string, number>;
+  /** Real per-phase accuracy (0-100) keyed by phaseId — shown in Quick Summary. */
+  phaseStatsMap: Record<string, PhaseStatsRecord | null>;
   onDrill: (methodId: string, phaseId: string, subsetId: string) => void;
   onRecognize: (methodId: string, phaseId: string, subsetId: string) => void;
   onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
@@ -240,7 +242,7 @@ function FlatDashboard({
 }) {
   const method = METHODS.find((m) => m.id === activeMethodId);
   const phases = method ? METHOD_PHASES[method.name] ?? [] : [];
-  const mastery = method ? (methodMasteries[method.name] ?? FALLBACK_MASTERY[method.name] ?? 0) : 0;
+  const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
 
   return (
     <>
@@ -289,7 +291,7 @@ function FlatDashboard({
           {puzzleMethods.map((m) => {
             const MIcon = METHOD_ICONS[m.name] ?? Layers;
             const isActive = m.id === activeMethodId;
-            const mPct = methodMasteries[m.name] ?? FALLBACK_MASTERY[m.name] ?? 0;
+            const mPct = methodMasteries[m.name] ?? 0;
             return (
               <button
                 key={m.id}
@@ -400,15 +402,17 @@ function FlatDashboard({
               </div>
               <div className="space-y-2.5">
                 {phases.slice(0, 5).map((phase) => {
-                  const phasePct = methodMasteries[method.name]
-                    ? Math.min(99, Math.round(mastery * 0.8 + phase.sortOrder * 3))
-                    : 0;
+                  const stats = phaseStatsMap[phase.id];
+                  const hasData = stats != null && stats.totalAttempts > 0;
                   return (
                     <div key={phase.id} className="flex items-center gap-2">
                       <div className={cn("size-1.5 rounded-full", PHASE_DOT[phase.id] ?? "bg-ink-3")} />
                       <span className="text-[0.62rem] text-ink-2 flex-1">{phase.name}</span>
-                      <span className="nums text-[0.58rem] font-medium text-ink">
-                        {phasePct}%
+                      <span className={cn(
+                        "nums text-[0.58rem] font-medium",
+                        hasData ? (stats.accuracy >= 80 ? "text-ready" : stats.accuracy >= 50 ? "text-caution" : "text-hold") : "text-ink-3/50",
+                      )}>
+                        {hasData ? `${stats.accuracy}%` : "—"}
                       </span>
                     </div>
                   );
@@ -610,8 +614,9 @@ export function TrainingDashboard({
   const [insightsView, setInsightsView] = useState<{ methodId?: string } | null>(null);
 
   // Progress tracking
-  const { ready: dbReady, getMethodMastery } = useTrainingProgress();
+  const { ready: dbReady, getMethodMastery, getPhaseStats } = useTrainingProgress();
   const [methodMasteries, setMethodMasteries] = useState<Record<string, number>>({});
+  const [phaseStatsMap, setPhaseStatsMap] = useState<Record<string, PhaseStatsRecord | null>>({});
   const [dueCount, setDueCount] = useState(0);
   const [masteriesKey, setMasteriesKey] = useState(0);
 
@@ -627,7 +632,7 @@ export function TrainingDashboard({
           const m = await getMethodMastery(method.id);
           masteries[method.name] = m;
         } catch {
-          masteries[method.name] = FALLBACK_MASTERY[method.name] ?? 0;
+          masteries[method.name] = 0;
         }
       }
       if (!cancelled) setMethodMasteries(masteries);
@@ -637,6 +642,26 @@ export function TrainingDashboard({
       cancelled = true;
     };
   }, [dbReady, getMethodMastery, masteriesKey]);
+
+  // Load real per-phase accuracy for the active method's Quick Summary —
+  // replaces the old fabricated formula (mastery * 0.8 + sortOrder * 3).
+  useEffect(() => {
+    if (!dbReady || !activeMethodId) return;
+    let cancelled = false;
+    const method = METHODS.find((m) => m.id === activeMethodId);
+    const phases = method ? METHOD_PHASES[method.name] ?? [] : [];
+    void Promise.all(
+      phases.map((phase) => getPhaseStats(activeMethodId, phase.id).catch(() => null)),
+    ).then((stats) => {
+      if (cancelled) return;
+      const map: Record<string, PhaseStatsRecord | null> = {};
+      phases.forEach((phase, i) => { map[phase.id] = stats[i]; });
+      setPhaseStatsMap(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dbReady, activeMethodId, getPhaseStats, masteriesKey]);
 
   // The "N due for review" badge is derived from the live review queue
   // (ReviewQueueSection reports it) — single source of truth, never stale.
@@ -852,6 +877,7 @@ export function TrainingDashboard({
           activeMethodId={activeMethodId}
           onSelectMethod={setActiveMethodId}
           methodMasteries={methodMasteries}
+          phaseStatsMap={phaseStatsMap}
           onDrill={handleDrill}
           onRecognize={handleRecognize}
           onPracticeMode={handlePracticeMode}

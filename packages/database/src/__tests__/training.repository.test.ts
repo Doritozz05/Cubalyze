@@ -26,6 +26,9 @@ function attemptRow(overrides: Partial<Record<string, unknown>> = {}): Record<st
     optimal_moves: 8,
     rotation_count: 0,
     inspection_ms: 15000,
+    review_grade: null,
+    session_id: null,
+    metric_kind: 'execution',
     timestamp: 1700000000000,
     ...overrides,
   };
@@ -128,7 +131,7 @@ describe('TrainingRepository — Attempts', () => {
     // Column order in INSERT: id, exercise_id, method_id, phase_id, subset_id,
     //   case_id, scramble, time_ms, verdict, play_mode, expected_moves,
     //   executed_moves, tps, move_count, optimal_moves, rotation_count,
-    //   inspection_ms, review_grade, timestamp
+    //   inspection_ms, review_grade, session_id, metric_kind, timestamp
     expect(bind[3]).toBe('cross'); // phase_id
     expect(bind[4]).toBe('f2l'); // subset_id
     expect(bind[5]).toBe('case1'); // case_id
@@ -143,7 +146,9 @@ describe('TrainingRepository — Attempts', () => {
     expect(bind[15]).toBe(1); // rotation_count
     expect(bind[16]).toBe(20000); // inspection_ms
     expect(bind[17]).toBe('good'); // review_grade
-    expect(bind[18]).toBe(1700000000000); // timestamp
+    expect(bind[18]).toBeNull(); // session_id
+    expect(bind[19]).toBe('execution'); // metric_kind
+    expect(bind[20]).toBe(1700000000000); // timestamp
   });
 
   it('insertAttempt with missing optional fields stores NULL', async () => {
@@ -163,7 +168,7 @@ describe('TrainingRepository — Attempts', () => {
     //   subset_id(4), case_id(5), scramble(6), time_ms(7), verdict(8), play_mode(9),
     //   expected_moves(10), executed_moves(11), tps(12), move_count(13),
     //   optimal_moves(14), rotation_count(15), inspection_ms(16), review_grade(17),
-    //   timestamp(18)
+    //   session_id(18), metric_kind(19), timestamp(20)
     expect(bind[3]).toBeNull(); // phase_id
     expect(bind[4]).toBeNull(); // subset_id
     expect(bind[5]).toBeNull(); // case_id
@@ -194,7 +199,7 @@ describe('TrainingRepository — Attempts', () => {
       timestamp: 0,
     });
     const bind = db.mock.calls[0][1] as unknown[];
-    expect(bind[18]).toBeGreaterThanOrEqual(before); // timestamp
+    expect(bind[20]).toBeGreaterThanOrEqual(before); // timestamp
   });
 
   it('getAttemptsByCase queries by case_id with limit', async () => {

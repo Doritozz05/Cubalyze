@@ -7,6 +7,7 @@ import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCrossScramble } from "@/hooks/useCrossScramble";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { useTrainingSession } from "@/hooks/useTrainingSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { TrainingBreadcrumb, StatChip, TouchAside } from "./components";
 import {
@@ -127,6 +128,11 @@ export function CrossTrainerView({
 
   // ── Persist attempts to the DB ───────────────────────────────────────
   const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  const { sessionId } = useTrainingSession({
+    exerciseId: `cross-trainer-${phaseId}`,
+    methodId,
+    phaseId,
+  });
 
   // ── Build the ReplayEngine + apply scramble via applyInitialScramble
   //    (reuses ReplayEngine's own scramble parsing — no duplicated
@@ -296,6 +302,8 @@ export function CrossTrainerView({
       scramble: cross.scramble,
       moveCount: userMoves,
       optimalMoves: cross.optimalDepth,
+      metricKind: "execution",
+      sessionId: sessionId ?? undefined,
     }).catch((err) => console.error("[CrossTrainer] persist failed:", err));
   }, [
     userMoves,
@@ -305,6 +313,7 @@ export function CrossTrainerView({
     dbPersistAttempt,
     methodId,
     phaseId,
+    sessionId,
   ]);
 
   const handleNewScramble = useCallback(() => {

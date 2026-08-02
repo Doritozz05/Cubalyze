@@ -7,6 +7,7 @@ export type {
   PhaseStatsRecord,
   MetricKind,
   QueueCandidateRecord,
+  TrainingSessionProgressRecord,
 } from './progress-tracker';
 // ─── SRS daily queue scheduler ────────────────────────────────────────
 export {
