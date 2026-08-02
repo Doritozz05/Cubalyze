@@ -100,8 +100,8 @@ export function detectPbMilestones(
   const prevBestSingle =
     validExistingSingles.length > 0 ? Math.min(...validExistingSingles) : null;
 
-  // Single PB triggers ONLY if there are existing valid solves and new time is strictly better than previous best
-  const isSinglePB = prevBestSingle !== null && newEffTime < prevBestSingle;
+  // Single PB triggers when there are no previous valid solves or when new time strictly beats previous best single
+  const isSinglePB = prevBestSingle === null ? true : newEffTime < prevBestSingle;
 
   // 2. Combine solves with new solve at the front (newest first)
   const updatedStatSolves = [newSolve, ...existingStatSolves];
