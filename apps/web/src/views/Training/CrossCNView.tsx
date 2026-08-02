@@ -43,7 +43,7 @@ export function CrossCNView({ methodId, phaseId, phaseName, onBack }: CrossCNVie
           <TrainingBreadcrumb onBack={onBack} segments={[{ label: method?.name ?? "?" }, { label: `${phaseName} · ${crossColor}`, isCurrent: true }]} />
           <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-purple-500/20 bg-purple-500/5 text-purple-400">{crossColor} cross</span>
           <span className="nums text-[0.62rem] text-ink-3 ml-auto">{attempts.length} attempts</span>
-          {hasSmartCube && <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">Smart Cube</span>}
+          {hasSmartCube && <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold bg-phase-blue text-white">Smart Cube</span>}
         </header>
 
         <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden lg:flex-row px-4 sm:px-6 lg:px-8 pb-4">

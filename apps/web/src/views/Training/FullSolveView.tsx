@@ -375,7 +375,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
               {lastSolve ? formatTime(lastSolve.totalMs) : ""}
             </span>
             {hasSmartCube && (
-              <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">
+              <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold bg-phase-blue text-white">
                 Smart Cube
               </span>
             )}

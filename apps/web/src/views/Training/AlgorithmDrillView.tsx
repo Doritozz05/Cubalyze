@@ -585,7 +585,7 @@ function DrillHeader({
         ]} />
         <span className="nums text-[0.62rem] text-ink-3 ml-auto">{masteredCount}/{totalCount} mastered</span>
         {smartCubeConnected && (
-          <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">
+          <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold bg-phase-blue text-white">
             Smart Cube
           </span>
         )}

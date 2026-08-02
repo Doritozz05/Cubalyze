@@ -39,7 +39,7 @@ export function CrossOptimalView({ methodId, phaseId, phaseName, onBack }: Cross
         <header className="flex items-center gap-3 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
           <TrainingBreadcrumb onBack={onBack} segments={[{ label: method?.name ?? "?" }, { label: `${phaseName} · ≤8`, isCurrent: true }]} />
           <span className="nums text-[0.62rem] text-ink-3 ml-auto">{attempts.length} attempts</span>
-          {hasSmartCube && <span className="shrink-0 rounded-md px-2 py-1 text-[0.6rem] font-medium border border-blue-500/20 bg-blue-500/5 text-blue-400">Smart Cube</span>}
+          {hasSmartCube && <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold bg-phase-blue text-white">Smart Cube</span>}
         </header>
 
         <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden lg:flex-row px-4 sm:px-6 lg:px-8 pb-4">
