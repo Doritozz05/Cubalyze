@@ -1,23 +1,6 @@
 import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 
 /**
- * Create a mock CubeMoveEvent with sequential timestamps.
- */
-export function makeMove(
-  face: CubeFace,
-  direction: CubeMoveDirection,
-  index: number,
-  baseTimestamp = 1000,
-): CubeMoveEvent {
-  return {
-    face,
-    direction,
-    cubeTimestamp: baseTimestamp + index * 100,
-    hostTimestamp: baseTimestamp + index * 100,
-  };
-}
-
-/**
  * Create a sequence of moves from notation strings like "R", "U'", "L2".
  * Each move gets an incrementing timestamp starting at baseTimestamp.
  */

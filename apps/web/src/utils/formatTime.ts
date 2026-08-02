@@ -3,12 +3,13 @@
 // All formatting targets centisecond precision (mm:ss.cs) so the monospaced
 // timer never "jumps" width while counting.
 //
-// Statistics functions (averageOf, computeStats, statLabel) are now in
-// the headless @cubeforge/statistics package.
+// Statistics functions (averageOf, computeStats, computeBpaWpa) are now in
+// the headless @cubeforge/statistics package; computeStats/computeBpaWpa are
+// re-exported here for backward compatibility.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Re-export statistics functions for backward compatibility.
-export { averageOf, computeStats, computeBpaWpa, type BpaWpaResult } from "@cubeforge/statistics";
+export { computeStats, computeBpaWpa } from "@cubeforge/statistics";
 
 const INF = Number.POSITIVE_INFINITY;
 

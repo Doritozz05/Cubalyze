@@ -1,9 +1,8 @@
-export { PenaltyBadge, type PenaltyBadgeProps } from "./PenaltyBadge";
-export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
-export { EmptyState, type EmptyStateProps } from "./EmptyState";
-export { AnimatedNumber, type AnimatedNumberProps } from "./AnimatedNumber";
-export { ProgressBar, type ProgressBarProps, type ProgressBarColor } from "./ProgressBar";
-export { MetricRing, type MetricRingProps, type RingColor } from "./MetricRing";
-export { Sparkline, type SparklineProps } from "./Sparkline";
-export { ActivityHeatmap, type ActivityHeatmapProps } from "./ActivityHeatmap";
-export { AlgorithmNotation, type AlgorithmNotationProps } from "./AlgorithmNotation";
+export { PenaltyBadge } from "./PenaltyBadge";
+export { SectionHeader } from "./SectionHeader";
+export { EmptyState } from "./EmptyState";
+export { AnimatedNumber } from "./AnimatedNumber";
+export { MetricRing } from "./MetricRing";
+export { Sparkline } from "./Sparkline";
+export { ActivityHeatmap } from "./ActivityHeatmap";
+export { AlgorithmNotation } from "./AlgorithmNotation";

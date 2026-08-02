@@ -69,28 +69,6 @@ export function effectiveTime(solve: Solve): number {
   }
 }
 
-/** Aggregated statistics for the current session. */
-export interface SessionStats {
-  /** Number of solves counted (excludes DNFs for averages). */
-  count: number;
-  /** Total solves including DNFs. */
-  total: number;
-  /** Best effective time in ms (Infinity if all DNF). */
-  best: number;
-  /** Worst effective time in ms (Infinity if all DNF). */
-  worst: number;
-  /** Arithmetic mean of effective times (DNF excluded). */
-  mean: number | null;
-  /** Average of 5 (current, trimming best/worst). null if not enough solves. */
-  ao5: number | null;
-  /** Average of 12. null if not enough solves. */
-  ao12: number | null;
-  /** Average of 100. null if not enough solves. */
-  ao100: number | null;
-  /** Sum of all effective times (DNF excluded). */
-  sessionTime: number;
-}
-
 /**
  * Finite state machine for the timer.
  *  idle           -> waiting to start, shows last/zero time

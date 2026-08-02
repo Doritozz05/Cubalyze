@@ -14,7 +14,6 @@
   "dependencies": {
     "@cubeforge/math-core": "workspace:*",
     "@cubeforge/solver-engine": "workspace:*",
-    "@cubeforge/types": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

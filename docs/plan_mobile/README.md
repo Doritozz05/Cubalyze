@@ -170,7 +170,7 @@ obligar a scrollear; o directamente a bottom sheet al pulsar un botón
   scroll horizontal en la semana si desborda.
 
 ### 5.2 Vistas de práctica (archivos con patrón común)
-`CrossTrainerView, CrossCNView, CrossOptimalView, EODetectView,
+`CrossTrainerView, EODetectView,
 EOEfficiencyView, LSESubPhaseView, PlainPracticeView, BlindPracticeView,
 AlgorithmDrillView, AlgorithmRecognizeView, FullSolveView, PhaseStatsView`
 

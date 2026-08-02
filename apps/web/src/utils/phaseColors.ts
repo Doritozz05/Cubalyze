@@ -7,11 +7,8 @@
  * New code should import directly from @cubeforge/analysis-engine.
  */
 
-export type { PauseCategory } from "@cubeforge/analysis-engine";
 export {
   PAUSE_COLOR_BY_CATEGORY,
-  TAIL_COLOR,
   phaseColorHex,
   pauseColorHex,
-  tailColorHex,
 } from "@cubeforge/analysis-engine";

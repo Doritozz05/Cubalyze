@@ -151,14 +151,3 @@ export function generateScrambleFor(category: PuzzleCategory): string {
   }
 }
 
-/**
- * Check if a solve's puzzleType matches the given category.
- * Falls back to '3x3x3' when puzzleType is undefined (backward compat).
- */
-export function solveMatchesCategory(
-  solvePuzzleType: string | undefined,
-  category: PuzzleCategory,
-): boolean {
-  const solveType = solvePuzzleType ?? "3x3x3";
-  return solveType === puzzleCategoryToType(category);
-}

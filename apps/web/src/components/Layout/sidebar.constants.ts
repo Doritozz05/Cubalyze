@@ -5,13 +5,6 @@ export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
 export const HOVER_DELAY = 150;
 export const UNHOVER_DELAY = 300;
-/**
- * Grace window after the window regains focus (a native browser dialog like
- * the Web Bluetooth chooser just closed). During this window hover-expansion
- * is ignored, because Chromium can dispatch synthetic mouse events at stale
- * coordinates (typically (0,0)) right after native dialogs close.
- */
-export const HOVER_SUPPRESS_MS = 500;
 
 export const SIDEBAR_MOTION = {
   container: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },

@@ -12,26 +12,6 @@ export interface AlgorithmRow {
   updated_at: string;
 }
 
-export interface AlgorithmCaseRow {
-  id: string;
-  subset_id: string;
-  case_number: string;
-  name: string;
-  recognition_patterns: string;
-  setup_scramble: string;
-  setup_algorithm: string | null;
-  diagram_type: string;
-  diagram_2d: string | null;
-  diagram_3d: string | null;
-  probability: string | null;
-  difficulty: string;
-  category: string | null;
-  tags: string;
-  puzzle_type: string;
-  created_at: string;
-  updated_at: string;
-}
-
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
 function rowToAlgorithm(row: AlgorithmRow): Algorithm {

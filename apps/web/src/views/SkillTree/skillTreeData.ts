@@ -294,6 +294,5 @@ const RAW_SKILL_BRANCHES: SkillBranch[] = [
 
 const layoutOutput = calculateAutoLayout(RAW_SKILL_BRANCHES);
 
-export const SKILL_BRANCHES: SkillBranch[] = layoutOutput.branches;
 export const ALL_SKILL_NODES: SkillNode[] = layoutOutput.allNodes;
 

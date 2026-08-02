@@ -1,0 +1,161 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      // scripts/*.cjs = dev utilities (find-orphans); scripts/*.ts = debug scripts (debug-oll5).
+      "entry": ["scripts/*.cjs", "scripts/*.ts"]
+    },
+    "apps/desktop": {
+      // Desktop is a thin Tauri shell that re-uses apps/web source via cross-app
+      // relative imports (src/main.tsx imports ../../web/src/App). Knip cannot
+      // trace those imports out of the workspace, so it thinks desktop uses none
+      // of its deps — they are actually consumed by the bundled web source.
+      // KNIP LIMITATION (documented) — these are shared, not dead.
+      "ignoreDependencies": [
+        "@cubeforge/algorithm-db",
+        "@cubeforge/analysis-engine",
+        "@cubeforge/cube-3d-engine",
+        "@cubeforge/database",
+        "@cubeforge/gan-protocol",
+        "@cubeforge/hardware-hal",
+        "@cubeforge/math-core",
+        "@cubeforge/solver-engine",
+        "@cubeforge/state",
+        "@cubeforge/statistics",
+        "@cubeforge/timer-engine",
+        "@cubeforge/training",
+        "@cubeforge/types",
+        "@radix-ui/react-accordion",
+        "@radix-ui/react-alert-dialog",
+        "@radix-ui/react-aspect-ratio",
+        "@radix-ui/react-avatar",
+        "@radix-ui/react-checkbox",
+        "@radix-ui/react-collapsible",
+        "@radix-ui/react-context-menu",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-dropdown-menu",
+        "@radix-ui/react-hover-card",
+        "@radix-ui/react-label",
+        "@radix-ui/react-menubar",
+        "@radix-ui/react-navigation-menu",
+        "@radix-ui/react-popover",
+        "@radix-ui/react-progress",
+        "@radix-ui/react-radio-group",
+        "@radix-ui/react-scroll-area",
+        "@radix-ui/react-select",
+        "@radix-ui/react-separator",
+        "@radix-ui/react-slider",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-switch",
+        "@radix-ui/react-tabs",
+        "@radix-ui/react-toast",
+        "@radix-ui/react-toggle",
+        "@radix-ui/react-toggle-group",
+        "@radix-ui/react-tooltip",
+        "@tauri-apps/plugin-shell",
+        "@tauri-apps/plugin-sql",
+        "@tauri-apps/plugin-updater",
+        "class-variance-authority",
+        "clsx",
+        "cmdk",
+        "comlink",
+        "date-fns",
+        "embla-carousel-react",
+        "framer-motion",
+        "input-otp",
+        "lucide-react",
+        "next-themes",
+        "react-day-picker",
+        "react-hook-form",
+        "react-resizable-panels",
+        "recharts",
+        "rxjs",
+        "sonner",
+        "tailwind-merge",
+        // Build-time CSS tooling: postcss.config.js references @tailwindcss/postcss
+        // (Tailwind v4 engine) to process web's index.css, which declares
+        // `@plugin "tailwindcss-animate"`. Knip cannot trace requires/directives
+        // inside postcss.config.js and index.css — same category as the `tsc` binary.
+        "tailwindcss",
+        "tailwindcss-animate",
+        "three",
+        "uuid",
+        "vaul",
+        "zod",
+        "zustand"
+      ]
+    },
+    "apps/web": {
+      // Deps consumed exclusively through the "@/components/ui" alias into
+      // packages/ui source (which declares them itself). Knip cannot attribute
+      // imports across workspace aliases, so these are shared, not dead.
+      "ignoreDependencies": [
+        "@radix-ui/react-accordion",
+        "@radix-ui/react-alert-dialog",
+        "@radix-ui/react-aspect-ratio",
+        "@radix-ui/react-avatar",
+        "@radix-ui/react-checkbox",
+        "@radix-ui/react-collapsible",
+        "@radix-ui/react-context-menu",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-dropdown-menu",
+        "@radix-ui/react-hover-card",
+        "@radix-ui/react-label",
+        "@radix-ui/react-menubar",
+        "@radix-ui/react-navigation-menu",
+        "@radix-ui/react-popover",
+        "@radix-ui/react-progress",
+        "@radix-ui/react-radio-group",
+        "@radix-ui/react-scroll-area",
+        "@radix-ui/react-select",
+        "@radix-ui/react-separator",
+        "@radix-ui/react-slider",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-switch",
+        "@radix-ui/react-tabs",
+        "@radix-ui/react-toast",
+        "@radix-ui/react-toggle",
+        "@radix-ui/react-toggle-group",
+        "@radix-ui/react-tooltip",
+        "class-variance-authority",
+        "cmdk",
+        "embla-carousel-react",
+        "input-otp",
+        "react-day-picker",
+        "react-hook-form",
+        "react-resizable-panels",
+        "vaul"
+      ]
+    }
+  },
+  "ignore": [
+    // public/ assets referenced by URL only (e.g. /stackmat-processor.js worklet loaded
+    // via AudioWorklet.addModule in packages/hardware-hal/src/audio/StackmatAdapter.ts).
+    "apps/web/public/**",
+    // Barrels under widgets/implementations/*/index.ts are the intentional public API
+    // surface for the future static plugin system (RFC-017) — imports go directly to
+    // definition.ts / FloatingX.tsx / Preview.tsx today.
+    "apps/web/src/widgets/implementations/**/index.ts",
+    // Source of the Stackmat audio worklet: compiled manually into apps/web/public/
+    // and loaded by URL, so TS import-graph analysis can never see it.
+    "packages/hardware-hal/src/audio/StackmatProcessor.ts",
+    // Desktop Tauri shell adapter layer — wired via vite.config.ts resolve.alias:
+    //   @cubeforge/hardware-hal → src/hardware-hal-override.ts
+    //   @cubeforge/database     → src/database-override.ts
+    // The overrides import the two Tauri adapters (GanCube/GanTimer). Knip cannot
+    // trace Vite resolve.alias, so these appear unused — they are the desktop entry surface.
+    "apps/desktop/src/adapters/**",
+    "apps/desktop/src/database-override.ts",
+    "apps/desktop/src/hardware-hal-override.ts",
+    // The widgets SDK barrel is the intentional plugin-authoring API surface for
+    // RFC-017 (WidgetHostAPI, WidgetPlugin, createHostAPI, widgetLifecycle) — exported
+    // for future plugin consumers; only connectWidgetLifecycle is consumed by the app
+    // today. Same treatment as the widgets/implementations barrels above.
+    "apps/web/src/widgets/sdk/index.ts"
+  ],
+  // tsc is used by root scripts (typecheck:all) but declared only in apps/web devDeps.
+  "ignoreBinaries": ["tsc"],
+  // Exports used only within their own file (e.g. DEFAULT_FILTERS) are not dead code —
+  // they just don't need the `export` keyword. Reduces noise without hiding real orphans.
+  "ignoreExportsUsedInFile": true
+}

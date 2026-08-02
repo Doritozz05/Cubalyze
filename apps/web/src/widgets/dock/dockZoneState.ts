@@ -82,17 +82,6 @@ export function useDockZoneActive(): boolean {
 }
 
 /**
- * React hook: returns the calculated insertion index for the drop.
- * WidgetDock subscribes to this to know where to show the indicator.
- */
-export function useDropIndex(): number {
-  return useSyncExternalStore(
-    dockZoneState.subscribe,
-    () => _dropIndex,
-  );
-}
-
-/**
  * React hook: returns the current drop x position of the dragging widget.
  */
 export function useDropX(): number {

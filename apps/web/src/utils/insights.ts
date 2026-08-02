@@ -21,14 +21,6 @@ export {
 } from "@cubeforge/analysis-engine";
 
 export type {
-  MoveTick,
-  TpsSample,
-  PauseMark,
-  TimelineSegmentKind,
   TimelineSegment,
-  StageSegment,
   TimelineData,
-  HistogramBin,
-  TpsPoint,
-  PhaseShare,
 } from "@cubeforge/analysis-engine";
