@@ -58,6 +58,15 @@ describe('MIGRATIONS — schema migrations module', () => {
     }
   });
 
+  it('migration 018 flags demo data (is_demo) for the mock-data fix', () => {
+    const m = MIGRATIONS.find((x) => x.id === '018_add_is_demo');
+    expect(m).toBeDefined();
+    expect(m!.sql).toContain('ALTER TABLE solves ADD COLUMN is_demo');
+    expect(m!.sql).toContain('ALTER TABLE sessions ADD COLUMN is_demo');
+    // Data heal: legacy 'Demo Session' rows are flagged so they stay hidden.
+    expect(m!.sql).toContain("UPDATE sessions SET is_demo = 1 WHERE name = 'Demo Session'");
+  });
+
   it('exports the Migration type with the expected surface', () => {
     // Compile-time check via assignability. If Migration type drifts, this fails to compile.
     const sample: Migration = {

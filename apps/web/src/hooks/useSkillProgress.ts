@@ -7,10 +7,24 @@ import { initDB, SkillProgressRepository } from "@cubeforge/database";
 const LEGACY_STORAGE_KEY = "cubeforge_completed_skills_v2";
 const MIGRATED_FLAG = "cubeforge:skills-migrated";
 
-/** Default completion state for a brand-new user (no data anywhere). */
+/**
+ * Presentational default for a brand-new user (no data anywhere).
+ *
+ * These are NOT persisted anywhere (not localStorage, not the DB): they only
+ * make the skill tree look non-empty on first paint. The first real user
+ * interaction flips the hook into "owned data" mode and persists from there.
+ */
 const DEFAULT_COMPLETED = ["cube-anatomy", "standard-notation", "first-cross"];
 
-function loadFromLocalStorage(): string[] {
+/**
+ * Read the legacy localStorage cache.
+ *
+ * Returns `null` when no real data exists (brand-new user) so callers can
+ * distinguish "legacy data to migrate" from "nothing at all". The previous
+ * implementation returned the default set here, which silently persisted fake
+ * completion state for every new user.
+ */
+function loadLegacySkillIds(): string[] | null {
   try {
     const saved = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (saved) {
@@ -18,9 +32,9 @@ function loadFromLocalStorage(): string[] {
       if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === "string");
     }
   } catch {
-    // fall through to default
+    // fall through to null
   }
-  return DEFAULT_COMPLETED;
+  return null;
 }
 
 function saveToLocalStorage(completedIds: string[]) {
@@ -44,16 +58,20 @@ export interface UseSkillProgressResult {
  * Skill-tree completion backed by SQLite (single source of truth).
  *
  * Same guarantees as {@link useCalendarTasks}: instant paint from the legacy
- * localStorage cache, one-time flag-guarded migration, DB wins after init,
- * and cache always kept in sync so an unavailable DB degrades gracefully.
+ * localStorage cache, one-time flag-guarded migration, DB wins after init, and
+ * cache always kept in sync — EXCEPT that the brand-new-user default set is
+ * presentational only and is never written to localStorage or the DB.
  */
 export function useSkillProgress(): UseSkillProgressResult {
   const [completedIds, setCompletedIdsState] = useState<string[]>(() =>
-    loadFromLocalStorage(),
+    loadLegacySkillIds() ?? DEFAULT_COMPLETED,
   );
   const [ready, setReady] = useState(false);
   const repoRef = useRef<SkillProgressRepository | null>(null);
   const dbLoadedRef = useRef(false);
+  // True once there is real data (DB rows, legacy cache, or a user action).
+  // While false, the state only holds the presentational default set.
+  const hasRealDataRef = useRef(false);
 
   // Init DB + one-time migration from localStorage
   useEffect(() => {
@@ -66,12 +84,13 @@ export function useSkillProgress(): UseSkillProgressResult {
           await dbClient.execute(sql, bind);
         const repo = new SkillProgressRepository(dbExecutor);
 
+        const legacy = loadLegacySkillIds();
         const migrated = localStorage.getItem(MIGRATED_FLAG) === "1";
         if (!migrated) {
-          const local = loadFromLocalStorage();
           const dbCount = await repo.count();
-          if (dbCount === 0 && local.length > 0) {
-            await repo.replaceAll(local);
+          // Only migrate when there is REAL legacy data — never the default set.
+          if (dbCount === 0 && legacy && legacy.length > 0) {
+            await repo.replaceAll(legacy);
           }
           localStorage.setItem(MIGRATED_FLAG, "1");
         }
@@ -80,9 +99,13 @@ export function useSkillProgress(): UseSkillProgressResult {
         if (!cancelled) {
           repoRef.current = repo;
           dbLoadedRef.current = true;
-          // DB is authoritative. A brand-new DB (empty) uses the default set.
-          setCompletedIdsState(dbIds.length > 0 ? dbIds : DEFAULT_COMPLETED);
-          saveToLocalStorage(dbIds.length > 0 ? dbIds : DEFAULT_COMPLETED);
+          hasRealDataRef.current = dbIds.length > 0 || legacy !== null;
+          // DB is authoritative. A brand-new DB (empty) uses the default set
+          // only as a presentational fallback (never persisted).
+          setCompletedIdsState(dbIds.length > 0 ? dbIds : (legacy ?? DEFAULT_COMPLETED));
+          if (dbIds.length > 0 || legacy !== null) {
+            saveToLocalStorage(dbIds.length > 0 ? dbIds : (legacy as string[]));
+          }
           setReady(true);
         }
       } catch {
@@ -96,8 +119,9 @@ export function useSkillProgress(): UseSkillProgressResult {
     };
   }, []);
 
-  // Persist every change to DB + cache.
+  // Persist every change to DB + cache — but never the presentational default.
   useEffect(() => {
+    if (!hasRealDataRef.current) return;
     saveToLocalStorage(completedIds);
     const repo = repoRef.current;
     if (repo && dbLoadedRef.current) {
@@ -110,6 +134,8 @@ export function useSkillProgress(): UseSkillProgressResult {
   const setCompletedIds = useCallback<
     React.Dispatch<React.SetStateAction<string[]>>
   >((updater) => {
+    // A user interaction means the user owns their skill data from now on.
+    hasRealDataRef.current = true;
     setCompletedIdsState((prev) =>
       typeof updater === "function"
         ? (updater as (p: string[]) => string[])(prev)

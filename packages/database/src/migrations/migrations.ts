@@ -348,4 +348,21 @@ export const MIGRATIONS: Migration[] = [
         ON training_attempts(metric_kind);
     `,
   },
+  {
+    id: '018_add_is_demo',
+    description: 'Flag demo/seeded data on solves and sessions so it can be isolated and wiped (fix: mock data injected into new users)',
+    sql: `
+      ALTER TABLE solves ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE sessions ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
+      CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
+
+      -- Data heal: legacy demo rows created by the old seedDemoData live in
+      -- sessions named 'Demo Session'. Mark them (and their solves) so they
+      -- are hidden from the UI and removable via clearDemoData().
+      UPDATE sessions SET is_demo = 1 WHERE name = 'Demo Session';
+      UPDATE solves SET is_demo = 1
+        WHERE session_id IN (SELECT id FROM sessions WHERE is_demo = 1);
+    `,
+  },
 ];

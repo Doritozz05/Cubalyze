@@ -18,6 +18,9 @@ export function isTauri(): boolean {
 /**
  * Returns true ONLY when running on local Vite dev server in the web browser (localhost/127.0.0.1).
  * Returns false when running in Tauri desktop app or on external production hosts (Vercel, custom domains).
+ *
+ * NOTE: the `.local` TLD (mDNS/LAN hostnames) is intentionally NOT treated as
+ * localhost — it previously allowed demo-data seeding on any .local host.
  */
 export function isLocalhost(): boolean {
   if (typeof window === "undefined") return false;
@@ -27,7 +30,6 @@ export function isLocalhost(): boolean {
   return (
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
-    hostname === "[::1]" ||
-    hostname.endsWith(".local")
+    hostname === "[::1]"
   );
 }

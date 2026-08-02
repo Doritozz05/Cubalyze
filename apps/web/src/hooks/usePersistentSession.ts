@@ -9,7 +9,7 @@ import { isDev } from "@/utils/env";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
-import { seedDemoDataIfEmpty } from "@/utils/seedDemoData";
+import { attachDemoDataHelpers } from "@/utils/seedDemoData";
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -143,7 +143,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
 
         if (!seedPromise) {
           seedPromise = (async () => {
-            const initialSessions = await sessionsRepo.findAll();
+            const initialSessions = await sessionsRepo.findAllNonDemo();
             if (initialSessions.length === 0) {
               const defaultSession = {
                 id: uuidv4(),
@@ -155,8 +155,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
               await sessionsRepo.insert(defaultSession);
               if (isDev()) console.log('[usePersistentSession] Created default session:', defaultSession.id);
             }
-            // Seed demo data if DB is empty and flag is set
-            await seedDemoDataIfEmpty(sessionsRepo, solvesRepo);
+            // Manual demo helpers (window.seedDemoData / window.clearDemoData).
+            // Seeding NEVER runs automatically — only via the console helper.
+            attachDemoDataHelpers(sessionsRepo, solvesRepo);
           })().catch((err) => {
             // Clear poisoned cache so next mount can retry
             console.error('[usePersistentSession] seedPromise failed, clearing cache:', err);
@@ -171,7 +172,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
           // Don't rethrow — continue with empty DB
         }
 
-        let allSessions = await sessionsRepo.findAll();
+        let allSessions = await sessionsRepo.findAllNonDemo();
         
         let lastActive = localStorage.getItem("cubeforge:activeSessionId");
         if (!lastActive || !allSessions.find(s => s.id === lastActive)) {
@@ -192,7 +193,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
             lastActive = emergencyId;
             localStorage.setItem("cubeforge:activeSessionId", lastActive);
             // Re-fetch allSessions so the rest of load() uses fresh data
-            allSessions = await sessionsRepo.findAll();
+            allSessions = await sessionsRepo.findAllNonDemo();
           }
         }
 
@@ -554,7 +555,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     // Query DB directly instead of relying on potentially stale closure state
     const wasActive = id === activeSessionIdRef.current;
     if (wasActive) {
-      const remainingSessions = await sessionsRepo.findAll();
+      const remainingSessions = await sessionsRepo.findAllNonDemo();
       if (remainingSessions.length > 0) {
         await switchSession(remainingSessions[0].id);
       } else {

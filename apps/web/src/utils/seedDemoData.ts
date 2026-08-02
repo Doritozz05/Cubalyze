@@ -1,18 +1,18 @@
 /**
  * Demo data seed — generates realistic solve data with full CFOP analysis metrics
- * so the Insights panel is populated in dev without needing a Smart Cube.
+ * so the Insights panel can be populated on demand during development.
  *
- * Triggered once: when the DB has 0 solves and `?seed=demo` is in the URL,
- * OR `localStorage["cubeforge:seed-demo"] === "1"`.
- *
- * Persisted to IndexedDB (SQLite) so data survives hard reloads.
+ * MANUAL-ONLY: this module NEVER seeds automatically. Trigger it from the
+ * console via `window.seedDemoData()` (development builds only). Demo solves
+ * are written to a dedicated "Demo Session" flagged `is_demo=1` and are
+ * excluded from real statistics; `window.clearDemoData()` wipes them.
  */
 
 import type { CubeFace, CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { v4 as uuidv4 } from "uuid";
 import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
 import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
-import { isLocalhost } from "./env";
+import { isDev } from "./env";
 
 // ─── Orientation Timeline Generator ───────────────────────────────────────
 
@@ -424,55 +424,69 @@ function generateMetrics(
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-/** Seed the database with demo solves if empty. */
-export async function seedDemoDataIfEmpty(
+const DEMO_SESSION_NAME = "Demo Session";
+
+/**
+ * Attach the manual console helpers (called once during app init):
+ *  - `window.seedDemoData()`  → seeds demo solves right now (dev builds only).
+ *  - `window.clearDemoData()` → deletes demo solves + the Demo session.
+ *
+ * No seeding ever happens automatically.
+ */
+export function attachDemoDataHelpers(
+  sessionsRepo: SessionsRepository,
+  solvesRepo: SolvesRepository,
+): void {
+  if (typeof window === "undefined") return;
+  (window as unknown as Record<string, unknown>).seedDemoData = () => {
+    void seedDemoData(sessionsRepo, solvesRepo);
+  };
+  (window as unknown as Record<string, unknown>).clearDemoData = () => {
+    void (async () => {
+      try {
+        await sessionsRepo.deleteDemoSessions();
+        await solvesRepo.deleteDemoData();
+      } finally {
+        window.location.reload();
+      }
+    })();
+  };
+}
+
+/**
+ * Seed the database with demo solves.
+ *
+ * MANUAL-ONLY: never invoked automatically by the app. Trigger it via
+ * `window.seedDemoData()` in the console (development builds only — production
+ * ignores it). Demo solves are written to a dedicated "Demo Session"
+ * (is_demo = 1) and are excluded from real statistics.
+ */
+export async function seedDemoData(
   sessionsRepo: SessionsRepository,
   solvesRepo: SolvesRepository,
 ): Promise<void> {
-  // In dev mode (vite dev server), demo data is ALWAYS seeded when the DB
-  // is empty — the user no longer needs ?seed=demo or the localStorage flag.
-  // Production builds keep the opt-in gate so real user DBs are never
-  // silently populated with fake solves.
   if (typeof window === "undefined") return;
+  // Demo data only exists in development builds.
+  if (!isDev()) return;
 
-  // Expose console helper for developers/testers
-  if (typeof window !== "undefined") {
-    (window as unknown as Record<string, unknown>).seedDemoData = () => {
-      window.localStorage.setItem("cubeforge:seed-demo", "1");
-      window.location.reload();
-    };
-    (window as unknown as Record<string, unknown>).clearDemoData = () => {
-      window.localStorage.removeItem("cubeforge:seed-demo");
-      window.location.reload();
-    };
-  }
-
-  // Demo DB injection is ONLY allowed when running on Vite dev server on localhost.
-  if (!isLocalhost()) return;
-
-  const flag = window.localStorage.getItem("cubeforge:seed-demo");
-  const url = new URL(window.location.href);
-  // Only seed if explicitly requested via localStorage flag or ?seed= URL parameter
-  if (flag !== "1" && !url.searchParams.has("seed")) return;
-
-  // Check if solves already exist (don't double-seed)
-  const existing = await solvesRepo.count();
+  // Don't double-seed: only when the user has no real solves AND no demo
+  // session has been created yet (a previous seed already populated one).
+  const existing = await solvesRepo.countNonDemo();
   if (existing > 0) return;
-
-  // Find or create a session
   const allSessions = await sessionsRepo.findAll();
-  let sessionId: string;
-  if (allSessions.length > 0) {
-    sessionId = allSessions[0].id;
-  } else {
-    sessionId = uuidv4();
-    await sessionsRepo.insert({
+  if (allSessions.some((s) => s.name === DEMO_SESSION_NAME)) return;
+
+  // Always a dedicated demo session — never the user's own session.
+  const sessionId = uuidv4();
+  await sessionsRepo.insert(
+    {
       id: sessionId,
-      name: "Demo Session",
+      name: DEMO_SESSION_NAME,
       puzzleType: "3x3",
       createdAt: new Date().toISOString(),
-    });
-  }
+    },
+    { isDemo: true },
+  );
 
   // Generate 20 solves over the last 2 hours
   const now = Date.now();
@@ -512,8 +526,8 @@ export async function seedDemoDataIfEmpty(
 
   // Insert all solves
   for (const solve of solves) {
-    await solvesRepo.insert(solve);
+    await solvesRepo.insert(solve, { isDemo: true });
   }
 
-  console.log(`[seedDemoData] Seeded ${solves.length} demo solves. Reload to see them in Insights.`);
+  console.log(`[seedDemoData] Seeded ${solves.length} demo solves (is_demo). They are excluded from Stats/Insights; run window.clearDemoData() to remove them.`);
 }

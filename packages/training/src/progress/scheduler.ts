@@ -10,9 +10,9 @@
  * - Overdue factor penalizes cases that already passed their review date.
  * - Mastery gap + recent fail rate + recognition accuracy capture the
  *   two-signal weakness model (declarative recognition vs procedural speed).
- * - New cases are injected daily (cap `newPerDay`) so the SRS *teaches*,
- *   not only reviews — fixing the H1 bug where never-practiced cases were
- *   excluded from the queue entirely.
+ * - Brand-new cases (never practiced) are excluded by default: the queue only
+ *   contains what the user actually practiced, mirroring the solve stats.
+ *   Daily new-case teaching can be re-enabled explicitly via `newPerDay`.
  * - Contextual interference: the final order round-robins across subsets so
  *   you never drill the same family (OLL/PLL/CMLL...) back-to-back
  *   (Shea & Morgan 1979 — random practice beats blocked practice).
@@ -73,7 +73,7 @@ export interface BuildQueueOptions {
   now?: number;
   /** Max items returned. Default 20. */
   limit?: number;
-  /** Max brand-new cases injected per day. Default 3. */
+  /** Max brand-new cases injected per day. Default 0 = disabled (the queue only contains practiced cases). */
   newPerDay?: number;
   /** Only include cases belonging to this method. Default: all methods. */
   methodId?: string;
@@ -203,7 +203,7 @@ export function scoreCandidate(
 /**
  * Build the daily review queue:
  *   1. Filter by method, score every candidate.
- *   2. Cap brand-new injections to `newPerDay`.
+ *   2. Cap brand-new injections to `newPerDay` (0 = disabled).
  *   3. Sort by priority (desc).
  *   4. Round-robin across subsets for contextual interference.
  */
@@ -213,7 +213,7 @@ export function buildDailyQueue(
 ): QueueItem[] {
   const now = options.now ?? Date.now();
   const limit = options.limit ?? 20;
-  const newPerDay = options.newPerDay ?? 3;
+  const newPerDay = options.newPerDay ?? DEFAULT_NEW_PER_DAY;
   const weakThreshold = options.weakThreshold ?? 60;
 
   let scored = candidates
@@ -250,4 +250,5 @@ export function buildDailyQueue(
 }
 
 /** Re-exported for consumers that want the canonical default. */
-export const DEFAULT_NEW_PER_DAY = 3;
+/** Off by default: brand-new (never-practiced) cases are not injected into the queue. */
+export const DEFAULT_NEW_PER_DAY = 0;

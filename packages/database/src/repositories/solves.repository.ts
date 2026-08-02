@@ -16,6 +16,7 @@ export interface SolveRow {
   analysis_engine_version: string | null;
   analysis: string | null;
   puzzle_type?: string;
+  is_demo?: number;
   created_at: string;
   updated_at: string;
 }
@@ -127,11 +128,15 @@ export class SolvesRepository {
     return rowToSolve(rows[0] as unknown as SolveRow);
   }
 
-  async insert(solve: Solve): Promise<void> {
+  /**
+   * Insert a solve. Pass `{ isDemo: true }` to flag seeded/demo solves so they
+   * stay isolated from the user's real statistics (see countNonDemo / deleteDemoData).
+   */
+  async insert(solve: Solve, options?: { isDemo?: boolean }): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
     );
   }
 
@@ -150,5 +155,24 @@ export class SolvesRepository {
   async count(): Promise<number> {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM solves');
     return (rows[0] as { cnt: number }).cnt;
+  }
+
+  /** Count solves that are NOT demo data (the user's real solves). */
+  async countNonDemo(): Promise<number> {
+    const rows = await this.db('SELECT COUNT(*) as cnt FROM solves WHERE is_demo = 0');
+    return (rows[0] as { cnt: number }).cnt;
+  }
+
+  /**
+   * Delete every demo solve (is_demo = 1). Returns how many rows were removed.
+   * Used by window.clearDemoData() so seeded data never lingers in the DB.
+   */
+  async deleteDemoData(): Promise<number> {
+    const rows = await this.db('SELECT COUNT(*) as cnt FROM solves WHERE is_demo = 1');
+    const count = (rows[0] as { cnt: number }).cnt;
+    if (count > 0) {
+      await this.db('DELETE FROM solves WHERE is_demo = 1');
+    }
+    return count;
   }
 }

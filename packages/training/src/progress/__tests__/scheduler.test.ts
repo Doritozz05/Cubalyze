@@ -145,24 +145,30 @@ describe("SRS scheduler — priority formula (scoreCandidate)", () => {
 });
 
 describe("SRS scheduler — buildDailyQueue", () => {
-  it("includes brand-new cases (H1 fix: never-practiced cases appear)", () => {
+  it("excludes brand-new cases by default (no auto-injection)", () => {
     const candidates = [
       makeCandidate("overdue1", "s1", "m1", progress({ srsNextReviewAt: NOW - DAY_MS })),
       makeCandidate("new1", "s2", "m1", null),
       makeCandidate("new2", "s3", "m1", null),
     ];
     const queue = buildDailyQueue(candidates, { now: NOW });
-    expect(queue.some((i) => i.reason === "new")).toBe(true);
-    expect(queue.length).toBe(3);
+    // Never-practiced cases are NOT injected unless newPerDay is set explicitly.
+    expect(queue.some((i) => i.reason === "new")).toBe(false);
+    expect(queue.length).toBe(1);
+    expect(queue[0].reason).toBe("overdue");
   });
 
-  it("caps brand-new injections to newPerDay (default 3)", () => {
+  it("injects brand-new cases only when newPerDay is set explicitly", () => {
+    expect(DEFAULT_NEW_PER_DAY).toBe(0);
     const candidates = Array.from({ length: 7 }, (_, i) =>
       makeCandidate(`new${i}`, `s${i}`, "m1", null),
     );
-    const queue = buildDailyQueue(candidates, { now: NOW, limit: 20 });
-    expect(queue.filter((i) => i.reason === "new").length).toBe(DEFAULT_NEW_PER_DAY);
-    expect(queue.length).toBe(DEFAULT_NEW_PER_DAY);
+    const queue = buildDailyQueue(candidates, { now: NOW, limit: 20, newPerDay: 3 });
+    expect(queue.filter((i) => i.reason === "new").length).toBe(3);
+    expect(queue.length).toBe(3);
+    // Explicit 0 (the default) disables injection entirely.
+    const none = buildDailyQueue(candidates, { now: NOW, limit: 20, newPerDay: 0 });
+    expect(none).toEqual([]);
   });
 
   it("orders overdue items above weak, weak above fresh", () => {
@@ -273,7 +279,8 @@ describe("SRS scheduler — tracker.getTodayQueue mapping", () => {
     // srsNextReviewAt is always in the past and new1 has no progress, so the
     // result is deterministic regardless of the wall clock.
     const tracker = new ProgressTracker(fakeRepo as never);
-    const queue = await tracker.getTodayQueue({});
+    // Explicit newPerDay so the never-practiced candidate is still mapped.
+    const queue = await tracker.getTodayQueue({ newPerDay: 1 });
     const reasons = queue.map((i: QueueItem) => i.reason).sort();
     expect(reasons).toEqual(["new", "overdue"]);
   });

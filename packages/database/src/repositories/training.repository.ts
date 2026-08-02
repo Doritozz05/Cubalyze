@@ -660,12 +660,28 @@ export class TrainingRepository {
   }
 
   async getMethodBestTime(methodId: string): Promise<number> {
-    // Best full solve time from solves table for this method
+    // Best full solve time from solves table for this method (demo data excluded)
     const rows = await this.db(
-      "SELECT MIN(time_ms) as best FROM solves WHERE method = ? AND penalty = 'none'",
+      "SELECT MIN(time_ms) as best FROM solves WHERE method = ? AND penalty = 'none' AND is_demo = 0",
       [methodId],
     );
     return (rows[0] as { best: number | null }).best ?? 0;
+  }
+
+  // ── Reset / Maintenance ────────────────────────────────────────────
+
+  /**
+   * Delete ALL training progress data: attempts, per-case SRS/progress rows,
+   * exercise aggregates and training sessions. Nothing else in the app clears
+   * these tables, so this is the only way to reset the SRS from scratch
+   * (exposed as the `window.clearTrainingData()` dev console helper).
+   * Solves/sessions are intentionally left untouched.
+   */
+  async clearAllData(): Promise<void> {
+    await this.db('DELETE FROM training_attempts');
+    await this.db('DELETE FROM algorithm_progress');
+    await this.db('DELETE FROM exercise_progress');
+    await this.db('DELETE FROM training_sessions');
   }
 
   // ── Phase Stats ────────────────────────────────────────────────────

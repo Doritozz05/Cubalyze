@@ -6,6 +6,7 @@ export interface SessionRow {
   puzzle_type: string;
   created_at: string;
   updated_at: string;
+  is_demo?: number;
 }
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -31,16 +32,29 @@ export class SessionsRepository {
     return rows.map((r) => rowToSession(r as unknown as SessionRow));
   }
 
+  /**
+   * All non-demo sessions, oldest first. Demo sessions (is_demo = 1) are
+   * hidden from the UI so seeded sample data never mixes with the user's own.
+   */
+  async findAllNonDemo(): Promise<Session[]> {
+    const rows = await this.db('SELECT * FROM sessions WHERE is_demo = 0 ORDER BY created_at ASC');
+    return rows.map((r) => rowToSession(r as unknown as SessionRow));
+  }
+
   async findById(id: string): Promise<Session | null> {
     const rows = await this.db('SELECT * FROM sessions WHERE id = ?', [id]);
     if (rows.length === 0) return null;
     return rowToSession(rows[0] as unknown as SessionRow);
   }
 
-  async insert(session: Session): Promise<void> {
+  /**
+   * Insert a session. Pass `{ isDemo: true }` for the seeded "Demo Session" so
+   * it stays hidden from the UI and removable via deleteDemoSessions().
+   */
+  async insert(session: Session, options?: { isDemo?: boolean }): Promise<void> {
     await this.db(
-      'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-      [session.id, session.name, session.puzzleType, session.createdAt || new Date().toISOString(), session.updatedAt || new Date().toISOString()]
+      'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
+      [session.id, session.name, session.puzzleType, session.createdAt || new Date().toISOString(), session.updatedAt || new Date().toISOString(), options?.isDemo ? 1 : 0]
     );
   }
 
@@ -53,6 +67,16 @@ export class SessionsRepository {
 
   async delete(id: string): Promise<void> {
     await this.db('DELETE FROM sessions WHERE id = ?', [id]);
+  }
+
+  /** Delete every demo session (is_demo = 1). Returns how many were removed. */
+  async deleteDemoSessions(): Promise<number> {
+    const rows = await this.db('SELECT COUNT(*) as cnt FROM sessions WHERE is_demo = 1');
+    const count = (rows[0] as { cnt: number }).cnt;
+    if (count > 0) {
+      await this.db('DELETE FROM sessions WHERE is_demo = 1');
+    }
+    return count;
   }
 
   async count(): Promise<number> {

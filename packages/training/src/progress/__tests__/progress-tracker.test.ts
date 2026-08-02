@@ -368,4 +368,20 @@ describe('ProgressTracker — delegates', () => {
     const result = await tracker.getPhaseStats('cfop', 'cross');
     expect(result).toEqual(phase);
   });
+
+  it('clearAllData delegates to the repo reset', async () => {
+    const clearAllData = vi.fn(async () => undefined);
+    const { repo } = createFakeRepo({ clearAllData });
+    const tracker = new ProgressTracker(repo);
+
+    await tracker.clearAllData();
+    expect(clearAllData).toHaveBeenCalledTimes(1);
+  });
+
+  it('clearAllData throws when the repo does not support resets', async () => {
+    const { repo } = createFakeRepo({ clearAllData: undefined });
+    const tracker = new ProgressTracker(repo);
+
+    await expect(tracker.clearAllData()).rejects.toThrow("Training data reset is unavailable");
+  });
 });

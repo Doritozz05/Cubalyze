@@ -53,6 +53,28 @@ function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
     completeTrainingSession: (id: string, completedAt?: number) => repo.completeTrainingSession(id, completedAt),
     getTrainingSessions: (methodId: string, phaseId?: string, limit?: number) => repo.getTrainingSessions(methodId, phaseId, limit),
     updateAttemptReviewGrade: (caseId: string, reviewGrade: SRSGrade) => repo.updateAttemptReviewGrade(caseId, reviewGrade),
+    clearAllData: () => repo.clearAllData(),
+  };
+}
+
+// ─── Dev console helper (module scope — always attached) ────────────────────
+// Training progress lives in tables nothing else clears (algorithm_progress,
+// training_attempts, exercise_progress, training_sessions), so this is the
+// only way to reset the SRS/progress from scratch.
+//
+// Attached at MODULE scope, not inside getSharedTracker(), so it exists from
+// app boot even before any training view mounts (views only initialize the
+// tracker lazily). The helper boots the shared tracker on first use.
+if (typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>).clearTrainingData = () => {
+    void getSharedTracker()
+      .then((tracker) => tracker.clearAllData())
+      .then(() => {
+        console.log("[clearTrainingData] All training progress deleted. Reload to refresh the dashboard.");
+      })
+      .catch((err) => {
+        console.error("[clearTrainingData] Failed:", err);
+      });
   };
 }
 

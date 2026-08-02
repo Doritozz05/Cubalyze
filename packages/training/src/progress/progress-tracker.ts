@@ -43,6 +43,8 @@ export interface ITrainingProgressRepo {
   getTrainingSessions?(methodId: string, phaseId?: string, limit?: number): Promise<TrainingSessionProgressRecord[]>;
   /** Stamp the FSRS grade onto the most recent attempt for a case (SRS review flow). */
   updateAttemptReviewGrade?(caseId: string, reviewGrade: string): Promise<void>;
+  /** Delete all training progress (attempts, algorithm/exercise progress, training sessions). */
+  clearAllData?(): Promise<void>;
 }
 
 // ─── Record Types (what comes from the DB) ────────────────────────────────
@@ -543,7 +545,7 @@ export class ProgressTracker {
    * Build the daily SRS review queue (FSRS priority + new-cases cap +
    * contextual interference). Uses the real catalog + progress data.
    */
-  async getTodayQueue(options: { methodId?: string; limit?: number } = {}): Promise<QueueItem[]> {
+  async getTodayQueue(options: { methodId?: string; limit?: number; newPerDay?: number } = {}): Promise<QueueItem[]> {
     const raw = await this.repo.getQueueCandidates(options.methodId);
     const candidates: QueueCandidate[] = raw.map((r) => ({
       case: {
@@ -608,5 +610,15 @@ export class ProgressTracker {
    */
   async getMethodExerciseProgress(methodId: string): Promise<ExerciseProgressRecord[]> {
     return this.repo.getMethodExerciseProgress(methodId);
+  }
+
+  /**
+   * Delete ALL training progress (attempts, algorithm/exercise progress,
+   * training sessions). Exposes the repo's reset so the web layer can attach
+   * a dev console helper without reaching into the repo directly.
+   */
+  async clearAllData(): Promise<void> {
+    if (!this.repo.clearAllData) throw new Error("Training data reset is unavailable");
+    return this.repo.clearAllData();
   }
 }

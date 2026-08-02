@@ -642,3 +642,18 @@ describe('TrainingRepository — Phase Stats', () => {
     expect(db.mock.calls[0][1]).toEqual(['m1', 'cross']);
   });
 });
+
+describe('TrainingRepository — Reset / Maintenance', () => {
+  it('clearAllData deletes every training table (attempts, progress, sessions)', async () => {
+    const db = mockDb();
+    const repo = new TrainingRepository(db);
+    await repo.clearAllData();
+    const statements = db.mock.calls.map((c) => c[0]);
+    expect(statements).toEqual([
+      'DELETE FROM training_attempts',
+      'DELETE FROM algorithm_progress',
+      'DELETE FROM exercise_progress',
+      'DELETE FROM training_sessions',
+    ]);
+  });
+});
