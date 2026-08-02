@@ -36,10 +36,10 @@ import {
 } from "@/components/ui/select";
 
 const REASON_META: Record<QueueReason, { label: string; badge: string; dot: string }> = {
-  overdue: { label: "Overdue", badge: "bg-caution-soft text-caution border-caution/30", dot: "bg-caution" },
-  review: { label: "Due", badge: "bg-phase-blue/10 text-phase-blue-600 border-phase-blue/30", dot: "bg-phase-blue" },
-  weak: { label: "Weak", badge: "bg-phase-violet/10 text-phase-purple-500 border-phase-violet/30", dot: "bg-phase-violet" },
-  new: { label: "New", badge: "bg-phase-emerald/10 text-accent-emerald border-phase-emerald/30", dot: "bg-phase-emerald" },
+  overdue: { label: "Overdue", badge: "bg-caution text-surface font-semibold", dot: "bg-caution" },
+  review: { label: "Due", badge: "bg-phase-blue text-white font-semibold", dot: "bg-phase-blue" },
+  weak: { label: "Weak", badge: "bg-phase-violet text-white font-semibold", dot: "bg-phase-violet" },
+  new: { label: "New", badge: "bg-phase-emerald text-white font-semibold", dot: "bg-phase-emerald" },
 };
 
 
