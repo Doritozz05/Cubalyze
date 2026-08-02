@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Search, Puzzle, Plus, Loader2, AlertCircle, CheckCircle2, Filter } from "lucide-react";
-import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
-import { WidgetRegistry } from "@/widgets/WidgetRegistry";
-import { validateWidgetPlugin, sanitizeWidgetId } from "@/widgets/loader";
-import type { WidgetPlugin } from "@/widgets/sdk";
+import { Search, Puzzle, Filter } from "lucide-react";
+import { useWidgetStore } from "@/widgets/widgetStore";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Drawer,
@@ -29,11 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TOUCH_FULL_BLEED } from "@/lib/touch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { WidgetExplorerSidebar } from "./WidgetExplorerSidebar";
 import { WidgetCard } from "./WidgetCard";
 import { getAllWidgets, WIDGET_CATEGORIES } from "@/widgets/registry";
@@ -69,11 +60,6 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
   const isTouch = useIsTouch();
   const [activeCategory, setActiveCategory] = useState<WidgetCategoryId>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importUrl, setImportUrl] = useState("");
-  const [importStatus, setImportStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [importMessage, setImportMessage] = useState("");
-
   // Reset to "all" + clear search on open
   useEffect(() => {
     if (open) {
@@ -118,65 +104,6 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
     setActiveCategory(id);
   }, []);
 
-  const handleOpenImportDialog = useCallback(() => {
-    setImportUrl("");
-    setImportStatus("idle");
-    setImportMessage("");
-    setImportDialogOpen(true);
-  }, []);
-
-  const handleConfirmImport = useCallback(async () => {
-    const url = importUrl.trim();
-    if (!url) return;
-
-    setImportStatus("loading");
-    setImportMessage("");
-
-    try {
-      const module = await import(/* @vite-ignore */ url);
-      const plugin = (module.default ?? module) as WidgetPlugin;
-      const validation = validateWidgetPlugin(plugin);
-      if (!validation.valid) {
-        setImportStatus("error");
-        setImportMessage(`Invalid widget:\n${validation.errors.join("\n")}`);
-        return;
-      }
-
-      const safeId = sanitizeWidgetId(plugin.id || plugin.definition?.id);
-      if (!safeId) {
-        setImportStatus("error");
-        setImportMessage("Widget must have a valid id");
-        return;
-      }
-
-      const definition = {
-        ...plugin.definition,
-        id: safeId,
-        source: "custom" as const,
-        icon: plugin.definition.icon as never,
-      };
-
-      widgetStore.getState().registerCustomWidget(definition);
-      WidgetRegistry.register(safeId, {
-        component: plugin.component as unknown as React.ComponentType<Record<string, unknown>>,
-        preview: plugin.preview ?? (() => null),
-        mapProps: () => ({}),
-      });
-
-      setImportStatus("success");
-      setImportMessage(`Widget "${definition.name}" imported successfully!`);
-
-      // Close dialog after brief success display
-      setTimeout(() => {
-        setImportDialogOpen(false);
-        setImportStatus("idle");
-      }, 1500);
-    } catch (err) {
-      setImportStatus("error");
-      setImportMessage(`Failed to load widget: ${err}`);
-    }
-  }, [importUrl]);
-
   const innerContent = (
     <div className="flex h-full min-h-0">
       {/* ── Sidebar (desktop only; touch uses scrollable category chips) ── */}
@@ -203,19 +130,6 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Import custom widget */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleOpenImportDialog}
-                    className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[0.7rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink cursor-pointer"
-                  >
-                    <Plus className="size-3" />
-                    Import
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" align="end">Import a custom widget from a URL</TooltipContent>
-              </Tooltip>
               {/* Count */}
               <span className="nums shrink-0 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[0.7rem] text-ink-3">
                 {filteredWidgets.length}
@@ -309,88 +223,6 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
         </Dialog>
       )}
 
-      {/* Import widget dialog — replaces native browser prompt() */}
-      <Dialog open={importDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setImportDialogOpen(false);
-          setImportStatus("idle");
-        }
-      }}>
-        <DialogContent className={`sm:max-w-md ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="size-4 text-ink-3" />
-              Import widget
-            </DialogTitle>
-            <DialogDescription>
-              Enter the URL of a widget module to import it into Cubeforge.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-3 py-2">
-            <Input
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="https://example.com/my-widget.js"
-              className="h-9 text-sm"
-              disabled={importStatus === "loading"}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && importUrl.trim() && importStatus !== "loading") {
-                  handleConfirmImport();
-                }
-              }}
-              autoFocus
-            />
-
-            {importStatus === "error" && (
-              <div className="flex items-start gap-2 rounded-md bg-dnf-soft px-3 py-2 text-xs text-dnf">
-                <AlertCircle className="mt-0.5 size-3 shrink-0" />
-                <span className="whitespace-pre-wrap">{importMessage}</span>
-              </div>
-            )}
-
-            {importStatus === "success" && (
-              <div className="flex items-center gap-2 rounded-md bg-ready-soft px-3 py-2 text-xs text-ready">
-                <CheckCircle2 className="size-3 shrink-0" />
-                <span>{importMessage}</span>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setImportDialogOpen(false);
-                setImportStatus("idle");
-              }}
-              disabled={importStatus === "loading"}
-              className="h-8 text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleConfirmImport}
-              disabled={!importUrl.trim() || importStatus === "loading"}
-              className="h-8 gap-1.5 text-xs"
-            >
-              {importStatus === "loading" ? (
-                <>
-                  <Loader2 className="size-3 animate-spin" />
-                  Importing…
-                </>
-              ) : (
-                <>
-                  <Plus className="size-3" />
-                  Import
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
