@@ -259,7 +259,6 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
       const pending = lastSolveRef.current;
       if (pending) persistTotalRef.current(pending);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const hintCtx = useMemo<HintContext>(() => ({
