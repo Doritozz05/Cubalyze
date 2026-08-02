@@ -34,12 +34,6 @@ import { LayoutOrganizerPreview } from "@/widgets/implementations/layout-organiz
  * Each widget declares its own `mapProps` — no switch-case in WidgetHost.
  * Called once on app startup (module-level side-effect).
  */
-import { widgetStore } from "@/widgets/widgetStore";
-import { setCustomWidgetsGetter } from "@/widgets/registry";
-
-// Wire up custom widgets getter at module level (before any component renders)
-setCustomWidgetsGetter(() => widgetStore.getState().customWidgets ?? []);
-
 export function registerAllWidgets(): void {
   WidgetRegistry.register("times-log", {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

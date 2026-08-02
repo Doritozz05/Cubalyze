@@ -63,23 +63,12 @@ export const BUILT_IN_WIDGETS: WidgetDefinition[] = [
   layoutOrganizerDefinition,
 ];
 
-let _getCustomWidgets: (() => WidgetDefinition[]) | null = null;
-
-/** Set a getter for custom widgets (called by widgetStore after initialization). */
-export function setCustomWidgetsGetter(getter: () => WidgetDefinition[]): void {
-  _getCustomWidgets = getter;
-}
-
-/** All widgets (built-in + registered custom). */
+/** All widgets (built-in + future static plugins via RFC-017). */
 export function getAllWidgets(): WidgetDefinition[] {
-  const custom = _getCustomWidgets?.() ?? [];
-  return [...BUILT_IN_WIDGETS, ...custom];
+  return [...BUILT_IN_WIDGETS];
 }
 
-/** Lookup a widget definition by id (searches built-in + custom). */
+/** Lookup a widget definition by id. */
 export function getWidget(id: WidgetId): WidgetDefinition | undefined {
-  return (
-    BUILT_IN_WIDGETS.find((w) => w.id === id) ??
-    _getCustomWidgets?.().find((w) => w.id === id)
-  );
+  return BUILT_IN_WIDGETS.find((w) => w.id === id);
 }

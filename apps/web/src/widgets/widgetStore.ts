@@ -3,7 +3,7 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { persist } from "zustand/middleware";
-import type { WidgetId, WidgetInstanceState, WidgetDefinition, WidgetStatus } from "./types";
+import type { WidgetId, WidgetInstanceState, WidgetStatus } from "./types";
 import { BUILT_IN_WIDGETS, getWidget } from "./registry";
 
 // ── Custom Layout ────────────────────────────────────────────────────────
@@ -22,8 +22,6 @@ export interface CustomLayout {
 export interface WidgetStoreState {
   /** Per-widget runtime state keyed by widget id. */
   instances: Record<WidgetId, WidgetInstanceState>;
-  /** Custom widget definitions registered by the user (persisted). */
-  customWidgets: WidgetDefinition[];
   /** Ordered list of docked widget IDs (first = leftmost in dock). */
   dockOrder: WidgetId[];
   /** Saved custom layouts. */
@@ -46,10 +44,6 @@ export interface WidgetStoreActions {
   dockAt: (id: WidgetId, index: number) => void;
   /** Bring a widget to the top of the z-stack (like clicking a window in a desktop OS). */
   focusWidget: (id: WidgetId) => void;
-  /** Register a custom widget. Adds to registry + creates instance state. */
-  registerCustomWidget: (def: WidgetDefinition) => void;
-  /** Remove a custom widget. */
-  removeCustomWidget: (id: WidgetId) => void;
   /** Save current floating widget positions as a named layout. */
   saveCustomLayout: (name: string) => void;
   /** Delete a custom layout by id. */
@@ -139,15 +133,10 @@ export function migratePersistedWidgetState(
   const raw = (persisted ?? {}) as Record<string, unknown>;
   const rawInstances = (raw.instances ?? {}) as Record<string, Record<string, unknown>>;
   const validIds = new Set(BUILT_IN_WIDGETS.map((w) => w.id as string));
-  const customWidgets = Array.isArray(raw.customWidgets)
-    ? raw.customWidgets as WidgetDefinition[]
-    : [];
   const cleanedInstances: Record<string, Record<string, unknown>> = {};
 
   for (const [id, rawValue] of Object.entries(rawInstances)) {
-    const isBuiltIn = validIds.has(id);
-    const isCustom = customWidgets.some((w) => w?.id === id);
-    if (!isBuiltIn && !isCustom) continue;
+    if (!validIds.has(id)) continue;
 
     const value = isRecord(rawValue) ? rawValue : {};
     const def = BUILT_IN_WIDGETS.find((w) => w.id === id);
@@ -193,8 +182,11 @@ export function migratePersistedWidgetState(
     new Set([...existingDockOrder, ...builtInOrder]),
   ).filter((id) => cleanedInstances[id]);
 
+  // Drop the obsolete `customWidgets` key (URL-import removed for local-first
+  // security) so it never leaks back into persisted state.
+  const { customWidgets: _staleCustomWidgets, ...rest } = raw;
   return {
-    ...raw,
+    ...rest,
     instances: cleanedInstances,
     dockOrder: combinedOrder,
     customLayouts: (raw.customLayouts as CustomLayout[]) ?? [],
@@ -207,7 +199,6 @@ export const widgetStore = createStore<WidgetStore>()(
   persist(
     (set, get) => ({
       instances: buildDefaultInstances(),
-      customWidgets: [],
       dockOrder: BUILT_IN_WIDGETS.map((w) => w.id),
       customLayouts: [],
 
@@ -392,32 +383,6 @@ export const widgetStore = createStore<WidgetStore>()(
           return { instances };
         }),
 
-      registerCustomWidget: (def) =>
-        set((s) => {
-          if (s.customWidgets.some((w) => w.id === def.id)) return s;
-          return {
-            customWidgets: [...s.customWidgets, def],
-            dockOrder: [...s.dockOrder, def.id],
-            instances: {
-              ...s.instances,
-              [def.id]: {
-                status: def.defaultActive ? "docked" : "inactive",
-                position: { ...def.defaultPosition },
-              },
-            },
-          };
-        }),
-
-      removeCustomWidget: (id) =>
-        set((s) => {
-          const { [id]: _, ...rest } = s.instances;
-          return {
-            customWidgets: s.customWidgets.filter((w) => w.id !== id),
-            dockOrder: s.dockOrder.filter((i) => i !== id),
-            instances: rest,
-          };
-        }),
-
       // ── Custom layouts ──────────────────────────────────────────────
       saveCustomLayout: (name) => {
         const state = get();
@@ -449,7 +414,9 @@ export const widgetStore = createStore<WidgetStore>()(
     }),
     {
       name: "cubeforge:widgets",
-      version: 5,
+      // v6: custom widgets (URL-import) removed — migrate drops orphaned
+      // instances so existing users get them cleaned on next load.
+      version: 6,
       migrate: (persisted, oldVersion) =>
         migratePersistedWidgetState(persisted, oldVersion),
       partialize: (state) => ({
@@ -460,7 +427,6 @@ export const widgetStore = createStore<WidgetStore>()(
             (({ zIndex: _z, panelWidth: _pw, ...rest }) => rest)(inst),
           ]),
         ),
-        customWidgets: state.customWidgets,
         dockOrder: state.dockOrder,
         customLayouts: state.customLayouts,
       }),

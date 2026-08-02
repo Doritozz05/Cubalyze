@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Search, Puzzle, Filter } from "lucide-react";
-import { useWidgetStore } from "@/widgets/widgetStore";
 import {
   Dialog,
   DialogContent,
@@ -68,15 +67,9 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
     }
   }, [open]);
 
-  // Merge built-in + custom widgets via registry. Subscribes to store for live updates.
-  const customWidgets = useWidgetStore((s) => s.customWidgets);
-  const allWidgets = useMemo(
-    () => {
-      void customWidgets;
-      return getAllWidgets();
-    },
-    [customWidgets],
-  );
+  // Built-in widgets from the registry (custom URL-import was removed for
+  // local-first security — future static plugins will extend via RFC-017).
+  const allWidgets = getAllWidgets();
 
   const filteredWidgets = useMemo(() => {
     let list = allWidgets;
