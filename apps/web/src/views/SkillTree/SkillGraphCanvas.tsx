@@ -475,11 +475,51 @@ export function SkillGraphCanvas({
     container.addEventListener("touchend", handleTouchEnd);
     container.addEventListener("touchcancel", handleTouchEnd);
 
+    // Trackpad pinch-to-zoom (ctrlKey + wheel) & mouse wheel zoom handler
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      const rect = container.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+
+      // Pinch on trackpads sets e.ctrlKey to true
+      const isPinch = e.ctrlKey;
+      const zoomFactor = isPinch ? Math.exp(-e.deltaY * 0.01) : Math.exp(-e.deltaY * 0.0015);
+
+      const currentZoom = zoomRef.current;
+      const targetZoom = Math.min(Math.max(currentZoom * zoomFactor, 0.4), 2.2);
+
+      if (targetZoom === currentZoom) return;
+
+      // Adjust pan so zooming centers around cursor
+      const currentPan = panRef.current;
+      const mouseCanvasX = (cursorX - currentPan.x) / currentZoom;
+      const mouseCanvasY = (cursorY - currentPan.y) / currentZoom;
+
+      const newPanX = cursorX - mouseCanvasX * targetZoom;
+      const newPanY = cursorY - mouseCanvasY * targetZoom;
+
+      panRef.current = { x: newPanX, y: newPanY };
+      zoomRef.current = targetZoom;
+
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = requestAnimationFrame(() => {
+        applyTransform(newPanX, newPanY, targetZoom);
+      });
+
+      setPan({ x: newPanX, y: newPanY });
+      setZoom(targetZoom);
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
     return () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
       container.removeEventListener("touchcancel", handleTouchEnd);
+      container.removeEventListener("wheel", handleWheel);
     };
   }, [applyTransform]);
 
@@ -502,9 +542,48 @@ export function SkillGraphCanvas({
   }, [isTouch, nodes, updatePan, updateZoom]);
 
   const resetView = useCallback(() => {
-    updateZoom(1);
-    updatePan({ x: 50, y: 50 });
-  }, [updatePan, updateZoom]);
+    const container = containerRef.current;
+    if (nodes.length === 0) {
+      updateZoom(0.4);
+      updatePan({ x: 50, y: 50 });
+      return;
+    }
+
+    // Compute bounding box of all nodes
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach((n) => {
+      if (n.x < minX) minX = n.x;
+      if (n.y < minY) minY = n.y;
+      if (n.x > maxX) maxX = n.x;
+      if (n.y > maxY) maxY = n.y;
+    });
+
+    // Node diameter + label margin offset ~100px
+    maxX += 100;
+    maxY += 100;
+
+    const treeWidth = maxX - minX;
+    const treeHeight = maxY - minY;
+    const treeCenterX = minX + treeWidth / 2;
+    const treeCenterY = minY + treeHeight / 2;
+
+    const cw = container ? container.clientWidth : 1000;
+    const ch = container ? container.clientHeight : 600;
+
+    // Minimum zoom limit level (0.4) to show maximum context
+    const minZoomLimit = 0.4;
+    const scaleX = (cw * 0.85) / Math.max(1, treeWidth);
+    const scaleY = (ch * 0.85) / Math.max(1, treeHeight);
+    const targetZoom = Math.min(minZoomLimit, Math.max(0.4, Math.min(scaleX, scaleY)));
+
+    const centeredPan = {
+      x: cw / 2 - treeCenterX * targetZoom,
+      y: ch / 2 - treeCenterY * targetZoom,
+    };
+
+    updateZoom(targetZoom);
+    updatePan(centeredPan);
+  }, [nodes, updatePan, updateZoom]);
 
   const handleZoomIn = useCallback(() => updateZoom(zoomRef.current + 0.15), [updateZoom]);
   const handleZoomOut = useCallback(() => updateZoom(zoomRef.current - 0.15), [updateZoom]);
