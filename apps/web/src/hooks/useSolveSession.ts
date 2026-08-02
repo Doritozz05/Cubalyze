@@ -796,6 +796,7 @@ export function useSolveSession(
   const reset = useCallback(() => {
     engine.reset();
     setTime(0);
+    setLastTime(null);
   }, [engine]);
 
   const cancel = useCallback(() => {

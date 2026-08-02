@@ -310,6 +310,7 @@ export default function App() {
     lastTime: timerLastTime,
     press: timerPress,
     release: timerRelease,
+    reset: timerReset,
     cancel: timerCancel,
     validation,
     smartCubeConnected,
@@ -715,8 +716,14 @@ export default function App() {
             clickToStart={clickToStart}
             holdDelay={spacebarHoldDelay}
             lastSolve={solves[0] ?? null}
-            onUpdatePenalty={(id, pen) => updateSolve(id, { penalty: pen })}
-            onDeleteSolve={handleDelete}
+            onUpdatePenalty={(id, pen) => {
+              updateSolve(id, { penalty: pen }).catch(() => toast.error("Update failed"));
+              timerReset();
+            }}
+            onDeleteSolve={(id) => {
+              handleDelete(id);
+              timerReset();
+            }}
             className="mt-1 flex-1"
           />
         )}
