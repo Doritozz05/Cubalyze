@@ -220,6 +220,30 @@ function rowToExerciseProgress(row: ExerciseProgressRow): ExerciseProgress {
   };
 }
 
+/** Queue candidate: a catalog case + its FSRS progress (null if never practiced). */
+export interface QueueCandidate {
+  caseId: string;
+  subsetId: string;
+  caseNumber: string;
+  caseName: string;
+  methodId: string;
+  subsetName: string;
+  progress: AlgorithmProgress | null;
+}
+
+function rowToQueueCandidate(row: Record<string, unknown>): QueueCandidate {
+  const hasProgress = row.algorithm_id !== undefined && row.algorithm_id !== null;
+  return {
+    caseId: String(row.case_id),
+    subsetId: String(row.subset_id),
+    caseNumber: String(row.case_number),
+    caseName: String(row.case_name ?? ""),
+    methodId: String(row.method_id ?? ""),
+    subsetName: String(row.subset_name ?? ""),
+    progress: hasProgress ? rowToAlgorithmProgress(row as unknown as AlgorithmProgressRow) : null,
+  };
+}
+
 // ─── Repository ───────────────────────────────────────────────────────────
 
 export class TrainingRepository {
@@ -388,6 +412,53 @@ export class TrainingRepository {
       [now, limit],
     );
     return rows.map((r) => rowToAlgorithmProgress(r as unknown as AlgorithmProgressRow));
+  }
+
+  /**
+   * Enumerate every algorithm case in the catalog (optionally filtered by
+   * method) with its FSRS progress LEFT JOINed.
+   *
+   * Never-practiced cases come back with `progress === null` — this is the
+   * H1 fix that lets the SRS queue include brand-new cases, not only the ones
+   * that already have an algorithm_progress row.
+   */
+  async getQueueCandidates(methodId?: string): Promise<QueueCandidate[]> {
+    const sql = `
+      SELECT
+        ac.id AS case_id,
+        ac.subset_id,
+        ac.case_number,
+        ac.name AS case_name,
+        as2.method_id,
+        as2.name AS subset_name,
+        ap.id AS id,
+        ap.algorithm_id,
+        ap.mastery,
+        ap.accuracy,
+        ap.best_time_ms,
+        ap.avg_time_ms,
+        ap.total_attempts,
+        ap.correct_streak,
+        ap.last_practiced_at,
+        ap.srs_next_review_at,
+        ap.srs_interval_days,
+        ap.srs_ease_factor,
+        ap.recognition_accuracy,
+        ap.recognition_attempts,
+        ap.srs_stability,
+        ap.srs_difficulty,
+        ap.srs_state,
+        ap.srs_lapses,
+        ap.srs_review_count,
+        ap.last_review_at
+      FROM algorithm_cases ac
+      INNER JOIN algorithm_subsets as2 ON ac.subset_id = as2.id
+      LEFT JOIN algorithm_progress ap ON ap.algorithm_id = ac.id
+      ${methodId ? "WHERE as2.method_id = ?" : ""}
+      ORDER BY ac.case_number ASC
+    `;
+    const rows = await this.db(sql, methodId ? [methodId] : []);
+    return rows.map((r) => rowToQueueCandidate(r as unknown as Record<string, unknown>));
   }
 
   // ── Exercise Progress ──────────────────────────────────────────────

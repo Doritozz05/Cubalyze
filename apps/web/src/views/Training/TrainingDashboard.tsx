@@ -8,6 +8,8 @@ import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
 import { FullSolveView } from "./FullSolveView";
+import { SRSReviewView } from "./SRSReviewView";
+import { SRSInsightsView } from "./SRSInsightsView";
 import { TrainingCalendar } from "./TrainingCalendar";
 import { PlainPracticeView } from "./PlainPracticeView";
 import { BlindPracticeView } from "./BlindPracticeView";
@@ -16,6 +18,7 @@ import { LSESubPhaseView } from "./LSESubPhaseView";
 import { EODetectView } from "./EODetectView";
 import { EOEfficiencyView } from "./EOEfficiencyView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { ReviewQueueSection } from "./components";
 import type { PuzzleCategory } from "@/types";
 import { puzzleCategoryToType, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
@@ -32,7 +35,6 @@ import {
   Zap,
   Target,
   Sparkles,
-  RotateCcw,
   Crosshair,
   Grid3x3,
   Palette,
@@ -213,6 +215,8 @@ function FlatDashboard({
   onPracticeMode,
   onStats,
   onFullSolve,
+  onStartReview,
+  onOpenInsights,
   dueCount,
   dbReady,
 }: {
@@ -227,6 +231,8 @@ function FlatDashboard({
   onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
   onStats: (methodId: string, phaseId: string, phaseName: string) => void;
   onFullSolve: (methodId: string) => void;
+  onStartReview: (methodId?: string) => void;
+  onOpenInsights: (methodId?: string) => void;
   dueCount: number;
   dbReady: boolean;
 }) {
@@ -413,31 +419,8 @@ function FlatDashboard({
             </section>
           </div>
 
-          {/* Quick Start — SRS due items */}
-          {dueCount > 0 && (
-            <section className="shrink-0 rounded-xl border border-line bg-surface p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <RotateCcw className="size-3.5 text-caution" />
-                <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
-                <span className="nums text-[0.6rem] text-ink-3 ml-auto">{dueCount} item{dueCount !== 1 ? "s" : ""} due</span>
-              </div>
-              <p className="text-[0.62rem] text-ink-3">
-                Spaced repetition items are ready for review. Practice these to lock in long-term retention.
-              </p>
-            </section>
-          )}
-          {dbReady && dueCount === 0 && (
-            <section className="shrink-0 rounded-xl border border-line bg-surface p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <RotateCcw className="size-3.5 text-ink-3/30" />
-                <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
-                <span className="nums text-[0.6rem] text-ink-3 ml-auto">All caught up!</span>
-              </div>
-              <p className="text-[0.62rem] text-ink-3">
-                Nothing due for review. Start a new drill to build your practice history.
-              </p>
-            </section>
-          )}
+          {/* Quick Start — SRS daily review queue */}
+          {dbReady && <ReviewQueueSection onStartReview={onStartReview} onOpenInsights={onOpenInsights} />}
         </div>
       )}
     </>
@@ -615,6 +598,8 @@ export function TrainingDashboard({
   const [recognizeView, setRecognizeView] = useState<RecognizeViewState | null>(null);
   const [statsView, setStatsView] = useState<StatsViewState | null>(null);
   const [fullSolveView, setFullSolveView] = useState<FullSolveViewState | null>(null);
+  const [reviewView, setReviewView] = useState<{ methodId?: string } | null>(null);
+  const [insightsView, setInsightsView] = useState<{ methodId?: string } | null>(null);
 
   // Progress tracking
   const { ready: dbReady, getMethodMastery, getDueForReview } = useTrainingProgress();
@@ -705,12 +690,22 @@ export function TrainingDashboard({
     setFullSolveView({ methodId });
   };
 
+  const handleStartReview = (methodId?: string) => {
+    setReviewView({ methodId });
+  };
+
+  const handleOpenInsights = (methodId?: string) => {
+    setInsightsView(methodId ? { methodId } : {});
+  };
+
   const handleBackFromSubView = () => {
     setDrillView(null);
     setPracticeView(null);
     setRecognizeView(null);
     setStatsView(null);
     setFullSolveView(null);
+    setReviewView(null);
+    setInsightsView(null);
   };
 
   // ── L3 Sub-views ────────────────────────────────────────────────────
@@ -774,6 +769,32 @@ export function TrainingDashboard({
     );
   }
 
+  if (reviewView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <SRSReviewView
+            methodId={reviewView.methodId}
+            onBack={handleBackFromSubView}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (insightsView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <SRSInsightsView
+            methodId={insightsView.methodId}
+            onBack={handleBackFromSubView}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (practiceView) {
     const { methodId, phaseId, phaseName, phaseType, modeId } = practiceView;
     const props = { methodId, phaseId, phaseName, onBack: handleBackFromSubView };
@@ -823,6 +844,8 @@ export function TrainingDashboard({
           onPracticeMode={handlePracticeMode}
           onStats={handleStats}
           onFullSolve={handleFullSolve}
+          onStartReview={handleStartReview}
+          onOpenInsights={handleOpenInsights}
           dueCount={dueCount}
           dbReady={dbReady}
         />

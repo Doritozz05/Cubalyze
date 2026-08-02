@@ -6,7 +6,31 @@ export type {
   ExerciseProgressRecord,
   PhaseStatsRecord,
   MetricKind,
+  QueueCandidateRecord,
 } from './progress-tracker';
+// ─── SRS daily queue scheduler ────────────────────────────────────────
+export {
+  buildDailyQueue,
+  scoreCandidate,
+  DEFAULT_NEW_PER_DAY,
+} from './scheduler';
+export type {
+  QueueCandidate,
+  QueueItem,
+  QueueReason,
+  QueueCaseMeta,
+  QueueSubsetMeta,
+  BuildQueueOptions,
+} from './scheduler';
+// ─── SRS insights ──────────────────────────────────────────────────────
+export { computeSRSInsights } from './insights';
+export type {
+  SRSInsights,
+  SRSStateCounts,
+  RetentionBucket,
+  IntervalPoint,
+  DueProjection,
+} from './insights';
 // ─── FSRS-lite scheduler ──────────────────────────────────────────────
 export {
   FSRS_DEFAULTS,

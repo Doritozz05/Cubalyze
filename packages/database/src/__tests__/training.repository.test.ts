@@ -419,6 +419,69 @@ describe('TrainingRepository — Algorithm Progress', () => {
     expect(bind[0]).toBeLessThanOrEqual(after);
     expect(bind[1]).toBe(5);
   });
+
+  it('getQueueCandidates LEFT JOINs catalog + progress (H1: includes never-practiced)', async () => {
+    const db = mockDb([]);
+    repo = new TrainingRepository(db);
+    await repo.getQueueCandidates();
+    expect(db.mock.calls[0][0]).toContain('FROM algorithm_cases ac');
+    expect(db.mock.calls[0][0]).toContain('INNER JOIN algorithm_subsets as2 ON ac.subset_id = as2.id');
+    expect(db.mock.calls[0][0]).toContain('LEFT JOIN algorithm_progress ap ON ap.algorithm_id = ac.id');
+  });
+
+  it('getQueueCandidates filters by method', async () => {
+    const db = mockDb([]);
+    repo = new TrainingRepository(db);
+    await repo.getQueueCandidates('method1');
+    expect(db.mock.calls[0][0]).toContain('WHERE as2.method_id = ?');
+    expect(db.mock.calls[0][1]).toEqual(['method1']);
+  });
+
+  it('maps a row with null progress to progress: null (never-practiced case)', async () => {
+    const row = {
+      case_id: 'case-new',
+      subset_id: 'subset1',
+      case_number: 'OLL 1',
+      case_name: 'Case 1',
+      method_id: 'method1',
+      subset_name: 'OLL',
+      // no algorithm_id → no progress
+    };
+    const db = mockDb([row]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getQueueCandidates();
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      caseId: 'case-new',
+      caseNumber: 'OLL 1',
+      caseName: 'Case 1',
+      methodId: 'method1',
+    });
+    expect(result[0].progress).toBeNull();
+  });
+
+  it('maps a row with progress to the full AlgorithmProgress (id + FSRS fields)', async () => {
+    const row = {
+      case_id: 'case-1',
+      subset_id: 'subset1',
+      case_number: 'OLL 21',
+      case_name: 'H',
+      method_id: 'method1',
+      subset_name: 'OLL',
+      ...progressRow(),
+    };
+    const db = mockDb([row]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getQueueCandidates();
+    expect(result[0].progress).not.toBeNull();
+    expect(result[0].progress).toMatchObject({
+      id: 'progress-1',
+      algorithmId: 'alg1',
+      mastery: 5,
+      srsState: 'new',
+      srsStability: 0,
+    });
+  });
 });
 
 describe('TrainingRepository — Exercise Progress', () => {

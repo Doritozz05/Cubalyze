@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { initDB, TrainingRepository } from "@cubeforge/database";
-import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind } from "@cubeforge/training";
+import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueCandidateRecord, QueueItem, SRSGrade, SRSInsights } from "@cubeforge/training";
 import { ProgressTracker } from "@cubeforge/training";
 import type { AttemptVerdict, PlayMode } from "@cubeforge/training";
 
@@ -22,6 +22,18 @@ function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
     getAlgorithmProgressBySubset: (subsetId: string) => repo.getAlgorithmProgressBySubset(subsetId),
     getWeakestAlgorithms: (subsetId: string, limit?: number) => repo.getWeakestAlgorithms(subsetId, limit),
     getDueForReview: (limit?: number) => repo.getDueForReview(limit),
+    getQueueCandidates: async (methodId?: string) => {
+      const rows = await repo.getQueueCandidates(methodId);
+      return rows.map((r) => ({
+        caseId: r.caseId,
+        subsetId: r.subsetId,
+        caseNumber: r.caseNumber,
+        caseName: r.caseName,
+        methodId: r.methodId,
+        subsetName: r.subsetName,
+        progress: r.progress ?? null,
+      })) as QueueCandidateRecord[];
+    },
     getExerciseProgress: (exerciseId: string, methodId: string, phaseId?: string) =>
       repo.getExerciseProgress(exerciseId, methodId, phaseId),
     upsertExerciseProgress: async (p: ExerciseProgressRecord) => repo.upsertExerciseProgress(p),
@@ -49,11 +61,15 @@ export interface UseTrainingProgressResult {
     optimalMoves?: number;
     tps?: number;
     rotationCount?: number;
+    reviewGrade?: SRSGrade;
   }) => Promise<AlgorithmProgressRecord | null>;
+  recordReview: (params: { caseId: string; grade: SRSGrade; now?: number }) => Promise<AlgorithmProgressRecord>;
   getCaseProgress: (algorithmId: string) => Promise<AlgorithmProgressRecord>;
   getSubsetProgress: (subsetId: string) => Promise<AlgorithmProgressRecord[]>;
   getMethodMastery: (methodId: string) => Promise<number>;
   getDueForReview: (limit?: number) => Promise<AlgorithmProgressRecord[]>;
+  getTodayQueue: (options?: { methodId?: string; limit?: number }) => Promise<QueueItem[]>;
+  getSRSInsights: (methodId?: string) => Promise<SRSInsights>;
   getMethodExerciseProgress: (methodId: string) => Promise<ExerciseProgressRecord[]>;
   getPhaseStats: (methodId: string, phaseId: string) => Promise<PhaseStatsRecord | null>;
 }
@@ -104,9 +120,20 @@ export function useTrainingProgress(): UseTrainingProgressResult {
       optimalMoves?: number;
       tps?: number;
       rotationCount?: number;
+      reviewGrade?: SRSGrade;
     }) => {
       if (!tracker) return null;
       return tracker.recordAttempt(params);
+    },
+    [tracker],
+  );
+
+  const recordReview = useCallback(
+    async (params: { caseId: string; grade: SRSGrade; now?: number }) => {
+      if (!tracker) {
+        throw new Error("[useTrainingProgress] recordReview called before DB ready");
+      }
+      return tracker.recordReview(params);
     },
     [tracker],
   );
@@ -163,6 +190,34 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     [tracker],
   );
 
+  const getTodayQueue = useCallback(
+    async (options: { methodId?: string; limit?: number } = {}) => {
+      if (!tracker) return [] as QueueItem[];
+      return tracker.getTodayQueue(options);
+    },
+    [tracker],
+  );
+
+  const getSRSInsights = useCallback(
+    async (methodId?: string) => {
+      if (!tracker) {
+        return {
+          totalCases: 0,
+          reviewed: 0,
+          stateCounts: { new: 0, learning: 0, review: 0, relearning: 0 },
+          totalLapses: 0,
+          totalReviews: 0,
+          avgMastery: 0,
+          retention: { average: 0, buckets: [] },
+          intervalGrowth: [],
+          dueProjection: [],
+        } as SRSInsights;
+      }
+      return tracker.getSRSInsights(methodId);
+    },
+    [tracker],
+  );
+
   const getMethodExerciseProgress = useCallback(
     async (methodId: string) => {
       if (!tracker) return [] as ExerciseProgressRecord[];
@@ -182,10 +237,13 @@ export function useTrainingProgress(): UseTrainingProgressResult {
   return {
     ready,
     recordAttempt,
+    recordReview,
     getCaseProgress,
     getSubsetProgress,
     getMethodMastery,
     getDueForReview,
+    getTodayQueue,
+    getSRSInsights,
     getMethodExerciseProgress,
     getPhaseStats,
   };

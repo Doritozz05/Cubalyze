@@ -9,3 +9,6 @@ export type { StatChipProps } from './StatChip';
 
 export { TouchAside } from './TouchAside';
 export type { TouchAsideProps } from './TouchAside';
+
+export { ReviewQueueSection } from './ReviewQueueSection';
+export type { ReviewQueueSectionProps } from './ReviewQueueSection';

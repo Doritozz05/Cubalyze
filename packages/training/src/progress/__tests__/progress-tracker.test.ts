@@ -14,10 +14,8 @@ function createFakeRepo(overrides: Partial<ITrainingProgressRepo> = {}): {
   savedAlgorithmProgress: (AlgorithmProgressRecord | null)[];
   savedExerciseProgress: (ExerciseProgressRecord | null)[];
 } {
-  const state: { alg: AlgorithmProgressRecord | null; ex: ExerciseProgressRecord | null } = {
-    alg: null,
-    ex: null,
-  };
+  const algState = new Map<string, AlgorithmProgressRecord>();
+  const exState = new Map<string, ExerciseProgressRecord>();
   const insertedAttempts: Record<string, unknown>[] = [];
   const savedAlgorithmProgress: (AlgorithmProgressRecord | null)[] = [];
   const savedExerciseProgress: (ExerciseProgressRecord | null)[] = [];
@@ -30,18 +28,20 @@ function createFakeRepo(overrides: Partial<ITrainingProgressRepo> = {}): {
     getAttemptsByCase: vi.fn(async () => []),
     getAttemptsByExercise: vi.fn(async () => []),
     getAttemptsByMethod: vi.fn(async () => []),
-    getAlgorithmProgress: vi.fn(async () => state.alg),
+    getAlgorithmProgress: vi.fn(async (algorithmId: string) => algState.get(algorithmId) ?? null),
     upsertAlgorithmProgress: vi.fn(async (p) => {
-      state.alg = p;
+      algState.set(p.algorithmId, p);
       savedAlgorithmProgress.push(p);
       return p;
     }),
     getAlgorithmProgressBySubset: vi.fn(async () => []),
     getWeakestAlgorithms: vi.fn(async () => []),
     getDueForReview: vi.fn(async () => []),
-    getExerciseProgress: vi.fn(async () => state.ex),
+    getQueueCandidates: vi.fn(async () => []),
+    getExerciseProgress: vi.fn(async (exerciseId: string, methodId: string) =>
+      exState.get(`${exerciseId}:${methodId}`) ?? null),
     upsertExerciseProgress: vi.fn(async (p) => {
-      state.ex = p;
+      exState.set(`${p.exerciseId}:${p.methodId}`, p);
       savedExerciseProgress.push(p);
       return p;
     }),
@@ -196,7 +196,91 @@ describe('ProgressTracker — recordAttempt', () => {
     const ex = savedExerciseProgress[savedExerciseProgress.length - 1];
     expect(ex?.bestTimeMs).toBe(0);
   });
+});
 
+describe('ProgressTracker — recordReview (FSRS grading)', () => {
+  it('first good review on a brand-new case graduates to review with a 3-day interval', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const now = 1_700_000_000_000;
+
+    const result = await tracker.recordReview({ caseId: 'case-ua', grade: 'good', now });
+
+    expect(result.srsState).toBe('review');
+    expect(result.srsStability).toBe(3); // INITIAL_STABILITY.good
+    expect(result.srsIntervalDays).toBe(3);
+    expect(result.srsReviewCount).toBe(1);
+    expect(result.srsLapses).toBe(0);
+    expect(result.lastReviewAt).toBe(now);
+    expect(result.srsNextReviewAt).toBe(now + 3 * 86_400_000);
+    expect(savedAlgorithmProgress).toHaveLength(1);
+  });
+
+  it('again on a review-state case moves to relearning and counts a lapse', async () => {
+    const { repo } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const now = 1_700_000_000_000;
+
+    await tracker.recordReview({ caseId: 'case-ua', grade: 'good', now });
+    const later = now + 3 * 86_400_000;
+    const result = await tracker.recordReview({ caseId: 'case-ua', grade: 'again', now: later });
+
+    expect(result.srsState).toBe('relearning');
+    expect(result.srsLapses).toBe(1);
+    expect(result.srsReviewCount).toBe(2);
+    // Relearning forces a short 1-day interval (spacing effect).
+    expect(result.srsIntervalDays).toBe(1);
+  });
+
+  it('hard review penalizes stability growth and raises difficulty vs good', async () => {
+    const { repo } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+    const now = 1_700_000_000_000;
+    const later = now + 3 * 86_400_000;
+
+    // Same history on two independent cases, differing only in the 2nd grade.
+    await tracker.recordReview({ caseId: 'case-a', grade: 'good', now });
+    await tracker.recordReview({ caseId: 'case-b', grade: 'good', now });
+    const hard = await tracker.recordReview({ caseId: 'case-a', grade: 'hard', now: later });
+    const good = await tracker.recordReview({ caseId: 'case-b', grade: 'good', now: later });
+
+    // Hard review applies a 0.8 stability penalty and difficulty +6 (clamped 10).
+    expect(hard.srsStability).toBeLessThan(good.srsStability);
+    expect(hard.srsDifficulty).toBe(10);
+    expect(good.srsDifficulty).toBe(5);
+  });
+
+  it('recordReview preserves practice metrics (mastery/accuracy/time) untouched', async () => {
+    const { repo, savedAlgorithmProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+
+    await tracker.recordAttempt({ ...baseParams, timeMs: 1200, verdict: 'correct', metricKind: 'execution' });
+    const before = savedAlgorithmProgress[savedAlgorithmProgress.length - 1];
+    expect(before?.mastery).toBeGreaterThan(0);
+
+    const result = await tracker.recordReview({ caseId: 'case-ua', grade: 'good', now: 1_700_000_000_000 });
+
+    expect(result.mastery).toBe(before?.mastery);
+    expect(result.accuracy).toBe(before?.accuracy);
+    expect(result.bestTimeMs).toBe(before?.bestTimeMs);
+    expect(result.totalAttempts).toBe(before?.totalAttempts);
+    // But the SRS schedule IS advanced.
+    expect(result.srsState).toBe('review');
+    expect(result.srsReviewCount).toBe(1);
+  });
+
+  it('recordAttempt forwards reviewGrade to the raw attempt row', async () => {
+    const { repo, insertedAttempts } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+
+    await tracker.recordAttempt({ ...baseParams, reviewGrade: 'good' });
+
+    expect(insertedAttempts[0]).toMatchObject({ reviewGrade: 'good' });
+    expect(insertedAttempts[0]).not.toHaveProperty('reviewGrade', undefined);
+  });
+});
+
+describe('ProgressTracker — delegates', () => {
   it('getPhaseStats delegates to the repo', async () => {
     const phase: PhaseStatsRecord = {
       methodId: 'cfop',

@@ -11,6 +11,12 @@
  */
 
 import type { AttemptVerdict, PlayMode } from "../types";
+import { buildDailyQueue, toFSRSRecord } from "./scheduler";
+import type { QueueCandidate, QueueItem } from "./scheduler";
+import { review as fsrsReview, FSRS_DEFAULTS } from "./fsrs";
+import type { FSRSRecord, SRSGrade } from "./fsrs";
+import { computeSRSInsights } from "./insights";
+import type { SRSInsights } from "./insights";
 
 // ─── Repository Interface (caller provides the implementation) ────────────
 
@@ -24,6 +30,8 @@ export interface ITrainingProgressRepo {
   getAlgorithmProgressBySubset(subsetId: string): Promise<AlgorithmProgressRecord[]>;
   getWeakestAlgorithms(subsetId: string, limit?: number): Promise<AlgorithmProgressRecord[]>;
   getDueForReview(limit?: number): Promise<AlgorithmProgressRecord[]>;
+  /** Enumerate catalog cases + FSRS progress (null for never-practiced). */
+  getQueueCandidates(methodId?: string): Promise<QueueCandidateRecord[]>;
   getExerciseProgress(exerciseId: string, methodId: string, phaseId?: string): Promise<ExerciseProgressRecord | null>;
   upsertExerciseProgress(progress: ExerciseProgressRecord): Promise<ExerciseProgressRecord>;
   getMethodExerciseProgress(methodId: string): Promise<ExerciseProgressRecord[]>;
@@ -48,6 +56,8 @@ export interface TrainingAttemptRecord {
   optimalMoves?: number;
   tps?: number;
   rotationCount?: number;
+  /** FSRS review grade (again|hard|good|easy) — set only by the SRS review flow. */
+  reviewGrade?: string;
   timestamp: number;
 }
 
@@ -77,6 +87,17 @@ export interface AlgorithmProgressRecord {
   srsReviewCount: number;
   /** Epoch ms of the last SRS review (≠ lastPracticedAt). */
   lastReviewAt: number;
+}
+
+/** One catalog case + its FSRS progress (progress null if never practiced). */
+export interface QueueCandidateRecord {
+  caseId: string;
+  subsetId: string;
+  caseNumber: string;
+  caseName: string;
+  methodId: string;
+  subsetName: string;
+  progress: AlgorithmProgressRecord | null;
 }
 
 export interface ExerciseProgressRecord {
@@ -203,10 +224,12 @@ export class ProgressTracker {
     optimalMoves?: number;
     tps?: number;
     rotationCount?: number;
+    /** Optional FSRS review grade to tag this attempt (SRS review flow). */
+    reviewGrade?: SRSGrade;
   }): Promise<AlgorithmProgressRecord | null> {
     const {
       exerciseId, methodId, phaseId, caseId, timeMs, verdict, playMode, scramble,
-      metricKind = 'execution', moveCount, optimalMoves, tps, rotationCount,
+      metricKind = 'execution', moveCount, optimalMoves, tps, rotationCount, reviewGrade,
     } = params;
 
     // Insert the raw attempt record (with efficiency metadata when available)
@@ -224,6 +247,7 @@ export class ProgressTracker {
       optimalMoves,
       tps,
       rotationCount,
+      reviewGrade,
       timestamp: now,
     });
 
@@ -353,6 +377,58 @@ export class ProgressTracker {
   }
 
   /**
+   * Apply one graded FSRS review (again|hard|good|easy) to a case and
+   * persist the updated SRS schedule.
+   *
+   * This is the ONLY path that advances the FSRS state machine
+   * (new → learning → review → relearning) and updates stability /
+   * difficulty / lapses. Practice attempts recorded via `recordAttempt`
+   * intentionally preserve the SRS fields (they bridge `prev.srs*`), so
+   * the review flow composes as:
+   *   recordAttempt({ ... })  → metrics + attempt history
+   *   recordReview({ grade }) → the FSRS schedule itself
+   *
+   * Returns the updated algorithm progress.
+   */
+  async recordReview(params: {
+    caseId: string;
+    grade: SRSGrade;
+    now?: number;
+  }): Promise<AlgorithmProgressRecord> {
+    const now = params.now ?? Date.now();
+    const prev = await this.repo.getAlgorithmProgress(params.caseId);
+
+    // Bootstrap an FSRS record from whatever we know (defaults for never-reviewed cases).
+    const record: FSRSRecord = prev ? toFSRSRecord(prev) : { ...FSRS_DEFAULTS };
+    const next = fsrsReview(record, params.grade, now);
+
+    const progress: AlgorithmProgressRecord = {
+      algorithmId: params.caseId,
+      mastery: prev?.mastery ?? 0,
+      accuracy: prev?.accuracy ?? 0,
+      bestTimeMs: prev?.bestTimeMs ?? 0,
+      avgTimeMs: prev?.avgTimeMs ?? 0,
+      totalAttempts: prev?.totalAttempts ?? 0,
+      correctStreak: prev?.correctStreak ?? 0,
+      lastPracticedAt: prev?.lastPracticedAt ?? now,
+      srsNextReviewAt: next.nextReviewAt,
+      srsIntervalDays: next.intervalDays,
+      srsEaseFactor: prev?.srsEaseFactor ?? DEFAULT_EASE_FACTOR,
+      recognitionAccuracy: prev?.recognitionAccuracy ?? 0,
+      recognitionAttempts: prev?.recognitionAttempts ?? 0,
+      srsStability: next.stability,
+      srsDifficulty: next.difficulty,
+      srsState: next.state,
+      srsLapses: next.lapses,
+      srsReviewCount: next.reviewCount,
+      lastReviewAt: next.lastReviewAt,
+    };
+
+    await this.repo.upsertAlgorithmProgress(progress);
+    return progress;
+  }
+
+  /**
    * Get progress for a specific algorithm case.
    * Returns default values if no progress exists yet.
    */
@@ -402,6 +478,36 @@ export class ProgressTracker {
    */
   async getDueForReview(limit = 20): Promise<AlgorithmProgressRecord[]> {
     return this.repo.getDueForReview(limit);
+  }
+
+  /**
+   * Build the daily SRS review queue (FSRS priority + new-cases cap +
+   * contextual interference). Uses the real catalog + progress data.
+   */
+  async getTodayQueue(options: { methodId?: string; limit?: number } = {}): Promise<QueueItem[]> {
+    const raw = await this.repo.getQueueCandidates(options.methodId);
+    const candidates: QueueCandidate[] = raw.map((r) => ({
+      case: {
+        algorithmId: r.caseId,
+        subsetId: r.subsetId,
+        caseNumber: r.caseNumber,
+        name: r.caseName || undefined,
+      },
+      subset: r.methodId
+        ? { subsetId: r.subsetId, methodId: r.methodId, name: r.subsetName || undefined }
+        : null,
+      progress: r.progress,
+    }));
+    return buildDailyQueue(candidates, options);
+  }
+
+  /**
+   * Aggregate SRS insights (retention distribution, interval growth,
+   * state breakdown, due projection) from the catalog + FSRS progress.
+   */
+  async getSRSInsights(methodId?: string): Promise<SRSInsights> {
+    const candidates = await this.repo.getQueueCandidates(methodId);
+    return computeSRSInsights(candidates);
   }
 
   /**
