@@ -25,9 +25,6 @@ export const WidgetRegistry = {
    * with a console warning in development.
    */
   register(id: WidgetId, registration: WidgetRegistration): void {
-    if (registry.has(id) && import.meta.env.DEV) {
-      console.warn(`[WidgetRegistry] Widget "${id}" already registered. Overwriting.`);
-    }
     registry.set(id, registration);
   },
 
