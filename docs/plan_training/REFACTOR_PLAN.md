@@ -360,6 +360,57 @@ todas las tablas v1 conocidas** y crea el esquema v2 (en la práctica, en OPFS b
 `Solve` en `@cubeforge/models`, `useProfileStats.ts:108`, `usePersistentSession.ts:94` y
 `db.edgeCases.test.ts` (consumidores reales: 3, sin riesgo).
 
+### 5.4 Impacto en consumidores (qué se toca y qué sigue igual)
+
+**A. Ripple del esquema (hay que tocar, sí o sí):**
+
+| Archivo | Cambio |
+|---|---|
+| `@cubeforge/models` (`Solve`, `Session`) | `date` → `timestamp` (number), `created_at/updated_at` → number |
+| `apps/web/src/hooks/usePersistentSession.ts` | 5 puntos: `toUISolve` (date), `metaSessions` (createdAt/updatedAt), `addSolve`/`importSolves` (ISO → ms), sesiones por defecto |
+| `apps/web/src/hooks/useProfileStats.ts` | `toUISolveSafe` (date + createdAt) |
+| `apps/web/src/utils/seedDemoData.ts` | solves demo (date) |
+| `packages/database/src/__tests__/db.edgeCases.test.ts` | shape de `Solve.date` |
+| `apps/desktop/src/database-override.ts` | mismo `MIGRATIONS` (wipe v2 lo cubre); re-export si cambia el listado de repos |
+
+**B. Contrato de training que cambia (semántica):**
+
+| Archivo | Cambio |
+|---|---|
+| `TrainingDashboard.tsx` | `getMethodMastery` → coverage/performance; `getPhaseStats` → bloques exec/rec; `masteryLabel` → `masteryLevel` |
+| `PhaseStatsView.tsx` | `phaseStats.accuracy` → `phaseStats.execution.accuracy`; umbrales → `masteryLevel`; quitar `void phaseId` |
+| `AlgorithmDrillView` / `AlgorithmRecognizeView` | umbrales 90/60 → `masteryLevel`; `exercise_id` canónico |
+| Todas las vistas de Training | `exercise_id` canónico (`EXERCISE_IDS.*`) |
+| `useTrainingProgress.ts` | adapter sin tipos duplicados; contadores nuevos; constantes desde el paquete |
+
+**C. Sin cambios (todo igual):**
+
+| Consumidor | Por qué |
+|---|---|
+| `useSkillProgress` (skill_progress) | tabla intacta |
+| `useCalendarTasks` (training_tasks) | tabla intacta |
+| `useProfile` (profiles, app_meta) | tablas intactas |
+| `useSRSQueue`, `SRSReviewView`, `SRSInsightsView`, `ProfileView` | `getTodayQueue`/`getSRSInsights`/`recordReview` no cambian de shape (solo `exercise_id` en SRSReview) |
+| `@cubeforge/statistics` (`computeStats`) | recibe `{time, penalty}`, sin dependencia de fechas |
+| `useSolveSession` / smart cube | escriben vía `addSolve` con `timestamp` number |
+
+**D. Riesgo nuevo: FKs activas (`PRAGMA foreign_keys=ON`).**
+
+Hoy cualquier string vale como `exercise_id`/`case_id`. Con FKs reales hay que garantizar el **orden de
+inserción** y que todo id escrito exista en el catálogo:
+
+- `solves.session_id → sessions(id)`: verificado — la sesión se crea antes que sus solves, y
+  `deleteSession` borra solves antes que la sesión ✅
+- `training_attempts.exercise_id → training_exercises(id)`: **nuevo requisito** — el registry del
+  paquete debe contener EXACTAMENTE los IDs que escriben las vistas (`drill`, `recognize`, `plain`,
+  `blind`, `cross-trainer`, `lse-eo|ulur|mslice`, `eo-detect`, `eo-efficiency`, `full-solve`,
+  `srs-review`); cualquier id fuera del catálogo romperá en runtime (antes no).
+- `training_attempts.case_id → algorithm_cases(id)`: ok — solo drill/recognize/SRS escriben `case_id`
+  real del catálogo; el resto usa NULL.
+- Acción: **tests de repos con FKs activas** (insertar intentos/solves válidos e inválidos) en Fase 1,
+  y el seed de catálogo (`seedIfEmpty` + `training_exercises`) debe ejecutarse antes de cualquier
+  escritura de usuario (ya ocurre en `getSharedTracker`/`seedPromise`).
+
 ### 5.3 Cleanup asociado
 
 - `apps/desktop/src/database-override.ts`: mover la re-exportación de repos a un re-export desde
