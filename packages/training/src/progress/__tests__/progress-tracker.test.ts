@@ -114,7 +114,7 @@ describe('ProgressTracker — recordAttempt', () => {
       scramble: 'x',
     });
 
-    const ex = savedExerciseProgress[savedExerciseProgress.length - 1];
+    const ex = savedExerciseProgress[savedExerciseProgress.length - 1]!;
     expect(ex.totalAttempts).toBe(2);
     // Accuracy denominator (execAttempts/execCorrect) EXCLUDES skipped…
     expect(ex.execAttempts).toBe(0);
@@ -134,7 +134,7 @@ describe('ProgressTracker — recordAttempt', () => {
       playMode: 'manual',
       scramble: 'x',
     });
-    const ex2 = savedExerciseProgress[savedExerciseProgress.length - 1];
+    const ex2 = savedExerciseProgress[savedExerciseProgress.length - 1]!;
     expect(ex2.execAttempts).toBe(1);
     expect(ex2.execCorrect).toBe(1);
     expect(ex2.execTimeAttempts).toBe(3);
