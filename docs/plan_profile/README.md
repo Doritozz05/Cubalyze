@@ -2,7 +2,7 @@
 
 > **Documento de diseño del perfil de usuario definitivo.**
 > Fecha: Agosto 2026
-> Estado: Borrador de diseño — pendiente de validación y aprobación (no implementar código sin TDD aprobado, según `docs/14-ai/AGENTS.md`)
+> Estado: **Fase F0 implementada** (identidad local + repositorios + ID anónimo). El resto del diseño queda pendiente de validación y aprobación — no implementar más código sin TDD aprobado, según `docs/14-ai/AGENTS.md`
 > Método: investigación de referencias → extracción de patrones → análisis comparativo → layout → arquitectura → bloques → investigación de identicons → sistema propio → plan por fases.
 
 ---
@@ -470,15 +470,17 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 
 > **Nota de numeración**: las fases de implementación de esta sección (F0–F7) usan numeración propia, **independiente** de las fases de diseño del documento (1–9).
 
-### Fase F0 — Identidad local (base, P0)
+### Fase F0 — Identidad local (base, P0) ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| Migraciones 019 (`profiles`) y 020 (`app_meta`) | SQL en `packages/database/src/migrations/migrations.ts` |
-| `profiles.repository.ts` + `appMeta.repository.ts` | Patrón repositorio existente |
-| `profile.store.ts` (packages/state) + hook `useProfile` | Patrón `usePersistentSession` |
-| Generación de `user_id` anónimo en primer arranque | `crypto.randomUUID()` persistido en `app_meta` |
-| Tests | migraciones idempotentes, repo CRUD, seed estable |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| Migraciones 019 (`profiles`) y 020 (`app_meta`) | SQL en `packages/database/src/migrations/migrations.ts` | ✅ |
+| Eliminar `kv_store` legacy | `packages/database/src/worker.ts` (se retira el CREATE) + migración 021 `DROP TABLE IF EXISTS kv_store` para limpiar BDs OPFS de dev | ✅ |
+| `profiles.repository.ts` + `app-meta.repository.ts` | Patrón repositorio existente; `getOrCreateUserId` race-safe (INSERT OR IGNORE + re-read) | ✅ |
+| `ProfileSchema` (zod) en `packages/models` | Exportado como `Profile` | ✅ |
+| Hook `useProfile` en `apps/web/src/hooks` | Cableado en `App.tsx`; asegura identidad en el primer arranque. `profile.store.ts` (packages/state) se difiere a F2 (edición desde UI) | ✅ |
+| Generación de `user_id` anónimo en primer arranque | `crypto.randomUUID()` (con fallback v4) persistido en `app_meta` | ✅ |
+| Tests | `profile.repository.test.ts` (semántica de primer arranque) + migraciones 019/020 en `migrations.test.ts` | ✅ |
 
 ### Fase F1 — Paquete headless `packages/identicon`
 

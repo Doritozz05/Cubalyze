@@ -23,6 +23,7 @@ import { toast, Toaster } from "sonner";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { useProfile } from "@/hooks/useProfile";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -58,6 +59,12 @@ import "@/index.css";
 export default function App() {
   // Touch regime (<1024px, mobile + tablet): bottom tab bar + top toasts.
   const isTouch = useIsTouch();
+
+  // Fase F0 (docs/plan_profile): ensure the anonymous local identity exists on
+  // first launch — the stable `user_id` that seeds the CubeMark identicon and
+  // anchors future profile/sync features. UI consumption arrives with the
+  // Profile view (F2+).
+  useProfile();
 
   const {
     session,
