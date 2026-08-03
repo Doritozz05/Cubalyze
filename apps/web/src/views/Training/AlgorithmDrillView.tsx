@@ -24,7 +24,7 @@ import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
-import { generateRandomSetup } from "@cubeforge/training";
+import { generateRandomSetup, EXERCISE_IDS } from "@cubeforge/training";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import {
   TrainingBreadcrumb,
@@ -187,7 +187,7 @@ export function AlgorithmDrillView({
   // ── Real progress from DB ──────────────────────────────────────────────
   const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
   const { sessionId } = useTrainingSession({
-    exerciseId: `drill-${subsetId}`,
+    exerciseId: EXERCISE_IDS.drill(subsetId),
     methodId,
     phaseId: _phaseId as string,
     subsetId,
@@ -330,7 +330,7 @@ export function AlgorithmDrillView({
       // with no real move tracking; faking the algorithm length would make
       // getPhaseStats efficiency always 1.0.
       dbPersistAttempt({
-        exerciseId: `drill-${subsetId}`,
+        exerciseId: EXERCISE_IDS.drill(subsetId),
         methodId,
         phaseId: _phaseId as string,
         caseId: selectedCase.id,

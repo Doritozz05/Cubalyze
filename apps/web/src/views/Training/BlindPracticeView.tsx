@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
@@ -23,7 +24,7 @@ export function BlindPracticeView({ methodId, phaseId, phaseName, onBack }: Blin
     showVerdict, attempts, bestTime, avgTime, streak,
     handleCorrect, handleIncorrect, handleSkip,
     currentScramble,
-  } = usePracticeSession({ methodId, phaseId, exerciseId: `blind-${phaseId}` });
+  } = usePracticeSession({ methodId, phaseId, exerciseId: EXERCISE_IDS.blind(methodId, phaseId) });
 
   const [showScramble, setShowScramble] = useState(true);
   const [blindPhase, setBlindPhase] = useState<"idle" | "inspecting" | "solving">("idle");

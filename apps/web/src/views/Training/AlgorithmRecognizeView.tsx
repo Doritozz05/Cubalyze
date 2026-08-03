@@ -23,6 +23,7 @@ import {
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useTrainingSession } from "@/hooks/useTrainingSession";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import {
   Check, X, ChevronRight, Target, Brain,
   Shuffle, TrendingDown,
@@ -124,7 +125,7 @@ export function AlgorithmRecognizeView({
   // ── Real progress for weakness ordering ────────────────────────────────
   const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
   const { sessionId } = useTrainingSession({
-    exerciseId: `recognize-${subsetId}`,
+    exerciseId: EXERCISE_IDS.recognize(subsetId),
     methodId,
     phaseId: _phaseId as string,
     subsetId,
@@ -225,7 +226,7 @@ export function AlgorithmRecognizeView({
     // advanceSRS: recognition also advances the FSRS state machine so the
     // quiz feeds the SRS stats (correct → good, miss → again), not just accuracy.
     dbPersistAttempt({
-      exerciseId: `recognize-${subsetId}`,
+      exerciseId: EXERCISE_IDS.recognize(subsetId),
       methodId,
       phaseId: _phaseId as string,
       caseId: round.caseId,

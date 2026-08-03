@@ -91,7 +91,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     time: dbSolve.timeMs,
     penalty: normalizePenalty(dbSolve.penalty),
     scramble: dbSolve.scramble,
-    timestamp: new Date(dbSolve.date).getTime(),
+    timestamp: dbSolve.timestamp,
     note: dbSolve.note ?? undefined,
     method: dbSolve.method as UISolve['method'],
     source: (dbSolve.source as SolveSource) ?? "manual",
@@ -149,8 +149,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
                 id: uuidv4(),
                 name: "Main session",
                 puzzleType: "3x3",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
               };
               await sessionsRepo.insert(defaultSession);
               if (isDev()) console.log('[usePersistentSession] Created default session:', defaultSession.id);
@@ -182,7 +182,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
           } else {
             console.warn('[usePersistentSession] No sessions found even after seeding! Creating emergency session.');
             const emergencyId = uuidv4();
-            const now = new Date().toISOString();
+            const now = Date.now();
             await sessionsRepo.insert({
               id: emergencyId,
               name: "Main session",
@@ -207,8 +207,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
             id: s.id,
             name: s.name,
             puzzle: s.puzzleType,
-            createdAt: new Date(s.createdAt).getTime(),
-            updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : new Date(s.createdAt).getTime(),
+            createdAt: s.createdAt,
+            updatedAt: s.updatedAt ?? s.createdAt,
             solveCount: sessionSolves.length,
           });
         }
@@ -258,12 +258,12 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const { solves: solvesRepo } = reposRef.current;
     
     const solveId = input.id ?? uuidv4();
-    const date = input.timestamp ? new Date(input.timestamp).toISOString() : new Date().toISOString();
+    const timestamp = input.timestamp ?? Date.now();
     const dbSolve: DBSolve = {
       id: solveId,
       sessionId: session.id,
       timeMs: input.time,
-      date,
+      timestamp,
       scramble: input.scramble,
       penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
       method: input.method,
@@ -418,13 +418,12 @@ export function usePersistentSession(): UsePersistentSessionResult {
 
     for (const input of inputs) {
       const solveId = uuidv4();
-      const date = new Date(input.timestamp).toISOString();
 
       const dbSolve: DBSolve = {
         id: solveId,
         sessionId: session.id,
         timeMs: input.time,
-        date,
+        timestamp: input.timestamp,
         scramble: input.scramble,
         penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
         method: input.method,
@@ -488,7 +487,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       id: uuidv4(),
       name: name ?? "Session",
       puzzleType: puzzle ?? "3x3",
-      createdAt: new Date().toISOString(),
+      createdAt: Date.now(),
     };
     
     await sessionsRepo.insert(newSess);

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
@@ -75,10 +76,13 @@ export interface PlainPracticeViewProps {
   phaseName: string;
   onBack: () => void;
   exerciseLabel?: string;
+  /** Canonical exercise id — defaults to plain-<method>-<phase>. Override for
+      variant modes (e.g. Speed vs Efficiency → se-<method>-<phase>). */
+  exerciseId?: string;
 }
 
 export function PlainPracticeView({
-  methodId, phaseId, phaseName, onBack, exerciseLabel,
+  methodId, phaseId, phaseName, onBack, exerciseLabel, exerciseId,
 }: PlainPracticeViewProps) {
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
 
@@ -88,7 +92,7 @@ export function PlainPracticeView({
     showVerdict, attempts, bestTime, avgTime, streak,
     handleCorrect, handleIncorrect, handleSkip,
     currentScramble,
-  } = usePracticeSession({ methodId, phaseId, exerciseId: `plain-${phaseId}` });
+  } = usePracticeSession({ methodId, phaseId, exerciseId: exerciseId ?? EXERCISE_IDS.plain(methodId, phaseId) });
 
   const tips = PHASE_TIPS[phaseId] ?? PHASE_TIPS["cross"];
 

@@ -20,7 +20,8 @@ import { EOEfficiencyView } from "./EOEfficiencyView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { ReviewQueueSection } from "./components";
 import type { PuzzleCategory } from "@/types";
-import type { PhaseStatsRecord } from "@cubeforge/training";
+import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubeforge/training";
+import { EXERCISE_IDS, buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel, MASTERY_LABEL_TEXT } from "@cubeforge/training";
 import { puzzleCategoryToType, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
   Select,
@@ -48,127 +49,52 @@ import {
   Clock,
   EyeOff,
   Eye,
-  Layout,
   ArrowUp,
   MoveVertical,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Phase definitions (pure data)
+   Phase presentation
+   Phase identities, practice modes, subset resolution and mastery labels
+   come from the @cubeforge/training catalog (single source of truth).
+   This file only adds ICONS — pure presentation.
    ─────────────────────────────────────────────────────────────────────── */
 
-type PhaseId = string;
-
-interface PhaseDef {
-  id: PhaseId;
-  name: string;
-  icon: React.ElementType;
-  description: string;
-  sortOrder: number;
-  hasAlgorithms: boolean;
-}
-
-const METHOD_PHASES: Record<string, PhaseDef[]> = {
-  CFOP: [
-    { id: "cross", name: "Cross", icon: Crosshair, description: "Solve the cross efficiently. Fewer moves, faster solutions.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l", name: "F2L", icon: Grid3x3, description: "Basic first two layers — 41 algorithmic pairs.", sortOrder: 2, hasAlgorithms: true },
-    { id: "af2l", name: "Advanced F2L", icon: Layers, description: "Advanced first two layers — 54 trapped & keyhole cases.", sortOrder: 3, hasAlgorithms: true },
-    { id: "oll", name: "OLL", icon: Palette, description: "Orient last layer — 57 cases to master.", sortOrder: 4, hasAlgorithms: true },
-    { id: "pll", name: "PLL", icon: Shuffle, description: "Permute last layer — 21 cases for the final step.", sortOrder: 5, hasAlgorithms: true },
-  ],
-  Roux: [
-    { id: "first-block", name: "First block", icon: Box, description: "Build a 1×2×3 block on the left.", sortOrder: 1, hasAlgorithms: false },
-    { id: "second-block", name: "Second block", icon: Blocks, description: "Build the right 1×2×3 block efficiently.", sortOrder: 2, hasAlgorithms: false },
-    { id: "cmll", name: "CMLL", icon: Palette, description: "Corners of last layer — 42 cases.", sortOrder: 3, hasAlgorithms: true },
-    { id: "lse", name: "LSE", icon: ArrowRightLeft, description: "Last six edges — EO, UL/UR, M-slice.", sortOrder: 4, hasAlgorithms: false },
-  ],
-  ZZ: [
-    { id: "eoline", name: "EOLine", icon: Zap, description: "Edge Orientation + Line. No rotations needed.", sortOrder: 1, hasAlgorithms: false },
-    { id: "f2l-zz", name: "F2L (ZZ)", icon: Grid3x3, description: "First two layers using only R, U, L moves.", sortOrder: 2, hasAlgorithms: true },
-    { id: "ll-zz", name: "Last layer", icon: Target, description: "OCLL, COLL, ZZLL — last layer for ZZ.", sortOrder: 3, hasAlgorithms: true },
-  ],
-  Petrus: [
-    { id: "block-222", name: "2×2×2 block", icon: Grid2x2, description: "Build the first 2×2×2 block.", sortOrder: 1, hasAlgorithms: false },
-    { id: "block-223", name: "2×2×3 block", icon: Grid3x3, description: "Extend to a 2×2×3 block.", sortOrder: 2, hasAlgorithms: false },
-    { id: "eo-petrus", name: "EO", icon: Gauge, description: "Edge Orientation after blocks.", sortOrder: 3, hasAlgorithms: false },
-    { id: "f2l-petrus", name: "F2L (Petrus)", icon: MoveHorizontal, description: "Finish F2L after EO.", sortOrder: 4, hasAlgorithms: true },
-    { id: "ll-petrus", name: "Last layer", icon: Target, description: "COLL + EPLL for Petrus last layer.", sortOrder: 5, hasAlgorithms: true },
-  ],
-  Ortega: [
-    { id: "oll", name: "OLL (2×2)", icon: Palette, description: "Orient top face — 7 cases to master.", sortOrder: 1, hasAlgorithms: true },
-    { id: "pbl", name: "PBL", icon: Shuffle, description: "Permute Both Layers — 6 cases for 2×2.", sortOrder: 2, hasAlgorithms: true },
-  ],
-  CLL: [
-    { id: "cll", name: "CLL", icon: Layers, description: "Corners of Last Layer — 42 cases for 2×2.", sortOrder: 1, hasAlgorithms: true },
-  ],
-  EG: [
-    { id: "eg1", name: "EG-1", icon: Grid2x2, description: "Bottom layer adjacent swap — 42 cases.", sortOrder: 1, hasAlgorithms: true },
-    { id: "eg2", name: "EG-2", icon: Grid2x2, description: "Bottom layer diagonal swap — 42 cases.", sortOrder: 2, hasAlgorithms: true },
-  ],
+/** phase id → icon (UI-only). */
+const PHASE_ICONS: Record<string, React.ElementType> = {
+  cross: Crosshair, f2l: Grid3x3, af2l: Layers, oll: Palette, pll: Shuffle, pbl: Shuffle,
+  cll: Layers, eg1: Grid2x2, eg2: Grid2x2,
+  "first-block": Box, "second-block": Blocks, cmll: Palette, lse: ArrowRightLeft,
+  eoline: Zap, "f2l-zz": Grid3x3, "ll-zz": Target,
+  "block-222": Grid2x2, "block-223": Grid3x3, "eo-petrus": Gauge,
+  "f2l-petrus": MoveHorizontal, "ll-petrus": Target,
 };
 
-/** Maps a phase ID to its specialized practice type for non-algorithmic phases. */
-type PhasePracticeType = "cross" | "block" | "lse" | "eo";
+type PhaseDef = PhaseDefinition & { icon: React.ElementType };
 
-function getPhasePracticeType(phaseId: string): PhasePracticeType | null {
-  const crossPhases = new Set(["cross", "eoline"]);
-  const blockPhases = new Set(["first-block", "second-block", "block-222", "block-223"]);
-  const lsePhases = new Set(["lse"]);
-  const eoPhases = new Set(["eo-petrus"]);
-  if (crossPhases.has(phaseId)) return "cross";
-  if (blockPhases.has(phaseId)) return "block";
-  if (lsePhases.has(phaseId)) return "lse";
-  if (eoPhases.has(phaseId)) return "eo";
-  return null;
+/** Phases for a method (identity from the catalog) with presentation icons. */
+function getPhasesForMethod(methodName: string): PhaseDef[] {
+  return buildMethodPhases(methodName).map((phase) => ({
+    ...phase,
+    icon: PHASE_ICONS[phase.id] ?? Sparkles,
+  }));
 }
 
-/** Exercise modes available per phase type. Each is a direct button in the card. */
-interface PhaseModeDef {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-}
+type PhaseModeDef = PhaseModeDefinition & { icon: React.ElementType };
 
-const PHASE_MODES: Record<PhasePracticeType, PhaseModeDef[]> = {
-  cross: [
-    { id: "plain", label: "Plain", icon: Clock },
-    { id: "blind", label: "Blind", icon: EyeOff },
-    { id: "optimal", label: "≤8", icon: MoveHorizontal },
-    { id: "cn", label: "CN", icon: Palette },
-  ],
-  block: [
-    { id: "plain", label: "Plain", icon: Clock },
-    { id: "blind", label: "Blind", icon: EyeOff },
-    { id: "speed-vs-eff", label: "S/E", icon: Gauge },
-  ],
-  lse: [
-    { id: "plain", label: "Full", icon: Layout },
-    { id: "eo", label: "EO", icon: ArrowRightLeft },
-    { id: "ulur", label: "UL/UR", icon: ArrowUp },
-    { id: "mslice", label: "M", icon: MoveVertical },
-  ],
-  eo: [
-    { id: "plain", label: "Plain", icon: Clock },
-    { id: "detect", label: "Detect", icon: Eye },
-    { id: "efficiency", label: "≤mvs", icon: Gauge },
-  ],
+/** mode id → icon (UI-only). */
+const PHASE_MODE_ICONS: Record<string, React.ElementType> = {
+  plain: Clock, blind: EyeOff, optimal: MoveHorizontal, cn: Palette,
+  "speed-vs-eff": Gauge, eo: ArrowRightLeft, ulur: ArrowUp, mslice: MoveVertical,
+  detect: Eye, efficiency: Gauge,
 };
 
-function getPhaseModes(phaseType: PhasePracticeType): PhaseModeDef[] {
-  return PHASE_MODES[phaseType] ?? [];
-}
-
-function findSubsetId(methodId: string, phaseId: string): string | null {
-  const phaseToSubsetName: Record<string, string> = {
-    "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
-    "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
-    "pbl": "PBL", "cll": "CLL", "eg1": "EG-1", "eg2": "EG-2",
-  };
-  const subsetName = phaseToSubsetName[phaseId];
-  if (!subsetName) return null;
-  const subset = SUBSETS.find((s) => s.methodId === methodId && s.name === subsetName)
-    ?? SUBSETS.find((s) => s.name === subsetName);
-  return subset?.id ?? null;
+/** Modes for a phase type (identity from the catalog) with presentation icons. */
+function getPhaseModesWithIcons(phaseType: PhasePracticeType): PhaseModeDef[] {
+  return getPhaseModes(phaseType).map((mode) => ({
+    ...mode,
+    icon: PHASE_MODE_ICONS[mode.id] ?? Clock,
+  }));
 }
 
 const METHOD_ACCENTS: Record<string, string> = {
@@ -190,10 +116,7 @@ const PHASE_DOT: Record<string, string> = {
 };
 
 function masteryLabel(pct: number): string {
-  if (pct >= 90) return "Mastered";
-  if (pct >= 60) return "Learning";
-  if (pct > 0) return "Beginner";
-  return "New";
+  return MASTERY_LABEL_TEXT[masteryLevel(pct)];
 }
 
 /* ── Mastery helpers ────────────────────────────────────────────────────── */
@@ -241,7 +164,7 @@ function FlatDashboard({
   dbReady: boolean;
 }) {
   const method = METHODS.find((m) => m.id === activeMethodId);
-  const phases = method ? METHOD_PHASES[method.name] ?? [] : [];
+  const phases = method ? getPhasesForMethod(method.name) : [];
   const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
 
   return (
@@ -385,7 +308,7 @@ function FlatDashboard({
                   onStats={() => onStats(method.id, phase.id, phase.name)}
                   phaseModes={
                     !phase.hasAlgorithms
-                      ? (() => { const pt = getPhasePracticeType(phase.id); return pt ? getPhaseModes(pt) : []; })()
+                      ? (() => { const pt = getPhasePracticeType(phase.id); return pt ? getPhaseModesWithIcons(pt) : []; })()
                       : null
                   }
                 />
@@ -649,7 +572,7 @@ export function TrainingDashboard({
     if (!dbReady || !activeMethodId) return;
     let cancelled = false;
     const method = METHODS.find((m) => m.id === activeMethodId);
-    const phases = method ? METHOD_PHASES[method.name] ?? [] : [];
+    const phases = method ? getPhasesForMethod(method.name) : [];
     void Promise.all(
       phases.map((phase) => getPhaseStats(activeMethodId, phase.id).catch(() => null)),
     ).then((stats) => {
@@ -840,9 +763,14 @@ export function TrainingDashboard({
     return (
       <div className="relative flex-1 min-h-0 w-full">
         <div className="absolute inset-0 flex flex-col">
-          {/* Generic: plain + speed-vs-eff */}
-          {(modeId === "plain" || modeId === "speed-vs-eff") && (
-            <PlainPracticeView {...props} exerciseLabel={modeId === "speed-vs-eff" ? "Speed vs Efficiency" : undefined} />
+          {/* Generic: plain + speed-vs-eff (S/E persists its own exercise id) */}
+          {modeId === "plain" && <PlainPracticeView {...props} />}
+          {modeId === "speed-vs-eff" && (
+            <PlainPracticeView
+              {...props}
+              exerciseLabel="Speed vs Efficiency"
+              exerciseId={EXERCISE_IDS.speedEfficiency(methodId, phaseId)}
+            />
           )}
           {/* Generic: blind */}
           {modeId === "blind" && <BlindPracticeView {...props} />}

@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
@@ -25,7 +26,9 @@ export function EODetectView({ methodId, phaseId, phaseName, onBack }: EODetectV
     showVerdict, attempts, bestTime, avgTime, streak,
     handleCorrect, handleIncorrect, handleSkip,
     currentScramble,
-  } = usePracticeSession({ methodId, phaseId, exerciseId: `eo-detect-${phaseId}` });
+  // EO Detect is a recognition-type exercise — attempts must never dilute the
+  // execution accuracy of drill/plain practice for the same phase.
+  } = usePracticeSession({ methodId, phaseId, exerciseId: EXERCISE_IDS.eoDetect(methodId, phaseId), metricKind: "recognition" });
 
   const localCorrect = useCallback(() => { handleCorrect(); setBadEdges(null); }, [handleCorrect]);
   const localIncorrect = useCallback(() => { handleIncorrect(); setBadEdges(null); }, [handleIncorrect]);

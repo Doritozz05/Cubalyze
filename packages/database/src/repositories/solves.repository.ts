@@ -5,7 +5,7 @@ export interface SolveRow {
   id: string;
   session_id: string;
   time_ms: number;
-  date: string;
+  timestamp: number;
   scramble: string;
   penalty: string;
   method: string | null;
@@ -17,8 +17,8 @@ export interface SolveRow {
   analysis: string | null;
   puzzle_type?: string;
   is_demo?: number;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
 }
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -64,7 +64,7 @@ function rowToSolve(row: SolveRow): Solve {
     id: row.id,
     sessionId: row.session_id,
     timeMs: row.time_ms,
-    date: row.date,
+    timestamp: row.timestamp,
     scramble: row.scramble,
     penalty: row.penalty as Solve['penalty'],
     method: row.method ?? undefined,
@@ -85,7 +85,7 @@ function solveToRow(solve: Solve): SolveRow {
     id: solve.id,
     session_id: solve.sessionId,
     time_ms: solve.timeMs,
-    date: solve.date,
+    timestamp: solve.timestamp,
     scramble: solve.scramble,
     penalty: solve.penalty,
     method: solve.method ?? null,
@@ -98,8 +98,8 @@ function solveToRow(solve: Solve): SolveRow {
     analysis_engine_version: solve.analysisEngineVersion ?? null,
     analysis: solve.analysis ?? null,
     puzzle_type: solve.puzzleType ?? '3x3x3',
-    created_at: solve.createdAt ?? new Date().toISOString(),
-    updated_at: solve.updatedAt ?? new Date().toISOString(),
+    created_at: solve.createdAt ?? Date.now(),
+    updated_at: solve.updatedAt ?? Date.now(),
   };
 }
 
@@ -113,10 +113,10 @@ export class SolvesRepository {
     let sql = 'SELECT * FROM solves';
     const bind: unknown[] = [];
     if (sessionId) {
-      sql += ' WHERE session_id = ? ORDER BY date ASC';
+      sql += ' WHERE session_id = ? ORDER BY timestamp ASC';
       bind.push(sessionId);
     } else {
-      sql += ' ORDER BY date ASC';
+      sql += ' ORDER BY timestamp ASC';
     }
     const rows = await this.db(sql, bind);
     return rows.map((r) => rowToSolve(r as unknown as SolveRow));
@@ -135,16 +135,16 @@ export class SolvesRepository {
   async insert(solve: Solve, options?: { isDemo?: boolean }): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, date, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
     );
   }
 
   async update(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
     await this.db(
-      'UPDATE solves SET session_id = ?, time_ms = ?, date = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.date, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, new Date().toISOString(), row.id]
+      'UPDATE solves SET session_id = ?, time_ms = ?, timestamp = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
+      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, Date.now(), row.id]
     );
   }
 

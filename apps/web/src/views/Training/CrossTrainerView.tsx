@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCrossScramble } from "@/hooks/useCrossScramble";
@@ -128,8 +129,14 @@ export function CrossTrainerView({
 
   // ── Persist attempts to the DB ───────────────────────────────────────
   const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  // Canonical exercise id: CN mode is a DISTINCT exercise (cn-<method>-<phase>)
+  // from the ≤8 optimal trainer (cross-trainer-<method>-<phase>), so each
+  // mode accumulates its own honest stats.
+  const exerciseId = cnMode
+    ? EXERCISE_IDS.crossTrainerCn(methodId, phaseId)
+    : EXERCISE_IDS.crossTrainer(methodId, phaseId);
   const { sessionId } = useTrainingSession({
-    exerciseId: `cross-trainer-${phaseId}`,
+    exerciseId,
     methodId,
     phaseId,
   });
@@ -293,7 +300,7 @@ export function CrossTrainerView({
     // Persist to DB using REAL efficiency columns (optimal_moves vs move_count)
     // so phase stats can compute efficiency = optimal / actual.
     dbPersistAttempt({
-      exerciseId: `cross-trainer-${phaseId}`,
+      exerciseId,
       methodId,
       phaseId,
       timeMs: 0,
@@ -314,6 +321,7 @@ export function CrossTrainerView({
     methodId,
     phaseId,
     sessionId,
+    exerciseId,
   ]);
 
   const handleNewScramble = useCallback(() => {
@@ -688,16 +696,15 @@ export function CrossTrainerView({
                   className="nums w-20 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-[0.75rem] text-ink text-center focus:outline-none focus:ring-1 focus:ring-ink/30"
                   placeholder="?"
                 />
-                {moveDiff !== null && (
-                  <span
-                    className={cn(
+                {moveDiff !== null && (                  <span className={cn(
                       "nums text-[0.65rem] font-semibold",
                       moveDiff <= 0 ? "text-ready" : "text-hold",
-                    )}
-                  >
-                    {moveDiff <= 0
-                      ? `${Math.abs(moveDiff)} under optimal 🎯`
-                      : `${moveDiff} over optimal`}
+                    )}>
+                    {moveDiff === 0
+                      ? "Optimal! 🎯"
+                      : moveDiff < 0
+                        ? `${Math.abs(moveDiff)} under optimal 🎯`
+                        : `${moveDiff} over optimal`}
                   </span>
                 )}
                 <span className="flex-1" />

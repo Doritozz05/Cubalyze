@@ -19,7 +19,7 @@ import { MIGRATIONS } from '../../../packages/database/src/migrations/index.js';
 // the desktop aliases @cubeforge/database to this file, so any repository
 // added upstream must be listed here too.
 export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
-export type { Solve, Session, Algorithm, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow } from '../../../packages/database/src/repositories/index.js';
+export type { Solve, Session, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow } from '../../../packages/database/src/repositories/index.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -63,6 +63,9 @@ async function initDB(): Promise<DBClient> {
     // Open (or create) the SQLite database in the user's AppData folder.
     // On Windows: C:\Users\<user>\AppData\Roaming\com.cubeforge.desktop\cubeforge.db
     db = await Database.load('sqlite:cubeforge.db');
+
+    // Enforce the FKs declared in the baseline v2 schema (per-connection pragma).
+    await db.execute('PRAGMA foreign_keys = ON');
 
     // Create the migrations tracking table if it doesn't exist
     await db.execute(

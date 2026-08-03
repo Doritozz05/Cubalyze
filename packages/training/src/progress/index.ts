@@ -11,6 +11,7 @@ export type {
   AlgorithmProgressRecord,
   ExerciseProgressRecord,
   PhaseStatsRecord,
+  MethodProgressBreakdown,
   MetricKind,
   QueueCandidateRecord,
   TrainingSessionProgressRecord,

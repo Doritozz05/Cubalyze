@@ -90,7 +90,7 @@ type DBSolveLike = {
   timeMs: number;
   penalty: string;
   scramble: string;
-  date: string;
+  timestamp: number;
   note?: string | null;
   method?: string | null;
   source?: string | null;
@@ -105,7 +105,7 @@ function toUISolveSafe(dbSolve: DBSolveLike): UISolve {
     time: dbSolve.timeMs,
     penalty,
     scramble: dbSolve.scramble,
-    timestamp: new Date(dbSolve.date).getTime(),
+    timestamp: dbSolve.timestamp,
     note: dbSolve.note ?? undefined,
     method: dbSolve.method as UISolve["method"] | undefined,
     source: (dbSolve.source as UISolve["source"]) ?? "manual",

@@ -11,7 +11,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
     id: 's1',
     sessionId: 'ses1',
     timeMs: 1000,
-    date: '2026-01-01',
+    timestamp: 1767225600000,
     scramble: '',
     penalty: 'none' as const,
     source: 'manual' as const,
@@ -65,7 +65,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
 });
 
 describe('SessionsRepository — demo session isolation (is_demo)', () => {
-  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '3x3x3', createdAt: '2026-01-01' };
+  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '3x3x3', createdAt: 1767225600000 };
 
   it('insert without options binds is_demo = 0', async () => {
     const db = mockDb();

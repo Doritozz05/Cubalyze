@@ -36,6 +36,8 @@ export interface ITrainingProgressRepo {
   upsertExerciseProgress(progress: ExerciseProgressRecord): Promise<ExerciseProgressRecord>;
   getMethodExerciseProgress(methodId: string): Promise<ExerciseProgressRecord[]>;
   getMethodMastery(methodId: string): Promise<number>;
+  /** Method mastery with coverage/performance breakdown (dashboards). */
+  getMethodProgress?(methodId: string): Promise<MethodProgressBreakdown | null>;
   /** Per-phase aggregate stats (avg time, accuracy, efficiency) for phase weakness detection. */
   getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStatsRecord | null>;
   createTrainingSession?(session: Omit<TrainingSessionProgressRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">): Promise<TrainingSessionProgressRecord>;
@@ -156,13 +158,37 @@ export interface TrainingSessionProgressRecord {
 export interface PhaseStatsRecord {
   methodId: string;
   phaseId: string;
+  /** Total attempts (execution + recognition). */
   totalAttempts: number;
-  accuracy: number;   // 0-100
+  /** EXECUTION-ONLY accuracy 0-100 — recognition attempts never dilute it. */
+  accuracy: number;
+  /** Exact execution attempt count. */
+  execAttempts: number;
+  /** Execution-only accuracy 0-100 (same as `accuracy`, kept explicit). */
+  execAccuracy: number;
+  /** Exact recognition attempt count. */
+  recAttempts: number;
+  /** Recognition-only accuracy 0-100. */
+  recAccuracy: number;
   avgTimeMs: number;
   bestTimeMs: number;
+  /** Execution fail rate 0-1 (incorrect + dnf / execution attempts). */
   failRate: number;   // 0-1
   efficiency: number; // 0-1 (optimal_moves / move_count)
   lastPracticedAt: number;
+}
+
+/** Method-level mastery breakdown: breadth (coverage) × depth (performance). */
+export interface MethodProgressBreakdown {
+  methodId: string;
+  /** Weighted mastery 0-100 = round(performance × coverage). */
+  mastery: number;
+  /** Fraction of the method's cases practiced (0-1). */
+  coverage: number;
+  /** Average mastery of PRACTICED cases only (0-100). */
+  performance: number;
+  totalCases: number;
+  practicedCases: number;
 }
 
 /** What a training attempt measures. Recognition quizzes must NOT touch execution time metrics. */
@@ -710,10 +736,19 @@ export class ProgressTracker {
   }
 
   /**
-   * Get overall method mastery (average of all algorithm masteries).
+   * Get overall method mastery (coverage × performance of practiced cases).
    */
   async getMethodMastery(methodId: string): Promise<number> {
     return this.repo.getMethodMastery(methodId);
+  }
+
+  /**
+   * Method mastery with the coverage/performance breakdown for dashboards.
+   * Returns null when the backend does not expose the breakdown.
+   */
+  async getMethodProgress(methodId: string): Promise<MethodProgressBreakdown | null> {
+    if (!this.repo.getMethodProgress) return null;
+    return this.repo.getMethodProgress(methodId);
   }
 
   /**

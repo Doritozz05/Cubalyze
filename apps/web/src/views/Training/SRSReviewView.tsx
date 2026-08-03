@@ -39,7 +39,7 @@ import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
-import { generateRandomSetup } from "@cubeforge/training";
+import { generateRandomSetup, EXERCISE_IDS } from "@cubeforge/training";
 import type { SRSGrade } from "@cubeforge/training";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { useTrainingSession } from "@/hooks/useTrainingSession";
@@ -122,7 +122,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
   const current = session.current;
   const caseId = current?.algorithmId;
   const { sessionId, completeSession } = useTrainingSession({
-    exerciseId: `srs-review-${methodId ?? "all"}`,
+    exerciseId: EXERCISE_IDS.srsReview(methodId),
     methodId: methodId ?? "all",
     phaseId: "srs-review",
     sessionKey,
@@ -221,7 +221,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     setPersistenceError(null);
     try {
       await recordAttempt({
-      exerciseId: `srs-review-${current.methodId}`,
+      exerciseId: EXERCISE_IDS.srsReview(current.methodId),
       methodId: current.methodId,
       caseId: current.algorithmId,
       timeMs: 0,
@@ -243,7 +243,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     setPersistenceError(null);
     try {
       await recordAttempt({
-      exerciseId: `srs-review-${current.methodId}`,
+      exerciseId: EXERCISE_IDS.srsReview(current.methodId),
       methodId: current.methodId,
       caseId: current.algorithmId,
       timeMs: 0,
@@ -273,7 +273,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     setPersistenceError(null);
     try {
       await recordAttempt({
-      exerciseId: `srs-review-${current.methodId}`,
+      exerciseId: EXERCISE_IDS.srsReview(current.methodId),
       methodId: current.methodId,
       caseId: current.algorithmId,
       timeMs: stoppedTime,

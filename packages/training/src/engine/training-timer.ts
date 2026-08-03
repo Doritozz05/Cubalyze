@@ -12,16 +12,24 @@ import {
   TimerEngine,
 } from '@cubeforge/timer-engine';
 
+export interface CreateTrainingTimerOptions {
+  /** Enable WCA-style 15s inspection countdown (e.g. full-solve views). Default false. */
+  useInspection?: boolean;
+}
+
 // ─── Factory ─────────────────────────────────────────────────────────────
 
 /**
  * Creates a TimerEngine configured for training mode.
  *
  * Training mode differs from practice mode in that:
- * - No inspection countdown (useInspection: false)
+ * - No inspection countdown by default (useInspection: false)
  * - Hold-to-arm behavior (spacebar hold → ready → release → start)
  * - Designed for quick drill repetition
+ *
+ * This is the single factory the training UI uses — useDrillTimer wraps it
+ * with React state bindings and the shared keyboard handling.
  */
-export function createTrainingTimer(): TimerEngine {
-  return new TimerEngine({ useInspection: false });
+export function createTrainingTimer(options: CreateTrainingTimerOptions = {}): TimerEngine {
+  return new TimerEngine({ useInspection: options.useInspection ?? false });
 }

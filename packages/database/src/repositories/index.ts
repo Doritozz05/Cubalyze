@@ -1,4 +1,4 @@
-export type { Solve, Session, Algorithm, Profile } from './types.js';
+export type { Solve, Session, Profile } from './types.js';
 export { SolvesRepository } from './solves.repository.js';
 export { SessionsRepository } from './sessions.repository.js';
 export { AlgorithmsRepository } from './algorithms.repository.js';

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useStore } from "zustand";
 import type { TimerState, Penalty, SolveMethod } from "@/types";
 import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
+import { mapTimerState } from "@/utils/timerState";
+import { useTimerKeyboard } from "@/hooks/useTimerKeyboard";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import { hapticStart, hapticStop } from "@/utils/haptics";
@@ -105,28 +107,6 @@ export interface UseSolveSessionResult {
   /** Compact orientation timeline for persistent storage (IMU solves only). */
   lastSolveOrientationTimeline: OrientationTimeline | undefined;
 }
-
-const mapEngineStateToUIState = (engineState: EngineState): TimerState => {
-  switch (engineState) {
-    case EngineState.IDLE:
-      return "idle";
-    case EngineState.INSPECTION:
-      return "inspection";
-    case EngineState.READY_FOR_MOVE:
-      return "ready_for_move";
-    case EngineState.TOUCHING:
-      return "holding";
-    case EngineState.READY:
-      return "ready";
-    case EngineState.RUNNING:
-      return "running";
-    case EngineState.COOLDOWN:
-    case EngineState.STOPPED:
-      return "stopped";
-    default:
-      return "idle";
-  }
-};
 
 // End-of-solve diagnostic logging lives in `solveSessionDebug.ts` (opt-in
 // via `?cfop_debug=1` / localStorage, or automatic on localhost dev).
@@ -385,7 +365,7 @@ export function useSolveSession(
           pendingMovesBufferRef.current = [];
         }
       }
-      setPhase(mapEngineStateToUIState(engineState));
+      setPhase(mapTimerState(engineState));
     });
     const sub2 = engine.tick$.subscribe((t) => setTime(t));
     const sub3 = engine.stop$.subscribe((ev) => {
@@ -811,42 +791,11 @@ export function useSolveSession(
     engine.reset();
   }, [engine]);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (options.keyboardDisabledRef?.current) return;
-      if (e.code !== "Space") return;
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) {
-          return;
-        }
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      if (!e.repeat) press();
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (options.keyboardDisabledRef?.current) return;
-      if (e.code !== "Space") return;
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) {
-          return;
-        }
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      release();
-    };
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    window.addEventListener("keyup", onKeyUp, { capture: true });
-    return () => {
-      window.removeEventListener("keydown", onKeyDown, { capture: true });
-      window.removeEventListener("keyup", onKeyUp, { capture: true });
-    };
-  }, [press, release, options.keyboardDisabledRef]);
+  useTimerKeyboard({
+    onPress: press,
+    onRelease: release,
+    disabledRef: options.keyboardDisabledRef,
+  });
 
   return {
     phase,

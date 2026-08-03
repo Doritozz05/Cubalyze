@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS, buildMethodPhases } from "@cubeforge/training";
 import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
@@ -47,6 +48,13 @@ interface PhaseSplit {
   status: "pending" | "active" | "done";
 }
 
+/** A phase split target before timing data is attached. */
+interface PhaseSplitTarget {
+  phaseId: string;
+  phaseName: string;
+  targetS: number;
+}
+
 interface SolveResult {
   totalMs: number;
   splits: PhaseSplit[];
@@ -59,36 +67,44 @@ interface SolveResult {
 
 /* ──────────────────────────────────────────────────────────────────────────
    Phase target definitions
+   ───────────────────────────────────────────────────────────────────────
+
+   Phase identities come from the @cubeforge/training catalog
+   (buildMethodPhases) so the splits always match the exercises the user
+   actually trains. Target seconds below are per-phase DEFAULTS — they are
+   replaced by the user's REAL per-phase average time (from
+   training_attempts) as soon as they exist, so targets are honest data
+   instead of fabricated numbers.
    ─────────────────────────────────────────────────────────────────────── */
 
-function getPhaseTargets(methodName: string): { phaseId: string; phaseName: string; targetS: number }[] {
-  switch (methodName) {
-    case "CFOP": return [
-      { phaseId: "cross", phaseName: "Cross", targetS: 2.0 },
-      { phaseId: "f2l", phaseName: "F2L", targetS: 6.0 },
-      { phaseId: "oll", phaseName: "OLL", targetS: 1.5 },
-      { phaseId: "pll", phaseName: "PLL", targetS: 1.2 },
-    ];
-    case "Roux": return [
-      { phaseId: "first-block", phaseName: "First block", targetS: 2.5 },
-      { phaseId: "second-block", phaseName: "Second block", targetS: 2.0 },
-      { phaseId: "cmll", phaseName: "CMLL", targetS: 1.5 },
-      { phaseId: "lse", phaseName: "LSE", targetS: 2.0 },
-    ];
-    case "ZZ": return [
-      { phaseId: "eoline", phaseName: "EOLine", targetS: 3.0 },
-      { phaseId: "f2l-zz", phaseName: "F2L (ZZ)", targetS: 6.0 },
-      { phaseId: "ll-zz", phaseName: "Last layer", targetS: 2.0 },
-    ];
-    case "Petrus": return [
-      { phaseId: "block-222", phaseName: "2×2×2", targetS: 2.5 },
-      { phaseId: "block-223", phaseName: "2×2×3", targetS: 2.8 },
-      { phaseId: "eo-petrus", phaseName: "EO", targetS: 1.2 },
-      { phaseId: "f2l-petrus", phaseName: "F2L", targetS: 3.5 },
-      { phaseId: "ll-petrus", phaseName: "Last layer", targetS: 2.5 },
-    ];
-    default: return [];
-  }
+const DEFAULT_PHASE_TARGETS: Record<string, { name: string; targetS: number }> = {
+  cross: { name: "Cross", targetS: 2.0 },
+  f2l: { name: "F2L", targetS: 6.0 },
+  af2l: { name: "Advanced F2L", targetS: 6.5 },
+  oll: { name: "OLL", targetS: 1.5 },
+  pll: { name: "PLL", targetS: 1.2 },
+  "first-block": { name: "First block", targetS: 2.5 },
+  "second-block": { name: "Second block", targetS: 2.0 },
+  cmll: { name: "CMLL", targetS: 1.5 },
+  lse: { name: "LSE", targetS: 2.0 },
+  eoline: { name: "EOLine", targetS: 3.0 },
+  "f2l-zz": { name: "F2L (ZZ)", targetS: 6.0 },
+  "ll-zz": { name: "Last layer", targetS: 2.0 },
+  "block-222": { name: "2×2×2", targetS: 2.5 },
+  "block-223": { name: "2×2×3", targetS: 2.8 },
+  "eo-petrus": { name: "EO", targetS: 1.2 },
+  "f2l-petrus": { name: "F2L", targetS: 3.5 },
+  "ll-petrus": { name: "Last layer", targetS: 2.5 },
+};
+
+/** Build default split targets from the catalog's phases for a method. */
+function defaultPhaseTargets(methodName: string): PhaseSplitTarget[] {
+  return buildMethodPhases(methodName)
+    .map((phase) => {
+      const def = DEFAULT_PHASE_TARGETS[phase.id];
+      return def ? { phaseId: phase.id, phaseName: def.name, targetS: def.targetS } : null;
+    })
+    .filter((t): t is PhaseSplitTarget => t !== null);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -120,12 +136,18 @@ export interface FullSolveViewProps {
 
 export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
-  const phaseTargets = useMemo(() => getPhaseTargets(method?.name ?? ""), [method]);
+  // Phase targets start as per-phase defaults derived from the catalog; they
+  // are upgraded to the user's REAL per-phase averages once loaded below.
+  const [phaseTargets, setPhaseTargets] = useState<PhaseSplitTarget[]>(() =>
+    defaultPhaseTargets(method?.name ?? ""),
+  );
 
   const [solveMode, setSolveMode] = useState<FullSolveMode>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("cubeforge_full_solve_mode");
-      if (saved === "targets" || saved === "moves" || saved === "tps" || saved === "rotations" || saved === "free") {
+      // Validate against CURRENT mode ids — old saves used legacy names
+      // ("moves"/"tps"/"rotations"/"free") which would corrupt the mode.
+      if (saved === "targets" || saved === "move-limit" || saved === "tps-challenge" || saved === "rotationless") {
         return saved as FullSolveMode;
       }
     }
@@ -182,6 +204,39 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   // ── Timer + Smart Cube ──────────────────────────────────────────────
   const { phase: timerPhase, time, stoppedTime, press, release, reset, engine } = useDrillTimer({ inspection: useInspection });
   const { remapScramble } = useOrientation();
+
+  // ── Honest targets: replace defaults with the user's real per-phase
+  //    averages (from training_attempts). Runs once per mount.
+  const { ready: dbReady, getPhaseStats } = useTrainingProgress();
+  useEffect(() => {
+    if (!dbReady || phaseTargets.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      phaseTargets.map((pt) => getPhaseStats(methodId, pt.phaseId).catch(() => null)),
+    ).then((stats) => {
+      if (cancelled) return;
+      setPhaseTargets((prev) =>
+        prev.map((pt, i) => {
+          const avgMs = stats[i]?.avgTimeMs ?? 0;
+          if (avgMs <= 0) return pt;
+          const personalS = Math.max(0.5, Math.round(avgMs) / 1000);
+          return { ...pt, targetS: personalS };
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbReady, methodId, getPhaseStats]);
+
+  // When personal targets arrive (and no solve is in flight), refresh the
+  // split progress bar / panel so the displayed targets are the real ones.
+  useEffect(() => {
+    if (activeSplitIdx !== -1 || timerPhase === "running") return;
+    setSplits(phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" as const })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phaseTargets, timerPhase]);
   const displayScramble = remapScramble(currentScramble);
 
   const scrambleDisplay = useStore(
@@ -202,7 +257,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   // Per-phase splits feed phase weakness; the total row records the solve.
   const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
   const { sessionId } = useTrainingSession({
-    exerciseId: `full-solve-${methodId}`,
+    exerciseId: EXERCISE_IDS.fullSolve(methodId),
     methodId,
     phaseId: "full",
     smartCubeUsed: hasSmartCube,
@@ -235,7 +290,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             : rotationsKnown ? (hadRotations ? "incorrect" : "correct") : "skipped";
 
     dbPersistAttempt({
-      exerciseId: `full-solve-${methodId}`,
+      exerciseId: EXERCISE_IDS.fullSolve(methodId),
       methodId,
       phaseId: "full",
       timeMs: solve.totalMs,
@@ -263,7 +318,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
         if (split.actualMs <= 0) continue;
         const overTarget = split.actualMs / 1000 > split.targetS;
         dbPersistAttempt({
-          exerciseId: `full-solve-${methodId}`,
+          exerciseId: EXERCISE_IDS.fullSolve(methodId),
           methodId,
           phaseId: split.phaseId,
           timeMs: split.actualMs,

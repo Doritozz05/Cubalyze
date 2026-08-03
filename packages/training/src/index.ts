@@ -5,7 +5,7 @@
  *
  * This package provides:
  * - Type definitions: exercises, sessions, progress tracking
- * - Exercise registry: catalog of all available training exercises
+ * - Exercise catalog: canonical exercise identities, phases, mastery labels
  * - Generators: targeted setup scrambles for algorithm drills
  * - Session engine: state machine for training sessions (Idle→Setup→Armed→Solving→Verdict)
  * - Timer factory: drill-configured TimerEngine
@@ -28,7 +28,26 @@ export { generateRandomSetup } from './generators';
 export { createTrainingTimer } from './engine';
 
 // ─── Exercises ────────────────────────────────────────────────────────────
-export { exerciseRegistry } from './exercises';
+export {
+  EXERCISE_IDS,
+  METHOD_PHASES,
+  buildMethodPhases,
+  getMethodPhases,
+  findSubsetId,
+  getPhasePracticeType,
+  getPhaseModes,
+  PHASE_MODES,
+  masteryLevel,
+  MASTERY_LABEL_TEXT,
+  buildExerciseCatalog,
+} from './exercises';
+export type {
+  PhaseDefinition,
+  PhasePracticeType,
+  PhaseModeDefinition,
+  ExerciseDefinition,
+  MasteryLabel,
+} from './exercises';
 
 // ─── Session ──────────────────────────────────────────────────────────────
 export { TrainingSessionEngine } from './session';
@@ -61,6 +80,7 @@ export type {
   AlgorithmProgressRecord,
   ExerciseProgressRecord,
   PhaseStatsRecord,
+  MethodProgressBreakdown,
   MetricKind,
   QueueCandidateRecord,
   QueueCandidate,

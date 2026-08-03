@@ -7,10 +7,11 @@ import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 import { TrainingBreadcrumb } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { findSubsetId } from "@cubeforge/training";
 import type { AlgorithmProgressRecord, PhaseStatsRecord } from "@cubeforge/training";
 import {
   Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
-  ChevronRight, Lightbulb, Gauge, AlertTriangle,
+  ChevronRight, Lightbulb, Gauge, AlertTriangle, Brain,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -49,7 +50,6 @@ function formatTime(ms: number): string {
 export function PhaseStatsView({
   methodId, phaseId, phaseName, onBack,
 }: PhaseStatsProps) {
-  void phaseId;
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
   const { cases: allCases } = useMemo(() => getSeedData(), []);
   const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">(
@@ -105,16 +105,10 @@ export function PhaseStatsView({
     return () => { cancelled = true; };
   }, [ready, methodId, phaseId, getPhaseStats, getTrainingSessions]);
 
-  // Find subset for this phase
+  // Find subset for this phase — canonical mapping from @cubeforge/training
   const subset = useMemo(() => {
-    const phaseToName: Record<string, string> = {
-      "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
-      "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
-    };
-    const name = phaseToName[phaseId];
-    if (!name) return null;
-    return SUBSETS.find((s) => s.methodId === methodId && s.name === name)
-      ?? SUBSETS.find((s) => s.name === name);
+    const subsetId = findSubsetId(methodId, phaseId);
+    return subsetId ? SUBSETS.find((s) => s.id === subsetId) ?? null : null;
   }, [methodId, phaseId]);
 
   const subsetCases = useMemo(() => {
@@ -322,15 +316,21 @@ function OverviewTab({
             <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">Phase Performance</h3>
             <span className="text-[0.55rem] text-ink-3/60">from all training sessions</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-lg bg-surface-2/60 p-3">
               <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Clock className="size-2.5" />Avg time</span>
               <span className="nums text-[0.9rem] font-bold text-ink mt-1 block">{formatTime(phaseStats.avgTimeMs)}</span>
             </div>
             <div className="rounded-lg bg-surface-2/60 p-3">
-              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Target className="size-2.5" />Accuracy</span>
-              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.accuracy >= 80 ? "text-ready" : phaseStats.accuracy >= 50 ? "text-caution" : "text-hold")}>
-                {phaseStats.accuracy}%
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Target className="size-2.5" />Exec acc</span>
+              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.execAccuracy >= 80 ? "text-ready" : phaseStats.execAccuracy >= 50 ? "text-caution" : "text-hold")}>
+                {phaseStats.execAccuracy}%
+              </span>
+            </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Brain className="size-2.5" />Rec acc</span>
+              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.recAccuracy >= 80 ? "text-ready" : phaseStats.recAccuracy >= 50 ? "text-caution" : "text-hold")}>
+                {phaseStats.recAttempts > 0 ? `${phaseStats.recAccuracy}%` : "--"}
               </span>
             </div>
             <div className="rounded-lg bg-surface-2/60 p-3">
@@ -345,9 +345,14 @@ function OverviewTab({
                 {Math.round(phaseStats.failRate * 100)}%
               </span>
             </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Flame className="size-2.5" />Attempts</span>
+              <span className="nums text-[0.9rem] font-bold text-ink mt-1 block">{phaseStats.totalAttempts}</span>
+            </div>
           </div>
           <p className="text-[0.55rem] text-ink-3/60 mt-3">
-            {phaseStats.totalAttempts} attempts recorded across phase trainings (Cross/EO/LSE/Full Solve).
+            Exec acc comes only from execution attempts; rec acc only from recognition
+            quizzes — the two are never mixed. {phaseStats.totalAttempts} attempts total.
           </p>
         </section>
       )}

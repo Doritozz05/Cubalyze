@@ -1,24 +1,7 @@
-import { z } from 'zod';
-
-// ─── Legacy Algorithm (backward compat for old `algorithms` table) ─────
-
-export const LegacyAlgorithmSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  moves: z.array(z.string()),
-  alternatives: z.array(z.array(z.string())).default([]),
-  subset: z.string(),
-  puzzleType: z.string().default('3x3x3'),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
-});
-
-export type LegacyAlgorithm = z.infer<typeof LegacyAlgorithmSchema>;
-
-// Re-export as `Algorithm` for backward compat with database/repositories/types.ts
-export type Algorithm = LegacyAlgorithm;
-
-// ─── New canonical schema (from algorithm-db) ──────────────────────────
+// ─── Canonical schema re-exported from @cubeforge/algorithm-db ──────────
+// (The legacy `algorithms` table + its Algorithm/LegacyAlgorithm types were
+// removed with the baseline v2 DB wipe — the canonical catalog lives in
+// algorithm-db now.)
 
 export {
   AlgorithmSchema,

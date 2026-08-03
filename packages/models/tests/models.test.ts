@@ -7,7 +7,7 @@ describe('Models Validation', () => {
       id: '123e4567-e89b-12d3-a456-426614174000',
       sessionId: '123e4567-e89b-12d3-a456-426614174001',
       timeMs: 12500,
-      date: new Date().toISOString(),
+      timestamp: Date.now(),
       scramble: 'R U R\' U\'',
       penalty: 'none'
     };
@@ -21,7 +21,7 @@ describe('Models Validation', () => {
       id: '123e4567-e89b-12d3-a456-426614174000',
       sessionId: '123e4567-e89b-12d3-a456-426614174001',
       timeMs: -100, // Invalid, must be non-negative
-      date: new Date().toISOString(),
+      timestamp: Date.now(),
       scramble: 'R U R\' U\'',
       penalty: 'none'
     };

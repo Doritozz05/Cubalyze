@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { initDB, AlgorithmsRepository, TrainingRepository } from "@cubeforge/database";
 import { seedIfEmpty } from "@cubeforge/algorithm-db";
-import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueCandidateRecord, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord } from "@cubeforge/training";
-import { ProgressTracker, normalizeAlgorithmProgress, normalizeExerciseProgress } from "@cubeforge/training";
+import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord } from "@cubeforge/training";
+import { ProgressTracker, normalizeAlgorithmProgress } from "@cubeforge/training";
 import type { AttemptVerdict, PlayMode } from "@cubeforge/training";
 
 // ─── Adapter: wraps TrainingRepository into ITrainingProgressRepo ──────────
@@ -15,6 +15,9 @@ async function ensureTrainingCatalog(dbExecutor: (sql: string, bind?: unknown[])
   // a resolved module-level promise would then leave the new DB unseeded.
   const algorithmsRepo = new AlgorithmsRepository(dbExecutor);
   await seedIfEmpty(algorithmsRepo);
+  // Seed the canonical exercise registry (idempotent, batched) so the UI can
+  // discover real exercise ids instead of hardcoding them.
+  await new TrainingRepository(dbExecutor).seedExercises();
 }
 
 function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
@@ -26,52 +29,18 @@ function createRepoAdapter(repo: TrainingRepository): ITrainingProgressRepo {
     getAttemptsByCase: (caseId: string, limit?: number) => repo.getAttemptsByCase(caseId, limit),
     getAttemptsByExercise: (exerciseId: string, limit?: number) => repo.getAttemptsByExercise(exerciseId, limit),
     getAttemptsByMethod: (methodId: string, limit?: number) => repo.getAttemptsByMethod(methodId, limit),
-    getAlgorithmProgress: async (algorithmId: string) => {
-      const r = await repo.getAlgorithmProgress(algorithmId);
-      // DB rows (pre-counter-columns) lack exact exec/rec counters; normalize
-      // derives them from the rounded aggregates. Removed once the DB v2
-      // schema persists the counters natively (Fase 3).
-      return r ? normalizeAlgorithmProgress(r as unknown as AlgorithmProgressRecord) : null;
-    },
-    upsertAlgorithmProgress: async (p: AlgorithmProgressRecord) =>
-      normalizeAlgorithmProgress((await repo.upsertAlgorithmProgress(p)) as unknown as AlgorithmProgressRecord),
-    getAlgorithmProgressBySubset: async (subsetId: string) => {
-      const rows = await repo.getAlgorithmProgressBySubset(subsetId);
-      return rows.map((r) => normalizeAlgorithmProgress(r as unknown as AlgorithmProgressRecord));
-    },
-    getWeakestAlgorithms: async (subsetId: string, limit?: number) => {
-      const rows = await repo.getWeakestAlgorithms(subsetId, limit);
-      return rows.map((r) => normalizeAlgorithmProgress(r as unknown as AlgorithmProgressRecord));
-    },
-    getDueForReview: async (limit?: number) => {
-      const rows = await repo.getDueForReview(limit);
-      return rows.map((r) => normalizeAlgorithmProgress(r as unknown as AlgorithmProgressRecord));
-    },
-    getQueueCandidates: async (methodId?: string) => {
-      const rows = await repo.getQueueCandidates(methodId);
-      return rows.map((r) => ({
-        caseId: r.caseId,
-        subsetId: r.subsetId,
-        caseNumber: r.caseNumber,
-        caseName: r.caseName,
-        methodId: r.methodId,
-        subsetName: r.subsetName,
-        progress: r.progress
-          ? normalizeAlgorithmProgress(r.progress as unknown as AlgorithmProgressRecord)
-          : null,
-      })) as QueueCandidateRecord[];
-    },
-    getExerciseProgress: async (exerciseId: string, methodId: string, phaseId?: string) => {
-      const r = await repo.getExerciseProgress(exerciseId, methodId, phaseId);
-      return r ? normalizeExerciseProgress(r as unknown as ExerciseProgressRecord) : null;
-    },
-    upsertExerciseProgress: async (p: ExerciseProgressRecord) =>
-      normalizeExerciseProgress((await repo.upsertExerciseProgress(p)) as unknown as ExerciseProgressRecord),
-    getMethodExerciseProgress: async (methodId: string) => {
-      const rows = await repo.getMethodExerciseProgress(methodId);
-      return rows.map((r) => normalizeExerciseProgress(r as unknown as ExerciseProgressRecord));
-    },
+    getAlgorithmProgress: (algorithmId: string) => repo.getAlgorithmProgress(algorithmId),
+    upsertAlgorithmProgress: (p: AlgorithmProgressRecord) => repo.upsertAlgorithmProgress(p),
+    getAlgorithmProgressBySubset: (subsetId: string) => repo.getAlgorithmProgressBySubset(subsetId),
+    getWeakestAlgorithms: (subsetId: string, limit?: number) => repo.getWeakestAlgorithms(subsetId, limit),
+    getDueForReview: (limit?: number) => repo.getDueForReview(limit),
+    getQueueCandidates: (methodId?: string) => repo.getQueueCandidates(methodId),
+    getExerciseProgress: (exerciseId: string, methodId: string, phaseId?: string) =>
+      repo.getExerciseProgress(exerciseId, methodId, phaseId),
+    upsertExerciseProgress: (p: ExerciseProgressRecord) => repo.upsertExerciseProgress(p),
+    getMethodExerciseProgress: (methodId: string) => repo.getMethodExerciseProgress(methodId),
     getMethodMastery: (methodId: string) => repo.getMethodMastery(methodId),
+    getMethodProgress: (methodId: string) => repo.getMethodProgress(methodId),
     getPhaseStats: (methodId: string, phaseId: string) => repo.getPhaseStats(methodId, phaseId),
     createTrainingSession: (session) => repo.createTrainingSession(session),
     completeTrainingSession: (id: string, completedAt?: number) => repo.completeTrainingSession(id, completedAt),
