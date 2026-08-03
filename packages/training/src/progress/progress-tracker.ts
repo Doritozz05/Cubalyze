@@ -76,7 +76,15 @@ export interface AlgorithmProgressRecord {
   accuracy: number;
   bestTimeMs: number;
   avgTimeMs: number;
+  /** Total attempts (execution + recognition). Derived: execAttempts + recognitionAttempts. */
   totalAttempts: number;
+  /** Exact execution attempt count (time-based drills). */
+  execAttempts: number;
+  /** Exact execution correct count (drives `accuracy`). */
+  execCorrect: number;
+  /** Exact recognition correct count (drives `recognitionAccuracy`). */
+  recognitionCorrect: number;
+  /** Consecutive correct execution attempts. Recognition misses never reset it. */
   correctStreak: number;
   lastPracticedAt: number;
   srsNextReviewAt: number;
@@ -84,6 +92,8 @@ export interface AlgorithmProgressRecord {
   srsEaseFactor: number;
   recognitionAccuracy: number;
   recognitionAttempts: number;
+  /** Consecutive correct recognition attempts (independent of the exec streak). */
+  recognitionStreak: number;
   /** FSRS-lite: memory stability in days (0 = not yet FSRS-tracked). */
   srsStability: number;
   /** FSRS-lite: intrinsic difficulty 1-10. */
@@ -115,6 +125,10 @@ export interface ExerciseProgressRecord {
   phaseId?: string;
   totalSessions: number;
   totalAttempts: number;
+  /** Exact execution attempt count (time-bearing drills). */
+  execAttempts: number;
+  /** Exact execution correct count (drives exercise-level accuracy). */
+  execCorrect: number;
   bestAccuracy: number;
   bestTimeMs: number;
   avgTimeMs: number;
@@ -198,25 +212,88 @@ function verdictToQuality(verdict: AttemptVerdict, timeMs: number, bestTimeMs: n
 
 // ─── Mastery Calculation ──────────────────────────────────────────────────
 
-function computeMastery(
+/**
+ * Mastery weights — single source of truth for how mastery balances
+ * accuracy, consistency (streak) and speed. Exported so the UI renders
+ * the exact same numbers the tracker computes.
+ */
+export const MASTERY_WEIGHTS = {
+  accuracy: 0.5,
+  streak: 0.2,
+  speed: 0.3,
+} as const;
+
+/**
+ * Compute a 0-100 mastery score from per-kind counters.
+ *
+ * - accuracyScore: correct / attempts (the caller passes EXECUTION-ONLY or
+ *   RECOGNITION-ONLY counters — never a mixed denominator).
+ * - streakScore: capped at 10 consecutive correct (0-100).
+ * - speedScore: 100 at the best time, 0 at 2× best or slower.
+ */
+export function computeMastery(
   correctCount: number,
   totalAttempts: number,
   currentStreak: number,
   avgTimeRatio: number, // avgTimeMs / bestTimeMs (1.0 = at best, higher = slower)
 ): number {
-  if (totalAttempts === 0) return 0;
-
-  const accuracyWeight = 0.5;
-  const streakWeight = 0.2;
-  const speedWeight = 0.3;
+  if (totalAttempts <= 0) return 0;
 
   const accuracyScore = (correctCount / totalAttempts) * 100;
   const streakScore = Math.min(currentStreak, 10) * 10; // 0-100, caps at 10 streak
   const speedScore = Math.max(0, Math.min(100, (2 - avgTimeRatio) * 100)); // 1.0 ratio = 100, 2.0+ = 0
 
   return Math.round(
-    accuracyScore * accuracyWeight + streakScore * streakWeight + speedScore * speedWeight,
+    accuracyScore * MASTERY_WEIGHTS.accuracy +
+      streakScore * MASTERY_WEIGHTS.streak +
+      speedScore * MASTERY_WEIGHTS.speed,
   );
+}
+
+// ─── Counter normalization (pre-v2 records lack exact exec/rec counters) ──
+
+/**
+ * Derive exact execution/recognition counters from a possibly-legacy record
+ * (rows persisted before the counter columns existed). Idempotent — records
+ * that already carry exact counters pass through untouched.
+ */
+export function normalizeAlgorithmProgress(p: AlgorithmProgressRecord): AlgorithmProgressRecord {
+  const recAttempts = p.recognitionAttempts ?? 0;
+  const execAttempts = p.execAttempts ?? Math.max((p.totalAttempts ?? 0) - recAttempts, 0);
+  return {
+    ...p,
+    execAttempts,
+    execCorrect: p.execCorrect ?? Math.round(((p.accuracy ?? 0) / 100) * execAttempts),
+    recognitionCorrect:
+      p.recognitionCorrect ?? Math.round(((p.recognitionAccuracy ?? 0) / 100) * recAttempts),
+    recognitionStreak: p.recognitionStreak ?? 0,
+    totalAttempts: execAttempts + recAttempts,
+  };
+}
+
+/** Derive exact exercise-level counters from a possibly-legacy record. */
+export function normalizeExerciseProgress(p: ExerciseProgressRecord): ExerciseProgressRecord {
+  return {
+    ...p,
+    execAttempts: p.execAttempts ?? (p.totalAttempts ?? 0),
+    execCorrect: p.execCorrect ?? 0,
+  };
+}
+
+function execCountersOf(prev?: AlgorithmProgressRecord | null): {
+  execAttempts: number;
+  execCorrect: number;
+} {
+  const p = prev ? normalizeAlgorithmProgress(prev) : null;
+  return { execAttempts: p?.execAttempts ?? 0, execCorrect: p?.execCorrect ?? 0 };
+}
+
+function recCountersOf(prev?: AlgorithmProgressRecord | null): {
+  recAttempts: number;
+  recCorrect: number;
+} {
+  const p = prev ? normalizeAlgorithmProgress(prev) : null;
+  return { recAttempts: p?.recognitionAttempts ?? 0, recCorrect: p?.recognitionCorrect ?? 0 };
 }
 
 // ─── Progress Tracker ─────────────────────────────────────────────────────
@@ -260,6 +337,7 @@ export class ProgressTracker {
       exerciseId, methodId, phaseId, caseId, timeMs, verdict, playMode, scramble,
       metricKind = 'execution', advanceSRS = false, moveCount, optimalMoves, tps, rotationCount, reviewGrade,
     } = params;
+    const isExecutionAttempt = metricKind === 'execution';
 
     // Insert the raw attempt record (with efficiency metadata when available)
     const now = Date.now();
@@ -283,23 +361,30 @@ export class ProgressTracker {
     });
 
     // Update exercise progress — ALWAYS (even without caseId).
-    // Recognition quizzes persist timeMs=0; guard time fields so they never
-    // corrupt exercise best/avg time.
-    const exPrev = await this.repo.getExerciseProgress(exerciseId, methodId, phaseId);
-    const hasTime = timeMs > 0;
+    // Only EXECUTION attempts with a real time carry the time metrics: avg is
+    // computed over exec-only attempts so recognition quizzes (timeMs=0) can
+    // never dilute exercise best/avg time. totalSessions starts at 0 — it is
+    // incremented when a training session completes, never per attempt.
+    const rawEx = await this.repo.getExerciseProgress(exerciseId, methodId, phaseId);
+    const exPrev = rawEx ? normalizeExerciseProgress(rawEx) : null;
+    const hasTime = timeMs > 0 && isExecutionAttempt;
+    const exPrevExecAttempts = exPrev?.execAttempts ?? 0;
+    const exExecAttempts = exPrevExecAttempts + (hasTime ? 1 : 0);
     const exProgress: ExerciseProgressRecord = {
       exerciseId,
       methodId,
       phaseId,
-      totalSessions: exPrev?.totalSessions ?? 1,
+      totalSessions: exPrev?.totalSessions ?? 0,
       totalAttempts: (exPrev?.totalAttempts ?? 0) + 1,
+      execAttempts: exExecAttempts,
+      execCorrect: (exPrev?.execCorrect ?? 0) + (hasTime && verdict === "correct" ? 1 : 0),
       bestAccuracy: Math.max(exPrev?.bestAccuracy ?? 0, verdict === "correct" ? 100 : 0),
       bestTimeMs: hasTime
         ? exPrev && exPrev.bestTimeMs > 0 ? Math.min(exPrev.bestTimeMs, timeMs) : timeMs
         : (exPrev?.bestTimeMs ?? 0),
       avgTimeMs: hasTime
-        ? exPrev
-          ? Math.round((exPrev.avgTimeMs * (exPrev.totalAttempts) + timeMs) / ((exPrev.totalAttempts) + 1))
+        ? exPrev && exPrevExecAttempts > 0
+          ? Math.round((exPrev.avgTimeMs * exPrevExecAttempts + timeMs) / exExecAttempts)
           : timeMs
         : (exPrev?.avgTimeMs ?? 0),
       lastPracticedAt: now,
@@ -309,7 +394,8 @@ export class ProgressTracker {
     if (!caseId) return null;
 
     // Update algorithm progress
-    const prev = await this.repo.getAlgorithmProgress(caseId);
+    const prevRaw = await this.repo.getAlgorithmProgress(caseId);
+    const prev = prevRaw ? normalizeAlgorithmProgress(prevRaw) : null;
     // A practice attempt must never clobber an existing FSRS schedule with
     // SM-2 math: drilling a case only updates mastery/accuracy/time. Once a
     // case has been graded (or entered an FSRS state), its review date,
@@ -319,16 +405,14 @@ export class ProgressTracker {
     const hasFSRS = prev
       ? (prev.srsReviewCount ?? 0) > 0 || (prev.srsStability ?? 0) > 0 || (prev.srsState ?? "new") !== "new"
       : false;
-    const correctStreak = verdict === "correct" ? (prev?.correctStreak ?? 0) + 1 : 0;
-    const totalAttempts = (prev?.totalAttempts ?? 0) + 1;
 
     if (metricKind === 'recognition') {
       // Recognition: only accuracy + SRS. Preserve execution time metrics untouched.
-      const recAttempts = (prev?.recognitionAttempts ?? 0) + 1;
-      const recCorrect = prev
-        ? Math.round((prev.recognitionAccuracy / 100) * prev.recognitionAttempts) + (verdict === "correct" ? 1 : 0)
-        : (verdict === "correct" ? 1 : 0);
+      const { recAttempts: prevRecAttempts, recCorrect: prevRecCorrect } = recCountersOf(prev);
+      const recAttempts = prevRecAttempts + 1;
+      const recCorrect = prevRecCorrect + (verdict === "correct" ? 1 : 0);
       const recognitionAccuracy = Math.round((recCorrect / recAttempts) * 100);
+      const recognitionStreak = verdict === "correct" ? (prev?.recognitionStreak ?? 0) + 1 : 0;
 
       const quality = verdictToQuality(verdict, 0, 0); // no time signal → 4/2
       const { ease, interval } = computeSM2(
@@ -337,8 +421,21 @@ export class ProgressTracker {
         prev?.srsIntervalDays ?? 0,
       );
 
-      // Mastery blends recognition accuracy (speed weight neutralized).
-      const mastery = computeMastery(recCorrect, recAttempts, correctStreak, 1);
+      // Mastery = max(recognition mastery, execution mastery). Recognition uses
+      // its own counters + its own streak; execution mastery (recomputed from
+      // prev counters) is preserved, so a recognition miss can never erode
+      // drill progress and vice versa.
+      const recMastery = computeMastery(recCorrect, recAttempts, recognitionStreak, 1);
+      const { execAttempts: prevExecAttempts, execCorrect: prevExecCorrect } = execCountersOf(prev);
+      const execMastery = prevExecAttempts > 0
+        ? computeMastery(
+            prevExecCorrect,
+            prevExecAttempts,
+            prev?.correctStreak ?? 0,
+            prev && prev.bestTimeMs > 0 ? prev.avgTimeMs / prev.bestTimeMs : 1,
+          )
+        : 0;
+      const mastery = Math.max(execMastery, recMastery);
 
       // When advanceSRS is set (standalone Recognize quiz), a recognition also
       // advances the FSRS state machine — correct → "good", miss → "again" —
@@ -376,8 +473,10 @@ export class ProgressTracker {
         accuracy: prev?.accuracy ?? 0, // execution accuracy untouched
         bestTimeMs: prev?.bestTimeMs ?? 0,
         avgTimeMs: prev?.avgTimeMs ?? 0,
-        totalAttempts,
-        correctStreak,
+        totalAttempts: prevExecAttempts + recAttempts,
+        execAttempts: prevExecAttempts,
+        execCorrect: prevExecCorrect,
+        correctStreak: prev?.correctStreak ?? 0, // exec streak preserved
         lastPracticedAt: now,
         // advanceSRS writes the FSRS schedule; otherwise preserve an existing
         // FSRS schedule, only bootstrapping SM-2 for never-graded cases.
@@ -388,6 +487,8 @@ export class ProgressTracker {
         srsEaseFactor: hasFSRS ? (prev?.srsEaseFactor ?? ease) : ease,
         recognitionAccuracy,
         recognitionAttempts: recAttempts,
+        recognitionCorrect: recCorrect,
+        recognitionStreak,
         srsStability: fsrs.srsStability ?? prev?.srsStability ?? 0,
         srsDifficulty: fsrs.srsDifficulty ?? prev?.srsDifficulty ?? 5,
         srsState: fsrs.srsState ?? prev?.srsState ?? "new",
@@ -400,23 +501,29 @@ export class ProgressTracker {
       return progress;
     }
 
-    // Execution path. Reconstruct counts over EXECUTION-ONLY attempts so that
-    // interleaved recognition attempts (which share totalAttempts) never
-    // corrupt execution accuracy or average time.
-    const execAttempts = prev ? Math.max((prev.totalAttempts ?? 0) - (prev.recognitionAttempts ?? 0), 0) : 0;
+    // Execution path — exact counters with an EXECUTION-ONLY denominator, so
+    // interleaved recognition attempts (which share totalAttempts) can never
+    // dilute execution accuracy, average time, or mastery.
+    const { execAttempts: prevExecAttempts, execCorrect: prevExecCorrect } = execCountersOf(prev);
+    const execAttempts = prevExecAttempts + 1;
+    const execCorrect = prevExecCorrect + (verdict === "correct" ? 1 : 0);
+    const accuracy = Math.round((execCorrect / execAttempts) * 100);
     const bestTimeMs = prev ? (prev.bestTimeMs > 0 ? Math.min(prev.bestTimeMs, timeMs) : timeMs) : timeMs;
-    const correctCount = prev && execAttempts > 0
-      ? Math.round((prev.accuracy / 100) * execAttempts) + (verdict === "correct" ? 1 : 0)
-      : (verdict === "correct" ? 1 : 0);
-    const execTotal = execAttempts + 1;
-    const accuracy = Math.round((correctCount / execTotal) * 100);
-    const avgTimeMs = prev && execAttempts > 0
-      ? Math.round((prev.avgTimeMs * execAttempts + timeMs) / execTotal)
+    const avgTimeMs = prev && prevExecAttempts > 0
+      ? Math.round((prev.avgTimeMs * prevExecAttempts + timeMs) / execAttempts)
       : timeMs;
 
+    const correctStreak = verdict === "correct" ? (prev?.correctStreak ?? 0) + 1 : 0;
     const quality = verdictToQuality(verdict, timeMs, bestTimeMs);
     const avgTimeRatio = bestTimeMs > 0 ? avgTimeMs / bestTimeMs : 1;
-    const mastery = computeMastery(correctCount, totalAttempts, correctStreak, avgTimeRatio);
+    const execMastery = computeMastery(execCorrect, execAttempts, correctStreak, avgTimeRatio);
+    const { recAttempts: prevRecAttempts, recCorrect: prevRecCorrect } = recCountersOf(prev);
+    const recMastery = prevRecAttempts > 0
+      ? computeMastery(prevRecCorrect, prevRecAttempts, prev?.recognitionStreak ?? 0, 1)
+      : 0;
+    // Persisted mastery = best of both dimensions: an improving drill never
+    // drops because a recognition quiz went badly, and vice versa.
+    const mastery = Math.max(execMastery, recMastery);
 
     const { ease, interval } = computeSM2(
       quality,
@@ -430,7 +537,9 @@ export class ProgressTracker {
       accuracy,
       bestTimeMs,
       avgTimeMs,
-      totalAttempts,
+      totalAttempts: execAttempts + prevRecAttempts,
+      execAttempts,
+      execCorrect,
       correctStreak,
       lastPracticedAt: now,
       // Drilling a graded case must not move its review date: the FSRS
@@ -443,6 +552,8 @@ export class ProgressTracker {
       srsEaseFactor: hasFSRS ? (prev?.srsEaseFactor ?? ease) : ease,
       recognitionAccuracy: prev?.recognitionAccuracy ?? 0,
       recognitionAttempts: prev?.recognitionAttempts ?? 0,
+      recognitionCorrect: prevRecCorrect,
+      recognitionStreak: prev?.recognitionStreak ?? 0,
       srsStability: prev?.srsStability ?? 0,
       srsDifficulty: prev?.srsDifficulty ?? 5,
       srsState: prev?.srsState ?? "new",
@@ -475,7 +586,8 @@ export class ProgressTracker {
     now?: number;
   }): Promise<AlgorithmProgressRecord> {
     const now = params.now ?? Date.now();
-    const prev = await this.repo.getAlgorithmProgress(params.caseId);
+    const prevRaw = await this.repo.getAlgorithmProgress(params.caseId);
+    const prev = prevRaw ? normalizeAlgorithmProgress(prevRaw) : null;
 
     // Bootstrap an FSRS record from whatever we know (defaults for never-reviewed cases).
     const record: FSRSRecord = prev ? toFSRSRecord(prev) : { ...FSRS_DEFAULTS };
@@ -488,6 +600,10 @@ export class ProgressTracker {
       bestTimeMs: prev?.bestTimeMs ?? 0,
       avgTimeMs: prev?.avgTimeMs ?? 0,
       totalAttempts: prev?.totalAttempts ?? 0,
+      execAttempts: prev?.execAttempts ?? 0,
+      execCorrect: prev?.execCorrect ?? 0,
+      recognitionCorrect: prev?.recognitionCorrect ?? 0,
+      recognitionStreak: prev?.recognitionStreak ?? 0,
       correctStreak: prev?.correctStreak ?? 0,
       lastPracticedAt: prev?.lastPracticedAt ?? now,
       srsNextReviewAt: next.nextReviewAt,
@@ -513,7 +629,7 @@ export class ProgressTracker {
    */
   async getCaseProgress(algorithmId: string): Promise<AlgorithmProgressRecord> {
     const progress = await this.repo.getAlgorithmProgress(algorithmId);
-    return (
+    return normalizeAlgorithmProgress(
       progress ?? {
         algorithmId,
         mastery: 0,
@@ -521,6 +637,10 @@ export class ProgressTracker {
         bestTimeMs: 0,
         avgTimeMs: 0,
         totalAttempts: 0,
+        execAttempts: 0,
+        execCorrect: 0,
+        recognitionCorrect: 0,
+        recognitionStreak: 0,
         correctStreak: 0,
         lastPracticedAt: 0,
         srsNextReviewAt: 0,

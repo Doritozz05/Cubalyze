@@ -42,6 +42,10 @@ function progress(overrides: Partial<AlgorithmProgressRecord> = {}): AlgorithmPr
     bestTimeMs: 1200,
     avgTimeMs: 1300,
     totalAttempts: 10,
+    execAttempts: 5,
+    execCorrect: 5,
+    recognitionCorrect: 3,
+    recognitionStreak: 3,
     correctStreak: 5,
     lastPracticedAt: NOW - 2 * DAY_MS,
     srsNextReviewAt: NOW + DAY_MS, // not due yet by default

@@ -1,4 +1,10 @@
-export { ProgressTracker } from './progress-tracker';
+export {
+  ProgressTracker,
+  computeMastery,
+  MASTERY_WEIGHTS,
+  normalizeAlgorithmProgress,
+  normalizeExerciseProgress,
+} from './progress-tracker';
 export type {
   ITrainingProgressRepo,
   TrainingAttemptRecord,

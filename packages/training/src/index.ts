@@ -49,6 +49,10 @@ export {
   scoreCandidate,
   DEFAULT_NEW_PER_DAY,
   computeSRSInsights,
+  computeMastery,
+  MASTERY_WEIGHTS,
+  normalizeAlgorithmProgress,
+  normalizeExerciseProgress,
 } from './progress';
 export type {
   ITrainingProgressRepo,
