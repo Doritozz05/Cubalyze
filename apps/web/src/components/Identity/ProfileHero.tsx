@@ -9,23 +9,23 @@ import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
 
 /**
- * Rainbow pill styles per phase token (static strings so Tailwind sees the
- * full class names). The tint + border carry the color; text stays `ink` for
- * legibility in both themes — same palette family as the CFOP timeline dots.
+ * Rainbow badge styles per phase token (static strings so Tailwind sees the
+ * full class names). Solid colored text + semi-transparent tinted background,
+ * no border and no dot — same palette family as the CFOP timeline dots.
  */
-const BADGE_COLOR_STYLES: Record<string, { pill: string; dot: string }> = {
-  "phase-blue": { pill: "border-phase-blue/40 bg-phase-blue/15", dot: "bg-phase-blue" },
-  "phase-emerald": { pill: "border-phase-emerald/40 bg-phase-emerald/15", dot: "bg-phase-emerald" },
-  "phase-teal": { pill: "border-phase-teal/40 bg-phase-teal/15", dot: "bg-phase-teal" },
-  "phase-amber": { pill: "border-phase-amber/40 bg-phase-amber/15", dot: "bg-phase-amber" },
-  "phase-violet": { pill: "border-phase-violet/40 bg-phase-violet/15", dot: "bg-phase-violet" },
-  "phase-purple": { pill: "border-phase-purple/40 bg-phase-purple/15", dot: "bg-phase-purple" },
-  "phase-indigo": { pill: "border-phase-indigo/40 bg-phase-indigo/15", dot: "bg-phase-indigo" },
-  "phase-rose": { pill: "border-phase-rose/40 bg-phase-rose/15", dot: "bg-phase-rose" },
-  "phase-cyan": { pill: "border-phase-cyan/40 bg-phase-cyan/15", dot: "bg-phase-cyan" },
-  "phase-orange": { pill: "border-phase-orange/40 bg-phase-orange/15", dot: "bg-phase-orange" },
-  "phase-sky": { pill: "border-phase-sky/40 bg-phase-sky/15", dot: "bg-phase-sky" },
-  "phase-pink": { pill: "border-phase-pink/40 bg-phase-pink/15", dot: "bg-phase-pink" },
+const BADGE_COLOR_STYLES: Record<string, { pill: string; text: string }> = {
+  "phase-blue": { pill: "bg-phase-blue/15", text: "text-phase-blue" },
+  "phase-emerald": { pill: "bg-phase-emerald/15", text: "text-phase-emerald" },
+  "phase-teal": { pill: "bg-phase-teal/15", text: "text-phase-teal" },
+  "phase-amber": { pill: "bg-phase-amber/15", text: "text-phase-amber" },
+  "phase-violet": { pill: "bg-phase-violet/15", text: "text-phase-violet" },
+  "phase-purple": { pill: "bg-phase-purple/15", text: "text-phase-purple" },
+  "phase-indigo": { pill: "bg-phase-indigo/15", text: "text-phase-indigo" },
+  "phase-rose": { pill: "bg-phase-rose/15", text: "text-phase-rose" },
+  "phase-cyan": { pill: "bg-phase-cyan/15", text: "text-phase-cyan" },
+  "phase-orange": { pill: "bg-phase-orange/15", text: "text-phase-orange" },
+  "phase-sky": { pill: "bg-phase-sky/15", text: "text-phase-sky" },
+  "phase-pink": { pill: "bg-phase-pink/15", text: "text-phase-pink" },
 };
 
 const DEFAULT_BADGE_STYLE = BADGE_COLOR_STYLES["phase-blue"];
@@ -146,16 +146,13 @@ export function ProfileHero({
                       key={badge.puzzle}
                       title={`PB ${badge.puzzleLabel} is Sub ${badge.thresholdLabel}`}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[0.65rem] font-semibold nums",
+                        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[0.65rem] font-semibold nums",
                         style.pill,
+                        style.text,
                       )}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={cn("size-1.5 rounded-full", style.dot)}
-                      />
                       Sub {badge.thresholdLabel}
-                      <span aria-hidden="true" className="text-ink-3">
+                      <span aria-hidden="true" className="opacity-60">
                         ·
                       </span>
                       <span className="font-sans tracking-normal">
@@ -165,7 +162,7 @@ export function ProfileHero({
                   );
                 })}
                 {badges.length > 4 && (
-                  <span className="rounded-md border border-line px-2.5 py-1 text-[0.65rem] font-medium text-ink-3">
+                  <span className="rounded-md bg-surface-2 px-2.5 py-1 text-[0.65rem] font-medium text-ink-3">
                     +{badges.length - 4}
                   </span>
                 )}
