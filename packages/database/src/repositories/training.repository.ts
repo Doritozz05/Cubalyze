@@ -15,6 +15,7 @@ import type {
   QueueCandidateRecord,
   TrainingSessionProgressRecord,
 } from "@cubeforge/training";
+import { withTransaction } from "./transaction.js";
 
 /** Generate a unique ID without external dependencies */
 function generateId(): string {
@@ -360,20 +361,24 @@ export class TrainingRepository {
   }
 
   async completeTrainingSession(id: string, completedAt = Date.now()): Promise<TrainingSessionRecord | null> {
-    await this.db(
-      `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed' WHERE id = ?`,
-      [completedAt, completedAt, id],
-    );
-    const rows = await this.db(
-      `SELECT ts.*, COUNT(ta.id) AS total_attempts,
-         SUM(CASE WHEN ta.verdict = 'correct' THEN 1 ELSE 0 END) AS correct_count,
-         AVG(CASE WHEN ta.time_ms > 0 THEN ta.time_ms END) AS avg_time_ms
-       FROM training_sessions ts LEFT JOIN training_attempts ta ON ta.session_id = ts.id
-       WHERE ts.id = ? GROUP BY ts.id`,
-      [id],
-    );
-    if (rows.length === 0) return null;
-    return rowToTrainingSession(rows[0]);
+    // The close (UPDATE) and the derived-aggregate read (SELECT) are atomic
+    // so a session can never be closed without its final stats.
+    return withTransaction(this.db, async () => {
+      await this.db(
+        `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed' WHERE id = ?`,
+        [completedAt, completedAt, id],
+      );
+      const rows = await this.db(
+        `SELECT ts.*, COUNT(ta.id) AS total_attempts,
+           SUM(CASE WHEN ta.verdict = 'correct' THEN 1 ELSE 0 END) AS correct_count,
+           AVG(CASE WHEN ta.time_ms > 0 THEN ta.time_ms END) AS avg_time_ms
+         FROM training_sessions ts LEFT JOIN training_attempts ta ON ta.session_id = ts.id
+         WHERE ts.id = ? GROUP BY ts.id`,
+        [id],
+      );
+      if (rows.length === 0) return null;
+      return rowToTrainingSession(rows[0]);
+    });
   }
 
   async getTrainingSessions(methodId: string, phaseId?: string, limit = 50): Promise<TrainingSessionRecord[]> {
@@ -444,6 +449,9 @@ export class TrainingRepository {
   }
 
   async upsertAlgorithmProgress(progress: AlgorithmProgressRecord): Promise<AlgorithmProgress> {
+    // Read-modify-write is atomic: the read and the write share one
+    // transaction, so a concurrent attempt can never be lost between them.
+    return withTransaction(this.db, async () => {
     const existing = await this.getAlgorithmProgress(progress.algorithmId);
     if (existing) {
       await this.db(
@@ -493,6 +501,7 @@ export class TrainingRepository {
       );
       return { ...progress, id };
     }
+    });
   }
 
   async getAlgorithmProgressBySubset(subsetId: string): Promise<AlgorithmProgress[]> {
@@ -600,6 +609,7 @@ export class TrainingRepository {
   }
 
   async upsertExerciseProgress(progress: ExerciseProgressRecord): Promise<ExerciseProgress> {
+    return withTransaction(this.db, async () => {
     const existing = await this.getExerciseProgress(
       progress.exerciseId,
       progress.methodId,
@@ -635,6 +645,7 @@ export class TrainingRepository {
       );
       return { ...progress, id };
     }
+    });
   }
 
   async getMethodExerciseProgress(methodId: string): Promise<ExerciseProgress[]> {
@@ -713,7 +724,10 @@ export class TrainingRepository {
    * Execution and recognition are counted SEPARATELY: `accuracy` (and
    * `execAccuracy`) is execution-only, so recognition quizzes can never
    * dilute the drill % a user sees. Recognition attempts still count toward
-   * `totalAttempts`/`recAttempts`/`recAccuracy`. Time and efficiency
+   * `totalAttempts`/`recAttempts`/`recAccuracy`. Rows with verdict
+   * 'skipped' (e.g. honest Full Solve phase splits — real timing, no
+   * correctness verdict) are EXCLUDED from the exec/rec denominators so
+   * they can never dilute accuracy or fail rate. Time and efficiency
    * aggregates are guarded (time_ms > 0 / optimal_moves > 0) so recognition
    * rows with time_ms=0 never corrupt them.
    */
@@ -721,9 +735,9 @@ export class TrainingRepository {
     const rows = await this.db(
       `SELECT
          COUNT(*) as total_attempts,
-         SUM(CASE WHEN metric_kind = 'execution' THEN 1 ELSE 0 END) as exec_attempts,
+         SUM(CASE WHEN metric_kind = 'execution' AND verdict != 'skipped' THEN 1 ELSE 0 END) as exec_attempts,
          SUM(CASE WHEN metric_kind = 'execution' AND verdict = 'correct' THEN 1 ELSE 0 END) as exec_correct,
-         SUM(CASE WHEN metric_kind = 'recognition' THEN 1 ELSE 0 END) as rec_attempts,
+         SUM(CASE WHEN metric_kind = 'recognition' AND verdict != 'skipped' THEN 1 ELSE 0 END) as rec_attempts,
          SUM(CASE WHEN metric_kind = 'recognition' AND verdict = 'correct' THEN 1 ELSE 0 END) as rec_correct,
          AVG(CASE WHEN time_ms > 0 THEN time_ms END) as avg_time_ms,
          MIN(CASE WHEN time_ms > 0 THEN time_ms END) as best_time_ms,

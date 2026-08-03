@@ -93,8 +93,14 @@ describe('findSubsetId', () => {
 describe('masteryLevel', () => {
   it('labels mastery consistently', () => {
     expect(masteryLevel(0)).toBe('new');
-    expect(masteryLevel(50)).toBe('beginner');
-    expect(masteryLevel(70)).toBe('learning');
-    expect(masteryLevel(95)).toBe('mastered');
+    expect(masteryLevel(29)).toBe('new');
+    expect(masteryLevel(30)).toBe('learning');
+    expect(masteryLevel(50)).toBe('learning');
+    expect(masteryLevel(70)).toBe('practicing');
+    expect(masteryLevel(85)).toBe('practicing');
+    expect(masteryLevel(90)).toBe('mastered');
+    expect(masteryLevel(94)).toBe('mastered');
+    expect(masteryLevel(95)).toBe('expert');
+    expect(masteryLevel(100)).toBe('expert');
   });
 });

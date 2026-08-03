@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { initDB, AlgorithmsRepository, TrainingRepository } from "@cubeforge/database";
 import { seedIfEmpty } from "@cubeforge/algorithm-db";
 import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord } from "@cubeforge/training";
-import { ProgressTracker, normalizeAlgorithmProgress } from "@cubeforge/training";
+import type { TrainingAttempt } from "@cubeforge/database";
+import { ProgressTracker, normalizeAlgorithmProgress, DEFAULT_EASE_FACTOR, FSRS_DEFAULTS } from "@cubeforge/training";
 import type { AttemptVerdict, PlayMode } from "@cubeforge/training";
 
 // ─── Adapter: wraps TrainingRepository into ITrainingProgressRepo ──────────
@@ -128,6 +129,7 @@ export interface UseTrainingProgressResult {
   getSubsetProgress: (subsetId: string) => Promise<AlgorithmProgressRecord[]>;
   getMethodMastery: (methodId: string) => Promise<number>;
   getDueForReview: (limit?: number) => Promise<AlgorithmProgressRecord[]>;
+  getAttemptsByExercise: (exerciseId: string, limit?: number) => Promise<TrainingAttempt[]>;
   getTodayQueue: (options?: { methodId?: string; limit?: number }) => Promise<QueueItem[]>;
   getSRSInsights: (methodId?: string) => Promise<SRSInsights>;
   getMethodExerciseProgress: (methodId: string) => Promise<ExerciseProgressRecord[]>;
@@ -223,9 +225,9 @@ export function useTrainingProgress(): UseTrainingProgressResult {
           lastPracticedAt: 0,
           srsNextReviewAt: 0,
           srsIntervalDays: 0,
-          srsEaseFactor: 2.5,
-          srsStability: 0,
-          srsDifficulty: 5,
+          srsEaseFactor: DEFAULT_EASE_FACTOR,
+          srsStability: FSRS_DEFAULTS.stability,
+          srsDifficulty: FSRS_DEFAULTS.difficulty,
           srsState: "new",
           srsLapses: 0,
           srsReviewCount: 0,
@@ -257,6 +259,17 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     async (limit: number = 20) => {
       if (!tracker) return [] as AlgorithmProgressRecord[];
       return tracker.getDueForReview(limit);
+    },
+    [tracker],
+  );
+
+  const getAttemptsByExercise = useCallback(
+    async (exerciseId: string, limit?: number): Promise<TrainingAttempt[]> => {
+      if (!tracker) return [];
+      // The DB rows carry the rich per-attempt metadata (moveCount, optimalMoves,
+      // phaseId) the phase-target views render; the package's pure record type
+      // omits those DB-only columns, so cast across the boundary.
+      return (await tracker.getAttemptsByExercise(exerciseId, limit)) as unknown as TrainingAttempt[];
     },
     [tracker],
   );
@@ -346,6 +359,7 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     getSubsetProgress,
     getMethodMastery,
     getDueForReview,
+    getAttemptsByExercise,
     getTodayQueue,
     getSRSInsights,
     getMethodExerciseProgress,

@@ -38,7 +38,7 @@ export {
   getPhaseModes,
   PHASE_MODES,
   masteryLevel,
-  MASTERY_LABEL_TEXT,
+  MASTERY_LEVEL_LABELS,
   buildExerciseCatalog,
 } from './exercises';
 export type {
@@ -63,12 +63,12 @@ export {
   intervalFor,
   isDue,
   fsrsReview,
-  REQUEST_RETENTION,
   buildDailyQueue,
   scoreCandidate,
   DEFAULT_NEW_PER_DAY,
   computeSRSInsights,
   computeMastery,
+  DEFAULT_EASE_FACTOR,
   MASTERY_WEIGHTS,
   normalizeAlgorithmProgress,
   normalizeExerciseProgress,

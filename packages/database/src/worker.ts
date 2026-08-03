@@ -11,6 +11,47 @@ let db: any = null;
 /** Whether the database is backed by OPFS (persistent) or memory (volatile). */
 let _storageType: 'opfs' | 'memory' = 'memory';
 
+/**
+ * Data safety net for the baseline v2 wipe (migration 022): before the
+ * legacy tables are dropped and recreated, copy any existing rows into
+ * `_backup_v1_*` tables so nothing is silently lost. Idempotent — runs once
+ * per table (no-op when the table no longer exists or the backup exists).
+ */
+function backupLegacyTables(): void {
+  if (!db) throw new Error('Database not initialized');
+  const tables = [
+    'solves',
+    'sessions',
+    'training_attempts',
+    'algorithm_progress',
+    'exercise_progress',
+    'training_sessions',
+    'algorithms',
+  ];
+  for (const t of tables) {
+    const exists = db.exec({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+      bind: [t],
+      rowMode: 'array',
+    }) as unknown[][];
+    if (!exists || exists.length === 0) continue;
+    const backupName = `_backup_v1_${t}`;
+    const hasBackup = db.exec({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+      bind: [backupName],
+      rowMode: 'array',
+    }) as unknown[][];
+    if (hasBackup && hasBackup.length > 0) continue;
+    try {
+      db.exec(`CREATE TABLE "${backupName}" AS SELECT * FROM "${t}"`);
+      console.log(`[DB Worker] Backed up legacy table ${t} → ${backupName}`);
+    } catch (e) {
+      // Non-fatal: a backup failure must never block migrations.
+      console.warn(`[DB Worker] backup of ${t} failed (non-fatal):`, e);
+    }
+  }
+}
+
 function runMigrations(): void {
   if (!db) throw new Error('Database not initialized');
 
@@ -77,6 +118,10 @@ export const DBWorker = {
       } catch {
         // In-memory DBs cannot switch to WAL — not an error.
       }
+
+      // Preserve v1 data before the baseline v2 migration wipes it (first run
+      // after upgrading from main only; idempotent afterwards).
+      backupLegacyTables();
 
       runMigrations();
 

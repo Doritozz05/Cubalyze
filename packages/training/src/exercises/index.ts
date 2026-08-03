@@ -8,7 +8,7 @@ export {
   getPhaseModes,
   PHASE_MODES,
   masteryLevel,
-  MASTERY_LABEL_TEXT,
+  MASTERY_LEVEL_LABELS,
   buildExerciseCatalog,
 } from './catalog';
 export type {

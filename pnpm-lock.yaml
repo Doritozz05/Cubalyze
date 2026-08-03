@@ -949,6 +949,9 @@ importers:
       '@cubeforge/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
+      '@cubeforge/math-core':
+        specifier: workspace:*
+        version: link:../math-core
       eslint:
         specifier: ^10.7.0
         version: 10.7.0(jiti@2.7.0)

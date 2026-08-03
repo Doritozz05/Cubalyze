@@ -21,7 +21,6 @@ import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
-import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import { generateRandomSetup, EXERCISE_IDS } from "@cubeforge/training";
@@ -32,8 +31,7 @@ import {
   StatChip,
   TouchAside,
 } from "./components";
-import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import { useTrainingSession } from "@/hooks/useTrainingSession";
+import { useTrainingEngine } from "@/hooks/useTrainingEngine";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
 import {
   Eye,
@@ -53,16 +51,6 @@ import {
 
 type DrillMode = "single" | "random" | "sequential" | "weakness";
 
-interface DrillAttempt {
-  id: string;
-  caseId: string;
-  caseLabel: string;
-  algorithm: string[];
-  timeMs: number;
-  correct: boolean;
-  timestamp: number;
-}
-
 /* ──────────────────────────────────────────────────────────────────────────
    Helpers
    ─────────────────────────────────────────────────────────────────────── */
@@ -76,11 +64,6 @@ function formatTime(ms: number): string {
 function calculateTps(moves: string[], ms: number): string {
   if (ms <= 0 || moves.length === 0) return "--";
   return ((moves.length / (ms / 1000))).toFixed(1);
-}
-
-let _attemptId = 0;
-function nextAttemptId(): string {
-  return `attempt-${++_attemptId}-${Date.now()}`;
 }
 
 const DRILL_MODES: { id: DrillMode; label: string; description: string }[] = [
@@ -134,32 +117,55 @@ export function AlgorithmDrillView({
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(preselectedCaseId ?? null);
   const [showAlgorithm, setShowAlgorithm] = useState(false);
   const [revealIfFail, setRevealIfFail] = useState(false);
-  const [attempts, setAttempts] = useState<DrillAttempt[]>([]);
   const [seqIndex, setSeqIndex] = useState(0);
   const [currentSetup, setCurrentSetup] = useState("");
-  const [showVerdict, setShowVerdict] = useState(false);
   const [setupVersion, setSetupVersion] = useState(0);
 
   // ── Orientation (remaps scramble display to match cube orientation) ──
   const { remapScramble, orientation } = useOrientation();
 
-  // ── Drill timer (hold-to-arm, space key) ───────────────────────────────
-  const { phase, time, stoppedTime, press, release, reset, engine } = useDrillTimer();
+  // ── Smart cube connection, tracked before the engine so the persisted
+  //    session records smartCubeUsed=true once a cube is linked. ──
+  const [smartCubeConnected, setSmartCubeConnected] = useState(false);
+
+  // ── Training engine: session state machine + drill timer + DB + session ─
+  const engineApi = useTrainingEngine({
+    preset: {
+      exerciseId: EXERCISE_IDS.drill(subsetId),
+      methodId,
+      phaseId: _phaseId as string,
+      subsetId,
+    },
+    smartCubeUsed: smartCubeConnected,
+  });
+  const {
+    sessionState,
+    phase,
+    time,
+    stoppedTime,
+    press,
+    release,
+    reset,
+    timerEngine,
+    ready,
+    getSubsetProgress,
+    sessionId,
+    beginAttempt,
+    submitVerdict,
+    skip: skipAttempt,
+  } = engineApi;
 
   // ── Smart Cube wiring (BLE + scramble validation + auto-arm) ───────────
   const drillSmartCube = useDrillSmartCube({
-    engine,
+    engine: timerEngine,
     setupScramble: currentSetup,
   });
 
-  // Show verdict overlay when timer stops, hide when engine leaves stopped
   useEffect(() => {
-    if (phase === "stopped" && stoppedTime > 0) {
-      setShowVerdict(true);
-    } else if (phase !== "stopped") {
-      setShowVerdict(false);
+    if (drillSmartCube.smartCubeConnected !== smartCubeConnected) {
+      setSmartCubeConnected(drillSmartCube.smartCubeConnected);
     }
-  }, [phase, stoppedTime]);
+  }, [drillSmartCube.smartCubeConnected, smartCubeConnected]);
 
   // ── Visualization style (yellow-gray for OLL, full-color for PLL, etc.) ─
   const visualizationStyle = useMemo<VisualizationStyle>(() => {
@@ -185,14 +191,6 @@ export function AlgorithmDrillView({
   }), [hasSmartCube, scrambleVerification, drillSmartCube.validation.isScrambled]);
 
   // ── Real progress from DB ──────────────────────────────────────────────
-  const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
-  const { sessionId } = useTrainingSession({
-    exerciseId: EXERCISE_IDS.drill(subsetId),
-    methodId,
-    phaseId: _phaseId as string,
-    subsetId,
-    smartCubeUsed: hasSmartCube,
-  });
   const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
 
   useEffect(() => {
@@ -231,17 +229,22 @@ export function AlgorithmDrillView({
     [subsetCases, getProgress],
   );
 
-  const correctAttempts = attempts.filter((a) => a.correct);
+  // Attempts accumulate in the session machine (engine attempts with verdicts).
+  const attempts = sessionState.attempts;
+  // Verdict overlay shows while the drill timer is stopped with a captured time.
+  const showVerdict = phase === "stopped" && stoppedTime > 0;
+
+  const correctAttempts = attempts.filter((a) => a.verdict === "correct");
   const streak = useMemo(() => {
     let s = 0;
     for (let i = attempts.length - 1; i >= 0; i--) {
-      if (attempts[i].correct) s++; else break;
+      if (attempts[i].verdict === "correct") s++; else break;
     }
     return s;
   }, [attempts]);
 
   const avgTime = useMemo(() => {
-    const valid = attempts.filter((a) => a.correct);
+    const valid = attempts.filter((a) => a.verdict === "correct");
     if (valid.length === 0) return 0;
     return valid.reduce((sum, a) => sum + a.timeMs, 0) / valid.length;
   }, [attempts]);
@@ -294,16 +297,18 @@ export function AlgorithmDrillView({
 
   // ── Random setup generation (when case or setupVersion changes) ──────
   useEffect(() => {
+    let setup = "";
     if (defaultAlgorithm?.moves) {
-      const setup = generateRandomSetup(
+      setup = generateRandomSetup(
         defaultAlgorithm.moves,
         "Y",
         selectedCase?.puzzleType ?? "3x3x3",
         selectedCase?.setupScramble,
-      );
-      setCurrentSetup(setup || selectedCase?.setupScramble || "");
-    } else {
-      setCurrentSetup("");
+      ) || selectedCase?.setupScramble || "";
+    }
+    setCurrentSetup(setup);
+    if (setup && selectedCase) {
+      beginAttempt(setup, selectedCase.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCaseId, defaultAlgorithm?.id, setupVersion]);
@@ -312,39 +317,21 @@ export function AlgorithmDrillView({
   const recordAttempt = useCallback(
     (correct: boolean) => {
       if (!selectedCase || !defaultAlgorithm) return;
-      const attempt: DrillAttempt = {
-        id: nextAttemptId(),
-        caseId: selectedCase.id,
-        caseLabel: selectedCase.caseNumber,
-        algorithm: defaultAlgorithm.moves,
-        timeMs: stoppedTime,
-        correct,
-        timestamp: Date.now(),
-      };
-      setAttempts((prev) => [attempt, ...prev]);
       if (!correct && revealIfFail) setShowAlgorithm(true);
 
-      // Persist to DB for progress tracking + SRS.
-      // metricKind: 'execution' — updates mastery + best/avg time.
-      // NOTE: no moveCount/optimalMoves — drill is a manual-verdict execution
-      // with no real move tracking; faking the algorithm length would make
-      // getPhaseStats efficiency always 1.0.
-      dbPersistAttempt({
-        exerciseId: EXERCISE_IDS.drill(subsetId),
-        methodId,
-        phaseId: _phaseId as string,
-        caseId: selectedCase.id,
-        timeMs: stoppedTime,
+      void submitVerdict({
         verdict: correct ? "correct" : "incorrect",
         playMode: hasSmartCube ? "smart-cube" : "manual",
+        caseId: selectedCase.id,
         scramble: currentSetup,
+        timeMs: stoppedTime,
         metricKind: "execution",
         sessionId: sessionId ?? undefined,
       }).catch((err) => {
         console.error("[DrillView] Failed to persist attempt:", err);
       });
     },
-    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime, dbPersistAttempt, subsetId, methodId, _phaseId, hasSmartCube, currentSetup, sessionId],
+    [selectedCase, defaultAlgorithm, revealIfFail, stoppedTime, submitVerdict, hasSmartCube, currentSetup, sessionId],
   );
 
   const handleMarkCorrect = useCallback(() => {
@@ -362,10 +349,11 @@ export function AlgorithmDrillView({
   }, [recordAttempt, reset, selectNextCase]);
 
   const handleSkip = useCallback(() => {
+    skipAttempt();
     reset();
     setSetupVersion((v) => v + 1);
     selectNextCase();
-  }, [reset, selectNextCase]);
+  }, [skipAttempt, reset, selectNextCase]);
 
   // ── Orientation-adapted display scramble (matches user's cube) ─────────
   const displaySetup = remapScramble(currentSetup);

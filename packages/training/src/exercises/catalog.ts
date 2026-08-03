@@ -176,21 +176,23 @@ export function getPhaseModes(phaseType: PhasePracticeType): PhaseModeDefinition
 
 // ─── Mastery label (single source of truth, shared with the Dashboard) ───
 
-export type MasteryLabel = 'new' | 'beginner' | 'learning' | 'mastered';
+export type MasteryLabel = 'new' | 'learning' | 'practicing' | 'mastered' | 'expert';
 
 /** 0-100 mastery → human label. Exported so every view labels identically. */
 export function masteryLevel(mastery: number): MasteryLabel {
+  if (mastery >= 95) return 'expert';
   if (mastery >= 90) return 'mastered';
-  if (mastery >= 60) return 'learning';
-  if (mastery > 0) return 'beginner';
+  if (mastery >= 70) return 'practicing';
+  if (mastery >= 30) return 'learning';
   return 'new';
 }
 
-export const MASTERY_LABEL_TEXT: Record<MasteryLabel, string> = {
+export const MASTERY_LEVEL_LABELS: Record<MasteryLabel, string> = {
   new: 'New',
-  beginner: 'Beginner',
   learning: 'Learning',
+  practicing: 'Practicing',
   mastered: 'Mastered',
+  expert: 'Expert',
 };
 
 // ─── DB-seedable exercise definitions ─────────────────────────────────────

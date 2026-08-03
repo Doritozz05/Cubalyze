@@ -371,8 +371,9 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsReviewCount: 0,
       lastReviewAt: 0,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('INSERT INTO algorithm_progress');
+    // The upsert now runs inside a transaction (BEGIN/COMMIT), so find the
+    // write call instead of assuming it is the last one.
+    expect(db.mock.calls.some((c) => String(c[0]).includes('INSERT INTO algorithm_progress'))).toBe(true);
   });
 
   it('upsertAlgorithmProgress UPDATES when existing', async () => {
@@ -403,8 +404,7 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsReviewCount: 2,
       lastReviewAt: 1700000000000,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('UPDATE algorithm_progress SET');
+    expect(db.mock.calls.some((c) => String(c[0]).includes('UPDATE algorithm_progress SET'))).toBe(true);
   });
 
   it('getAlgorithmProgressBySubset joins algorithm_cases', async () => {
@@ -558,8 +558,7 @@ describe('TrainingRepository — Exercise Progress', () => {
       avgTimeMs: 11000,
       lastPracticedAt: 1700000000000,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('INSERT INTO exercise_progress');
+    expect(db.mock.calls.some((c) => String(c[0]).includes('INSERT INTO exercise_progress'))).toBe(true);
   });
 
   it('upsertExerciseProgress UPDATES when existing', async () => {
@@ -577,8 +576,7 @@ describe('TrainingRepository — Exercise Progress', () => {
       avgTimeMs: 10000,
       lastPracticedAt: 1700000000000,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('UPDATE exercise_progress SET');
+    expect(db.mock.calls.some((c) => String(c[0]).includes('UPDATE exercise_progress SET'))).toBe(true);
   });
 
   it('getMethodExerciseProgress returns array mapped', async () => {
@@ -715,6 +713,16 @@ describe('TrainingRepository — Phase Stats', () => {
     repo = new TrainingRepository(db);
     const result = await repo.getPhaseStats('cfop', 'f2l');
     expect(result?.failRate).toBe(0.25);
+  });
+
+  it('getPhaseStats SQL excludes skipped verdicts from exec/rec denominators', async () => {
+    // Honest Full Solve splits persist as 'skipped' (real timing, no verdict):
+    // they must never dilute accuracy/failRate denominators.
+    const db = mockDb([{ total_attempts: 1, exec_attempts: 1, exec_correct: 1 }]);
+    repo = new TrainingRepository(db);
+    await repo.getPhaseStats('cfop', 'cross');
+    const sql = db.mock.calls[0][0] as string;
+    expect(sql).toContain("verdict != 'skipped'");
   });
 
   it('getPhaseStats includes recognition attempts (no WHERE metric_kind filter)', async () => {

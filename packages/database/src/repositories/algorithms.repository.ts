@@ -8,7 +8,8 @@ export class AlgorithmsRepository {
     this.db = db;
   }
 
-  async count(): Promise<number> {
+  /** Number of seeded algorithm cases (used by seedIfEmpty to detect an empty catalog). */
+  async countCases(): Promise<number> {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM algorithm_cases');
     return Number((rows[0] as { cnt: number }).cnt ?? 0);
   }

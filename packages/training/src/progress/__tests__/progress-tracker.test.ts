@@ -371,8 +371,9 @@ describe('ProgressTracker — recordReview (FSRS grading)', () => {
     expect(result.srsState).toBe('relearning');
     expect(result.srsLapses).toBe(1);
     expect(result.srsReviewCount).toBe(2);
-    // Relearning forces a short 1-day interval (spacing effect).
-    expect(result.srsIntervalDays).toBe(1);
+    // Relearning after 'again' schedules a 0-day interval: re-review the
+    // same day instead of waiting a full day (FSRS standard, plan §2.8).
+    expect(result.srsIntervalDays).toBe(0);
   });
 
   it('hard review penalizes stability growth and raises difficulty vs good', async () => {

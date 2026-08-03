@@ -196,7 +196,7 @@ export type MetricKind = 'execution' | 'recognition';
 
 // ─── SM-2 Spaced Repetition Algorithm ─────────────────────────────────────
 
-const DEFAULT_EASE_FACTOR = 2.5;
+export const DEFAULT_EASE_FACTOR = 2.5;
 const MIN_EASE_FACTOR = 1.3;
 
 function computeSM2(
@@ -696,6 +696,14 @@ export class ProgressTracker {
    */
   async getWeakestCases(subsetId: string, limit = 5): Promise<AlgorithmProgressRecord[]> {
     return this.repo.getWeakestAlgorithms(subsetId, limit);
+  }
+
+  /**
+   * Latest raw attempts for an exercise (DB rows, newest first) — used by
+   * phase-target views (Cross/EO/LSE) to render DB-backed history.
+   */
+  async getAttemptsByExercise(exerciseId: string, limit = 50): Promise<TrainingAttemptRecord[]> {
+    return this.repo.getAttemptsByExercise(exerciseId, limit);
   }
 
   /**
