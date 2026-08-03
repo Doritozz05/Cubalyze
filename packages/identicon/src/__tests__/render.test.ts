@@ -40,6 +40,36 @@ describe('renderCubeMark — SVG output', () => {
     expect(renderCubeMark(spec)).toBe(renderCubeMark(spec));
   });
 
+  it('paints the accent fill on the true center cell (full-grid anchor)', () => {
+    // The spec's center cell (full-grid index 12) must be the one tinted with
+    // the accent (hue+30) — a decision-grid/full-grid index mismatch would
+    // tint a mirrored cell instead (see spec.ts ANCHOR_DECISION vs render
+    // ANCHOR_INDEX). The accent ALSO appears on interior frames, so we must
+    // assert the center rect's own fill attribute, not just `toContain`.
+    //
+    // Robust geometry check: find the cell rect whose bounds contain the
+    // viewBox center (32,32) — avoids float-rounding drift on `x`.
+    const rectRe =
+      /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="[\d.]+" fill="(hsl\([^"]+\))"/g;
+    for (let i = 0; i < 50; i++) {
+      const spec = generateCubeMarkSpec(`anchor-${i}`);
+      const svg = renderCubeMark(spec);
+      const accent = resolveGlyphHsl((spec.hue + 30) % 360);
+      const accentCss = `hsl(${accent.h} ${accent.s}% ${accent.l}%)`;
+      let centerFill: string | null = null;
+      for (const m of svg.matchAll(rectRe)) {
+        const [, x, y, w, h, fill] = m;
+        const cx = Number(x) + Number(w) / 2;
+        const cy = Number(y) + Number(h) / 2;
+        if (Math.abs(cx - 32) < 0.01 && Math.abs(cy - 32) < 0.01) {
+          centerFill = fill;
+          break;
+        }
+      }
+      expect(centerFill, `seed anchor-${i} center cell fill`).toBe(accentCss);
+    }
+  });
+
   it('cubeMarkToDataUri produces an encoded data URI', () => {
     const svg = renderCubeMark(generateCubeMarkSpec('uri'));
     const uri = cubeMarkToDataUri(svg);

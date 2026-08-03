@@ -18,6 +18,9 @@ export interface IdenticonAvatarProps {
  * F2 (docs/plan_profile) — renders a CubeMark identicon as INLINE SVG so the
  * `var(--surface-2)` tile stays theme-aware (data-URIs can't resolve CSS
  * variables). Memoized on (seed, size, tile); generation is ~0.01ms.
+ *
+ * The avatar is decorative: the display name renders next to it in text, so
+ * the wrapper is `aria-hidden` and the SVG itself carries no role/label.
  */
 export function IdenticonAvatar({
   seed,

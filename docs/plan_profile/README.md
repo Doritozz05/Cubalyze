@@ -2,7 +2,7 @@
 
 > **Documento de diseño del perfil de usuario definitivo.**
 > Fecha: Agosto 2026
-> Estado: **Fases F0–F3 implementadas** (identidad local, sistema CubeMark, componentes de identidad y vista de perfil navegable). Quedan pendientes F4 (bloques de datos/stats), F5 (edición), F6 (pulido responsive/a11y) y F7 (futuro) — no implementar más sin validar, según `docs/14-ai/AGENTS.md`
+> Estado: **Fases F0–F4 implementadas** (identidad local, sistema CubeMark, componentes de identidad, vista de perfil navegable y bloques de datos reales). Quedan pendientes F5 (edición), F6 (pulido responsive/a11y) y F7 (futuro) — no implementar más sin validar, según `docs/14-ai/AGENTS.md`
 > Método: investigación de referencias → extracción de patrones → análisis comparativo → layout → arquitectura → bloques → investigación de identicons → sistema propio → plan por fases.
 
 ---
@@ -515,19 +515,21 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 | `views/Profile/ProfileView.tsx` | Hero (B1) + quick actions reales (navegan a vistas existentes); skeleton/estados | ✅ |
 | Tauri (desktop) | `database-override.ts` re-exporta `AppMetaRepository`/`ProfilesRepository`/`Profile` (alias `@cubeforge/database`) | ✅ |
 
-### Fase F4 — Bloques de datos (Overview/Stats/Training/Algorithms/Skills)
+### Fase F4 — Bloques de datos (Overview/Stats/Training/Algorithms/Skills) ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| Hooks de agregación | `useProfileStats` (PBs/Ao5/Ao12/racha por puzzle), reutilizando `computeStats` |
-| Bloques Overview | heatmap + PB progression + phase balance + últimos solves + acciones (reutiliza atoms/widgets) |
-| Bloques Stats | tabla por puzzle + `TrendChart` + distribución |
-| Bloques Training | mastery rings + cola SRS (useSRSQueue) + top-5 débiles |
-| Bloques Algorithms | subsets con barras dominados/aprendiendo/nuevos |
-| Bloques Skills | XP + % completado + por categoría (useSkillProgress) |
-| Tests | cálculos de stats, filtros puzzle, empty states |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| Hook `useProfileStats` | Agrega TODOS los solves no-demo de todas las sesiones; `computeStats` (estadística compartida) por puzzle; heatmap 365 días; racha (convención "no rota hasta un día completo sin actividad"); helpers puros exportados | ✅ |
+| `StatStrip` (B2) | 5 KPIs reales del puzzle principal (PB single, Ao5, Ao12, Mean, Racha) con `MetricTile` + skeletons | ✅ |
+| Tabs (B3) | `Tabs` de `@cubeforge/ui` con 5 triggers (Overview/Stats/Training/Algorithms/Skills) | ✅ |
+| Overview | `ActivityHeatmap` (52 semanas) + últimos 5 solves (best resaltado `ready`) + empty states accionables | ✅ |
+| Stats | tabla tabular por puzzle (PB/Ao5/Ao12/count) con `nums`; `TrendChart`/distribución se difieren a F6 | ✅ (núcleo) |
+| Training | cola SRS real (`useSRSQueue`): Overdue / Due-weak / New con conteos y orientación accionable | ✅ |
+| Algorithms | `getSRSInsights` real: mastery medio (anillo), reviewed/total, estados Mastered/Learning/New | ✅ |
+| Skills | XP total + % (anillo) + barras por categoría (`ALL_SKILL_NODES` + `useSkillProgress`) | ✅ |
+| Tests | `useProfileStats.test.ts` (12 tests: normalización puzzle, racha, heatmap, agregación, DNFs) — corren desde la raíz (`npx vitest run`) | ✅ |
 
-### Fase F5 — Edición del perfil
+### Fase F5 — Edición del perfil ⏳ pendiente
 
 | Tarea | Detalle |
 |---|---|
@@ -536,7 +538,7 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 | Validación | zod (`ProfileSchema`), handle único local |
 | Export de datos | ya existe (DataSection); se añade export del perfil |
 
-### Fase F6 — Responsive, a11y y pulido
+### Fase F6 — Responsive, a11y y pulido ⏳ pendiente
 
 | Tarea | Detalle |
 |---|---|

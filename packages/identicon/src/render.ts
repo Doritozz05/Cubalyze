@@ -81,7 +81,7 @@ export function renderCubeMark(
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"` +
-    ` shape-rendering="geometricPrecision" role="img" aria-label="Identicon">` +
+    ` shape-rendering="geometricPrecision">` +
     `<rect x="0" y="0" width="${size}" height="${size}" rx="${fmt(size * 0.16)}" fill="${tileFill}"/>` +
     renderCells(spec, size) +
     renderFrame(spec, size) +
