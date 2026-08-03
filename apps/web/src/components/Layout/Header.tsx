@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MobileSessionSheet } from "./MobileSessionSheet";
+import type { Profile } from "@cubeforge/database";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
@@ -113,6 +114,8 @@ export interface HeaderProps {
   onOpenProfile?: () => void;
   /** Stable identity seed for the CubeMark avatar chip (user_id). */
   profileSeed?: string;
+  /** The user's profile row — photo (if set) or display name. */
+  profile?: Profile | null;
   /** Currently selected puzzle category. */
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
@@ -138,6 +141,7 @@ export function Header({
   onAddManual,
   onOpenProfile,
   profileSeed,
+  profile,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
   className,
@@ -422,7 +426,7 @@ export function Header({
           </Select>
 
           {/* Profile avatar chip — ubiquitous entry to the identity center. */}
-          {profileSeed && onOpenProfile ? (
+          {(profileSeed || profile) && onOpenProfile ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -431,12 +435,20 @@ export function Header({
                   aria-label="Open profile"
                   className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
                 >
-                  <IdenticonAvatar
-                    seed={profileSeed}
-                    size={20}
-                    tile="transparent"
-                    className="rounded-[0.3rem]"
-                  />
+                  {profile?.avatarKind === "photo" && profile.avatarData ? (
+                    <img
+                      src={profile.avatarData}
+                      alt=""
+                      className="size-5 rounded-[0.3rem] object-cover"
+                    />
+                  ) : profileSeed ? (
+                    <IdenticonAvatar
+                      seed={profileSeed}
+                      size={20}
+                      tile="transparent"
+                      className="rounded-[0.3rem]"
+                    />
+                  ) : null}
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Profile</TooltipContent>

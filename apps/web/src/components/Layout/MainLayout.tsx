@@ -7,6 +7,7 @@ import { Header } from "./Header";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
+import type { Profile } from "@cubeforge/database";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { PuzzleCategory } from "@/types";
 
@@ -39,6 +40,8 @@ export interface MainLayoutProps {
   onOpenProfile?: () => void;
   /** Stable identity seed for the header CubeMark chip (user_id). */
   profileSeed?: string;
+  /** User profile object containing custom avatar photo data if set. */
+  profile?: Profile | null;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (shows the split). */
@@ -82,6 +85,7 @@ export function MainLayout({
   onAddManual,
   onOpenProfile,
   profileSeed,
+  profile,
   cube3D,
   cube3DActive,
   cube3DReady,
@@ -300,6 +304,7 @@ export function MainLayout({
               onAddManual={onAddManual}
               onOpenProfile={onOpenProfile}
               profileSeed={profileSeed}
+              profile={profile}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
             />

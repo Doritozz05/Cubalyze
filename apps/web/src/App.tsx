@@ -818,6 +818,7 @@ export default function App() {
           onAddManual={() => setManualOpen(true)}
           onOpenProfile={() => handleNavigate("profile")}
           profileSeed={profileSeed ?? undefined}
+          profile={profile}
           main={renderMain()}
         />
 
