@@ -64,13 +64,9 @@ export const DBWorker = {
         _storageType = 'memory';
       }
 
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS kv_store (
-          key TEXT PRIMARY KEY,
-          value TEXT
-        );
-      `);
-
+      // NOTE: the legacy ad-hoc kv_store table was removed here — its role is
+      // now covered by the versioned app_meta table created in migration 020.
+      // Keeping schema changes inside migrations keeps the schema auditable.
       runMigrations();
 
       return true;

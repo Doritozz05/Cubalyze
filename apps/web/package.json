@@ -18,6 +18,7 @@
     "@cubeforge/cube-3d-engine": "workspace:*",
     "@cubeforge/database": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
+    "@cubeforge/identicon": "workspace:*",
     "@cubeforge/math-core": "workspace:*",
     "@cubeforge/solver-engine": "workspace:*",
     "@cubeforge/state": "workspace:*",

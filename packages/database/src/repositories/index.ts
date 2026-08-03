@@ -1,4 +1,4 @@
-export type { Solve, Session, Algorithm } from './types.js';
+export type { Solve, Session, Algorithm, Profile } from './types.js';
 export { SolvesRepository } from './solves.repository.js';
 export { SessionsRepository } from './sessions.repository.js';
 export { AlgorithmsRepository } from './algorithms.repository.js';
@@ -7,3 +7,7 @@ export type { TrainingAttempt, AlgorithmProgress, ExerciseProgress } from './tra
 export { CalendarRepository } from './calendar.repository.js';
 export type { TrainingTask, TaskRepeat, TaskColor } from './calendar.repository.js';
 export { SkillProgressRepository } from './skill-progress.repository.js';
+export { AppMetaRepository, USER_ID_KEY, generateUuid } from './app-meta.repository.js';
+export type { AppMetaRow } from './app-meta.repository.js';
+export { ProfilesRepository } from './profiles.repository.js';
+export type { ProfileRow } from './profiles.repository.js';

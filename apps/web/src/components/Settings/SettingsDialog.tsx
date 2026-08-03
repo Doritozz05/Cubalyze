@@ -34,11 +34,14 @@ import { PlaceholderSection } from './sections/PlaceholderSection';
 import { ScrambleSection } from './sections/ScrambleSection';
 import { ShortcutsSection } from './sections/ShortcutsSection';
 import { DataSection } from './sections/DataSection';
+import { ProfileSection } from './sections/ProfileSection';
 import type { Solve } from '@/types';
 
 export interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Section to show when the dialog opens (e.g. 'profile'). Default 'appearance'. */
+  initialSection?: string;
   /** Solves data for the Data/Export section. */
   solves?: Solve[];
   /** Current session name for export filenames. */
@@ -71,7 +74,7 @@ const sectionVariants = {
  * - Clean header area with title + description
  * - Modular: each section is a separate component
  */
-export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImportSolves }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, initialSection, solves, sessionName, onImportSolves }: SettingsDialogProps) {
   const isTouch = useIsTouch();
   const [activeSection, setActiveSection] = useState('appearance');
   const prevSection = useRef('appearance');
@@ -79,13 +82,16 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
   const activeSectionRef = useRef(activeSection);
   activeSectionRef.current = activeSection;
 
-  // Reset to first content section on open
+  // Reset to the requested section (or the default) on open
   useEffect(() => {
     if (open) {
-      setActiveSection('appearance');
-      prevSection.current = 'appearance';
+      const start = initialSection && SETTINGS_SECTIONS.some((s) => s.id === initialSection)
+        ? initialSection
+        : 'appearance';
+      setActiveSection(start);
+      prevSection.current = start;
     }
-  }, [open]);
+  }, [open, initialSection]);
 
   const activeIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === activeSection);
   const prevIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === prevSection.current);
@@ -100,6 +106,8 @@ export function SettingsDialog({ open, onOpenChange, solves, sessionName, onImpo
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
+      case 'profile':
+        return <ProfileSection />;
       case 'general':
         return <GeneralSection />;
       case 'appearance':

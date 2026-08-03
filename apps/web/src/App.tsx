@@ -13,6 +13,7 @@ import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
 import { TrainingDashboard } from "@/views/Training/TrainingDashboard";
 import { UltraSkillTreeView } from "@/views/SkillTree/UltraSkillTreeView";
+import { ProfileView } from "@/views/Profile/ProfileView";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
@@ -23,6 +24,7 @@ import { toast, Toaster } from "sonner";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { useProfile } from "@/hooks/useProfile";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -58,6 +60,11 @@ import "@/index.css";
 export default function App() {
   // Touch regime (<1024px, mobile + tablet): bottom tab bar + top toasts.
   const isTouch = useIsTouch();
+
+  // Fase F0 (docs/plan_profile): ensure the anonymous local identity exists on
+  // first launch. `userId` is the stable seed for the CubeMark identicon shown
+  // in the header chip and the Profile view.
+  const { userId: profileSeed } = useProfile();
 
   const {
     session,
@@ -114,6 +121,9 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Section to land on when Settings opens (e.g. 'profile' from the hero Edit
+  // button). Reset after the dialog consumes it.
+  const [settingsInitialSection, setSettingsInitialSection] = useState<string | undefined>(undefined);
   const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -330,6 +340,16 @@ export default function App() {
       setActivePbMilestone(null);
     }
   }, [timerPhase]);
+
+  // Clear a pending PB celebration when leaving the timer stage. The banner's
+  // auto-dismiss timeout is cancelled when it unmounts (onClose never fires),
+  // so the milestone used to survive navigation and replay the confetti every
+  // time the user returned to the timer view.
+  useEffect(() => {
+    if (activeView !== "timer") {
+      setActivePbMilestone(null);
+    }
+  }, [activeView]);
 
 
   // ── Import solve wrapper (adapts importSolves to DataSection's expected shape) ──
@@ -613,6 +633,18 @@ export default function App() {
       return <UltraSkillTreeView onNavigate={(view) => setActiveView(view as ViewId)} />;
     }
 
+    if (activeView === "profile") {
+      return (
+        <ProfileView
+          onNavigate={handleNavigate}
+          onOpenSettings={() => {
+            setSettingsInitialSection("profile");
+            setSettingsOpen(true);
+          }}
+        />
+      );
+    }
+
     // timer
     return (
       <>
@@ -768,7 +800,11 @@ export default function App() {
               sessionName={session?.name}
               onImportSolves={handleImportSolves}
               settingsOpen={settingsOpen}
-              onSettingsOpenChange={setSettingsOpen}
+              onSettingsOpenChange={(open) => {
+                setSettingsOpen(open);
+                if (!open) setSettingsInitialSection(undefined);
+              }}
+              settingsInitialSection={settingsInitialSection}
               widgetExplorerOpen={widgetExplorerOpen}
               onWidgetExplorerOpenChange={setWidgetExplorerOpen}
               cubeConnectorOpen={cubeConnectorOpen}
@@ -777,6 +813,8 @@ export default function App() {
           }
           isFocused={isFocused}
           onAddManual={() => setManualOpen(true)}
+          onOpenProfile={() => handleNavigate("profile")}
+          profileSeed={profileSeed ?? undefined}
           main={renderMain()}
         />
 
@@ -795,6 +833,7 @@ export default function App() {
           onOpenChange={setMobileMoreOpen}
           onOpenSettings={() => setSettingsOpen(true)}
           onOpenCubeConnector={() => setCubeConnectorOpen(true)}
+          onOpenProfile={() => handleNavigate("profile")}
         />
 
         {/* Manual solve sheet — mounted at App level (opened from the

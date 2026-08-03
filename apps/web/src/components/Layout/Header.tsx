@@ -14,6 +14,7 @@ import { WidgetExplorer } from "@/widgets/explorer";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useDockZoneActive } from "@/widgets/dock/dockZoneState";
+import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,6 +109,10 @@ export interface HeaderProps {
   onDeleteSession?: (id: string) => void;
   /** Open the manual solve entry sheet (the "+" button). */
   onAddManual?: () => void;
+  /** Navigate to the Profile view (avatar chip). */
+  onOpenProfile?: () => void;
+  /** Stable identity seed for the CubeMark avatar chip (user_id). */
+  profileSeed?: string;
   /** Currently selected puzzle category. */
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
@@ -131,6 +136,8 @@ export function Header({
   onRenameSession,
   onDeleteSession,
   onAddManual,
+  onOpenProfile,
+  profileSeed,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
   className,
@@ -413,6 +420,28 @@ export function Header({
               ))}
             </SelectContent>
           </Select>
+
+          {/* Profile avatar chip — ubiquitous entry to the identity center. */}
+          {profileSeed && onOpenProfile ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onOpenProfile}
+                  aria-label="Open profile"
+                  className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
+                >
+                  <IdenticonAvatar
+                    seed={profileSeed}
+                    size={20}
+                    tile="transparent"
+                    className="rounded-[0.3rem]"
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Profile</TooltipContent>
+            </Tooltip>
+          ) : null}
         </div>
       </div>
 

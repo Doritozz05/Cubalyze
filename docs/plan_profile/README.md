@@ -2,7 +2,7 @@
 
 > **Documento de diseño del perfil de usuario definitivo.**
 > Fecha: Agosto 2026
-> Estado: Borrador de diseño — pendiente de validación y aprobación (no implementar código sin TDD aprobado, según `docs/14-ai/AGENTS.md`)
+> Estado: **Fases F0–F6 implementadas** (identidad local, sistema CubeMark, componentes de identidad, vista de perfil navegable, bloques de datos reales, edición del perfil y pulido responsive/a11y). Queda F7 (futuro) — no implementar más sin validar, según `docs/14-ai/AGENTS.md`
 > Método: investigación de referencias → extracción de patrones → análisis comparativo → layout → arquitectura → bloques → investigación de identicons → sistema propio → plan por fases.
 
 ---
@@ -412,8 +412,11 @@ Investigación realizada sobre patrones de diseño de perfiles/dashboards en 4 s
 
 ```
 1. SEED   = user_id (estable)                    [siempre el ID, nunca el display name]
-2. HASH   = SHA-256(seed) (Web Crypto, async, con cache en memoria;
-            fallback sincrono FNV-1a 32-bit si el entorno no tiene Web Crypto)
+2. HASH   = FNV-1a multi-salt de 32 bytes (`hashSeed`): 8 slots con salts
+            distintos, 100% sincrono y sin dependencias. Adoptado sobre
+            SHA-256 async: el identicon no requiere criptografía, solo
+            distribución uniforme con efecto avalancha (misma familia que
+            GitHub/DiceBear)
 3. PRNG   = mulberry32(primeros 4 bytes del hash) → secuencia determinista
 4. GRID   = 5×5 con espejo vertical → 15 celdas de decisión (c0=c4, c1=c3, c2 centro)
             + celda central SIEMPRE activa (ancla)
@@ -439,7 +442,7 @@ interface CubeMarkSpec {
   frame: 0 | 1 | 2;         // estilo de marco interior
 }
 
-generateCubeMarkSpec(seed: string): Promise<CubeMarkSpec>;  // (o sync con fallback)
+generateCubeMarkSpec(seed: string): CubeMarkSpec;           // síncrono y determinista
 renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2' }): string;
 ```
 
@@ -470,73 +473,82 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 
 > **Nota de numeración**: las fases de implementación de esta sección (F0–F7) usan numeración propia, **independiente** de las fases de diseño del documento (1–9).
 
-### Fase F0 — Identidad local (base, P0)
+### Fase F0 — Identidad local (base, P0) ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| Migraciones 019 (`profiles`) y 020 (`app_meta`) | SQL en `packages/database/src/migrations/migrations.ts` |
-| `profiles.repository.ts` + `appMeta.repository.ts` | Patrón repositorio existente |
-| `profile.store.ts` (packages/state) + hook `useProfile` | Patrón `usePersistentSession` |
-| Generación de `user_id` anónimo en primer arranque | `crypto.randomUUID()` persistido en `app_meta` |
-| Tests | migraciones idempotentes, repo CRUD, seed estable |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| Migraciones 019 (`profiles`) y 020 (`app_meta`) | SQL en `packages/database/src/migrations/migrations.ts` | ✅ |
+| Eliminar `kv_store` legacy | `packages/database/src/worker.ts` (se retira el CREATE) + migración 021 `DROP TABLE IF EXISTS kv_store` para limpiar BDs OPFS de dev | ✅ |
+| `profiles.repository.ts` + `app-meta.repository.ts` | Patrón repositorio existente; `getOrCreateUserId` race-safe (INSERT OR IGNORE + re-read) | ✅ |
+| `ProfileSchema` (zod) en `packages/models` | Exportado como `Profile` | ✅ |
+| Hook `useProfile` en `apps/web/src/hooks` | Cableado en `App.tsx`; asegura identidad en el primer arranque. `profile.store.ts` (packages/state) se difiere a F2 (edición desde UI) | ✅ |
+| Generación de `user_id` anónimo en primer arranque | `crypto.randomUUID()` (con fallback v4) persistido en `app_meta` | ✅ |
+| Tests | `profile.repository.test.ts` (semántica de primer arranque) + migraciones 019/020 en `migrations.test.ts` | ✅ |
 
-### Fase F1 — Paquete headless `packages/identicon`
+### Fase F1 — Paquete headless `packages/identicon` ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| `generateCubeMarkSpec` + `renderCubeMark` | Algoritmo §9.2 puro, sin React |
-| Tests de garantías (§9.3) | vitest |
-| Benchmark de rendimiento | <1ms con cache |
-| Integración en `packages/types`/`models` | `CubeMarkSpec` tipado |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| `generateCubeMarkSpec` + `renderCubeMark` | Algoritmo §9.2 puro, síncrono, sin React | ✅ |
+| Tests de garantías (§9.3) | vitest: determinismo, simetría, ancla, fill-ratio, unicidad (con presupuesto de colisiones por paridad), contraste 24 hues, rendimiento | ✅ |
+| Benchmark de rendimiento | <1ms por spec+render (test automatizado) | ✅ |
+| Tipos `CubeMarkSpec`/`CubeMarkRenderOptions` | Viven en el propio paquete (headless) | ✅ |
+| Hash determinista | FNV-1a multi-salt (32 bytes), síncrono — ver §9.2 paso 2 | ✅ |
 
-### Fase F2 — Componentes de identidad (UI)
+### Fase F2 — Componentes de identidad (UI) ✅ parcialmente implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| `IdenticonAvatar` | Envuelve `Avatar` (ui); data-URI SVG; tamaños 24/80/112/512 |
-| `ProfileHero` (B1) | Avatar + nombre + handle + chips + acciones |
-| `StatStrip` (B2) | 5 tiles con `MetricTile`/`AnimatedNumber`/`Tooltip` |
-| `ProfileTabs` (B3) | `Tabs` de ui + badges |
-| `BlockHeader`/estados | skeleton + `EmptyState` por bloque |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| `IdenticonAvatar` | SVG **inline** tema-aware (`var(--surface-2)`), memoizado; tamaños 20/80/112 | ✅ |
+| `ProfileHero` (B1) | Avatar + nombre + handle + chips (miembro desde, puzzle, métodos) + bio + skeleton | ✅ |
+| `StatStrip` (B2) | 5 tiles con `MetricTile`/`AnimatedNumber`/`Tooltip` | ⏳ F4 |
+| `ProfileTabs` (B3) | `Tabs` de ui + badges | ⏳ F4 |
+| `BlockHeader`/estados | skeleton + `EmptyState` por bloque | ⏳ F4 |
 
-### Fase F3 — Vista Profile + navegación
+### Fase F3 — Vista Profile + navegación ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| `ViewId = "profile"` + item en sidebar (grupo Main) | `sidebar.constants.ts`, `LeftSidebar` |
-| Avatar-chip en `Header` → navega a profile | reutiliza `IdenticonAvatar` 24px |
-| Entrada táctil (`MobileTabBar`/`MobileMoreSheet`) | patrón existente |
-| `views/Profile/ProfileView.tsx` | orquesta B1→B4 con estados |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| `ViewId = "profile"` + item en sidebar (grupo Main) | `sidebar.constants.ts`, `LeftSidebar` (data-driven) | ✅ |
+| Avatar-chip en `Header` → navega a profile | `IdenticonAvatar` 20px, prop `onOpenProfile`/`profileSeed` | ✅ |
+| Entrada táctil (`MobileMoreSheet`) | Card "Profile" en el grid de opciones | ✅ |
+| `views/Profile/ProfileView.tsx` | Hero (B1) + quick actions reales (navegan a vistas existentes); skeleton/estados | ✅ |
+| Tauri (desktop) | `database-override.ts` re-exporta `AppMetaRepository`/`ProfilesRepository`/`Profile` (alias `@cubeforge/database`) | ✅ |
 
-### Fase F4 — Bloques de datos (Overview/Stats/Training/Algorithms/Skills)
+### Fase F4 — Bloques de datos (Overview/Stats/Training/Algorithms/Skills) ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| Hooks de agregación | `useProfileStats` (PBs/Ao5/Ao12/racha por puzzle), reutilizando `computeStats` |
-| Bloques Overview | heatmap + PB progression + phase balance + últimos solves + acciones (reutiliza atoms/widgets) |
-| Bloques Stats | tabla por puzzle + `TrendChart` + distribución |
-| Bloques Training | mastery rings + cola SRS (useSRSQueue) + top-5 débiles |
-| Bloques Algorithms | subsets con barras dominados/aprendiendo/nuevos |
-| Bloques Skills | XP + % completado + por categoría (useSkillProgress) |
-| Tests | cálculos de stats, filtros puzzle, empty states |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| Hook `useProfileStats` | Agrega TODOS los solves no-demo de todas las sesiones; `computeStats` (estadística compartida) por puzzle; heatmap 365 días; racha (convención "no rota hasta un día completo sin actividad"); helpers puros exportados | ✅ |
+| `StatStrip` (B2) | 5 KPIs reales del puzzle principal (PB single, Ao5, Ao12, Mean, Racha) con `MetricTile` + skeletons | ✅ |
+| Tabs (B3) | `Tabs` de `@cubeforge/ui` con 5 triggers (Overview/Stats/Training/Algorithms/Skills) | ✅ |
+| Overview | `ActivityHeatmap` (52 semanas) + últimos 5 solves (best resaltado `ready`) + empty states accionables | ✅ |
+| Stats | tabla tabular por puzzle (PB/Ao5/Ao12/count) con `nums`; `TrendChart`/distribución se difieren a F6 | ✅ (núcleo) |
+| Training | cola SRS real (`useSRSQueue`): Overdue / Due-weak / New con conteos y orientación accionable | ✅ |
+| Algorithms | `getSRSInsights` real: mastery medio (anillo), reviewed/total, estados Mastered/Learning/New | ✅ |
+| Skills | XP total + % (anillo) + barras por categoría (`ALL_SKILL_NODES` + `useSkillProgress`) | ✅ |
+| Tests | `useProfileStats.test.ts` (12 tests: normalización puzzle, racha, heatmap, agregación, DNFs) — corren desde la raíz (`npx vitest run`) | ✅ |
 
-### Fase F5 — Edición del perfil
+### Fase F5 — Edición del perfil ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| Sección "Profile" en Settings | nombre, @handle, bio, métodos declarados, puzzle principal |
-| Avatar editor | subir foto (blob), mantener/reemplazar/restablecer identicon |
-| Validación | zod (`ProfileSchema`), handle único local |
-| Export de datos | ya existe (DataSection); se añade export del perfil |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| Sección "Profile" en Settings | `ProfileSection.tsx`: nombre, @handle (con `@` prefijo), bio (contador 280), puzzle principal (2×2/3×3 pills), métodos declarados (chips toggle desde `METHODS` del catálogo) | ✅ |
+| Botón "Edit profile" | `ProfileHero` gana `onEdit` → abre Settings en la sección profile vía `initialSection` (App → LeftSidebar → SettingsDialog) | ✅ |
+| Avatar editor | subir foto (base64 ≤1.5 MB, `FileReader` → `profiles.avatar_data`), cambiar foto, restablecer identicon (el CubeMark nunca se borra, D5) | ✅ |
+| Validación | `HANDLE_RE` (3–20 chars lowercase/alnum/-/_), bio ≤280, mismo espíritu que `ProfileSchema` | ✅ |
+| Export del perfil | botón "Export profile (JSON)" con `downloadFile` (payload completo de `profiles`) | ✅ |
+| Feedback | toast de éxito/error, estado saving con spinner, preview del avatar en el propio editor | ✅ |
 
-### Fase F6 — Responsive, a11y y pulido
+### Fase F6 — Responsive, a11y y pulido ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| <1024px | columna única, stat strip 2×2, hero condensado, tabs scrollables |
-| A11y | foco visible, contraste (ink-3), labels aria, navegación por teclado en tabs |
-| Micro-interacciones | hover/transiciones consistentes (150–200ms) |
-| Container queries | adaptación interna de tiles en grids estrechos (opcional) |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| <1024px (táctil) | StatStrip 2×2+1 (`lg:grid-cols-5` — ahora alineado al breakpoint táctil real de 1024px, no 640px); hero condensado (avatar 80px, `items-start`, edit en header row); tabs scrollables (`overflow-x-auto`) | ✅ |
+| A11y | `aria-label` en TabsList y secciones; focus-visible rings consistentes (`ring-ink/40`) en tabs, quick actions y botón Edit; iconos decorativos `aria-hidden`; `aria-pressed` en chips de métodos; labels asociadas con `htmlFor` en el editor | ✅ |
+| Micro-interacciones | transiciones 150ms consistentes en botones/chips; `active:scale-[0.98]` en quick actions; `hover:shadow-sm` en cards de Settings | ✅ |
+| Hero con foto | `ProfileHero` renderiza `avatarKind='photo'` con `<img>` (object-cover) cuando existe | ✅ |
+| Container queries | diferidas (opcional) — la cuadrícula 2×2+1 ya cubre la necesidad actual | ⏳ opcional |
 
 ### Fase F7 — Preparación para el futuro (no implementar ahora)
 
@@ -546,7 +558,7 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 | Logros/Badges (P2) | espacios reservados en Training tab y hero (chips) |
 | Comunidad/Comparación (P2) | hooks de agregación ya aislados → reutilizables |
 
-**Estimación total**: 6–9 semanas (F0–F6), siguiendo el ritmo del plan_training. Las fases F0–F1 son la base: todo lo demás depende de la identidad local y del sistema CubeMark.
+**Estimación total**: 6–9 semanas (F0–F6), siguiendo el ritmo del plan_training. Las fases F0–F1 son la base: todo lo demás depende de la identidad local y del sistema CubeMark. **F0–F6 completadas (Agosto 2026).**
 
 ---
 

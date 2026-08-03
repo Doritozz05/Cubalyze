@@ -276,7 +276,7 @@ describe('Database Client', () => {
     expect(db).toBeDefined();
     expect(getDB()).toBe(db);
 
-    const results = await db.execute('SELECT * FROM kv_store;');
+    const results = await db.execute('SELECT * FROM app_meta;');
     expect(results).toEqual([{ key: 'theme', value: 'dark' }]);
 
     await closeDB();

@@ -67,6 +67,29 @@ describe('MIGRATIONS — schema migrations module', () => {
     expect(m!.sql).toContain("UPDATE sessions SET is_demo = 1 WHERE name = 'Demo Session'");
   });
 
+  it('migration 019 creates the profiles table (identity row)', () => {
+    const m = MIGRATIONS.find((x) => x.id === '019_create_profiles');
+    expect(m).toBeDefined();
+    expect(m!.sql).toContain('CREATE TABLE IF NOT EXISTS profiles');
+    expect(m!.sql).toContain('user_id TEXT PRIMARY KEY');
+    expect(m!.sql).toContain('avatar_kind');
+    expect(m!.sql).toContain('declared_methods');
+  });
+
+  it('migration 020 creates the app_meta key/value table', () => {
+    const m = MIGRATIONS.find((x) => x.id === '020_create_app_meta');
+    expect(m).toBeDefined();
+    expect(m!.sql).toContain('CREATE TABLE IF NOT EXISTS app_meta');
+    expect(m!.sql).toContain('key TEXT PRIMARY KEY');
+    expect(m!.sql).toContain('value TEXT NOT NULL');
+  });
+
+  it('migration 021 drops the legacy kv_store table', () => {
+    const m = MIGRATIONS.find((x) => x.id === '021_drop_kv_store');
+    expect(m).toBeDefined();
+    expect(m!.sql).toContain('DROP TABLE IF EXISTS kv_store');
+  });
+
   it('exports the Migration type with the expected surface', () => {
     // Compile-time check via assignability. If Migration type drifts, this fails to compile.
     const sample: Migration = {

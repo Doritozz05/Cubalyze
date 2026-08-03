@@ -59,6 +59,9 @@ importers:
       '@cubeforge/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
+      '@cubeforge/identicon':
+        specifier: workspace:*
+        version: link:../../packages/identicon
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../../packages/math-core
@@ -300,6 +303,9 @@ importers:
       '@cubeforge/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
+      '@cubeforge/identicon':
+        specifier: workspace:*
+        version: link:../../packages/identicon
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../../packages/math-core
@@ -746,6 +752,24 @@ importers:
       tsup:
         specifier: ^8.3.6
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(yaml@2.9.0)
+
+  packages/identicon:
+    devDependencies:
+      '@cubeforge/config-eslint':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      eslint:
+        specifier: ^10.7.0
+        version: 10.7.0(jiti@2.7.0)
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

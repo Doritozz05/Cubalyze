@@ -11,6 +11,7 @@ import {
   Shuffle,
   Keyboard,
   Download,
+  UserRound,
 } from 'lucide-react';
 
 export interface SettingsSection {
@@ -21,6 +22,12 @@ export interface SettingsSection {
 }
 
 export const SETTINGS_SECTIONS: SettingsSection[] = [
+  {
+    id: 'profile',
+    label: 'Profile',
+    icon: UserRound,
+    description: 'Your identity, avatar, and declared solving methods.',
+  },
   {
     id: 'general',
     label: 'General',

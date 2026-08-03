@@ -365,4 +365,39 @@ export const MIGRATIONS: Migration[] = [
         WHERE session_id IN (SELECT id FROM sessions WHERE is_demo = 1);
     `,
   },
+  {
+    id: '019_create_profiles',
+    description: 'Create profiles table (user identity: name, handle, bio, avatar, declared methods, main puzzle)',
+    sql: `
+      CREATE TABLE IF NOT EXISTS profiles (
+        user_id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL DEFAULT '',
+        handle TEXT NOT NULL DEFAULT '',
+        bio TEXT NOT NULL DEFAULT '',
+        avatar_kind TEXT NOT NULL DEFAULT 'identicon',
+        avatar_data TEXT,
+        main_puzzle TEXT NOT NULL DEFAULT '3x3x3',
+        declared_methods TEXT NOT NULL DEFAULT '[]',
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      );
+    `,
+  },
+  {
+    id: '020_create_app_meta',
+    description: 'Create app_meta key/value table (replaces the legacy ad-hoc kv_store created in the worker)',
+    sql: `
+      CREATE TABLE IF NOT EXISTS app_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `,
+  },
+  {
+    id: '021_drop_kv_store',
+    description: 'Drop the legacy kv_store table (replaced by app_meta in 020); cleans up databases created before the table moved into migrations',
+    sql: `
+      DROP TABLE IF EXISTS kv_store;
+    `,
+  },
 ];

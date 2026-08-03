@@ -49,6 +49,8 @@ export interface LeftSidebarProps {
   onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
   settingsOpen?: boolean;
   onSettingsOpenChange?: (open: boolean) => void;
+  /** Section to show when the settings dialog opens (e.g. 'profile'). */
+  settingsInitialSection?: string;
   widgetExplorerOpen?: boolean;
   onWidgetExplorerOpenChange?: (open: boolean) => void;
   cubeConnectorOpen?: boolean;
@@ -66,6 +68,7 @@ export function LeftSidebar({
   onImportSolves,
   settingsOpen: externalSettingsOpen,
   onSettingsOpenChange,
+  settingsInitialSection,
   widgetExplorerOpen: externalWidgetExplorerOpen,
   onWidgetExplorerOpenChange,
   cubeConnectorOpen: externalCubeConnectorOpen,
@@ -241,10 +244,14 @@ export function LeftSidebar({
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-2 space-y-1">
+        {/* In the touch regime the Sheet's rail is a plain button — the
+            always-mounted standalone Drawer (rendered below) is the single
+            dialog, so no duplicate Drawer mounts inside the Sheet. */}
         <CubeConnector 
           variant="rail" 
           expanded={labelVisible} 
           open={cubeConnectorOpen}
+          hideDialog={isTouch}
           onOpenChange={(open) => {
             setCubeConnectorOpen(open);
             if (!open) {
@@ -301,11 +308,17 @@ export function LeftSidebar({
               onMobileOpenChange?.(false);
             }
           }}
+          initialSection={settingsInitialSection}
           solves={solves}
           sessionName={sessionName}
           onImportSolves={onImportSolves}
         />
+        {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
+            used to leak into the layout top-left in the touch regime (e.g.
+            the stray Bluetooth icon on the Skill Tree view). The rail button
+            inside the Sheet (or the MobileMoreSheet entry) opens it. */}
         <CubeConnector
+          hideTrigger
           open={cubeConnectorOpen}
           onOpenChange={(open) => {
             setCubeConnectorOpen(open);
@@ -350,6 +363,7 @@ export function LeftSidebar({
             onMobileOpenChange?.(false);
           }
         }}
+        initialSection={settingsInitialSection}
         solves={solves}
         sessionName={sessionName}
         onImportSolves={onImportSolves}

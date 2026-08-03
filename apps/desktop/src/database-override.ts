@@ -15,8 +15,11 @@ import Database from '@tauri-apps/plugin-sql';
 import { MIGRATIONS } from '../../../packages/database/src/migrations/index.js';
 
 // ── Re-export repositories (pure logic, unchanged) ────────────────────
-export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository } from '../../../packages/database/src/repositories/index.js';
-export type { Solve, Session, Algorithm, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor } from '../../../packages/database/src/repositories/index.js';
+// NOTE: keep in sync with packages/database/src/repositories/index.js —
+// the desktop aliases @cubeforge/database to this file, so any repository
+// added upstream must be listed here too.
+export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
+export type { Solve, Session, Algorithm, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow } from '../../../packages/database/src/repositories/index.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
