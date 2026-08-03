@@ -18,6 +18,7 @@ import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useSkillProgress } from "@/hooks/useSkillProgress";
 import { ProfileHero } from "@/components/Identity/ProfileHero";
 import { StatStrip } from "@/components/Identity/StatStrip";
+import { computeSubBadges } from "@/utils/subBadges";
 import { ActivityHeatmap } from "@/components/Insights/atoms/ActivityHeatmap";
 import { EmptyState } from "@/components/Insights/atoms/EmptyState";
 import { SectionHeader } from "@/components/Insights/atoms/SectionHeader";
@@ -406,13 +407,24 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
   const { profile, loading: profileLoading } = useProfile();
   const { stats, loading: statsLoading } = useProfileStats();
 
+  // Sub-X milestone badges ("Sub 5 · 3×3"…) derived from each puzzle's PB.
+  const badges = useMemo(
+    () => computeSubBadges(stats, profile?.mainPuzzle),
+    [stats, profile?.mainPuzzle],
+  );
+
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-4 py-6 sm:px-6">
       <h1 className="mb-4 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
         Profile
       </h1>
 
-      <ProfileHero profile={profile} loading={profileLoading} onEdit={onOpenSettings} />
+      <ProfileHero
+        profile={profile}
+        loading={profileLoading}
+        onEdit={onOpenSettings}
+        badges={badges}
+      />
 
       <div className="mt-4">
         <StatStrip stats={stats} loading={statsLoading} />

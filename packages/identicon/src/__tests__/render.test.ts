@@ -78,6 +78,65 @@ describe('renderCubeMark — SVG output', () => {
   });
 });
 
+describe('renderCubeMark — circle shape (avatar variant)', () => {
+  it('renders a circular tile (rx = half the size) when shape is circle', () => {
+    const svg = renderCubeMark(generateCubeMarkSpec('circle'), {
+      tile: 'surface-2',
+      shape: 'circle',
+    });
+    expect(svg).toContain('rx="32"');
+  });
+
+  it('keeps the rounded-square default when shape is omitted', () => {
+    const svg = renderCubeMark(generateCubeMarkSpec('rounded-default'));
+    // Default tile radius = size * 0.16 = 10.24 at size 64.
+    expect(svg).toContain('rx="10.24"');
+    expect(svg).not.toContain('<clipPath');
+  });
+
+  it('clips the glyph with a deterministic per-seed clipPath', () => {
+    const a = renderCubeMark(generateCubeMarkSpec('seed-a'), { shape: 'circle' });
+    const b = renderCubeMark(generateCubeMarkSpec('seed-b'), { shape: 'circle' });
+    const a2 = renderCubeMark(generateCubeMarkSpec('seed-a'), { shape: 'circle' });
+
+    // Same seed → same clip id (deterministic, stable across re-renders).
+    expect(a).toBe(a2);
+    // Different seeds → different clip ids (no shared clipPath collisions).
+    expect(a).not.toBe(b);
+    expect(a).toContain('<clipPath');
+    expect(a).toContain('clip-path="url(#');
+    expect(a).toContain('<circle cx="32" cy="32" r="32"/>');
+  });
+
+  it('keeps every cell fully inside the circular bounds', () => {
+    // With the wider circle pad (12% of size) the grid's outer corner stays
+    // within the inscribed area, so nothing is cropped for the round avatars.
+    const cellRe =
+      /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="[\d.]+" fill="(hsl\([^"]+\))"/g;
+    for (let i = 0; i < 50; i++) {
+      const svg = renderCubeMark(generateCubeMarkSpec(`circle-fit-${i}`), {
+        shape: 'circle',
+      });
+      let cells = 0;
+      for (const m of svg.matchAll(cellRe)) {
+        const [, x, y, w, h] = m;
+        cells += 1;
+        const corners: Array<[number, number]> = [
+          [Number(x), Number(y)],
+          [Number(x) + Number(w), Number(y)],
+          [Number(x), Number(y) + Number(h)],
+          [Number(x) + Number(w), Number(y) + Number(h)],
+        ];
+        for (const [px, py] of corners) {
+          const dist = Math.hypot(px - 32, py - 32);
+          expect(dist, `seed circle-fit-${i} cell corner ${px},${py}`).toBeLessThanOrEqual(32.001);
+        }
+      }
+      expect(cells).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('resolveGlyphHsl — contrast guarantee', () => {
   it('meets ≥ 3:1 against light and dark surfaces for ALL 24 hues', () => {
     const lightLum = relativeLuminance(hexToRgb(SURFACE_LIGHT));

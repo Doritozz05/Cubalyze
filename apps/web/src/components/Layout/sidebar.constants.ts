@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Dumbbell, Network, User } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Dumbbell, Network } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -54,13 +54,15 @@ export interface NavGroup {
  * "Insights" holds the unified stats + analysis dashboard that takes over
  * the stage (sidebar of solves + overview / per-solve analysis).
  * "Explore" holds discovery surfaces like the Widgets panel.
+ *
+ * Profile lives in the sidebar FOOTER (next to Settings) — its item shows
+ * the user's avatar/CubeMark instead of a generic icon (see LeftSidebar).
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Main",
     items: [
       { id: "timer", label: "Timer", icon: Timer },
-      { id: "profile", label: "Profile", icon: User },
     ],
   },
   {

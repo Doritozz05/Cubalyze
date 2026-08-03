@@ -5,8 +5,10 @@ import { useTheme } from "next-themes";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { motion, LayoutGroup } from "framer-motion";
-import { Sun, Moon, Settings } from "lucide-react";
+import { Sun, Moon, Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Profile } from "@cubeforge/database";
+import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
 import {
   Sheet,
   SheetContent,
@@ -51,6 +53,10 @@ export interface LeftSidebarProps {
   onSettingsOpenChange?: (open: boolean) => void;
   /** Section to show when the settings dialog opens (e.g. 'profile'). */
   settingsInitialSection?: string;
+  /** Stable identity seed (user_id) for the footer CubeMark chip. */
+  profileSeed?: string | null;
+  /** The user's profile row — photo (if set) or display name for the chip. */
+  profile?: Profile | null;
   widgetExplorerOpen?: boolean;
   onWidgetExplorerOpenChange?: (open: boolean) => void;
   cubeConnectorOpen?: boolean;
@@ -69,6 +75,8 @@ export function LeftSidebar({
   settingsOpen: externalSettingsOpen,
   onSettingsOpenChange,
   settingsInitialSection,
+  profileSeed,
+  profile,
   widgetExplorerOpen: externalWidgetExplorerOpen,
   onWidgetExplorerOpenChange,
   cubeConnectorOpen: externalCubeConnectorOpen,
@@ -242,8 +250,20 @@ export function LeftSidebar({
         </LayoutGroup>
       </nav>
 
-      {/* Footer */}
+      {/* Footer — Profile (avatar chip) + device / settings / theme. The
+          Profile entry lives here on DESKTOP only: on touch the navigation
+          sheet keeps the previous footer (Settings / Smart Cube / Theme) and
+          Profile stays in the More bottom sheet (see MobileMoreSheet). */}
       <div className="border-t border-sidebar-border p-2 space-y-1">
+        {!isTouch && (
+          <SidebarProfileItem
+            seed={profileSeed}
+            profile={profile}
+            labelVisible={labelVisible}
+            isActive={activeView === "profile"}
+            onClick={() => handleNavItemClick("profile")}
+          />
+        )}
         {/* In the touch regime the Sheet's rail is a plain button — the
             always-mounted standalone Drawer (rendered below) is the single
             dialog, so no duplicate Drawer mounts inside the Sheet. */}
@@ -450,6 +470,70 @@ function SidebarNavItem({
   );
 
   return button;
+}
+
+/**
+ * Footer entry for the user's identity. Renders the avatar (photo, CubeMark
+ * or a fallback icon) instead of a generic glyph, and shows the display name
+ * when the rail is expanded. Highlights while the Profile view is active.
+ */
+function SidebarProfileItem({
+  seed,
+  profile,
+  labelVisible,
+  isActive,
+  onClick,
+}: {
+  seed?: string | null;
+  profile?: Profile | null;
+  labelVisible: boolean;
+  isActive?: boolean;
+  onClick?: () => void;
+}) {
+  const hasPhoto = profile?.avatarKind === "photo" && !!profile.avatarData;
+  const avatar = hasPhoto ? (
+    <img
+      src={profile.avatarData}
+      alt=""
+      className="size-5 rounded-md object-cover ring-1 ring-sidebar-border"
+    />
+  ) : seed ? (
+    <IdenticonAvatar
+      seed={seed}
+      size={20}
+      tile="surface-2"
+      className="rounded-md ring-1 ring-sidebar-border"
+    />
+  ) : (
+    <UserRound className="size-4" />
+  );
+
+  const label = profile?.displayName?.trim() || "Profile";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors",
+        isActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+      )}
+    >
+      <div className="flex size-5 shrink-0 items-center justify-center">
+        {avatar}
+      </div>
+      <motion.span
+        initial={false}
+        animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
+        transition={SIDEBAR_MOTION.label}
+        className="overflow-hidden whitespace-nowrap"
+      >
+        {label}
+      </motion.span>
+    </button>
+  );
 }
 
 function SidebarFooterItem({

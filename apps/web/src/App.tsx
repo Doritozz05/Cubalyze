@@ -63,8 +63,9 @@ export default function App() {
 
   // Fase F0 (docs/plan_profile): ensure the anonymous local identity exists on
   // first launch. `userId` is the stable seed for the CubeMark identicon shown
-  // in the header chip and the Profile view.
-  const { userId: profileSeed } = useProfile();
+  // in the header chip and the Profile view; the profile row also feeds the
+  // LeftSidebar footer chip (photo or CubeMark).
+  const { userId: profileSeed, profile } = useProfile();
 
   const {
     session,
@@ -809,6 +810,8 @@ export default function App() {
               onWidgetExplorerOpenChange={setWidgetExplorerOpen}
               cubeConnectorOpen={cubeConnectorOpen}
               onCubeConnectorOpenChange={setCubeConnectorOpen}
+              profileSeed={profileSeed}
+              profile={profile}
             />
           }
           isFocused={isFocused}
