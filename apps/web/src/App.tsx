@@ -38,6 +38,7 @@ import {
   puzzleCategoryToType,
   puzzleCategoryToOrder,
   preloadSolvers,
+  PUZZLE_CATEGORIES,
 } from "@/utils/puzzleUtils";
 import { isDev } from "@/utils/env";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -127,9 +128,17 @@ export default function App() {
   const [settingsInitialSection, setSettingsInitialSection] = useState<string | undefined>(undefined);
   const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
-  const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
+  const [puzzle, setPuzzle] = useState<PuzzleCategory>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cubeforge_puzzle");
+      if (saved && PUZZLE_CATEGORIES.includes(saved as PuzzleCategory)) {
+        return saved as PuzzleCategory;
+      }
+    }
+    return "3x3";
+  });
   const [currentScramble, setCurrentScramble] = useState(() =>
-    generateScrambleFor("3x3"),
+    generateScrambleFor(puzzle),
   );
 
   // ── Preload solvers at app startup ─────────────────────────────────────
@@ -192,6 +201,13 @@ export default function App() {
 
   const handlePuzzleChange = useCallback((newPuzzle: PuzzleCategory) => {
     setPuzzle(newPuzzle);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cubeforge_puzzle", newPuzzle);
+      } catch (e) {
+        console.warn("[App] Failed to save puzzle to localStorage", e);
+      }
+    }
     setCurrentScramble(generateScrambleFor(newPuzzle));
     setScrambleIndex(0);
     toast.success(`Switched to ${newPuzzle}`);

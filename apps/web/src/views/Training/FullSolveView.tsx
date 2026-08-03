@@ -122,8 +122,48 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
   const phaseTargets = useMemo(() => getPhaseTargets(method?.name ?? ""), [method]);
 
-  const [solveMode, setSolveMode] = useState<FullSolveMode>("targets");
-  const [useInspection, setUseInspection] = useState(false);
+  const [solveMode, setSolveMode] = useState<FullSolveMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cubeforge_full_solve_mode");
+      if (saved === "targets" || saved === "moves" || saved === "tps" || saved === "rotations" || saved === "free") {
+        return saved as FullSolveMode;
+      }
+    }
+    return "targets";
+  });
+
+  const handleSolveModeChange = (mode: FullSolveMode) => {
+    setSolveMode(mode);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cubeforge_full_solve_mode", mode);
+      } catch (e) {
+        console.warn("[FullSolveView] Failed to save solve mode to localStorage", e);
+      }
+    }
+  };
+
+  const [useInspection, setUseInspection] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cubeforge_full_solve_inspection");
+      if (saved !== null) return saved === "true";
+    }
+    return false;
+  });
+
+  const handleToggleInspection = () => {
+    setUseInspection((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("cubeforge_full_solve_inspection", String(next));
+        } catch (e) {
+          console.warn("[FullSolveView] Failed to save inspection to localStorage", e);
+        }
+      }
+      return next;
+    });
+  };
   const [splits, setSplits] = useState<PhaseSplit[]>(() =>
     phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" as const })),
   );
@@ -385,7 +425,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             {SOLVE_MODES.map((mode) => (
               <button
                 key={mode.id}
-                onClick={() => setSolveMode(mode.id)}
+                onClick={() => handleSolveModeChange(mode.id)}
                 className={cn(
                   "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:shrink-0 max-lg:px-3.5",
                   solveMode === mode.id
@@ -406,7 +446,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             ))}
             <span className="w-px h-5 bg-line mx-1" />
             <button
-              onClick={() => setUseInspection((v) => !v)}
+              onClick={handleToggleInspection}
               disabled={timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",

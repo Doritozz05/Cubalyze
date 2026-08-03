@@ -52,7 +52,28 @@ export function PhaseStatsView({
   void phaseId;
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
   const { cases: allCases } = useMemo(() => getSeedData(), []);
-  const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">(
+    () => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("cubeforge_phase_stats_tab");
+        if (saved === "overview" || saved === "cases" || saved === "history") {
+          return saved;
+        }
+      }
+      return "overview";
+    },
+  );
+
+  const handleTabChange = (tab: "overview" | "cases" | "history") => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cubeforge_phase_stats_tab", tab);
+      } catch (e) {
+        console.warn("[PhaseStatsView] Failed to save tab to localStorage", e);
+      }
+    }
+  };
 
   // ── Real progress from DB ──────────────────────────────────────────────
   const { ready, getSubsetProgress, getPhaseStats, getTrainingSessions } = useTrainingProgress();
@@ -167,7 +188,7 @@ export function PhaseStatsView({
           />
           <div className="flex gap-0.5">
             {(["overview", "cases", "history"] as const).map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)}
+              <button key={tab} onClick={() => handleTabChange(tab)}
                 className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors capitalize",
                   activeTab === tab ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")}>
                 {tab}
@@ -405,7 +426,27 @@ function OverviewTab({
    ─────────────────────────────────────────────────────────────────────── */
 
 function CasesTab({ caseStats }: { caseStats: CaseStat[] }) {
-  const [sortBy, setSortBy] = useState<"mastery" | "time" | "name">("mastery");
+  const [sortBy, setSortBy] = useState<"mastery" | "time" | "name">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cubeforge_phase_stats_sort");
+      if (saved === "mastery" || saved === "time" || saved === "name") {
+        return saved;
+      }
+    }
+    return "mastery";
+  });
+
+  const handleSortChange = (s: "mastery" | "time" | "name") => {
+    setSortBy(s);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cubeforge_phase_stats_sort", s);
+      } catch (e) {
+        console.warn("[PhaseStatsView] Failed to save sort option to localStorage", e);
+      }
+    }
+  };
+
   const sorted = useMemo(() => {
     return [...caseStats].sort((a, b) => {
       if (sortBy === "mastery") return a.mastery - b.mastery;
@@ -428,7 +469,7 @@ function CasesTab({ caseStats }: { caseStats: CaseStat[] }) {
       <div className="flex items-center gap-2">
         <span className="text-[0.58rem] text-ink-3">Sort by:</span>
         {(["mastery", "time", "name"] as const).map((s) => (
-          <button key={s} onClick={() => setSortBy(s)}
+          <button key={s} onClick={() => handleSortChange(s)}
             className={cn("rounded px-2 py-0.5 text-[0.58rem] font-medium capitalize transition-colors",
               sortBy === s ? "bg-ink text-surface" : "text-ink-3 hover:text-ink bg-surface-2")}>
             {s}

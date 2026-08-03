@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, History, Pencil, Trash2, Check, X, Puzzle } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
@@ -147,6 +147,10 @@ export function Header({
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
+
+  useEffect(() => {
+    setPuzzle(puzzleProp);
+  }, [puzzleProp]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
