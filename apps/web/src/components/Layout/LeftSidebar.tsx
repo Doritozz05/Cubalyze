@@ -223,8 +223,8 @@ export function LeftSidebar({
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <LayoutGroup>
+      <LayoutGroup>
+        <nav className="flex-1 overflow-y-auto px-2 py-3">
           {NAV_GROUPS.map((group) => (
             <div key={group.title} className="mb-1">
               <SidebarGroupTitle label={group.title} labelVisible={labelVisible} />
@@ -247,52 +247,52 @@ export function LeftSidebar({
               </div>
             </div>
           ))}
-        </LayoutGroup>
-      </nav>
+        </nav>
 
-      {/* Footer — Profile (avatar chip) + device / settings / theme. The
-          Profile entry lives here on DESKTOP only: on touch the navigation
-          sheet keeps the previous footer (Settings / Smart Cube / Theme) and
-          Profile stays in the More bottom sheet (see MobileMoreSheet). */}
-      <div className="border-t border-sidebar-border p-2 space-y-1">
-        {!isTouch && (
-          <SidebarProfileItem
-            seed={profileSeed}
-            profile={profile}
-            labelVisible={labelVisible}
-            isActive={activeView === "profile"}
-            onClick={() => handleNavItemClick("profile")}
+        {/* Footer — Profile (avatar chip) + device / settings / theme. The
+            Profile entry lives here on DESKTOP only: on touch the navigation
+            sheet keeps the previous footer (Settings / Smart Cube / Theme) and
+            Profile stays in the More bottom sheet (see MobileMoreSheet). */}
+        <div className="border-t border-sidebar-border p-2 space-y-1">
+          {!isTouch && (
+            <SidebarProfileItem
+              seed={profileSeed}
+              profile={profile}
+              labelVisible={labelVisible}
+              isActive={activeView === "profile"}
+              onClick={() => handleNavItemClick("profile")}
+            />
+          )}
+          {/* In the touch regime the Sheet's rail is a plain button — the
+              always-mounted standalone Drawer (rendered below) is the single
+              dialog, so no duplicate Drawer mounts inside the Sheet. */}
+          <CubeConnector 
+            variant="rail" 
+            expanded={labelVisible} 
+            open={cubeConnectorOpen}
+            hideDialog={isTouch}
+            onOpenChange={(open) => {
+              setCubeConnectorOpen(open);
+              if (!open) {
+                onMobileOpenChange?.(false);
+                setIsHovered(false);
+              }
+            }}
           />
-        )}
-        {/* In the touch regime the Sheet's rail is a plain button — the
-            always-mounted standalone Drawer (rendered below) is the single
-            dialog, so no duplicate Drawer mounts inside the Sheet. */}
-        <CubeConnector 
-          variant="rail" 
-          expanded={labelVisible} 
-          open={cubeConnectorOpen}
-          hideDialog={isTouch}
-          onOpenChange={(open) => {
-            setCubeConnectorOpen(open);
-            if (!open) {
-              onMobileOpenChange?.(false);
-              setIsHovered(false);
-            }
-          }}
-        />
-        <SidebarFooterItem
-          icon={Settings}
-          label="Settings"
-          labelVisible={labelVisible}
-          onClick={() => setSettingsOpen(true)}
-        />
-        <SidebarFooterItem
-          icon={mounted && isDark ? Sun : Moon}
-          label={mounted && isDark ? "Light mode" : "Dark mode"}
-          labelVisible={labelVisible}
-          onClick={() => setStoreTheme(isDark ? "light" : "dark")}
-        />
-      </div>
+          <SidebarFooterItem
+            icon={Settings}
+            label="Settings"
+            labelVisible={labelVisible}
+            onClick={() => setSettingsOpen(true)}
+          />
+          <SidebarFooterItem
+            icon={mounted && isDark ? Sun : Moon}
+            label={mounted && isDark ? "Light mode" : "Dark mode"}
+            labelVisible={labelVisible}
+            onClick={() => setStoreTheme(isDark ? "light" : "dark")}
+          />
+        </div>
+      </LayoutGroup>
     </>
   );
 
@@ -515,20 +515,27 @@ function SidebarProfileItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors",
+        "relative flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors group",
         isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          ? "text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
       )}
     >
-      <div className="flex size-5 shrink-0 items-center justify-center">
+      {isActive && (
+        <motion.div
+          layoutId="sidebar-active-bg"
+          className="absolute inset-0 rounded-md bg-sidebar-accent"
+          transition={ACTIVE_PILL_SPRING}
+        />
+      )}
+      <div className="relative z-10 flex size-5 shrink-0 items-center justify-center">
         {avatar}
       </div>
       <motion.span
         initial={false}
         animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
         transition={SIDEBAR_MOTION.label}
-        className="overflow-hidden whitespace-nowrap"
+        className="relative z-10 overflow-hidden whitespace-nowrap"
       >
         {label}
       </motion.span>
