@@ -19,6 +19,7 @@
     "@cubeforge/database": "workspace:*",
     "@cubeforge/gan-protocol": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
+    "@cubeforge/identicon": "workspace:*",
     "@cubeforge/math-core": "workspace:*",
     "@cubeforge/solver-engine": "workspace:*",
     "@cubeforge/state": "workspace:*",

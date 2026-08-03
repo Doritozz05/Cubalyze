@@ -35,6 +35,10 @@ export interface MainLayoutProps {
   leftSidebar?: React.ReactNode;
   /** Open the manual solve entry sheet (the "+" button in the header). */
   onAddManual?: () => void;
+  /** Navigate to the Profile view (header avatar chip). */
+  onOpenProfile?: () => void;
+  /** Stable identity seed for the header CubeMark chip (user_id). */
+  profileSeed?: string;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (shows the split). */
@@ -76,6 +80,8 @@ export function MainLayout({
   main,
   leftSidebar,
   onAddManual,
+  onOpenProfile,
+  profileSeed,
   cube3D,
   cube3DActive,
   cube3DReady,
@@ -292,6 +298,8 @@ export function MainLayout({
               onRenameSession={onRenameSession}
               onDeleteSession={onDeleteSession}
               onAddManual={onAddManual}
+              onOpenProfile={onOpenProfile}
+              profileSeed={profileSeed}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
             />

@@ -13,6 +13,7 @@ import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
 import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
 import { TrainingDashboard } from "@/views/Training/TrainingDashboard";
 import { UltraSkillTreeView } from "@/views/SkillTree/UltraSkillTreeView";
+import { ProfileView } from "@/views/Profile/ProfileView";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
 import { WidgetHost } from "@/widgets/explorer";
@@ -61,10 +62,9 @@ export default function App() {
   const isTouch = useIsTouch();
 
   // Fase F0 (docs/plan_profile): ensure the anonymous local identity exists on
-  // first launch — the stable `user_id` that seeds the CubeMark identicon and
-  // anchors future profile/sync features. UI consumption arrives with the
-  // Profile view (F2+).
-  useProfile();
+  // first launch. `userId` is the stable seed for the CubeMark identicon shown
+  // in the header chip and the Profile view.
+  const { userId: profileSeed } = useProfile();
 
   const {
     session,
@@ -620,6 +620,10 @@ export default function App() {
       return <UltraSkillTreeView onNavigate={(view) => setActiveView(view as ViewId)} />;
     }
 
+    if (activeView === "profile") {
+      return <ProfileView onNavigate={handleNavigate} />;
+    }
+
     // timer
     return (
       <>
@@ -784,6 +788,8 @@ export default function App() {
           }
           isFocused={isFocused}
           onAddManual={() => setManualOpen(true)}
+          onOpenProfile={() => handleNavigate("profile")}
+          profileSeed={profileSeed ?? undefined}
           main={renderMain()}
         />
 
@@ -802,6 +808,7 @@ export default function App() {
           onOpenChange={setMobileMoreOpen}
           onOpenSettings={() => setSettingsOpen(true)}
           onOpenCubeConnector={() => setCubeConnectorOpen(true)}
+          onOpenProfile={() => handleNavigate("profile")}
         />
 
         {/* Manual solve sheet — mounted at App level (opened from the

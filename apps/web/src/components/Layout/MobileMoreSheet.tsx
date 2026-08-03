@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon } from "lucide-react";
+import { Settings, Bluetooth, Sun, Moon, User } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -18,6 +18,7 @@ interface MobileMoreSheetProps {
   onOpenChange: (open: boolean) => void;
   onOpenSettings: () => void;
   onOpenCubeConnector: () => void;
+  onOpenProfile: () => void;
 }
 
 export function MobileMoreSheet({
@@ -25,6 +26,7 @@ export function MobileMoreSheet({
   onOpenChange,
   onOpenSettings,
   onOpenCubeConnector,
+  onOpenProfile,
 }: MobileMoreSheetProps) {
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
@@ -71,6 +73,23 @@ export function MobileMoreSheet({
               <span className="block text-xs font-semibold text-ink">Settings</span>
               <span className="block text-[0.65rem] text-ink-3 mt-0.5 leading-tight">
                 Preferences & inputs
+              </span>
+            </div>
+          </button>
+
+          {/* Profile — identity center */}
+          <button
+            type="button"
+            onClick={() => handleAction(onOpenProfile)}
+            className="flex flex-col items-start gap-2.5 rounded-xl border border-line bg-surface-2/60 p-4 text-left transition-all active:scale-[0.98] active:bg-surface-2 hover:border-line-2 cursor-pointer"
+          >
+            <div className="grid size-9 place-items-center rounded-lg bg-surface border border-line text-ink">
+              <User className="size-5" />
+            </div>
+            <div>
+              <span className="block text-xs font-semibold text-ink">Profile</span>
+              <span className="block text-[0.65rem] text-ink-3 mt-0.5 leading-tight">
+                Your identity & progress
               </span>
             </div>
           </button>

@@ -2,7 +2,7 @@
 
 > **Documento de diseño del perfil de usuario definitivo.**
 > Fecha: Agosto 2026
-> Estado: **Fase F0 implementada** (identidad local + repositorios + ID anónimo). El resto del diseño queda pendiente de validación y aprobación — no implementar más código sin TDD aprobado, según `docs/14-ai/AGENTS.md`
+> Estado: **Fases F0–F3 implementadas** (identidad local, sistema CubeMark, componentes de identidad y vista de perfil navegable). Quedan pendientes F4 (bloques de datos/stats), F5 (edición), F6 (pulido responsive/a11y) y F7 (futuro) — no implementar más sin validar, según `docs/14-ai/AGENTS.md`
 > Método: investigación de referencias → extracción de patrones → análisis comparativo → layout → arquitectura → bloques → investigación de identicons → sistema propio → plan por fases.
 
 ---
@@ -412,8 +412,11 @@ Investigación realizada sobre patrones de diseño de perfiles/dashboards en 4 s
 
 ```
 1. SEED   = user_id (estable)                    [siempre el ID, nunca el display name]
-2. HASH   = SHA-256(seed) (Web Crypto, async, con cache en memoria;
-            fallback sincrono FNV-1a 32-bit si el entorno no tiene Web Crypto)
+2. HASH   = FNV-1a multi-salt de 32 bytes (`hashSeed`): 8 slots con salts
+            distintos, 100% sincrono y sin dependencias. Adoptado sobre
+            SHA-256 async: el identicon no requiere criptografía, solo
+            distribución uniforme con efecto avalancha (misma familia que
+            GitHub/DiceBear)
 3. PRNG   = mulberry32(primeros 4 bytes del hash) → secuencia determinista
 4. GRID   = 5×5 con espejo vertical → 15 celdas de decisión (c0=c4, c1=c3, c2 centro)
             + celda central SIEMPRE activa (ancla)
@@ -439,7 +442,7 @@ interface CubeMarkSpec {
   frame: 0 | 1 | 2;         // estilo de marco interior
 }
 
-generateCubeMarkSpec(seed: string): Promise<CubeMarkSpec>;  // (o sync con fallback)
+generateCubeMarkSpec(seed: string): CubeMarkSpec;           // síncrono y determinista
 renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2' }): string;
 ```
 
@@ -482,33 +485,35 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 | Generación de `user_id` anónimo en primer arranque | `crypto.randomUUID()` (con fallback v4) persistido en `app_meta` | ✅ |
 | Tests | `profile.repository.test.ts` (semántica de primer arranque) + migraciones 019/020 en `migrations.test.ts` | ✅ |
 
-### Fase F1 — Paquete headless `packages/identicon`
+### Fase F1 — Paquete headless `packages/identicon` ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| `generateCubeMarkSpec` + `renderCubeMark` | Algoritmo §9.2 puro, sin React |
-| Tests de garantías (§9.3) | vitest |
-| Benchmark de rendimiento | <1ms con cache |
-| Integración en `packages/types`/`models` | `CubeMarkSpec` tipado |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| `generateCubeMarkSpec` + `renderCubeMark` | Algoritmo §9.2 puro, síncrono, sin React | ✅ |
+| Tests de garantías (§9.3) | vitest: determinismo, simetría, ancla, fill-ratio, unicidad (con presupuesto de colisiones por paridad), contraste 24 hues, rendimiento | ✅ |
+| Benchmark de rendimiento | <1ms por spec+render (test automatizado) | ✅ |
+| Tipos `CubeMarkSpec`/`CubeMarkRenderOptions` | Viven en el propio paquete (headless) | ✅ |
+| Hash determinista | FNV-1a multi-salt (32 bytes), síncrono — ver §9.2 paso 2 | ✅ |
 
-### Fase F2 — Componentes de identidad (UI)
+### Fase F2 — Componentes de identidad (UI) ✅ parcialmente implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| `IdenticonAvatar` | Envuelve `Avatar` (ui); data-URI SVG; tamaños 24/80/112/512 |
-| `ProfileHero` (B1) | Avatar + nombre + handle + chips + acciones |
-| `StatStrip` (B2) | 5 tiles con `MetricTile`/`AnimatedNumber`/`Tooltip` |
-| `ProfileTabs` (B3) | `Tabs` de ui + badges |
-| `BlockHeader`/estados | skeleton + `EmptyState` por bloque |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| `IdenticonAvatar` | SVG **inline** tema-aware (`var(--surface-2)`), memoizado; tamaños 20/80/112 | ✅ |
+| `ProfileHero` (B1) | Avatar + nombre + handle + chips (miembro desde, puzzle, métodos) + bio + skeleton | ✅ |
+| `StatStrip` (B2) | 5 tiles con `MetricTile`/`AnimatedNumber`/`Tooltip` | ⏳ F4 |
+| `ProfileTabs` (B3) | `Tabs` de ui + badges | ⏳ F4 |
+| `BlockHeader`/estados | skeleton + `EmptyState` por bloque | ⏳ F4 |
 
-### Fase F3 — Vista Profile + navegación
+### Fase F3 — Vista Profile + navegación ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| `ViewId = "profile"` + item en sidebar (grupo Main) | `sidebar.constants.ts`, `LeftSidebar` |
-| Avatar-chip en `Header` → navega a profile | reutiliza `IdenticonAvatar` 24px |
-| Entrada táctil (`MobileTabBar`/`MobileMoreSheet`) | patrón existente |
-| `views/Profile/ProfileView.tsx` | orquesta B1→B4 con estados |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| `ViewId = "profile"` + item en sidebar (grupo Main) | `sidebar.constants.ts`, `LeftSidebar` (data-driven) | ✅ |
+| Avatar-chip en `Header` → navega a profile | `IdenticonAvatar` 20px, prop `onOpenProfile`/`profileSeed` | ✅ |
+| Entrada táctil (`MobileMoreSheet`) | Card "Profile" en el grid de opciones | ✅ |
+| `views/Profile/ProfileView.tsx` | Hero (B1) + quick actions reales (navegan a vistas existentes); skeleton/estados | ✅ |
+| Tauri (desktop) | `database-override.ts` re-exporta `AppMetaRepository`/`ProfilesRepository`/`Profile` (alias `@cubeforge/database`) | ✅ |
 
 ### Fase F4 — Bloques de datos (Overview/Stats/Training/Algorithms/Skills)
 
