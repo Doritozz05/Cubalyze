@@ -61,7 +61,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
   const interactive = !!onExpand;
 
   return (
-    <div className="relative w-full flex flex-col items-center justify-center h-[58px] shrink-0">
+    <div className="relative w-full flex flex-col items-center justify-center h-14.5 shrink-0">
       <AnimatePresence initial={false}>
         {isMinimized ? (
           <motion.div
@@ -98,7 +98,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
           >
             <div className="relative flex flex-col items-center w-full h-full justify-center">
               {bpaWpa != null && (
-                <div className="absolute -top-[30px] left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface/95 px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
+                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface/95 px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
                   <span className="font-mono">
                     Ao{bpaWpa.targetN} BPA: <strong className="text-ready font-semibold">{formatTime(bpaWpa.bpa ?? 0)}</strong>
                   </span>
