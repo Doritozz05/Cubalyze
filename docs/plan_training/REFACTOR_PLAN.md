@@ -489,7 +489,9 @@ inserción** y que todo id escrito exista en el catálogo:
 - [x] `TrainingDashboard` (data-driven; FlatDashboard/ExerciseCard extraídos).
 - [x] `FullSolveView` (targets-data, splits skipped, singleton solver; paneles extraídos).
 - [x] `CrossTrainerView` (timer real + eficiencia tolerante + stats DB; paneles extraídos).
-- [ ] Vistas thin (Plain/Blind/LSE/EO) → IDs canónicos + `useTrainingEngine`. (pendiente)
+- [x] Vistas thin (Plain/Blind/LSE/EO) → IDs canónicos + `useTrainingEngine`
+      (`usePracticeSession` reescrito para delegar en el engine; las 5 vistas
+      Plain/Blind/LSE/EO consumen el mismo machine con IDs canónicos).
 - [ ] Aceptación: verificación browser de cada vista (flujo completo + datos persistidos
       coherentes entre UI y DB); `pnpm --filter @cubeforge/web typecheck` y tests web.
 - Archivos: `apps/web/src/views/Training/**`.

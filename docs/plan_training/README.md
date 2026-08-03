@@ -5,8 +5,8 @@
 > Estado: Implementación base completada (2026-08) — ver [REFACTOR_PLAN.md](./REFACTOR_PLAN.md)
 > para el estado fase a fase (Fases 1-6 ejecutadas: métricas honestas, baseline v2,
 > tipos unificados, catálogo real, timer compartido, `useTrainingEngine` adoptado en
-> Drill/Recognize, vistas partidas, `masteryLevel` de 5 niveles). Pendiente: vistas thin
-> (Plain/Blind/LSE/EO) migradas a `useTrainingEngine` y verificación browser final.
+> Drill/Recognize + vistas thin (Plain/Blind/LSE/EO) vía `usePracticeSession`, vistas
+> partidas, `masteryLevel` de 5 niveles). Pendiente: verificación browser final.
 
 ---
 

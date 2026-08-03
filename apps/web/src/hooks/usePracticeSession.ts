@@ -4,11 +4,10 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import type { HintContext } from "@/components/Timer/hintFor";
-import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
+import type { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useOrientation } from "@/hooks/useOrientation";
-import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import { useTrainingSession } from "@/hooks/useTrainingSession";
+import { useTrainingEngine } from "@/hooks/useTrainingEngine";
 import { RandomStateGenerator } from "@cubeforge/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 import type { MetricKind } from "@cubeforge/training";
@@ -23,9 +22,6 @@ export function formatTime(ms: number): string {
   return s < 10 ? s.toFixed(2) : s < 60 ? s.toFixed(2)
     : `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
 }
-
-let _gid = 0;
-export function nextPracticeId(): string { return `pr-${++_gid}-${Date.now()}`; }
 
 /* ──────────────────────────────────────────────────────────────────────────
    Types
@@ -84,35 +80,53 @@ export interface PracticeSessionResult {
    Hook
    ─────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Thin practice-mode orchestrator. Delegates the session state machine, the
+ * drill timer, DB persistence and the logical session to `useTrainingEngine`
+ * (the SAME engine Drill/Recognize use), so every training view shares one
+ * machine with its 45+ reducer tests behind it.
+ *
+ * Behaviour preserved from the legacy hook:
+ *  - skips ARE persisted to the DB (verdict 'skipped', timeMs 0) so
+ *    fail/skip rates are real, but they are NOT counted in the local
+ *    session stats (attempts/best/avg/streak);
+ *  - scrambles are generated locally with RandomStateGenerator.
+ */
 export function usePracticeSession({
   methodId, phaseId, exerciseId,
   metricKind, moveCount, optimalMoves, tps, rotationCount,
 }: PracticeSessionParams): PracticeSessionResult {
-  const [attempts, setAttempts] = useState<PracticeAttempt[]>([]);
   const [currentScramble, setCurrentScramble] = useState(
     () => RandomStateGenerator.generateScramble(getMin2PhaseSolver()),
   );
 
-  // Timer
-  const { phase, time, stoppedTime, press, release, reset, engine } = useDrillTimer();
-  const { remapScramble } = useOrientation();
-  const displayScramble = remapScramble(currentScramble);
-  const smartCube = useDrillSmartCube({ engine, setupScramble: currentScramble });
-  const hasSmartCube = smartCube.smartCubeConnected;
-  const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
-  const { sessionId } = useTrainingSession({
-    exerciseId,
-    methodId,
-    phaseId,
-    smartCubeUsed: hasSmartCube,
+  // Smart cube connection, tracked before the engine so the persisted session
+  // records smartCubeUsed=true once a cube is linked (same pattern as Drill).
+  const [smartCubeConnected, setSmartCubeConnected] = useState(false);
+
+  // Training engine: session machine + drill timer + persistence + session.
+  const {
+    phase, time, stoppedTime, press, release, reset,
+    timerEngine, sessionState, sessionId,
+    submitVerdict,
+  } = useTrainingEngine({
+    preset: { exerciseId, methodId, phaseId },
+    smartCubeUsed: smartCubeConnected,
   });
 
-  // Verdict
-  const [showVerdict, setShowVerdict] = useState(false);
+  const { remapScramble } = useOrientation();
+  const displayScramble = remapScramble(currentScramble);
+  const smartCube = useDrillSmartCube({ engine: timerEngine, setupScramble: currentScramble });
+  const hasSmartCube = smartCube.smartCubeConnected;
+
   useEffect(() => {
-    if (phase === "stopped" && stoppedTime > 0) setShowVerdict(true);
-    else if (phase !== "stopped") setShowVerdict(false);
-  }, [phase, stoppedTime]);
+    if (hasSmartCube !== smartCubeConnected) {
+      setSmartCubeConnected(hasSmartCube);
+    }
+  }, [hasSmartCube, smartCubeConnected]);
+
+  // Verdict
+  const showVerdict = phase === "stopped" && stoppedTime > 0;
 
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const scrambleVerificationRaw = useStore(preferencesStore, (s) => s.scrambleVerification);
@@ -123,7 +137,19 @@ export function usePracticeSession({
     isScrambled: smartCube.validation.isScrambled,
   }), [hasSmartCube, scrambleVerification, smartCube.validation.isScrambled]);
 
-  // Stats
+  // Stats derive from the session machine. Skips are excluded so they match
+  // the historical behaviour (skips never counted in local stats).
+  const attempts: PracticeAttempt[] = useMemo(
+    () => sessionState.attempts
+      .filter((a) => a.verdict !== "skipped")
+      .map((a) => ({
+        id: a.id,
+        timeMs: a.timeMs,
+        correct: a.verdict === "correct",
+        timestamp: a.timestamp,
+      })),
+    [sessionState.attempts],
+  );
   const validAttempts = attempts.filter((a) => a.timeMs > 0);
   const bestTime = validAttempts.length > 0 ? Math.min(...validAttempts.map((a) => a.timeMs)) : 0;
   const avgTime = validAttempts.length > 0
@@ -134,44 +160,47 @@ export function usePracticeSession({
     return s;
   }, [attempts]);
 
-  // Persist
-  const recordAttempt = useCallback((correct: boolean) => {
-    setAttempts((prev) => [{
-      id: nextPracticeId(), timeMs: stoppedTime, correct, timestamp: Date.now(),
-    }, ...prev]);
-    dbPersistAttempt({
-      exerciseId, methodId, phaseId, timeMs: stoppedTime,
-      verdict: correct ? "correct" : "incorrect",
+  const regenerateScramble = useCallback(() => {
+    setCurrentScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
+  }, []);
+
+  const persist = useCallback((verdict: "correct" | "incorrect" | "skipped", time: number) => {
+    void submitVerdict({
+      verdict,
       playMode: hasSmartCube ? "smart-cube" : "manual",
       scramble: currentScramble,
+      timeMs: time,
       metricKind,
       sessionId: sessionId ?? undefined,
       moveCount: moveCount ?? undefined,
       optimalMoves: optimalMoves ?? undefined,
       tps: tps ?? undefined,
       rotationCount: rotationCount ?? undefined,
-    }).catch((err) => { console.error(`[${exerciseId}] Failed to persist:`, err); });
-  }, [stoppedTime, dbPersistAttempt, methodId, phaseId, exerciseId, hasSmartCube, currentScramble,
-    metricKind, sessionId, moveCount, optimalMoves, tps, rotationCount]);
+    }).catch((err) => {
+      console.error(`[${exerciseId}] Failed to persist:`, err);
+    });
+  }, [submitVerdict, hasSmartCube, currentScramble, metricKind, sessionId,
+    moveCount, optimalMoves, tps, rotationCount, exerciseId]);
 
-  const regenerateScramble = useCallback(() => {
-    setCurrentScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
-  }, []);
+  const handleCorrect = useCallback(() => {
+    persist("correct", stoppedTime);
+    reset();
+    regenerateScramble();
+  }, [persist, stoppedTime, reset, regenerateScramble]);
 
-  const handleCorrect = useCallback(() => { recordAttempt(true); reset(); regenerateScramble(); }, [recordAttempt, reset, regenerateScramble]);
-  const handleIncorrect = useCallback(() => { recordAttempt(false); reset(); regenerateScramble(); }, [recordAttempt, reset, regenerateScramble]);
+  const handleIncorrect = useCallback(() => {
+    persist("incorrect", stoppedTime);
+    reset();
+    regenerateScramble();
+  }, [persist, stoppedTime, reset, regenerateScramble]);
+
   const handleSkip = useCallback(() => {
-    // Skips are also persisted (verdict 'skipped') so fail/skip rates are real.
-    dbPersistAttempt({
-      exerciseId, methodId, phaseId, timeMs: 0,
-      verdict: "skipped",
-      playMode: hasSmartCube ? "smart-cube" : "manual",
-      scramble: currentScramble,
-      metricKind,
-      sessionId: sessionId ?? undefined,
-    }).catch((err) => { console.error(`[${exerciseId}] Failed to persist skip:`, err); });
-    reset(); regenerateScramble();
-  }, [reset, regenerateScramble, dbPersistAttempt, exerciseId, methodId, phaseId, hasSmartCube, currentScramble, metricKind, sessionId]);
+    // Skips are persisted (verdict 'skipped', timeMs 0) so fail/skip rates are
+    // real — but excluded from the local stats above (historical behaviour).
+    persist("skipped", 0);
+    reset();
+    regenerateScramble();
+  }, [persist, reset, regenerateScramble]);
 
   return {
     phase, time, stoppedTime, press, release, reset,

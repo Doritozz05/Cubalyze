@@ -31,7 +31,8 @@ export interface UseTrainingEngineOptions {
 export interface SubmitVerdictParams {
   verdict: AttemptVerdict;
   playMode?: PlayMode;
-  caseId: string;
+  /** Case being practiced — optional for generic practice modes (no case id). */
+  caseId?: string;
   scramble: string;
   timeMs: number;
   expectedMoves?: string[];
@@ -39,6 +40,11 @@ export interface SubmitVerdictParams {
   advanceSRS?: boolean;
   /** Persisted with the attempt when provided (session grouping). */
   sessionId?: string;
+  /** Efficiency metadata so phase-target trainings feed real phase stats. */
+  moveCount?: number;
+  optimalMoves?: number;
+  tps?: number;
+  rotationCount?: number;
 }
 
 export function useTrainingEngine({
@@ -107,7 +113,7 @@ export function useTrainingEngine({
   // ── Submit a verdict: drive the machine through the cycle, persist ──
   const submitVerdict = useCallback(
     async (params: SubmitVerdictParams) => {
-      const { verdict, playMode = "manual", caseId, scramble, timeMs, expectedMoves, metricKind, advanceSRS } = params;
+      const { verdict, playMode = "manual", caseId = "", scramble, timeMs, expectedMoves, metricKind, advanceSRS } = params;
       const ph = engine.getState().phase;
 
       // Move the machine to the verdict state if it isn't there yet
@@ -131,7 +137,7 @@ export function useTrainingEngine({
         exerciseId: preset.exerciseId,
         methodId: preset.methodId,
         phaseId: preset.phaseId,
-        caseId,
+        caseId: caseId || undefined,
         sessionId: params.sessionId,
         timeMs,
         verdict,
@@ -139,6 +145,10 @@ export function useTrainingEngine({
         scramble,
         metricKind,
         advanceSRS,
+        moveCount: params.moveCount,
+        optimalMoves: params.optimalMoves,
+        tps: params.tps,
+        rotationCount: params.rotationCount,
       });
       engine.dispatch({ type: "NEXT_ATTEMPT" });
     },
