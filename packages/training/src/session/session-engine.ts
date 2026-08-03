@@ -31,6 +31,9 @@ interface InternalState {
   smartCubeConnected: boolean;
   currentScramble: string;
   currentCaseId: string;
+  /** Whether the current attempt was already judged — makes VERDICT idempotent
+   * so a double-invoke (UI double-click) can never double-count an attempt. */
+  judged: boolean;
 }
 
 // ─── Event Types ─────────────────────────────────────────────────────────
@@ -130,6 +133,7 @@ export class TrainingSessionEngine {
 
       case 'VERDICT': {
         if (state.phase !== 'verdict') return state;
+        if (state.judged) return state; // idempotent: a 2nd verdict on the same attempt is a no-op
         const attempt: TrainingAttempt = {
           id: `attempt-${++this.attemptIdCounter}-${Date.now()}`,
           exerciseId: state.config.preset.exerciseId,
@@ -145,12 +149,13 @@ export class TrainingSessionEngine {
           ...state,
           attempts: [attempt, ...state.attempts],
           attemptIndex: state.attemptIndex + 1,
+          judged: true,
         };
       }
 
       case 'NEXT_ATTEMPT':
         if (state.phase !== 'verdict') return state;
-        return { ...state, phase: 'setup', stoppedTimeMs: 0 };
+        return { ...state, phase: 'setup', stoppedTimeMs: 0, judged: false };
 
       case 'END_SESSION':
         return { ...state, phase: 'idle' };
@@ -176,6 +181,7 @@ export class TrainingSessionEngine {
       smartCubeConnected: false,
       currentScramble: '',
       currentCaseId: '',
+      judged: false,
     };
   }
 

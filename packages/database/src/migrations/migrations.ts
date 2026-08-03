@@ -563,4 +563,11 @@ export const MIGRATIONS: Migration[] = [
         ON training_sessions(completed_at);
     `,
   },
+  {
+    id: '023_exercise_exec_time_attempts',
+    description: 'Add exec_time_attempts to exercise_progress — the execution-with-timer denominator (including honest "skipped" Full Solve splits) kept separate from exec_attempts (the accuracy denominator, which excludes skipped) so skipped splits feed avg/best time without diluting phase accuracy.',
+    sql: `
+      ALTER TABLE exercise_progress ADD COLUMN exec_time_attempts INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];

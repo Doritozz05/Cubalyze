@@ -116,6 +116,15 @@ export function useTrainingEngine({
       const { verdict, playMode = "manual", caseId = "", scramble, timeMs, expectedMoves, metricKind, advanceSRS } = params;
       const ph = engine.getState().phase;
 
+      // A verdict is ALREADY pending — this is a double-invoke (a second click
+      // on the same quiz question / record button before the machine advanced).
+      // Return WITHOUT recording. Without this guard the second VERDICT dispatch
+      // below would push + persist a duplicate attempt: the reducer only guards on
+      // phase, and phase stays "verdict" between the VERDICT dispatch and the
+      // await progress.recordAttempt(...), so two calls both pass this check and
+      // double-count the attempt.
+      if (ph === "verdict") return;
+
       // Move the machine to the verdict state if it isn't there yet
       // (untimed quizzes jump straight from setup; a double-click is ignored).
       if (ph === "setup") {

@@ -127,8 +127,12 @@ export interface ExerciseProgressRecord {
   phaseId?: string;
   totalSessions: number;
   totalAttempts: number;
-  /** Exact execution attempt count (time-bearing drills). */
+  /** Exact execution attempt count (time-bearing, accuracy denominator —
+   * EXCLUDES "skipped" verdicts so honest Full Solve splits never dilute accuracy). */
   execAttempts: number;
+  /** Optional exact execution-with-timer count (time denominator for avg/best),
+   * INCLUDING "skipped" verdicts. Absent on legacy/partial records → defaults. */
+  execTimeAttempts?: number;
   /** Exact execution correct count (drives exercise-level accuracy). */
   execCorrect: number;
   bestAccuracy: number;
@@ -302,6 +306,7 @@ export function normalizeExerciseProgress(p: ExerciseProgressRecord): ExercisePr
   return {
     ...p,
     execAttempts: p.execAttempts ?? (p.totalAttempts ?? 0),
+    execTimeAttempts: p.execTimeAttempts ?? p.execAttempts ?? 0,
     execCorrect: p.execCorrect ?? 0,
   };
 }
@@ -394,8 +399,16 @@ export class ProgressTracker {
     const rawEx = await this.repo.getExerciseProgress(exerciseId, methodId, phaseId);
     const exPrev = rawEx ? normalizeExerciseProgress(rawEx) : null;
     const hasTime = timeMs > 0 && isExecutionAttempt;
+    // Accuracy denominator: execution-with-timer EXCLUDING "skipped" (honest
+    // Full Solve splits carry real time but no correctness verdict). Mirrors the
+    // getPhaseStats SQL so both callers agree — skipped splits never dilute accuracy.
+    const isJudgedExec = hasTime && verdict !== "skipped";
     const exPrevExecAttempts = exPrev?.execAttempts ?? 0;
-    const exExecAttempts = exPrevExecAttempts + (hasTime ? 1 : 0);
+    const exExecAttempts = exPrevExecAttempts + (isJudgedExec ? 1 : 0);
+    // Time denominator: any execution-with-timer attempt, INCLUDING "skipped" —
+    // so Full Solve splits still feed avg/best time ("honest timing, no verdict").
+    const exPrevTimeAttempts = exPrev?.execTimeAttempts ?? 0;
+    const exTimeAttempts = exPrevTimeAttempts + (hasTime ? 1 : 0);
     const exProgress: ExerciseProgressRecord = {
       exerciseId,
       methodId,
@@ -403,14 +416,15 @@ export class ProgressTracker {
       totalSessions: exPrev?.totalSessions ?? 0,
       totalAttempts: (exPrev?.totalAttempts ?? 0) + 1,
       execAttempts: exExecAttempts,
-      execCorrect: (exPrev?.execCorrect ?? 0) + (hasTime && verdict === "correct" ? 1 : 0),
+      execTimeAttempts: exTimeAttempts,
+      execCorrect: (exPrev?.execCorrect ?? 0) + (isJudgedExec && verdict === "correct" ? 1 : 0),
       bestAccuracy: Math.max(exPrev?.bestAccuracy ?? 0, verdict === "correct" ? 100 : 0),
-      bestTimeMs: hasTime
+      bestTimeMs: isJudgedExec
         ? exPrev && exPrev.bestTimeMs > 0 ? Math.min(exPrev.bestTimeMs, timeMs) : timeMs
         : (exPrev?.bestTimeMs ?? 0),
       avgTimeMs: hasTime
-        ? exPrev && exPrevExecAttempts > 0
-          ? Math.round((exPrev.avgTimeMs * exPrevExecAttempts + timeMs) / exExecAttempts)
+        ? exPrev && exPrevTimeAttempts > 0
+          ? Math.round((exPrev.avgTimeMs * exPrevTimeAttempts + timeMs) / exTimeAttempts)
           : timeMs
         : (exPrev?.avgTimeMs ?? 0),
       lastPracticedAt: now,

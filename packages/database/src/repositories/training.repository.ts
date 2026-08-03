@@ -83,6 +83,7 @@ export interface ExerciseProgressRow {
   total_sessions: number;
   total_attempts: number;
   exec_attempts: number;
+  exec_time_attempts: number;
   exec_correct: number;
   best_accuracy: number;
   best_time_ms: number;
@@ -222,6 +223,7 @@ function rowToExerciseProgress(row: ExerciseProgressRow): ExerciseProgress {
     totalSessions: row.total_sessions,
     totalAttempts: row.total_attempts,
     execAttempts: row.exec_attempts ?? 0,
+    execTimeAttempts: row.exec_time_attempts ?? row.exec_attempts ?? 0,
     execCorrect: row.exec_correct ?? 0,
     bestAccuracy: row.best_accuracy,
     bestTimeMs: row.best_time_ms,
@@ -618,12 +620,12 @@ export class TrainingRepository {
     if (existing) {
       await this.db(
         `UPDATE exercise_progress SET total_sessions = ?, total_attempts = ?, exec_attempts = ?,
-         exec_correct = ?, best_accuracy = ?,
+         exec_time_attempts = ?, exec_correct = ?, best_accuracy = ?,
          best_time_ms = ?, avg_time_ms = ?, last_practiced_at = ?
          WHERE id = ?`,
         [
           progress.totalSessions, progress.totalAttempts, progress.execAttempts,
-          progress.execCorrect, progress.bestAccuracy,
+          progress.execTimeAttempts ?? 0, progress.execCorrect, progress.bestAccuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.lastPracticedAt,
           existing.id,
         ],
@@ -633,13 +635,13 @@ export class TrainingRepository {
       const id = generateId();
       await this.db(
         `INSERT INTO exercise_progress (id, exercise_id, method_id, phase_id, total_sessions,
-         total_attempts, exec_attempts, exec_correct, best_accuracy, best_time_ms, avg_time_ms,
+         total_attempts, exec_attempts, exec_time_attempts, exec_correct, best_accuracy, best_time_ms, avg_time_ms,
          last_practiced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, progress.exerciseId, progress.methodId, progress.phaseId ?? null,
           progress.totalSessions, progress.totalAttempts, progress.execAttempts,
-          progress.execCorrect, progress.bestAccuracy,
+          progress.execTimeAttempts ?? 0, progress.execCorrect, progress.bestAccuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.lastPracticedAt,
         ],
       );

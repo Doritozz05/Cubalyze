@@ -66,8 +66,6 @@ export const FSRS_DEFAULTS: FSRSRecord = {
 const FACTOR = 19 / 81; // ≈ 0.2346
 /** Retrievability decay exponent. */
 const DECAY = -0.5;
-/** Target retention: the next review is scheduled when R ≈ 0.9. */
-const REQUEST_RETENTION = 0.9;
 const MIN_DIFFICULTY = 1;
 const MAX_DIFFICULTY = 10;
 const MAX_INTERVAL_DAYS = 365;

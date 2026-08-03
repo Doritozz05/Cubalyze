@@ -660,6 +660,33 @@ describe("Full session lifecycle", () => {
     engine.dispatch({ type: "END_SESSION" });
     expect(engine.getState().phase).toBe("idle");
   });
+
+  it("ignores a second VERDICT on the same attempt (double-click never double-counts)", () => {
+    const engine = new TrainingSessionEngine();
+    startSession(engine);
+    engine.dispatch({ type: "SCRAMBLE_GENERATED", scramble: "F R U R' U' F'", caseId: "oll-33" });
+    engine.dispatch({ type: "ARM" });
+    engine.dispatch({ type: "START_SOLVING" });
+    engine.dispatch({ type: "STOP", timeMs: 1500 });
+
+    engine.dispatch({ type: "VERDICT", verdict: "correct", playMode: "manual" });
+    // A double-click fires a 2nd verdict while still on the same attempt.
+    engine.dispatch({ type: "VERDICT", verdict: "correct", playMode: "manual" });
+    engine.dispatch({ type: "VERDICT", verdict: "incorrect", playMode: "manual" });
+
+    expect(engine.getState().attempts).toHaveLength(1);
+    expect(engine.getState().attempts[0].verdict).toBe("correct");
+    expect(engine.getState().attemptIndex).toBe(1);
+
+    // A fresh attempt resets idempotency — VERDICT is accepted again.
+    engine.dispatch({ type: "NEXT_ATTEMPT" });
+    engine.dispatch({ type: "SCRAMBLE_GENERATED", scramble: "U R U' R'", caseId: "oll-2" });
+    engine.dispatch({ type: "ARM" });
+    engine.dispatch({ type: "START_SOLVING" });
+    engine.dispatch({ type: "STOP", timeMs: 1200 });
+    engine.dispatch({ type: "VERDICT", verdict: "incorrect", playMode: "smart-cube" });
+    expect(engine.getState().attempts).toHaveLength(2);
+  });
 });
 
 // ─── Smart cube play mode ─────────────────────────────────────────────────
