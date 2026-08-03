@@ -12,8 +12,10 @@
  *  4. Fill density is chosen deterministically in [9..16] of the FULL mirrored
  *     grid (36–64%) and enforced by construction: each decision cell adds 1
  *     (center column) or 2 (columns 0/1 + their mirror) to the total.
- *  5. Hue quantized in 24 steps of 15°; an interior frame variant (0–2) adds
- *     per-user differentiation without touching the silhouette.
+ *  5. Hue quantized in 24 steps of 15°.
+ *
+ * The glyph is PURE CELLS (no interior frame / overlay) — every CubeMark
+ * renders as squares only.
  */
 
 import {
@@ -22,7 +24,6 @@ import {
   HUE_STEP_DEG,
   FILL_ON_MIN,
   FILL_ON_MAX,
-  FRAME_VARIANTS,
 } from './constants.js';
 import { hashSeed, mulberry32, readU32 } from './hash.js';
 
@@ -33,8 +34,6 @@ export interface CubeMarkSpec {
   cells: boolean[];
   /** Hue in degrees, quantized to 15° steps (0..345). */
   hue: number;
-  /** Interior frame variant: 0 = none, 1 = thin, 2 = thick. */
-  frame: 0 | 1 | 2;
 }
 
 /**
@@ -107,7 +106,6 @@ export function generateCubeMarkSpec(seed: string): CubeMarkSpec {
   const cells = chooseCells(prng, targetOn);
 
   const hueIndex = readU32(bytes, 4) % HUE_STEPS;
-  const frame = readU32(bytes, 8) % FRAME_VARIANTS;
 
-  return { seed, cells, hue: hueIndex * HUE_STEP_DEG, frame: frame as 0 | 1 | 2 };
+  return { seed, cells, hue: hueIndex * HUE_STEP_DEG };
 }

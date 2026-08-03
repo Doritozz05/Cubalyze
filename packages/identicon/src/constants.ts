@@ -28,9 +28,6 @@ export const FILL_RATIO_MAX = 0.65;
 export const FILL_ON_MIN = 9;
 export const FILL_ON_MAX = 16;
 
-/** Interior frame variants (2 bits from the hash). */
-export const FRAME_VARIANTS = 3 as const; // 0 = none, 1 = thin, 2 = thick
-
 /** Contrast guarantee: glyph vs surface ≥ 3:1 in both themes (WCAG UI text). */
 export const MIN_CONTRAST = 3;
 

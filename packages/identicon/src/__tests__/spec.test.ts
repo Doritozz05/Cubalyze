@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { generateCubeMarkSpec } from '../spec.js';
-import { GRID_SIZE, CELL_COUNT, ANCHOR_INDEX, FILL_ON_MIN, FILL_ON_MAX, FRAME_VARIANTS, HUE_STEPS, HUE_STEP_DEG } from '../constants.js';
+import { GRID_SIZE, CELL_COUNT, ANCHOR_INDEX, FILL_ON_MIN, FILL_ON_MAX, HUE_STEPS, HUE_STEP_DEG } from '../constants.js';
 
 function fingerprint(spec: ReturnType<typeof generateCubeMarkSpec>): string {
-  return JSON.stringify({ cells: spec.cells, hue: spec.hue, frame: spec.frame });
+  return JSON.stringify({ cells: spec.cells, hue: spec.hue });
 }
 
 function countFilled(cells: boolean[]): number {
@@ -64,30 +64,29 @@ describe('generateCubeMarkSpec — legibility guarantees', () => {
     }
   });
 
-  it('quantizes hue in 15° steps and keeps the frame variant in range', () => {
+  it('quantizes hue in 15° steps', () => {
     for (let i = 0; i < 200; i++) {
-      const { hue, frame } = generateCubeMarkSpec(`meta-${i}`);
+      const { hue } = generateCubeMarkSpec(`meta-${i}`);
       expect(hue).toBeGreaterThanOrEqual(0);
       expect(hue).toBeLessThan(360);
       expect(hue % HUE_STEP_DEG).toBe(0);
-      expect(frame).toBeGreaterThanOrEqual(0);
-      expect(frame).toBeLessThan(FRAME_VARIANTS);
     }
   });
 });
 
 describe('generateCubeMarkSpec — differentiation', () => {
   it('500 distinct seeds produce almost entirely distinct glyphs (collision budget)', () => {
-    // Fingerprint space: ~thousands of mirror-symmetric cell patterns × 24 hues
-    // × 3 frames. By birthday parity a handful of collisions per 500 random
-    // seeds is EXPECTED — the guard is against systematic collapse (a broken
+    // Fingerprint space: thousands of mirror-symmetric cell patterns × 24
+    // hues (the glyph is pure cells — no frame overlay to multiply space).
+    // By birthday parity a handful of collisions per 500 random seeds is
+    // EXPECTED — the guard is against systematic collapse (a broken
     // generator collapses to ~400/500, as a debug run demonstrated).
     const seen = new Set<string>();
     for (let i = 0; i < 500; i++) {
       const spec = generateCubeMarkSpec(`unique-${i}-${crypto.randomUUID?.() ?? i}`);
       seen.add(fingerprint(spec));
     }
-    expect(seen.size).toBeGreaterThanOrEqual(498);
+    expect(seen.size).toBeGreaterThanOrEqual(496);
   });
 
   it('covers the full hue space across many seeds', () => {

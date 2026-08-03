@@ -419,8 +419,8 @@ Investigación realizada sobre patrones de diseño de perfiles/dashboards en 4 s
             GitHub/DiceBear)
 3. PRNG   = mulberry32(primeros 4 bytes del hash) → secuencia determinista
 4. GRID   = 5×5 con espejo vertical → 15 celdas de decisión (c0=c4, c1=c3, c2 centro)
-            + celda central SIEMPRE activa (ancla)
-            + 2 bits para estilo de marco interior (ninguno / fino / grueso) → variación
+            + celda central SIEMPRE activa (ancla). Glifo de CELDAS PURAS —
+            sin marcos ni overlays: todo CubeMark son cuadrados
 5. SELECCIÓN DE CELDAS = regla de conectividad: bit activo con peso extra si es
             adyacente al ancla; ratio de relleno forzado 35–65% (re-roll local del PRNG)
 6. COLOR  = hue = bits altos del hash (cuantizado en 24 pasos de 15° → paletas
@@ -437,9 +437,8 @@ Investigación realizada sobre patrones de diseño de perfiles/dashboards en 4 s
 ```typescript
 // packages/identicon/src/index.ts
 interface CubeMarkSpec {
-  cells: number[];          // 15 bits (tras espejo) + ancla implícita
-  hue: number;              // 0–360
-  frame: 0 | 1 | 2;         // estilo de marco interior
+  cells: boolean[];         // 25 celdas, rejilla espejada ya aplicada
+  hue: number;              // 0–345 (pasos de 15°)
 }
 
 generateCubeMarkSpec(seed: string): CubeMarkSpec;           // síncrono y determinista
@@ -535,7 +534,7 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 |---|---|---|
 | Sección "Profile" en Settings | `ProfileSection.tsx`: nombre, @handle (con `@` prefijo), bio (contador 280), puzzle principal (2×2/3×3 pills), métodos declarados (chips toggle desde `METHODS` del catálogo) | ✅ |
 | Botón "Edit profile" | `ProfileHero` gana `onEdit` → abre Settings en la sección profile vía `initialSection` (App → LeftSidebar → SettingsDialog) | ✅ |
-| Avatar editor | subir foto (base64 ≤1.5 MB, `FileReader` → `profiles.avatar_data`), cambiar foto, restablecer identicon (el CubeMark nunca se borra, D5) | ✅ |
+| Avatar editor | subir foto (fuente ≤10 MB, redimensionada y comprimida en cliente a ≤512px vía canvas → WebP/JPEG/PNG, `processAvatarImage`; fallback al original solo si es pequeño), cambiar foto, restablecer identicon (el CubeMark nunca se borra, D5) | ✅ |
 | Validación | `HANDLE_RE` (3–20 chars lowercase/alnum/-/_), bio ≤280, mismo espíritu que `ProfileSchema` | ✅ |
 | Export del perfil | botón "Export profile (JSON)" con `downloadFile` (payload completo de `profiles`) | ✅ |
 | Feedback | toast de éxito/error, estado saving con spinner, preview del avatar en el propio editor | ✅ |

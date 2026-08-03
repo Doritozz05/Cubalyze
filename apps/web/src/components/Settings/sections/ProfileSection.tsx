@@ -18,6 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { downloadFile } from "@/utils/exportSolves";
+import {
+  MAX_AVATAR_SOURCE_BYTES,
+  processAvatarImage,
+} from "@/utils/processAvatarImage";
 import { METHODS } from "@cubeforge/algorithm-db";
 
 /** Puzzle types the app actually supports today (2×2 / 3×3). */
@@ -28,16 +32,6 @@ const METHOD_NAMES = METHODS.map((m) => m.name);
 
 const HANDLE_RE = /^[a-z0-9_-]{3,20}$/;
 const MAX_BIO = 280;
-const MAX_AVATAR_BYTES = 1.5 * 1024 * 1024; // 1.5 MB
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Couldn't read the image file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 /**
  * F5 (docs/plan_profile) — Profile identity editor.
@@ -61,6 +55,7 @@ export function ProfileSection() {
   const [mainPuzzle, setMainPuzzle] = useState<string>("3x3x3");
   const [methods, setMethods] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ handle?: string; bio?: string }>({});
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Initialize the draft exactly once when the DB row first loads. Syncing on
   // every `profile` change would wipe unsaved edits whenever an unrelated
@@ -77,7 +72,8 @@ export function ProfileSection() {
     }
   }, [profile]);
 
-  const validate = useCallback((): boolean => {
+  /** Validate the draft; returns the first problem as a user-facing message. */
+  const validate = useCallback((): { ok: boolean; message?: string } => {
     const next: { handle?: string; bio?: string } = {};
     const h = handle.trim();
     if (h && !HANDLE_RE.test(h)) {
@@ -88,11 +84,18 @@ export function ProfileSection() {
       next.bio = `Keep it under ${MAX_BIO} characters (${bio.length}).`;
     }
     setErrors(next);
-    return Object.keys(next).length === 0;
+    const first = next.handle ?? next.bio;
+    return first ? { ok: false, message: first } : { ok: true };
   }, [handle, bio]);
 
   const handleSave = useCallback(async () => {
-    if (!profile || !validate()) return;
+    if (!profile) return;
+    const check = validate();
+    if (!check.ok) {
+      // Never fail silently: tell the user exactly what to fix.
+      toast.error(check.message ?? "Check the highlighted fields before saving");
+      return;
+    }
     setSaving(true);
     try {
       await updateProfile({
@@ -121,20 +124,26 @@ export function ProfileSection() {
     async (file: File | undefined) => {
       if (!file || !profile) return;
       if (!file.type.startsWith("image/")) {
-        toast.error("Please choose an image file");
+        toast.error("Please choose an image file (JPG, PNG, WebP, GIF or SVG)");
         return;
       }
-      if (file.size > MAX_AVATAR_BYTES) {
-        toast.error("Image too large — keep it under 1.5 MB");
+      if (file.size > MAX_AVATAR_SOURCE_BYTES) {
+        const mb = Math.round(MAX_AVATAR_SOURCE_BYTES / 1024 / 1024);
+        toast.error(`Image too large — keep it under ${mb} MB`);
         return;
       }
+      setUploadingAvatar(true);
       try {
-        const dataUrl = await readFileAsDataUrl(file);
+        // Downscale + compress client-side so the stored payload is small
+        // (phones produce multi-MB photos; the row stays light).
+        const dataUrl = await processAvatarImage(file);
         await updateProfile({ avatarKind: "photo", avatarData: dataUrl });
         toast.success("Avatar updated");
       } catch (err) {
         console.error("[ProfileSection] Photo upload failed:", err);
-        toast.error("Couldn't read the image");
+        toast.error("Couldn't process that image — try a JPG, PNG or WebP");
+      } finally {
+        setUploadingAvatar(false);
       }
     },
     [profile, updateProfile],
@@ -213,9 +222,14 @@ export function ProfileSection() {
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
             >
-              <Camera className="size-3.5" />
-              {isPhoto ? "Change photo" : "Upload photo"}
+              {uploadingAvatar ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Camera className="size-3.5" />
+              )}
+              {uploadingAvatar ? "Processing…" : isPhoto ? "Change photo" : "Upload photo"}
             </Button>
             {isPhoto && (
               <Button type="button" variant="ghost" size="sm" onClick={resetIdenticon}>
