@@ -49,6 +49,8 @@ export interface LeftSidebarProps {
   onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
   settingsOpen?: boolean;
   onSettingsOpenChange?: (open: boolean) => void;
+  /** Section to show when the settings dialog opens (e.g. 'profile'). */
+  settingsInitialSection?: string;
   widgetExplorerOpen?: boolean;
   onWidgetExplorerOpenChange?: (open: boolean) => void;
   cubeConnectorOpen?: boolean;
@@ -66,6 +68,7 @@ export function LeftSidebar({
   onImportSolves,
   settingsOpen: externalSettingsOpen,
   onSettingsOpenChange,
+  settingsInitialSection,
   widgetExplorerOpen: externalWidgetExplorerOpen,
   onWidgetExplorerOpenChange,
   cubeConnectorOpen: externalCubeConnectorOpen,
@@ -301,6 +304,7 @@ export function LeftSidebar({
               onMobileOpenChange?.(false);
             }
           }}
+          initialSection={settingsInitialSection}
           solves={solves}
           sessionName={sessionName}
           onImportSolves={onImportSolves}
@@ -350,6 +354,7 @@ export function LeftSidebar({
             onMobileOpenChange?.(false);
           }
         }}
+        initialSection={settingsInitialSection}
         solves={solves}
         sessionName={sessionName}
         onImportSolves={onImportSolves}

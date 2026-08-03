@@ -121,6 +121,9 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Section to land on when Settings opens (e.g. 'profile' from the hero Edit
+  // button). Reset after the dialog consumes it.
+  const [settingsInitialSection, setSettingsInitialSection] = useState<string | undefined>(undefined);
   const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
   const [puzzle, setPuzzle] = useState<PuzzleCategory>("3x3");
@@ -621,7 +624,15 @@ export default function App() {
     }
 
     if (activeView === "profile") {
-      return <ProfileView onNavigate={handleNavigate} />;
+      return (
+        <ProfileView
+          onNavigate={handleNavigate}
+          onOpenSettings={() => {
+            setSettingsInitialSection("profile");
+            setSettingsOpen(true);
+          }}
+        />
+      );
     }
 
     // timer
@@ -779,7 +790,11 @@ export default function App() {
               sessionName={session?.name}
               onImportSolves={handleImportSolves}
               settingsOpen={settingsOpen}
-              onSettingsOpenChange={setSettingsOpen}
+              onSettingsOpenChange={(open) => {
+                setSettingsOpen(open);
+                if (!open) setSettingsInitialSection(undefined);
+              }}
+              settingsInitialSection={settingsInitialSection}
               widgetExplorerOpen={widgetExplorerOpen}
               onWidgetExplorerOpenChange={setWidgetExplorerOpen}
               cubeConnectorOpen={cubeConnectorOpen}

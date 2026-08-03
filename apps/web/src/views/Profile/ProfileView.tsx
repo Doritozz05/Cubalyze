@@ -392,6 +392,8 @@ function SkillsTab() {
 
 export interface ProfileViewProps {
   onNavigate?: (view: ViewId) => void;
+  /** Opens the Profile editor (Settings → Profile). */
+  onOpenSettings?: () => void;
 }
 
 /**
@@ -400,7 +402,7 @@ export interface ProfileViewProps {
  * solves across all sessions (Stats), SRS review queue (Training), the
  * algorithm catalog (Algorithms) and skill-tree XP (Skills).
  */
-export function ProfileView({ onNavigate }: ProfileViewProps) {
+export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
   const { profile, loading: profileLoading } = useProfile();
   const { stats, loading: statsLoading } = useProfileStats();
 
@@ -410,14 +412,17 @@ export function ProfileView({ onNavigate }: ProfileViewProps) {
         Profile
       </h1>
 
-      <ProfileHero profile={profile} loading={profileLoading} />
+      <ProfileHero profile={profile} loading={profileLoading} onEdit={onOpenSettings} />
 
       <div className="mt-4">
         <StatStrip stats={stats} loading={statsLoading} />
       </div>
 
       <Tabs defaultValue="overview" className="mt-5">
-        <TabsList className="w-full justify-start overflow-x-auto bg-transparent p-0">
+        <TabsList
+          aria-label="Profile sections"
+          className="w-full justify-start overflow-x-auto bg-transparent p-0"
+        >
           {(
             [
               ["overview", "Overview"],
@@ -430,7 +435,7 @@ export function ProfileView({ onNavigate }: ProfileViewProps) {
             <TabsTrigger
               key={value}
               value={value}
-              className="data-[state=active]:bg-surface data-[state=active]:shadow-sm rounded-lg border border-transparent px-3 text-xs data-[state=active]:border-line"
+              className="data-[state=active]:bg-surface data-[state=active]:shadow-sm rounded-lg border border-transparent px-3 text-xs data-[state=active]:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
             >
               {label}
             </TabsTrigger>
@@ -464,10 +469,11 @@ export function ProfileView({ onNavigate }: ProfileViewProps) {
               key={id}
               type="button"
               onClick={() => onNavigate?.(id)}
-              className="group flex flex-col items-start gap-2 rounded-xl border border-line bg-surface p-3.5 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer"
+              aria-label={`${label} — ${description}`}
+              className="group flex flex-col items-start gap-2 rounded-xl border border-line bg-surface p-3.5 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
             >
               <div className="grid size-8 place-items-center rounded-lg border border-line bg-surface-2/60 text-ink-2 transition-colors group-hover:text-ink">
-                <Icon className="size-4" />
+                <Icon className="size-4" aria-hidden="true" />
               </div>
               <span className="text-xs font-semibold text-ink">{label}</span>
               <span className="text-[0.6rem] leading-tight text-ink-3">{description}</span>
@@ -476,11 +482,14 @@ export function ProfileView({ onNavigate }: ProfileViewProps) {
         </div>
       </section>
 
-      <section className="mt-8 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3">
-        <Flame className="size-3" />
+      <section
+        aria-label="Identity summary"
+        className="mt-8 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
+      >
+        <Flame className="size-3" aria-hidden="true" />
         <span>CubeForge identity center</span>
-        <span className="mx-1">·</span>
-        <CheckCircle2 className="size-3 text-ready" />
+        <span className="mx-1" aria-hidden="true">·</span>
+        <CheckCircle2 className="size-3 text-ready" aria-hidden="true" />
         <span>All data local</span>
       </section>
     </div>

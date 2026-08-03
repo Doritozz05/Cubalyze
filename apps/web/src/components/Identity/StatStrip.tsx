@@ -28,7 +28,7 @@ export function StatStrip({ stats, loading, puzzle, className }: StatStripProps)
     return (
       <div
         className={cn(
-          "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-5",
+          "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-5",
           className,
         )}
       >
@@ -81,7 +81,7 @@ export function StatStrip({ stats, loading, puzzle, className }: StatStripProps)
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-5",
+        "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-5",
         className,
       )}
     >

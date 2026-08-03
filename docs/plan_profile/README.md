@@ -2,7 +2,7 @@
 
 > **Documento de diseño del perfil de usuario definitivo.**
 > Fecha: Agosto 2026
-> Estado: **Fases F0–F4 implementadas** (identidad local, sistema CubeMark, componentes de identidad, vista de perfil navegable y bloques de datos reales). Quedan pendientes F5 (edición), F6 (pulido responsive/a11y) y F7 (futuro) — no implementar más sin validar, según `docs/14-ai/AGENTS.md`
+> Estado: **Fases F0–F6 implementadas** (identidad local, sistema CubeMark, componentes de identidad, vista de perfil navegable, bloques de datos reales, edición del perfil y pulido responsive/a11y). Queda F7 (futuro) — no implementar más sin validar, según `docs/14-ai/AGENTS.md`
 > Método: investigación de referencias → extracción de patrones → análisis comparativo → layout → arquitectura → bloques → investigación de identicons → sistema propio → plan por fases.
 
 ---
@@ -529,23 +529,26 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 | Skills | XP total + % (anillo) + barras por categoría (`ALL_SKILL_NODES` + `useSkillProgress`) | ✅ |
 | Tests | `useProfileStats.test.ts` (12 tests: normalización puzzle, racha, heatmap, agregación, DNFs) — corren desde la raíz (`npx vitest run`) | ✅ |
 
-### Fase F5 — Edición del perfil ⏳ pendiente
+### Fase F5 — Edición del perfil ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| Sección "Profile" en Settings | nombre, @handle, bio, métodos declarados, puzzle principal |
-| Avatar editor | subir foto (blob), mantener/reemplazar/restablecer identicon |
-| Validación | zod (`ProfileSchema`), handle único local |
-| Export de datos | ya existe (DataSection); se añade export del perfil |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| Sección "Profile" en Settings | `ProfileSection.tsx`: nombre, @handle (con `@` prefijo), bio (contador 280), puzzle principal (2×2/3×3 pills), métodos declarados (chips toggle desde `METHODS` del catálogo) | ✅ |
+| Botón "Edit profile" | `ProfileHero` gana `onEdit` → abre Settings en la sección profile vía `initialSection` (App → LeftSidebar → SettingsDialog) | ✅ |
+| Avatar editor | subir foto (base64 ≤1.5 MB, `FileReader` → `profiles.avatar_data`), cambiar foto, restablecer identicon (el CubeMark nunca se borra, D5) | ✅ |
+| Validación | `HANDLE_RE` (3–20 chars lowercase/alnum/-/_), bio ≤280, mismo espíritu que `ProfileSchema` | ✅ |
+| Export del perfil | botón "Export profile (JSON)" con `downloadFile` (payload completo de `profiles`) | ✅ |
+| Feedback | toast de éxito/error, estado saving con spinner, preview del avatar en el propio editor | ✅ |
 
-### Fase F6 — Responsive, a11y y pulido ⏳ pendiente
+### Fase F6 — Responsive, a11y y pulido ✅ implementada (Agosto 2026)
 
-| Tarea | Detalle |
-|---|---|
-| <1024px | columna única, stat strip 2×2, hero condensado, tabs scrollables |
-| A11y | foco visible, contraste (ink-3), labels aria, navegación por teclado en tabs |
-| Micro-interacciones | hover/transiciones consistentes (150–200ms) |
-| Container queries | adaptación interna de tiles en grids estrechos (opcional) |
+| Tarea | Detalle | Estado |
+|---|---|---|
+| <1024px (táctil) | StatStrip 2×2+1 (`lg:grid-cols-5` — ahora alineado al breakpoint táctil real de 1024px, no 640px); hero condensado (avatar 80px, `items-start`, edit en header row); tabs scrollables (`overflow-x-auto`) | ✅ |
+| A11y | `aria-label` en TabsList y secciones; focus-visible rings consistentes (`ring-ink/40`) en tabs, quick actions y botón Edit; iconos decorativos `aria-hidden`; `aria-pressed` en chips de métodos; labels asociadas con `htmlFor` en el editor | ✅ |
+| Micro-interacciones | transiciones 150ms consistentes en botones/chips; `active:scale-[0.98]` en quick actions; `hover:shadow-sm` en cards de Settings | ✅ |
+| Hero con foto | `ProfileHero` renderiza `avatarKind='photo'` con `<img>` (object-cover) cuando existe | ✅ |
+| Container queries | diferidas (opcional) — la cuadrícula 2×2+1 ya cubre la necesidad actual | ⏳ opcional |
 
 ### Fase F7 — Preparación para el futuro (no implementar ahora)
 
@@ -555,7 +558,7 @@ renderCubeMark(spec: CubeMarkSpec, options?: { tile?: 'transparent' | 'surface-2
 | Logros/Badges (P2) | espacios reservados en Training tab y hero (chips) |
 | Comunidad/Comparación (P2) | hooks de agregación ya aislados → reutilizables |
 
-**Estimación total**: 6–9 semanas (F0–F6), siguiendo el ritmo del plan_training. Las fases F0–F1 son la base: todo lo demás depende de la identidad local y del sistema CubeMark.
+**Estimación total**: 6–9 semanas (F0–F6), siguiendo el ritmo del plan_training. Las fases F0–F1 son la base: todo lo demás depende de la identidad local y del sistema CubeMark. **F0–F6 completadas (Agosto 2026).**
 
 ---
 
