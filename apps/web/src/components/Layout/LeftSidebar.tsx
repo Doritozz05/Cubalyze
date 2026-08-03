@@ -244,10 +244,14 @@ export function LeftSidebar({
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-2 space-y-1">
+        {/* In the touch regime the Sheet's rail is a plain button — the
+            always-mounted standalone Drawer (rendered below) is the single
+            dialog, so no duplicate Drawer mounts inside the Sheet. */}
         <CubeConnector 
           variant="rail" 
           expanded={labelVisible} 
           open={cubeConnectorOpen}
+          hideDialog={isTouch}
           onOpenChange={(open) => {
             setCubeConnectorOpen(open);
             if (!open) {
@@ -309,7 +313,12 @@ export function LeftSidebar({
           sessionName={sessionName}
           onImportSolves={onImportSolves}
         />
+        {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
+            used to leak into the layout top-left in the touch regime (e.g.
+            the stray Bluetooth icon on the Skill Tree view). The rail button
+            inside the Sheet (or the MobileMoreSheet entry) opens it. */}
         <CubeConnector
+          hideTrigger
           open={cubeConnectorOpen}
           onOpenChange={(open) => {
             setCubeConnectorOpen(open);

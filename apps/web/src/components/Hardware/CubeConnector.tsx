@@ -80,6 +80,18 @@ export interface CubeConnectorProps {
   open?: boolean;
   /** Callback fired when the dialog opens or closes. */
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Render only the Drawer/Dialog, skipping the trigger button.
+   * Used by the touch-regime LeftSidebar where the standalone trigger
+   * (a `hidden sm:flex` button) used to leak into the layout top-left.
+   */
+  hideTrigger?: boolean;
+  /**
+   * Render only the trigger, skipping the Drawer/Dialog.
+   * Used by the rail variant inside the touch Sheet so the single,
+   * always-mounted standalone Drawer remains the only dialog.
+   */
+  hideDialog?: boolean;
 }
 
 export function CubeConnector({
@@ -88,6 +100,8 @@ export function CubeConnector({
   expanded = false,
   open: externalOpen,
   onOpenChange,
+  hideTrigger = false,
+  hideDialog = false,
 }: CubeConnectorProps) {
   const isTouch = useIsTouch();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -305,8 +319,8 @@ export function CubeConnector({
 
   return (
     <>
-      {trigger}
-      {isTouch ? (
+      {!hideTrigger && trigger}
+      {!hideDialog && (isTouch ? (
         <Drawer open={open} onOpenChange={handleOpenChange}>
           <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] p-0 pb-safe focus:outline-none">
             <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
@@ -332,7 +346,7 @@ export function CubeConnector({
             {innerContent}
           </DialogContent>
         </Dialog>
-      )}
+      ))}
     </>
   );
 }

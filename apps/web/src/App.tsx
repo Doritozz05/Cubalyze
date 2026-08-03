@@ -341,6 +341,16 @@ export default function App() {
     }
   }, [timerPhase]);
 
+  // Clear a pending PB celebration when leaving the timer stage. The banner's
+  // auto-dismiss timeout is cancelled when it unmounts (onClose never fires),
+  // so the milestone used to survive navigation and replay the confetti every
+  // time the user returned to the timer view.
+  useEffect(() => {
+    if (activeView !== "timer") {
+      setActivePbMilestone(null);
+    }
+  }, [activeView]);
+
 
   // ── Import solve wrapper (adapts importSolves to DataSection's expected shape) ──
   const handleImportSolves = useCallback(
