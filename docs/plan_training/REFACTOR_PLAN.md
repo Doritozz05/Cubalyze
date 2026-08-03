@@ -393,8 +393,14 @@ todas las tablas v1 conocidas** y crea el esquema v2 (en la práctica, en OPFS b
 | `useSRSQueue`, `SRSReviewView`, `SRSInsightsView`, `ProfileView` | `getTodayQueue`/`getSRSInsights`/`recordReview` no cambian de shape (solo `exercise_id` en SRSReview) |
 | `@cubeforge/statistics` (`computeStats`) | recibe `{time, penalty}`, sin dependencia de fechas |
 | `useSolveSession` / smart cube | escriben vía `addSolve` con `timestamp` number |
+| **Import/Export de solves** (`importSolves.ts`, `exportSolves.ts`) | Trabajan con `timestamp` number (epoch ms) en el lado UI, nunca con `date` de BD. Todos los formatos (csTimer CSV/JSON, TwistyTimer, CubeForge CSV/JSON, generic) ya parsean/serializan a número → **no se tocan** |
+| **Perfil** (`ProfileSection`, `useProfile`, `ProfileHero`) | No existe import/export de perfil (solo edición en UI); `profiles`/`app_meta` no cambian de esquema → **sin impacto** |
 
-**D. Riesgo nuevo: FKs activas (`PRAGMA foreign_keys=ON`).**
+**D. Nota sobre import/export**: la conversión `timestamp (number) ↔ date (ISO string)` vive SOLO en
+`usePersistentSession` (adapter UI↔DB). Con baseline v2 esa conversión **desaparece** (se escribe/lee el
+número directamente) → simplificación, no rotura. `importSolves.ts` y `exportSolves.ts` no cambian.
+
+**E. Riesgo nuevo: FKs activas (`PRAGMA foreign_keys=ON`).**
 
 Hoy cualquier string vale como `exercise_id`/`case_id`. Con FKs reales hay que garantizar el **orden de
 inserción** y que todo id escrito exista en el catálogo:
