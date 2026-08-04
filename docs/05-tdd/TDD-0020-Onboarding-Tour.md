@@ -17,7 +17,7 @@ Algorithms → Profile → Widgets → final CTA). Skill Tree and Training are *
   first solve" CTA.
 - Respect `prefers-reduced-motion`, work on touch (<1024px) and desktop, be fully a11y-correct.
 
-## 2. File structure (< 300 lines/file)
+## 2. File structure (< 1000 lines/file)
 
 ```text
 packages/database/src/repositories/app-meta.repository.ts   // +ONBOARDING_KEY +2 methods

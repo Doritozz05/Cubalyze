@@ -35,6 +35,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Line-length gate (TDD-0006)
+        run: pnpm lint:lines
+
       - name: Test
         run: pnpm test
 

@@ -40,7 +40,9 @@ Current (verified in August 2026 audit):
 
 Constraints and explicit gaps (do not fabricate as built):
 - Only **2×2 and 3×3** WCA events supported so far.
-- **Undecided / not built yet:** user account & identity, multi-device sync, AI Coach, backend/API, and onboarding. The `ai-core`, `sync-engine`, and `api` packages are empty placeholders.
+- **Onboarding** (guided tour) and **local profile/identity** (avatar, preferences, stats) are built, but are **local-only**: there is no account system, authentication, or server-side identity. `apps/api` is still an empty scaffold.
+- **Not built yet:** multi-device sync/cloud backup, AI Coach, and any backend/API. The `ai-core`, `sync-engine`, and `api` packages are empty placeholders.
+- Desktop app (`apps/desktop`, Tauri) wraps the same frontend with native BLE (GAN cube/timer) and a bundled SQLite driver; it is built and type-checks, but the **auto-updater is disabled** until a signed release channel with a real update server + public key is set up.
 - GPLv3 licensing of several cited reference engines (csTimer, parts of cubing.js, tnoodle-lib) warns against direct code integration without legal audit; safe path is reimplementing documented protocol logic.
 
 ## Brand Commitments
@@ -56,7 +58,7 @@ Constraints and explicit gaps (do not fabricate as built):
 - `docs/00-product/PRD.md` — master product/architecture/design document (research, positioning, surfaces, data model).
 - `docs/01-roadmap/Master_Roadmap.md` — execution and dependency plan (sole source of truth for planning order).
 - `docs/00-product/Auditoria_Producto_2026-08.md` — code-grounded audit of real state vs. promises (tests, package coverage, navigation, hardware, persistence, explicit absences).
-- Repo code: `apps/web` (React PWA, ~42,921 lines), `apps/desktop` (Tauri), `apps/api` (empty), and 16/19 packages with real code.
+- Repo code: `apps/web` (React PWA — timer, smart-cube analytics, training/FSRS, skill tree, onboarding tour, local profile, widgets), `apps/desktop` (Tauri wrapper with native BLE), `apps/api` (empty), and the majority of `packages/*` with real code (core engines, database, UI kit).
 - **Absences:** no testimonials, no paying customers, no deployment/benchmark claims, no AI, sync, or account exists yet. Any such claim in future surface work must be marked speculative, not presented as shipped.
 
 ## Product Principles
