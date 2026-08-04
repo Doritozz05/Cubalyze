@@ -39,7 +39,9 @@ export function OnboardingSpotlight({ rect }: { rect: SpotlightRect | null }) {
           : { type: "spring", stiffness: 420, damping: 38 }
       }
       className="pointer-events-none absolute rounded-xl border-2 border-line bg-transparent"
-      style={{ boxShadow: "0 0 0 9999px rgba(2, 6, 23, 0.55)" }}
+      // Pure neutral black veil — no blue channel (a slate tint looked off
+      // against the app's canvas in both themes).
+      style={{ boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.55)" }}
     />
   );
 }

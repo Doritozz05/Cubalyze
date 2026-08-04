@@ -123,8 +123,9 @@ export interface TourStep { id: string; view: ViewId; title: string; body: strin
   → `getBoundingClientRect()`. Retry up to 2× (1 frame each). Missing target → centered
   tooltip, never blocks.
 - Mask: `motion.div` absolutely positioned at the rect with
-  `box-shadow: 0 0 0 9999px rgba(2,6,23,0.55)` + `border-line` ring + `rounded-xl`.
-  Spring animation between steps (disabled under `prefers-reduced-motion`).
+  `box-shadow: 0 0 0 9999px rgba(0,0,0,0.55)` (pure neutral black — no blue
+  tint) + `border-line` ring + `rounded-xl`. Spring animation between steps
+  (disabled under `prefers-reduced-motion`).
 - Tooltip: desktop resolves side (bottom preferred, flip top/left/right by space);
   touch (<1024px via `useIsTouch`) anchors bottom-center above the bottom tab bar.
 - Keydown while active: `Escape` → skip; `Space`/arrows → `preventDefault` (never arms the timer).

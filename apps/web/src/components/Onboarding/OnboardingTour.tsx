@@ -8,9 +8,10 @@ import { TOUR_STEPS } from "./tourSteps";
 import { OnboardingSpotlight, type SpotlightRect } from "./OnboardingSpotlight";
 import { TourTooltip, type ArrowSide } from "./TourTooltip";
 
-const TOOLTIP_WIDTH = 288; // w-72
-const TOOLTIP_GAP = 14;
-const TOOLTIP_EST_HEIGHT = 190;
+const TOOLTIP_WIDTH = 336; // w-[21rem]
+const TOOLTIP_GAP = 20;
+const TOOLTIP_EST_HEIGHT = 230;
+const VIEWPORT_MARGIN = 16;
 
 export interface OnboardingTourProps {
   /** Currently active stage view (drives re-measure after navigation). */
@@ -39,33 +40,38 @@ function computePlacement(
   if (isTouch) {
     return {
       style: {
-        left: 12,
-        right: 12,
-        bottom: "calc(3.5rem + env(safe-area-inset-bottom) + 0.75rem)",
+        left: 16,
+        right: 16,
+        bottom: "calc(3.5rem + env(safe-area-inset-bottom) + 1rem)",
       },
       arrowSide: undefined,
     };
   }
 
-  // Final step (no target): centered card.
+  // Final step (no target): centered card, clamped to the viewport.
   if (!rect) {
-    return { style: { top: vh / 2 - TOOLTIP_EST_HEIGHT / 2, left: vw / 2 - TOOLTIP_WIDTH / 2 } };
+    return {
+      style: {
+        top: Math.max(VIEWPORT_MARGIN, vh / 2 - TOOLTIP_EST_HEIGHT / 2),
+        left: Math.max(VIEWPORT_MARGIN, vw / 2 - TOOLTIP_WIDTH / 2),
+      },
+    };
   }
 
   // Prefer below the target; flip above when it would overflow.
   let top: number;
   let arrowSide: ArrowSide;
-  if (rect.y + rect.height + TOOLTIP_GAP + TOOLTIP_EST_HEIGHT < vh) {
+  if (rect.y + rect.height + TOOLTIP_GAP + TOOLTIP_EST_HEIGHT < vh - VIEWPORT_MARGIN) {
     top = rect.y + rect.height + TOOLTIP_GAP;
     arrowSide = "top";
   } else {
-    top = Math.max(8, rect.y - TOOLTIP_GAP - TOOLTIP_EST_HEIGHT);
+    top = Math.max(VIEWPORT_MARGIN, rect.y - TOOLTIP_GAP - TOOLTIP_EST_HEIGHT);
     arrowSide = "bottom";
   }
 
   const left = Math.min(
-    Math.max(rect.x + rect.width / 2 - TOOLTIP_WIDTH / 2, 8),
-    vw - TOOLTIP_WIDTH - 8,
+    Math.max(rect.x + rect.width / 2 - TOOLTIP_WIDTH / 2, VIEWPORT_MARGIN),
+    vw - TOOLTIP_WIDTH - VIEWPORT_MARGIN,
   );
 
   return { style: { top, left, width: TOOLTIP_WIDTH }, arrowSide };

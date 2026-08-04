@@ -52,7 +52,7 @@ export function TourTooltip({
   return (
     <div
       className={cn(
-        "relative w-72 max-w-[calc(100vw-1.5rem)] rounded-xl border border-line bg-surface p-4 shadow-sm",
+        "relative w-[21rem] max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-5 shadow-sm",
         isTouch && "w-full",
       )}
     >
@@ -83,14 +83,14 @@ export function TourTooltip({
         </div>
       </div>
 
-      <h3 id={titleId} className="mt-2 text-sm font-semibold text-ink">
+      <h3 id={titleId} className="mt-2.5 text-base font-semibold text-ink">
         {title}
       </h3>
-      <p id={bodyId} className="mt-1 text-[0.78rem] leading-relaxed text-ink-2">
+      <p id={bodyId} className="mt-1.5 text-sm leading-relaxed text-ink-2">
         {body}
       </p>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
+      <div className="mt-5 flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onSkip} className={cn(touchBtn)}>
           Skip
         </Button>
