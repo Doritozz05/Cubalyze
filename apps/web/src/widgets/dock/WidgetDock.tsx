@@ -60,6 +60,7 @@ function DockPill({
   // back to default/pointer mid-drag. Pin `cursor: grabbing` on <html> for
   // the whole drag instead (cleanup also runs on unmount).
   useGlobalDragCursor(isDragging);
+  const reduceMotion = useReducedMotion();
 
   if (!definition || !isDocked) return null;
 
@@ -100,8 +101,6 @@ function DockPill({
       });
     }
   };
-
-  const reduceMotion = useReducedMotion();
 
   return (
     <>
