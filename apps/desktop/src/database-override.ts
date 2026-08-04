@@ -18,7 +18,7 @@ import { MIGRATIONS } from '../../../packages/database/src/migrations/index.js';
 // NOTE: keep in sync with packages/database/src/repositories/index.js —
 // the desktop aliases @cubeforge/database to this file, so any repository
 // added upstream must be listed here too.
-export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
+export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, ONBOARDING_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
 export type { Solve, Session, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow } from '../../../packages/database/src/repositories/index.js';
 
 // ── Types ─────────────────────────────────────────────────────────────

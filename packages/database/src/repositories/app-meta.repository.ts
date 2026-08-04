@@ -15,6 +15,12 @@ type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unkn
 /** Key under which the anonymous local user id is stored. */
 export const USER_ID_KEY = 'user_id';
 
+/**
+ * Key marking the first-load onboarding tour as seen/skipped (TDD-0020).
+ * Absent = first launch (tour eligible); '1' = never auto-show again.
+ */
+export const ONBOARDING_KEY = 'onboarding_completed';
+
 export interface AppMetaRow {
   key: string;
   value: string;
@@ -73,5 +79,15 @@ export class AppMetaRepository {
 
     const stored = await this.get(USER_ID_KEY);
     return stored ?? generated;
+  }
+
+  /** True once the first-load onboarding tour has been seen or skipped. */
+  async getOnboardingCompleted(): Promise<boolean> {
+    return (await this.get(ONBOARDING_KEY)) === '1';
+  }
+
+  /** Persist the one-shot flag so the tour never auto-shows again. */
+  async setOnboardingCompleted(): Promise<void> {
+    await this.set(ONBOARDING_KEY, '1');
   }
 }

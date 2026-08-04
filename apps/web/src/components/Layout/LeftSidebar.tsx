@@ -237,6 +237,9 @@ export function LeftSidebar({
                     labelVisible={labelVisible}
                     isActive={activeView === item.id}
                     onClick={() => handleNavItemClick(item.id)}
+                    onboardingTarget={
+                      item.id === "widgets" ? "widgets-entry" : undefined
+                    }
                     badge={
                       item.id === "timer" && timerActive ? (
                         <span className="size-1.5 rounded-full bg-ready animate-pulse" />
@@ -426,6 +429,7 @@ function SidebarNavItem({
   isActive,
   badge,
   onClick,
+  onboardingTarget,
 }: {
   icon: React.ElementType;
   label: string;
@@ -433,12 +437,15 @@ function SidebarNavItem({
   isActive?: boolean;
   badge?: React.ReactNode;
   onClick?: () => void;
+  /** Spotlight target for the onboarding tour (TDD-0020). */
+  onboardingTarget?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const button = (
     <button
       type="button"
       onClick={onClick}
+      data-onboarding-target={onboardingTarget}
       className={cn(
         "relative flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors group",
         isActive

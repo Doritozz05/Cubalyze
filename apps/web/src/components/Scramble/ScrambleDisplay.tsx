@@ -51,7 +51,7 @@ export function ScrambleDisplay({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full" data-onboarding-target="timer">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ink-3">
