@@ -117,6 +117,10 @@ export interface PreferencesState {
   /** Optional haptic feedback (navigator.vibrate) on the touch regime. Default ON. */
   haptics: boolean;
   setHaptics: (value: boolean) => void;
+
+  /** Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Default ON. */
+  showSessionStats: boolean;
+  setShowSessionStats: (value: boolean) => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -210,6 +214,9 @@ export const createPreferencesStore = () => {
 
         haptics: true,
         setHaptics: (value) => set({ haptics: value }),
+
+        showSessionStats: true,
+        setShowSessionStats: (value) => set({ showSessionStats: value }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -236,6 +243,7 @@ export const createPreferencesStore = () => {
           inputMode: state.inputMode,
           clickToStart: state.clickToStart,
           haptics: state.haptics,
+          showSessionStats: state.showSessionStats,
         }),
         version: 1,
       },

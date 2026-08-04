@@ -89,6 +89,7 @@ export function TimerStage(props: TimerStageProps) {
   const holdDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
+  const showSessionStats = useStore(preferencesStore, (s) => s.showSessionStats);
   const isManualMode = inputMode === "manual";
 
   // Previous PB (excluding the most recent solve) for accurate PB delta.
@@ -207,7 +208,7 @@ export function TimerStage(props: TimerStageProps) {
         />
       )}
 
-      {!isFocused && (
+      {showSessionStats && !isFocused && (
         <SessionStats
           solves={solves}
           onExpand={onExpand}

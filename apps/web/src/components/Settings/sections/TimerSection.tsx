@@ -49,6 +49,8 @@ export function TimerSection() {
   const setInputMode = useStore(preferencesStore, (s) => s.setInputMode);
   const clickToStart = useStore(preferencesStore, (s) => s.clickToStart);
   const setClickToStart = useStore(preferencesStore, (s) => s.setClickToStart);
+  const showSessionStats = useStore(preferencesStore, (s) => s.showSessionStats);
+  const setShowSessionStats = useStore(preferencesStore, (s) => s.setShowSessionStats);
 
   return (
     <div className="flex flex-col gap-5">
@@ -253,6 +255,13 @@ export function TimerSection() {
         description="Display a minimalist floating banner upon setting a new Personal Best."
         checked={pbCelebrationAnimation}
         onCheckedChange={setPbCelebrationAnimation}
+      />
+
+      <SettingToggle
+        title="Session stats"
+        description="Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Turn it off for a cleaner timer screen."
+        checked={showSessionStats}
+        onCheckedChange={setShowSessionStats}
       />
 
       <SettingToggle

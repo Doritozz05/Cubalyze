@@ -20,6 +20,14 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().theme).toBe('dark');
   });
 
+  it('toggles showSessionStats (default ON)', () => {
+    expect(preferencesStore.getState().showSessionStats).toBe(true);
+    preferencesStore.getState().setShowSessionStats(false);
+    expect(preferencesStore.getState().showSessionStats).toBe(false);
+    preferencesStore.getState().setShowSessionStats(true);
+    expect(preferencesStore.getState().showSessionStats).toBe(true);
+  });
+
   it('handles spacebarHoldDelay, showBpaWpa, and timePrecision settings', () => {
     const store = preferencesStore.getState();
     expect(store.spacebarHoldDelay).toBe(300);
