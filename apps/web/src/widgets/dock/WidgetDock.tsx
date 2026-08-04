@@ -8,6 +8,7 @@ import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
 import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -100,28 +101,34 @@ function DockPill({
     }
   };
 
+  const reduceMotion = useReducedMotion();
+
   return (
     <>
       <Reorder.Item
         as="button"
         value={widgetId}
         drag
-        layout
+        layout={reduceMotion ? undefined : true}
         ref={(el: HTMLElement | null) => {
           itemRef.current = el;
           onPillRef?.(widgetId, el);
         }}
-        initial={{ opacity: 0, scale: 0.85 }}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
         animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.85 }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 30,
-          // Hide the real pill INSTANTLY on lift (no clipped fade inside the
-          // overflow container); fade it back smoothly when it snaps back.
-          opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
-        }}
+        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+                // Hide the real pill INSTANTLY on lift (no clipped fade inside the
+                // overflow container); fade it back smoothly when it snaps back.
+                opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
+              }
+        }
         onClick={() => {
           if (suppressClickRef.current) {
             suppressClickRef.current = false;
@@ -220,6 +227,7 @@ function DockPill({
  * the dock, a gap spacer is rendered at the target drop position.
  */
 export function WidgetDock() {
+  const reduceMotion = useReducedMotion();
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
@@ -418,11 +426,11 @@ export function WidgetDock() {
               return (
                 <motion.div
                   key={GHOST_ID}
-                  layout
-                  initial={{ opacity: 0, width: 0 }}
+                  layout={reduceMotion ? undefined : true}
+                  initial={reduceMotion ? false : { opacity: 0, width: 0 }}
                   animate={{ opacity: 0, width: GHOST_WIDTH }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, width: 0 }}
+                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
                   className="h-8 shrink-0"
                   aria-hidden
                 />
