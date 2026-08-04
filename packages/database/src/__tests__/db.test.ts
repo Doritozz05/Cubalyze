@@ -144,9 +144,10 @@ describe('SolvesRepository', () => {
     ]);
     expect(count).toBe(2);
     expect(db.mock.calls[0][0]).toBe('BEGIN');
+    // Both rows land in ONE multi-row INSERT (batched to cut worker round-trips).
     expect(db.mock.calls[1][0]).toContain('INSERT INTO solves');
-    expect(db.mock.calls[2][0]).toContain('INSERT INTO solves');
-    expect(db.mock.calls[3][0]).toBe('COMMIT');
+    expect(db.mock.calls[1][0]).toContain('VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    expect(db.mock.calls[2][0]).toBe('COMMIT');
   });
 
   it('insertMany is a no-op for an empty batch', async () => {

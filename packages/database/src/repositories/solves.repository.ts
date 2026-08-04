@@ -147,16 +147,38 @@ export class SolvesRepository {
    * Used by bulk imports: a failure mid-batch rolls the whole batch back, so
    * the user never ends up with a partially imported file. Returns the number
    * of rows inserted (throws on failure — the batch is rolled back).
+   *
+   * Performance: solves are grouped into multi-row INSERT statements instead
+   * of one round-trip per solve. Every `execute()` crosses the worker bridge
+   * (Comlink postMessage → WASM → postMessage), so a 5000-solve import used to
+   * cost 5000+ round-trips; batching cuts that to a handful. 500 rows × 17
+   * columns = 8500 bound variables, well under SQLite's MAX_VARIABLE_NUMBER
+   * (32766) and SQL length limits.
    */
   async insertMany(solves: Solve[]): Promise<number> {
     if (solves.length === 0) return 0;
+    // Rows per INSERT statement. Keeps each statement far below SQLite's
+    // variable/size limits while minimizing round-trips to the DB worker.
+    const ROWS_PER_STATEMENT = 500;
+
     return withTransaction(this.db, async (exec) => {
-      for (const solve of solves) {
-        const row = solveToRow(solve);
-        await exec(
-          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, 0, row.created_at, row.updated_at]
-        );
+      for (let start = 0; start < solves.length; start += ROWS_PER_STATEMENT) {
+        const chunk = solves.slice(start, start + ROWS_PER_STATEMENT);
+        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const sql =
+          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ' +
+          placeholders;
+        const bind: unknown[] = [];
+        for (const solve of chunk) {
+          const row = solveToRow(solve);
+          bind.push(
+            row.id, row.session_id, row.time_ms, row.timestamp, row.scramble,
+            row.penalty, row.method, row.source, row.note, row.moves,
+            row.orientation_timeline, row.analysis_engine_version, row.analysis,
+            row.puzzle_type, 0, row.created_at, row.updated_at
+          );
+        }
+        await exec(sql, bind);
       }
       return solves.length;
     });

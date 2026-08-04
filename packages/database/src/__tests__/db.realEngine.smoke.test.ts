@@ -219,6 +219,25 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     expect(await solvesRepo.count()).toBe(countBefore);
   });
 
+  it('inserts >500 solves across multiple multi-row statements (chunking)', async () => {
+    const sessionId = UUID(8);
+    await sessionsRepo.insert({
+      id: sessionId,
+      name: 'Chunking',
+      puzzleType: '3x3x3',
+      createdAt: 1_700_000_000_000,
+    });
+    // 1200 solves → 3 multi-row INSERT statements (500 + 500 + 200).
+    const batch = Array.from({ length: 1200 }, (_, i) =>
+      makeSolve(5000 + i, sessionId, 1_700_000_000_000),
+    );
+    const inserted = await solvesRepo.insertMany(batch);
+    expect(inserted).toBe(1200);
+    expect(await solvesRepo.findAll(sessionId)).toHaveLength(1200);
+    // Cleanup so later global-count assertions stay stable.
+    await solvesRepo.deleteBySession(sessionId);
+  }, 30_000);
+
   it('countBySession returns per-session counts in one query', async () => {
     const a = UUID(5);
     const b = UUID(6);
