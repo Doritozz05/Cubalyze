@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStorageStatusStore } from '@/stores/storageStatus';
@@ -28,7 +28,7 @@ export interface DataSectionProps {
  * - JSON export (full metadata)
  * - Import from csTimer / CubeForge / generic CSV with preview
  */
-export function DataSection({ solves, sessionName, onImportSolves }: DataSectionProps) {
+export const DataSection = memo(function DataSection({ solves, sessionName, onImportSolves }: DataSectionProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [importState, setImportState] = useState<'idle' | 'preview' | 'importing' | 'done' | 'error'>('idle');
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
@@ -476,7 +476,7 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
                         </thead>
                         <tbody>
                           {importPreview.samples.map((s, i) => (
-                            <tr key={i} className="border-b border-line/50 last:border-0">
+                            <tr key={`${s.timestamp}-${s.time}-${i}`} className="border-b border-line/50 last:border-0">
                               <td className="px-3 py-2 text-ink font-mono">
                                 {s.penalty === 'DNF'
                                   ? s.time > 0
@@ -567,4 +567,4 @@ export function DataSection({ solves, sessionName, onImportSolves }: DataSection
       </Dialog>
     </>
   );
-}
+});

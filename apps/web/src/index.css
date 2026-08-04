@@ -110,6 +110,13 @@
   --color-plus2-soft: var(--plus2-soft);
   --color-caution: var(--caution);
   --color-caution-soft: var(--caution-soft);
+
+  /* Chart-series tokens for the solve progression chart (PB / Ao5 / Ao12).
+     Same values as the previous inline hexes — tokenised so the app draws
+     from one vocabulary instead of raw color literals. */
+  --color-chart-pb: var(--chart-pb);
+  --color-chart-ao5: var(--chart-ao5);
+  --color-chart-ao12: var(--chart-ao12);
 }
 
 :root {
@@ -171,19 +178,31 @@
   --ink-3: #667085;
   --line: #e9ecef;
   --line-2: #dee2e6;
-  --ready: #4c9a6a;
+  /* Accent text (light) — each darkened along its own hue so normal-size
+     accent text passes WCAG AA on the bone canvas AND on its --*-soft bg:
+     ready #2b7749 (5.19:1 bone / 4.73:1 soft), hold #8c3c34 (7.09:1),
+     plus2 #96641e (4.81:1). Pairs stay mutually distinct (ready vs
+     accent-emerald, hold vs dnf, plus2 vs caution). */
+  --ready: #2b7749;
   --ready-soft: #e7f1ea;
-  --hold: #c8554a;
+  --hold: #8c3c34;
   --hold-soft: #fbeae8;
   --dnf: #b3261e;
   --dnf-soft: #fcebec;
-  --plus2: #a8650a;
+  --plus2: #96641e;
   --plus2-soft: #fbf0dc;
-  /* Inspection countdown — pure yellow, sits between +2 (ochre) and hold (salmon).
-     Bumped from amber-600 (#ca8a04) to yellow-500 (#eab308) for crisper
-     separation from +2's ochre on the hue wheel. */
-  --caution: #eab308;
+  /* Inspection countdown — dark amber on the light canvas so caution text
+     clears WCAG AA. #eab308 (yellow-500) sat at 1.82:1 on bone — unusable
+     for the normal-size caution text in training views and solve lists —
+     so light mode drops to amber-700 (#b45309, 4.76:1 on bone), which keeps
+     a warm hue distinct from +2's ochre (#a8650a). Dark mode keeps the
+     bright yellow-400 (#facc15, 10.8:1 on the dark surface). */
+  --caution: #b45309;
   --caution-soft: #fef3c7;
+  /* Chart series (light) — PB / Ao5 / Ao12 for the solve progression chart. */
+  --chart-pb: #fbbf24;
+  --chart-ao5: #ef4444;
+  --chart-ao12: #22c55e;
   --sidebar: #ffffff;
   --sidebar-foreground: #212529;
   --sidebar-primary: #212529;
@@ -249,6 +268,10 @@
   --plus2-soft: rgba(217, 164, 65, 0.14);
   --caution: #facc15;
   --caution-soft: rgba(250, 204, 21, 0.14);
+  /* Chart series (dark) — PB / Ao5 / Ao12. Brightened for low-glare contrast. */
+  --chart-pb: #fcd34d;
+  --chart-ao5: #f87171;
+  --chart-ao12: #4ade80;
 }
 
 @layer base {
@@ -448,5 +471,23 @@ input[type="image"],
 
 .animate-widget-mount {
   animation: widgetMount 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────
+   Users who opt out of animation get a static, instant UI: no widget mount
+   pop, no timer hold scale, no pulsing dots. Surfaces still swap state
+   colors instantly — only the transform/keyframe layers are killed. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-widget-mount {
+    animation: none;
+  }
+  .animate-pulse {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 

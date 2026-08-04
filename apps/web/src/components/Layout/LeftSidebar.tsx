@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
-import { motion, LayoutGroup } from "framer-motion";
+import { motion, LayoutGroup, useReducedMotion } from "framer-motion";
 import { Sun, Moon, Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@cubeforge/database";
@@ -434,6 +434,7 @@ function SidebarNavItem({
   badge?: React.ReactNode;
   onClick?: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const button = (
     <button
       type="button"
@@ -449,7 +450,7 @@ function SidebarNavItem({
         <motion.div
           layoutId="sidebar-active-bg"
           className="absolute inset-0 rounded-md bg-sidebar-accent"
-          transition={ACTIVE_PILL_SPRING}
+          transition={reduceMotion ? { duration: 0 } : ACTIVE_PILL_SPRING}
         />
       )}
       <div className="relative z-10 flex size-5 shrink-0 items-center justify-center">
@@ -461,7 +462,7 @@ function SidebarNavItem({
       <motion.span
         initial={false}
         animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
-        transition={SIDEBAR_MOTION.label}
+        transition={reduceMotion ? { duration: 0 } : SIDEBAR_MOTION.label}
         className="relative z-10 overflow-hidden whitespace-nowrap"
       >
         {label}

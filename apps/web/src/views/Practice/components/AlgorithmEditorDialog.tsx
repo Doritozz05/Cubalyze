@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import {
   X,
@@ -305,6 +305,7 @@ export function AlgorithmEditorDialog({
   ]);
 
   // ── Render ────────────────────────────────────────────────────────────
+  const reduceMotion = useReducedMotion();
   return (
     <AnimatePresence>
       {open ? (
@@ -315,7 +316,7 @@ export function AlgorithmEditorDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: reduceMotion ? 0 : 0.15 }}
             className="fixed inset-0 z-50 bg-black/40"
             onClick={onClose}
           />
@@ -323,10 +324,10 @@ export function AlgorithmEditorDialog({
           {/* Sheet */}
           <motion.aside
             key="alg-editor-sheet"
-            initial={{ x: 420, opacity: 0 }}
+            initial={reduceMotion ? false : { x: 420, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 420, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 360, damping: 32 }}
+            exit={reduceMotion ? { opacity: 0 } : { x: 420, opacity: 0 }}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 32 }}
             // w-105 (420px) overflows on screens <420px; below `sm` it becomes
             // a full-width sheet (no side border), >=640px stays w-105.
             // Desktop (>=1024px) is unchanged.

@@ -20,6 +20,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { announce } from "@/lib/announce";
+import { formatTime } from "@/utils/formatTime";
 import { METHODS, SUBSETS, getSeedData, resolveVisualizationStyleForSubset } from "@cubeforge/algorithm-db";
 import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { useStore } from "zustand";
@@ -249,6 +251,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       });
       reset();
       setStage("grading");
+      announce(correct ? `Correct. ${formatTime(stoppedTime)}.` : "Incorrect. Next: the grading step.");
     } catch (err) {
       console.error("[SRSReview] execution:", err);
       setPersistenceError("Could not save execution result. Please try again.");
@@ -259,6 +262,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     setPersistenceError(null);
     try {
       await grade(nextGrade);
+      announce(`Review graded ${nextGrade}.`);
       // Tag the attempt that produced this review with the FSRS grade so
       // attempt history and the SRS schedule stay linked. Best-effort: the
       // grade already saved, so a tag failure must not read as a failed grade.

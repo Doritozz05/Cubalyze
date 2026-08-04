@@ -14,15 +14,15 @@ colors:
   border: "#e9ecef"
   line: "#e9ecef"
   line-2: "#dee2e6"
-  ready: "#4c9a6a"
+  ready: "#2b7749"
   ready-soft: "#e7f1ea"
-  hold: "#c8554a"
+  hold: "#8c3c34"
   hold-soft: "#fbeae8"
   dnf: "#b3261e"
   dnf-soft: "#fcebec"
-  plus2: "#a8650a"
+  plus2: "#96641e"
   plus2-soft: "#fbf0dc"
-  caution: "#eab308"
+  caution: "#b45309"
   caution-soft: "#fef3c7"
   accent-emerald: "#047857"
 typography:
@@ -128,11 +128,11 @@ Bone-white and carbon ink carry the page; a handful of muted semantic hues carry
 - **Hairline** (#e9ecef / #2a2f35): 1px borders and dividers; **Hairline-2** (#dee2e6 / #343a40) reserved for the thin scrollbar thumb.
 
 ### Semantic accent set (the timer states)
-- **Ready** (#4c9a6a, soft #e7f1ea): "on your marks" — green used for the ready timer state, PB gains, active pulse dot.
-- **Hold** (#c8554a, soft #fbeae8): warm reset pressure — applied while holding the cube on the pad.
+- **Ready** (#2b7749, soft #e7f1ea): "on your marks" — green used for the ready timer state, PB gains, active pulse dot. Darkened from #4c9a6a so normal-size accent text clears 4.5:1 on the bone canvas (5.19:1) and its soft bg (4.73:1).
+- **Hold** (#8c3c34, soft #fbeae8): warm reset pressure — applied while holding the cube on the pad. Darkened from #c8554a for AA (7.09:1), kept distinct from dnf.
 - **DNF** (#b3261e, soft #fcebec): did-not-finish. The one hard destructive hue, shared with destructive buttons.
-- **+2** (#a8650a, soft #fbf0dc): two-second penalty — ochre, kept distinct from hold and caution.
-- **Caution** (#eab308, soft #fef3c7): inspection countdown, pure yellow so it clears +2's ochre on the hue wheel.
+- **+2** (#96641e, soft #fbf0dc): two-second penalty — ochre, kept distinct from hold and caution. Darkened from #a8650a for AA (4.81:1).
+- **Caution** (#b45309 light / #facc15 dark, soft #fef3c7): inspection countdown. Light mode sits at amber-700 so caution text clears 4.5:1 on the bone canvas while staying warm and distinct from +2's ochre; dark mode brightens to yellow-400 for the low-glare canvas.
 - **Emerald Accent** (#047857 light / #34d399 dark): a single functional green for successful linkage and confirmation.
 
 ### Phase rainbow (the one sanctioned explosion)

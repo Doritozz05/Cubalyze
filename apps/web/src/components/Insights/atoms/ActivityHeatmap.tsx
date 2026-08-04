@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -45,7 +45,7 @@ function intensity(count: number, max: number): number {
  * The component slices the last `weeks * 7` entries and arranges them into
  * a week-column / day-row grid.
  */
-export function ActivityHeatmap({
+export const ActivityHeatmap = memo(function ActivityHeatmap({
   counts,
   weeks = 12,
   className,
@@ -93,11 +93,11 @@ export function ActivityHeatmap({
         <span>Less</span>
         <div className="flex items-center gap-[3px]">
           {INTENSITY_BG.map((bg, i) => (
-            <div key={i} className={cn("size-[10px] rounded-[2px]", bg)} />
+            <div key={`${bg}-${i}`} className={cn("size-[10px] rounded-[2px]", bg)} />
           ))}
         </div>
         <span>More</span>
       </div>
     </div>
   );
-}
+});

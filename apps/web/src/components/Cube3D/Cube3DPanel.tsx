@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
@@ -16,7 +16,7 @@ export interface Cube3DPanelProps {
   scramble?: string;
 }
 
-export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DPanelProps) {
+export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DPanelProps) {
   const {
     canvasRef,
     containerRef,
@@ -163,7 +163,7 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
           ) : (
             <div className="flex justify-center gap-2 font-mono text-[0.8rem] font-semibold text-ink select-none">
               {recentMoves.map((m, i) => (
-                <span key={i} className="animate-in fade-in slide-in-from-right-2">
+                <span key={`${m}-${i}`} className="animate-in fade-in slide-in-from-right-2">
                   {m}
                 </span>
               ))}
@@ -173,4 +173,4 @@ export function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DP
       </div>
     </div>
   );
-}
+});

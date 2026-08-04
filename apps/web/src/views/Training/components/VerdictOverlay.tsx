@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Check, X } from "lucide-react";
+import { useAnnounce } from "@/lib/announce";
 
 /**
  * Overlay shown after a timed training attempt completes.
@@ -28,11 +29,17 @@ export function VerdictOverlay({
   onIncorrect,
   onSkip,
 }: VerdictOverlayProps) {
+  const reduceMotion = useReducedMotion();
+  // The overlay is transient and positioned over the timer — announce the
+  // attempt result so screen-reader users get the verdict, not just a pause.
+  useAnnounce(`Attempt complete. Time ${timeDisplay}. TPS ${tpsDisplay}. Mark correct or incorrect, or skip.`);
+
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={reduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
+      transition={reduceMotion ? { duration: 0 } : undefined}
       className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 rounded-xl bg-surface/98"
     >
       {/* Touch: fluid clamp so the big numeral never overflows narrow screens. */}

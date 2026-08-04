@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, Shuffle } from "lucide-react";
@@ -23,7 +24,7 @@ export interface MiniCube3DPanelProps {
  * Calibrate sets the current orientation as reference (white on top,
  * green front — standard WCA orientation).
  */
-export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
+export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
   const { canvasRef, containerRef, isReady, initFailed, contextEvicted, recentMoves, calibrate, reset, applyScramble } =
     useCube3D({ maxRecentMoves: 8, scramble });
 
@@ -130,7 +131,7 @@ export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
             <div className="flex justify-center gap-1.5 font-mono text-[0.65rem] font-semibold text-ink">
               {recentMoves.map((m, i) => (
                 <span
-                  key={i}
+                  key={`${m}-${i}`}
                   className="animate-in fade-in slide-in-from-right-2"
                 >
                   {m}
@@ -142,4 +143,4 @@ export function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
       </div>
     </div>
   );
-}
+});

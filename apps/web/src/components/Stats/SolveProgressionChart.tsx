@@ -78,9 +78,9 @@ function PbDotShape(props: any) {
   if (cx == null || cy == null) return null;
   return (
     <g>
-      <circle cx={cx} cy={cy} r={6} fill="none" stroke="#FBBF24" strokeWidth={2} strokeOpacity={0.45} />
-      <circle cx={cx} cy={cy} r={4} fill="none" stroke="#FBBF24" strokeWidth={1.5} strokeOpacity={0.75} />
-      <circle cx={cx} cy={cy} r={2.5} fill="#FBBF24" />
+      <circle cx={cx} cy={cy} r={6} fill="none" stroke="var(--color-chart-pb)" strokeWidth={2} strokeOpacity={0.45} />
+      <circle cx={cx} cy={cy} r={4} fill="none" stroke="var(--color-chart-pb)" strokeWidth={1.5} strokeOpacity={0.75} />
+      <circle cx={cx} cy={cy} r={2.5} fill="var(--color-chart-pb)" />
     </g>
   );
 }
@@ -210,15 +210,15 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
         </div>
         <div className="flex items-center gap-3 text-[0.6rem] text-ink-3">
           <span className="flex items-center gap-1">
-            <span className="inline-block h-0.5 w-3 rounded bg-[#FBBF24]" />
+            <span className="inline-block h-0.5 w-3 rounded bg-chart-pb" />
             PB
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-0.5 w-3 rounded bg-[#EF4444]" />
+            <span className="inline-block h-0.5 w-3 rounded bg-chart-ao5" />
             Ao5
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-0.5 w-3 rounded bg-[#22C55E]" />
+            <span className="inline-block h-0.5 w-3 rounded bg-chart-ao12" />
             Ao12
           </span>
           {hasDnfs && (
@@ -286,7 +286,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               <Line
                 type="linear"
                 dataKey="pbHistory"
-                stroke="#FBBF24"
+                stroke="var(--color-chart-pb)"
                 strokeWidth={1.5}
                 strokeDasharray="5 3"
                 dot={false}
@@ -302,7 +302,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               <Line
                 type="monotone"
                 dataKey="ao5"
-                stroke="#EF4444"
+                stroke="var(--color-chart-ao5)"
                 strokeWidth={1.5}
                 dot={false}
                 activeDot={false}
@@ -317,7 +317,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
               <Line
                 type="monotone"
                 dataKey="ao12"
-                stroke="#22C55E"
+                stroke="var(--color-chart-ao12)"
                 strokeWidth={1.5}
                 dot={false}
                 activeDot={false}
@@ -330,7 +330,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
             {/* ── PB yellow dots (from chart data, only at PB positions) ── */}
             <Scatter
               dataKey="pbTime"
-              fill="#FBBF24"
+              fill="var(--color-chart-pb)"
               shape={<PbDotShape />}
               name="pbDots"
               isAnimationActive={false}
@@ -340,8 +340,8 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
             {hasEnoughForAo5 && (
               <Scatter
                 dataKey="bestAo5Time"
-                fill="#EF4444"
-                shape={<MarkerDotShape color="#EF4444" />}
+                fill="var(--color-chart-ao5)"
+                shape={<MarkerDotShape color="var(--color-chart-ao5)" />}
                 name="bestAo5"
                 isAnimationActive={false}
               />
@@ -351,8 +351,8 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
             {hasEnoughForAo12 && (
               <Scatter
                 dataKey="bestAo12Time"
-                fill="#22C55E"
-                shape={<MarkerDotShape color="#22C55E" />}
+                fill="var(--color-chart-ao12)"
+                shape={<MarkerDotShape color="var(--color-chart-ao12)" />}
                 name="bestAo12"
                 isAnimationActive={false}
               />
@@ -384,7 +384,7 @@ function ScatterTooltip({ active, payload }: any) {
           </span>
         )}
         {point.isPb && !point.isDnf && (
-          <span className="rounded bg-[#FBBF24]/15 px-1 py-0.5 text-[0.6rem] font-medium uppercase text-[#FBBF24]">
+          <span className="rounded bg-chart-pb/15 px-1 py-0.5 text-[0.6rem] font-medium uppercase text-chart-pb">
             PB
           </span>
         )}
@@ -399,19 +399,19 @@ function ScatterTooltip({ active, payload }: any) {
       <div className="mt-1.5 flex flex-col gap-0.5 text-[0.6rem] text-ink-3">
         {point.pbHistory != null && (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block size-1.5 rounded-full bg-[#FBBF24]" />
+            <span className="inline-block size-1.5 rounded-full bg-chart-pb" />
             PB {formatTime(point.pbHistory)}
           </span>
         )}
         {point.ao5 != null && (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-px w-2 bg-[#EF4444]" />
+            <span className="inline-block h-px w-2 bg-chart-ao5" />
             Ao5 {formatTime(point.ao5)}
           </span>
         )}
         {point.ao12 != null && (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-px w-2 bg-[#22C55E]" />
+            <span className="inline-block h-px w-2 bg-chart-ao12" />
             Ao12 {formatTime(point.ao12)}
           </span>
         )}
