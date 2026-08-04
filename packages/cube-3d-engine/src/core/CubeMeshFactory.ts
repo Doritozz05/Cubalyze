@@ -181,9 +181,18 @@ export class CubeMeshFactory {
     });
 
     for (const face of ['U', 'D', 'F', 'B', 'R', 'L'] as const) {
-      // Normal sticker panels (stickered + coreless) — unlit, opaque
+      // Normal sticker panels (stickered + coreless) — unlit, opaque.
+      // NEGATIVE polygonOffset resolves z-fighting with the cubie core:
+      // stickers sit only 0.0001 units in front of the core faces, and at max
+      // zoom-out the depth buffer can't separate them (flickering "inside"
+      // stickers). Positive offsets push fragments AWAY from the camera, which
+      // would let the core win the depth test and make stickers vanish — so
+      // we push stickers CLOSER (negative), guaranteeing they always win.
       this.stickerMaterials[face] = new MeshBasicMaterial({
         color: new Color(this.style.stickerColors[face]),
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
       });
 
       // Stickerless exposed faces — unlit flat color (matches default look)

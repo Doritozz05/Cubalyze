@@ -259,6 +259,45 @@ describe('SceneManager — Level 2 Edge Cases', () => {
   });
 
   // ────────────────────────────────────────────────────────────────────
+  //  Dynamic near plane (depth precision at distance)
+  // ────────────────────────────────────────────────────────────────────
+
+  describe('dynamic near plane — depth precision guard', () => {
+    it('near scales with the default radius 7 (0.03 → 0.21)', () => {
+      expect(sceneManager.camera.near).toBeCloseTo(0.21, 5);
+    });
+
+    it('zooming out to max radius (20) raises near to 0.6', () => {
+      sceneManager.zoomBy(100);
+      expect(sceneManager.camera.near).toBeCloseTo(0.6, 5);
+    });
+
+    it('zooming in clamps near at the minimum 0.1 (no clipping)', () => {
+      sceneManager.zoomBy(0.0001);
+      expect(sceneManager.camera.near).toBeCloseTo(0.1, 5);
+    });
+
+    it('near plane never exceeds the 1.5 max clamp', () => {
+      // Radius clamped to 20 → near = 0.6; force far above max via rotation
+      // at max zoom is not possible, but the clamp formula is stable:
+      sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6, 20);
+      expect(sceneManager.camera.near).toBeLessThanOrEqual(1.5);
+    });
+
+    it('far plane stays at 100', () => {
+      expect(sceneManager.camera.far).toBe(100);
+    });
+
+    it('rotating the camera keeps near in sync with distance', () => {
+      const before = sceneManager.camera.near;
+      sceneManager.rotateCamera(0, -10000); // phi clamps, radius stays 7
+      expect(sceneManager.camera.near).toBeCloseTo(before, 5);
+      sceneManager.zoomBy(2); // radius → 14
+      expect(sceneManager.camera.near).toBeCloseTo(0.42, 5);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────
   //  resetCamera
   // ────────────────────────────────────────────────────────────────────
 
