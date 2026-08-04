@@ -6,6 +6,16 @@
  */
 
 import type { CubeMoveEvent } from "@cubeforge/types";
+import { buildExerciseCatalog } from "@cubeforge/training";
+import type {
+  AlgorithmProgressRecord,
+  ExerciseProgressRecord,
+  MethodProgressBreakdown,
+  PhaseStatsRecord,
+  QueueCandidateRecord,
+  TrainingSessionProgressRecord,
+} from "@cubeforge/training";
+import { withTransaction } from "./transaction.js";
 
 /** Generate a unique ID without external dependencies */
 function generateId(): string {
@@ -46,13 +56,17 @@ export interface AlgorithmProgressRow {
   best_time_ms: number;
   avg_time_ms: number;
   total_attempts: number;
+  exec_attempts: number;
+  exec_correct: number;
   correct_streak: number;
+  recognition_accuracy: number;
+  recognition_attempts: number;
+  recognition_correct: number;
+  recognition_streak: number;
   last_practiced_at: number;
   srs_next_review_at: number;
   srs_interval_days: number;
   srs_ease_factor: number;
-  recognition_accuracy: number;
-  recognition_attempts: number;
   srs_stability: number;
   srs_difficulty: number;
   srs_state: string;
@@ -68,6 +82,9 @@ export interface ExerciseProgressRow {
   phase_id: string | null;
   total_sessions: number;
   total_attempts: number;
+  exec_attempts: number;
+  exec_time_attempts: number;
+  exec_correct: number;
   best_accuracy: number;
   best_time_ms: number;
   avg_time_ms: number;
@@ -75,6 +92,16 @@ export interface ExerciseProgressRow {
 }
 
 // ─── Domain Types (camelCase, for consumers) ──────────────────────────────
+// Single source of truth: the record shapes come from @cubeforge/training.
+// The DB layer only adds its internal row `id` where the domain omits it.
+// (TrainingAttempt keeps its DB-only optional fields — subsetId, expectedMoves,
+// executedMoves, inspectionMs — which the pure tracker does not model.)
+
+export type AlgorithmProgress = AlgorithmProgressRecord & { id: string };
+export type ExerciseProgress = ExerciseProgressRecord & { id: string };
+export type TrainingSessionRecord = TrainingSessionProgressRecord;
+export type PhaseStats = PhaseStatsRecord;
+export type QueueCandidate = QueueCandidateRecord;
 
 export interface TrainingAttempt {
   id: string;
@@ -103,77 +130,7 @@ export interface TrainingAttempt {
   timestamp: number;
 }
 
-export interface AlgorithmProgress {
-  id: string;
-  algorithmId: string;
-  mastery: number;
-  accuracy: number;
-  bestTimeMs: number;
-  avgTimeMs: number;
-  totalAttempts: number;
-  correctStreak: number;
-  lastPracticedAt: number;
-  srsNextReviewAt: number;
-  srsIntervalDays: number;
-  srsEaseFactor: number;
-  recognitionAccuracy: number;
-  recognitionAttempts: number;
-  /** FSRS-lite: memory stability in days (0 = not yet FSRS-tracked). */
-  srsStability: number;
-  /** FSRS-lite: intrinsic difficulty 1-10. */
-  srsDifficulty: number;
-  /** FSRS-lite: new | learning | review | relearning. */
-  srsState: "new" | "learning" | "review" | "relearning";
-  /** FSRS-lite: total forgotten reviews. */
-  srsLapses: number;
-  /** FSRS-lite: total graded reviews. */
-  srsReviewCount: number;
-  /** Epoch ms of the last SRS review (≠ last_practiced_at). */
-  lastReviewAt: number;
-}
 
-export interface ExerciseProgress {
-  id: string;
-  exerciseId: string;
-  methodId: string;
-  phaseId?: string;
-  totalSessions: number;
-  totalAttempts: number;
-  bestAccuracy: number;
-  bestTimeMs: number;
-  avgTimeMs: number;
-  lastPracticedAt: number;
-}
-
-/** Per-phase aggregate stats derived from training_attempts. */
-export interface TrainingSessionRecord {
-  id: string;
-  exerciseId: string;
-  methodId: string;
-  phaseId?: string;
-  subsetId?: string;
-  startedAt: number;
-  completedAt?: number;
-  durationMs: number;
-  smartCubeUsed: boolean;
-  status: "active" | "completed";
-  totalAttempts: number;
-  correctCount: number;
-  accuracy: number;
-  avgTimeMs: number;
-}
-
-export interface PhaseStats {
-  methodId: string;
-  phaseId: string;
-  totalAttempts: number;
-  accuracy: number;      // 0-100
-  avgTimeMs: number;
-  bestTimeMs: number;
-  failRate: number;      // 0-1
-  efficiency: number;    // 0-1 (optimal_moves / move_count), 0 when unavailable
-  lastPracticedAt: number;
-}
 
 // ─── Row ↔ Domain converters ──────────────────────────────────────────────
 
@@ -214,6 +171,8 @@ function rowToAlgorithmProgress(row: AlgorithmProgressRow): AlgorithmProgress {
     bestTimeMs: row.best_time_ms,
     avgTimeMs: row.avg_time_ms,
     totalAttempts: row.total_attempts,
+    execAttempts: row.exec_attempts ?? 0,
+    execCorrect: row.exec_correct ?? 0,
     correctStreak: row.correct_streak,
     lastPracticedAt: row.last_practiced_at,
     srsNextReviewAt: row.srs_next_review_at,
@@ -221,6 +180,8 @@ function rowToAlgorithmProgress(row: AlgorithmProgressRow): AlgorithmProgress {
     srsEaseFactor: row.srs_ease_factor,
     recognitionAccuracy: row.recognition_accuracy ?? 0,
     recognitionAttempts: row.recognition_attempts ?? 0,
+    recognitionCorrect: row.recognition_correct ?? 0,
+    recognitionStreak: row.recognition_streak ?? 0,
     srsStability: row.srs_stability ?? 0,
     srsDifficulty: row.srs_difficulty ?? 5,
     srsState: (row.srs_state ?? "new") as AlgorithmProgress["srsState"],
@@ -261,22 +222,14 @@ function rowToExerciseProgress(row: ExerciseProgressRow): ExerciseProgress {
     phaseId: row.phase_id ?? undefined,
     totalSessions: row.total_sessions,
     totalAttempts: row.total_attempts,
+    execAttempts: row.exec_attempts ?? 0,
+    execTimeAttempts: row.exec_time_attempts ?? row.exec_attempts ?? 0,
+    execCorrect: row.exec_correct ?? 0,
     bestAccuracy: row.best_accuracy,
     bestTimeMs: row.best_time_ms,
     avgTimeMs: row.avg_time_ms,
     lastPracticedAt: row.last_practiced_at,
   };
-}
-
-/** Queue candidate: a catalog case + its FSRS progress (null if never practiced). */
-export interface QueueCandidate {
-  caseId: string;
-  subsetId: string;
-  caseNumber: string;
-  caseName: string;
-  methodId: string;
-  subsetName: string;
-  progress: AlgorithmProgress | null;
 }
 
 function rowToQueueCandidate(row: Record<string, unknown>): QueueCandidate {
@@ -299,6 +252,39 @@ export class TrainingRepository {
 
   constructor(db: DBExecutor) {
     this.db = db;
+  }
+
+  // ── Exercise catalog registry ─────────────────────────────────────
+
+  /**
+   * Seed `training_exercises` from the canonical catalog in
+   * @cubeforge/training (idempotent INSERT OR IGNORE, batched so the
+   * worker boundary is crossed a handful of times, mirroring
+   * AlgorithmsRepository.seedAll).
+   *
+   * The table is informational (the baseline v2 schema deliberately kept
+   * training_attempts.exercise_id FK-free so legacy/edge ids can't crash
+   * writes) but it is the canonical registry the UI can query to discover
+   * the real exercise ids instead of hardcoding them.
+   */
+  async seedExercises(): Promise<number> {
+    const defs = buildExerciseCatalog();
+    const now = Date.now();
+    const BATCH = 40; // 6 cols × 40 rows = 240 bind vars, well under SQLite's 999
+    for (let i = 0; i < defs.length; i += BATCH) {
+      const rows = defs.slice(i, i + BATCH);
+      const values = rows.map(() => "(?, ?, ?, ?, ?, ?)").join(", ");
+      const bind: unknown[] = [];
+      for (const d of rows) {
+        bind.push(d.id, d.name, d.description, d.kind, d.methodId ?? null, now);
+      }
+      await this.db(
+        `INSERT OR IGNORE INTO training_exercises (id, name, description, kind, method_id, created_at)
+         VALUES ${values}`,
+        bind,
+      );
+    }
+    return defs.length;
   }
 
   // ── Attempts ───────────────────────────────────────────────────────
@@ -377,20 +363,24 @@ export class TrainingRepository {
   }
 
   async completeTrainingSession(id: string, completedAt = Date.now()): Promise<TrainingSessionRecord | null> {
-    await this.db(
-      `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed' WHERE id = ?`,
-      [completedAt, completedAt, id],
-    );
-    const rows = await this.db(
-      `SELECT ts.*, COUNT(ta.id) AS total_attempts,
-         SUM(CASE WHEN ta.verdict = 'correct' THEN 1 ELSE 0 END) AS correct_count,
-         AVG(CASE WHEN ta.time_ms > 0 THEN ta.time_ms END) AS avg_time_ms
-       FROM training_sessions ts LEFT JOIN training_attempts ta ON ta.session_id = ts.id
-       WHERE ts.id = ? GROUP BY ts.id`,
-      [id],
-    );
-    if (rows.length === 0) return null;
-    return rowToTrainingSession(rows[0]);
+    // The close (UPDATE) and the derived-aggregate read (SELECT) are atomic
+    // so a session can never be closed without its final stats.
+    return withTransaction(this.db, async () => {
+      await this.db(
+        `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed' WHERE id = ?`,
+        [completedAt, completedAt, id],
+      );
+      const rows = await this.db(
+        `SELECT ts.*, COUNT(ta.id) AS total_attempts,
+           SUM(CASE WHEN ta.verdict = 'correct' THEN 1 ELSE 0 END) AS correct_count,
+           AVG(CASE WHEN ta.time_ms > 0 THEN ta.time_ms END) AS avg_time_ms
+         FROM training_sessions ts LEFT JOIN training_attempts ta ON ta.session_id = ts.id
+         WHERE ts.id = ? GROUP BY ts.id`,
+        [id],
+      );
+      if (rows.length === 0) return null;
+      return rowToTrainingSession(rows[0]);
+    });
   }
 
   async getTrainingSessions(methodId: string, phaseId?: string, limit = 50): Promise<TrainingSessionRecord[]> {
@@ -460,22 +450,29 @@ export class TrainingRepository {
     return rowToAlgorithmProgress(rows[0] as unknown as AlgorithmProgressRow);
   }
 
-  async upsertAlgorithmProgress(progress: Omit<AlgorithmProgress, "id">): Promise<AlgorithmProgress> {
+  async upsertAlgorithmProgress(progress: AlgorithmProgressRecord): Promise<AlgorithmProgress> {
+    // Read-modify-write is atomic: the read and the write share one
+    // transaction, so a concurrent attempt can never be lost between them.
+    return withTransaction(this.db, async () => {
     const existing = await this.getAlgorithmProgress(progress.algorithmId);
     if (existing) {
       await this.db(
         `UPDATE algorithm_progress SET mastery = ?, accuracy = ?, best_time_ms = ?, avg_time_ms = ?,
-         total_attempts = ?, correct_streak = ?, last_practiced_at = ?,
+         total_attempts = ?, exec_attempts = ?, exec_correct = ?, correct_streak = ?,
+         last_practiced_at = ?,
          srs_next_review_at = ?, srs_interval_days = ?, srs_ease_factor = ?,
-         recognition_accuracy = ?, recognition_attempts = ?,
+         recognition_accuracy = ?, recognition_attempts = ?, recognition_correct = ?,
+         recognition_streak = ?,
          srs_stability = ?, srs_difficulty = ?, srs_state = ?, srs_lapses = ?,
          srs_review_count = ?, last_review_at = ?
          WHERE algorithm_id = ?`,
         [
           progress.mastery, progress.accuracy, progress.bestTimeMs, progress.avgTimeMs,
-          progress.totalAttempts, progress.correctStreak, progress.lastPracticedAt,
+          progress.totalAttempts, progress.execAttempts, progress.execCorrect,
+          progress.correctStreak, progress.lastPracticedAt,
           progress.srsNextReviewAt, progress.srsIntervalDays, progress.srsEaseFactor,
           progress.recognitionAccuracy, progress.recognitionAttempts,
+          progress.recognitionCorrect, progress.recognitionStreak,
           progress.srsStability, progress.srsDifficulty, progress.srsState,
           progress.srsLapses, progress.srsReviewCount, progress.lastReviewAt,
           progress.algorithmId,
@@ -486,22 +483,27 @@ export class TrainingRepository {
       const id = generateId();
       await this.db(
         `INSERT INTO algorithm_progress (id, algorithm_id, mastery, accuracy, best_time_ms, avg_time_ms,
-         total_attempts, correct_streak, last_practiced_at, srs_next_review_at, srs_interval_days, srs_ease_factor,
-         recognition_accuracy, recognition_attempts, srs_stability, srs_difficulty, srs_state,
+         total_attempts, exec_attempts, exec_correct, correct_streak, last_practiced_at,
+         srs_next_review_at, srs_interval_days, srs_ease_factor,
+         recognition_accuracy, recognition_attempts, recognition_correct, recognition_streak,
+         srs_stability, srs_difficulty, srs_state,
          srs_lapses, srs_review_count, last_review_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, progress.algorithmId, progress.mastery, progress.accuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.totalAttempts,
-          progress.correctStreak, progress.lastPracticedAt,
+          progress.execAttempts, progress.execCorrect, progress.correctStreak,
+          progress.lastPracticedAt,
           progress.srsNextReviewAt, progress.srsIntervalDays, progress.srsEaseFactor,
           progress.recognitionAccuracy, progress.recognitionAttempts,
+          progress.recognitionCorrect, progress.recognitionStreak,
           progress.srsStability, progress.srsDifficulty, progress.srsState,
           progress.srsLapses, progress.srsReviewCount, progress.lastReviewAt,
         ],
       );
       return { ...progress, id };
     }
+    });
   }
 
   async getAlgorithmProgressBySubset(subsetId: string): Promise<AlgorithmProgress[]> {
@@ -561,6 +563,8 @@ export class TrainingRepository {
         ap.best_time_ms,
         ap.avg_time_ms,
         ap.total_attempts,
+        ap.exec_attempts,
+        ap.exec_correct,
         ap.correct_streak,
         ap.last_practiced_at,
         ap.srs_next_review_at,
@@ -568,6 +572,8 @@ export class TrainingRepository {
         ap.srs_ease_factor,
         ap.recognition_accuracy,
         ap.recognition_attempts,
+        ap.recognition_correct,
+        ap.recognition_streak,
         ap.srs_stability,
         ap.srs_difficulty,
         ap.srs_state,
@@ -604,7 +610,8 @@ export class TrainingRepository {
     return rowToExerciseProgress(rows[0] as unknown as ExerciseProgressRow);
   }
 
-  async upsertExerciseProgress(progress: Omit<ExerciseProgress, "id">): Promise<ExerciseProgress> {
+  async upsertExerciseProgress(progress: ExerciseProgressRecord): Promise<ExerciseProgress> {
+    return withTransaction(this.db, async () => {
     const existing = await this.getExerciseProgress(
       progress.exerciseId,
       progress.methodId,
@@ -612,11 +619,13 @@ export class TrainingRepository {
     );
     if (existing) {
       await this.db(
-        `UPDATE exercise_progress SET total_sessions = ?, total_attempts = ?, best_accuracy = ?,
+        `UPDATE exercise_progress SET total_sessions = ?, total_attempts = ?, exec_attempts = ?,
+         exec_time_attempts = ?, exec_correct = ?, best_accuracy = ?,
          best_time_ms = ?, avg_time_ms = ?, last_practiced_at = ?
          WHERE id = ?`,
         [
-          progress.totalSessions, progress.totalAttempts, progress.bestAccuracy,
+          progress.totalSessions, progress.totalAttempts, progress.execAttempts,
+          progress.execTimeAttempts ?? 0, progress.execCorrect, progress.bestAccuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.lastPracticedAt,
           existing.id,
         ],
@@ -626,16 +635,19 @@ export class TrainingRepository {
       const id = generateId();
       await this.db(
         `INSERT INTO exercise_progress (id, exercise_id, method_id, phase_id, total_sessions,
-         total_attempts, best_accuracy, best_time_ms, avg_time_ms, last_practiced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         total_attempts, exec_attempts, exec_time_attempts, exec_correct, best_accuracy, best_time_ms, avg_time_ms,
+         last_practiced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, progress.exerciseId, progress.methodId, progress.phaseId ?? null,
-          progress.totalSessions, progress.totalAttempts, progress.bestAccuracy,
+          progress.totalSessions, progress.totalAttempts, progress.execAttempts,
+          progress.execTimeAttempts ?? 0, progress.execCorrect, progress.bestAccuracy,
           progress.bestTimeMs, progress.avgTimeMs, progress.lastPracticedAt,
         ],
       );
       return { ...progress, id };
     }
+    });
   }
 
   async getMethodExerciseProgress(methodId: string): Promise<ExerciseProgress[]> {
@@ -648,24 +660,45 @@ export class TrainingRepository {
 
   // ── Aggregates ─────────────────────────────────────────────────────
 
-  async getMethodMastery(methodId: string): Promise<number> {
+  /**
+   * Method mastery with an explicit coverage × performance breakdown:
+   *   - coverage: practiced cases / total cases (breadth)
+   *   - performance: average mastery of PRACTICED cases (depth)
+   *   - mastery = round(performance × coverage) — identical to the historical
+   *     AVG(COALESCE(mastery, 0)) over all cases, now computed explicitly so
+   *     the UI can display breadth and depth separately.
+   */
+  async getMethodProgress(methodId: string): Promise<MethodProgressBreakdown | null> {
     const rows = await this.db(
-      `SELECT COALESCE(AVG(COALESCE(ap.mastery, 0)), 0) as avg_mastery FROM algorithm_cases ac
+      `SELECT
+         COUNT(*) AS total_cases,
+         SUM(CASE WHEN ap.algorithm_id IS NOT NULL THEN 1 ELSE 0 END) AS practiced_cases,
+         COALESCE(AVG(CASE WHEN ap.algorithm_id IS NOT NULL THEN ap.mastery END), 0) AS performance
+       FROM algorithm_cases ac
        INNER JOIN algorithm_subsets as2 ON ac.subset_id = as2.id
        LEFT JOIN algorithm_progress ap ON ap.algorithm_id = ac.id
        WHERE as2.method_id = ?`,
       [methodId],
     );
-    return Math.round((rows[0] as { avg_mastery: number }).avg_mastery);
+    const r = rows[0] as Record<string, unknown>;
+    if (!r) return null;
+    const totalCases = Number(r.total_cases) || 0;
+    const practicedCases = Number(r.practiced_cases) || 0;
+    const performance = Number(r.performance) || 0;
+    const coverage = totalCases > 0 ? practicedCases / totalCases : 0;
+    return {
+      methodId,
+      mastery: Math.round(performance * coverage),
+      coverage,
+      performance: Math.round(performance),
+      totalCases,
+      practicedCases,
+    };
   }
 
-  async getMethodBestTime(methodId: string): Promise<number> {
-    // Best full solve time from solves table for this method (demo data excluded)
-    const rows = await this.db(
-      "SELECT MIN(time_ms) as best FROM solves WHERE method = ? AND penalty = 'none' AND is_demo = 0",
-      [methodId],
-    );
-    return (rows[0] as { best: number | null }).best ?? 0;
+  async getMethodMastery(methodId: string): Promise<number> {
+    const progress = await this.getMethodProgress(methodId);
+    return progress?.mastery ?? 0;
   }
 
   // ── Reset / Maintenance ────────────────────────────────────────────
@@ -690,20 +723,27 @@ export class TrainingRepository {
    * Aggregate per-phase stats from training_attempts. Used for
    * phase-level weakness detection (avg time, accuracy, efficiency).
    *
-   * Recognition attempts ARE included: they carry a real verdict (correct /
-   * incorrect) so they contribute to accuracy/fail-rate/attempt counts, which
-   * is what the Quick Summary and phase stats report. Time and efficiency
-   * aggregates are already guarded (time_ms > 0 / optimal_moves > 0) so the
-   * recognition attempts' time_ms=0 rows never corrupt them.
+   * Execution and recognition are counted SEPARATELY: `accuracy` (and
+   * `execAccuracy`) is execution-only, so recognition quizzes can never
+   * dilute the drill % a user sees. Recognition attempts still count toward
+   * `totalAttempts`/`recAttempts`/`recAccuracy`. Rows with verdict
+   * 'skipped' (e.g. honest Full Solve phase splits — real timing, no
+   * correctness verdict) are EXCLUDED from the exec/rec denominators so
+   * they can never dilute accuracy or fail rate. Time and efficiency
+   * aggregates are guarded (time_ms > 0 / optimal_moves > 0) so recognition
+   * rows with time_ms=0 never corrupt them.
    */
   async getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStats | null> {
     const rows = await this.db(
       `SELECT
          COUNT(*) as total_attempts,
-         AVG(CASE WHEN verdict = 'correct' THEN 1.0 ELSE 0 END) as accuracy,
+         SUM(CASE WHEN metric_kind = 'execution' AND verdict != 'skipped' THEN 1 ELSE 0 END) as exec_attempts,
+         SUM(CASE WHEN metric_kind = 'execution' AND verdict = 'correct' THEN 1 ELSE 0 END) as exec_correct,
+         SUM(CASE WHEN metric_kind = 'recognition' AND verdict != 'skipped' THEN 1 ELSE 0 END) as rec_attempts,
+         SUM(CASE WHEN metric_kind = 'recognition' AND verdict = 'correct' THEN 1 ELSE 0 END) as rec_correct,
          AVG(CASE WHEN time_ms > 0 THEN time_ms END) as avg_time_ms,
          MIN(CASE WHEN time_ms > 0 THEN time_ms END) as best_time_ms,
-         AVG(CASE WHEN verdict IN ('incorrect', 'dnf') THEN 1.0 ELSE 0 END) as fail_rate,
+         SUM(CASE WHEN metric_kind = 'execution' AND verdict IN ('incorrect', 'dnf') THEN 1 ELSE 0 END) as exec_failures,
          AVG(CASE WHEN optimal_moves > 0 AND move_count > 0 THEN optimal_moves * 1.0 / move_count END) as efficiency,
          MAX(timestamp) as last_practiced_at
        FROM training_attempts
@@ -712,14 +752,26 @@ export class TrainingRepository {
     );
     const r = rows[0] as Record<string, unknown>;
     if (!r || Number(r.total_attempts) === 0) return null;
+    const execAttempts = Number(r.exec_attempts) || 0;
+    const execCorrect = Number(r.exec_correct) || 0;
+    const recAttempts = Number(r.rec_attempts) || 0;
+    const recCorrect = Number(r.rec_correct) || 0;
+    const execAccuracy = execAttempts > 0 ? Math.round((execCorrect / execAttempts) * 100) : 0;
+    const recAccuracy = recAttempts > 0 ? Math.round((recCorrect / recAttempts) * 100) : 0;
     return {
       methodId,
       phaseId,
       totalAttempts: Number(r.total_attempts),
-      accuracy: Math.round((Number(r.accuracy) || 0) * 100),
+      accuracy: execAccuracy,
+      execAttempts,
+      execAccuracy,
+      recAttempts,
+      recAccuracy,
       avgTimeMs: Math.round(Number(r.avg_time_ms) || 0),
       bestTimeMs: Math.round(Number(r.best_time_ms) || 0),
-      failRate: Number(r.fail_rate) || 0,
+      // Fail rate is execution-only: failures / execution attempts. Recognition
+      // rows (all correct, no time) must never dilute the drill failure signal.
+      failRate: execAttempts > 0 ? (Number(r.exec_failures) || 0) / execAttempts : 0,
       efficiency: Number(r.efficiency) || 0,
       lastPracticedAt: Number(r.last_practiced_at) || 0,
     };

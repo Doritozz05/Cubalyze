@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { AppMetaRepository, generateUuid } from '../repositories/app-meta.repository.js';
+import { AppMetaRepository, generateUuid, ONBOARDING_KEY } from '../repositories/app-meta.repository.js';
 import { ProfilesRepository } from '../repositories/profiles.repository.js';
 import type { Profile } from '@cubeforge/models';
 
@@ -129,6 +129,37 @@ describe('AppMetaRepository', () => {
     expect(store.size).toBe(1);
     const inserts = fn.mock.calls.filter(([sql]) => sql.includes('INSERT'));
     expect(inserts).toHaveLength(0);
+  });
+
+  it('getOnboardingCompleted is false while the onboarding flag is absent (first launch)', async () => {
+    const { fn } = metaFake();
+    const repo = new AppMetaRepository(fn);
+    expect(await repo.getOnboardingCompleted()).toBe(false);
+  });
+
+  it('setOnboardingCompleted persists the flag with the onboarding key', async () => {
+    const { fn, store } = metaFake();
+    const repo = new AppMetaRepository(fn);
+    await repo.setOnboardingCompleted();
+    expect(store.get(ONBOARDING_KEY)).toBe('1');
+    expect(fn.mock.calls[0][0]).toContain('INSERT OR REPLACE INTO app_meta');
+    expect(await repo.getOnboardingCompleted()).toBe(true);
+  });
+
+  it('setOnboardingCompleted is idempotent', async () => {
+    const { fn } = metaFake({ [ONBOARDING_KEY]: '1' });
+    const repo = new AppMetaRepository(fn);
+    await repo.setOnboardingCompleted();
+    expect(await repo.getOnboardingCompleted()).toBe(true);
+    // One overwrite call, no reads triggered by the double-set.
+    const writes = fn.mock.calls.filter(([sql]) => sql.includes('INSERT OR REPLACE'));
+    expect(writes).toHaveLength(1);
+  });
+
+  it('getOnboardingCompleted is true once the flag is seeded', async () => {
+    const { fn } = metaFake({ [ONBOARDING_KEY]: '1' });
+    const repo = new AppMetaRepository(fn);
+    expect(await repo.getOnboardingCompleted()).toBe(true);
   });
 
   it('generateUuid produces a v4-shaped UUID', () => {

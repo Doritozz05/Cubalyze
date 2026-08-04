@@ -85,7 +85,7 @@ export function PracticeDashboard({
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex-1 min-h-0 w-full">
+    <div className="relative flex-1 min-h-0 w-full" data-onboarding-target="practice">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5">
         {/* Left panel: Method tree — desktop only (>=1024px) */}
         <aside className="hidden h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface lg:flex lg:w-64 lg:shrink-0">

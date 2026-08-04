@@ -18,7 +18,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}): Record<strin
     id: 's1',
     session_id: 'ses1',
     time_ms: 12345,
-    date: '2026-01-01',
+    timestamp: 1767225600000,
     scramble: "R U R'",
     penalty: 'none',
     method: 'CFOP',
@@ -29,8 +29,8 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}): Record<strin
     analysis_engine_version: null,
     analysis: null,
     puzzle_type: '3x3x3',
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    created_at: 1767225600000,
+    updated_at: 1767225600000,
     ...overrides,
   };
 }
@@ -222,7 +222,7 @@ describe('SolvesRepository — Nivel 2 Edge Cases', () => {
       const db = mockDb();
       repo = new SolvesRepository(db);
       await repo.insert({
-        id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01',
+        id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
         scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '2x2x2',
       });
       const bind = db.mock.calls[0][1] as unknown[];
@@ -274,7 +274,7 @@ describe('SolvesRepository — Nivel 2 Edge Cases', () => {
       expect(solve.id).toBe('s1');
       expect(solve.sessionId).toBe('ses1');
       expect(solve.timeMs).toBe(12345);
-      expect(solve.date).toBe('2026-01-01');
+      expect(solve.timestamp).toBe(1767225600000);
       expect(solve.scramble).toBe("R U R'");
       expect(solve.penalty).toBe('none');
       expect(solve.method).toBe('CFOP');
@@ -288,7 +288,7 @@ describe('SolvesRepository — Nivel 2 Edge Cases', () => {
       repo = new SolvesRepository(db);
 
       await repo.insert({
-        id: 's1', sessionId: 'ses1', timeMs: 1000, date: '2026-01-01',
+        id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
         scramble: '', penalty: 'none', source: 'smart',
         moves: [{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }],
         puzzleType: '3x3x3',

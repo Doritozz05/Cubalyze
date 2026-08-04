@@ -4,8 +4,8 @@ export interface SessionRow {
   id: string;
   name: string;
   puzzle_type: string;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
   is_demo?: number;
 }
 
@@ -54,14 +54,14 @@ export class SessionsRepository {
   async insert(session: Session, options?: { isDemo?: boolean }): Promise<void> {
     await this.db(
       'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
-      [session.id, session.name, session.puzzleType, session.createdAt || new Date().toISOString(), session.updatedAt || new Date().toISOString(), options?.isDemo ? 1 : 0]
+      [session.id, session.name, session.puzzleType, session.createdAt || Date.now(), session.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
     );
   }
 
   async update(session: Session): Promise<void> {
     await this.db(
       'UPDATE sessions SET name = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [session.name, session.puzzleType, new Date().toISOString(), session.id]
+      [session.name, session.puzzleType, Date.now(), session.id]
     );
   }
 

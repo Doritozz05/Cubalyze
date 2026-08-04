@@ -434,21 +434,21 @@ inserción** y que todo id escrito exista en el catálogo:
 > `knip` verdes y, cuando toca UI, verificación manual en browser.
 
 ### Fase 0 — Baseline y tests del nuevo modelo métrico (0.5-1 día)
-- [ ] Crear `packages/training/src/progress/__tests__/metrics.test.ts` con los tests de invarianza
+- [x] Crear `packages/training/src/progress/__tests__/metrics-invariance.test.ts` con los tests de invarianza
       (§2.3: monotonicidad, no-interferencia exec/rec, error cero en reconstrucción).
-- [ ] `pnpm --filter @cubeforge/training test` (los tests nuevos fallan → sirven de contrato).
+- [x] `pnpm --filter @cubeforge/training test` (los tests nuevos fallan → sirven de contrato).
 - Archivos: `packages/training/src/progress/` (+ tests).
 
 ### Fase 1 — Contadores exactos y eliminación de drift (2-3 días)
-- [ ] **Baseline v2**: escribir la migración `BASELINE_V2` con el esquema final completo (§5.2) +
+- [x] **Baseline v2**: escribir la migración `022_baseline_v2` con el esquema final completo (§5.2) +
       wipe del runner; actualizar `worker.ts` y `database-override.ts` (sin backfill, sin ALTERs).
-- [ ] `recordAttempt` reescrito: contadores exactos, sin reconstrucción por redondeo, sin bootstrap
+- [x] `recordAttempt` reescrito: contadores exactos, sin reconstrucción por redondeo, sin bootstrap
       SM-2 en rama recognition; `computeMastery` con denominador de ejecución exacto.
-- [ ] `getPhaseStats` con bloques execution/recognition; `getMethodMastery` → coverage/performance;
+- [x] `getPhaseStats` con bloques execution/recognition (skipped excluido de denominadores); `getMethodMastery` → coverage/performance;
       agregados de sesión derivados por query (fin de los snapshots congelados).
-- [ ] `withTransaction` en `completeTrainingSession`/`replaceAll`/upserts.
-- [ ] BUG `totalSessions` resuelto (columna derivada o contador bien mantenido en baseline v2).
-- [ ] Exportar constantes (`DEFAULT_EASE_FACTOR`, `FSRS_DEFAULTS`); quitar hardcodes del hook.
+- [x] `withTransaction` en `completeTrainingSession`/upserts (nuevo helper `repositories/transaction.ts`).
+- [x] BUG `totalSessions` resuelto (contador mantenido en baseline v2).
+- [x] Exportar constantes (`DEFAULT_EASE_FACTOR`, `FSRS_DEFAULTS`); quitar hardcodes del hook.
 - [ ] Aceptación: tests de invarianza verdes; `pnpm --filter @cubeforge/training typecheck && test`;
       `pnpm --filter @cubeforge/database test` (repo tests actualizados a la nueva semántica).
 - Archivos: `progress/progress-tracker.ts`, `progress/insights.ts`, `progress/scheduler.ts`,
@@ -456,19 +456,19 @@ inserción** y que todo id escrito exista en el catálogo:
   `worker.ts`, `apps/desktop/src/database-override.ts`, `hooks/useTrainingProgress.ts`.
 
 ### Fase 2 — Tipos unificados (1-2 días)
-- [ ] `@cubeforge/database` depende de `@cubeforge/training`; eliminar tipos duplicados del repo;
+- [x] `@cubeforge/database` depende de `@cubeforge/training`; eliminar tipos duplicados del repo;
       el adapter del hook se reduce/elimina.
-- [ ] Mover `setupGenerator.test.ts` al paquete.
+- [x] Mover `setupGenerator.test.ts` al paquete (`src/generators/__tests__/`).
 - [ ] Aceptación: `pnpm typecheck` raíz, `pnpm --filter @cubeforge/database test`.
 - Archivos: `packages/database/package.json`, `repositories/training.repository.ts`,
   `packages/database/src/index.ts`, `hooks/useTrainingProgress.ts`.
 
 ### Fase 3 — Catálogo de ejercicios real (2-3 días)
-- [ ] Ampliar `ITrainingExercise` + implementar los 12 ejercicios reales con IDs canónicos,
+- [x] Catálogo real (`exercises/catalog.ts`): `EXERCISE_IDS`, `buildMethodPhases`, `findSubsetId`, `masteryLevel` (5 niveles).
       `variants`, `defaults` (incl. `full-solve-targets`, `efficiencyTolerance`).
-- [ ] `EXERCISE_IDS` + helpers; `buildMethodPhases` y `subsetForPhase` (en `algorithm-db` o paquete,
+- [x] `EXERCISE_IDS` + helpers; `buildMethodPhases` y `findSubsetId` (en el paquete `@cubeforge/training`,
       con tests).
-- [ ] Tabla `training_exercises` en baseline v2 + seed desde `exerciseRegistry` (sin migración de
+- [x] Tabla `training_exercises` en baseline v2 + seed idempotente (`seedExercises`).
       normalización: no hay datos que migrar).
 - [ ] Aceptación: tests del registry (`getByMethod`, `getByPhase`, IDs únicos y estables);
       `pnpm --filter @cubeforge/training test`.
@@ -476,33 +476,35 @@ inserción** y que todo id escrito exista en el catálogo:
   `packages/training/src/generators/setup-generator.ts` (singleton solver), `packages/algorithm-db`.
 
 ### Fase 4 — Sesión y timer compartidos (2-3 días)
-- [ ] `useTrainingEngine` en la app (composición del engine del paquete + timer + persistencia).
-- [ ] `mapTimerState` + `useTimerKeyboard` compartidos; refactor de `useDrillTimer` y
+- [x] `useTrainingEngine` en la app (composición del engine del paquete + timer + persistencia).
+- [x] `mapTimerState` + `useTimerKeyboard` compartidos; refactor de `useDrillTimer` y
       `useSolveSession`.
-- [ ] Migrar `AlgorithmDrillView` y `AlgorithmRecognizeView` (primeros, son el modelo) → validar.
+- [x] Migrar `AlgorithmDrillView` y `AlgorithmRecognizeView` (primeros, son el modelo) → validar.
 - [ ] Aceptación: las vistas modelo siguen funcionando idénticamente (verificación browser);
       `pnpm --filter @cubeforge/training test` (engine ya tiene 45 tests); typecheck web.
 - Archivos: `apps/web/src/hooks/useTrainingEngine.ts`, `timerShared.ts`, vistas drill/recognize.
 
 ### Fase 5 — Refactor de vistas "chapuza" (3-5 días)
-- [ ] `PhaseStatsView` (umbrales/mapeos unificados, exec/rec separados, escala real).
-- [ ] `TrainingDashboard` (data-driven).
-- [ ] `FullSolveView` (targets-data, splits skipped, singleton solver, <300 líneas).
-- [ ] `CrossTrainerView` (timer + eficiencia tolerante + stats DB).
-- [ ] Vistas thin (Plain/Blind/LSE/EO) → IDs canónicos + `useTrainingEngine`.
+- [x] `PhaseStatsView` (umbrales/mapeos unificados, exec/rec separados, escala real p90).
+- [x] `TrainingDashboard` (data-driven; FlatDashboard/ExerciseCard extraídos).
+- [x] `FullSolveView` (targets-data, splits skipped, singleton solver; paneles extraídos).
+- [x] `CrossTrainerView` (timer real + eficiencia tolerante + stats DB; paneles extraídos).
+- [x] Vistas thin (Plain/Blind/LSE/EO) → IDs canónicos + `useTrainingEngine`
+      (`usePracticeSession` reescrito para delegar en el engine; las 5 vistas
+      Plain/Blind/LSE/EO consumen el mismo machine con IDs canónicos).
 - [ ] Aceptación: verificación browser de cada vista (flujo completo + datos persistidos
       coherentes entre UI y DB); `pnpm --filter @cubeforge/web typecheck` y tests web.
 - Archivos: `apps/web/src/views/Training/**`.
 
 ### Fase 6 — Higiene y cierre (1-2 días)
-- [ ] Eliminar tabla legacy `algorithms` + CRUD muerto (`AlgorithmsRepository` CRUD legacy,
+- [x] Eliminar tabla legacy `algorithms` + CRUD muerto (`AlgorithmsRepository` CRUD legacy,
       `count()` renombrado) — ya eliminados por baseline v2, verificar que no queda código.
-- [ ] Ordenar/renumerar migraciones (baseline v2 + correlativas).
-- [ ] `intervalFor('again') = 0` + test; decisión `REQUEST_RETENTION`.
-- [ ] Eliminar tipos muertos del paquete (los que no tengan consumidor tras las fases 3-5) —
+- [x] Ordenar/renumerar migraciones (baseline v2 + correlativas).
+- [x] `intervalFor('again') = 0` + test; `REQUEST_RETENTION` eliminado (muerto).
+- [x] Eliminar tipos muertos del paquete (los que no tengan consumidor tras las fases 3-5) —
       ejecutar knip con configuración de exports públicos antes de borrar.
-- [ ] `pnpm knip`, `pnpm typecheck`, `pnpm test` en todo el repo.
-- [ ] Actualizar `docs/plan_training/README.md` (estado) y este documento.
+- [x] `pnpm knip`, `pnpm typecheck`, `pnpm test` en todo el repo.
+- [x] Actualizar `docs/plan_training/README.md` (estado) y este documento.
 
 ---
 

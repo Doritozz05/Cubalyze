@@ -107,6 +107,38 @@ export function exportSolvesToJSON(
 }
 
 /**
+ * Export EVERY session's solves to a single JSON file (full fidelity).
+ *
+ * Structure: `{ app, exportedAt, sessions: [{ sessionName, solveCount, solves }] }`.
+ * Each solve keeps its full metadata (including per-solve `puzzleType`), so
+ * the "Import CubeForge JSON (no data loss)" flow restores it exactly.
+ */
+export function exportAllSolvesToJSON(
+  sessions: Array<{ sessionName: string; solves: Solve[] }>,
+): string {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    app: "CubeForge",
+    sessionCount: sessions.length,
+    sessions: sessions.map(({ sessionName, solves }) => ({
+      sessionName: sessionName ?? "Unknown",
+      solveCount: solves.length,
+      solves: solves.map((solve) => ({
+        timeMs: solve.time,
+        penalty: solve.penalty,
+        scramble: solve.scramble,
+        timestamp: solve.timestamp,
+        method: solve.method,
+        note: solve.note,
+        source: solve.source,
+        puzzleType: solve.puzzleType,
+      })),
+    })),
+  };
+  return JSON.stringify(data, null, 2);
+}
+
+/**
  * Trigger a file download in the browser.
  */
 export function downloadFile(content: string, filename: string, mimeType: string): void {

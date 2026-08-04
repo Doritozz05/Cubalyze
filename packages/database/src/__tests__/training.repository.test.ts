@@ -43,6 +43,8 @@ function progressRow(overrides: Partial<Record<string, unknown>> = {}): Record<s
     best_time_ms: 9000,
     avg_time_ms: 11000,
     total_attempts: 20,
+    exec_attempts: 12,
+    exec_correct: 10,
     correct_streak: 4,
     last_practiced_at: 1700000000000,
     srs_next_review_at: 1700000864000,
@@ -50,6 +52,8 @@ function progressRow(overrides: Partial<Record<string, unknown>> = {}): Record<s
     srs_ease_factor: 2.5,
     recognition_accuracy: 0,
     recognition_attempts: 0,
+    recognition_correct: 0,
+    recognition_streak: 0,
     srs_stability: 0,
     srs_difficulty: 5,
     srs_state: 'new',
@@ -68,6 +72,8 @@ function exerciseRow(overrides: Partial<Record<string, unknown>> = {}): Record<s
     phase_id: null,
     total_sessions: 5,
     total_attempts: 50,
+    exec_attempts: 40,
+    exec_correct: 36,
     best_accuracy: 0.9,
     best_time_ms: 8500,
     avg_time_ms: 10500,
@@ -347,6 +353,8 @@ describe('TrainingRepository — Algorithm Progress', () => {
       bestTimeMs: 12000,
       avgTimeMs: 13000,
       totalAttempts: 10,
+      execAttempts: 8,
+      execCorrect: 6,
       correctStreak: 2,
       lastPracticedAt: 1700000000000,
       srsNextReviewAt: 1700000864000,
@@ -354,6 +362,8 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsEaseFactor: 2.5,
       recognitionAccuracy: 0,
       recognitionAttempts: 0,
+      recognitionCorrect: 0,
+      recognitionStreak: 0,
       srsStability: 0,
       srsDifficulty: 5,
       srsState: 'new',
@@ -361,8 +371,9 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsReviewCount: 0,
       lastReviewAt: 0,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('INSERT INTO algorithm_progress');
+    // The upsert now runs inside a transaction (BEGIN/COMMIT), so find the
+    // write call instead of assuming it is the last one.
+    expect(db.mock.calls.some((c) => String(c[0]).includes('INSERT INTO algorithm_progress'))).toBe(true);
   });
 
   it('upsertAlgorithmProgress UPDATES when existing', async () => {
@@ -375,6 +386,8 @@ describe('TrainingRepository — Algorithm Progress', () => {
       bestTimeMs: 7000,
       avgTimeMs: 8500,
       totalAttempts: 50,
+      execAttempts: 40,
+      execCorrect: 38,
       correctStreak: 10,
       lastPracticedAt: 1700000000000,
       srsNextReviewAt: 1700001728000,
@@ -382,6 +395,8 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsEaseFactor: 2.8,
       recognitionAccuracy: 0,
       recognitionAttempts: 0,
+      recognitionCorrect: 0,
+      recognitionStreak: 0,
       srsStability: 3,
       srsDifficulty: 4,
       srsState: 'review',
@@ -389,8 +404,7 @@ describe('TrainingRepository — Algorithm Progress', () => {
       srsReviewCount: 2,
       lastReviewAt: 1700000000000,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('UPDATE algorithm_progress SET');
+    expect(db.mock.calls.some((c) => String(c[0]).includes('UPDATE algorithm_progress SET'))).toBe(true);
   });
 
   it('getAlgorithmProgressBySubset joins algorithm_cases', async () => {
@@ -537,13 +551,14 @@ describe('TrainingRepository — Exercise Progress', () => {
       methodId: 'method1',
       totalSessions: 1,
       totalAttempts: 10,
+      execAttempts: 8,
+      execCorrect: 6,
       bestAccuracy: 0.8,
       bestTimeMs: 9000,
       avgTimeMs: 11000,
       lastPracticedAt: 1700000000000,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('INSERT INTO exercise_progress');
+    expect(db.mock.calls.some((c) => String(c[0]).includes('INSERT INTO exercise_progress'))).toBe(true);
   });
 
   it('upsertExerciseProgress UPDATES when existing', async () => {
@@ -554,13 +569,14 @@ describe('TrainingRepository — Exercise Progress', () => {
       methodId: 'method1',
       totalSessions: 2,
       totalAttempts: 20,
+      execAttempts: 16,
+      execCorrect: 14,
       bestAccuracy: 0.9,
       bestTimeMs: 8000,
       avgTimeMs: 10000,
       lastPracticedAt: 1700000000000,
     });
-    const lastCall = db.mock.calls[db.mock.calls.length - 1];
-    expect(lastCall[0]).toContain('UPDATE exercise_progress SET');
+    expect(db.mock.calls.some((c) => String(c[0]).includes('UPDATE exercise_progress SET'))).toBe(true);
   });
 
   it('getMethodExerciseProgress returns array mapped', async () => {
@@ -578,29 +594,33 @@ describe('TrainingRepository — Aggregates', () => {
     repo = new TrainingRepository(mockDb());
   });
 
-  it('getMethodMastery rounds the AVG(mastery) result', async () => {
-    const db = mockDb([{ avg_mastery: 4.6 }]);
+  it('getMethodMastery = round(performance × coverage)', async () => {
+    // 5 of 10 cases practiced at avg mastery 92 → mastery = round(92 × 0.5) = 46
+    const db = mockDb([{ total_cases: 10, practiced_cases: 5, performance: 92 }]);
     repo = new TrainingRepository(db);
-    expect(await repo.getMethodMastery('m1')).toBe(5);
+    expect(await repo.getMethodMastery('m1')).toBe(46);
   });
 
-  it('getMethodMastery returns 0 when COALESCE returns 0', async () => {
-    const db = mockDb([{ avg_mastery: 0 }]);
+  it('getMethodMastery returns 0 when nothing is practiced', async () => {
+    const db = mockDb([{ total_cases: 10, practiced_cases: 0, performance: 0 }]);
     repo = new TrainingRepository(db);
     expect(await repo.getMethodMastery('m1')).toBe(0);
   });
 
-  it('getMethodBestTime returns MIN(time_ms) for the method', async () => {
-    const db = mockDb([{ best: 8500 }]);
+  it('getMethodProgress exposes coverage, performance and counts', async () => {
+    const db = mockDb([{ total_cases: 100, practiced_cases: 25, performance: 80 }]);
     repo = new TrainingRepository(db);
-    expect(await repo.getMethodBestTime('m1')).toBe(8500);
+    const result = await repo.getMethodProgress('m1');
+    expect(result).toEqual({
+      methodId: 'm1',
+      mastery: 20, // round(80 × 0.25)
+      coverage: 0.25,
+      performance: 80,
+      totalCases: 100,
+      practicedCases: 25,
+    });
   });
 
-  it('getMethodBestTime returns 0 when no rows', async () => {
-    const db = mockDb([{ best: null }]);
-    repo = new TrainingRepository(db);
-    expect(await repo.getMethodBestTime('m1')).toBe(0);
-  });
 });
 
 describe('TrainingRepository — Phase Stats', () => {
@@ -615,13 +635,16 @@ describe('TrainingRepository — Phase Stats', () => {
     expect(await repo.getPhaseStats('m1', 'cross')).toBeNull();
   });
 
-  it('getPhaseStats maps aggregate row to domain', async () => {
+  it('getPhaseStats maps aggregate row to domain with exec/rec split', async () => {
     const db = mockDb([{
       total_attempts: 20,
-      accuracy: 0.85,
+      exec_attempts: 16,
+      exec_correct: 12,
+      rec_attempts: 4,
+      rec_correct: 3,
       avg_time_ms: 2400.5,
       best_time_ms: 1800,
-      fail_rate: 0.15,
+      exec_failures: 4,
       efficiency: 0.666,
       last_practiced_at: 1700000000000,
     }]);
@@ -631,13 +654,40 @@ describe('TrainingRepository — Phase Stats', () => {
       methodId: 'm1',
       phaseId: 'cross',
       totalAttempts: 20,
-      accuracy: 85,
+      // exec-only accuracy: 12/16 = 75% (NOT diluted by the 4 recognition attempts)
+      accuracy: 75,
+      execAttempts: 16,
+      execAccuracy: 75,
+      recAttempts: 4,
+      recAccuracy: 75,
       avgTimeMs: 2401,
       bestTimeMs: 1800,
-      failRate: 0.15,
+      failRate: 0.25,
       efficiency: 0.666,
       lastPracticedAt: 1700000000000,
     });
+  });
+
+  it('getPhaseStats accuracy is execution-only (recognition never dilutes the %)', async () => {
+    // 2 correct + 1 incorrect executions (67%), plus 5 correct recognitions:
+    // the drill % must stay 67, not jump to 8/9 ≈ 89%.
+    const db = mockDb([{
+      total_attempts: 9,
+      exec_attempts: 3,
+      exec_correct: 2,
+      rec_attempts: 6,
+      rec_correct: 5,
+      avg_time_ms: 1500,
+      best_time_ms: 1000,
+      exec_failures: 1,
+      efficiency: 0,
+      last_practiced_at: 1700000000000,
+    }]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getPhaseStats('cfop', 'f2l');
+    expect(result?.accuracy).toBe(67);
+    expect(result?.recAccuracy).toBe(83); // round(5/6 × 100)
+    expect(result?.totalAttempts).toBe(9);
   });
 
   it('getPhaseStats queries with method_id and phase_id filters', async () => {
@@ -649,15 +699,48 @@ describe('TrainingRepository — Phase Stats', () => {
     expect(db.mock.calls[0][1]).toEqual(['m1', 'cross']);
   });
 
-  it('getPhaseStats includes recognition attempts (no metric_kind filter)', async () => {
-    // 42 Recognize attempts on F2L must show up in the phase stats — previously
-    // the metric_kind = 'execution' filter hid them and the Quick Summary
-    // rendered "—" despite real practice data.
-    const db = mockDb([{ total_attempts: 42 }]);
+  it('getPhaseStats failRate is execution-only (recognition rows never dilute it)', async () => {
+    // 4 exec attempts (1 failure) + 20 recognition attempts: failRate must be
+    // 1/4 = 0.25, NOT 1/24 ≈ 0.04.
+    const db = mockDb([{
+      total_attempts: 24,
+      exec_attempts: 4,
+      exec_correct: 3,
+      rec_attempts: 20,
+      rec_correct: 20,
+      exec_failures: 1,
+    }]);
     repo = new TrainingRepository(db);
     const result = await repo.getPhaseStats('cfop', 'f2l');
-    expect(db.mock.calls[0][0]).not.toContain('metric_kind');
+    expect(result?.failRate).toBe(0.25);
+  });
+
+  it('getPhaseStats SQL excludes skipped verdicts from exec/rec denominators', async () => {
+    // Honest Full Solve splits persist as 'skipped' (real timing, no verdict):
+    // they must never dilute accuracy/failRate denominators.
+    const db = mockDb([{ total_attempts: 1, exec_attempts: 1, exec_correct: 1 }]);
+    repo = new TrainingRepository(db);
+    await repo.getPhaseStats('cfop', 'cross');
+    const sql = db.mock.calls[0][0] as string;
+    expect(sql).toContain("verdict != 'skipped'");
+  });
+
+  it('getPhaseStats includes recognition attempts (no WHERE metric_kind filter)', async () => {
+    // Recognition attempts must still count toward totalAttempts — there is
+    // NO `WHERE metric_kind = 'execution'` clause; metric_kind only appears
+    // inside CASE expressions that split exec vs rec counters.
+    const db = mockDb([{
+      total_attempts: 42,
+      exec_attempts: 10,
+      exec_correct: 8,
+      rec_attempts: 32,
+      rec_correct: 30,
+    }]);
+    repo = new TrainingRepository(db);
+    const result = await repo.getPhaseStats('cfop', 'f2l');
+    expect(db.mock.calls[0][0]).not.toContain('WHERE metric_kind');
     expect(result?.totalAttempts).toBe(42);
+    expect(result?.recAttempts).toBe(32);
   });
 
   it('getPhaseStats still guards time aggregates from recognition time_ms=0 rows', async () => {
@@ -670,6 +753,7 @@ describe('TrainingRepository — Phase Stats', () => {
     expect(sql).toContain('time_ms > 0');
     expect(sql).toContain('optimal_moves > 0 AND move_count > 0');
   });
+
 });
 
 describe('TrainingRepository — Reset / Maintenance', () => {

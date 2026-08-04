@@ -244,6 +244,7 @@ export function Header({
               type="button"
               onClick={() => setWidgetsOpen(true)}
               aria-label="Open widgets"
+              data-onboarding-target="widgets-entry"
               className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
             >
               <Puzzle className="size-3.5" />

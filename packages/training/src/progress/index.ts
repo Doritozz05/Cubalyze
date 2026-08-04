@@ -1,5 +1,6 @@
 export {
   ProgressTracker,
+  DEFAULT_EASE_FACTOR,
   computeMastery,
   MASTERY_WEIGHTS,
   normalizeAlgorithmProgress,
@@ -11,6 +12,7 @@ export type {
   AlgorithmProgressRecord,
   ExerciseProgressRecord,
   PhaseStatsRecord,
+  MethodProgressBreakdown,
   MetricKind,
   QueueCandidateRecord,
   TrainingSessionProgressRecord,
@@ -47,6 +49,5 @@ export {
   intervalFor,
   isDue,
   review as fsrsReview,
-  REQUEST_RETENTION,
 } from './fsrs';
 export type { FSRSRecord, SRSGrade, SRSState } from './fsrs';

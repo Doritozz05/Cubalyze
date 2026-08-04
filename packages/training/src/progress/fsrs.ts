@@ -66,13 +66,6 @@ export const FSRS_DEFAULTS: FSRSRecord = {
 const FACTOR = 19 / 81; // ≈ 0.2346
 /** Retrievability decay exponent. */
 const DECAY = -0.5;
-/**
- * Target retention: schedule the next review when R ≈ 0.9.
- * Public constant consumed by the Phase B scheduler (buildDailyQueue priority)
- * and exposed so future interval math can use it. `intervalFor` currently
- * derives intervals from stability with fixed grade multipliers instead.
- */
-export const REQUEST_RETENTION = 0.9;
 const MIN_DIFFICULTY = 1;
 const MAX_DIFFICULTY = 10;
 const MAX_INTERVAL_DAYS = 365;
@@ -135,9 +128,13 @@ export function nextStability(
   return Math.max(stability * (1 + delta), 0.1);
 }
 
-/** Whole-day interval for a grade, given the new stability (1-365). */
+/**
+ * Whole-day interval for a grade, given the new stability (0-365).
+ * `again` → 0 days (FSRS standard): a failed review is re-attempted the same
+ * day instead of waiting a full day (plan §2.8).
+ */
 export function intervalFor(grade: SRSGrade, stability: number): number {
-  if (grade === "again") return 1;
+  if (grade === "again") return 0;
   const multiplier = grade === "hard" ? 1.2 : grade === "easy" ? 1.3 : 1;
   return clamp(Math.round(stability * multiplier), 1, MAX_INTERVAL_DAYS);
 }

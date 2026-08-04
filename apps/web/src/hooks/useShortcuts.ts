@@ -13,6 +13,11 @@ export interface UseShortcutsOptions {
   onCancel?: () => void;
   /** A ref whose `.current` is the current timer state — gates N/C. */
   timerStateRef?: React.MutableRefObject<string>;
+  /**
+   * When false the listener is not attached at all (e.g. while the onboarding
+   * tour owns the keyboard — TDD-0020). Defaults to true.
+   */
+  enabled?: boolean;
 }
 
 /**
@@ -25,10 +30,13 @@ export function useShortcuts({
   onCopyScramble,
   onCancel,
   timerStateRef,
+  enabled = true,
 }: UseShortcutsOptions) {
   const shortcuts = useStore(preferencesStore, (s) => s.shortcuts);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const onKeyDown = (e: KeyboardEvent) => {
       // Never intercept modifier combos or Space (timer owns it).
       if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -64,5 +72,5 @@ export function useShortcuts({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onNewScramble, onCopyScramble, onCancel, timerStateRef, shortcuts]);
+  }, [onNewScramble, onCopyScramble, onCancel, timerStateRef, shortcuts, enabled]);
 }

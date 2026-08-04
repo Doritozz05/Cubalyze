@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
@@ -24,7 +25,7 @@ export function EOEfficiencyView({ methodId, phaseId, phaseName, onBack }: EOEff
     showVerdict, attempts, bestTime, avgTime, streak,
     handleCorrect, handleIncorrect, handleSkip,
     currentScramble,
-  } = usePracticeSession({ methodId, phaseId, exerciseId: `eo-eff-${phaseId}` });
+  } = usePracticeSession({ methodId, phaseId, exerciseId: EXERCISE_IDS.eoEfficiency(methodId, phaseId) });
 
   return (
     <div className="relative flex-1 min-h-0 w-full h-full">

@@ -483,7 +483,7 @@ export async function seedDemoData(
       id: sessionId,
       name: DEMO_SESSION_NAME,
       puzzleType: "3x3",
-      createdAt: new Date().toISOString(),
+      createdAt: Date.now(),
     },
     { isDemo: true },
   );
@@ -510,7 +510,7 @@ export async function seedDemoData(
       id: uuidv4(),
       sessionId,
       timeMs: totalTimeMs,
-      date: ts.toISOString(),
+      timestamp: ts.getTime(),
       scramble,
       penalty: (Math.random() < 0.1 ? "+2" : "none") as "none" | "+2" | "DNF",
       method: "CFOP" as const,
@@ -519,8 +519,8 @@ export async function seedDemoData(
       orientationTimeline,
       analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
       analysis: JSON.stringify(analysis),
-      createdAt: ts.toISOString(),
-      updatedAt: ts.toISOString(),
+      createdAt: ts.getTime(),
+      updatedAt: ts.getTime(),
     };
   });
 

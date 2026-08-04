@@ -4,7 +4,9 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
-import { RandomStateGenerator, Min2PhaseSolver } from "@cubeforge/solver-engine";
+import { EXERCISE_IDS } from "@cubeforge/training";
+import { RandomStateGenerator } from "@cubeforge/solver-engine";
+import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
@@ -20,6 +22,14 @@ import {
   TrainingBreadcrumb,
   TouchAside,
 } from "./components";
+import {
+  defaultPhaseTargets,
+  PhaseTargetsPanel,
+  MoveLimitInfo,
+  TpsInfo,
+  RotationlessInfo,
+} from "./components/FullSolvePanels";
+import type { PhaseSplit, PhaseSplitTarget } from "./components/fullSolveTypes";
 import {
   Target,
   Flame,
@@ -39,13 +49,7 @@ import {
 
 type FullSolveMode = "targets" | "move-limit" | "tps-challenge" | "rotationless";
 
-interface PhaseSplit {
-  phaseId: string;
-  phaseName: string;
-  targetS: number;
-  actualMs: number;
-  status: "pending" | "active" | "done";
-}
+
 
 interface SolveResult {
   totalMs: number;
@@ -59,37 +63,15 @@ interface SolveResult {
 
 /* ──────────────────────────────────────────────────────────────────────────
    Phase target definitions
-   ─────────────────────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────────────────────────
 
-function getPhaseTargets(methodName: string): { phaseId: string; phaseName: string; targetS: number }[] {
-  switch (methodName) {
-    case "CFOP": return [
-      { phaseId: "cross", phaseName: "Cross", targetS: 2.0 },
-      { phaseId: "f2l", phaseName: "F2L", targetS: 6.0 },
-      { phaseId: "oll", phaseName: "OLL", targetS: 1.5 },
-      { phaseId: "pll", phaseName: "PLL", targetS: 1.2 },
-    ];
-    case "Roux": return [
-      { phaseId: "first-block", phaseName: "First block", targetS: 2.5 },
-      { phaseId: "second-block", phaseName: "Second block", targetS: 2.0 },
-      { phaseId: "cmll", phaseName: "CMLL", targetS: 1.5 },
-      { phaseId: "lse", phaseName: "LSE", targetS: 2.0 },
-    ];
-    case "ZZ": return [
-      { phaseId: "eoline", phaseName: "EOLine", targetS: 3.0 },
-      { phaseId: "f2l-zz", phaseName: "F2L (ZZ)", targetS: 6.0 },
-      { phaseId: "ll-zz", phaseName: "Last layer", targetS: 2.0 },
-    ];
-    case "Petrus": return [
-      { phaseId: "block-222", phaseName: "2×2×2", targetS: 2.5 },
-      { phaseId: "block-223", phaseName: "2×2×3", targetS: 2.8 },
-      { phaseId: "eo-petrus", phaseName: "EO", targetS: 1.2 },
-      { phaseId: "f2l-petrus", phaseName: "F2L", targetS: 3.5 },
-      { phaseId: "ll-petrus", phaseName: "Last layer", targetS: 2.5 },
-    ];
-    default: return [];
-  }
-}
+   Phase identities come from the @cubeforge/training catalog
+   (buildMethodPhases) so the splits always match the exercises the user
+   actually trains. Target seconds below are per-phase DEFAULTS — they are
+   replaced by the user's REAL per-phase average time (from
+   training_attempts) as soon as they exist, so targets are honest data
+   instead of fabricated numbers.
+   ─────────────────────────────────────────────────────────────────────── */
 
 /* ──────────────────────────────────────────────────────────────────────────
    Helpers
@@ -120,12 +102,18 @@ export interface FullSolveViewProps {
 
 export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
-  const phaseTargets = useMemo(() => getPhaseTargets(method?.name ?? ""), [method]);
+  // Phase targets start as per-phase defaults derived from the catalog; they
+  // are upgraded to the user's REAL per-phase averages once loaded below.
+  const [phaseTargets, setPhaseTargets] = useState<PhaseSplitTarget[]>(() =>
+    defaultPhaseTargets(method?.name ?? ""),
+  );
 
   const [solveMode, setSolveMode] = useState<FullSolveMode>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("cubeforge_full_solve_mode");
-      if (saved === "targets" || saved === "moves" || saved === "tps" || saved === "rotations" || saved === "free") {
+      // Validate against CURRENT mode ids — old saves used legacy names
+      // ("moves"/"tps"/"rotations"/"free") which would corrupt the mode.
+      if (saved === "targets" || saved === "move-limit" || saved === "tps-challenge" || saved === "rotationless") {
         return saved as FullSolveMode;
       }
     }
@@ -170,7 +158,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   const [activeSplitIdx, setActiveSplitIdx] = useState(-1);
   const [lastSolve, setLastSolve] = useState<SolveResult | null>(null);
   const [currentScramble, setCurrentScramble] = useState(
-    () => RandomStateGenerator.generateScramble(new Min2PhaseSolver()),
+    () => RandomStateGenerator.generateScramble(getMin2PhaseSolver()),
   );
 
   // ── Mode-specific state ───────────────────────────────────────────
@@ -182,6 +170,39 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   // ── Timer + Smart Cube ──────────────────────────────────────────────
   const { phase: timerPhase, time, stoppedTime, press, release, reset, engine } = useDrillTimer({ inspection: useInspection });
   const { remapScramble } = useOrientation();
+
+  // ── Honest targets: replace defaults with the user's real per-phase
+  //    averages (from training_attempts). Runs once per mount.
+  const { ready: dbReady, getPhaseStats } = useTrainingProgress();
+  useEffect(() => {
+    if (!dbReady || phaseTargets.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      phaseTargets.map((pt) => getPhaseStats(methodId, pt.phaseId).catch(() => null)),
+    ).then((stats) => {
+      if (cancelled) return;
+      setPhaseTargets((prev) =>
+        prev.map((pt, i) => {
+          const avgMs = stats[i]?.avgTimeMs ?? 0;
+          if (avgMs <= 0) return pt;
+          const personalS = Math.max(0.5, Math.round(avgMs) / 1000);
+          return { ...pt, targetS: personalS };
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbReady, methodId, getPhaseStats]);
+
+  // When personal targets arrive (and no solve is in flight), refresh the
+  // split progress bar / panel so the displayed targets are the real ones.
+  useEffect(() => {
+    if (activeSplitIdx !== -1 || timerPhase === "running") return;
+    setSplits(phaseTargets.map((pt) => ({ ...pt, actualMs: 0, status: "pending" as const })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phaseTargets, timerPhase]);
   const displayScramble = remapScramble(currentScramble);
 
   const scrambleDisplay = useStore(
@@ -202,7 +223,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   // Per-phase splits feed phase weakness; the total row records the solve.
   const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
   const { sessionId } = useTrainingSession({
-    exerciseId: `full-solve-${methodId}`,
+    exerciseId: EXERCISE_IDS.fullSolve(methodId),
     methodId,
     phaseId: "full",
     smartCubeUsed: hasSmartCube,
@@ -235,7 +256,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             : rotationsKnown ? (hadRotations ? "incorrect" : "correct") : "skipped";
 
     dbPersistAttempt({
-      exerciseId: `full-solve-${methodId}`,
+      exerciseId: EXERCISE_IDS.fullSolve(methodId),
       methodId,
       phaseId: "full",
       timeMs: solve.totalMs,
@@ -261,13 +282,15 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
       persistedSolveRef.current = lastSolve;
       for (const split of lastSolve.splits) {
         if (split.actualMs <= 0) continue;
-        const overTarget = split.actualMs / 1000 > split.targetS;
+        // Honest split: it is REAL timing data but NOT a correctness verdict.
+        // Persisted as 'skipped' so it feeds phase time aggregates without
+        // fabricating an accuracy/failRate verdict from the (arbitrary) target.
         dbPersistAttempt({
-          exerciseId: `full-solve-${methodId}`,
+          exerciseId: EXERCISE_IDS.fullSolve(methodId),
           methodId,
           phaseId: split.phaseId,
           timeMs: split.actualMs,
-          verdict: overTarget ? "incorrect" : "correct",
+          verdict: "skipped",
           playMode: hasSmartCube ? "smart-cube" : "manual",
           scramble: currentScramble,
           metricKind: "execution",
@@ -393,7 +416,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
     setLastSolve(null);
     setUserMoveCount(null);
     setHadRotations(null);
-    setCurrentScramble(RandomStateGenerator.generateScramble(new Min2PhaseSolver()));
+    setCurrentScramble(RandomStateGenerator.generateScramble(getMin2PhaseSolver()));
   }, [reset, phaseTargets, persistTotal]);
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -820,148 +843,3 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
    Sidebar Panels (mode-specific)
    ─────────────────────────────────────────────────────────────────────── */
 
-function PhaseTargetsPanel({
-  splits, totalTarget, totalActual, onMarkSplit,
-}: {
-  splits: PhaseSplit[];
-  totalTarget: number;
-  totalActual: number;
-  onMarkSplit: () => void;
-}) {
-  return (
-    <div className="rounded-xl border border-line bg-surface p-4">
-      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        Phase Targets
-      </h3>
-      <div className="space-y-2.5">
-        {splits.map((split) => {
-          const isDone = split.status === "done";
-          const isActive = split.status === "active";
-          const pct = split.targetS > 0
-            ? Math.min(100, Math.round((split.actualMs / 1000 / split.targetS) * 100))
-            : 0;
-          return (
-            <button
-              key={split.phaseId}
-              onClick={isActive ? onMarkSplit : undefined}
-              className={cn(
-                "w-full rounded-lg p-2.5 transition-colors text-left",
-                isActive && "bg-surface-2 ring-1 ring-ink/10 cursor-pointer hover:bg-surface-2/80",
-                isDone && "bg-surface-2/50",
-                !isActive && !isDone && "opacity-40 cursor-default",
-              )}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className={cn(
-                  "text-[0.62rem] font-medium",
-                  isActive ? "text-ink" : "text-ink-3",
-                )}>
-                  {split.phaseName}
-                </span>
-                <span className={cn(
-                  "nums text-[0.6rem]",
-                  isDone ? "text-ready" : "text-ink-3/60",
-                )}>
-                  {isDone
-                    ? `${(split.actualMs / 1000).toFixed(1)}s / ${split.targetS.toFixed(1)}s`
-                    : `${split.targetS.toFixed(1)}s`}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
-                {isDone && (
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.4 }}
-                    className={cn(
-                      "h-full rounded-full",
-                      pct <= 100 ? "bg-ready" : "bg-hold",
-                    )}
-                  />
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
-        <span className="text-[0.6rem] text-ink-3">Total target</span>
-        <div className="flex items-center gap-2">
-          <span className="nums text-[0.68rem] font-semibold text-ink">
-            {totalTarget.toFixed(1)}s
-          </span>
-          {totalActual > 0 && (
-            <span className={cn(
-              "nums text-[0.62rem]",
-              totalActual <= totalTarget ? "text-ready" : "text-hold",
-            )}>
-              ({(totalActual).toFixed(1)}s)
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MoveLimitInfo({ moveLimit }: { moveLimit: number }) {
-  return (
-    <div className="rounded-xl border border-line bg-surface p-4">
-      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        Move Limit
-      </h3>
-      <div className="text-center py-4">
-        <span className="nums text-[2.5rem] font-bold text-ink">{moveLimit}</span>
-        <p className="text-[0.6rem] text-ink-3 mt-1">max moves allowed</p>
-      </div>
-      <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
-        <p>• CFOP average: ~55-60 moves</p>
-        <p>• Roux average: ~45-50 moves</p>
-        <p>• Advanced goal: ≤ 50 moves</p>
-        <p>• World-class: ≤ 45 moves</p>
-      </div>
-    </div>
-  );
-}
-
-function TpsInfo({ tpsThreshold }: { tpsThreshold: number }) {
-  return (
-    <div className="rounded-xl border border-line bg-surface p-4">
-      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        TPS Challenge
-      </h3>
-      <div className="text-center py-4">
-        <span className="nums text-[2.5rem] font-bold text-ink">{tpsThreshold}</span>
-        <p className="text-[0.6rem] text-ink-3 mt-1">minimum TPS</p>
-      </div>
-      <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
-        <p>• Beginner: 2-3 TPS</p>
-        <p>• Intermediate: 3-5 TPS</p>
-        <p>• Advanced: 5-8 TPS</p>
-        <p>• Elite: 8-12+ TPS</p>
-      </div>
-    </div>
-  );
-}
-
-function RotationlessInfo({ hadRotations }: { hadRotations: boolean }) {
-  return (
-    <div className="rounded-xl border border-line bg-surface p-4">
-      <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        Rotationless
-      </h3>
-      <div className="text-center py-4">
-        <Lock className={cn("size-10 mx-auto mb-2", hadRotations ? "text-hold" : "text-ready")} />
-        <p className={cn("text-[0.72rem] font-semibold", hadRotations ? "text-hold" : "text-ready")}>
-          {hadRotations ? "Rotation Used" : "Clean Solve!"}
-        </p>
-      </div>
-      <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
-        <p>• Use d moves instead of y + U</p>
-        <p>• Learn F2L cases from all angles</p>
-        <p>• ZZ method forces rotationless solving</p>
-        <p>• Reduces pauses from re-orientation</p>
-      </div>
-    </div>
-  );
-}

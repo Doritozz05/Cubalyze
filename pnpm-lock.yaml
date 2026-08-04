@@ -59,9 +59,6 @@ importers:
       '@cubeforge/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
-      '@cubeforge/identicon':
-        specifier: workspace:*
-        version: link:../../packages/identicon
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../../packages/math-core
@@ -662,6 +659,9 @@ importers:
       '@cubeforge/models':
         specifier: workspace:*
         version: link:../models
+      '@cubeforge/training':
+        specifier: workspace:*
+        version: link:../training
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../types
@@ -949,6 +949,9 @@ importers:
       '@cubeforge/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
+      '@cubeforge/math-core':
+        specifier: workspace:*
+        version: link:../math-core
       eslint:
         specifier: ^10.7.0
         version: 10.7.0(jiti@2.7.0)

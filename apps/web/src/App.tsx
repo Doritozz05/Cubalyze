@@ -24,7 +24,10 @@ import { toast, Toaster } from "sonner";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
 import { useProfile } from "@/hooks/useProfile";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { OnboardingTour } from "@/components/Onboarding/OnboardingTour";
 import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -66,12 +69,13 @@ export default function App() {
   // first launch. `userId` is the stable seed for the CubeMark identicon shown
   // in the header chip and the Profile view; the profile row also feeds the
   // LeftSidebar footer chip (photo or CubeMark).
-  const { userId: profileSeed, profile } = useProfile();
+  const { userId: profileSeed, profile, loading: profileLoading } = useProfile();
 
   const {
     session,
     sessions,
     solves,
+    loading: sessionLoading,
     addSolve,
     updateSolve,
     deleteSolve,
@@ -100,6 +104,59 @@ export default function App() {
   const handleDismissPbBanner = useCallback(() => {
     setActivePbMilestone(null);
   }, []);
+
+  // ── First-load onboarding tour (TDD-0020) ─────────────────────────────
+  // One-shot spotlight walkthrough of the main tabs. Auto-starts on a clean
+  // first launch only; users with real data (solves or an edited profile)
+  // never see it. Skill Tree and Training are intentionally not toured.
+  const {
+    status: tourStatus,
+    currentStep: tourStep,
+    start: tourStart,
+    next: tourNext,
+    back: tourBack,
+    skip: tourSkip,
+    complete: tourComplete,
+  } = useOnboarding();
+  const tourActive = tourStatus === "active";
+
+  // Auto-start: gate on "idle" + both data sources loaded + eligibility guard.
+  useEffect(() => {
+    if (tourStatus !== "idle") return;
+    if (profileLoading || sessionLoading) return;
+    // Check solves across ALL sessions (a returning user with data in a
+    // non-active session must not get the first-run tour either).
+    const hasData =
+      sessions.some((s) => s.solveCount > 0) ||
+      !!profile?.displayName?.trim() ||
+      !!profile?.handle?.trim();
+    if (hasData) {
+      // Returning user whose flag was lost: persist done so we never re-check.
+      void tourComplete();
+      return;
+    }
+    // Delay so the timer paints before the tour fades in.
+    const t = setTimeout(() => tourStart(), 600);
+    return () => clearTimeout(t);
+  }, [
+    tourStatus,
+    profileLoading,
+    sessionLoading,
+    sessions,
+    profile,
+    tourComplete,
+    tourStart,
+  ]);
+
+  // Replay from Settings → General re-opens the tour: close overlays so the
+  // spotlight never sits on top of a dialog or sheet.
+  useEffect(() => {
+    if (tourActive) {
+      setSettingsOpen(false);
+      setMobileNavOpen(false);
+      setMobileMoreOpen(false);
+    }
+  }, [tourActive]);
 
   // ── Refs to avoid stale closures in the lifecycle callback ────────────
   const solvesRef = useRef(solves);
@@ -191,12 +248,15 @@ export default function App() {
   // dependency. Synced via the effect below.
   const smartCubeConnectedRef = useRef(false);
 
-  // Disable practice-timer keyboard shortcuts when training view is active
-  // (the training drill has its own timer + space handler via useDrillTimer).
-  const trainingActiveRef = useRef(false);
+  // Disable the practice timer's global space handler while a view owns the
+  // keyboard: training views (their own timer via useDrillTimer) and the
+  // onboarding tour (TDD-0020) must never arm the main timer underneath.
+  // useTimerKeyboard listens in the capture phase and does NOT honor
+  // defaultPrevented, so a ref gate is the only reliable mechanism.
+  const keyboardDisabledRef = useRef(false);
   useEffect(() => {
-    trainingActiveRef.current = activeView === "training";
-  }, [activeView]);
+    keyboardDisabledRef.current = activeView === "training" || tourActive;
+  }, [activeView, tourActive]);
 
 
   const handlePuzzleChange = useCallback((newPuzzle: PuzzleCategory) => {
@@ -330,7 +390,7 @@ export default function App() {
   );
 
   // ── Centralised orchestration ───────────────────────────────────────────
-  const session$ = useSolveSession(currentScramble, { onSolve: handleComplete, keyboardDisabledRef: trainingActiveRef });
+  const session$ = useSolveSession(currentScramble, { onSolve: handleComplete, keyboardDisabledRef });
   const {
     phase: timerPhase,
     time: timerTime,
@@ -376,6 +436,20 @@ export default function App() {
     },
     [importSolves],
   );
+
+  // ── Export ALL sessions (JSON, full fidelity) ─────────────────────────
+  // Fetches every session's solves and writes a single JSON file that the
+  // "Import CubeForge JSON (no data loss)" flow restores exactly.
+  const handleExportAllJSON = useCallback(async () => {
+    if (sessions.length === 0) return;
+    const withSolves: Array<{ sessionName: string; solves: Solve[] }> = [];
+    for (const s of sessions) {
+      const sessionSolves = await fetchSessionSolves(s.id);
+      withSolves.push({ sessionName: s.name, solves: sessionSolves });
+    }
+    const json = exportAllSolvesToJSON(withSolves);
+    downloadFile(json, 'cubeforge-all-sessions.json', 'application/json');
+  }, [sessions, fetchSessionSolves]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);
@@ -461,6 +535,8 @@ export default function App() {
     onCopyScramble: handleCopy,
     onCancel: handleCancelShortcut,
     timerStateRef,
+    // The tour owns the keyboard while active (ESC skips, Space is swallowed).
+    enabled: !tourActive,
   });
 
   useEffect(() => {
@@ -828,6 +904,7 @@ export default function App() {
               onCubeConnectorOpenChange={setCubeConnectorOpen}
               profileSeed={profileSeed}
               profile={profile}
+              onExportAllJSON={handleExportAllJSON}
             />
           }
           isFocused={isFocused}
@@ -871,7 +948,7 @@ export default function App() {
             Timeline, Metronome, Notes, etc.) driven by the Widget Store.
             The 3D cube button is rendered separately below as a circular
             floating button (not through WidgetHost/dock system). */}
-        {activeView === "timer" && !isFocused && (
+        {activeView === "timer" && !isFocused && !tourActive && (
           <WidgetHost
             solves={solves}
             onUpdate={handleUpdate}
@@ -891,13 +968,27 @@ export default function App() {
         {/* 3D Cube launcher — circular floating button, always present when
             cube panel is closed and widget is toggled on. Independent from
             the dock system but toggleable in the Widget Explorer. */}
-        {activeView === "timer" && !isFocused && (
+        {activeView === "timer" && !isFocused && !tourActive && (
           <CubeButtonGate
             cubePanelOpen={cubePanelOpen}
             smartCubeConnected={smartCubeConnected}
             onOpenCube={handleOpenCube}
           />
         )}
+
+        {/* First-load onboarding spotlight tour — one-shot (TDD-0020). */}
+        <AnimatePresence>
+          {tourActive && (
+            <OnboardingTour
+              activeView={activeView}
+              currentStep={tourStep}
+              onNavigate={handleNavigate}
+              onNext={tourNext}
+              onBack={tourBack}
+              onSkip={tourSkip}
+            />
+          )}
+        </AnimatePresence>
 
         <Toaster
           // On touch, toasts float at the top so they never collide with the

@@ -1,35 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  TimerEngine,
-  TimerState as EngineState,
-} from "@cubeforge/timer-engine";
+import { TimerEngine } from "@cubeforge/timer-engine";
+import { createTrainingTimer } from "@cubeforge/training";
 import type { TimerState } from "@/types";
-
-/* ── Map engine state → UI state ─────────────────────────────────────── */
-
-function mapState(es: EngineState): TimerState {
-  switch (es) {
-    case EngineState.IDLE:
-      return "idle";
-    case EngineState.INSPECTION:
-      return "inspection";
-    case EngineState.READY_FOR_MOVE:
-      return "ready_for_move";
-    case EngineState.TOUCHING:
-      return "holding";
-    case EngineState.READY:
-      return "ready";
-    case EngineState.RUNNING:
-      return "running";
-    case EngineState.COOLDOWN:
-    case EngineState.STOPPED:
-      return "stopped";
-    default:
-      return "idle";
-  }
-}
+import { mapTimerState } from "@/utils/timerState";
+import { useTimerKeyboard } from "@/hooks/useTimerKeyboard";
 
 /* ── Hook ─────────────────────────────────────────────────────────────── */
 
@@ -75,7 +51,7 @@ export interface UseDrillTimerResult {
 export function useDrillTimer(options: UseDrillTimerOptions = {}): UseDrillTimerResult {
   const { enabled = true, inspection = false } = options;
   const engine = useMemo(
-    () => new TimerEngine({ useInspection: inspection }),
+    () => createTrainingTimer({ useInspection: inspection }),
     [inspection],
   );
 
@@ -95,7 +71,7 @@ export function useDrillTimer(options: UseDrillTimerOptions = {}): UseDrillTimer
   /* ── Subscribe to engine events ──────────────────────────────────── */
   useEffect(() => {
     const sub1 = engine.state$.subscribe((es) => {
-      setPhase(mapState(es));
+      setPhase(mapTimerState(es));
     });
     const sub2 = engine.tick$.subscribe((t) => setTime(t));
     const sub3 = engine.stop$.subscribe((ev) => {
@@ -111,48 +87,8 @@ export function useDrillTimer(options: UseDrillTimerOptions = {}): UseDrillTimer
     };
   }, [engine]);
 
-  /* ── Space key handling (global, excluded from inputs) ──────────── */
-  useEffect(() => {
-    if (!enabled) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== "Space") return;
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      if (!e.repeat) press();
-    };
-
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code !== "Space") return;
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      release();
-    };
-
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    window.addEventListener("keyup", onKeyUp, { capture: true });
-    return () => {
-      window.removeEventListener("keydown", onKeyDown, { capture: true });
-      window.removeEventListener("keyup", onKeyUp, { capture: true });
-    };
-  }, [press, release, enabled]);
+  /* ── Space key handling (shared hook, global, excluded from inputs) ─ */
+  useTimerKeyboard({ onPress: press, onRelease: release, enabled });
 
   return { phase, time, stoppedTime, press, release, reset, engine };
 }

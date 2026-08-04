@@ -90,6 +90,57 @@ describe('ProgressTracker — recordAttempt', () => {
     });
   });
 
+  it('skipped Full Solve splits feed avg time but never dilute exercise accuracy denominators', async () => {
+    const { repo, savedExerciseProgress } = createFakeRepo();
+    const tracker = new ProgressTracker(repo);
+
+    // Two honest per-phase Full Solve splits: real timing, no correctness verdict.
+    await tracker.recordAttempt({
+      exerciseId: 'full-solve:cfop',
+      methodId: 'cfop',
+      phaseId: 'f2l',
+      timeMs: 6500,
+      verdict: 'skipped',
+      playMode: 'manual',
+      scramble: 'x',
+    });
+    await tracker.recordAttempt({
+      exerciseId: 'full-solve:cfop',
+      methodId: 'cfop',
+      phaseId: 'f2l',
+      timeMs: 7200,
+      verdict: 'skipped',
+      playMode: 'manual',
+      scramble: 'x',
+    });
+
+    const ex = savedExerciseProgress[savedExerciseProgress.length - 1]!;
+    expect(ex.totalAttempts).toBe(2);
+    // Accuracy denominator (execAttempts/execCorrect) EXCLUDES skipped…
+    expect(ex.execAttempts).toBe(0);
+    expect(ex.execCorrect).toBe(0);
+    // …while the time denominator (execTimeAttempts) INCLUDES skipped splits.
+    expect(ex.execTimeAttempts).toBe(2);
+    expect(ex.avgTimeMs).toBe(6850); // (6500 + 7200) / 2 — honest timing
+    expect(ex.bestTimeMs).toBe(0);   // skipped is never a "best execution"
+
+    // A judged attempt is still counted toward accuracy.
+    await tracker.recordAttempt({
+      exerciseId: 'full-solve:cfop',
+      methodId: 'cfop',
+      phaseId: 'f2l',
+      timeMs: 1000,
+      verdict: 'correct',
+      playMode: 'manual',
+      scramble: 'x',
+    });
+    const ex2 = savedExerciseProgress[savedExerciseProgress.length - 1]!;
+    expect(ex2.execAttempts).toBe(1);
+    expect(ex2.execCorrect).toBe(1);
+    expect(ex2.execTimeAttempts).toBe(3);
+    expect(ex2.avgTimeMs).toBe(4900); // (6500 + 7200 + 1000) / 3
+  });
+
   it('passes efficiency metadata (moveCount/optimalMoves) into the raw attempt', async () => {
     const { repo, insertedAttempts } = createFakeRepo();
     const tracker = new ProgressTracker(repo);
@@ -371,8 +422,9 @@ describe('ProgressTracker — recordReview (FSRS grading)', () => {
     expect(result.srsState).toBe('relearning');
     expect(result.srsLapses).toBe(1);
     expect(result.srsReviewCount).toBe(2);
-    // Relearning forces a short 1-day interval (spacing effect).
-    expect(result.srsIntervalDays).toBe(1);
+    // Relearning after 'again' schedules a 0-day interval: re-review the
+    // same day instead of waiting a full day (FSRS standard, plan §2.8).
+    expect(result.srsIntervalDays).toBe(0);
   });
 
   it('hard review penalizes stability growth and raises difficulty vs good', async () => {
@@ -430,6 +482,10 @@ describe('ProgressTracker — delegates', () => {
       phaseId: 'cross',
       totalAttempts: 10,
       accuracy: 80,
+      execAttempts: 8,
+      execAccuracy: 80,
+      recAttempts: 2,
+      recAccuracy: 50,
       avgTimeMs: 2500,
       bestTimeMs: 1800,
       failRate: 0.2,

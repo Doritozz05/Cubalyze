@@ -12,7 +12,8 @@ export const SolveSchema = z.object({
   id: z.string().uuid(),
   sessionId: z.string().uuid(),
   timeMs: z.number().int().nonnegative(),
-  date: z.string().datetime(),
+  /** Epoch ms of when the solve happened (single time format across the DB). */
+  timestamp: z.number().int().nonnegative(),
   scramble: z.string(),
   penalty: z.enum(['none', '+2', 'dnf', 'DNF']).default('none'),
   method: z.string().optional(),
@@ -34,8 +35,8 @@ export const SolveSchema = z.object({
   analysis: z.string().optional(),
   /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). Optional for backward compat. */
   puzzleType: z.string().optional(),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
+  createdAt: z.number().int().optional(),
+  updatedAt: z.number().int().optional(),
 });
 
 export type Solve = z.infer<typeof SolveSchema>;

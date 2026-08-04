@@ -3,13 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { EXERCISE_IDS } from "@cubeforge/training";
+import type { PhaseStatsRecord } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
+import { TimerContainer } from "@/components/Timer/TimerContainer";
+import type { HintContext } from "@/components/Timer/hintFor";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCrossScramble } from "@/hooks/useCrossScramble";
+import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useTrainingSession } from "@/hooks/useTrainingSession";
 import { useOrientation } from "@/hooks/useOrientation";
-import { TrainingBreadcrumb, StatChip, TouchAside } from "./components";
+import { formatTime } from "@/hooks/usePracticeSession";
+import { TrainingBreadcrumb, TouchAside } from "./components";
+import {
+  RecentAttemptsList,
+  CrossStatsPanel,
+  CrossTipsPanel,
+  CrossScrambleInfoPanel,
+} from "./components/CrossTrainerPanels";
 import {
   ReplayEngine,
   type ReplayState,
@@ -23,9 +35,7 @@ import {
   Shuffle,
   Crosshair,
   Target,
-  Flame,
   Clock,
-  Lightbulb,
   Layers,
   Eye,
   EyeOff,
@@ -35,8 +45,9 @@ import {
 /* ──────────────────────────────────────────────────────────────────────────
    CrossTrainerView
 
-   A no-timer cross trainer that adapts or18's RubiksSolverDemo cross_trainer
-   to our systems. Reuses (NOT rebuilds):
+   A timed cross trainer (real stopwatch via useDrillTimer, same primitive as
+   Drill/Recognize) that adapts or18's RubiksSolverDemo cross_trainer to our
+   systems. Reuses (NOT rebuilds):
      • useCrossScramble  — way-to-cross scramble + optimal solution + replay moves
      • useCube3D         — main-thread Cube3DEngine on the live canvas (engineRef)
      • ReplayEngine      — drives the optimal-solution 3D replay on the SAME canvas,
@@ -46,9 +57,12 @@ import {
      • TrainingBreadcrumb / StatChip — shared training UI atoms
      • useTrainingProgress.recordAttempt — persists attempts (move count metadata)
 
-   Layout: 3 columns — scramble + live/stickering cube | optimal replay + move
-   entry | stats. No TimerContainer: the user enters their planned move count
-   manually and the trainer grades efficiency against the optimal depth.
+   Layout: 3 columns — scramble + live/stickering cube | timer + optimal
+   replay + move entry | stats. The user times their cross (spacebar), enters
+   the move count they used, and the trainer grades efficiency against the
+   optimal depth with a 2-move tolerance (efficient = moves ≤ optimal + 2).
+   Stats come from the DB (getPhaseStats + getAttemptsByExercise) so they
+   survive navigation, merged with the current session's optimistic attempts.
    ─────────────────────────────────────────────────────────────────────── */
 
 export interface CrossTrainerViewProps {
@@ -61,6 +75,10 @@ export interface CrossTrainerViewProps {
 const DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const SPEEDS = [0.25, 0.5, 1, 2] as const;
 const FACES = ["D", "U", "F", "B", "R", "L"] as const;
+
+/** A user is "efficient" when within 2 moves of the optimal depth — being 1-2
+    moves off is correct, not a failure (plan §2.7). */
+const EFFICIENCY_TOLERANCE = 2;
 
 interface CrossAttempt {
   id: string;
@@ -126,13 +144,60 @@ export function CrossTrainerView({
   const [userMoves, setUserMoves] = useState<number | null>(null);
   const [attempts, setAttempts] = useState<CrossAttempt[]>([]);
 
-  // ── Persist attempts to the DB ───────────────────────────────────────
-  const { recordAttempt: dbPersistAttempt } = useTrainingProgress();
+  // ── Persist attempts to the DB + real timing (same primitive as Drill) ─
+  const { recordAttempt: dbPersistAttempt, ready: dbReady, getPhaseStats, getAttemptsByExercise } = useTrainingProgress();
+  const { phase: timerPhase, time, stoppedTime, press, release, reset: resetTimer } = useDrillTimer();
+  const hintCtx = useMemo<HintContext>(() => ({
+    smartCube: false,
+    scrambleVerif: false,
+    inspection: false,
+    isScrambled: false,
+  }), []);
+  // Canonical exercise id: CN mode is a DISTINCT exercise (cn-<method>-<phase>)
+  // from the ≤8 optimal trainer (cross-trainer-<method>-<phase>), so each
+  // mode accumulates its own honest stats.
+  const exerciseId = cnMode
+    ? EXERCISE_IDS.crossTrainerCn(methodId, phaseId)
+    : EXERCISE_IDS.crossTrainer(methodId, phaseId);
   const { sessionId } = useTrainingSession({
-    exerciseId: `cross-trainer-${phaseId}`,
+    exerciseId,
     methodId,
     phaseId,
   });
+
+  // ── DB-backed stats (survive navigation — plan §2.7/M7) ───────────────
+  const [dbAttempts, setDbAttempts] = useState<CrossAttempt[]>([]);
+  const [dbPhaseStats, setDbPhaseStats] = useState<PhaseStatsRecord | null>(null);
+
+  useEffect(() => {
+    if (!dbReady) return;
+    let cancelled = false;
+    void getPhaseStats(methodId, phaseId).then((s) => {
+      if (!cancelled) setDbPhaseStats(s);
+    });
+    void getAttemptsByExercise(exerciseId, 15).then((rows) => {
+      if (cancelled) return;
+      setDbAttempts(rows
+        .filter((r) => r.moveCount != null)
+        .map((r) => ({
+          id: r.id,
+          userMoves: r.moveCount ?? 0,
+          optimalDepth: r.optimalMoves ?? 0,
+          face: r.phaseId ?? "—",
+          scramble: r.scramble,
+          timestamp: r.timestamp,
+          efficient: (r.moveCount ?? 0) <= (r.optimalMoves ?? 0) + EFFICIENCY_TOLERANCE,
+        })));
+    });
+    return () => { cancelled = true; };
+  }, [dbReady, methodId, phaseId, exerciseId, getPhaseStats, getAttemptsByExercise]);
+
+  // Any scramble change (new / depth / face / CN) resets the timer so each
+  // cross attempt is timed from the moment the new scramble appears.
+  useEffect(() => {
+    resetTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cross.scrambleIndex]);
 
   // ── Build the ReplayEngine + apply scramble via applyInitialScramble
   //    (reuses ReplayEngine's own scramble parsing — no duplicated
@@ -274,10 +339,11 @@ export function CrossTrainerView({
     setSpeed(s);
   }, []);
 
-  // ── Submit manual move count ─────────────────────────────────────────
+  // ── Submit timed move count ──────────────────────────────────────────
   const handleSubmitMoves = useCallback(() => {
     if (userMoves === null || userMoves < 0) return;
-    const efficient = userMoves <= cross.optimalDepth;
+    // Efficiency with tolerance: ≤ optimal + 2 is correct, not a failure.
+    const efficient = userMoves <= cross.optimalDepth + EFFICIENCY_TOLERANCE;
     const attempt: CrossAttempt = {
       id: nextAttemptId(),
       userMoves,
@@ -289,14 +355,15 @@ export function CrossTrainerView({
     };
     setAttempts((prev) => [attempt, ...prev]);
     setUserMoves(null);
+    resetTimer();
 
-    // Persist to DB using REAL efficiency columns (optimal_moves vs move_count)
-    // so phase stats can compute efficiency = optimal / actual.
+    // Persist with REAL timing + efficiency columns (optimal_moves vs
+    // move_count) so phase stats compute time + efficiency = optimal / actual.
     dbPersistAttempt({
-      exerciseId: `cross-trainer-${phaseId}`,
+      exerciseId,
       methodId,
       phaseId,
-      timeMs: 0,
+      timeMs: stoppedTime,
       verdict: efficient ? "correct" : "incorrect",
       playMode: "manual",
       scramble: cross.scramble,
@@ -314,6 +381,9 @@ export function CrossTrainerView({
     methodId,
     phaseId,
     sessionId,
+    exerciseId,
+    stoppedTime,
+    resetTimer,
   ]);
 
   const handleNewScramble = useCallback(() => {
@@ -341,9 +411,15 @@ export function CrossTrainerView({
     [cross],
   );
 
-  // ── Derived stats ────────────────────────────────────────────────────
+  // ── Derived stats (local optimistic attempts merged with DB history) ──
+  const allAttempts = useMemo(() => {
+    const map = new Map<string, CrossAttempt>();
+    for (const a of [...dbAttempts, ...attempts]) map.set(a.id, a);
+    return [...map.values()].sort((a, b) => b.timestamp - a.timestamp);
+  }, [attempts, dbAttempts]);
+
   const stats = useMemo(() => {
-    const valid = attempts;
+    const valid = allAttempts;
     const efficientCount = valid.filter((a) => a.efficient).length;
     const accuracy =
       valid.length > 0 ? Math.round((efficientCount / valid.length) * 100) : 0;
@@ -363,8 +439,15 @@ export function CrossTrainerView({
       }
       return s;
     })();
-    return { accuracy, avgMoves, bestMoves, streak, total: valid.length };
-  }, [attempts]);
+    const effRows = valid.filter((a) => a.optimalDepth > 0 && a.userMoves > 0);
+    const efficiency = effRows.length > 0
+      ? Math.round(
+          effRows.reduce((s, a) => s + (100 * a.optimalDepth) / a.userMoves, 0) /
+            effRows.length,
+        )
+      : 0;
+    return { accuracy, avgMoves, bestMoves, streak, total: valid.length, efficiency };
+  }, [allAttempts]);
 
   const totalMs = cross.replayMoves.length * 600;
   const hasReplay = cross.replayMoves.length > 0;
@@ -546,8 +629,30 @@ export function CrossTrainerView({
             </div>
           </div>
 
-          {/* Column 2: Optimal solution replay + manual move entry */}
+          {/* Column 2: Timer + optimal solution replay + manual move entry */}
           <div className="flex min-h-0 flex-1 flex-col gap-4 min-w-0">
+            {/* Real timer (same primitive as Drill/Recognize) */}
+            <div className="shrink-0 rounded-xl border border-line bg-surface p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="size-4 text-ink-2" />
+                <span className="text-[0.7rem] font-semibold text-ink">Cross timer</span>
+                <span className="flex-1" />
+                <span className="text-[0.6rem] text-ink-3">
+                  {timerPhase === "running" && "Solving… press space to stop"}
+                  {timerPhase === "stopped" && stoppedTime > 0 ? `Stopped · ${formatTime(stoppedTime)}` : timerPhase === "stopped" ? "Stopped" : "Press & hold space, release to start"}
+                </span>
+              </div>
+              <TimerContainer
+                phase={timerPhase}
+                time={time}
+                lastTime={null}
+                hintCtx={hintCtx}
+                onPress={press}
+                onRelease={release}
+                className="py-2"
+              />
+            </div>
+
             {/* Optimal solution reveal + replay */}
             <div className="shrink-0 rounded-xl border border-line bg-surface p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -670,8 +775,9 @@ export function CrossTrainerView({
                 </span>
               </div>
               <p className="text-[0.6rem] text-ink-3">
-                Plan your cross during inspection, then enter how many moves you
-                used. The trainer compares against the optimal {cross.optimalDepth}.
+                Time your cross with the spacebar, then enter how many moves you
+                used. The trainer compares against the optimal {cross.optimalDepth}
+                (within {EFFICIENCY_TOLERANCE} moves counts as correct).
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -688,22 +794,24 @@ export function CrossTrainerView({
                   className="nums w-20 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-[0.75rem] text-ink text-center focus:outline-none focus:ring-1 focus:ring-ink/30"
                   placeholder="?"
                 />
-                {moveDiff !== null && (
-                  <span
-                    className={cn(
+                {moveDiff !== null && (                  <span className={cn(
                       "nums text-[0.65rem] font-semibold",
-                      moveDiff <= 0 ? "text-ready" : "text-hold",
-                    )}
-                  >
-                    {moveDiff <= 0
-                      ? `${Math.abs(moveDiff)} under optimal 🎯`
-                      : `${moveDiff} over optimal`}
+                      moveDiff <= EFFICIENCY_TOLERANCE ? "text-ready" : "text-hold",
+                    )}>
+                    {moveDiff === 0
+                      ? "Optimal! 🎯"
+                      : moveDiff < 0
+                        ? `${Math.abs(moveDiff)} under optimal 🎯`
+                        : moveDiff <= EFFICIENCY_TOLERANCE
+                          ? `${moveDiff} over optimal (ok)`
+                          : `${moveDiff} over optimal`}
                   </span>
                 )}
                 <span className="flex-1" />
                 <button
                   onClick={handleSubmitMoves}
-                  disabled={userMoves === null}
+                  disabled={userMoves === null || timerPhase !== "stopped"}
+                  title={timerPhase !== "stopped" ? "Stop the timer first (press space to start, space to stop)" : undefined}
                   className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors disabled:opacity-30"
                 >
                   <Target className="size-3" />
@@ -713,141 +821,22 @@ export function CrossTrainerView({
 
               {/* Recent attempts list */}
               <div className="flex-1 min-h-0 overflow-y-auto mt-1">
-                {attempts.length === 0 ? (
-                  <p className="text-[0.58rem] text-ink-3/40 italic text-center py-4">
-                    No attempts yet. Enter your move count above.
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {attempts.slice(0, 12).map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center gap-2 rounded-md px-2 py-1 text-[0.6rem] hover:bg-surface-2/50"
-                      >
-                        <span
-                          className={cn(
-                            "nums font-semibold",
-                            a.efficient ? "text-ready" : "text-hold",
-                          )}
-                        >
-                          {a.userMoves}
-                        </span>
-                        <span className="text-ink-3/50">/ {a.optimalDepth}</span>
-                        <span className="text-ink-3/40 ml-auto">
-                          {a.face}
-                        </span>
-                        <span
-                          className={cn(
-                            "size-1.5 rounded-full",
-                            a.efficient ? "bg-ready" : "bg-hold",
-                          )}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <RecentAttemptsList attempts={allAttempts} />
               </div>
             </div>
           </div>
 
           {/* Column 3: Stats + tips */}
           <TouchAside title="Stats">
-            <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
-              <div className="grid grid-cols-2 gap-2">
-                <StatChip
-                  icon={Flame}
-                  label="Attempts"
-                  value={`${stats.total}`}
-                />
-                <StatChip
-                  icon={Target}
-                  label="Accuracy"
-                  value={`${stats.accuracy}%`}
-                />
-                <StatChip
-                  icon={Crosshair}
-                  label="Best"
-                  value={stats.bestMoves > 0 ? `${stats.bestMoves}` : "--"}
-                />
-                <StatChip
-                  icon={Clock}
-                  label="Avg moves"
-                  value={stats.avgMoves > 0 ? `${stats.avgMoves}` : "--"}
-                />
-              </div>
-            </div>
-
-            <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="size-3.5 text-caution" />
-                <h4 className="text-[0.62rem] font-medium text-ink-2">Tips</h4>
-              </div>
-              <ul className="space-y-2 text-[0.58rem] text-ink-3/80">
-                <li className="flex gap-2">
-                  <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-                  Plan your entire cross during inspection — no move counting
-                  during execution.
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-                  World-class crosses are ≤ 6 moves. The theoretical max is 8.
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-                  Use the replay to study the optimal path and spot missed
-                  efficiencies.
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-                  Toggle the cross highlight to track the 4 target edges
-                  visually.
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-                  Color-neutral (CN) mode finds the best face for each scramble
-                  — saves ~0.5s per solve.
-                </li>
-              </ul>
-            </div>
-
-            <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Crosshair className="size-3.5 text-phase-blue" />
-                <h4 className="text-[0.62rem] font-medium text-ink-2">
-                  Current scramble
-                </h4>
-              </div>
-              <div className="space-y-1 text-[0.6rem]">
-                <div className="flex justify-between">
-                  <span className="text-ink-3">Mode</span>
-                  <span className="nums font-medium text-ink">
-                    {cnMode ? "Color-neutral" : `${cross.face} fixed`}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-3">Solved face</span>
-                  <span className="nums font-medium text-ink">{cross.face}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-3">Optimal depth</span>
-                  <span className="nums font-medium text-ink">
-                    {cross.optimalDepth}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-3">Your last</span>
-                  <span className="nums font-medium text-ink">
-                    {attempts[0]?.userMoves ?? "--"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-3">Streak</span>
-                  <span className="nums font-medium text-ink">
-                    {stats.streak}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <CrossStatsPanel stats={stats} avgTimeMs={dbPhaseStats?.avgTimeMs ?? 0} />
+            <CrossTipsPanel />
+            <CrossScrambleInfoPanel
+              cnMode={cnMode}
+              face={cross.face}
+              optimalDepth={cross.optimalDepth}
+              lastUserMoves={allAttempts[0]?.userMoves}
+              streak={stats.streak}
+            />
           </TouchAside>
         </div>
       </div>

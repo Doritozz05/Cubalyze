@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { MetricTile, type MetricTileAccent } from "@/components/Stats/atoms/MetricTile";
 import { statLabel } from "@/utils/formatTime";
 import type { ProfileStats } from "@/hooks/useProfileStats";
@@ -23,7 +24,7 @@ function fmt(value: number | null): string {
  * puzzle (defaults to the user's most-used puzzle). Values use the `nums`
  * tabular class; DNF/missing renders as "—" (never 0.00).
  */
-export function StatStrip({ stats, loading, puzzle, className }: StatStripProps) {
+export const StatStrip = memo(function StatStrip({ stats, loading, puzzle, className }: StatStripProps) {
   if (loading || !stats) {
     return (
       <div
@@ -96,4 +97,4 @@ export function StatStrip({ stats, loading, puzzle, className }: StatStripProps)
       ))}
     </div>
   );
-}
+});

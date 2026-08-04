@@ -54,3 +54,8 @@ Thumbs.db
 # Tauri / Rust desktop
 **/src-tauri/target/
 **/src-tauri/bundle/
+
+.github/hooks/
+.github/skills/
+.github/agents/
+.impeccable/

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { BarChart3, Layers } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -47,7 +47,7 @@ export interface OverviewPanelProps {
 // NOTE: phase ring colors are now derived semantically via phaseColorHex()
 // (one source of truth shared with SolveListPanel and SolveAnalysisPanel).
 
-export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
+export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
   const stats = useMemo(() => computeStats(solves), [solves]);
 
   const bestSingle = Number.isFinite(stats.best) ? stats.best : null;
@@ -263,7 +263,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
                 <Bar dataKey="count" radius={[2, 2, 0, 0]}>
                   {histogram.map((_, i) => (
                     <Cell
-                      key={i}
+                      key={`bin-${i}`}
                       fill={isModal[i] ? "var(--ink-2)" : "var(--ink-3)"}
                       fillOpacity={isModal[i] ? 0.7 : 0.4}
                     />
@@ -375,7 +375,7 @@ export function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
       <PenaltyMix solves={solves} />
     </div>
   );
-}
+});
 
 // ─── Penalty mix sub-component ────────────────────────────────────────────
 

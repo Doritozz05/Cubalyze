@@ -20,9 +20,9 @@ import {
   TrainingBreadcrumb,
   TouchAside,
 } from "./components";
-import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import { useTrainingSession } from "@/hooks/useTrainingSession";
+import { useTrainingEngine } from "@/hooks/useTrainingEngine";
 import type { AlgorithmProgressRecord } from "@cubeforge/training";
+import { EXERCISE_IDS } from "@cubeforge/training";
 import {
   Check, X, ChevronRight, Target, Brain,
   Shuffle, TrendingDown,
@@ -121,13 +121,14 @@ export function AlgorithmRecognizeView({
     [allCases, subsetId, childSubsetIds]
   );
 
-  // ── Real progress for weakness ordering ────────────────────────────────
-  const { ready, getSubsetProgress, recordAttempt: dbPersistAttempt } = useTrainingProgress();
-  const { sessionId } = useTrainingSession({
-    exerciseId: `recognize-${subsetId}`,
-    methodId,
-    phaseId: _phaseId as string,
-    subsetId,
+  // ── Training engine: session machine + DB persistence + session grouping ─
+  const { ready, getSubsetProgress, sessionId, submitVerdict } = useTrainingEngine({
+    preset: {
+      exerciseId: EXERCISE_IDS.recognize(subsetId),
+      methodId,
+      phaseId: _phaseId as string,
+      subsetId,
+    },
   });
   const [progressMap, setProgressMap] = useState<Map<string, AlgorithmProgressRecord>>(new Map());
 
@@ -224,10 +225,7 @@ export function AlgorithmRecognizeView({
     // never touches execution best/avg time (which timeMs: 0 would corrupt).
     // advanceSRS: recognition also advances the FSRS state machine so the
     // quiz feeds the SRS stats (correct → good, miss → again), not just accuracy.
-    dbPersistAttempt({
-      exerciseId: `recognize-${subsetId}`,
-      methodId,
-      phaseId: _phaseId as string,
+    void submitVerdict({
       caseId: round.caseId,
       timeMs: 0, // recognition quiz has no timer
       verdict: isCorrect ? "correct" : "incorrect",
@@ -239,7 +237,7 @@ export function AlgorithmRecognizeView({
     }).catch((err) => {
       console.error("[RecognizeView] Failed to persist attempt:", err);
     });
-  }, [round, dbPersistAttempt, subsetId, methodId, _phaseId, sessionId]);
+  }, [round, submitVerdict, sessionId]);
 
   // ── Go to next round ────────────────────────────────────────────────
   const handleNext = useCallback(() => {

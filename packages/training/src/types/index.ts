@@ -7,17 +7,8 @@
 export type {
   // Exercise
   ExerciseCategory,
-  ScrambleStrategyType,
-  ScrambleStrategy,
-  ValidationRuleType,
-  ValidationRule,
-  SmartCubeRequirement,
-  ITrainingExercise,
   ExercisePreset,
-  ExerciseRegistry,
 } from './exercise';
-
-export { EXERCISE_CATEGORY_LABELS } from './exercise';
 
 export type {
   // Session

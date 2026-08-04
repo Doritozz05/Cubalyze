@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateRandomSetup } from '@cubeforge/training';
+import { generateRandomSetup } from '../setup-generator.js';
 import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
 
 describe('setupGenerator', () => {

@@ -63,8 +63,8 @@ export function getSeedData(): SeedData {
 }
 
 /** Check if the database already has been seeded. */
-export async function isSeeded(algorithmsRepo: { count(): Promise<number> }): Promise<boolean> {
-  const count = await algorithmsRepo.count();
+export async function isSeeded(algorithmsRepo: { countCases(): Promise<number> }): Promise<boolean> {
+  const count = await algorithmsRepo.countCases();
   return count > 0;
 }
 
@@ -77,7 +77,7 @@ export async function isSeeded(algorithmsRepo: { count(): Promise<number> }): Pr
  */
 export async function seedIfEmpty(
   algorithmsRepo: {
-    count(): Promise<number>;
+    countCases(): Promise<number>;
     insertMethod?(method: (typeof METHODS)[number]): Promise<void>;
     insertSubset?(subset: (typeof SUBSETS)[number]): Promise<void>;
     insertCase?(c: AlgorithmCase): Promise<void>;

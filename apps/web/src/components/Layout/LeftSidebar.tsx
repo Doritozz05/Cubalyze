@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
-import { motion, LayoutGroup } from "framer-motion";
+import { motion, LayoutGroup, useReducedMotion } from "framer-motion";
 import { Sun, Moon, Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@cubeforge/database";
@@ -49,6 +49,8 @@ export interface LeftSidebarProps {
   sessionName?: string;
   /** Batch import callback for importing solves from files. */
   onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
+  /** Export a JSON file containing every session's solves (full fidelity). */
+  onExportAllJSON?: () => Promise<void>;
   settingsOpen?: boolean;
   onSettingsOpenChange?: (open: boolean) => void;
   /** Section to show when the settings dialog opens (e.g. 'profile'). */
@@ -72,6 +74,7 @@ export function LeftSidebar({
   solves,
   sessionName,
   onImportSolves,
+  onExportAllJSON,
   settingsOpen: externalSettingsOpen,
   onSettingsOpenChange,
   settingsInitialSection,
@@ -237,6 +240,9 @@ export function LeftSidebar({
                     labelVisible={labelVisible}
                     isActive={activeView === item.id}
                     onClick={() => handleNavItemClick(item.id)}
+                    onboardingTarget={
+                      item.id === "widgets" ? "widgets-entry" : undefined
+                    }
                     badge={
                       item.id === "timer" && timerActive ? (
                         <span className="size-1.5 rounded-full bg-ready animate-pulse" />
@@ -332,6 +338,7 @@ export function LeftSidebar({
           solves={solves}
           sessionName={sessionName}
           onImportSolves={onImportSolves}
+          onExportAllJSON={onExportAllJSON}
         />
         {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
             used to leak into the layout top-left in the touch regime (e.g.
@@ -387,6 +394,7 @@ export function LeftSidebar({
         solves={solves}
         sessionName={sessionName}
         onImportSolves={onImportSolves}
+        onExportAllJSON={onExportAllJSON}
       />
     </>
   );
@@ -426,6 +434,7 @@ function SidebarNavItem({
   isActive,
   badge,
   onClick,
+  onboardingTarget,
 }: {
   icon: React.ElementType;
   label: string;
@@ -433,11 +442,15 @@ function SidebarNavItem({
   isActive?: boolean;
   badge?: React.ReactNode;
   onClick?: () => void;
+  /** Spotlight target for the onboarding tour (TDD-0020). */
+  onboardingTarget?: string;
 }) {
+  const reduceMotion = useReducedMotion();
   const button = (
     <button
       type="button"
       onClick={onClick}
+      data-onboarding-target={onboardingTarget}
       className={cn(
         "relative flex w-full items-center gap-3 rounded-md text-sm px-2 py-2 transition-colors group",
         isActive
@@ -449,7 +462,7 @@ function SidebarNavItem({
         <motion.div
           layoutId="sidebar-active-bg"
           className="absolute inset-0 rounded-md bg-sidebar-accent"
-          transition={ACTIVE_PILL_SPRING}
+          transition={reduceMotion ? { duration: 0 } : ACTIVE_PILL_SPRING}
         />
       )}
       <div className="relative z-10 flex size-5 shrink-0 items-center justify-center">
@@ -461,7 +474,7 @@ function SidebarNavItem({
       <motion.span
         initial={false}
         animate={{ width: labelVisible ? "auto" : 0, opacity: labelVisible ? 1 : 0 }}
-        transition={SIDEBAR_MOTION.label}
+        transition={reduceMotion ? { duration: 0 } : SIDEBAR_MOTION.label}
         className="relative z-10 overflow-hidden whitespace-nowrap"
       >
         {label}

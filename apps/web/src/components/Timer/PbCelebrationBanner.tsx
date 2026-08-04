@@ -6,6 +6,7 @@ import { Trophy, X, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatTime } from "@/utils/formatTime";
 import { cn } from "@/lib/utils";
+import { useAnnounce } from "@/lib/announce";
 
 export interface PbCelebrationBannerProps {
   types: ("Single" | "Ao5" | "Ao12")[];
@@ -31,6 +32,19 @@ export function PbCelebrationBanner({
   className,
 }: PbCelebrationBannerProps) {
   const [visible, setVisible] = useState(true);
+
+  // Announce the new PB to screen readers (the banner itself is visual/transient).
+  useAnnounce(
+    types.length > 0
+      ? `New personal best. ${
+          types.includes("Single") && singleTime != null ? `Single ${formatTime(singleTime)}.` : ""
+        } ${
+          types.includes("Ao5") && ao5Time != null ? `Average of 5 ${formatTime(ao5Time)}.` : ""
+        } ${
+          types.includes("Ao12") && ao12Time != null ? `Average of 12 ${formatTime(ao12Time)}.` : ""
+        }`
+      : null,
+  );
 
   useEffect(() => {
     setVisible(true);

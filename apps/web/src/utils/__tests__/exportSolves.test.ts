@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { exportSolvesToCsTimer } from "../exportSolves";
+import { exportSolvesToCsTimer, exportSolvesToJSON, exportAllSolvesToJSON } from "../exportSolves";
 import { parseImport, toSolveInput } from "../importSolves";
 import type { Solve } from "@/types";
 
@@ -75,5 +75,80 @@ describe("exportSolvesToCsTimer", () => {
 
     const exportedCsv = exportSolvesToCsTimer(solves);
     expect(exportedCsv).toBe(REAL_CSTIMER_CSV);
+  });
+});
+
+describe("CubeForge JSON full-fidelity round trip", () => {
+  const sample: Solve[] = [
+    {
+      id: "a",
+      time: 73520,
+      penalty: "none",
+      scramble: "F U2 R2 F2 D2 L2 B2 L' F2 L' U2 R D2 B' U' R D L' B U'",
+      timestamp: 1737013787000,
+      method: "CFOP",
+      note: "nice",
+      source: "manual",
+      puzzleType: "3x3x3",
+    },
+    {
+      id: "b",
+      time: 44070,
+      penalty: "+2",
+      scramble: "R U R' U'",
+      timestamp: 1737020000000,
+      method: "Roux",
+      source: "smart",
+      puzzleType: "2x2x2",
+    },
+  ];
+
+  it("single-session JSON export → import preserves per-solve puzzleType and all metadata", () => {
+    const json = exportSolvesToJSON(sample, "Test session");
+    const result = parseImport(json);
+    expect(result.format).toBe("cubeforge-json");
+    expect(result.errors).toHaveLength(0);
+    expect(result.solves).toHaveLength(2);
+
+    const s0 = result.solves[0]!;
+    expect(s0.time).toBe(73520);
+    expect(s0.penalty).toBe("none");
+    expect(s0.scramble).toBe(sample[0]!.scramble);
+    expect(s0.timestamp).toBe(1737013787000);
+    expect(s0.method).toBe("CFOP");
+    expect(s0.note).toBe("nice");
+    expect(s0.puzzleType).toBe("3x3x3");
+
+    // The 2x2 solve keeps 2x2x2 — NOT forced to a single category.
+    expect(result.solves[1]!.puzzleType).toBe("2x2x2");
+    expect(result.solves[1]!.note).toBeUndefined();
+  });
+
+  it("export-all JSON → import flattens sessions but preserves every solve's puzzleType", () => {
+    const json = exportAllSolvesToJSON([
+      { sessionName: "Session A", solves: sample },
+      { sessionName: "Session B", solves: [sample[1]!] },
+    ]);
+
+    const data = JSON.parse(json);
+    expect(data.app).toBe("CubeForge");
+    expect(data.sessionCount).toBe(2);
+    expect(data.sessions[0].solveCount).toBe(2);
+    expect(data.sessions[1].solveCount).toBe(1);
+
+    const result = parseImport(json);
+    expect(result.format).toBe("cubeforge-json");
+    expect(result.errors).toHaveLength(0);
+    expect(result.solves).toHaveLength(3);
+    // Puzzle types survive the round trip per solve.
+    const types = result.solves.map((s) => s.puzzleType);
+    expect(types).toEqual(["3x3x3", "2x2x2", "2x2x2"]);
+  });
+
+  it("toSolveInput keeps the exported puzzleType", () => {
+    const result = parseImport(exportSolvesToJSON(sample));
+    const input = result.solves.map((s) => toSolveInput(s));
+    expect(input[0]!.puzzleType).toBe("3x3x3");
+    expect(input[1]!.puzzleType).toBe("2x2x2");
   });
 });

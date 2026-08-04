@@ -7,10 +7,11 @@ import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 import { TrainingBreadcrumb } from "./components";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
+import { findSubsetId, masteryLevel } from "@cubeforge/training";
 import type { AlgorithmProgressRecord, PhaseStatsRecord } from "@cubeforge/training";
 import {
   Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
-  ChevronRight, Lightbulb, Gauge, AlertTriangle,
+  ChevronRight, Lightbulb, Gauge, AlertTriangle, Brain,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -49,7 +50,6 @@ function formatTime(ms: number): string {
 export function PhaseStatsView({
   methodId, phaseId, phaseName, onBack,
 }: PhaseStatsProps) {
-  void phaseId;
   const method = useMemo(() => METHODS.find((m) => m.id === methodId), [methodId]);
   const { cases: allCases } = useMemo(() => getSeedData(), []);
   const [activeTab, setActiveTab] = useState<"overview" | "cases" | "history">(
@@ -105,16 +105,10 @@ export function PhaseStatsView({
     return () => { cancelled = true; };
   }, [ready, methodId, phaseId, getPhaseStats, getTrainingSessions]);
 
-  // Find subset for this phase
+  // Find subset for this phase — canonical mapping from @cubeforge/training
   const subset = useMemo(() => {
-    const phaseToName: Record<string, string> = {
-      "oll": "OLL", "pll": "PLL", "f2l": "Basic F2L", "af2l": "Advanced F2L", "cmll": "CMLL",
-      "f2l-zz": "Basic F2L", "ll-zz": "OCLL", "f2l-petrus": "Basic F2L", "ll-petrus": "COLL",
-    };
-    const name = phaseToName[phaseId];
-    if (!name) return null;
-    return SUBSETS.find((s) => s.methodId === methodId && s.name === name)
-      ?? SUBSETS.find((s) => s.name === name);
+    const subsetId = findSubsetId(methodId, phaseId);
+    return subsetId ? SUBSETS.find((s) => s.id === subsetId) ?? null : null;
   }, [methodId, phaseId]);
 
   const subsetCases = useMemo(() => {
@@ -152,10 +146,10 @@ export function PhaseStatsView({
     });
   }, [subsetCases, progressMap, ready]);
 
-  const mastered = caseStats.filter((c) => c.mastery >= 90).length;
-  const learning = caseStats.filter((c) => c.mastery >= 60 && c.mastery < 90).length;
-  const beginner = caseStats.filter((c) => c.mastery > 0 && c.mastery < 60).length;
-  const newCases = caseStats.filter((c) => c.mastery === 0).length;
+  const mastered = caseStats.filter((c) => masteryLevel(c.mastery) === "mastered" || masteryLevel(c.mastery) === "expert").length;
+  const learning = caseStats.filter((c) => masteryLevel(c.mastery) === "practicing").length;
+  const beginner = caseStats.filter((c) => masteryLevel(c.mastery) === "learning").length;
+  const newCases = caseStats.filter((c) => masteryLevel(c.mastery) === "new").length;
   const avgMastery = caseStats.length > 0 ? Math.round(caseStats.reduce((s, c) => s + c.mastery, 0) / caseStats.length) : 0;
   const bestTime = caseStats.length > 0 ? Math.min(...caseStats.filter(c => c.bestTimeMs > 0).map((c) => c.bestTimeMs), Infinity) : 0;
   const totalAttempts = caseStats.reduce((s, c) => s + c.attempts, 0);
@@ -294,21 +288,34 @@ function OverviewTab({
         <section className="rounded-xl border border-line bg-surface p-5">
           <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-4">14-Day Trend</h3>
           <div className="flex items-end gap-1 h-32">
-            {sessionHistory.map((day, idx) => {
-              const maxTime = 2.5;
-              const pct = Math.min(100, (day.avgTime / maxTime) * 100);
-              const prevDay = sessionHistory[idx - 1];
-              const trend = prevDay ? day.avgTime < prevDay.avgTime : true;
+            {(() => {
+              // Real scale: percentile-90 of the actual per-day averages instead
+              // of a fabricated cap, so the bars stay meaningful as you improve.
+              const sorted = [...sessionHistory].map((d) => d.avgTime).sort((a, b) => a - b);
+              const p90 =
+                sorted.length > 0
+                  ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.9))]
+                  : 1;
+              const maxTime = Math.max(p90, 0.5); // floor keeps bars visible on fast sessions
               return (
-                <div key={day.day} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-                  <span className="nums text-[0.48rem] text-ink-3/70">{day.avgTime.toFixed(1)}s</span>
-                  <motion.div initial={{ height: 0 }} animate={{ height: `${pct}%` }}
-                    transition={{ duration: 0.5, delay: idx * 0.03 }}
-                    className={cn("w-full rounded-t-sm", trend ? "bg-ink/50" : "bg-hold/40")} />
-                  <span className="text-[0.48rem] text-ink-3/50 leading-none">{day.day}</span>
-                </div>
+                <>
+                  {sessionHistory.map((day, idx) => {
+                    const pct = Math.min(100, (day.avgTime / maxTime) * 100);
+                    const prevDay = sessionHistory[idx - 1];
+                    const trend = prevDay ? day.avgTime < prevDay.avgTime : true;
+                    return (
+                      <div key={day.day} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                        <span className="nums text-[0.48rem] text-ink-3/70">{day.avgTime.toFixed(1)}s</span>
+                        <motion.div initial={{ height: 0 }} animate={{ height: `${pct}%` }}
+                          transition={{ duration: 0.5, delay: idx * 0.03 }}
+                          className={cn("w-full rounded-t-sm", trend ? "bg-ink/50" : "bg-hold/40")} />
+                        <span className="text-[0.48rem] text-ink-3/50 leading-none">{day.day}</span>
+                      </div>
+                    );
+                  })}
+                </>
               );
-            })}
+            })()}
           </div>
           <div className="flex items-center gap-1 mt-2 text-[0.55rem] text-ink-3/60">
             <TrendingDown className="size-3 text-ready" /> Avg time trending down — good progress!
@@ -322,15 +329,21 @@ function OverviewTab({
             <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">Phase Performance</h3>
             <span className="text-[0.55rem] text-ink-3/60">from all training sessions</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-lg bg-surface-2/60 p-3">
               <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Clock className="size-2.5" />Avg time</span>
               <span className="nums text-[0.9rem] font-bold text-ink mt-1 block">{formatTime(phaseStats.avgTimeMs)}</span>
             </div>
             <div className="rounded-lg bg-surface-2/60 p-3">
-              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Target className="size-2.5" />Accuracy</span>
-              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.accuracy >= 80 ? "text-ready" : phaseStats.accuracy >= 50 ? "text-caution" : "text-hold")}>
-                {phaseStats.accuracy}%
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Target className="size-2.5" />Exec acc</span>
+              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.execAccuracy >= 80 ? "text-ready" : phaseStats.execAccuracy >= 50 ? "text-caution" : "text-hold")}>
+                {phaseStats.execAccuracy}%
+              </span>
+            </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Brain className="size-2.5" />Rec acc</span>
+              <span className={cn("nums text-[0.9rem] font-bold mt-1 block", phaseStats.recAccuracy >= 80 ? "text-ready" : phaseStats.recAccuracy >= 50 ? "text-caution" : "text-hold")}>
+                {phaseStats.recAttempts > 0 ? `${phaseStats.recAccuracy}%` : "--"}
               </span>
             </div>
             <div className="rounded-lg bg-surface-2/60 p-3">
@@ -345,9 +358,14 @@ function OverviewTab({
                 {Math.round(phaseStats.failRate * 100)}%
               </span>
             </div>
+            <div className="rounded-lg bg-surface-2/60 p-3">
+              <span className="text-[0.55rem] text-ink-3 flex items-center gap-1"><Flame className="size-2.5" />Attempts</span>
+              <span className="nums text-[0.9rem] font-bold text-ink mt-1 block">{phaseStats.totalAttempts}</span>
+            </div>
           </div>
           <p className="text-[0.55rem] text-ink-3/60 mt-3">
-            {phaseStats.totalAttempts} attempts recorded across phase trainings (Cross/EO/LSE/Full Solve).
+            Exec acc comes only from execution attempts; rec acc only from recognition
+            quizzes — the two are never mixed. {phaseStats.totalAttempts} attempts total.
           </p>
         </section>
       )}
@@ -362,13 +380,14 @@ function OverviewTab({
             {weakCases.map((sc) => (
               <div key={sc.case.id} className="flex items-center gap-3 rounded-lg px-3 py-2 bg-surface-2/50">
                 <span className={cn("nums text-[0.62rem] font-medium shrink-0 w-10",
-                  sc.mastery < 30 ? "text-hold" : sc.mastery < 60 ? "text-caution" : "text-ink-2")}>
+                  masteryLevel(sc.mastery) === "new" ? "text-ink-3" : masteryLevel(sc.mastery) === "learning" ? "text-hold" : masteryLevel(sc.mastery) === "practicing" ? "text-caution" : "text-ink-2")}>
                   {sc.case.caseNumber}
                 </span>
                 <span className="text-[0.6rem] text-ink-3 truncate flex-1">{sc.case.name}</span>
                 <span className="nums text-[0.58rem] text-ink-3 shrink-0">{sc.bestTimeMs > 0 ? formatTime(sc.bestTimeMs) : "--"}</span>
                 <div className="h-1.5 w-14 rounded-full bg-surface-2 overflow-hidden shrink-0">
-                  <div className={cn("h-full rounded-full", sc.mastery >= 90 ? "bg-ready" : sc.mastery >= 60 ? "bg-caution" : "bg-hold")}
+                  <div className={cn("h-full rounded-full",
+                    masteryLevel(sc.mastery) === "mastered" || masteryLevel(sc.mastery) === "expert" ? "bg-ready" : masteryLevel(sc.mastery) === "practicing" ? "bg-caution" : "bg-hold")}
                     style={{ width: `${sc.mastery}%` }} />
                 </div>
                 <span className="nums text-[0.55rem] text-ink-2 shrink-0 w-7 text-right">{sc.mastery}%</span>
@@ -490,10 +509,12 @@ function CasesTab({ caseStats }: { caseStats: CaseStat[] }) {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <div className="h-1.5 w-20 rounded-full bg-surface-2 overflow-hidden">
-                  <div className={cn("h-full rounded-full", sc.mastery >= 90 ? "bg-ready" : sc.mastery >= 60 ? "bg-caution" : "bg-hold")}
+                  <div className={cn("h-full rounded-full",
+                    masteryLevel(sc.mastery) === "mastered" || masteryLevel(sc.mastery) === "expert" ? "bg-ready" : masteryLevel(sc.mastery) === "practicing" ? "bg-caution" : "bg-hold")}
                     style={{ width: `${sc.mastery}%` }} />
                 </div>
-                <span className={cn("nums text-[0.58rem] w-8 text-right", sc.mastery >= 90 ? "text-ready" : sc.mastery >= 60 ? "text-caution" : "text-hold")}>
+                <span className={cn("nums text-[0.58rem] w-8 text-right",
+                  masteryLevel(sc.mastery) === "mastered" || masteryLevel(sc.mastery) === "expert" ? "text-ready" : masteryLevel(sc.mastery) === "practicing" ? "text-caution" : "text-hold")}>
                   {sc.mastery}%
                 </span>
               </div>

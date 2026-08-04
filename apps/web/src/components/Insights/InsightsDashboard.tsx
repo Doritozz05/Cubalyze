@@ -225,7 +225,7 @@ export function InsightsDashboard({
   }, []);
 
   return (
-    <div className="relative flex-1 min-h-0 w-full flex flex-col">
+    <div className="relative flex-1 min-h-0 w-full flex flex-col" data-onboarding-target="insights">
       {/* ── Top bar: session + cube dropdowns ────────────────────────── */}
       <div className="flex shrink-0 items-center gap-3 px-1 pb-3">
         {/* Session selector */}

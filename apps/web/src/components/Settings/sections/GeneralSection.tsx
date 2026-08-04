@@ -3,6 +3,8 @@
 import { Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
+import { Button } from '@/components/ui/button';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { SettingToggle } from '../components/SettingToggle';
 import {
   Select,
@@ -13,6 +15,9 @@ import {
 } from '@/components/ui/select';
 
 export function GeneralSection() {
+  // Replay is a module-level singleton action: starting it here immediately
+  // remounts the tour (App closes this dialog via its tour-active effect).
+  const { replay } = useOnboarding();
   const theme = useStore(preferencesStore, (s) => s.theme);
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
@@ -93,6 +98,20 @@ export function GeneralSection() {
         checked={haptics}
         onCheckedChange={setHaptics}
       />
+
+      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[0.85rem] font-medium text-ink">Onboarding tour</h4>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            Replay the first-run tour that walks you through the main tabs.
+          </p>
+        </div>
+        <div className="mt-0.5 shrink-0">
+          <Button variant="outline" size="sm" onClick={replay}>
+            Replay tour
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

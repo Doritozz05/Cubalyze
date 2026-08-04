@@ -36,6 +36,8 @@ export interface ITrainingProgressRepo {
   upsertExerciseProgress(progress: ExerciseProgressRecord): Promise<ExerciseProgressRecord>;
   getMethodExerciseProgress(methodId: string): Promise<ExerciseProgressRecord[]>;
   getMethodMastery(methodId: string): Promise<number>;
+  /** Method mastery with coverage/performance breakdown (dashboards). */
+  getMethodProgress?(methodId: string): Promise<MethodProgressBreakdown | null>;
   /** Per-phase aggregate stats (avg time, accuracy, efficiency) for phase weakness detection. */
   getPhaseStats(methodId: string, phaseId: string): Promise<PhaseStatsRecord | null>;
   createTrainingSession?(session: Omit<TrainingSessionProgressRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">): Promise<TrainingSessionProgressRecord>;
@@ -125,8 +127,12 @@ export interface ExerciseProgressRecord {
   phaseId?: string;
   totalSessions: number;
   totalAttempts: number;
-  /** Exact execution attempt count (time-bearing drills). */
+  /** Exact execution attempt count (time-bearing, accuracy denominator —
+   * EXCLUDES "skipped" verdicts so honest Full Solve splits never dilute accuracy). */
   execAttempts: number;
+  /** Optional exact execution-with-timer count (time denominator for avg/best),
+   * INCLUDING "skipped" verdicts. Absent on legacy/partial records → defaults. */
+  execTimeAttempts?: number;
   /** Exact execution correct count (drives exercise-level accuracy). */
   execCorrect: number;
   bestAccuracy: number;
@@ -156,13 +162,37 @@ export interface TrainingSessionProgressRecord {
 export interface PhaseStatsRecord {
   methodId: string;
   phaseId: string;
+  /** Total attempts (execution + recognition). */
   totalAttempts: number;
-  accuracy: number;   // 0-100
+  /** EXECUTION-ONLY accuracy 0-100 — recognition attempts never dilute it. */
+  accuracy: number;
+  /** Exact execution attempt count. */
+  execAttempts: number;
+  /** Execution-only accuracy 0-100 (same as `accuracy`, kept explicit). */
+  execAccuracy: number;
+  /** Exact recognition attempt count. */
+  recAttempts: number;
+  /** Recognition-only accuracy 0-100. */
+  recAccuracy: number;
   avgTimeMs: number;
   bestTimeMs: number;
+  /** Execution fail rate 0-1 (incorrect + dnf / execution attempts). */
   failRate: number;   // 0-1
   efficiency: number; // 0-1 (optimal_moves / move_count)
   lastPracticedAt: number;
+}
+
+/** Method-level mastery breakdown: breadth (coverage) × depth (performance). */
+export interface MethodProgressBreakdown {
+  methodId: string;
+  /** Weighted mastery 0-100 = round(performance × coverage). */
+  mastery: number;
+  /** Fraction of the method's cases practiced (0-1). */
+  coverage: number;
+  /** Average mastery of PRACTICED cases only (0-100). */
+  performance: number;
+  totalCases: number;
+  practicedCases: number;
 }
 
 /** What a training attempt measures. Recognition quizzes must NOT touch execution time metrics. */
@@ -170,7 +200,7 @@ export type MetricKind = 'execution' | 'recognition';
 
 // ─── SM-2 Spaced Repetition Algorithm ─────────────────────────────────────
 
-const DEFAULT_EASE_FACTOR = 2.5;
+export const DEFAULT_EASE_FACTOR = 2.5;
 const MIN_EASE_FACTOR = 1.3;
 
 function computeSM2(
@@ -276,6 +306,7 @@ export function normalizeExerciseProgress(p: ExerciseProgressRecord): ExercisePr
   return {
     ...p,
     execAttempts: p.execAttempts ?? (p.totalAttempts ?? 0),
+    execTimeAttempts: p.execTimeAttempts ?? p.execAttempts ?? 0,
     execCorrect: p.execCorrect ?? 0,
   };
 }
@@ -368,8 +399,16 @@ export class ProgressTracker {
     const rawEx = await this.repo.getExerciseProgress(exerciseId, methodId, phaseId);
     const exPrev = rawEx ? normalizeExerciseProgress(rawEx) : null;
     const hasTime = timeMs > 0 && isExecutionAttempt;
+    // Accuracy denominator: execution-with-timer EXCLUDING "skipped" (honest
+    // Full Solve splits carry real time but no correctness verdict). Mirrors the
+    // getPhaseStats SQL so both callers agree — skipped splits never dilute accuracy.
+    const isJudgedExec = hasTime && verdict !== "skipped";
     const exPrevExecAttempts = exPrev?.execAttempts ?? 0;
-    const exExecAttempts = exPrevExecAttempts + (hasTime ? 1 : 0);
+    const exExecAttempts = exPrevExecAttempts + (isJudgedExec ? 1 : 0);
+    // Time denominator: any execution-with-timer attempt, INCLUDING "skipped" —
+    // so Full Solve splits still feed avg/best time ("honest timing, no verdict").
+    const exPrevTimeAttempts = exPrev?.execTimeAttempts ?? 0;
+    const exTimeAttempts = exPrevTimeAttempts + (hasTime ? 1 : 0);
     const exProgress: ExerciseProgressRecord = {
       exerciseId,
       methodId,
@@ -377,14 +416,15 @@ export class ProgressTracker {
       totalSessions: exPrev?.totalSessions ?? 0,
       totalAttempts: (exPrev?.totalAttempts ?? 0) + 1,
       execAttempts: exExecAttempts,
-      execCorrect: (exPrev?.execCorrect ?? 0) + (hasTime && verdict === "correct" ? 1 : 0),
+      execTimeAttempts: exTimeAttempts,
+      execCorrect: (exPrev?.execCorrect ?? 0) + (isJudgedExec && verdict === "correct" ? 1 : 0),
       bestAccuracy: Math.max(exPrev?.bestAccuracy ?? 0, verdict === "correct" ? 100 : 0),
-      bestTimeMs: hasTime
+      bestTimeMs: isJudgedExec
         ? exPrev && exPrev.bestTimeMs > 0 ? Math.min(exPrev.bestTimeMs, timeMs) : timeMs
         : (exPrev?.bestTimeMs ?? 0),
       avgTimeMs: hasTime
-        ? exPrev && exPrevExecAttempts > 0
-          ? Math.round((exPrev.avgTimeMs * exPrevExecAttempts + timeMs) / exExecAttempts)
+        ? exPrev && exPrevTimeAttempts > 0
+          ? Math.round((exPrev.avgTimeMs * exPrevTimeAttempts + timeMs) / exTimeAttempts)
           : timeMs
         : (exPrev?.avgTimeMs ?? 0),
       lastPracticedAt: now,
@@ -673,6 +713,14 @@ export class ProgressTracker {
   }
 
   /**
+   * Latest raw attempts for an exercise (DB rows, newest first) — used by
+   * phase-target views (Cross/EO/LSE) to render DB-backed history.
+   */
+  async getAttemptsByExercise(exerciseId: string, limit = 50): Promise<TrainingAttemptRecord[]> {
+    return this.repo.getAttemptsByExercise(exerciseId, limit);
+  }
+
+  /**
    * Get algorithms due for SRS review.
    */
   async getDueForReview(limit = 20): Promise<AlgorithmProgressRecord[]> {
@@ -710,10 +758,19 @@ export class ProgressTracker {
   }
 
   /**
-   * Get overall method mastery (average of all algorithm masteries).
+   * Get overall method mastery (coverage × performance of practiced cases).
    */
   async getMethodMastery(methodId: string): Promise<number> {
     return this.repo.getMethodMastery(methodId);
+  }
+
+  /**
+   * Method mastery with the coverage/performance breakdown for dashboards.
+   * Returns null when the backend does not expose the breakdown.
+   */
+  async getMethodProgress(methodId: string): Promise<MethodProgressBreakdown | null> {
+    if (!this.repo.getMethodProgress) return null;
+    return this.repo.getMethodProgress(methodId);
   }
 
   /**

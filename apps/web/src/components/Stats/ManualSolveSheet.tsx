@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Plus, RefreshCw, X, Clock, Shuffle, Tag, FileText, CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -128,6 +128,8 @@ export function ManualSolveSheet({
     }
   };
 
+  const reduceMotion = useReducedMotion();
+
   return (
     <AnimatePresence>
       {open ? (
@@ -138,18 +140,18 @@ export function ManualSolveSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: reduceMotion ? 0 : 0.15 }}
             className="fixed inset-0 z-50 bg-black/40"
             onClick={onClose}
           />
           {/* Sheet */}
           <motion.aside
             key="sheet"
-            initial={{ x: 360, opacity: 0 }}
+            initial={reduceMotion ? false : { x: 360, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 360, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 360, damping: 32 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-[380px] flex-col border-l border-line bg-canvas shadow-2xl"
+            exit={reduceMotion ? { opacity: 0 } : { x: 360, opacity: 0 }}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 32 }}
+            className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-[380px] flex-col border-l border-line bg-canvas shadow-2xl"
             aria-label="Manual solve"
           >
             {/* Header */}

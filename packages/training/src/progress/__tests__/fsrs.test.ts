@@ -73,9 +73,9 @@ describe("FSRS — interval", () => {
     expect(intervalFor("easy", 4.2163)).toBe(5); // round(4.2163·1.3)
   });
 
-  it("always returns 1 day after an again", () => {
-    expect(intervalFor("again", 365)).toBe(1);
-    expect(intervalFor("again", 0.1)).toBe(1);
+  it("always returns 0 days after an again (re-review same day)", () => {
+    expect(intervalFor("again", 365)).toBe(0);
+    expect(intervalFor("again", 0.1)).toBe(0);
   });
 
   it("clamps to the 365-day maximum", () => {
@@ -104,7 +104,7 @@ describe("FSRS — review state machine", () => {
     expect(next.lapses).toBe(0); // first failure is not a lapse of a mature card
   });
 
-  it("again on a review-state card: relearning + 1 lapse + 1-day interval", () => {
+  it("again on a review-state card: relearning + 1 lapse + 0-day interval", () => {
     const now = 1_000_000_000;
     const mature: FSRSRecord = {
       ...FSRS_DEFAULTS,
@@ -117,7 +117,8 @@ describe("FSRS — review state machine", () => {
     const next = review(mature, "again", now);
     expect(next.state).toBe("relearning");
     expect(next.lapses).toBe(1);
-    expect(next.intervalDays).toBe(1);
+    expect(next.intervalDays).toBe(0);
+    expect(next.nextReviewAt).toBe(now); // due for re-review the same day
     expect(next.reviewCount).toBe(3);
   });
 

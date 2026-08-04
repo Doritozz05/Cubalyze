@@ -103,6 +103,7 @@ export function ProfileHero({
 
   return (
     <div
+      data-onboarding-target="profile"
       className={cn(
         "flex items-start gap-5 rounded-2xl border border-line bg-surface p-5 sm:items-center sm:gap-6 sm:p-6",
         className,

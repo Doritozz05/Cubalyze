@@ -43,15 +43,18 @@ const TASK_COLORS: { value: TaskColor; label: string; dot: string }[] = [
 
 const COLOR_MAP = new Map(TASK_COLORS.map((c) => [c.value, c]));
 
+/* Same vocabulary as the phase tokens — referenced via var() so the calendar
+   always draws the app's single color source (light/dark aware), instead of
+   duplicating hex values that drift from index.css. */
 const COLOR_HEX: Record<TaskColor, string> = {
-  blue: "#60a5fa",
-  emerald: "#34d399",
-  amber: "#fbbf24",
-  violet: "#a78bfa",
-  rose: "#fb7185",
-  cyan: "#22d3ee",
-  orange: "#fb923c",
-  pink: "#f472b6",
+  blue: "var(--phase-blue)",
+  emerald: "var(--phase-emerald)",
+  amber: "var(--phase-amber)",
+  violet: "var(--phase-violet)",
+  rose: "var(--phase-rose)",
+  cyan: "var(--phase-cyan)",
+  orange: "var(--phase-orange)",
+  pink: "var(--phase-pink)",
 };
 
 const DEFAULT_COLOR: TaskColor = "blue";
