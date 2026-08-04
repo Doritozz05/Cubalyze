@@ -2,6 +2,7 @@ use btleplug::api::{Central, CharPropFlags, Manager as _, Peripheral as _, ScanF
 use btleplug::platform::{Adapter, Peripheral};
 use futures::StreamExt;
 use tauri::{AppHandle, Emitter, State};
+use crate::debug_log;
 use crate::state::AppState;
 use super::{
     GAN_TIMER_SERVICE, GAN_TIMER_TIME_CHAR, GAN_TIMER_STATE_CHAR,
@@ -143,7 +144,7 @@ fn build_timer_event(data: &[u8]) -> serde_json::Value {
 
 async fn scan_for_gan_timer(adapter: &Adapter) -> Result<Peripheral, String> {
     adapter.stop_scan().await.ok();
-    eprintln!("[BLE Timer] Starting scan for GAN Timer...");
+    debug_log!("[BLE Timer] Starting scan for GAN Timer...");
 
     adapter.start_scan(ScanFilter::default()).await
         .map_err(|e| format!("Scan start failed: {}", e))?;
@@ -156,7 +157,7 @@ async fn scan_for_gan_timer(adapter: &Adapter) -> Result<Peripheral, String> {
             if let Ok(Some(props)) = p.properties().await {
                 if let Some(ref name) = props.local_name {
                     if is_gan_timer(name) {
-                        eprintln!("[BLE Timer] Found: {} ({})", name, p.address());
+                        debug_log!("[BLE Timer] Found: {} ({})", name, p.address());
                         adapter.stop_scan().await.ok();
                         return Ok(p.clone());
                     }
@@ -165,7 +166,7 @@ async fn scan_for_gan_timer(adapter: &Adapter) -> Result<Peripheral, String> {
         }
 
         if attempt == 4 {
-            eprintln!("[BLE Timer] Still scanning... (attempts: {})", attempt + 1);
+            debug_log!("[BLE Timer] Still scanning... (attempts: {})", attempt + 1);
         }
     }
 
@@ -180,7 +181,7 @@ pub async fn connect_gan_timer(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
-    eprintln!("[BLE Timer] === connect_gan_timer ===");
+    debug_log!("[BLE Timer] === connect_gan_timer ===");
     let adapter = get_adapter(&state).await?;
 
     let _ = app.emit("ble:timer_status", serde_json::json!({
@@ -191,10 +192,10 @@ pub async fn connect_gan_timer(
     let device = scan_for_gan_timer(&adapter).await?;
     let address = device.address().to_string();
 
-    eprintln!("[BLE Timer] GATT connecting to {}...", address);
+    debug_log!("[BLE Timer] GATT connecting to {}...", address);
     device.connect().await
         .map_err(|e| format!("GATT connect failed: {}", e))?;
-    eprintln!("[BLE Timer] Connected, discovering services...");
+    debug_log!("[BLE Timer] Connected, discovering services...");
     device.discover_services().await
         .map_err(|e| format!("Service discovery failed: {}", e))?;
 
@@ -208,16 +209,16 @@ pub async fn connect_gan_timer(
         if svc_uuid != GAN_TIMER_SERVICE {
             continue;
         }
-        eprintln!("[BLE Timer] Found timer service, scanning characteristics...");
+        debug_log!("[BLE Timer] Found timer service, scanning characteristics...");
         for ch in &svc.characteristics {
             let ch_uuid = ch.uuid.to_string().to_lowercase();
             if ch_uuid == GAN_TIMER_STATE_CHAR && ch.properties.contains(CharPropFlags::NOTIFY) {
                 state_char = Some(ch.clone());
-                eprintln!("[BLE Timer]  → state characteristic (notify): {}", ch_uuid);
+                debug_log!("[BLE Timer]  → state characteristic (notify): {}", ch_uuid);
             }
             if ch_uuid == GAN_TIMER_TIME_CHAR && ch.properties.contains(CharPropFlags::READ) {
                 time_char = Some(ch.clone());
-                eprintln!("[BLE Timer]  → time characteristic (read): {}", ch_uuid);
+                debug_log!("[BLE Timer]  → time characteristic (read): {}", ch_uuid);
             }
         }
     }
@@ -225,10 +226,10 @@ pub async fn connect_gan_timer(
     let state_char = state_char.ok_or("Timer state characteristic not found")?;
     let time_char = time_char.ok_or("Timer time characteristic not found")?;
 
-    eprintln!("[BLE Timer] Subscribing to state notifications...");
+    debug_log!("[BLE Timer] Subscribing to state notifications...");
     device.subscribe(&state_char).await
         .map_err(|e| format!("Notification subscribe failed: {}", e))?;
-    eprintln!("[BLE Timer] Subscribed OK");
+    debug_log!("[BLE Timer] Subscribed OK");
 
     // Store in app state
     state.connected_timer.lock().replace(device.clone());
@@ -241,13 +242,13 @@ pub async fn connect_gan_timer(
     tauri::async_runtime::spawn(async move {
         let mut stream = match device_clone.notifications().await {
             Ok(s) => s,
-            Err(e) => {
-                eprintln!("[BLE Timer] Failed to get notification stream: {}", e);
+            Err(_e) => {
+                debug_log!("[BLE Timer] Failed to get notification stream: {}", _e);
                 return;
             }
         };
 
-        eprintln!("[BLE Timer] Notification listener started");
+        debug_log!("[BLE Timer] Notification listener started");
         while let Some(notification) = stream.next().await {
             if validate_timer_event(&notification.value) {
                 let evt = build_timer_event(&notification.value);
@@ -261,10 +262,10 @@ pub async fn connect_gan_timer(
                     }));
                 }
             } else {
-                eprintln!("[BLE Timer] Invalid event data (CRC or magic failed)");
+                debug_log!("[BLE Timer] Invalid event data (CRC or magic failed)");
             }
         }
-        eprintln!("[BLE Timer] Notification stream ended");
+        debug_log!("[BLE Timer] Notification stream ended");
         let _ = app_clone.emit("ble:timer_status", serde_json::json!({
             "status": "disconnected",
             "message": "Timer disconnected"
@@ -284,7 +285,7 @@ pub async fn connect_gan_timer(
         "mac": address,
     });
     let _ = app.emit("ble:timer_status", payload.clone());
-    eprintln!("[BLE Timer] Connection complete: {}", name);
+    debug_log!("[BLE Timer] Connection complete: {}", name);
 
     Ok(payload)
 }
@@ -329,7 +330,7 @@ pub async fn disconnect_gan_timer(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    eprintln!("[BLE Timer] Disconnecting...");
+    debug_log!("[BLE Timer] Disconnecting...");
     let peripheral = state.connected_timer.lock().take();
     state.timer_state_char.lock().take();
     state.timer_time_char.lock().take();
@@ -341,7 +342,7 @@ pub async fn disconnect_gan_timer(
             "status": "disconnected",
             "message": "Timer disconnected"
         }));
-        eprintln!("[BLE Timer] Disconnected OK");
+        debug_log!("[BLE Timer] Disconnected OK");
     }
     Ok(())
 }
