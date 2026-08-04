@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { useStore } from "zustand";
-import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
+import {
+  Cube3DEngine,
+  FACE_ROTATION_MAP,
+  getSkinStyle,
+  scrambleMoveDurationMs,
+} from "@cubeforge/cube-3d-engine";
 import type { Subscription } from "rxjs";
 
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
@@ -200,6 +205,25 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
             const orientation = orientationStore.getState().orientation;
             const notation = MoveTransformer.toDisplayNotation(ev, orientation);
             appendRecentMove(notation);
+
+            // Animate the physical move on the 3D cube so the model follows
+            // the real cube in near-real-time. Fire-and-forget on purpose:
+            // awaiting here would queue behind the animation and lag the
+            // physical cube; the RotationEngine pool snaps overlapping tasks
+            // automatically. The raw face maps 1:1 to the model's local axes
+            // regardless of the root orientation quaternion (gyro).
+            const mapping = FACE_ROTATION_MAP[ev.face];
+            if (mapping) {
+              const angle = ev.direction * mapping.angleSign * 90;
+              void engine.rotateLayers(
+                mapping.axis,
+                [mapping.layerValue],
+                angle,
+                scrambleMoveDurationMs(angle, 130),
+                undefined,
+                "smooth",
+              );
+            }
           });
         }
 
