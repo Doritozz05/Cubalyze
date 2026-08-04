@@ -63,6 +63,10 @@ export function useTrainingEngine({
   // ── Shared subsystems ────────────────────────────────────────────────
   const drill = useDrillTimer();
   const progress = useTrainingProgress();
+  // Destructure so the exhaustive-deps rule tracks the stable callback
+  // directly instead of the whole `progress` object (which is recreated on
+  // every render and would churn submitVerdict's identity needlessly).
+  const { recordAttempt } = progress;
   const session = useTrainingSession({
     exerciseId: preset.exerciseId,
     methodId: preset.methodId,
@@ -85,7 +89,7 @@ export function useTrainingEngine({
       type: "START_SESSION",
       config: { preset, smartCubeMode: smartCubeUsed ? "on" : "auto" },
     });
-  }, [progress.ready, presetKey, smartCubeUsed, engine]);
+  }, [progress.ready, presetKey, smartCubeUsed, engine, preset]);
 
   // ── Bridge: timer events → machine events ───────────────────────────
   // Defensive: invalid transitions are no-ops inside the reducer, so this
@@ -142,7 +146,7 @@ export function useTrainingEngine({
       if (engine.getState().phase !== "verdict") return; // guard: already judged
 
       engine.dispatch({ type: "VERDICT", verdict, playMode, expectedMoves });
-      await progress.recordAttempt({
+      await recordAttempt({
         exerciseId: preset.exerciseId,
         methodId: preset.methodId,
         phaseId: preset.phaseId,
@@ -161,7 +165,7 @@ export function useTrainingEngine({
       });
       engine.dispatch({ type: "NEXT_ATTEMPT" });
     },
-    [engine, progress.recordAttempt, preset.exerciseId, preset.methodId, preset.phaseId],
+    [engine, recordAttempt, preset.exerciseId, preset.methodId, preset.phaseId],
   );
 
   // ── Skip: advance the machine WITHOUT recording an attempt (matches the
