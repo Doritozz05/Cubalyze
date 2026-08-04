@@ -24,6 +24,7 @@ import { toast, Toaster } from "sonner";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
 import { useProfile } from "@/hooks/useProfile";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { OnboardingTour } from "@/components/Onboarding/OnboardingTour";
@@ -435,6 +436,20 @@ export default function App() {
     },
     [importSolves],
   );
+
+  // ── Export ALL sessions (JSON, full fidelity) ─────────────────────────
+  // Fetches every session's solves and writes a single JSON file that the
+  // "Import CubeForge JSON (no data loss)" flow restores exactly.
+  const handleExportAllJSON = useCallback(async () => {
+    if (sessions.length === 0) return;
+    const withSolves: Array<{ sessionName: string; solves: Solve[] }> = [];
+    for (const s of sessions) {
+      const sessionSolves = await fetchSessionSolves(s.id);
+      withSolves.push({ sessionName: s.name, solves: sessionSolves });
+    }
+    const json = exportAllSolvesToJSON(withSolves);
+    downloadFile(json, 'cubeforge-all-sessions.json', 'application/json');
+  }, [sessions, fetchSessionSolves]);
 
   const { remapScramble } = useOrientation();
   const displayScramble = remapScramble(currentScramble);
@@ -889,6 +904,7 @@ export default function App() {
               onCubeConnectorOpenChange={setCubeConnectorOpen}
               profileSeed={profileSeed}
               profile={profile}
+              onExportAllJSON={handleExportAllJSON}
             />
           }
           isFocused={isFocused}

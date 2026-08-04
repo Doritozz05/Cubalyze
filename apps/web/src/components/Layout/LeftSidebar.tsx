@@ -49,6 +49,8 @@ export interface LeftSidebarProps {
   sessionName?: string;
   /** Batch import callback for importing solves from files. */
   onImportSolves?: (solves: Array<{ time: number; penalty: import('@/types').Penalty; scramble: string; method?: string; timestamp: number; note?: string; source: import('@/types').SolveSource; puzzleType?: string }>) => Promise<void>;
+  /** Export a JSON file containing every session's solves (full fidelity). */
+  onExportAllJSON?: () => Promise<void>;
   settingsOpen?: boolean;
   onSettingsOpenChange?: (open: boolean) => void;
   /** Section to show when the settings dialog opens (e.g. 'profile'). */
@@ -72,6 +74,7 @@ export function LeftSidebar({
   solves,
   sessionName,
   onImportSolves,
+  onExportAllJSON,
   settingsOpen: externalSettingsOpen,
   onSettingsOpenChange,
   settingsInitialSection,
@@ -335,6 +338,7 @@ export function LeftSidebar({
           solves={solves}
           sessionName={sessionName}
           onImportSolves={onImportSolves}
+          onExportAllJSON={onExportAllJSON}
         />
         {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
             used to leak into the layout top-left in the touch regime (e.g.
@@ -390,6 +394,7 @@ export function LeftSidebar({
         solves={solves}
         sessionName={sessionName}
         onImportSolves={onImportSolves}
+        onExportAllJSON={onExportAllJSON}
       />
     </>
   );

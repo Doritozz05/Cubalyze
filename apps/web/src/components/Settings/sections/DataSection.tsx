@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStorageStatusStore } from '@/stores/storageStatus';
-import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToJSON, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
+import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
 import { PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
 import type { Solve, PuzzleCategory } from '@/types';
@@ -17,6 +17,8 @@ export interface DataSectionProps {
   sessionName?: string;
   /** Batch import callback — adds multiple solves at once. */
   onImportSolves?: (solves: ReturnType<typeof toSolveInput>[]) => Promise<void>;
+  /** Export a JSON file containing every session's solves (full fidelity). */
+  onExportAllJSON?: () => Promise<void>;
 }
 
 /**
@@ -28,9 +30,13 @@ export interface DataSectionProps {
  * - JSON export (full metadata)
  * - Import from csTimer / CubeForge / generic CSV with preview
  */
-export const DataSection = memo(function DataSection({ solves, sessionName, onImportSolves }: DataSectionProps) {
+export const DataSection = memo(function DataSection({ solves, sessionName, onImportSolves, onExportAllJSON }: DataSectionProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [importState, setImportState] = useState<'idle' | 'preview' | 'importing' | 'done' | 'error'>('idle');
+  // 'category': legacy flow — user picks 2x2/3x3/etc and ALL solves are forced
+  // into that category. 'json': full-fidelity CubeForge JSON flow — per-solve
+  // puzzleType (and every other field) is preserved as-is.
+  const [importMode, setImportMode] = useState<'category' | 'json'>('category');
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [importResult, setImportResult] = useState<{
     imported: number;
@@ -38,7 +44,9 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
   } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   // Puzzle category selected before importing — solves are stored into it.
+  // Only used in 'category' mode; ignored in 'json' mode.
   const [importCategory, setImportCategory] = useState<PuzzleCategory | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +71,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
         setImportError(null);
         setDragOver(false);
         setImportCategory(null);
+        setImportMode('category');
         fileContentRef.current = '';
       }, 200);
       return () => clearTimeout(t);
@@ -126,12 +135,28 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     setImportState('importing');
     try {
       const result = parseImport(fileContentRef.current);
-      // Force the user-selected category so solves always land where the
-      // user picked — never rely on puzzle inference for placement.
-      const puzzleType = importCategory ? puzzleCategoryToType(importCategory) : undefined;
-      const inputs = result.solves.map((s) =>
-        toSolveInput(puzzleType ? { ...s, puzzleType } : s),
-      );
+
+      let inputs: ReturnType<typeof toSolveInput>[];
+      if (importMode === 'json') {
+        // Full-fidelity path: CubeForge JSON — keep the per-solve puzzleType
+        // (and everything else) exactly as exported. Never force a category.
+        if (importPreview.format !== 'cubeforge-json') {
+          setImportError(
+            'This file is not a CubeForge JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.',
+          );
+          setImportState('error');
+          return;
+        }
+        inputs = result.solves.map((s) => toSolveInput(s));
+      } else {
+        // Legacy path: force the user-selected category so solves always
+        // land where the user picked — never rely on puzzle inference.
+        const puzzleType = importCategory ? puzzleCategoryToType(importCategory) : undefined;
+        inputs = result.solves.map((s) =>
+          toSolveInput(puzzleType ? { ...s, puzzleType } : s),
+        );
+      }
+
       await onImportSolves(inputs);
 
       setImportResult({
@@ -143,7 +168,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       setImportError('Import failed: ' + (e instanceof Error ? e.message : String(e)));
       setImportState('error');
     }
-  }, [importPreview, onImportSolves, importCategory]);
+  }, [importPreview, onImportSolves, importCategory, importMode]);
 
   // ── Export handlers ──────────────────────────────────────────────────
   const handleExportCSV = () => {
@@ -160,12 +185,13 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     downloadFile(csv, `cubeforge-${name}-cstimer.csv`, 'text/csv;charset=utf-8');
   };
 
-  const handleExportJSON = () => {
-    if (solves.length === 0) return;
-    const json = exportSolvesToJSON(solves, sessionName);
-    const name = (sessionName ?? 'session').replace(/[^a-z0-9_-]/gi, '_');
-    downloadFile(json, `cubeforge-${name}.json`, 'application/json');
-  };
+  const handleExportAllJSON = useCallback(() => {
+    if (!onExportAllJSON || exportingAll) return;
+    setExportingAll(true);
+    onExportAllJSON()
+      .catch(() => toast.error("Couldn't export all sessions. Try again."))
+      .finally(() => setExportingAll(false));
+  }, [onExportAllJSON, exportingAll]);
 
   const handleExportExcel = () => {
     if (solves.length === 0 || exportingExcel) return;
@@ -217,13 +243,23 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
               Import from csTimer, Twisty Timer, CubeDesk, or any CSV file.
             </p>
           </div>
-          <button
-            onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); }}
-            disabled={!onImportSolves}
-            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
-          >
-            Import data
-          </button>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            <button
+              onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); setImportMode('category'); }}
+              disabled={!onImportSolves}
+              className="rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
+            >
+              Import data
+            </button>
+            <button
+              onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); setImportMode('json'); }}
+              disabled={!onImportSolves}
+              className="rounded-lg border border-ready/25 bg-ready/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ready transition-all hover:bg-ready/10 hover:border-ready/40 cursor-pointer"
+              title="Restores a CubeForge JSON export exactly — per-solve puzzle type and all metadata preserved."
+            >
+              Import CubeForge JSON (no data loss)
+            </button>
+          </div>
         </div>
 
         {/* ── CubeForge CSV ─────────────────────────────────────────── */}
@@ -273,26 +309,25 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           </button>
         </div>
 
-        {/* ── JSON Export ───────────────────────────────────────────── */}
-        <div className="group flex items-center justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        {/* ── Export ALL sessions (JSON) ───────────────────────────── */}
+        <div className="group flex items-center justify-between gap-6 rounded-xl border border-ready/20 bg-ready/[0.03] p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <FileJson className="size-4 text-ink-2" />
-              <h4 className="text-[0.85rem] font-medium text-ink">JSON export</h4>
+              <FileJson className="size-4 text-ready" />
+              <h4 className="text-[0.85rem] font-medium text-ink">Export all sessions (JSON)</h4>
+              <span className="rounded-full bg-ready/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-ready">No data loss</span>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
-              Full machine-readable export with all solve metadata. Re-importable to CubeForge with no data loss.
+              Exports <strong className="text-ink-2">every session</strong> with all metadata per solve (including puzzle type and smart/manual source).
+              Re-import with “Import CubeForge JSON (no data loss)” to restore all solves into your current session with nothing lost per solve.
             </p>
-            {isEmpty && (
-              <p className="mt-1 text-[0.62rem] text-ink-3/60">No solves to export yet.</p>
-            )}
           </div>
           <button
-            onClick={handleExportJSON}
-            disabled={isEmpty}
-            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={handleExportAllJSON}
+            disabled={!onExportAllJSON || exportingAll}
+            className="shrink-0 rounded-lg border border-ready/30 bg-ready/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ready transition-all hover:bg-ready/10 hover:border-ready/50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Export JSON
+            {exportingAll ? 'Exporting…' : 'Export all'}
           </button>
         </div>
 
@@ -356,7 +391,62 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             <div className="overflow-y-auto p-5">
               {importState === 'idle' && (
                 <div className="flex flex-col gap-5">
-                  {!importCategory ? (
+                  {importMode === 'json' ? (
+                    /* ── Full-fidelity CubeForge JSON flow (no category) ── */
+                    <>
+                      <div className="flex items-start gap-3 rounded-lg border border-ready/20 bg-ready/5 p-3">
+                        <Check className="mt-0.5 size-4 shrink-0 text-ready" />
+                        <div>
+                          <p className="text-[0.72rem] font-medium text-ready">
+                            CubeForge JSON — no data loss
+                          </p>
+                          <p className="mt-0.5 text-[0.62rem] text-ink-3 leading-relaxed">
+                            Every solve keeps its original puzzle type (2x2, 3x3, …), method, notes, source and timestamp —
+                            exactly as exported. No category selection needed.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setImportMode('category')}
+                        className="flex w-fit items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink cursor-pointer"
+                      >
+                        <ArrowLeft className="size-3" />
+                        Use category import instead
+                      </button>
+
+                      <div
+                        onDragOver={onDragOver}
+                        onDragLeave={onDragLeave}
+                        onDrop={onDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                          'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 px-6 transition-colors cursor-pointer',
+                          dragOver
+                            ? 'border-ready bg-ready/5'
+                            : 'border-line hover:border-ready/30 hover:bg-surface-2/50',
+                        )}
+                      >
+                        <div className="grid size-12 place-items-center rounded-full bg-surface-2">
+                          <FileUp className={cn('size-5', dragOver ? 'text-ready' : 'text-ink-3/50')} />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[0.78rem] font-medium text-ink">
+                            Drop your CubeForge JSON here or click to browse
+                          </p>
+                          <p className="mt-1 text-[0.65rem] text-ink-3">
+                            Files exported with “Export all sessions (JSON)”
+                          </p>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".json"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </div>
+                    </>
+                  ) : !importCategory ? (
                     /* ── Step 1: pick the puzzle category ──────────────── */
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2.5">
@@ -504,10 +594,12 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                     </button>
                     <button
                       onClick={() => void handleConfirmImport()}
-                      disabled={!importCategory}
+                      disabled={importMode === 'category' && !importCategory}
                       className="rounded-md bg-ink px-4 py-1.5 text-[0.68rem] font-medium text-surface hover:bg-ink/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
-                      Import {importPreview.rowCount} solves{importCategory ? ` into ${importCategory}` : ''}
+                      {importMode === 'json'
+                        ? `Import ${importPreview.rowCount} solves (no data loss)`
+                        : `Import ${importPreview.rowCount} solves${importCategory ? ` into ${importCategory}` : ''}`}
                     </button>
                   </div>
                 </div>

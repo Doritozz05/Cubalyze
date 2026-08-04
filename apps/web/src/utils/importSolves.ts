@@ -34,6 +34,8 @@ export interface ImportedSolve {
   category?: string;
   /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
   puzzleType?: string;
+  /** How the solve was recorded ('smart' | 'manual') — preserved from CubeForge JSON. */
+  source?: SolveSource;
 }
 
 export interface ImportResult {
@@ -808,23 +810,63 @@ interface CubeForgeExport {
   }>;
 }
 
+interface CubeForgeAllExport {
+  exportedAt: string;
+  app: string;
+  sessionCount: number;
+  sessions: Array<{
+    sessionName: string;
+    solveCount: number;
+    solves: Array<{
+      timeMs: number;
+      penalty: string;
+      scramble: string;
+      timestamp: number;
+      method?: string;
+      note?: string;
+      source?: string;
+      puzzleType?: string;
+    }>;
+  }>;
+}
+
+function toImportedSolve(s: CubeForgeExport["solves"][number]): ImportedSolve {
+  return {
+    time: s.timeMs,
+    penalty: normalizePenalty(s.penalty),
+    scramble: s.scramble ?? "",
+    timestamp: s.timestamp ?? Date.now(),
+    method: s.method && isSolveMethod(s.method) ? (s.method as SolveMethod) : undefined,
+    note: s.note,
+    puzzleType: s.puzzleType ?? inferPuzzleType(s.scramble ?? ""),
+    source: s.source === "smart" || s.source === "manual" ? s.source : undefined,
+  };
+}
+
 function parseJsonImport(content: string): ImportResult {
   try {
     const data = JSON.parse(content);
 
     // Detect CubeForge JSON
-    if (data.app === "CubeForge" && Array.isArray(data.solves)) {
-      const export_ = data as CubeForgeExport;
-      const solves: ImportedSolve[] = export_.solves.map((s) => ({
-        time: s.timeMs,
-        penalty: normalizePenalty(s.penalty),
-        scramble: s.scramble ?? "",
-        timestamp: s.timestamp ?? Date.now(),
-        method: s.method && isSolveMethod(s.method) ? (s.method as SolveMethod) : undefined,
-        note: s.note,
-        puzzleType: s.puzzleType ?? inferPuzzleType(s.scramble ?? ""),
-      }));
-      return { solves, errors: [], format: "cubeforge-json" };
+    if (data.app === "CubeForge") {
+      // Single-session export: { app, sessionName, solves }
+      if (Array.isArray(data.solves)) {
+        const export_ = data as CubeForgeExport;
+        const solves: ImportedSolve[] = export_.solves.map(toImportedSolve);
+        return { solves, errors: [], format: "cubeforge-json" };
+      }
+
+      // Full export: { app, sessions: [{ sessionName, solves }] } — flattens
+      // every session's solves, preserving each solve's per-solve metadata.
+      if (Array.isArray(data.sessions)) {
+        const export_ = data as CubeForgeAllExport;
+        const solves: ImportedSolve[] = [];
+        for (const session of export_.sessions) {
+          if (!Array.isArray(session.solves)) continue;
+          for (const s of session.solves) solves.push(toImportedSolve(s));
+        }
+        return { solves, errors: [], format: "cubeforge-json" };
+      }
     }
 
     return { solves: [], errors: [{ line: 0, message: "Unrecognized JSON structure" }], format: "unknown" };
@@ -1037,6 +1079,6 @@ export function toSolveInput(
     timestamp: imported.timestamp,
     note: imported.note,
     puzzleType: imported.puzzleType ?? inferPuzzleType(imported.scramble),
-    source: "manual" as SolveSource,
+    source: imported.source ?? "manual",
   };
 }

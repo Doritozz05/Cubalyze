@@ -48,6 +48,8 @@ export interface SettingsDialogProps {
   sessionName?: string;
   /** Batch import callback for importing solves from files. */
   onImportSolves?: (solves: ReturnType<typeof import('@/utils/importSolves').toSolveInput>[]) => Promise<void>;
+  /** Export a JSON file containing every session's solves (full fidelity). */
+  onExportAllJSON?: () => Promise<void>;
 }
 
 const sectionVariants = {
@@ -74,7 +76,7 @@ const sectionVariants = {
  * - Clean header area with title + description
  * - Modular: each section is a separate component
  */
-export function SettingsDialog({ open, onOpenChange, initialSection, solves, sessionName, onImportSolves }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, initialSection, solves, sessionName, onImportSolves, onExportAllJSON }: SettingsDialogProps) {
   const isTouch = useIsTouch();
   const [activeSection, setActiveSection] = useState('appearance');
   const prevSection = useRef('appearance');
@@ -123,7 +125,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
       case 'shortcuts':
         return <ShortcutsSection />;
       case 'data':
-        return <DataSection solves={solves ?? []} sessionName={sessionName} onImportSolves={onImportSolves} />;
+        return <DataSection solves={solves ?? []} sessionName={sessionName} onImportSolves={onImportSolves} onExportAllJSON={onExportAllJSON} />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {
@@ -132,7 +134,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return null;
       }
     }
-  }, [activeSection, solves, sessionName, onImportSolves]);
+  }, [activeSection, solves, sessionName, onImportSolves, onExportAllJSON]);
 
   const innerContent = (
     <div className="flex h-full min-h-0">
