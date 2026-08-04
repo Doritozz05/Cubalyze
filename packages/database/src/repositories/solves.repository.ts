@@ -193,6 +193,24 @@ export class SolvesRepository {
     return (rows[0] as { cnt: number }).cnt;
   }
 
+  /**
+   * Count solves per session in a single GROUP BY query.
+   *
+   * Replaces N separate `findAll(sessionId)` round-trips when only counts are
+   * needed (e.g. building the session list at startup), so startup cost does
+   * not grow linearly with the number of sessions.
+   */
+  async countBySession(): Promise<Map<string, number>> {
+    const rows = await this.db(
+      'SELECT session_id AS sid, COUNT(*) AS cnt FROM solves GROUP BY session_id'
+    );
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      counts.set(String(row.sid), Number(row.cnt));
+    }
+    return counts;
+  }
+
   /** Count solves that are NOT demo data (the user's real solves). */
   async countNonDemo(): Promise<number> {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM solves WHERE is_demo = 0');

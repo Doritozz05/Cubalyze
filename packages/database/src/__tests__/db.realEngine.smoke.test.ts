@@ -218,4 +218,36 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     expect(await solvesRepo.insertMany([])).toBe(0);
     expect(await solvesRepo.count()).toBe(countBefore);
   });
+
+  it('countBySession returns per-session counts in one query', async () => {
+    const a = UUID(5);
+    const b = UUID(6);
+    await sessionsRepo.insert({
+      id: a,
+      name: 'Counts A',
+      puzzleType: '3x3x3',
+      createdAt: 1_700_000_000_000,
+    });
+    await sessionsRepo.insert({
+      id: b,
+      name: 'Counts B',
+      puzzleType: '3x3x3',
+      createdAt: 1_700_000_000_000,
+    });
+
+    await solvesRepo.insertMany(
+      Array.from({ length: 7 }, (_, i) => makeSolve(4000 + i, a, 1_700_000_000_000)),
+    );
+    await solvesRepo.insertMany(
+      Array.from({ length: 3 }, (_, i) => makeSolve(4100 + i, b, 1_700_000_000_000)),
+    );
+
+    const counts = await solvesRepo.countBySession();
+    // Session-scoped asserts — the suite shares one in-memory DB, so other
+    // sessions may also be present in the Map.
+    expect(counts.get(a)).toBe(7);
+    expect(counts.get(b)).toBe(3);
+    // Sessions without solves are absent — callers must default to 0.
+    expect(counts.has(UUID(99))).toBe(false);
+  }, 30_000);
 });

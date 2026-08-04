@@ -199,19 +199,17 @@ export function usePersistentSession(): UsePersistentSessionResult {
 
         if (!isMounted) return;
 
-        // Fetch counts and map to SessionMeta
-        const metaSessions: SessionMeta[] = [];
-        for (const s of allSessions) {
-          const sessionSolves = await solvesRepo.findAll(s.id);
-          metaSessions.push({
-            id: s.id,
-            name: s.name,
-            puzzle: s.puzzleType,
-            createdAt: s.createdAt,
-            updatedAt: s.updatedAt ?? s.createdAt,
-            solveCount: sessionSolves.length,
-          });
-        }
+        // Fetch counts in one GROUP BY query instead of N findAll() calls
+        // (startup cost no longer scales with the number of sessions).
+        const sessionCounts = await solvesRepo.countBySession();
+        const metaSessions: SessionMeta[] = allSessions.map((s) => ({
+          id: s.id,
+          name: s.name,
+          puzzle: s.puzzleType,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt ?? s.createdAt,
+          solveCount: sessionCounts.get(s.id) ?? 0,
+        }));
         
         setSessions(metaSessions);
         setActiveSessionId(lastActive);
