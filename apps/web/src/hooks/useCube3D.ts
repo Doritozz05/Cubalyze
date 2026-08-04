@@ -55,8 +55,10 @@ export interface UseCube3DResult {
   calibrate: () => void;
   /** Reset cube pieces to solved state. */
   reset: () => void;
-  /** Apply a scramble string to the 3D cube model. */
+  /** Apply a scramble string to the 3D cube model (animated when possible). */
   applyScramble: (scrambleString?: string) => void;
+  /** Zoom the camera by a wheel-delta-like amount (positive = zoom out). */
+  zoomCamera: (delta: number) => void;
   /** Rotate camera view by delta X and delta Y (for orbit controls). */
   rotateCamera: (dx: number, dy: number) => void;
   /** Direct ref to the underlying Cube3DEngine instance. */
@@ -291,21 +293,37 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     setRecentMoves([]);
   }, []);
 
-  const applyScramble = useCallback((scrambleString?: string) => {
+  const applyScramble = useCallback(async (scrambleString?: string) => {
     const targetScramble = scrambleString || options.scramble;
     if (!engineRef.current || !targetScramble || !targetScramble.trim()) return;
+
+    const engine = engineRef.current;
+    const trimmed = targetScramble.trim();
+
+    // Preferred path: play the scramble as animated moves (adaptive duration
+    // per angle) for a premium feel. Falls back to instant facelet sync when
+    // the scramble has unsupported tokens (wide moves, rotations) or errors.
+    try {
+      const animated = await engine.applyScrambleAnimated(trimmed);
+      if (animated) {
+        setRecentMoves([]);
+        return;
+      }
+    } catch (e) {
+      console.warn("[useCube3D] Animated scramble failed, falling back:", e);
+    }
 
     try {
       if (order === 2) {
         const state = new Cube2x2State();
-        state.applySequence(targetScramble.trim());
+        state.applySequence(trimmed);
         const facelets = Cube2x2FaceletConverter.toFaceletString(state);
-        engineRef.current.syncFacelets(facelets);
+        engine.syncFacelets(facelets);
       } else {
         const state = new CubeState();
-        state.applySequence(targetScramble.trim());
+        state.applySequence(trimmed);
         const facelets = FaceletStringConverter.toFaceletString(state);
-        engineRef.current.syncFacelets(facelets);
+        engine.syncFacelets(facelets);
       }
       setRecentMoves([]);
     } catch (e) {
@@ -315,6 +333,10 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
   const rotateCamera = useCallback((dx: number, dy: number) => {
     engineRef.current?.rotateCamera(dx, dy);
+  }, []);
+
+  const zoomCamera = useCallback((delta: number) => {
+    engineRef.current?.zoomCamera(delta);
   }, []);
 
   return {
@@ -328,6 +350,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     reset,
     applyScramble,
     rotateCamera,
+    zoomCamera,
     engineRef,
   };
 }

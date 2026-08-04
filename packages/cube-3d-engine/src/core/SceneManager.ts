@@ -198,6 +198,22 @@ export class SceneManager {
     this.camera.lookAt(0, 0, 0);
   }
 
+  /**
+   * Scale the orbit radius by `factor` (> 1 zooms in, < 1 zooms out),
+   * clamped to [minOrbitRadius, maxOrbitRadius]. Preserves the current
+   * viewing angles (theta/phi).
+   */
+  public zoomBy(factor: number): void {
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    const spherical = new Spherical().setFromVector3(this.camera.position);
+    spherical.radius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, spherical.radius * factor),
+    );
+    this.camera.position.setFromSpherical(spherical);
+    this.camera.lookAt(0, 0, 0);
+  }
+
   /** Resets the camera to the default front-facing position. */
   public resetCamera(): void {
     this.camera.position.set(0, 0, this.orbitRadius);

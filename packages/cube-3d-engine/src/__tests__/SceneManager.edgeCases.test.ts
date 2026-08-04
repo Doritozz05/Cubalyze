@@ -181,6 +181,84 @@ describe('SceneManager — Level 2 Edge Cases', () => {
   });
 
   // ────────────────────────────────────────────────────────────────────
+  //  zoomBy
+  // ────────────────────────────────────────────────────────────────────
+
+  describe('zoomBy — edge cases', () => {
+    it('zoomBy(1) is a no-op', () => {
+      sceneManager.zoomBy(1);
+      expect(sceneManager.camera.position.z).toBeCloseTo(7, 5);
+    });
+
+    it('zoomBy(2) doubles the orbit radius (7 → 14)', () => {
+      sceneManager.zoomBy(2);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(14, 5);
+    });
+
+    it('zoomBy(0.5) halves the orbit radius (7 → 3.5)', () => {
+      sceneManager.zoomBy(0.5);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(3.5, 5);
+    });
+
+    it('zoomBy(100) clamps at maxOrbitRadius (20)', () => {
+      sceneManager.zoomBy(100);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(20, 5);
+    });
+
+    it('zoomBy(0.0001) clamps at minOrbitRadius (2)', () => {
+      sceneManager.zoomBy(0.0001);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(2, 5);
+    });
+
+    it('zoomBy with NaN, 0 or negative factor is a no-op', () => {
+      const before = sceneManager.camera.position.clone();
+      sceneManager.zoomBy(NaN);
+      sceneManager.zoomBy(0);
+      sceneManager.zoomBy(-2);
+      expect(sceneManager.camera.position.distanceTo(before)).toBeCloseTo(0, 5);
+    });
+
+    it('zoomBy preserves the viewing angles (theta/phi)', () => {
+      sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+      const before = sceneManager.camera.position.clone().normalize();
+      sceneManager.zoomBy(1.5);
+      const after = sceneManager.camera.position.clone().normalize();
+      expect(after.distanceTo(before)).toBeCloseTo(0, 5);
+    });
+
+    it('zoom in then zoom out returns to the same radius (round-trip)', () => {
+      sceneManager.zoomBy(1.4);
+      sceneManager.zoomBy(1 / 1.4);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(7, 5);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────
   //  resetCamera
   // ────────────────────────────────────────────────────────────────────
 

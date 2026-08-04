@@ -28,28 +28,79 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     reset,
     applyScramble,
     rotateCamera,
+    zoomCamera,
+    engineRef,
   } = useCube3D({ maxRecentMoves: 15, order, scramble });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
+  // Active pointers (for two-finger pinch zoom on trackpads / touch).
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinchDistRef = useRef(0);
+
+  const currentPinchDistance = () => {
+    const pts = [...pointers.current.values()];
+    if (pts.length < 2) return 0;
+    const [a, b] = pts;
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    setIsDragging(true);
-    lastPos.current = { x: e.clientX, y: e.clientY };
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 1) {
+      setIsDragging(true);
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      // Arm the engine inertia: stop any leftover glide from a previous drag.
+      engineRef.current?.setCameraDragActive(true);
+    } else if (pointers.current.size === 2) {
+      // Second finger lands → capture the starting span for pinch zoom, and
+      // re-arm so no stale single-finger velocity glides after the pinch.
+      pinchDistRef.current = currentPinchDistance();
+      engineRef.current?.setCameraDragActive(true);
+    }
     (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Two fingers → pinch zoom (spread = zoom in, pinch = zoom out).
+    if (pointers.current.size >= 2) {
+      const dist = currentPinchDistance();
+      if (pinchDistRef.current > 0 && dist > 0) {
+        const ratio = dist / pinchDistRef.current;
+        // Convert the span delta to wheel-delta units for zoomCamera.
+        zoomCamera((1 - ratio) * 600);
+        pinchDistRef.current = dist;
+      }
+      return;
+    }
+
     if (!isDragging) return;
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
+    // Feeds engine camera momentum → inertia glide on release.
     rotateCamera(dx, dy);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    setIsDragging(false);
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size === 0) {
+      setIsDragging(false);
+      // Release: let the engine glide the camera with inertia.
+      engineRef.current?.setCameraDragActive(false);
+    } else if (pointers.current.size === 1) {
+      // Back to one finger → reset baseline so the next move doesn't jump.
+      const remaining = [...pointers.current.values()][0];
+      lastPos.current = { x: remaining.x, y: remaining.y };
+    }
     (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    zoomCamera(e.deltaY);
   };
 
   return (
@@ -129,13 +180,14 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
         <canvas
           ref={canvasRef as React.RefObject<HTMLCanvasElement>}
           className={cn(
-            "absolute inset-0 h-full w-full outline-none",
+            "absolute inset-0 h-full w-full outline-none touch-none",
             isDragging ? "cursor-grabbing" : "cursor-grab"
           )}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
+          onWheel={handleWheel}
         />
 
         {/* Loading state overlay — pointer-events-none so the canvas can still

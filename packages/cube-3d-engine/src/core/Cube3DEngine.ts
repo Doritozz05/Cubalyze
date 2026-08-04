@@ -3,6 +3,7 @@ import { SceneManager } from './SceneManager';
 import { CubeMeshFactory, type CubeStyleOptions } from './CubeMeshFactory';
 import { CubeModel } from './CubeModel';
 import { RotationEngine, type RotationAxis } from '../animation/RotationEngine';
+import { parseScrambleMoves, scrambleMoveDurationMs } from '../animation/ScrambleAnimator';
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable, type PhaseMask } from '@cubeforge/math-core';
@@ -64,6 +65,23 @@ export class Cube3DEngine {
    * stops entirely, saving CPU/GPU/battery on an idle but mounted cube.
    */
   private needsRender = false;
+
+  /**
+   * Camera drag inertia state machine:
+   *   'idle'     — inertia not armed. `rotateCamera` only applies the direct
+   *                rotation (legacy behavior) for flows that never call
+   *                `setCameraDragActive` (Case3DCanvas, etc.).
+   *   'dragging' — pointer down (armed by the UI). Velocity is recorded and
+   *                aged each frame, but not applied (rotation is direct).
+   *   'gliding'  — released. The stored velocity decays and rotates the
+   *                camera until it drops below the threshold.
+   */
+  private cameraMomentumState: 'idle' | 'dragging' | 'gliding' = 'idle';
+  private cameraMomentum: { x: number; y: number; lastApplyTime: number } | null = null;
+  /** Momentum below this magnitude (px/frame) stops the inertia glide. */
+  private readonly cameraMomentumThreshold = 0.01;
+  /** Exponential decay per ~16.7ms frame — ~12% velocity loss per frame. */
+  private readonly cameraMomentumDecay = 0.88;
 
   /** Track grayed-out sticker meshes so we can restore + dispose them. */
   private grayedStickers: { mesh: Mesh; originalMat: Material }[] = [];
@@ -204,6 +222,48 @@ export class Cube3DEngine {
     if (this.sceneManager) {
       this.sceneManager.rotateCamera(dx, dy);
     }
+    // Record the drag velocity for the inertia glide — only in flows that
+    // armed the drag via setCameraDragActive (otherwise keep the legacy
+    // direct-rotation-only behavior for Case3DCanvas and friends).
+    if (this.cameraMomentumState !== 'idle') {
+      this.cameraMomentum = { x: dx, y: dy, lastApplyTime: performance.now() };
+    }
+    this.requestRender();
+  }
+
+  /**
+   * Mark whether the camera is being dragged. Call with `true` on pointer
+   * down and `false` on pointer up. While `dragging` the momentum system
+   * only ages the stored velocity (so direct rotateCamera calls aren't
+   * doubled); on release it glides the camera with inertia.
+   */
+  public setCameraDragActive(active: boolean): void {
+    if (active) {
+      this.cameraMomentumState = 'dragging';
+      this.cameraMomentum = null; // drop any leftover glide
+    } else if (this.cameraMomentumState === 'dragging') {
+      if (this.cameraMomentum) {
+        // Release with motion → glide with inertia. Reset the decay clock so
+        // the first glide frame doesn't jump.
+        this.cameraMomentumState = 'gliding';
+        this.cameraMomentum = { ...this.cameraMomentum, lastApplyTime: performance.now() };
+      } else {
+        // Plain click without motion → back to idle, nothing to glide.
+        this.cameraMomentumState = 'idle';
+      }
+    }
+  }
+
+  /**
+   * Zoom the camera by a wheel-delta-like amount (positive = zoom out,
+   * negative = zoom in). Converted to an exponential radius factor so the
+   * zoom rate feels proportional at any distance.
+   */
+  public zoomCamera(deltaY: number): void {
+    if (!this.sceneManager) return;
+    if (!Number.isFinite(deltaY) || deltaY === 0) return;
+    const factor = Math.exp(-deltaY / 1200);
+    this.sceneManager.zoomBy(factor);
     this.requestRender();
   }
 
@@ -230,6 +290,8 @@ export class Cube3DEngine {
     if (this.sceneManager) {
       this.sceneManager.resetCamera();
     }
+    this.cameraMomentum = null;
+    this.cameraMomentumState = 'idle';
     this.gyroFusion.calibrate();
     this.requestRender();
   }
@@ -293,6 +355,8 @@ export class Cube3DEngine {
 
   public setIsometricView(): void {
     if (!this.sceneManager) return;
+    this.cameraMomentum = null;
+    this.cameraMomentumState = 'idle';
     this.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
     this.requestRender();
   }
@@ -530,6 +594,42 @@ export class Cube3DEngine {
   }
 
   /**
+   * Play a WCA scramble string as a sequence of animated layer rotations.
+   *
+   * Each move animates with the smooth easing and an adaptive duration
+   * proportional to its angle (90° vs 180°). Returns `false` (without
+   * touching the cube) when the scramble is empty or contains a move the
+   * engine cannot animate — callers should fall back to instant facelet
+   * sync in that case.
+   */
+  public async applyScrambleAnimated(
+    scramble: string,
+    baseDurationMs = 160,
+  ): Promise<boolean> {
+    if (!this.model || !this.rotationEngine) return false;
+    const moves = parseScrambleMoves(scramble);
+    if (!moves || moves.length === 0) return false;
+
+    // Match the old instant-sync semantics: the scramble always plays from
+    // the solved state, never compounding on whatever the cube currently is.
+    this.resetCube();
+
+    this.requestRender();
+    for (const move of moves) {
+      await this.rotateLayers(
+        move.axis,
+        [move.layerValue],
+        move.angle,
+        scrambleMoveDurationMs(move.angle, baseDurationMs),
+        undefined,
+        'smooth',
+      );
+    }
+    this.requestRender();
+    return true;
+  }
+
+  /**
    * True when any animation system still has work to do on the next frame.
    * Used by {@link loop} to decide whether to keep the rAF cycle alive.
    */
@@ -537,6 +637,7 @@ export class Cube3DEngine {
     if (this.orientationAnim) return true;
     if (this.rotationEngine?.isAnimating()) return true;
     if (this.gyroFusion?.isEnabled()) return true;
+    if (this.cameraMomentum && this.cameraMomentumState !== 'idle') return true;
     return false;
   }
 
@@ -548,6 +649,39 @@ export class Cube3DEngine {
 
     if (this.rotationEngine) this.rotationEngine.update(timeMs);
     if (this.gyroFusion) this.gyroFusion.update(deltaMs);
+
+    // Camera inertia. While 'dragging', the rotation is applied directly by
+    // rotateCamera() — here we only age the stored velocity so a long hold
+    // can't leave a stale flick on release. Once released ('gliding'), we
+    // decay the velocity and keep rotating until it falls below the
+    // threshold. Keeps the loop alive via hasActiveAnimation.
+    if (this.cameraMomentum && this.cameraMomentumState !== 'idle') {
+      const dt = Math.min(Math.max((timeMs - this.cameraMomentum.lastApplyTime) / 16.667, 0), 3);
+      const decay = Math.pow(this.cameraMomentumDecay, dt);
+
+      if (this.cameraMomentumState === 'dragging') {
+        // Pointer down: don't rotate here (would double the drag) — just age
+        // the velocity so the release glide reflects recent motion only.
+        this.cameraMomentum = {
+          x: this.cameraMomentum.x * decay,
+          y: this.cameraMomentum.y * decay,
+          lastApplyTime: timeMs,
+        };
+      } else {
+        const mx = this.cameraMomentum.x * decay;
+        const my = this.cameraMomentum.y * decay;
+        if (
+          Math.abs(mx) < this.cameraMomentumThreshold &&
+          Math.abs(my) < this.cameraMomentumThreshold
+        ) {
+          this.cameraMomentum = null;
+          this.cameraMomentumState = 'idle';
+        } else {
+          this.sceneManager?.rotateCamera(mx, my);
+          this.cameraMomentum = { x: mx, y: my, lastApplyTime: timeMs };
+        }
+      }
+    }
 
     if (this.orientationAnim && this.model) {
       const elapsed = timeMs - this.orientationAnim.startTime;
@@ -587,6 +721,8 @@ export class Cube3DEngine {
       this.animFrameId = null;
     }
     this.needsRender = false;
+    this.cameraMomentum = null;
+    this.cameraMomentumState = 'idle';
     this.orientationSub?.unsubscribe();
     this.rotationEventSub?.unsubscribe();
     if (this.orientationTracker) this.orientationTracker.dispose();
