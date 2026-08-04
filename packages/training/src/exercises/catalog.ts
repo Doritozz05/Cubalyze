@@ -277,8 +277,6 @@ export function buildExerciseCatalog(): ExerciseDefinition[] {
     }
 
     for (const phase of buildMethodPhases(method.name)) {
-      const subsetId = findSubsetId(method.id, phase.id);
-
       const practiceType = getPhasePracticeType(phase.id);
       if (!practiceType) continue;
       const modes = getPhaseModes(practiceType);
