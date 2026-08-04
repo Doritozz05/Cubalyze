@@ -135,7 +135,7 @@ export function PracticeDashboard({
             {selectedCase && !isTouch && (
               <div
                 className={cn(
-                  "flex min-h-0 flex-col border-l border-line bg-surface",
+                  "flex min-h-0 flex-col rounded-lg border-l border-line bg-surface",
                   "w-full lg:w-80",
                 )}
               >
