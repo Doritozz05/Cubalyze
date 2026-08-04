@@ -2,7 +2,7 @@
 
 > **Documento de diseño del onboarding de primer uso.**
 > Fecha: Agosto 2026
-> Estado: **Borrador de diseño — sin código.** Requiere TDD aprobado antes de implementar (pipeline de `docs/14-ai/AGENTS.md`).
+> Estado: **Fases F0–F5 implementadas** (TDD-0020 aprobado e implementado el mismo día). Pendiente: verificación browser final.
 > Decisiones confirmadas por el usuario: **gate = flag en `app_meta`** y **formato = spotlight walkthrough** (highlight del elemento real + tooltip, con navegación automática entre tabs). Fuera de alcance explícito: **Skill Tree y Training** (no se tocan como stops del tour).
 > Método: investigación de referencias → extracción de patrones → arquitectura → diseño UX → micro-copy → plan por fases → decisiones y riesgos.
 
