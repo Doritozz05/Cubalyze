@@ -1,17 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
-import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
-import { TrainingDashboard } from "@/views/Training/TrainingDashboard";
-import { UltraSkillTreeView } from "@/views/SkillTree/UltraSkillTreeView";
-import { ProfileView } from "@/views/Profile/ProfileView";
+import { lazy, Suspense, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { SolveMetrics } from "@cubeforge/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
+
+// Heavy views are code-split: each loads its own chunk only when the user
+// visits it, keeping the initial bundle (timer + shell) small. The timer
+// stage stays eager — it is the landing screen users see first.
+const InsightsDashboard = lazy(() =>
+  import("@/components/Insights/InsightsDashboard").then((m) => ({ default: m.InsightsDashboard })),
+);
+const PracticeDashboard = lazy(() =>
+  import("@/views/Practice/PracticeDashboard").then((m) => ({ default: m.PracticeDashboard })),
+);
+const TrainingDashboard = lazy(() =>
+  import("@/views/Training/TrainingDashboard").then((m) => ({ default: m.TrainingDashboard })),
+);
+const UltraSkillTreeView = lazy(() =>
+  import("@/views/SkillTree/UltraSkillTreeView").then((m) => ({ default: m.UltraSkillTreeView })),
+);
+const ProfileView = lazy(() =>
+  import("@/views/Profile/ProfileView").then((m) => ({ default: m.ProfileView })),
+);
+
+/** Tiny fallback shown while a lazy view chunk downloads. */
+function ViewFallback() {
+  return (
+    <div className="flex h-full min-h-[60vh] w-full items-center justify-center">
+      <Loader2 className="size-8 animate-spin text-ink-3" />
+    </div>
+  );
+}
 
 export interface MainStageProps {
   activeView: ViewId;
@@ -71,49 +95,63 @@ export function MainStage(props: MainStageProps) {
 
   if (activeView === "insights") {
     return (
-      <InsightsDashboard
-        key={sessionId ?? "none"}
-        solves={solves}
-        sessions={sessions}
-        fetchSessionSolves={fetchSessionSolves}
-        activeSessionId={sessionId}
-        pb={currentPB ?? undefined}
-        pendingAnalysis={lastAnalysis}
-        sessionId={sessionId}
-        onUpdateSolve={onUpdateSolve}
-        onDeleteSolve={onDeleteSolve}
-      />
+      <Suspense fallback={<ViewFallback />}>
+        <InsightsDashboard
+          key={sessionId ?? "none"}
+          solves={solves}
+          sessions={sessions}
+          fetchSessionSolves={fetchSessionSolves}
+          activeSessionId={sessionId}
+          pb={currentPB ?? undefined}
+          pendingAnalysis={lastAnalysis}
+          sessionId={sessionId}
+          onUpdateSolve={onUpdateSolve}
+          onDeleteSolve={onDeleteSolve}
+        />
+      </Suspense>
     );
   }
 
   if (activeView === "practice") {
     return (
-      <PracticeDashboard
-        onPracticeCase={(subsetId, caseId) => {
-          setTrainingPreset({ subsetId, caseId });
-          onNavigate("training");
-        }}
-      />
+      <Suspense fallback={<ViewFallback />}>
+        <PracticeDashboard
+          onPracticeCase={(subsetId, caseId) => {
+            setTrainingPreset({ subsetId, caseId });
+            onNavigate("training");
+          }}
+        />
+      </Suspense>
     );
   }
 
   if (activeView === "training") {
     return (
-      <TrainingDashboard
-        preset={trainingPreset}
-        onPresetConsumed={() => setTrainingPreset(null)}
-        puzzle={puzzle}
-        onPuzzleChange={onPuzzleChange}
-      />
+      <Suspense fallback={<ViewFallback />}>
+        <TrainingDashboard
+          preset={trainingPreset}
+          onPresetConsumed={() => setTrainingPreset(null)}
+          puzzle={puzzle}
+          onPuzzleChange={onPuzzleChange}
+        />
+      </Suspense>
     );
   }
 
   if (activeView === "skill-tree") {
-    return <UltraSkillTreeView onNavigate={(view) => onNavigate(view as ViewId)} />;
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <UltraSkillTreeView onNavigate={(view) => onNavigate(view as ViewId)} />
+      </Suspense>
+    );
   }
 
   if (activeView === "profile") {
-    return <ProfileView onNavigate={onNavigate} onOpenSettings={onOpenSettings} />;
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <ProfileView onNavigate={onNavigate} onOpenSettings={onOpenSettings} />
+      </Suspense>
+    );
   }
 
   // timer

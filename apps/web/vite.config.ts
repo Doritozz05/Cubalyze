@@ -84,4 +84,23 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Stable vendor chunks: big third-party libs get their own chunk so
+        // they are cached independently of app code and of each other.
+        // (xlsx/comlink are already lazy-imported and stay out of these.)
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('recharts')) return 'recharts';
+          if (id.includes('framer-motion')) return 'framer-motion';
+          if (id.includes('@radix-ui')) return 'radix';
+          if (id.includes('/react/') || id.includes('react-dom') || id.includes('scheduler')) {
+            return 'react';
+          }
+          return 'vendor';
+        },
+      },
+    },
+  },
 })
