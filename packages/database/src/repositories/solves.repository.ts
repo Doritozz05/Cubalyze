@@ -1,5 +1,6 @@
 import type { Solve } from './types.js';
 import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
+import { withTransaction } from './transaction.js';
 
 export interface SolveRow {
   id: string;
@@ -138,6 +139,41 @@ export class SolvesRepository {
       'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
     );
+  }
+
+  /**
+   * Insert many solves inside a single SQLite transaction (all-or-nothing).
+   *
+   * Used by bulk imports: a failure mid-batch rolls the whole batch back, so
+   * the user never ends up with a partially imported file. Returns the number
+   * of rows inserted (throws on failure — the batch is rolled back).
+   */
+  async insertMany(solves: Solve[]): Promise<number> {
+    if (solves.length === 0) return 0;
+    return withTransaction(this.db, async (exec) => {
+      for (const solve of solves) {
+        const row = solveToRow(solve);
+        await exec(
+          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, 0, row.created_at, row.updated_at]
+        );
+      }
+      return solves.length;
+    });
+  }
+
+  /**
+   * Delete every solve belonging to a session in a single statement
+   * (replaces the previous delete-one-by-one loop). Returns how many rows
+   * were removed.
+   */
+  async deleteBySession(sessionId: string): Promise<number> {
+    const rows = await this.db('SELECT COUNT(*) as cnt FROM solves WHERE session_id = ?', [sessionId]);
+    const count = (rows[0] as { cnt: number }).cnt;
+    if (count > 0) {
+      await this.db('DELETE FROM solves WHERE session_id = ?', [sessionId]);
+    }
+    return count;
   }
 
   async update(solve: Solve): Promise<void> {
