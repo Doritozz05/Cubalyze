@@ -7,7 +7,6 @@ import {
   Dumbbell,
   BookOpen,
   Network,
-  Flame,
   CheckCircle2,
   Activity,
 } from "lucide-react";
@@ -495,12 +494,9 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
       </section>
 
       <section
-        aria-label="Identity summary"
+        aria-label="Local data notice"
         className="mt-8 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
       >
-        <Flame className="size-3" aria-hidden="true" />
-        <span>CubeForge identity center</span>
-        <span className="mx-1" aria-hidden="true">·</span>
         <CheckCircle2 className="size-3 text-ready" aria-hidden="true" />
         <span>All data local</span>
       </section>
