@@ -258,11 +258,15 @@ export class Cube3DEngine {
    * Zoom the camera by a wheel-delta-like amount (positive = zoom out,
    * negative = zoom in). Converted to an exponential radius factor so the
    * zoom rate feels proportional at any distance.
+   *
+   * Wheel convention: scrolling up (deltaY < 0) zooms in, scrolling down
+   * zooms out — matching standard map/3D-viewer behaviour.
    */
   public zoomCamera(deltaY: number): void {
     if (!this.sceneManager) return;
     if (!Number.isFinite(deltaY) || deltaY === 0) return;
-    const factor = Math.exp(-deltaY / 1200);
+    // factor > 1 → camera moves away (zoom out); factor < 1 → zoom in.
+    const factor = Math.exp(deltaY / 1200);
     this.sceneManager.zoomBy(factor);
     this.requestRender();
   }
