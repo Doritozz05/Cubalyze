@@ -7,7 +7,7 @@ import { GanCubeAdapter } from '../src/bluetooth/GanCubeAdapter';
 // Since parseMoveNotation is a module-level function (not exported),
 // we test it indirectly through the moves$ observable and the public API.
 
-describe('GanCubeAdapter — Nivel 2 Edge Cases', () => {
+describe('GanCubeAdapter — Level 2 Edge Cases', () => {
   let adapter: GanCubeAdapter;
 
   beforeEach(() => {
@@ -142,7 +142,7 @@ describe('GanCubeAdapter — Nivel 2 Edge Cases', () => {
 
 import { GanTimerAdapter } from '../src/bluetooth/GanTimerAdapter';
 
-describe('GanTimerAdapter — Nivel 2 Edge Cases', () => {
+describe('GanTimerAdapter — Level 2 Edge Cases', () => {
   let adapter: GanTimerAdapter;
 
   beforeEach(() => {

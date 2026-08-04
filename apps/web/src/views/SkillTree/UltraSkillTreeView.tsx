@@ -36,8 +36,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   // View mode: 'graph' (interactive tree) or 'list' (compact card grid)
   const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
 
-  // Set of completed skill IDs — SQLite is the single source of truth;
-  // the hook keeps a localStorage cache + one-time migration for fallback.
+  // Completed skill IDs — SQLite is the single source of truth (localStorage cache + migration as fallback).
   const { completedIds, setCompletedIds } = useSkillProgress();
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -55,8 +54,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
       }
 
       const allPrereqsMet =
-        node.prerequisites.length === 0 ||
-        node.prerequisites.every((req) => completedSet.has(req));
+        node.prerequisites.length === 0 || node.prerequisites.every((req) => completedSet.has(req));
 
       if (allPrereqsMet) {
         return { ...node, status: "unlocked" as const, masteryPercentage: 0 };
@@ -66,9 +64,10 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
     });
   }, [completedIds]);
 
-  const selectedNode = useMemo(() => {
-    return skillNodes.find((n) => n.id === selectedNodeId) || null;
-  }, [skillNodes, selectedNodeId]);
+  const selectedNode = useMemo(
+    () => skillNodes.find((n) => n.id === selectedNodeId) || null,
+    [skillNodes, selectedNodeId],
+  );
 
   const filteredNodes = useMemo(() => {
     return skillNodes.filter((node) => {

@@ -40,7 +40,7 @@ function createMockCanvas(): HTMLCanvasElement {
   } as unknown as HTMLCanvasElement;
 }
 
-describe('SceneManager — Nivel 2 Edge Cases', () => {
+describe('SceneManager — Level 2 Edge Cases', () => {
   let sceneManager: SceneManager;
   let canvas: HTMLCanvasElement;
 

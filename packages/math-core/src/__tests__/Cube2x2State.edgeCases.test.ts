@@ -1,28 +1,28 @@
 /**
- * Nivel 2 — Edge cases para Cube2x2State
+ * Level 2 — Edge cases for Cube2x2State
  *
- * Casos frontera:
- * • applySequence con strings vacíos, nulos, malformados
- * • Movimientos D, L, B delegados a CubeState 3x3
- * • clone() y reset() en estados scrambled
- * • invertNotation con entradas inválidas
- * • isSolved con estados corruptos
- * • applyMove con todos los 18 movimientos
+ * Boundary cases:
+ * • applySequence with empty, null, malformed strings
+ * • D, L, B moves delegated to the 3x3 CubeState
+ * • clone() and reset() on scrambled states
+ * • invertNotation with invalid inputs
+ * • isSolved with corrupted states
+ * • applyMove with all 18 moves
  */
 import { describe, it, expect } from 'vitest';
 import { Cube2x2State, Move2x2, StringToMove2x2 } from '../Cube2x2State';
 
-describe('Cube2x2State — Nivel 2 Edge Cases', () => {
+describe('Cube2x2State — Level 2 Edge Cases', () => {
   // ── Constructor ────────────────────────────────────────────────────
 
-  it('constructor sin args crea estado resuelto', () => {
+  it('constructor without args creates a solved state', () => {
     const s = new Cube2x2State();
     expect(s.isSolved()).toBe(true);
     expect(s.cp).toEqual(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]));
     expect(s.co).toEqual(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]));
   });
 
-  it('constructor con cp/co personalizados', () => {
+  it('constructor with custom cp/co', () => {
     const cp = [3, 0, 1, 2, 4, 5, 6, 7];
     const co = [0, 0, 0, 0, 0, 0, 0, 0];
     const s = new Cube2x2State(cp, co);
@@ -30,14 +30,14 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(Array.from(s.co)).toEqual(co);
   });
 
-  it('constructor con cp undefined y co undefined', () => {
+  it('constructor with undefined cp and co', () => {
     const s = new Cube2x2State(undefined, undefined);
     expect(s.isSolved()).toBe(true);
   });
 
-  // ── applySequence: strings vacíos y malformados ────────────────────
+  // ── applySequence: empty and malformed strings ─────────────────────
 
-  it('applySequence con string vacío no cambia estado', () => {
+  it('applySequence with an empty string does not change the state', () => {
     const s = new Cube2x2State();
     s.applyMove(Move2x2.U1); // scrambled
     const before = s.clone();
@@ -46,7 +46,7 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(Array.from(s.co)).toEqual(Array.from(before.co));
   });
 
-  it('applySequence con espacios no cambia estado', () => {
+  it('applySequence with spaces does not change the state', () => {
     const s = new Cube2x2State();
     s.applyMove(Move2x2.R1);
     const before = s.clone();
@@ -54,13 +54,13 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(Array.from(s.cp)).toEqual(Array.from(before.cp));
   });
 
-  it('applySequence con solo espacios y tabs', () => {
+  it('applySequence with only spaces and tabs', () => {
     const s = new Cube2x2State();
     s.applySequence('\t \n  ');
     expect(s.isSolved()).toBe(true);
   });
 
-  it('applySequence con un solo movimiento bien formado', () => {
+  it('applySequence with a single well-formed move', () => {
     const s = new Cube2x2State();
     s.applySequence("U");
     expect(s.isSolved()).toBe(false);
@@ -68,58 +68,58 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(s.isSolved()).toBe(true);
   });
 
-  // ── applySequence: movimientos que NO existen ──────────────────────
+  // ── applySequence: moves that do NOT exist ─────────────────────────
 
-  it('applySequence con token que no existe en StringToMove2x2 lanza error', () => {
+  it('applySequence with a token missing from StringToMove2x2 throws', () => {
     const s = new Cube2x2State();
     expect(() => s.applySequence('X')).toThrow();
   });
 
-  it('applySequence con token numérico lanza error', () => {
+  it('applySequence with a numeric token throws', () => {
     const s = new Cube2x2State();
     expect(() => s.applySequence('123')).toThrow();
   });
 
-  // ── D, L, B moves delegados a CubeState 3x3 ────────────────────────
+  // ── D, L, B moves delegated to the 3x3 CubeState ───────────────────
 
-  it('applySequence con D move (delegado a 3×3)', () => {
+  it('applySequence with a D move (delegated to 3×3)', () => {
     const s = new Cube2x2State();
     s.applySequence("D");
     expect(s.isSolved()).toBe(false);
-    // D mueve la capa inferior: los 4 corners D cambian de posición
-    expect(s.cp[6]).not.toBe(6); // DBL se mueve
+    // D moves the bottom layer: all 4 D corners change position
+    expect(s.cp[6]).not.toBe(6); // DBL moves
   });
 
-  it('applySequence con L move', () => {
+  it('applySequence with an L move', () => {
     const s = new Cube2x2State();
     s.applySequence("L");
     expect(s.isSolved()).toBe(false);
   });
 
-  it('applySequence con B move', () => {
+  it('applySequence with a B move', () => {
     const s = new Cube2x2State();
     s.applySequence("B");
     expect(s.isSolved()).toBe(false);
   });
 
-  it('D + D + D + D = solved (4 D vuelven al inicio)', () => {
+  it('D + D + D + D = solved (4 D return to start)', () => {
     const s = new Cube2x2State();
     s.applySequence("D D D D");
     expect(s.isSolved()).toBe(true);
   });
 
-  // ── Movimientos compuestos URF (nativos) ───────────────────────────
+  // ── Compound URF moves (native) ────────────────────────────────────
 
-  it('U R F aplicados en secuencia mantienen cp[6] = 6 (DBL fijo)', () => {
+  it('U R F applied in sequence keeps cp[6] = 6 (DBL fixed)', () => {
     const s = new Cube2x2State();
     s.applySequence("U R F U2 R' F'");
-    expect(s.cp[6]).toBe(6); // DBL no se mueve con URF
+    expect(s.cp[6]).toBe(6); // DBL does not move with URF
   });
 
-  it('U + U + U + U = 4U vuelve al inicio', () => {
+  it('U + U + U + U = 4U returns to start', () => {
     const s = new Cube2x2State();
     s.applySequence("U U U U");
-    // 4 x U = ciclo completo de 360°
+    // 4 x U = full 360° cycle
     expect(s.isSolved()).toBe(true);
   });
 
@@ -135,25 +135,25 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(s.isSolved()).toBe(true);
   });
 
-  // ── Movimientos extendidos (x, y, z, M, E, S) delegados a 3×3 ─────
+  // ── Extended moves (x, y, z, M, E, S) delegated to 3×3 ────────────
 
-  it('secuencia con y rotation (delegado a 3×3)', () => {
+  it('sequence with a y rotation (delegated to 3×3)', () => {
     const s = new Cube2x2State();
     s.applySequence("y");
-    // y rotation mueve todo el cubo, DBL cambia de posición
+    // y rotation moves the whole cube, DBL changes position
     expect(s.cp[6]).not.toBe(6);
   });
 
-  it('applySequence con y rotation (delegado a CubeState 3×3)', () => {
+  it('applySequence with a y rotation (delegated to CubeState 3×3)', () => {
     const s = new Cube2x2State();
     s.applySequence("y");
-    expect(s.cp[6]).not.toBe(6); // DBL se mueve con rotación global
-    // y + y + y + y = 4 rotaciones vuelven al original
+    expect(s.cp[6]).not.toBe(6); // DBL moves with the global rotation
+    // y + y + y + y = 4 rotations return to the original
     s.applySequence("y y y");
     expect(s.isSolved()).toBe(true);
   });
 
-  it('x rotation cambia los corners', () => {
+  it('x rotation changes the corners', () => {
     const s = new Cube2x2State();
     s.applySequence("x");
     expect(s.isSolved()).toBe(false);
@@ -186,7 +186,7 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(s.clone().isSolved()).toBe(true);
   });
 
-  it('clone() después de secuencia larga', () => {
+  it('clone() after a long sequence', () => {
     const s = new Cube2x2State();
     s.applySequence("R U R' U' R' F R F'");
     const c = s.clone();
@@ -196,7 +196,7 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
 
   // ── reset() ────────────────────────────────────────────────────────
 
-  it('reset() vuelve al estado resuelto', () => {
+  it('reset() returns to the solved state', () => {
     const s = new Cube2x2State();
     s.applySequence("R U R' F2 U2 R' F'");
     expect(s.isSolved()).toBe(false);
@@ -204,7 +204,7 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(s.isSolved()).toBe(true);
   });
 
-  it('reset() dos veces seguidas es seguro', () => {
+  it('reset() twice in a row is safe', () => {
     const s = new Cube2x2State();
     s.applyMove(Move2x2.F1);
     s.reset();
@@ -214,13 +214,13 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
 
   // ── isSolved() ─────────────────────────────────────────────────────
 
-  it('isSolved detecta twisted corner (co[3] = 1)', () => {
+  it('isSolved detects a twisted corner (co[3] = 1)', () => {
     const s = new Cube2x2State();
     s.co[3] = 1; // Manually twist one corner
     expect(s.isSolved()).toBe(false);
   });
 
-  it('isSolved detecta corner intercambiado (cp[0]=1, cp[1]=0)', () => {
+  it('isSolved detects a swapped corner (cp[0]=1, cp[1]=0)', () => {
     const s = new Cube2x2State();
     s.cp[0] = 1;
     s.cp[1] = 0;
@@ -229,20 +229,20 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
 
   // ── invertNotation ─────────────────────────────────────────────────
 
-  it('invertNotation invierte secuencia correctamente', () => {
+  it('invertNotation inverts a sequence correctly', () => {
     const result = Cube2x2State.invertNotation("R U R'");
     expect(result).toBe("R U' R'");
   });
 
-  it('invertNotation con secuencia vacía devuelve vacío', () => {
+  it('invertNotation with an empty sequence returns empty', () => {
     expect(Cube2x2State.invertNotation("")).toBe("");
   });
 
-  it('invertNotation con espacios devuelve vacío', () => {
+  it('invertNotation with spaces returns empty', () => {
     expect(Cube2x2State.invertNotation("  ")).toBe("");
   });
 
-  it('invertNotation con token inválido lanza error', () => {
+  it('invertNotation with an invalid token throws', () => {
     expect(() => Cube2x2State.invertNotation("X")).toThrow();
   });
 
@@ -255,17 +255,17 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(s.isSolved()).toBe(true);
   });
 
-  it('invertNotation con U2 mantiene U2', () => {
+  it('invertNotation keeps U2 as U2', () => {
     expect(Cube2x2State.invertNotation("U2")).toBe("U2");
   });
 
-  // ── applyMove: todos los 18 movimientos ────────────────────────────
+  // ── applyMove: all 18 moves ────────────────────────────────────────
 
-  it('applyMove con cada uno de los 18 movimientos no lanza error', () => {
+  it('applyMove with each of the 18 moves does not throw', () => {
     for (let m = 0; m < 18; m++) {
       const s = new Cube2x2State();
       expect(() => s.applyMove(m as Move2x2)).not.toThrow();
-      // Después de aplicar y deshacer, debe volver a solved
+      // After applying and undoing, it must return to solved
       const inv = Cube2x2State.inverseMove(m as Move2x2);
       s.applyMove(inv);
       expect(s.isSolved()).toBe(true);
@@ -289,9 +289,9 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     expect(Cube2x2State.moveToNotation(Move2x2.U3)).toBe("U'");
   });
 
-  // ── StringToMove2x2: validación exhaustiva ─────────────────────────
+  // ── StringToMove2x2: exhaustive validation ─────────────────────────
 
-  it('StringToMove2x2 tiene 18 entradas + 6 alias (U3, R3, F3, D3, L3, B3)', () => {
+  it('StringToMove2x2 has 18 entries + 6 aliases (U3, R3, F3, D3, L3, B3)', () => {
     const expected = [
       'U', 'U2', "U'", 'U3',
       'R', 'R2', "R'", 'R3',
@@ -305,17 +305,17 @@ describe('Cube2x2State — Nivel 2 Edge Cases', () => {
     }
   });
 
-  // ── Estados extremos ───────────────────────────────────────────────
+  // ── Extreme states ────────────────────────────────────────────────
 
-  it('superflip 2×2 (6 movimientos) no está resuelto', () => {
+  it('superflip 2×2 (6 moves) is not solved', () => {
     // Superflip-like state on 2×2: R U2 R' U' R U2 R' F R' F'
     const s = new Cube2x2State();
     s.applySequence("R U2 R' U' R U2 R' F R' F'");
     expect(s.isSolved()).toBe(false);
   });
 
-  it('18 movimientos URF cada uno aplicado una vez vuelve a solved', () => {
-    // Aplicar cada uno de los 9 movimientos URF una vez, luego sus inversos
+  it('18 URF moves each applied once returns to solved', () => {
+    // Apply each of the 9 URF moves once, then their inverses
     const moves = ['U', 'U2', "U'", 'R', 'R2', "R'", 'F', 'F2', "F'"];
     const inverse = ["U'", 'U2', 'U', "R'", 'R2', 'R', "F'", 'F2', 'F'];
     const s = new Cube2x2State();
