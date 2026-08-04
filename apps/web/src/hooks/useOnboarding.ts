@@ -48,6 +48,27 @@ const listeners = new Set<() => void>();
 let metaRepo: AppMetaRepository | null = null;
 let initPromise: Promise<void> | null = null;
 
+// localStorage mirror of the one-shot flag. Keeps the tour one-shot even when
+// the DB is unavailable (broken/opfs-less worker) — skip/complete always write
+// both, and reads fall back to the mirror when the DB read fails.
+const LOCAL_FLAG_KEY = "cubeforge_onboarding_completed";
+
+function readLocalFlag(): boolean {
+  try {
+    return localStorage.getItem(LOCAL_FLAG_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeLocalFlag(): void {
+  try {
+    localStorage.setItem(LOCAL_FLAG_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 function setStore(partial: Partial<OnboardingStore>): void {
   store = { ...store, ...partial };
   for (const listener of listeners) listener();
@@ -74,7 +95,8 @@ function ensureInitialized(): Promise<void> {
       const dbExecutor = async (sql: string, bind?: unknown[]) =>
         await dbClient.execute(sql, bind);
       metaRepo = new AppMetaRepository(dbExecutor);
-      const completed = await metaRepo.getOnboardingCompleted();
+      const completed =
+        (await metaRepo.getOnboardingCompleted()) || readLocalFlag();
       const next = onboardingInitialState(completed);
       setStore({ ...next, loading: false });
       if (isDev()) {
@@ -88,8 +110,15 @@ function ensureInitialized(): Promise<void> {
     } catch (err) {
       console.error("[useOnboarding] Failed to initialize:", err);
       initPromise = null;
-      // Fail-open: never block the app with a broken-DB tour.
-      setStore({ status: "done", currentStep: 0, loading: false });
+      // Fail-open: a transient DB hiccup (worker cold start, OPFS lock) must
+      // NOT permanently mark the tour as seen — otherwise first-run users get
+      // no onboarding and no way to re-trigger it. Falling back to the mirror
+      // flag (idle when absent) lets App's auto-start effect still run the
+      // tour once profile/session finish loading.
+      setStore({
+        ...onboardingInitialState(readLocalFlag()),
+        loading: false,
+      });
     }
   })();
 
@@ -98,6 +127,8 @@ function ensureInitialized(): Promise<void> {
 
 /** Best-effort flag persist — a write failure must never break the app. */
 async function persistCompleted(): Promise<void> {
+  // Mirror first: even if the DB write below fails, the tour stays one-shot.
+  writeLocalFlag();
   try {
     if (!metaRepo) await ensureInitialized();
     await metaRepo?.setOnboardingCompleted();

@@ -13,6 +13,15 @@ const TOOLTIP_GAP = 20;
 const TOOLTIP_EST_HEIGHT = 230;
 const VIEWPORT_MARGIN = 16;
 
+// Padding (px) added AROUND the measured target so the spotlight ring and its
+// rounded corners never sit on top of content flush against the target's edges
+// (e.g. the "S" of the "Scramble" label used to be clipped by the ring).
+const SPOTLIGHT_PAD = 6;
+// How many consecutive identical frames count as a "settled" layout.
+const STABLE_FRAMES = 2;
+// Upper bound on re-measure attempts (~500ms at 60fps) before falling back.
+const MAX_MEASURE_ATTEMPTS = 30;
+
 export interface OnboardingTourProps {
   /** Currently active stage view (drives re-measure after navigation). */
   activeView: ViewId;
@@ -112,26 +121,89 @@ export function OnboardingTour({
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Navigate to the step's view, then measure its target on the next frame.
-  // Re-runs when activeView lands (prop change) so the measurement happens
-  // after the target actually mounted.
+  // Navigate to the step's view, then measure its target. Re-runs when
+  // activeView lands (prop change) so the measurement happens after the target
+  // actually mounted.
+  //
+  // Measurement is deliberately conservative: the target's rect is only
+  // committed once it has been identical for STABLE_FRAMES consecutive frames,
+  // so a slide-in animation, a view transition or a layout shift can never
+  // leave the highlight stranded on stale coordinates (it used to sit over the
+  // header when the scramble was still animating in, or off the widgets tab
+  // while the sidebar was collapsing). Hidden/zero-size targets are skipped.
   useEffect(() => {
     if (!step) return;
     if (activeView !== step.view) onNavigate(step.view);
+    const target = step.target;
+
+    // Final centered step has no target — nothing to measure (also avoids a
+    // stale spotlight lingering on the previous step's rect).
+    if (!target) {
+      setRect(null);
+      return;
+    }
 
     let cancelled = false;
     let attempts = 0;
+    let stableFrames = 0;
+    let lastRect: SpotlightRect | null = null;
+
     const measure = () => {
       if (cancelled) return;
-      const el = step.target
-        ? document.querySelector<HTMLElement>(step.target)
-        : null;
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setRect({ x: r.x, y: r.y, width: r.width, height: r.height });
-        return;
+      // Pick the first VISIBLE match: a hidden duplicate (e.g. the touch-only
+      // header "Widgets" button next to the desktop sidebar item) must never
+      // be measured, whatever its DOM order.
+      let el: HTMLElement | null = null;
+      for (const candidate of document.querySelectorAll<HTMLElement>(target)) {
+        if (candidate.getClientRects().length > 0) {
+          el = candidate;
+          break;
+        }
       }
-      if (attempts++ < 2) {
+
+      if (el) {
+        // Target found: don't let the missing-element budget eat settling
+        // time (a long slide-in should keep waiting, not give up).
+        attempts = 0;
+        const r = el.getBoundingClientRect();
+        const next: SpotlightRect = {
+          x: r.x,
+          y: r.y,
+          width: r.width,
+          height: r.height,
+        };
+
+        const settled =
+          lastRect !== null &&
+          Math.abs(lastRect.x - next.x) < 0.5 &&
+          Math.abs(lastRect.y - next.y) < 0.5 &&
+          Math.abs(lastRect.width - next.width) < 0.5 &&
+          Math.abs(lastRect.height - next.height) < 0.5;
+        lastRect = next;
+
+        if (settled) {
+          if (++stableFrames >= STABLE_FRAMES) {
+            // Expand the box slightly so the ring/rounded corners never clip
+            // content that sits flush against the target's edges.
+            setRect({
+              x: next.x - SPOTLIGHT_PAD,
+              y: next.y - SPOTLIGHT_PAD,
+              width: next.width + SPOTLIGHT_PAD * 2,
+              height: next.height + SPOTLIGHT_PAD * 2,
+            });
+            return;
+          }
+        } else {
+          stableFrames = 0;
+        }
+      } else {
+        // Target missing/hidden: restart the stability window so a stale
+        // rect can never count as "settled" when the target reappears.
+        stableFrames = 0;
+        lastRect = null;
+      }
+
+      if (attempts++ < MAX_MEASURE_ATTEMPTS) {
         requestAnimationFrame(measure);
       } else {
         setRect(null); // fallback: centered tooltip, never block

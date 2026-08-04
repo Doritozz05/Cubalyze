@@ -119,9 +119,12 @@ export interface TourStep { id: string; view: ViewId; title: string; body: strin
 
 ## 7. OnboardingTour behavior
 
-- On step change: `onNavigate(step.view)`, then wait 1 rAF and measure `querySelector(step.target)`
-  → `getBoundingClientRect()`. Retry up to 2× (1 frame each). Missing target → centered
-  tooltip, never blocks.
+- On step change: `onNavigate(step.view)`, then measure `querySelector(step.target)`
+  → `getBoundingClientRect()`. The rect is committed only after 2 consecutive identical
+  frames (skips hidden/zero-size targets) so slide-ins, view transitions and layout
+  shifts can't strand the highlight on stale coordinates. Retry up to ~500ms. Missing
+  target → centered tooltip, never blocks. The committed box is padded +6px so the
+  ring/rounded corners never clip content flush against the target's edges.
 - Mask: `motion.div` absolutely positioned at the rect with
   `box-shadow: 0 0 0 9999px rgba(0,0,0,0.55)` (pure neutral black — no blue
   tint) + `border-line` ring + `rounded-xl`. Spring animation between steps
