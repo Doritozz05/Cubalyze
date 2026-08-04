@@ -3,9 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
-import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
-import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
-import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
+import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
+import { Case2x2Diagram } from "@/views/Algorithms/components/Case2x2Diagram";
+import { Case3DDiagram } from "@/views/Algorithms/components/Case3DDiagram";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";

@@ -239,7 +239,7 @@ Los targets se marcan en el DOM con el atributo **`data-onboarding-target`** (m�
 |---|---|---|---|---|
 | 1 | **Timer** | `timer` | ScrambleDisplay / zona del timer | "Tu timer: mantén espacio (o toca y mantén) y suelta para cronometrar; inspección WCA 15 s integrada." |
 | 2 | **Stats** | `insights` | Cabecera del dashboard | "Aquí vive tu progreso: resumen de sesión, análisis de fases, PB y replay 3D de cualquier solve." |
-| 3 | **Algorithms** | `practice` | Grid de métodos / árbol | "Explora algoritmos por método (CFOP, Roux, ZZ…). Un clic envía cualquier caso al entrenador." |
+| 3 | **Algorithms** | `algorithms` | Grid de métodos / árbol | "Explora algoritmos por método (CFOP, Roux, ZZ…). Un clic envía cualquier caso al entrenador." |
 | 4 | **Profile** | `profile` | ProfileHero (avatar/nombre) | "Tu identidad. El CubeMark nace de tu ID anónimo; personaliza nombre, handle y avatar aquí." |
 | 5 | **Widgets** | `timer` | Item **"Widgets"** de la sidebar (grupo Explore) | "Tools flotantes: log de tiempos, visualizador de scramble, metrónomo… Ábrelos con este icono y arma tu layout." |
 | 6 | **Final** | `timer` | — (sin target; tooltip centrado) | "Ya está. [Haz tu primer solve] · Tip: revisa Settings para atajos, tema y smart cube." |

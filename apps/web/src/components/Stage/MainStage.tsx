@@ -15,8 +15,8 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
 const InsightsDashboard = lazy(() =>
   import("@/components/Insights/InsightsDashboard").then((m) => ({ default: m.InsightsDashboard })),
 );
-const PracticeDashboard = lazy(() =>
-  import("@/views/Practice/PracticeDashboard").then((m) => ({ default: m.PracticeDashboard })),
+const AlgorithmDashboard = lazy(() =>
+  import("@/views/Algorithms/AlgorithmDashboard").then((m) => ({ default: m.AlgorithmDashboard })),
 );
 const TrainingDashboard = lazy(() =>
   import("@/views/Training/TrainingDashboard").then((m) => ({ default: m.TrainingDashboard })),
@@ -112,10 +112,10 @@ export function MainStage(props: MainStageProps) {
     );
   }
 
-  if (activeView === "practice") {
+  if (activeView === "algorithms") {
     return (
       <Suspense fallback={<ViewFallback />}>
-        <PracticeDashboard
+        <AlgorithmDashboard
           onPracticeCase={(subsetId, caseId) => {
             setTrainingPreset({ subsetId, caseId });
             onNavigate("training");

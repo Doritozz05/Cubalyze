@@ -31,7 +31,7 @@ type TabItem = {
 
 const MAIN_TABS: TabItem[] = [
   { id: "training", label: "Training", icon: Dumbbell },
-  { id: "practice", label: "Algorithms", icon: BookOpen },
+  { id: "algorithms", label: "Algorithms", icon: BookOpen },
   { id: "timer", label: "Timer", icon: Timer },
   { id: "insights", label: "Stats", icon: BarChart3 },
   { id: "skill-tree", label: "Skills", icon: Network },

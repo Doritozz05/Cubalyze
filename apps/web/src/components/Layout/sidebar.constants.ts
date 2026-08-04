@@ -28,7 +28,7 @@ export const ACTIVE_PILL_SPRING = {
 export type ViewId =
   | "timer"
   | "insights"
-  | "practice"
+  | "algorithms"
   | "training"
   | "skill-tree"
   | "profile";
@@ -69,7 +69,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Training",
     items: [
       { id: "training", label: "Training", icon: Dumbbell },
-      { id: "practice", label: "Algorithms", icon: BookOpen },
+      { id: "algorithms", label: "Algorithms", icon: BookOpen },
       { id: "skill-tree", label: "Skills", icon: Network },
     ],
   },
