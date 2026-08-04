@@ -1,1 +1,7 @@
+# Conventional Commits gate (local). Escape hatch for urgent/WIP commits:
+#   SKIP_COMMITLINT=1 git commit ...
+# CI (quality-gates.yml) ALWAYS enforces commitlint regardless of this flag.
+if [ "$SKIP_COMMITLINT" = "1" ]; then
+  exit 0
+fi
 pnpm exec commitlint --edit "$1"
