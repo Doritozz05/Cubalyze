@@ -55,6 +55,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // External registerSW.js instead of an inline <script> so the strict
+      // Content-Security-Policy (script-src 'self', no 'unsafe-inline') works.
+      injectRegister: 'script',
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },

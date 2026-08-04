@@ -438,6 +438,10 @@ export function attachDemoDataHelpers(
   solvesRepo: SolvesRepository,
 ): void {
   if (typeof window === "undefined") return;
+  // Never expose demo-data hooks in production: the helpers only make sense
+  // in development, and `window.seedDemoData` would otherwise be a foot-gun
+  // on user data (it self-guards, but the surface is unnecessary).
+  if (!isDev()) return;
   (window as unknown as Record<string, unknown>).seedDemoData = () => {
     void seedDemoData(sessionsRepo, solvesRepo);
   };

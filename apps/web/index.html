@@ -6,27 +6,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f8f9fa" />
-  <script>
-    // Dynamic theme-color: keeps the browser chrome in sync with the app theme.
-    // Light canvas = #f8f9fa, dark canvas = #14171b. Watches the `.dark` class
-    // that next-themes toggles on <html> (covers user + system theme changes).
-    (function () {
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (!meta) return;
-      var LIGHT = '#f8f9fa';
-      var DARK = '#14171b';
-      function apply() {
-        meta.setAttribute('content', document.documentElement.classList.contains('dark') ? DARK : LIGHT);
-      }
-      apply();
-      if (window.MutationObserver) {
-        new MutationObserver(apply).observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['class'],
-        });
-      }
-    })();
-  </script>
+  <script src="/theme-color.js"></script>
   <meta name="description"
     content="CubeForge — Smart Cube Training Platform, Algorithm Database & Speedcubing Analytics" />
   <meta property="og:title" content="CubeForge — Smart Cube Training Platform" />
