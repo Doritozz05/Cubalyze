@@ -1035,6 +1035,18 @@ function unquote(s: string): string {
   return t;
 }
 
+/**
+ * Reverse of `sanitizeFormula` in exportSolves.ts: when exporting, text cells
+ * that start with `=`, `+`, `-`, `@`, tab or CR get prefixed with a single `'`
+ * so spreadsheet apps don't execute them as formulas. When re-importing one of
+ * our own exports, strip that marker again so the note round-trips cleanly.
+ * Legitimate apostrophe-first text (e.g. `'til later`) is left untouched.
+ */
+function unescapeFormulaMarker(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  return /^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value;
+}
+
 function isSolveMethod(s: string): s is SolveMethod {
   return ["CFOP", "Roux", "ZZ", "Petrus"].includes(s as SolveMethod);
 }
@@ -1077,7 +1089,7 @@ export function toSolveInput(
     scramble: imported.scramble,
     method: imported.method,
     timestamp: imported.timestamp,
-    note: imported.note,
+    note: unescapeFormulaMarker(imported.note),
     puzzleType: imported.puzzleType ?? inferPuzzleType(imported.scramble),
     source: imported.source ?? "manual",
   };

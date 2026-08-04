@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectFormat, parseImport, previewImport, toSolveInput } from "../importSolves";
+import { detectFormat, parseImport, previewImport, toSolveInput, type ImportedSolve } from "../importSolves";
 
 // Real Twisty Timer export: 3 quoted semicolon-delimited fields per row,
 // "time";"scramble";"date" with WCA-format times and ISO dates with timezone.
@@ -287,5 +287,47 @@ describe("csTimer JSON format", () => {
     expect(result.solves[2]!.penalty).toBe("DNF");
     expect(result.solves[2]!.note).toBe("Hola");
     expect(result.solves[2]!.timestamp).toBe(1785495990000);
+  });
+});
+
+describe("formula-marker round-trip (unescapeFormulaMarker)", () => {
+  it("strips the export apostrophe marker from notes starting with formula chars", () => {
+    const imported: ImportedSolve = {
+      time: 12340,
+      penalty: "none",
+      scramble: "R U R' U'",
+      timestamp: 1737013787000,
+      note: "'=SUM(A1:A2)",
+    };
+    expect(toSolveInput(imported).note).toBe("=SUM(A1:A2)");
+  });
+
+  it("strips the marker for +, -, @, tab and CR as well", () => {
+    for (const [raw, expected] of [
+      ["'+2s", "+2s"],
+      ["'-minus", "-minus"],
+      ["'@evil", "@evil"],
+      ["'\tTAB", "\tTAB"],
+      ["'\rCR", "\rCR"],
+    ] as const) {
+      expect(toSolveInput({ time: 1, penalty: "none", scramble: "R", timestamp: 1, note: raw }).note).toBe(expected);
+    }
+  });
+
+  it("leaves legitimate apostrophe-first notes untouched", () => {
+    const imported: ImportedSolve = {
+      time: 12340,
+      penalty: "none",
+      scramble: "R U R' U'",
+      timestamp: 1737013787000,
+      note: "'til later",
+    };
+    expect(toSolveInput(imported).note).toBe("'til later");
+  });
+
+  it("leaves plain notes and undefined notes untouched", () => {
+    const plain: ImportedSolve = { time: 1, penalty: "none", scramble: "R", timestamp: 1, note: "Hola note" };
+    expect(toSolveInput(plain).note).toBe("Hola note");
+    expect(toSolveInput({ ...plain, note: undefined }).note).toBeUndefined();
   });
 });

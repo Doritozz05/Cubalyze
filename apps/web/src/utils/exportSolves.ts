@@ -5,6 +5,19 @@ import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime } from "@/utils/formatTime";
 
 /**
+ * Neutralize spreadsheet formula injection (OWASP): when a cell is opened in
+ * Excel/Sheets, values starting with =, +, -, @, tab or CR are interpreted as
+ * formulas. Prefixing with a single quote forces them to be treated as text.
+ * Applied to every user-controlled text cell in CSV/XLSX exports.
+ */
+function sanitizeFormula(value: string): string {
+  if (/^[=+\-@\t\r]/.test(value)) {
+    return `'${value}`;
+  }
+  return value;
+}
+
+/**
  * Export solves to CubeForge CSV format.
  */
 export function exportSolvesToCSV(solves: Solve[], _sessionName?: string): string {
@@ -15,9 +28,12 @@ export function exportSolvesToCSV(solves: Solve[], _sessionName?: string): strin
       ? "DNF"
       : formatTime(effectiveTime(solve));
     const date = new Date(solve.timestamp).toISOString();
-    const note = solve.note ? `"${solve.note.replace(/"/g, '""')}"` : "";
-    const method = solve.method ?? "";
-    return [no, time, solve.penalty, `"${solve.scramble}"`, date, method, note].join(",");
+    const note = solve.note
+      ? `"${sanitizeFormula(solve.note).replace(/"/g, '""')}"`
+      : "";
+    const method = sanitizeFormula(solve.method ?? "");
+    const scramble = sanitizeFormula(solve.scramble);
+    return [no, time, solve.penalty, `"${scramble}"`, date, method, note].join(",");
   });
 
   return [header, ...rows].join("\n");
@@ -70,8 +86,8 @@ export function exportSolvesToCsTimer(solves: Solve[]): string {
       p1Str = timeStr;
     }
 
-    const comment = solve.note ? solve.note.replace(/;/g, ",") : "";
-    const scramble = solve.scramble.replace(/;/g, "");
+    const comment = solve.note ? sanitizeFormula(solve.note).replace(/;/g, ",") : "";
+    const scramble = sanitizeFormula(solve.scramble).replace(/;/g, "");
     const dateStr = formatCsTimerDate(solve.timestamp);
 
     return `${no};${timeStr};${comment};${scramble};${dateStr};${p1Str}`;
@@ -175,10 +191,10 @@ export async function exportSolvesToXLSX(
       Time: pen === "DNF" ? "DNF" : formatTime(eff),
       "Time (s)": Number.isFinite(eff) ? Number((eff / 1000).toFixed(2)) : "DNF",
       Penalty: solve.penalty,
-      Scramble: solve.scramble,
+      Scramble: sanitizeFormula(solve.scramble),
       Date: new Date(solve.timestamp).toISOString(),
-      Method: solve.method ?? "",
-      Note: solve.note ?? "",
+      Method: sanitizeFormula(solve.method ?? ""),
+      Note: sanitizeFormula(solve.note ?? ""),
     };
   });
 
@@ -202,7 +218,7 @@ export async function exportSolvesToXLSX(
     XLSX.utils.json_to_sheet([
       {
         App: "CubeForge",
-        Session: sessionName,
+        Session: sanitizeFormula(sessionName),
         ExportedAt: new Date().toISOString(),
         SolveCount: solves.length,
       },
