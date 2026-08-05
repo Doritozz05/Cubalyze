@@ -19,8 +19,12 @@ const VIEWPORT_MARGIN = 16;
 const SPOTLIGHT_PAD = 6;
 // How many consecutive identical frames count as a "settled" layout.
 const STABLE_FRAMES = 2;
-// Upper bound on re-measure attempts (~500ms at 60fps) before falling back.
-const MAX_MEASURE_ATTEMPTS = 30;
+// Upper bound on how long measurement may run before falling back to a
+// centered tooltip. TIME-based (not frame-based) so a 120Hz display or a busy
+// main thread can't silently shrink the window. 3s comfortably covers the
+// lazy views' first chunk fetch (cold cache, dev transforms) plus any mount
+// animation that runs before the target's rect settles.
+const MEASURE_DEADLINE_MS = 3000;
 
 /**
  * True while the target (or any of its ancestors) is mid-animation.
@@ -143,6 +147,20 @@ export function OnboardingTour({
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  // The toured views are code-split (see MainStage). Warm them as soon as the
+  // tour mounts so the spotlight never waits on a chunk: a cold chunk can take
+  // longer than the measurement window, which used to leave steps 2-4 without
+  // any highlight (the loop fell back to a centered tooltip before the target
+  // even existed). The tour starts on the timer, so this prefetch runs while
+  // the user is still reading step 1.
+  useEffect(() => {
+    // Best-effort prefetch: a failed chunk download must never surface as an
+    // unhandled rejection (the views would retry via lazy() on navigation).
+    void import("@/components/Insights/InsightsDashboard").catch(() => {});
+    void import("@/views/Algorithms/AlgorithmDashboard").catch(() => {});
+    void import("@/views/Profile/ProfileView").catch(() => {});
+  }, []);
+
   // Navigate to the step's view, then measure its target. Re-runs when
   // activeView lands (prop change) so the measurement happens after the target
   // actually mounted.
@@ -175,7 +193,7 @@ export function OnboardingTour({
     }
 
     let cancelled = false;
-    let attempts = 0;
+    let deadline = performance.now() + MEASURE_DEADLINE_MS;
     let stableFrames = 0;
     let lastRect: SpotlightRect | null = null;
 
@@ -220,7 +238,7 @@ export function OnboardingTour({
           // Target found in a usable spot: don't let the missing-element
           // budget eat settling time (a long slide-in should keep waiting,
           // not give up).
-          attempts = 0;
+          deadline = performance.now() + MEASURE_DEADLINE_MS;
           const settled =
             lastRect !== null &&
             Math.abs(lastRect.x - next.x) < 0.5 &&
@@ -247,9 +265,9 @@ export function OnboardingTour({
         } else {
           // In transit: restart the stability window so a stale rect can
           // never count as "settled" when the target reaches its final spot.
-          // In-transit ticks still count toward the fallback budget, so a
-          // target stuck mid-animation (e.g. a perpetual animation on an
-          // ancestor) can never loop forever — after ~500ms the spotlight
+          // In-transit frames keep eating the deadline, so a target stuck
+          // mid-animation (e.g. a perpetual animation on an ancestor) can
+          // never loop forever — after MEASURE_DEADLINE_MS the spotlight
           // falls back to a centered tooltip instead of hanging.
           stableFrames = 0;
           lastRect = null;
@@ -261,7 +279,7 @@ export function OnboardingTour({
         lastRect = null;
       }
 
-      if (attempts++ < MAX_MEASURE_ATTEMPTS) {
+      if (performance.now() < deadline) {
         requestAnimationFrame(measure);
       } else {
         setRect(null); // fallback: centered tooltip, never block
