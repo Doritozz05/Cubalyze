@@ -1,7 +1,6 @@
 'use client';
 
 import { Switch } from '@/components/ui/switch';
-import { useIsTouch } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 export interface SettingToggleProps {
@@ -25,20 +24,6 @@ export function SettingToggle({
   onCheckedChange,
   className,
 }: SettingToggleProps) {
-  // Touch (<1024px): the whole row is a 44px tap target (like native
-  // settings), so the Switch sits inside a size-11 tappable button. Desktop
-  // (>=1024px) is untouched — the Switch stays a plain inline toggle.
-  const isTouch = useIsTouch();
-
-  const switchEl = (
-    <div className="flex h-5 shrink-0 items-center">
-      <Switch
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-      />
-    </div>
-  );
-
   return (
     <div
       className={cn(
@@ -53,24 +38,13 @@ export function SettingToggle({
           {description}
         </p>
       </div>
-      {isTouch ? (
-        // The pill sits top-right inside the 44px cell — pixel-identical to
-        // the desktop path — so touch and desktop pills always align with
-        // the row title (centering it here pushed it ~12px down).
-        <div
-          role="switch"
-          aria-checked={checked}
+      <div className="flex h-5 shrink-0 items-center">
+        <Switch
+          checked={checked}
+          onCheckedChange={onCheckedChange}
           aria-label={title}
-          onClick={() => onCheckedChange(!checked)}
-          className="grid size-11 shrink-0 cursor-pointer touch-manipulation items-start justify-items-end rounded-lg"
-        >
-          <span className="pointer-events-none flex h-5 items-center" aria-hidden="true">
-            <Switch checked={checked} onCheckedChange={onCheckedChange} />
-          </span>
-        </div>
-      ) : (
-        switchEl
-      )}
+        />
+      </div>
     </div>
   );
 }
