@@ -176,10 +176,28 @@ function runMigrations(): void {
 
   for (const migration of MIGRATIONS) {
     if (applied.has(migration.id)) continue;
-    db.exec(migration.sql);
-    // Use INSERT OR IGNORE so that reloads over an already-migrated OPFS
-    // database don't crash on the UNIQUE constraint.
-    db.exec('INSERT OR IGNORE INTO _migrations (id) VALUES (?)', { bind: [migration.id] });
+
+    // Each migration runs in its own transaction. If a statement fails — or
+    // the worker is killed mid-run (e.g. a Vite HMR reload while exec() is
+    // in flight) — the transaction is left uncommitted and SQLite rolls it
+    // back on the next open. Without this, a crash between statements left
+    // orphan tables such as `training_exercises` with no _migrations record,
+    // wedging every later init with "table ... already exists".
+    db.exec('BEGIN');
+    try {
+      db.exec(migration.sql);
+      // Use INSERT OR IGNORE so that reloads over an already-migrated OPFS
+      // database don't crash on the UNIQUE constraint.
+      db.exec('INSERT OR IGNORE INTO _migrations (id) VALUES (?)', { bind: [migration.id] });
+      db.exec('COMMIT');
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // Transaction already gone — nothing left to unwind.
+      }
+      throw err;
+    }
   }
 }
 

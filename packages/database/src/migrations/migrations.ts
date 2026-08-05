@@ -55,7 +55,7 @@ export const MIGRATIONS: Migration[] = [
     description: 'Update models with new schema fields (recreate tables)',
     sql: `
       DROP TABLE IF EXISTS solves;
-      CREATE TABLE solves (
+      CREATE TABLE IF NOT EXISTS solves (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
         time_ms INTEGER NOT NULL,
@@ -68,11 +68,11 @@ export const MIGRATIONS: Migration[] = [
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       );
-      CREATE INDEX idx_solves_session_id ON solves(session_id);
+      CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
       CREATE INDEX idx_solves_date ON solves(date);
 
       DROP TABLE IF EXISTS sessions;
-      CREATE TABLE sessions (
+      CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         puzzle_type TEXT NOT NULL DEFAULT '3x3x3',
@@ -414,7 +414,7 @@ export const MIGRATIONS: Migration[] = [
       DROP TABLE IF EXISTS sessions;
 
       -- ── Sessions (INTEGER ms timestamps) ─────────────────────────────────
-      CREATE TABLE sessions (
+      CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         puzzle_type TEXT NOT NULL DEFAULT '3x3x3',
@@ -422,11 +422,11 @@ export const MIGRATIONS: Migration[] = [
         updated_at INTEGER NOT NULL DEFAULT 0,
         is_demo INTEGER NOT NULL DEFAULT 0
       );
-      CREATE INDEX idx_sessions_created_at ON sessions(created_at);
-      CREATE INDEX idx_sessions_is_demo ON sessions(is_demo);
+      CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
 
       -- ── Solves (single INTEGER timestamp; real FK; CHECKs) ───────────────
-      CREATE TABLE solves (
+      CREATE TABLE IF NOT EXISTS solves (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
         time_ms INTEGER NOT NULL,
@@ -446,12 +446,12 @@ export const MIGRATIONS: Migration[] = [
         updated_at INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       );
-      CREATE INDEX idx_solves_session_id ON solves(session_id);
-      CREATE INDEX idx_solves_timestamp ON solves(timestamp);
-      CREATE INDEX idx_solves_is_demo ON solves(is_demo);
+      CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
+      CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
 
       -- ── Training exercise registry (seeded from @cubeforge/training in 023) ──
-      CREATE TABLE training_exercises (
+      CREATE TABLE IF NOT EXISTS training_exercises (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL DEFAULT '',
         description TEXT NOT NULL DEFAULT '',
@@ -461,7 +461,7 @@ export const MIGRATIONS: Migration[] = [
       );
 
       -- ── Training attempts ────────────────────────────────────────────────
-      CREATE TABLE training_attempts (
+      CREATE TABLE IF NOT EXISTS training_attempts (
         id TEXT PRIMARY KEY,
         exercise_id TEXT NOT NULL,
         method_id TEXT NOT NULL,
@@ -485,15 +485,15 @@ export const MIGRATIONS: Migration[] = [
         timestamp INTEGER NOT NULL,
         FOREIGN KEY (case_id) REFERENCES algorithm_cases(id)
       );
-      CREATE INDEX idx_training_attempts_exercise ON training_attempts(exercise_id);
-      CREATE INDEX idx_training_attempts_method ON training_attempts(method_id);
-      CREATE INDEX idx_training_attempts_case ON training_attempts(case_id);
-      CREATE INDEX idx_training_attempts_session ON training_attempts(session_id);
-      CREATE INDEX idx_training_attempts_metric_kind ON training_attempts(metric_kind);
-      CREATE INDEX idx_training_attempts_timestamp ON training_attempts(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_exercise ON training_attempts(exercise_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_method ON training_attempts(method_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_case ON training_attempts(case_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_session ON training_attempts(session_id);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_metric_kind ON training_attempts(metric_kind);
+      CREATE INDEX IF NOT EXISTS idx_training_attempts_timestamp ON training_attempts(timestamp);
 
       -- ── Algorithm progress (exact exec/rec counters; real FK) ────────────
-      CREATE TABLE algorithm_progress (
+      CREATE TABLE IF NOT EXISTS algorithm_progress (
         id TEXT PRIMARY KEY,
         algorithm_id TEXT NOT NULL UNIQUE,
         mastery INTEGER NOT NULL DEFAULT 0,
@@ -520,11 +520,11 @@ export const MIGRATIONS: Migration[] = [
         last_review_at INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (algorithm_id) REFERENCES algorithm_cases(id)
       );
-      CREATE INDEX idx_algorithm_progress_mastery ON algorithm_progress(mastery);
-      CREATE INDEX idx_algorithm_progress_srs ON algorithm_progress(srs_next_review_at);
+      CREATE INDEX IF NOT EXISTS idx_algorithm_progress_mastery ON algorithm_progress(mastery);
+      CREATE INDEX IF NOT EXISTS idx_algorithm_progress_srs ON algorithm_progress(srs_next_review_at);
 
       -- ── Exercise progress (exec counters; NULL-safe UNIQUE) ──────────────
-      CREATE TABLE exercise_progress (
+      CREATE TABLE IF NOT EXISTS exercise_progress (
         id TEXT PRIMARY KEY,
         exercise_id TEXT NOT NULL,
         method_id TEXT NOT NULL,
@@ -540,12 +540,12 @@ export const MIGRATIONS: Migration[] = [
       );
       -- Expression index: phase_id NULLs are distinct in plain UNIQUE indexes,
       -- so COALESCE makes the (exercise, method, phase) identity actually unique.
-      CREATE UNIQUE INDEX uq_exercise_progress_identity
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_exercise_progress_identity
         ON exercise_progress(exercise_id, method_id, COALESCE(phase_id, ''));
-      CREATE INDEX idx_exercise_progress_method ON exercise_progress(method_id);
+      CREATE INDEX IF NOT EXISTS idx_exercise_progress_method ON exercise_progress(method_id);
 
       -- ── Training sessions ────────────────────────────────────────────────
-      CREATE TABLE training_sessions (
+      CREATE TABLE IF NOT EXISTS training_sessions (
         id TEXT PRIMARY KEY,
         exercise_id TEXT NOT NULL,
         method_id TEXT NOT NULL,
@@ -557,9 +557,9 @@ export const MIGRATIONS: Migration[] = [
         smart_cube_used INTEGER NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed'))
       );
-      CREATE INDEX idx_training_sessions_method_phase
+      CREATE INDEX IF NOT EXISTS idx_training_sessions_method_phase
         ON training_sessions(method_id, phase_id, started_at);
-      CREATE INDEX idx_training_sessions_completed
+      CREATE INDEX IF NOT EXISTS idx_training_sessions_completed
         ON training_sessions(completed_at);
     `,
   },
