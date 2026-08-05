@@ -8,6 +8,25 @@ import { applyCaseRenderPlan } from "@/services/Case3DRenderAdapter";
 const STORAGE_PREFIX = "cubeforge_snap_3d_v8_";
 const CANV_SIZE = 256;
 
+/**
+ * Bounded-cache guards: a 256×256 PNG data URL is ~5–20KB, so a large
+ * algorithm library could otherwise exhaust the ~5MB sessionStorage quota
+ * (snapshots then silently fail) or balloon the in-memory Map. These caps
+ * keep the cache healthy: LRU eviction for memory, quota-safe batch eviction
+ * for storage.
+ */
+const MAX_MEMORY_CACHE_ENTRIES = 200;
+const MAX_STORAGE_CACHE_ENTRIES = 150;
+
+/** Insert into a Map, evicting the oldest (insertion-order) entry past the cap. */
+function boundedSet(map: Map<string, string>, key: string, value: string, max: number): void {
+  map.set(key, value);
+  if (map.size > max) {
+    const oldest = map.keys().next();
+    if (!oldest.done) map.delete(oldest.value);
+  }
+}
+
 
 type RenderTask = {
   key: string;
@@ -42,6 +61,7 @@ export class Global3DSnapshotService {
     if (typeof window === "undefined") return;
     try {
       for (let i = 0; i < sessionStorage.length; i++) {
+        if (this.memoryCache.size >= MAX_MEMORY_CACHE_ENTRIES) break;
         const key = sessionStorage.key(i);
         if (key && key.startsWith(STORAGE_PREFIX)) {
           const val = sessionStorage.getItem(key);
@@ -164,6 +184,31 @@ export class Global3DSnapshotService {
     });
   }
 
+  /**
+   * Free space in sessionStorage: remove entries down to the cap (or at least
+   * one entry when the quota is hit for another reason) so a single retry can
+   * succeed. sessionStorage exposes no reliable insertion order, so which
+   * entries are dropped is best-effort — the memory cache keeps serving the
+   * most recently rendered snapshots regardless.
+   */
+  private evictOldestStoredSnapshots(): void {
+    try {
+      const keys: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const k = sessionStorage.key(i);
+        if (k && k.startsWith(STORAGE_PREFIX)) keys.push(k);
+      }
+      // Remove the excess above the cap; when already under the cap (storage
+      // full for another reason) still free at least one entry.
+      const toRemove = Math.max(keys.length - MAX_STORAGE_CACHE_ENTRIES, 1);
+      for (const k of keys.slice(0, toRemove)) {
+        sessionStorage.removeItem(k);
+      }
+    } catch {
+      // Storage unavailable — nothing to evict
+    }
+  }
+
   private processNext() {
     if (this.isProcessing || this.queue.length === 0) return;
     this.isProcessing = true;
@@ -198,11 +243,19 @@ export class Global3DSnapshotService {
 
         const dataUrl = canvas.toDataURL("image/png");
         if (dataUrl && dataUrl.length > 100) {
-          this.memoryCache.set(key, dataUrl);
+          boundedSet(this.memoryCache, key, dataUrl, MAX_MEMORY_CACHE_ENTRIES);
           try {
             sessionStorage.setItem(STORAGE_PREFIX + key, dataUrl);
           } catch {
-            // Storage full or unavailable
+            // Quota exceeded or storage unavailable: drop the oldest stored
+            // snapshots (oldest first) and retry once, so a large library
+            // degrades gracefully instead of silently losing the new snapshot.
+            this.evictOldestStoredSnapshots();
+            try {
+              sessionStorage.setItem(STORAGE_PREFIX + key, dataUrl);
+            } catch {
+              // Still failing — keep the in-memory copy and move on.
+            }
           }
           task.resolve(dataUrl);
         } else {

@@ -99,4 +99,49 @@ describe('MIGRATIONS — schema migrations module', () => {
     };
     expect(sample).toBeDefined();
   });
+
+  it('every migration is re-runnable: non-IF-NOT-EXISTS CREATEs are preceded by a DROP of the same object', () => {
+    for (const m of MIGRATIONS) {
+      const upper = m.sql.toUpperCase();
+      const statements = m.sql
+        .split('\n')
+        .filter((l) => l.trim() && !l.trim().startsWith('--'))
+        .join('\n')
+        .split(';')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      for (const stmt of statements) {
+        const table = stmt.match(/^CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][A-Za-z0-9_]*)/i);
+        if (table && !table[1]) {
+          expect(upper).toContain(`DROP TABLE IF EXISTS ${table[2].toUpperCase()}`);
+        }
+        const idx = stmt.match(/^CREATE\s+(?:UNIQUE\s+)?INDEX\s+(IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][A-Za-z0-9_]*)/i);
+        if (idx && !idx[1]) {
+          const on = stmt.match(/ON\s+([A-Za-z_][A-Za-z0-9_]*)/i);
+          expect(on).toBeTruthy();
+          expect(upper).toContain(`DROP TABLE IF EXISTS ${on![1].toUpperCase()}`);
+        }
+      }
+    }
+  });
+
+  it('migration 022 is idempotent: every CREATE TABLE/INDEX uses IF NOT EXISTS so a partially-applied baseline can self-heal', () => {
+    const m = MIGRATIONS.find((x) => x.id === '022_baseline_v2');
+    expect(m).toBeDefined();
+    const statements = m!.sql
+      .split('\n')
+      .filter((l) => l.trim() && !l.trim().startsWith('--'))
+      .join('\n')
+      .split(';')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    for (const stmt of statements) {
+      if (/^CREATE\s+TABLE\s+/i.test(stmt)) {
+        expect(stmt.toUpperCase()).toMatch(/^CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS/i);
+      }
+      if (/^CREATE\s+(UNIQUE\s+)?INDEX\s+/i.test(stmt)) {
+        expect(stmt.toUpperCase()).toMatch(/^CREATE\s+(UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS/i);
+      }
+    }
+  });
 });

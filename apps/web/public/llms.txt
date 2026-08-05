@@ -1,0 +1,14 @@
+# CubeForge
+
+> CubeForge is an open-source, offline-first speedcubing platform that unifies timing, smart cube integration, real-time analytics, spaced-repetition training, and algorithm databases into a single application. It runs entirely in the browser with no account required, and its source code is available on GitHub.
+
+## Key Features
+- [Speedcubing Timer](https://cubeforge-phi.vercel.app/): Manual and smart cube (GAN) timing with inspection, penalties, scramble generation, and personal bests.
+- [Statistics & Analytics](https://cubeforge-phi.vercel.app/): Session statistics, trend charts, phase timing, and move-by-move solve analysis.
+- [Algorithm Database](https://cubeforge-phi.vercel.app/): Searchable algorithm database with 3D case diagrams and learning tools.
+- [Training System](https://cubeforge-phi.vercel.app/): Spaced-repetition algorithm drills, cross and F2L trainers, and structured practice plans.
+- [Skill Tree](https://cubeforge-phi.vercel.app/): Curated speedcubing learning paths with progress tracking.
+- [Profile](https://cubeforge-phi.vercel.app/): Local anonymous profile with CubeMark identicon.
+
+## Optional
+- [CubeForge GitHub Repository](https://github.com/Doritozz05/Cubeforge): Open-source source code, documentation, and contribution guidelines.

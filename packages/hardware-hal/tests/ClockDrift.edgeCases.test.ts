@@ -1,61 +1,61 @@
 /**
- * Nivel 2 — Edge cases para ClockDriftReconciler
+ * Level 2 — Edge cases for ClockDriftReconciler
  *
- * Casos frontera para la reconciliación de reloj entre el hardware
- * del cubo (crystal interno) y el host (performance.now):
+ * Boundary cases for clock reconciliation between the cube hardware
+ * (internal crystal) and the host (performance.now):
  *
- * • Sin data points, 1 data point (fallback a offset simple)
- * • Drift negativo (reloj del cubo más rápido que el host)
- * • Denominador cero (todos los cubeTs iguales)
- * • NaN, Infinity, números negativos
- * • Overflow de timestamp, valores muy grandes
- * • Data points no monotónicos
- * • Ventana llena + nuevos puntos (shift)
+ * • No data points, 1 data point (fallback to a simple offset)
+ * • Negative drift (cube clock faster than host)
+ * • Zero denominator (all cubeTs equal)
+ * • NaN, Infinity, negative numbers
+ * • Timestamp overflow, very large values
+ * • Non-monotonic data points
+ * • Full window + new points (shift)
  */
 import { describe, it, expect } from 'vitest';
 import { ClockDriftReconciler } from '../src/sync/ClockDrift';
 
-describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
-  // ── Sin datos ──────────────────────────────────────────────────────
+describe('ClockDriftReconciler — Level 2 Edge Cases', () => {
+  // ── No data ────────────────────────────────────────────────────────
 
-  it('reconcile sin data points devuelve cubeTs intacto', () => {
+  it('reconcile with no data points returns cubeTs unchanged', () => {
     const r = new ClockDriftReconciler(20);
     expect(r.reconcile(1000)).toBe(1000);
   });
 
-  it('reconcile sin data points devuelve 0 si cubeTs=0', () => {
+  it('reconcile with no data points returns 0 when cubeTs=0', () => {
     const r = new ClockDriftReconciler(20);
     expect(r.reconcile(0)).toBe(0);
   });
 
-  it('reconcile sin data points devuelve NaN si cubeTs=NaN', () => {
+  it('reconcile with no data points returns NaN when cubeTs=NaN', () => {
     const r = new ClockDriftReconciler(20);
     expect(r.reconcile(NaN)).toBeNaN();
   });
 
-  // ── 1 data point (fallback a offset simple) ────────────────────────
+  // ── 1 data point (fallback to a simple offset) ─────────────────────
 
-  it('1 data point: reconcile usa offset directo', () => {
+  it('1 data point: reconcile uses a direct offset', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050); // offset = 50
     expect(r.reconcile(2000)).toBe(2050); // 2000 + 50
   });
 
-  it('1 data point con offset negativo', () => {
+  it('1 data point with a negative offset', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(2000, 1900); // offset = -100
     expect(r.reconcile(3000)).toBe(2900); // 3000 - 100
   });
 
-  it('1 data point: reconcile del mismo cubeTs', () => {
+  it('1 data point: reconcile of the same cubeTs', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050);
     expect(r.reconcile(1000)).toBe(1050);
   });
 
-  // ── 2+ data points con drift lineal ────────────────────────────────
+  // ── 2+ data points with linear drift ───────────────────────────────
 
-  it('drift lineal perfecto: host = cube + 50', () => {
+  it('perfect linear drift: host = cube + 50', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050);
     r.addDataPoint(2000, 2050);
@@ -63,30 +63,30 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(r.reconcile(4000)).toBe(4050);
   });
 
-  it('drift con pendiente: cubo más rápido que host', () => {
-    // Cube avanza 1000, host solo 900 (cubo más rápido)
+  it('drift with slope: cube faster than host', () => {
+    // Cube advances 1000, host only 900 (cube faster)
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(0, 0);
     r.addDataPoint(1000, 900);
     r.addDataPoint(2000, 1800);
-    // Pendiente = 0.9, intercept = 0
+    // Slope = 0.9, intercept = 0
     // reconcile(3000) = 0.9 * 3000 + 0 = 2700
     expect(r.reconcile(3000)).toBe(2700);
   });
 
-  it('drift con pendiente: cubo más lento que host (drift negativo)', () => {
-    // Cube avanza 1000, host avanza 1100 (cubo más lento)
+  it('drift with slope: cube slower than host (negative drift)', () => {
+    // Cube advances 1000, host advances 1100 (cube slower)
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(0, 0);
     r.addDataPoint(1000, 1100);
     r.addDataPoint(2000, 2200);
-    // Pendiente = 1.1, intercept = 0 → reconcile(3000) ≈ 3300
+    // Slope = 1.1, intercept = 0 → reconcile(3000) ≈ 3300
     expect(r.reconcile(3000)).toBeCloseTo(3300, 10);
   });
 
-  // ── Denominador cero (todos los cubeTs iguales) ────────────────────
+  // ── Zero denominator (all cubeTs equal) ────────────────────────────
 
-  it('todos los cubeTs iguales → fallback a average offset', () => {
+  it('all cubeTs equal → fallback to average offset', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050);
     r.addDataPoint(1000, 1060);
@@ -95,7 +95,7 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(r.reconcile(2000)).toBe(2050); // 2000 + 50
   });
 
-  it('2 data points con mismo cubeTs pero distinto hostTs', () => {
+  it('2 data points with the same cubeTs but different hostTs', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(500, 550);
     r.addDataPoint(500, 560);
@@ -103,27 +103,27 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(r.reconcile(1000)).toBe(1055);
   });
 
-  // ── NaN e Infinity en data points ─────────────────────────────────
+  // ── NaN and Infinity in data points ────────────────────────────────
 
-  it('addDataPoint con cubeTs NaN se incluye (se propaga a la regresión)', () => {
+  it('addDataPoint with NaN cubeTs is kept (propagates into the regression)', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(NaN, 1000);
     r.addDataPoint(1000, 2000);
-    // NaN contamina sumX, pero la función no filtra
+    // NaN contaminates sumX, but the function does not filter
     const result = r.reconcile(2000);
     expect(isNaN(result)).toBe(true);
   });
 
-  it('addDataPoint con hostTs Infinity', () => {
+  it('addDataPoint with Infinity hostTs', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, Infinity);
     const result = r.reconcile(2000);
     expect(isFinite(result)).toBe(false);
   });
 
-  // ── Valores extremos ──────────────────────────────────────────────
+  // ── Extreme values ────────────────────────────────────────────────
 
-  it('timestamps muy grandes (cercanos a Number.MAX_SAFE_INTEGER)', () => {
+  it('very large timestamps (near Number.MAX_SAFE_INTEGER)', () => {
     const r = new ClockDriftReconciler(20);
     const big = Number.MAX_SAFE_INTEGER / 2;
     r.addDataPoint(big, big + 100);
@@ -132,7 +132,7 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(result).toBe(big + 2100); // big + 2000 + 100 offset
   });
 
-  it('timestamps negativos (no debería pasar, pero no debe crashear)', () => {
+  it('negative timestamps (should not happen, but must not crash)', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(-1000, -900);
     r.addDataPoint(-500, -400);
@@ -147,29 +147,29 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(r.reconcile(500)).toBe(550);
   });
 
-  // ── Datos no monotónicos ───────────────────────────────────────────
+  // ── Non-monotonic data ─────────────────────────────────────────────
 
-  it('data points desordenados (no monotónicos) no crashean', () => {
+  it('out-of-order (non-monotonic) data points do not crash', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(3000, 3050);
     r.addDataPoint(1000, 1050);
     r.addDataPoint(2000, 2050);
-    // El orden no importa para la regresión lineal
+    // Order does not matter for linear regression
     const result = r.reconcile(4000);
     expect(isFinite(result)).toBe(true);
   });
 
-  // ── Ventana llena + rotación ───────────────────────────────────────
+  // ── Full window + rotation ──────────────────────────────────────────
 
-  it('ventana de tamaño 2: solo los 2 últimos cuentan', () => {
+  it('window size 2: only the last 2 count', () => {
     const r = new ClockDriftReconciler(2);
     r.addDataPoint(0, 0);
     r.addDataPoint(1000, 1000);
-    r.addDataPoint(2000, 1900); // Empuja (0,0) fuera
-    // Ventana tiene: (1000,1000) y (2000,1900)
-    // Pendiente = (2*1900000 - 3000*2900) / (2*5000000 - 3000^2)
+    r.addDataPoint(2000, 1900); // Pushes (0,0) out
+    // Window holds: (1000,1000) and (2000,1900)
+    // Slope = (2*1900000 - 3000*2900) / (2*5000000 - 3000^2)
     // = (3800000 - 8700000) / (10000000 - 9000000) = -4900000/1000000 = -4.9? 
-    // No, espera: 
+    // No, wait: 
     // sumX = 3000, sumY = 2900, sumXY = 1000*1000 + 2000*1900 = 4800000
     // sumXX = 1000^2 + 2000^2 = 5000000, n=2
     // denominator = 2*5000000 - 3000^2 = 10000000 - 9000000 = 1000000
@@ -179,20 +179,20 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(r.reconcile(3000)).toBe(2800);
   });
 
-  it('addDataPoint mantiene máximo windowSize elementos', () => {
+  it('addDataPoint keeps at most windowSize elements', () => {
     const r = new ClockDriftReconciler(3);
     r.addDataPoint(0, 0);
     r.addDataPoint(100, 100);
     r.addDataPoint(200, 200);
     expect(r['history'].length).toBe(3);
-    r.addDataPoint(300, 300); // Empuja (0,0) fuera
+    r.addDataPoint(300, 300); // Pushes (0,0) out
     expect(r['history'].length).toBe(3);
     expect(r['history'][0].cubeTs).toBe(100);
   });
 
-  // ── Drift sin offset (relojes sincronizados) ───────────────────────
+  // ── Drift without offset (synchronized clocks) ─────────────────────
 
-  it('relojes perfectamente sincronizados: reconcile(x) ≈ x', () => {
+  it('perfectly synchronized clocks: reconcile(x) ≈ x', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(0, 0);
     r.addDataPoint(1000, 1000);
@@ -200,30 +200,30 @@ describe('ClockDriftReconciler — Nivel 2 Edge Cases', () => {
     expect(r.reconcile(3000)).toBe(3000);
   });
 
-  // ── Un solo data point después de muchos ───────────────────────────
+  // ── A single data point after many ─────────────────────────────────
 
-  it('después de la regresión lineal, 1 data point + reconcile funciona', () => {
+  it('after linear regression, 1 data point + reconcile works', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050);
     r.addDataPoint(2000, 2050);
-    // 2 data points → regresión lineal
+    // 2 data points → linear regression
     expect(r.reconcile(3000)).toBe(3050);
   });
 
-  // ── Reconcile con valores extremos después de data points ──────────
+  // ── Reconcile with extreme values after data points ────────────────
 
-  it('reconcile con cubeTs = 0 después de data points positivos', () => {
+  it('reconcile with cubeTs = 0 after positive data points', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050);
     r.addDataPoint(2000, 2050);
     const result = r.reconcile(0);
-    // Extrapolación lineal hacia atrás
+    // Linear extrapolation backwards
     expect(isFinite(result)).toBe(true);
   });
 
-  // ── Resistencia a NaN en reconcile ─────────────────────────────────
+  // ── NaN resistance in reconcile ────────────────────────────────────
 
-  it('reconcile(NaN) después de data points válidos devuelve NaN', () => {
+  it('reconcile(NaN) after valid data points returns NaN', () => {
     const r = new ClockDriftReconciler(20);
     r.addDataPoint(1000, 1050);
     r.addDataPoint(2000, 2050);

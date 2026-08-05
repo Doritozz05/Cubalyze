@@ -7,13 +7,13 @@ This Technical Design Document outlines the architecture, data flow, and impleme
 - Render a 3x3 Rubik's Cube at 60 FPS on low-end devices.
 - Support real-time hardware synchronization (moves and gyroscope).
 - Adhere to **ADR-014** (Pure Three.js, no R3F, manual memory pooling).
-- Enforce strict modularity: No file exceeds 300 lines of code.
+- Enforce strict modularity: No file exceeds 1000 lines of code (extreme-outlier gate only).
 
 ## 2. Architecture & Modularity
 
 The `cube-3d-engine` package will be completely agnostic of the frontend framework (React/Vue). 
 
-### 2.1 File Structure (Target: `< 300 lines/file`)
+### 2.1 File Structure (Target: `< 1000 lines/file`)
 ```text
 packages/cube-3d-engine/src/
 ├── core/

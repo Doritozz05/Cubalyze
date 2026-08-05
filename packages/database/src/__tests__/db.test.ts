@@ -134,6 +134,58 @@ describe('SolvesRepository', () => {
     expect(bind[6]).toBe('CFOP'); // method
     expect(bind[7]).toBe('smart'); // source (column order: ..., method, source, moves, ...)
   });
+
+  it('insertMany wraps the batch in a transaction (BEGIN → inserts → COMMIT)', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    const count = await repo.insertMany([
+      { id: 'b1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3' },
+      { id: 'b2', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: "U'", penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3' },
+    ]);
+    expect(count).toBe(2);
+    expect(db.mock.calls[0][0]).toBe('BEGIN');
+    // Both rows land in ONE multi-row INSERT (batched to cut worker round-trips).
+    expect(db.mock.calls[1][0]).toContain('INSERT INTO solves');
+    expect(db.mock.calls[1][0]).toContain('VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    expect(db.mock.calls[2][0]).toBe('COMMIT');
+  });
+
+  it('insertMany is a no-op for an empty batch', async () => {
+    const db = mockDb();
+    repo = new SolvesRepository(db);
+    expect(await repo.insertMany([])).toBe(0);
+    expect(db).not.toHaveBeenCalled();
+  });
+
+  it('insertMany rolls back when a statement fails (all-or-nothing)', async () => {
+    const db = mockDb();
+    db.mockImplementation(async (...args: unknown[]) => {
+      const bind = args[1] as unknown[] | undefined;
+      if (bind && bind.includes('fail')) throw new Error('boom');
+      return [];
+    });
+    repo = new SolvesRepository(db);
+    await expect(repo.insertMany([{ id: 'x1', sessionId: 'ses1', timeMs: 1, timestamp: 1, scramble: 'fail', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3' }])).rejects.toThrow('boom');
+    expect(db.mock.calls[0][0]).toBe('BEGIN');
+    expect(db.mock.calls[db.mock.calls.length - 1][0]).toBe('ROLLBACK');
+  });
+
+  it('deleteBySession deletes all solves of a session in one statement', async () => {
+    const db = mockDb([{ cnt: 3 }]);
+    repo = new SolvesRepository(db);
+    const removed = await repo.deleteBySession('ses1');
+    expect(removed).toBe(3);
+    expect(db).toHaveBeenCalledWith('SELECT COUNT(*) as cnt FROM solves WHERE session_id = ?', ['ses1']);
+    expect(db).toHaveBeenCalledWith('DELETE FROM solves WHERE session_id = ?', ['ses1']);
+  });
+
+  it('deleteBySession skips the DELETE when the session has no solves', async () => {
+    const db = mockDb([{ cnt: 0 }]);
+    repo = new SolvesRepository(db);
+    const removed = await repo.deleteBySession('empty');
+    expect(removed).toBe(0);
+    expect(db).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('SessionsRepository', () => {

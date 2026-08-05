@@ -4,28 +4,65 @@ import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
+import { CountryFlag } from "./CountryFlag";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
 
 /**
  * Rainbow badge styles per phase token (static strings so Tailwind sees the
- * full class names). Solid colored text + semi-transparent tinted background,
- * no border and no dot — same palette family as the CFOP timeline dots.
+ * full class names). Linear-style soft pill: 10% tinted fill, deeper text in
+ * the same hue, a 1px hue-matched border, and a small status dot.
  */
-const BADGE_COLOR_STYLES: Record<string, { pill: string; text: string }> = {
-  "phase-blue": { pill: "bg-phase-blue/15", text: "text-phase-blue" },
-  "phase-emerald": { pill: "bg-phase-emerald/15", text: "text-phase-emerald" },
-  "phase-teal": { pill: "bg-phase-teal/15", text: "text-phase-teal" },
-  "phase-amber": { pill: "bg-phase-amber/15", text: "text-phase-amber" },
-  "phase-violet": { pill: "bg-phase-violet/15", text: "text-phase-violet" },
-  "phase-purple": { pill: "bg-phase-purple/15", text: "text-phase-purple" },
-  "phase-indigo": { pill: "bg-phase-indigo/15", text: "text-phase-indigo" },
-  "phase-rose": { pill: "bg-phase-rose/15", text: "text-phase-rose" },
-  "phase-cyan": { pill: "bg-phase-cyan/15", text: "text-phase-cyan" },
-  "phase-orange": { pill: "bg-phase-orange/15", text: "text-phase-orange" },
-  "phase-sky": { pill: "bg-phase-sky/15", text: "text-phase-sky" },
-  "phase-pink": { pill: "bg-phase-pink/15", text: "text-phase-pink" },
+const BADGE_COLOR_STYLES: Record<string, { pill: string; dot: string }> = {
+  "phase-blue": {
+    pill: "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    dot: "bg-blue-500",
+  },
+  "phase-emerald": {
+    pill: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
+  "phase-teal": {
+    pill: "border-teal-500/25 bg-teal-500/10 text-teal-700 dark:text-teal-300",
+    dot: "bg-teal-500",
+  },
+  "phase-amber": {
+    pill: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    dot: "bg-amber-500",
+  },
+  "phase-violet": {
+    pill: "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    dot: "bg-violet-500",
+  },
+  "phase-purple": {
+    pill: "border-purple-500/25 bg-purple-500/10 text-purple-700 dark:text-purple-300",
+    dot: "bg-purple-500",
+  },
+  "phase-indigo": {
+    pill: "border-indigo-500/25 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+    dot: "bg-indigo-500",
+  },
+  "phase-rose": {
+    pill: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+    dot: "bg-rose-500",
+  },
+  "phase-cyan": {
+    pill: "border-cyan-500/25 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+    dot: "bg-cyan-500",
+  },
+  "phase-orange": {
+    pill: "border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300",
+    dot: "bg-orange-500",
+  },
+  "phase-sky": {
+    pill: "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    dot: "bg-sky-500",
+  },
+  "phase-pink": {
+    pill: "border-pink-500/25 bg-pink-500/10 text-pink-700 dark:text-pink-300",
+    dot: "bg-pink-500",
+  },
 };
 
 const DEFAULT_BADGE_STYLE = BADGE_COLOR_STYLES["phase-blue"];
@@ -97,9 +134,10 @@ export function ProfileHero({
   const chips = [
     { key: "handle", value: handle },
     { key: "member", value: memberSince },
+    { key: "country", value: profile.country ?? "" },
     { key: "puzzle", value: profile.mainPuzzle },
     ...profile.declaredMethods.map((method) => ({ key: `method-${method}`, value: method })),
-  ];
+  ].filter((chip) => chip.value !== "");
 
   return (
     <div
@@ -133,7 +171,11 @@ export function ProfileHero({
               {chips.map((chip, i) => (
                 <span key={chip.key} className="inline-flex items-center gap-2">
                   {i > 0 && <span aria-hidden="true">·</span>}
-                  <span className="whitespace-nowrap">{chip.value}</span>
+                  {chip.key === "country" ? (
+                    <CountryFlag country={chip.value} />
+                  ) : (
+                    <span className="whitespace-nowrap">{chip.value}</span>
+                  )}
                 </span>
               ))}
             </div>
@@ -147,23 +189,26 @@ export function ProfileHero({
                       key={badge.puzzle}
                       title={`PB ${badge.puzzleLabel} is Sub ${badge.thresholdLabel}`}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[0.65rem] font-semibold nums",
+                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold nums",
                         style.pill,
-                        style.text,
                       )}
                     >
+                      <span
+                        aria-hidden="true"
+                        className={cn("size-1.5 rounded-full", style.dot)}
+                      />
                       Sub {badge.thresholdLabel}
-                      <span aria-hidden="true" className="opacity-60">
+                      <span aria-hidden="true" className="opacity-50">
                         ·
                       </span>
-                      <span className="font-sans tracking-normal">
+                      <span className="font-sans font-medium tracking-normal">
                         {badge.puzzleLabel}
                       </span>
                     </span>
                   );
                 })}
                 {badges.length > 4 && (
-                  <span className="rounded-md bg-surface-2 px-2.5 py-1 text-[0.65rem] font-medium text-ink-3">
+                  <span className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[0.65rem] font-medium text-ink-3">
                     +{badges.length - 4}
                   </span>
                 )}

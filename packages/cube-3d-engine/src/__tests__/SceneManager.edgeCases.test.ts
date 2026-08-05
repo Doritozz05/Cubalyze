@@ -40,7 +40,7 @@ function createMockCanvas(): HTMLCanvasElement {
   } as unknown as HTMLCanvasElement;
 }
 
-describe('SceneManager — Nivel 2 Edge Cases', () => {
+describe('SceneManager — Level 2 Edge Cases', () => {
   let sceneManager: SceneManager;
   let canvas: HTMLCanvasElement;
 
@@ -177,6 +177,123 @@ describe('SceneManager — Nivel 2 Edge Cases', () => {
       const pos = sceneManager.camera.position;
       const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2);
       expect(dist).toBeCloseTo(7, 0);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────
+  //  zoomBy
+  // ────────────────────────────────────────────────────────────────────
+
+  describe('zoomBy — edge cases', () => {
+    it('zoomBy(1) is a no-op', () => {
+      sceneManager.zoomBy(1);
+      expect(sceneManager.camera.position.z).toBeCloseTo(7, 5);
+    });
+
+    it('zoomBy(2) doubles the orbit radius (7 → 14)', () => {
+      sceneManager.zoomBy(2);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(14, 5);
+    });
+
+    it('zoomBy(0.5) halves the orbit radius (7 → 3.5)', () => {
+      sceneManager.zoomBy(0.5);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(3.5, 5);
+    });
+
+    it('zoomBy(100) clamps at maxOrbitRadius (20)', () => {
+      sceneManager.zoomBy(100);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(20, 5);
+    });
+
+    it('zoomBy(0.0001) clamps at minOrbitRadius (2)', () => {
+      sceneManager.zoomBy(0.0001);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(2, 5);
+    });
+
+    it('zoomBy with NaN, 0 or negative factor is a no-op', () => {
+      const before = sceneManager.camera.position.clone();
+      sceneManager.zoomBy(NaN);
+      sceneManager.zoomBy(0);
+      sceneManager.zoomBy(-2);
+      expect(sceneManager.camera.position.distanceTo(before)).toBeCloseTo(0, 5);
+    });
+
+    it('zoomBy preserves the viewing angles (theta/phi)', () => {
+      sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+      const before = sceneManager.camera.position.clone().normalize();
+      sceneManager.zoomBy(1.5);
+      const after = sceneManager.camera.position.clone().normalize();
+      expect(after.distanceTo(before)).toBeCloseTo(0, 5);
+    });
+
+    it('zoom in then zoom out returns to the same radius (round-trip)', () => {
+      sceneManager.zoomBy(1.4);
+      sceneManager.zoomBy(1 / 1.4);
+      const dist = Math.sqrt(
+        sceneManager.camera.position.x ** 2 +
+        sceneManager.camera.position.y ** 2 +
+        sceneManager.camera.position.z ** 2,
+      );
+      expect(dist).toBeCloseTo(7, 5);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────
+  //  Dynamic near plane (depth precision at distance)
+  // ────────────────────────────────────────────────────────────────────
+
+  describe('dynamic near plane — depth precision guard', () => {
+    it('near scales with the default radius 7 (0.03 → 0.21)', () => {
+      expect(sceneManager.camera.near).toBeCloseTo(0.21, 5);
+    });
+
+    it('zooming out to max radius (20) raises near to 0.6', () => {
+      sceneManager.zoomBy(100);
+      expect(sceneManager.camera.near).toBeCloseTo(0.6, 5);
+    });
+
+    it('zooming in clamps near at the minimum 0.1 (no clipping)', () => {
+      sceneManager.zoomBy(0.0001);
+      expect(sceneManager.camera.near).toBeCloseTo(0.1, 5);
+    });
+
+    it('near plane never exceeds the 1.5 max clamp', () => {
+      // Radius clamped to 20 → near = 0.6; force far above max via rotation
+      // at max zoom is not possible, but the clamp formula is stable:
+      sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6, 20);
+      expect(sceneManager.camera.near).toBeLessThanOrEqual(1.5);
+    });
+
+    it('far plane stays at 100', () => {
+      expect(sceneManager.camera.far).toBe(100);
+    });
+
+    it('rotating the camera keeps near in sync with distance', () => {
+      const before = sceneManager.camera.near;
+      sceneManager.rotateCamera(0, -10000); // phi clamps, radius stays 7
+      expect(sceneManager.camera.near).toBeCloseTo(before, 5);
+      sceneManager.zoomBy(2); // radius → 14
+      expect(sceneManager.camera.near).toBeCloseTo(0.42, 5);
     });
   });
 

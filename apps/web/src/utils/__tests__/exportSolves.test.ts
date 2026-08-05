@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { exportSolvesToCsTimer, exportSolvesToJSON, exportAllSolvesToJSON } from "../exportSolves";
+import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToJSON, exportAllSolvesToJSON } from "../exportSolves";
 import { parseImport, toSolveInput } from "../importSolves";
 import type { Solve } from "@/types";
 
@@ -75,6 +75,57 @@ describe("exportSolvesToCsTimer", () => {
 
     const exportedCsv = exportSolvesToCsTimer(solves);
     expect(exportedCsv).toBe(REAL_CSTIMER_CSV);
+  });
+});
+
+describe("formula injection guard (OWASP CSV/XLSX)", () => {
+  const dangerous: Solve[] = [
+    {
+      id: "inj1",
+      time: 12345,
+      penalty: "none",
+      scramble: "=HYPERLINK(\"http://evil.example\",\"click\")",
+      timestamp: 1737013787000,
+      method: "+SUM(A1:A9)" as Solve["method"],
+      note: "=cmd|'/C calc'!A0",
+      source: "manual",
+      puzzleType: "3x3x3",
+    },
+    {
+      id: "inj2",
+      time: 1000,
+      penalty: "none",
+      scramble: "@SUM(1+1)",
+      timestamp: 1737013787000,
+      method: "-2+3" as Solve["method"],
+      note: "\t1+1",
+      source: "manual",
+      puzzleType: "3x3x3",
+    },
+  ];
+
+  it("CubeForge CSV neutralizes cells starting with = + - @ or tab", () => {
+    const csv = exportSolvesToCSV(dangerous);
+    expect(csv).toContain("'=HYPERLINK");
+    expect(csv).toContain("'=cmd|");
+    expect(csv).toContain("'+SUM");
+    expect(csv).toContain("'@SUM");
+    expect(csv).toContain("'-2+3");
+    // Safe values are left untouched.
+    expect(csv).not.toMatch(/"'[A-Za-z0-9 ]/);
+  });
+
+  it("csTimer CSV neutralizes comment and scramble cells", () => {
+    const csv = exportSolvesToCsTimer(dangerous);
+    expect(csv).toContain("'=cmd|'/C calc'!A0");
+    expect(csv).toContain("'=HYPERLINK");
+    expect(csv).toContain("'@SUM");
+  });
+
+  it("JSON export keeps raw values untouched (machine-readable format)", () => {
+    const json = exportSolvesToJSON(dangerous);
+    expect(json).toContain("=cmd|'/C calc'!A0");
+    expect(json).not.toContain("'=cmd|");
   });
 });
 

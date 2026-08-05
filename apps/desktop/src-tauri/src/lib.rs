@@ -1,5 +1,6 @@
 
 mod ble;
+mod log;
 mod state;
 
 use state::AppState;
@@ -13,7 +14,9 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        // NOTE: no updater plugin — auto-updates are disabled until a signed
+        // release channel (real endpoint + public key) is set up. See
+        // tauri.conf.json → plugins.updater.active = false.
         .plugin(tauri_plugin_sql::Builder::default().build())
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
@@ -50,14 +53,14 @@ pub fn run() {
 
                         if let Ok(rt) = tokio::runtime::Handle::try_current() {
                             if let Some(p) = cube {
-                                eprintln!("[BLE] Window closing — disconnecting cube...");
+                                debug_log!("[BLE] Window closing — disconnecting cube...");
                                 let _ = rt.block_on(p.disconnect());
-                                eprintln!("[BLE] Cube disconnected");
+                                debug_log!("[BLE] Cube disconnected");
                             }
                             if let Some(p) = timer {
-                                eprintln!("[BLE] Window closing — disconnecting timer...");
+                                debug_log!("[BLE] Window closing — disconnecting timer...");
                                 let _ = rt.block_on(p.disconnect());
-                                eprintln!("[BLE] Timer disconnected");
+                                debug_log!("[BLE] Timer disconnected");
                             }
                         }
                     }
@@ -67,8 +70,8 @@ pub fn run() {
             // Start BLE background auto-scan when the app opens.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = ble::cube::start_auto_scan(handle).await {
-                    eprintln!("[BLE] Auto-scan background task error: {}", e);
+                if let Err(_e) = ble::cube::start_auto_scan(handle).await {
+                    debug_log!("[BLE] Auto-scan background task error: {}", _e);
                 }
             });
             Ok(())

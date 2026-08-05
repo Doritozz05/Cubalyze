@@ -204,12 +204,22 @@ export function Header({
         className,
       )}
     >
-      {/* pt-safe pushes content below the notch/status bar on iOS; it is
+      {/* Desktop (lg+): symmetric 3-region grid — the left and right columns
+          are equal-weight (1fr each) and the middle column can shrink
+          (minmax(0,1fr)), so the widget dock is ALWAYS dead-centered on
+          screen, no matter what the left (battery) or right (session/puzzle)
+          regions contain. Previously the flex `justify-between` centered the
+          dock BETWEEN the two side groups, which skewed it left whenever the
+          right side was wider. min-w-0 on every column stops a wide side from
+          inflating its track (which would re-skew the dock); a cramped right
+          side simply overflows leftward into the dock's padding instead.
+          Below lg we keep plain flex so the touch layout is unchanged.
+          pt-safe pushes content below the notch/status bar on iOS; it is
           0 everywhere else, so desktop layout is identical. */}
-      <div className="mx-auto flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6">
+      <div className="mx-auto flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6 lg:grid lg:grid-cols-[1fr_minmax(0,1fr)_1fr]">
         {/* Left: Smart Cube battery indicator (the hamburger is replaced by
             the bottom tab bar's "More" button in the touch regime) */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           {/* Battery % chip — only shown when a Smart Cube is connected */}
           {isCubeConnected && (
             <Tooltip>
@@ -234,8 +244,9 @@ export function Header({
 
         {/* Center: Widget dock — desktop keeps the flowing pill row; the
             touch regime collapses it into a single "Widgets" button that
-            opens the explorer (no drag/dock pills on touch). */}
-        <div className="flex flex-1 items-center justify-center min-w-0 px-4">
+            opens the explorer (no drag/dock pills on touch). flex-1 matters
+            below lg (flex layout); it's ignored inside the lg grid. */}
+        <div className="flex min-w-0 flex-1 items-center justify-center px-4">
           <div className="hidden w-full lg:block">
             <WidgetDock />
           </div>
@@ -258,8 +269,10 @@ export function Header({
           </div>
         </div>
 
-        {/* Right: PB + session + manual + puzzle grouped together */}
-        <div className="flex items-center gap-2">
+        {/* Right: PB + session + manual + puzzle grouped together. justify-end
+            pins the controls to the header's right edge inside the lg grid
+            track (harmless below lg). */}
+        <div className="flex min-w-0 items-center justify-end gap-2">
           {onAddManual ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -432,32 +445,34 @@ export function Header({
 
           {/* Profile avatar chip — ubiquitous entry to the identity center. */}
           {(profileSeed || profile) && onOpenProfile ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={onOpenProfile}
-                  aria-label="Open profile"
-                  className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
-                >
-                  {profile?.avatarKind === "photo" && profile.avatarData ? (
-                    <img
-                      src={profile.avatarData}
-                      alt=""
-                      className="size-5 rounded-[0.3rem] object-cover"
-                    />
-                  ) : profileSeed ? (
-                    <IdenticonAvatar
-                      seed={profileSeed}
-                      size={20}
-                      tile="transparent"
-                      className="rounded-[0.3rem]"
-                    />
-                  ) : null}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Profile</TooltipContent>
-            </Tooltip>
+            <div className="flex shrink-0 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onOpenProfile}
+                    aria-label="Open profile"
+                    className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
+                  >
+                    {profile?.avatarKind === "photo" && profile.avatarData ? (
+                      <img
+                        src={profile.avatarData}
+                        alt=""
+                        className="size-5 rounded-[0.3rem] object-cover"
+                      />
+                    ) : profileSeed ? (
+                      <IdenticonAvatar
+                        seed={profileSeed}
+                        size={20}
+                        tile="transparent"
+                        className="rounded-[0.3rem]"
+                      />
+                    ) : null}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Profile</TooltipContent>
+              </Tooltip>
+            </div>
           ) : null}
         </div>
       </div>

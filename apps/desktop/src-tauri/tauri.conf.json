@@ -25,7 +25,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost https: wss:; img-src 'self' data: blob:; font-src 'self' data: blob:; worker-src 'self' blob:"
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost https: wss:; img-src 'self' data: blob:; font-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost https: wss:; img-src 'self' data: blob:; font-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     }
   },
   "bundle": {
@@ -46,14 +47,7 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
-      "endpoints": [
-        "https://updates.cubeforge.app/v1/{{target}}/{{arch}}/{{current_version}}"
-      ],
-      "pubkey": "REPLACE_WITH_YOUR_PUBLIC_KEY",
-      "windows": {
-        "installMode": "passive"
-      }
+      "active": false
     }
   }
 }

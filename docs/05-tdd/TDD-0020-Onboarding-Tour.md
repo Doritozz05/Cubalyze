@@ -17,7 +17,7 @@ Algorithms → Profile → Widgets → final CTA). Skill Tree and Training are *
   first solve" CTA.
 - Respect `prefers-reduced-motion`, work on touch (<1024px) and desktop, be fully a11y-correct.
 
-## 2. File structure (< 300 lines/file)
+## 2. File structure (< 1000 lines/file)
 
 ```text
 packages/database/src/repositories/app-meta.repository.ts   // +ONBOARDING_KEY +2 methods
@@ -38,7 +38,7 @@ apps/web/src/hooks/useShortcuts.ts          // +enabled prop
 apps/web/src/components/Settings/sections/GeneralSection.tsx  // +replay row
 apps/web/src/components/Scramble/ScrambleDisplay.tsx          // +data-onboarding-target
 apps/web/src/components/Insights/InsightsDashboard.tsx        // +data-onboarding-target
-apps/web/src/views/Practice/PracticeDashboard.tsx             // +data-onboarding-target
+apps/web/src/views/Algorithms/AlgorithmDashboard.tsx         // +data-onboarding-target
 apps/web/src/components/Identity/ProfileHero.tsx              // +data-onboarding-target
 apps/web/src/components/Layout/LeftSidebar.tsx                // +target on "Widgets" item
 apps/web/src/components/Layout/Header.tsx                     // +target on touch Widgets btn
@@ -106,7 +106,7 @@ interface UseOnboardingResult {
 |---|---|---|---|
 | 1 | timer | `timer` | `[data-onboarding-target="timer"]` |
 | 2 | stats | `insights` | `[data-onboarding-target="insights"]` |
-| 3 | algorithms | `practice` | `[data-onboarding-target="practice"]` |
+| 3 | algorithms | `algorithms` | `[data-onboarding-target="algorithms"]` |
 | 4 | profile | `profile` | `[data-onboarding-target="profile"]` |
 | 5 | widgets | `timer` | `[data-onboarding-target="widgets-entry"]` |
 | 6 | final | `timer` | — (centered tooltip, no target) |

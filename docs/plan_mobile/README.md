@@ -197,7 +197,7 @@ Para **cada una**, en `<1024`:
 
 ## 6. Tab 3 — Algorithms
 
-### 6.1 `PracticeDashboard.tsx`
+### 6.1 `AlgorithmDashboard.tsx`
 - Hoy: `<aside lg:w-64>` (MethodTree) + grid + `hidden lg:block` del detalle.
 - En `<1024`:
   - MethodTree → **chips horizontales scrollables** (sustituye el aside):
@@ -358,7 +358,7 @@ Cada fase es autocontenida, termina validada (§12) y NO toca ≥1024px.
 | **F1** | Timer | TimerContainer, Scramble, SessionStats, ManualTimeInput, PB banner, panel 3D sheet | §4 |
 | **F2** | Widgets | TouchPanel, dock→botón, FloatingWidgetWrapper clamp/sheet, TimesPanel, Explorer | §9, `TouchPanel.tsx` (nuevo) |
 | **F3** | Settings + sheets | SettingsDialog/Sidebar, ManualSolveSheet, AlgorithmEditorDialog | §10, §6.4 |
-| **F4** | Algorithms | PracticeDashboard, MethodTree chips, CaseGrid, detail overlay | §6 |
+| **F4** | Algorithms | AlgorithmDashboard, MethodTree chips, CaseGrid, detail overlay | §6 |
 | **F5** | Training | Dashboard + 12 sub-vistas (TouchPanel asides) | §5 |
 | **F6** | Insights | master-detail móvil, SolveListPanel, OverviewPanel | §8 |
 | **F7** | Skills | Canvas zoom inicial, nodos, modal, toolbar | §7 |

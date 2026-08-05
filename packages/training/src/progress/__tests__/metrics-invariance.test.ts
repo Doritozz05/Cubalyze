@@ -59,7 +59,7 @@ const baseParams = {
   scramble: "R U' R'",
 };
 
-describe('Métrica invariante — ejecución y reconocimiento son ortogonales', () => {
+describe('Invariant metric — execution and recognition are orthogonal', () => {
   it('recognition attempts NEVER touch exec counters, times or accuracy', async () => {
     const { repo, savedAlgorithmProgress } = createFakeRepo();
     const tracker = new ProgressTracker(repo);
@@ -223,7 +223,7 @@ describe('Métrica invariante — ejecución y reconocimiento son ortogonales', 
   });
 });
 
-describe('Métrica invariante — ejercicio', () => {
+describe('Invariant metric — exercise', () => {
   it('exercise avg time is not diluted by recognition attempts', async () => {
     const { repo, savedExerciseProgress } = createFakeRepo();
     const tracker = new ProgressTracker(repo);

@@ -35,6 +35,8 @@ import { ScrambleSection } from './sections/ScrambleSection';
 import { ShortcutsSection } from './sections/ShortcutsSection';
 import { DataSection } from './sections/DataSection';
 import { ProfileSection } from './sections/ProfileSection';
+import { NotificationsSection } from './sections/NotificationsSection';
+import { AdvancedSection } from './sections/AdvancedSection';
 import type { Solve } from '@/types';
 
 export interface SettingsDialogProps {
@@ -126,6 +128,10 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return <ShortcutsSection />;
       case 'data':
         return <DataSection solves={solves ?? []} sessionName={sessionName} onImportSolves={onImportSolves} onExportAllJSON={onExportAllJSON} />;
+      case 'notifications':
+        return <NotificationsSection />;
+      case 'advanced':
+        return <AdvancedSection />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {

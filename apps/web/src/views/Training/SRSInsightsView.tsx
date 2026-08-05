@@ -28,8 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Loader2,
   BookOpen,
   Brain,
   Repeat2,
@@ -118,10 +118,7 @@ export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
         />
 
         {!ready || loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="size-6 text-ink-3 animate-spin" />
-            <p className="text-[0.7rem] text-ink-3">Loading memory insights…</p>
-          </div>
+          <Spinner variant="centered" size="md" label="Loading memory insights…" />
         ) : error ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-3">
             <p className="text-[0.7rem] text-hold">{error}</p>

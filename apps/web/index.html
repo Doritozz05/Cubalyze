@@ -6,27 +6,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f8f9fa" />
-  <script>
-    // Dynamic theme-color: keeps the browser chrome in sync with the app theme.
-    // Light canvas = #f8f9fa, dark canvas = #14171b. Watches the `.dark` class
-    // that next-themes toggles on <html> (covers user + system theme changes).
-    (function () {
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (!meta) return;
-      var LIGHT = '#f8f9fa';
-      var DARK = '#14171b';
-      function apply() {
-        meta.setAttribute('content', document.documentElement.classList.contains('dark') ? DARK : LIGHT);
-      }
-      apply();
-      if (window.MutationObserver) {
-        new MutationObserver(apply).observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['class'],
-        });
-      }
-    })();
-  </script>
+  <script src="/theme-color.js"></script>
   <meta name="description"
     content="CubeForge — Smart Cube Training Platform, Algorithm Database & Speedcubing Analytics" />
   <meta property="og:title" content="CubeForge — Smart Cube Training Platform" />
@@ -37,7 +17,112 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <!-- Pre-paint theme bootstrap (external, not inline): sets .dark before the
+       bundle loads so the root loader and first paint match the saved theme.
+       Kept in a separate file because the production Content-Security-Policy
+       uses `script-src 'self'` without 'unsafe-inline' (see theme-color.js). -->
+  <script src="/theme-bootstrap.js"></script>
+  <div id="root">
+    <style>
+      #root-loader-wrapper {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        color: #14171b;
+        z-index: 9999;
+      }
+      html.dark #root-loader-wrapper {
+        background-color: #14171b;
+        color: #f8f9fa;
+      }
+      .cf-rubik-lateral-root {
+        --offset: 18px;
+        --sq: 14px;
+        position: relative;
+        width: calc(3 * var(--offset) + var(--sq));
+        height: calc(2 * var(--offset) + var(--sq));
+      }
+      .cf-rubik-sq-root {
+        position: absolute;
+        width: var(--sq);
+        height: var(--sq);
+        border-radius: 2.5px;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
+      }
+      /* Colors match the app spinner tokens (--phase-orange / --phase-blue). */
+      .cf-sq1-r { background-color: #fb923c; animation: cf-sq1-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.1s ease-out both; }
+      .cf-sq2-r { background-color: #60a5fa; animation: cf-sq2-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.2s ease-out both; }
+      .cf-sq3-r { background-color: #fbbf24; animation: cf-sq3-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.3s ease-out both; }
+      .cf-sq4-r { background-color: #34d399; animation: cf-sq4-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.4s ease-out both; }
+      .cf-sq5-r { background-color: #a78bfa; animation: cf-sq5-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.5s ease-out both; }
+
+      @keyframes cf-sq1-r {
+        0% { left: 0px; top: 0px; }
+        8.333% { left: 0px; top: 18px; }
+        100% { left: 0px; top: 18px; }
+      }
+      @keyframes cf-sq2-r {
+        0% { left: 0px; top: 18px; }
+        8.333% { left: 0px; top: 36px; }
+        16.67% { left: 18px; top: 36px; }
+        25.00% { left: 18px; top: 18px; }
+        83.33% { left: 18px; top: 18px; }
+        91.67% { left: 18px; top: 0px; }
+        100% { left: 0px; top: 0px; }
+      }
+      @keyframes cf-sq3-r {
+        0%, 100% { left: 18px; top: 18px; }
+        16.67% { left: 18px; top: 18px; }
+        25.00% { left: 18px; top: 0px; }
+        33.33% { left: 36px; top: 0px; }
+        41.67% { left: 36px; top: 18px; }
+        66.67% { left: 36px; top: 18px; }
+        75.00% { left: 36px; top: 36px; }
+        83.33% { left: 18px; top: 36px; }
+        91.67% { left: 18px; top: 18px; }
+      }
+      @keyframes cf-sq4-r {
+        0% { left: 36px; top: 18px; }
+        33.33% { left: 36px; top: 18px; }
+        41.67% { left: 36px; top: 36px; }
+        50.00% { left: 54px; top: 36px; }
+        58.33% { left: 54px; top: 18px; }
+        100% { left: 54px; top: 18px; }
+      }
+      @keyframes cf-sq5-r {
+        0% { left: 54px; top: 18px; }
+        50.00% { left: 54px; top: 18px; }
+        58.33% { left: 54px; top: 0px; }
+        66.67% { left: 36px; top: 0px; }
+        75.00% { left: 36px; top: 18px; }
+        100% { left: 36px; top: 18px; }
+      }
+      @keyframes cf-sqin-r {
+        0% { transform: scale(0.75); opacity: 0; }
+        100% { transform: scale(1.0); opacity: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .cf-sq1-r, .cf-sq2-r, .cf-sq3-r, .cf-sq4-r, .cf-sq5-r { animation: none; }
+        .cf-sq1-r { left: 0px; top: 18px; }
+        .cf-sq2-r { left: 0px; top: 0px; }
+        .cf-sq3-r { left: 18px; top: 18px; }
+        .cf-sq4-r { left: 54px; top: 18px; }
+        .cf-sq5-r { left: 36px; top: 18px; }
+      }
+    </style>
+    <div id="root-loader-wrapper">
+      <div class="cf-rubik-lateral-root" role="img" aria-label="Loading">
+        <div class="cf-rubik-sq-root cf-sq1-r"></div>
+        <div class="cf-rubik-sq-root cf-sq2-r"></div>
+        <div class="cf-rubik-sq-root cf-sq3-r"></div>
+        <div class="cf-rubik-sq-root cf-sq4-r"></div>
+        <div class="cf-rubik-sq-root cf-sq5-r"></div>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

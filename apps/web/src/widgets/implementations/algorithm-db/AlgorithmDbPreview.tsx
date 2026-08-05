@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { getSeedData } from "@cubeforge/algorithm-db";
-import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
+import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 
 export function AlgorithmDbPreview() {
   // Select a random OLL case from seed data for preview

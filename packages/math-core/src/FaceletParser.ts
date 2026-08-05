@@ -1,4 +1,4 @@
-import { Vector3, Quaternion } from 'three';
+import { Vector3, Quaternion } from './math3d';
 
 // Standard Kociemba facelet layout
 // U1..9 (0-8), R1..9 (9-17), F1..9 (18-26), D1..9 (27-35), L1..9 (36-44), B1..9 (45-53)

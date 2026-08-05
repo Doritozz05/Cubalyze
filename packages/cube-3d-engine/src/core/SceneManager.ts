@@ -36,6 +36,14 @@ export class SceneManager {
   private readonly orbitRadius: number = 7;
   private readonly minOrbitRadius: number = 2;
   private readonly maxOrbitRadius: number = 20;
+  /**
+   * Near plane bounds for dynamic depth precision. A fixed near of 0.1 at
+   * max zoom-out (radius 20) compresses the depth buffer so much that the
+   * sticker panels (0.0001 in front of the cubie cores) z-fight and flicker.
+   * Near scales with the orbit radius within these bounds.
+   */
+  private readonly minNearPlane = 0.1;
+  private readonly maxNearPlane = 1.5;
 
   private ambientLight: AmbientLight;
   private directionalLight: DirectionalLight;
@@ -68,10 +76,11 @@ export class SceneManager {
     this.scene = new Scene();
 
     const safeAspect = width > 0 && height > 0 ? width / height : 1;
-    this.camera = new PerspectiveCamera(this.baseFov, safeAspect, 0.1, 100);
+    this.camera = new PerspectiveCamera(this.baseFov, safeAspect, this.minNearPlane, 100);
     this.updateCameraAspectAndFov(width, height);
     this.camera.position.set(0, 0, this.orbitRadius);
     this.camera.lookAt(0, 0, 0);
+    this.updateNearPlane();
 
     this.cameraGroup = new Group();
     this.scene.add(this.cameraGroup);
@@ -178,6 +187,22 @@ export class SceneManager {
     this.renderer.setSize(width, height, false);
   }
 
+  /**
+   * Scales the near plane with the orbit distance so depth precision stays
+   * consistent at any zoom level. At max zoom-out the cube is ~20 units away;
+   * a near of ~0.6 (vs 0.1) gives ~6× more usable depth precision, which
+   * eliminates the sticker/core z-fighting flicker far away. Clamped so it
+   * never clips the nearest cubie surface when zoomed in close.
+   */
+  private updateNearPlane(): void {
+    const dist = this.camera.position.length();
+    this.camera.near = Math.min(
+      this.maxNearPlane,
+      Math.max(this.minNearPlane, dist * 0.03),
+    );
+    this.camera.updateProjectionMatrix();
+  }
+
   public rotateCamera(dx: number, dy: number): void {
     const SPEED = 0.005;
     const MIN_PHI = 0.1;
@@ -196,12 +221,31 @@ export class SceneManager {
 
     this.camera.position.setFromSpherical(spherical);
     this.camera.lookAt(0, 0, 0);
+    this.updateNearPlane();
+  }
+
+  /**
+   * Scale the orbit radius by `factor` (> 1 zooms in, < 1 zooms out),
+   * clamped to [minOrbitRadius, maxOrbitRadius]. Preserves the current
+   * viewing angles (theta/phi).
+   */
+  public zoomBy(factor: number): void {
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    const spherical = new Spherical().setFromVector3(this.camera.position);
+    spherical.radius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, spherical.radius * factor),
+    );
+    this.camera.position.setFromSpherical(spherical);
+    this.camera.lookAt(0, 0, 0);
+    this.updateNearPlane();
   }
 
   /** Resets the camera to the default front-facing position. */
   public resetCamera(): void {
     this.camera.position.set(0, 0, this.orbitRadius);
     this.camera.lookAt(0, 0, 0);
+    this.updateNearPlane();
   }
 
   /**
@@ -223,6 +267,7 @@ export class SceneManager {
       clampedRadius * cosPhi * Math.cos(theta),
     );
     this.camera.lookAt(0, 0, 0);
+    this.updateNearPlane();
   }
 
   public render(): void {

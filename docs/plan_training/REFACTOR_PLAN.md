@@ -288,10 +288,10 @@ eo-detect, eo-efficiency, full-solve, srs-review
 | `TrainingDashboard` | Fases desde `buildMethodPhases`; subset desde `subsetForPhase`; mastery desde `masteryLevel`; coverage/performance; eliminar `masteryLabel`, `findSubsetId`, `METHOD_PHASES`, `PHASE_MODES` |
 | `AlgorithmDrillView` | `exercise_id` canónico; envolver en `useTrainingEngine`; resto intacto (es el modelo) |
 | `AlgorithmRecognizeView` | Ídem |
-| `FullSolveView` | Reconstruir: targets desde el paquete; splits como `skipped` + timeMs; singleton solver; extraer sub-paneles a archivos propios (<300 líneas) |
+| `FullSolveView` | Reconstruir: targets desde el paquete; splits como `skipped` + timeMs; singleton solver; extraer sub-paneles a archivos propios (<1000 líneas) |
 | `CrossTrainerView` | Añadir timer (useDrillTimer); eficiencia con tolerancia; stats desde DB; `exercise_id` canónico; conservar el excelente reuso de `useCrossScramble`/`ReplayEngine`/`useCube3D` |
 | `PlainPracticeView` / `BlindPracticeView` / `LSESubPhaseView` / `EODetectView` / `EOEfficiencyView` | `exercise_id` canónico; `useTrainingEngine`; (opcional) tips desde `defaults` |
-| `SRSReviewView` | `exercise_id` canónico (`srs-review`); partir en componentes (<300 líneas); sin cambio de lógica FSRS |
+| `SRSReviewView` | `exercise_id` canónico (`srs-review`); partir en componentes (<1000 líneas); sin cambio de lógica FSRS |
 | `PhaseStatsView` | `masteryLevel` + `subsetForPhase`; tabs de ejecución vs reconocimiento; eje del gráfico con escala real (percentil 90, no `maxTime=2.5`); quitar `void phaseId` |
 | `ProfileView` (sección mastery) | Consumir `masteryLevel`/`MASTERY_LEVEL_LABELS` del paquete |
 | `useTrainingProgress` | Eliminar hardcodes (2.5/5); adaptar a los nuevos counters; quitar el default-duplicado de `getCaseProgress` |
@@ -521,7 +521,7 @@ inserción** y que todo id escrito exista en el catálogo:
 6. `total_sessions` crece con cada sesión.
 7. **BD limpia**: sin tabla `algorithms` legacy, un solo formato de tiempo (INTEGER ms), FKs y
    CHECKs activos, `exercise_progress` UNIQUE real, agregados de sesión derivados en vivo.
-8. Tamaños: vistas de Training < 300 líneas (meta TDD-0006; excepción negociable para dashboard).
+8. Tamaños: vistas de Training < 1000 líneas (meta TDD-0006; excepción negociable para dashboard).
 
 ---
 

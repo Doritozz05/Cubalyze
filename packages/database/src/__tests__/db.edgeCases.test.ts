@@ -35,7 +35,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}): Record<strin
   };
 }
 
-describe('SolvesRepository — Nivel 2 Edge Cases', () => {
+describe('SolvesRepository — Level 2 Edge Cases', () => {
   let repo: SolvesRepository;
 
   beforeEach(() => {

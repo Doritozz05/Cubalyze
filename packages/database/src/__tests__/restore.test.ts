@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, restoreMissingCountSql } from '../migrations/restore.js';
+import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL, backupHasDateColumnSql, backupCreatedAtTypeSql, restoreMissingCountSql } from '../migrations/restore.js';
 
 describe('restoreLegacyData — v1 → v2 restore statements', () => {
   it('restores sessions first (solves FK depends on sessions)', () => {
@@ -50,6 +50,35 @@ describe('restoreLegacyData — v1 → v2 restore statements', () => {
   it('is idempotent (INSERT OR IGNORE — re-running never duplicates)', () => {
     expect(RESTORE_SESSIONS_SQL).toContain('INSERT OR IGNORE');
     expect(RESTORE_SOLVES_SQL).toContain('INSERT OR IGNORE');
+  });
+
+  it('v2-snapshot solves restore copies columns straight across (no julianday conversion)', () => {
+    // A stale v2-shaped snapshot already stores INTEGER epoch-ms in
+    // `timestamp` — converting with julianday(date) would corrupt or fail.
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('INSERT OR IGNORE INTO solves');
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('timestamp');
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).not.toContain('julianday');
+    // No bare v1 `date` column reference (the `date` inside `updated_at` is fine).
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).not.toMatch(/\bdate\b/);
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('FROM _backup_v1_solves');
+  });
+
+  it('v2-snapshot sessions restore copies columns straight across (no conversion)', () => {
+    expect(RESTORE_SESSIONS_V2_SNAPSHOT_SQL).toContain('INSERT OR IGNORE INTO sessions');
+    expect(RESTORE_SESSIONS_V2_SNAPSHOT_SQL).not.toContain('julianday');
+    expect(RESTORE_SESSIONS_V2_SNAPSHOT_SQL).toContain('FROM _backup_v1_sessions');
+  });
+
+  it('backupHasDateColumnSql probes pragma_table_info for the v1 `date` column', () => {
+    const sql = backupHasDateColumnSql('_backup_v1_solves');
+    expect(sql).toContain("pragma_table_info('_backup_v1_solves')");
+    expect(sql).toContain("WHERE name = 'date'");
+  });
+
+  it('backupCreatedAtTypeSql probes the stored shape of created_at', () => {
+    const sql = backupCreatedAtTypeSql('_backup_v1_sessions');
+    expect(sql).toContain('typeof(created_at)');
+    expect(sql).toContain('_backup_v1_sessions');
   });
 
   it('restoreMissingCountSql builds a guarded count for the given tables', () => {

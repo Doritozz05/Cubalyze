@@ -5,12 +5,20 @@ import { Button } from "@/components/ui/button";
 
 export type ArrowSide = "top" | "bottom" | "left" | "right";
 
+// Horizontal centering of the top/bottom arrows is driven by an inline `left`
+// (see arrowOffset below) so a viewport-clamped card still points at the
+// target; only the vertical edge and border sides stay in the class.
 const ARROW_STYLES: Record<ArrowSide, string> = {
-  top: "-top-1 left-1/2 -translate-x-1/2 border-t border-l",
-  bottom: "-bottom-1 left-1/2 -translate-x-1/2 border-b border-r",
+  top: "-top-1 border-t border-l",
+  bottom: "-bottom-1 border-b border-r",
   left: "-left-1 top-1/2 -translate-y-1/2 border-l border-b",
   right: "-right-1 top-1/2 -translate-y-1/2 border-r border-t",
 };
+
+// size-2.5 → 10px arrow; half of that centers the span on arrowOffset.
+const ARROW_HALF = 5;
+// Fallback arrow center: the card is w-[21rem] (336px).
+const ARROW_CENTER_FALLBACK = 336 / 2;
 
 interface TourTooltipProps {
   title: string;
@@ -21,6 +29,8 @@ interface TourTooltipProps {
   isLast: boolean;
   isTouch: boolean;
   arrowSide?: ArrowSide;
+  /** Arrow center, px from the tooltip's left edge (top/bottom arrows only). */
+  arrowOffset?: number;
   titleId: string;
   bodyId: string;
   onNext: () => void;
@@ -41,6 +51,7 @@ export function TourTooltip({
   isLast,
   isTouch,
   arrowSide,
+  arrowOffset,
   titleId,
   bodyId,
   onNext,
@@ -63,6 +74,11 @@ export function TourTooltip({
             "absolute size-2.5 rotate-45 border-line bg-surface",
             ARROW_STYLES[arrowSide],
           )}
+          style={
+            arrowSide === "left" || arrowSide === "right"
+              ? undefined
+              : { left: (arrowOffset ?? ARROW_CENTER_FALLBACK) - ARROW_HALF }
+          }
         />
       ) : null}
 

@@ -31,10 +31,10 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "algorithms",
-    view: "practice",
+    view: "algorithms",
     title: "Algorithms",
     body: "Browse cases by method — CFOP, Roux, ZZ… Send any case to the trainer with one click.",
-    target: '[data-onboarding-target="practice"]',
+    target: '[data-onboarding-target="algorithms"]',
   },
   {
     id: "profile",

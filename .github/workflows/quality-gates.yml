@@ -36,6 +36,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
         name: Lint (0 errors, 0 warnings)
+      - run: pnpm lint:lines
+        name: TDD-0006 line gate (no new files >1000 lines)
 
   unit-tests:
     name: Unit Tests (Nivel 1-3)

@@ -11,17 +11,17 @@ import { MobileMethodNavigator } from "./components/MobileMethodNavigator";
 import { CaseGrid } from "./components/CaseGrid";
 import { CaseDetailPanel } from "./components/CaseDetailPanel";
 
-export interface PracticeDashboardProps {
+export interface AlgorithmDashboardProps {
   onPracticeCase?: (subsetId: string, caseId: string) => void;
   initialSubsetId?: string | null;
   initialCaseId?: string | null;
 }
 
-export function PracticeDashboard({
+export function AlgorithmDashboard({
   onPracticeCase,
   initialSubsetId,
   initialCaseId,
-}: PracticeDashboardProps = {}) {
+}: AlgorithmDashboardProps = {}) {
   const [selectedSubsetId, setSelectedSubsetId] = useState<string | null>(
     () => initialSubsetId ?? SUBSETS.find((s) => s.name === "PLL")?.id ?? null,
   );
@@ -85,7 +85,7 @@ export function PracticeDashboard({
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex-1 min-h-0 w-full" data-onboarding-target="practice">
+    <div className="relative flex-1 min-h-0 w-full" data-onboarding-target="algorithms">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5">
         {/* Left panel: Method tree — desktop only (>=1024px) */}
         <aside className="hidden h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface lg:flex lg:w-64 lg:shrink-0">
@@ -135,7 +135,7 @@ export function PracticeDashboard({
             {selectedCase && !isTouch && (
               <div
                 className={cn(
-                  "flex min-h-0 flex-col border-l border-line bg-surface",
+                  "flex min-h-0 flex-col rounded-lg border-l border-line bg-surface",
                   "w-full lg:w-80",
                 )}
               >

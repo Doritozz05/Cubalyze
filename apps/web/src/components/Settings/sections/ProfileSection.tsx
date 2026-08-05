@@ -2,16 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 import {
   UserRound,
   Camera,
   RotateCcw,
   Download,
   Check,
-  Loader2,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
+import { CountryFlag } from "@/components/Identity/CountryFlag";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,14 @@ import {
   processAvatarImage,
 } from "@/utils/processAvatarImage";
 import { METHODS } from "@cubeforge/algorithm-db";
+import { COUNTRIES, countryName } from "@/utils/countries";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /** Puzzle types the app actually supports today (2×2 / 3×3). */
 const PUZZLE_OPTIONS = ["2x2x2", "3x3x3"] as const;
@@ -53,6 +62,7 @@ export function ProfileSection() {
   const [handle, setHandle] = useState("");
   const [bio, setBio] = useState("");
   const [mainPuzzle, setMainPuzzle] = useState<string>("3x3x3");
+  const [country, setCountry] = useState<string>("");
   const [methods, setMethods] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ handle?: string; bio?: string }>({});
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -68,6 +78,7 @@ export function ProfileSection() {
       setHandle(profile.handle);
       setBio(profile.bio);
       setMainPuzzle(profile.mainPuzzle || "3x3x3");
+      setCountry(profile.country ?? "");
       setMethods(profile.declaredMethods ?? []);
     }
   }, [profile]);
@@ -103,6 +114,7 @@ export function ProfileSection() {
         handle: handle.trim(),
         bio: bio.trim(),
         mainPuzzle,
+        country,
         declaredMethods: methods,
       });
       toast.success("Profile saved");
@@ -112,7 +124,7 @@ export function ProfileSection() {
     } finally {
       setSaving(false);
     }
-  }, [profile, validate, updateProfile, displayName, handle, bio, mainPuzzle, methods]);
+  }, [profile, validate, updateProfile, displayName, handle, bio, mainPuzzle, country, methods]);
 
   const toggleMethod = useCallback((name: string) => {
     setMethods((prev) =>
@@ -172,12 +184,7 @@ export function ProfileSection() {
   }, [profile]);
 
   if (loading || !profile) {
-    return (
-      <div className="flex items-center justify-center py-16 text-sm text-ink-3">
-        <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading profile…
-      </div>
-    );
+    return <Spinner variant="centered" size="md" label="Loading profile…" />;
   }
 
   const isPhoto = profile.avatarKind === "photo";
@@ -225,7 +232,7 @@ export function ProfileSection() {
               disabled={uploadingAvatar}
             >
               {uploadingAvatar ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner size="xs" />
               ) : (
                 <Camera className="size-3.5" />
               )}
@@ -322,6 +329,43 @@ export function ProfileSection() {
         ) : null}
       </div>
 
+      {/* ── Country ──────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="profile-country">Country</Label>
+        {/* Radix Select forbids empty-string item values, so the "unset"
+            option uses a 'none' sentinel mapped to '' on save. */}
+        <Select value={country || "none"} onValueChange={(v) => setCountry(v === "none" ? "" : v)}>
+          <SelectTrigger id="profile-country" className="w-full">
+            <SelectValue placeholder="Select a country">
+              {country ? (
+                <span className="flex items-center gap-2">
+                  <CountryFlag country={country} withTooltip={false} />
+                  {countryName(country)}
+                </span>
+              ) : (
+                "Select a country"
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="max-h-[50vh]">
+            <SelectItem value="none">
+              <span className="text-ink-3">Not set</span>
+            </SelectItem>
+            {COUNTRIES.map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                <span className="flex items-center gap-2">
+                  <CountryFlag country={c.code} withTooltip={false} />
+                  {c.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[0.65rem] text-ink-3">
+          Shown next to your name and in your profile header.
+        </p>
+      </div>
+
       {/* ── Main puzzle ──────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5" role="group" aria-labelledby="profile-main-puzzle-label">
         <span
@@ -385,7 +429,7 @@ export function ProfileSection() {
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-line pt-4">
         <Button type="button" size="sm" onClick={() => void handleSave()} disabled={saving}>
-          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+          {saving ? <Spinner size="xs" /> : <Check className="size-3.5" />}
           {saving ? "Saving…" : "Save profile"}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={handleExport}>

@@ -1,74 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "zustand";
-import { MainLayout } from "@/components/Layout/MainLayout";
-import { LeftSidebar } from "@/components/Layout/LeftSidebar";
-import { MobileTabBar } from "@/components/Layout/MobileTabBar";
-import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
-import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
-import { TimerContainer } from "@/components/Timer/TimerContainer";
-import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
-import { SessionStats } from "@/components/Stats/SessionStats";
-import { InsightsDashboard } from "@/components/Insights/InsightsDashboard";
-import { PracticeDashboard } from "@/views/Practice/PracticeDashboard";
-import { TrainingDashboard } from "@/views/Training/TrainingDashboard";
-import { UltraSkillTreeView } from "@/views/SkillTree/UltraSkillTreeView";
-import { ProfileView } from "@/views/Profile/ProfileView";
-import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
-import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
-import { WidgetHost } from "@/widgets/explorer";
-import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
-import { Eye } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast, Toaster } from "sonner";
-import { useStorageStatusStore } from "@/stores/storageStatus";
-import { useShortcuts } from "@/hooks/useShortcuts";
+import { toast } from "sonner";
+import { AppShell } from "@/components/Layout/AppShell";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
-import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
+import { useSolveSession } from "@/hooks/useSolveSession";
+import { useSolveCompletion } from "@/hooks/useSolveCompletion";
+import { useOnboardingTour } from "@/hooks/useOnboardingTour";
+import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 import { useProfile } from "@/hooks/useProfile";
-import { useOnboarding } from "@/hooks/useOnboarding";
-import { OnboardingTour } from "@/components/Onboarding/OnboardingTour";
-import { useSolveSession, runAnalysis } from "@/hooks/useSolveSession";
 import { useOrientation } from "@/hooks/useOrientation";
-import { useIsTouch } from "@/hooks/use-mobile";
+import { useScrambleState } from "@/hooks/useScrambleState";
+import { useSessionActions } from "@/hooks/useSessionActions";
+import { useManualSolves } from "@/hooks/useManualSolves";
+import { useTimerFocus } from "@/hooks/useTimerFocus";
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { copyTextWithFallback } from "@/utils/clipboard";
+import { preloadSolvers } from "@/utils/puzzleUtils";
 import { preferencesStore } from "@cubeforge/state";
-import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
-import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
-import { globalAudioSystem } from "@/utils/audioSystem";
-import { hapticCelebrate } from "@/utils/haptics";
-import {
-  generateScrambleFor,
-  puzzleCategoryToType,
-  puzzleCategoryToOrder,
-  preloadSolvers,
-  PUZZLE_CATEGORIES,
-} from "@/utils/puzzleUtils";
-import { isDev } from "@/utils/env";
-import { ThemeProvider } from "@/components/theme-provider";
-import { v4 as uuidv4 } from "uuid";
-import type { Penalty, PuzzleCategory, Solve, SolveMethod, SolveSource } from "@/types";
-import { normalizePenalty, effectiveTime } from "@/types";
-import type { CubeMoveEvent, CubeOrientation, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
-import { SIDEBAR_MOTION, type ViewId } from "@/components/Layout/sidebar.constants";
+import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { migrateWidgetPositions } from "@/widgets/migration";
 import { installWidgetDebug } from "@/widgets/debug";
-import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { connectWidgetLifecycle } from "@/widgets/sdk";
-import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
+import type { ViewId } from "@/components/Layout/sidebar.constants";
+import type { Solve } from "@/types";
+import type { PbMilestoneResult } from "@/utils/pbDetection";
+import "@/index.css";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.
 registerAllWidgets();
-import "@/index.css";
 
 export default function App() {
-  // Touch regime (<1024px, mobile + tablet): bottom tab bar + top toasts.
-  const isTouch = useIsTouch();
-
-  // Fase F0 (docs/plan_profile): ensure the anonymous local identity exists on
-  // first launch. `userId` is the stable seed for the CubeMark identicon shown
-  // in the header chip and the Profile view; the profile row also feeds the
-  // LeftSidebar footer chip (photo or CubeMark).
+  // Anonymous local identity (docs/plan_profile F0): `userId` is the stable
+  // seed for the CubeMark identicon shown in the header chip and Profile view.
   const { userId: profileSeed, profile, loading: profileLoading } = useProfile();
 
   const {
@@ -88,953 +52,251 @@ export default function App() {
     fetchSessionSolves,
   } = usePersistentSession();
 
-  const methodPref = useStore(preferencesStore, (s) => s.method);
-  const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
-  const focusMode = useStore(preferencesStore, (s) => s.focusMode);
-  const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
-  const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
-  const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
-  const inputMode = useStore(preferencesStore, (s) => s.inputMode);
-  const clickToStart = useStore(preferencesStore, (s) => s.clickToStart);
-  const spacebarHoldDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
+  const { puzzle, scrambleIndex, currentScramble, handlePuzzleChange, handleRegenerate, resetScramble } =
+    useScrambleState();
 
-  // ── PB Celebration state ───────────────────────────────────────────────
-  const [activePbMilestone, setActivePbMilestone] = useState<PbMilestoneResult | null>(null);
+  // Single source of truth for what the main stage shows.
+  const [activeView, setActiveView] = useState<ViewId>("timer");
 
-  const handleDismissPbBanner = useCallback(() => {
-    setActivePbMilestone(null);
-  }, []);
-
-  // ── First-load onboarding tour (TDD-0020) ─────────────────────────────
-  // One-shot spotlight walkthrough of the main tabs. Auto-starts on a clean
-  // first launch only; users with real data (solves or an edited profile)
-  // never see it. Skill Tree and Training are intentionally not toured.
-  const {
-    status: tourStatus,
-    currentStep: tourStep,
-    start: tourStart,
-    next: tourNext,
-    back: tourBack,
-    skip: tourSkip,
-    complete: tourComplete,
-  } = useOnboarding();
-  const tourActive = tourStatus === "active";
-
-  // Auto-start: gate on "idle" + both data sources loaded + eligibility guard.
-  useEffect(() => {
-    if (tourStatus !== "idle") return;
-    if (profileLoading || sessionLoading) return;
-    // Check solves across ALL sessions (a returning user with data in a
-    // non-active session must not get the first-run tour either).
-    const hasData =
-      sessions.some((s) => s.solveCount > 0) ||
-      !!profile?.displayName?.trim() ||
-      !!profile?.handle?.trim();
-    if (hasData) {
-      // Returning user whose flag was lost: persist done so we never re-check.
-      void tourComplete();
-      return;
-    }
-    // Delay so the timer paints before the tour fades in.
-    const t = setTimeout(() => tourStart(), 600);
-    return () => clearTimeout(t);
-  }, [
-    tourStatus,
-    profileLoading,
-    sessionLoading,
-    sessions,
-    profile,
-    tourComplete,
-    tourStart,
-  ]);
-
-  // Replay from Settings → General re-opens the tour: close overlays so the
-  // spotlight never sits on top of a dialog or sheet.
-  useEffect(() => {
-    if (tourActive) {
-      setSettingsOpen(false);
-      setMobileNavOpen(false);
-      setMobileMoreOpen(false);
-    }
-  }, [tourActive]);
-
-  // ── Refs to avoid stale closures in the lifecycle callback ────────────
+  // Refs to avoid stale closures in lifecycle callbacks.
   const solvesRef = useRef(solves);
   solvesRef.current = solves;
-  const methodRef = useRef(methodPref);
-  methodRef.current = methodPref;
 
-  const [scrambleIndex, setScrambleIndex] = useState(0);
-  // Single source of truth for what the main stage shows. Replaces the old
-  // cube3DActive + sidebarActive pair.
-  const [activeView, setActiveView] = useState<ViewId>("timer");
-  // Training preset for Algorithms → Training bridge: when user clicks
-  // "Practice This Case" from Algorithms view, we navigate to Training
-  // with the case already loaded in AlgorithmDrillView.
-  const [trainingPreset, setTrainingPreset] = useState<{
-    subsetId: string;
-    caseId: string;
-  } | null>(null);
-  const [cubePanelOpen, setCubePanelOpen] = useState(false);
-  const [cube3DReady, setCube3DReady] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  // Section to land on when Settings opens (e.g. 'profile' from the hero Edit
-  // button). Reset after the dialog consumes it.
-  const [settingsInitialSection, setSettingsInitialSection] = useState<string | undefined>(undefined);
-  const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
-  const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
-  const [puzzle, setPuzzle] = useState<PuzzleCategory>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cubeforge_puzzle");
-      if (saved && PUZZLE_CATEGORIES.includes(saved as PuzzleCategory)) {
-        return saved as PuzzleCategory;
-      }
-    }
-    return "3x3";
-  });
-  const [currentScramble, setCurrentScramble] = useState(() =>
-    generateScrambleFor(puzzle),
-  );
-
-  // ── Preload solvers at app startup ─────────────────────────────────────
-  // Deferred to browser idle time (see preloadSolvers) so the first paint
-  // and interaction are never blocked by the ~1s WASM/table warmup.
+  // Deferred solver preload (WASM/table warmup) so first paint is never blocked.
   useEffect(() => {
     preloadSolvers();
   }, []);
 
-  // ── Volatile-storage warning ──────────────────────────────────────────
-  // When the DB falls back to in-memory storage (OPFS unavailable), all data
-  // is lost on reload. Warn the user once per session so they can export.
-  const storageWarnedRef = useRef(false);
-  const storageType = useStore(useStorageStatusStore, (s) => s.storageType);
-  useEffect(() => {
-    if (storageType === "memory" && !storageWarnedRef.current) {
-      storageWarnedRef.current = true;
-      toast.warning(
-        "Storage is volatile — solves will be lost on reload. Export your data in Settings → Data.",
-        { duration: 8000 },
-      );
-    }
-  }, [storageType]);
+  // ── Daily practice/review reminders (Settings → Notifications) ────────
+  useReminderScheduler();
 
-  // ── Widget lifecycle connection (avoids stale closure via refs) ────────
+  // ── First-load onboarding tour (TDD-0020) ─────────────────────────────
+  // (AppShell closes its own overlays when the tour activates.)
+  const tour = useOnboardingTour({
+    profileLoading,
+    sessionLoading,
+    sessions,
+    profile,
+  });
+  const tourActive = tour.tourActive;
+
+  const methodPref = useStore(preferencesStore, (s) => s.method);
+
+  // ── Widget lifecycle connection ────────────────────────────────────────
   useEffect(() => {
     migrateWidgetPositions();
     installWidgetDebug();
     const disconnect = connectWidgetLifecycle(() => ({
       solves: solvesRef.current,
-      method: methodRef.current,
+      method: preferencesStore.getState().method,
       theme: "system" as const,
       onNavigate: (view) => setActiveView(view),
     }));
     return disconnect;
   }, []);
 
-  // ── Last solve analysis (displayed in the "Analysis" view) ─────────────
-  const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
-  // Monotonic completion ordering prevents an out-of-order IndexedDB promise
-  // from deciding which analysis is displayed. A token becomes "saved" only
-  // after its own insert succeeds, so a failed later insert cannot hide an
-  // earlier valid analysis.
-  const completionTokenRef = useRef(0);
-  const latestSavedTokenRef = useRef(0);
-
   // Tracks the live Smart Cube connection state so `handleComplete` (which
-  // must be defined *before* `useSolveSession` provides `smartCubeConnected`)
-  // can read the current connection status without a temporal-dead-zone
-  // dependency. Synced via the effect below.
+  // must be defined *before* `useSolveSession` provides the value) can read
+  // it without a temporal-dead-zone dependency.
   const smartCubeConnectedRef = useRef(false);
 
   // Disable the practice timer's global space handler while a view owns the
-  // keyboard: training views (their own timer via useDrillTimer) and the
-  // onboarding tour (TDD-0020) must never arm the main timer underneath.
-  // useTimerKeyboard listens in the capture phase and does NOT honor
-  // defaultPrevented, so a ref gate is the only reliable mechanism.
+  // keyboard (training views + onboarding tour must never arm the timer).
   const keyboardDisabledRef = useRef(false);
   useEffect(() => {
     keyboardDisabledRef.current = activeView === "training" || tourActive;
   }, [activeView, tourActive]);
 
+  // ── PB Celebration banner state ────────────────────────────────────────
+  const [activePbMilestone, setActivePbMilestone] = useState<PbMilestoneResult | null>(null);
+  const handleDismissPbBanner = useCallback(() => setActivePbMilestone(null), []);
 
-  const handlePuzzleChange = useCallback((newPuzzle: PuzzleCategory) => {
-    setPuzzle(newPuzzle);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("cubeforge_puzzle", newPuzzle);
-      } catch (e) {
-        console.warn("[App] Failed to save puzzle to localStorage", e);
-      }
-    }
-    setCurrentScramble(generateScrambleFor(newPuzzle));
-    setScrambleIndex(0);
-    toast.success(`Switched to ${newPuzzle}`);
-  }, []);
+  // Stable callback so handleComplete's identity does not change on every
+  // render (avoids re-binding the solve-session listeners constantly).
+  const handleNextScramble = useCallback(() => resetScramble(), [resetScramble]);
 
-  const handleRegenerate = useCallback(() => {
-    setCurrentScramble(generateScrambleFor(puzzle));
-    setScrambleIndex((i) => i + 1);
-    toast.success("New scramble");
-  }, [puzzle]);
+  // ── End-of-solve pipeline (PB milestones + save + analysis) ────────────
+  const { handleComplete, lastAnalysis } = useSolveCompletion({
+    addSolve,
+    updateSolve,
+    currentScramble,
+    puzzle,
+    solvesRef,
+    smartCubeConnectedRef,
+    onPbMilestone: setActivePbMilestone,
+    onNextScramble: handleNextScramble,
+  });
 
-  const handleComplete = useCallback(
-    (
-      time: number,
-      penalty: Penalty,
-      rawMoves: CubeMoveEvent[],
-      _rawOrientations: (CubeOrientation | undefined)[],
-      rawOrientationTimeline: OrientationTimeline | undefined,
-    ) => {
-      // These locals are captured by this solve's background job before the
-      // next scramble is generated, so the analysis uses the correct input.
-      const capturedScramble = currentScramble;
-      const capturedMethod = methodPref;
-      const solveId = uuidv4();
-      const completionToken = ++completionTokenRef.current;
+  // ── Centralised solve-session orchestration ────────────────────────────
+  const session$ = useSolveSession(currentScramble, {
+    onSolve: handleComplete,
+    keyboardDisabledRef,
+  });
 
-      // `smartCubeConnectedRef.current` reflects the live connection state at
-      // solve-stop time (synced by the effect below). We use a ref instead of
-      // the `smartCubeConnected` variable directly because `handleComplete` is
-      // declared before `useSolveSession` provides it (it's passed as `onSolve`).
-      const capturedSource: SolveSource = smartCubeConnectedRef.current ? "smart" : "manual";
+  // Stable member functions (memoized inside useSolveSession) — destructured
+  // so downstream callbacks keep exhaustive-deps happy without rebinding.
+  const { cancel: cancelTimer, reset: resetTimer } = session$;
 
-      // Check for Personal Best milestones (Single, Ao5, Ao12) before adding
-
-      const pbResult = detectPbMilestones(solvesRef.current, time, penalty, puzzleCategoryToType(puzzle));
-      if (pbResult.types.length > 0) {
-        hapticCelebrate();
-        if (pbCelebrationAudio) {
-          globalAudioSystem.playPbFanfare(pbResult.types);
-        }
-        if (pbCelebrationAnimation) {
-          setActivePbMilestone(pbResult);
-        }
-      } else {
-        setActivePbMilestone(null);
-      }
-
-      // Save with raw moves immediately so replay/timeline have data from the
-      // first render. The background job later replaces them with compacted
-      // moves and computed metrics.
-      const savePromise = addSolve({
-        id: solveId,
-        time,
-        scramble: scrambleDisplay ? capturedScramble : "",
-        penalty,
-        method: capturedMethod,
-        source: capturedSource,
-        moves: rawMoves,
-        orientationTimeline: rawOrientationTimeline,
-        puzzleType: puzzleCategoryToType(puzzle),
-      });
-      savePromise
-        .then((returnedId) => {
-          if (!returnedId) {
-            console.warn('[handleComplete] addSolve returned null — solve NOT saved to DB!');
-            toast.error('Solve not saved — database not ready. Try again.');
-            return;
-          }
-          latestSavedTokenRef.current = Math.max(latestSavedTokenRef.current, completionToken);
-          setCurrentScramble(generateScrambleFor(puzzle));
-          setScrambleIndex((i) => i + 1);
-
-          // Analysis is intentionally independent from the save continuation.
-          // It waits for this exact insert, then patches this exact solve.
-          // Nothing here depends on a global "pending solve" ref.
-          if (rawMoves.length > 0) {
-            queueSolveAnalysis(
-              {
-                solveId,
-                save: savePromise,
-                analyze: async () => runAnalysis(
-                  rawMoves,
-                  capturedScramble,
-                  capturedMethod,
-                  _rawOrientations,
-                  time,
-                ),
-                onResult: async ({ metrics: analysis, compactedMoves, compactedOrientationTimeline }) => {
-                  if (latestSavedTokenRef.current === completionToken) {
-                    setLastAnalysis(analysis);
-                  }
-                  if (isDev()) {
-                    console.log(
-                      '%c[App] Persisting moves+analysis to solve %s · %d raw → %d compacted',
-                      'color:#38bdf8',
-                      solveId.slice(0, 8),
-                      rawMoves.length,
-                      compactedMoves.length,
-                    );
-                  }
-                  await updateSolve(solveId, {
-                    moves: compactedMoves,
-                    orientationTimeline: compactedOrientationTimeline,
-                    analysis,
-                  });
-                },
-              },
-              (err) => {
-                console.error(`[App] Background analysis failed for solve ${solveId}:`, err);
-              },
-            );
-          }
-        })
-        .catch((err) => {
-          console.error('[handleComplete] addSolve threw:', err);
-          toast.error("Couldn't save solve — check console for details");
-        });
-    },
-    [addSolve, currentScramble, methodPref, pbCelebrationAudio, pbCelebrationAnimation, puzzle, scrambleDisplay, updateSolve],
-  );
-
-  // ── Centralised orchestration ───────────────────────────────────────────
-  const session$ = useSolveSession(currentScramble, { onSolve: handleComplete, keyboardDisabledRef });
-  const {
-    phase: timerPhase,
-    time: timerTime,
-    lastTime: timerLastTime,
-    press: timerPress,
-    release: timerRelease,
-    reset: timerReset,
-    cancel: timerCancel,
-    validation,
-    smartCubeConnected,
-    inspection,
-    scrambleVerification,
-  } = session$;
-
-  // Sync the connection ref so handleComplete (declared above, before session$
-  // was available) can read the current Smart Cube connection state.
+  // Sync the connection ref so handleComplete can read it at solve-stop time.
   useEffect(() => {
-    smartCubeConnectedRef.current = smartCubeConnected;
-  }, [smartCubeConnected]);
+    smartCubeConnectedRef.current = session$.smartCubeConnected;
+  }, [session$.smartCubeConnected]);
 
-  // Reset PB celebration banner when starting or preparing a new solve
+  // Reset PB celebration banner when starting a new solve / leaving the timer.
   useEffect(() => {
-    if (timerPhase !== "idle" && timerPhase !== "stopped") {
+    if (session$.phase !== "idle" && session$.phase !== "stopped") {
       setActivePbMilestone(null);
     }
-  }, [timerPhase]);
-
-  // Clear a pending PB celebration when leaving the timer stage. The banner's
-  // auto-dismiss timeout is cancelled when it unmounts (onClose never fires),
-  // so the milestone used to survive navigation and replay the confetti every
-  // time the user returned to the timer view.
+  }, [session$.phase]);
   useEffect(() => {
-    if (activeView !== "timer") {
-      setActivePbMilestone(null);
-    }
+    if (activeView !== "timer") setActivePbMilestone(null);
   }, [activeView]);
 
+  // ── Session-level actions (update/delete/clear/new/switch/import/export) ─
+  const {
+    handleUpdate,
+    handleDelete,
+    handleClear,
+    handleNewSession,
+    handleSwitchSession,
+    handleImportSolves,
+    handleExportAllJSON,
+  } = useSessionActions({
+    updateSolve,
+    deleteSolve,
+    clearSession,
+    importSolves,
+    newSession,
+    switchSession,
+    sessions,
+    fetchSessionSolves,
+    puzzle,
+    resetScramble,
+  });
 
-  // ── Import solve wrapper (adapts importSolves to DataSection's expected shape) ──
-  const handleImportSolves = useCallback(
-    async (inputs: Array<{ time: number; penalty: Penalty; scramble: string; method?: string; timestamp: number; note?: string; source?: SolveSource; puzzleType?: string }>) => {
-      await importSolves(inputs);
-    },
-    [importSolves],
-  );
+  // ── Manual solve entry (inline manual mode + header "+" sheet) ─────────
+  const { handleManualSubmit, handleAddManual } = useManualSolves({
+    addSolve,
+    currentScramble,
+    puzzle,
+    resetScramble,
+  });
 
-  // ── Export ALL sessions (JSON, full fidelity) ─────────────────────────
-  // Fetches every session's solves and writes a single JSON file that the
-  // "Import CubeForge JSON (no data loss)" flow restores exactly.
-  const handleExportAllJSON = useCallback(async () => {
-    if (sessions.length === 0) return;
-    const withSolves: Array<{ sessionName: string; solves: Solve[] }> = [];
-    for (const s of sessions) {
-      const sessionSolves = await fetchSessionSolves(s.id);
-      withSolves.push({ sessionName: s.name, solves: sessionSolves });
-    }
-    const json = exportAllSolvesToJSON(withSolves);
-    downloadFile(json, 'cubeforge-all-sessions.json', 'application/json');
-  }, [sessions, fetchSessionSolves]);
-
-  const { remapScramble } = useOrientation();
-  const displayScramble = remapScramble(currentScramble);
+  // ── Focus mode (chrome collapses while solving) ────────────────────────
+  const { isFocused, manualFocus, toggleManualFocus } = useTimerFocus({
+    timerPhase: session$.phase,
+    smartCubeConnected: session$.smartCubeConnected,
+  });
 
   // Refs so global shortcuts can read/act on the timer without re-rendering.
-  const timerStateRef = useRef(timerPhase);
-  timerStateRef.current = timerPhase;
+  const timerStateRef = useRef(session$.phase);
+  timerStateRef.current = session$.phase;
   const cancelRef = useRef<(() => void) | null>(null);
 
-  const handleTimerCancel = useCallback(() => {
-    timerCancel();
-  }, [timerCancel]);
+  const handleTimerCancel = useCallback(() => cancelTimer(), [cancelTimer]);
 
   const handleCopy = useCallback(async () => {
-    const fail = () => toast.error("Couldn't copy scramble");
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(currentScramble);
-        toast.success("Scramble copied");
-        return;
-      }
-    } catch {
-      /* fall through */
-    }
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = currentScramble;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      if (ok) toast.success("Scramble copied");
-      else fail();
-    } catch {
-      fail();
-    }
+    const ok = await copyTextWithFallback(currentScramble);
+    if (ok) toast.success("Scramble copied");
+    else toast.error("Couldn't copy scramble");
   }, [currentScramble]);
 
-  const handleCancelShortcut = useCallback(() => {
-    timerCancel();
-  }, [timerCancel]);
-
-  const handleUpdate = useCallback(
-    (id: string, updates: { penalty?: Penalty; note?: string | null }) => {
-      updateSolve(id, updates).catch(() => toast.error("Update failed"));
-    },
-    [updateSolve],
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      deleteSolve(id).catch(() => toast.error("Delete failed"));
-    },
-    [deleteSolve],
-  );
-
-  const handleClear = useCallback(() => {
-    clearSession().catch(() => toast.error("Couldn't clear session"));
-  }, [clearSession]);
-
-  const handleNewSession = useCallback(() => {
-    newSession(undefined, puzzleCategoryToType(puzzle))
-      .then(() => {
-        setCurrentScramble(generateScrambleFor(puzzle));
-        setScrambleIndex(0);
-        toast.success("New session started");
-      })
-      .catch(() => toast.error("Couldn't create session"));
-  }, [newSession, puzzle]);
-
-  const handleSwitchSession = useCallback(
-    (id: string) => {
-      switchSession(id).catch(() => toast.error("Couldn't switch session"));
-    },
-    [switchSession],
-  );
-
-  useShortcuts({
+  useGlobalShortcuts({
     onNewScramble: handleRegenerate,
     onCopyScramble: handleCopy,
-    onCancel: handleCancelShortcut,
+    onCancel: handleTimerCancel,
     timerStateRef,
     // The tour owns the keyboard while active (ESC skips, Space is swallowed).
     enabled: !tourActive,
+    solveCount: solves.length,
   });
 
-  useEffect(() => {
-    document.title = `cubeforge — ${solves.length} solves`;
-  }, [solves.length]);
-
-  const currentPuzzleType = puzzleCategoryToType(puzzle);
-  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType);
-  const validSolves = puzzleSolves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
-  const currentPB =
-    validSolves.length > 0
-      ? Math.min(
-          ...validSolves.map((s) => effectiveTime(s)),
-        )
-      : null;
-
-  // Previous PB (excluding the most recent solve) for accurate PB delta comparison
-  const previousSolves = puzzleSolves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
-  const previousPB =
-    previousSolves.length > 0
-      ? Math.min(
-          ...previousSolves.map((s) => effectiveTime(s)),
-        )
-      : null;
-
-  const timerStateRefValue = timerStateRef.current;
-  const timerRunning =
-    timerStateRefValue === "running" || timerStateRefValue === "ready";
-  const isManualMode = inputMode === "manual";
-
-  const [manualFocus, setManualFocus] = useState(false);
-
-  const isFocused =
-    (isManualMode && manualFocus) ||
-    (focusMode &&
-      !isManualMode &&
-      (timerPhase === "running" ||
-        timerPhase === "inspection" ||
-        timerPhase === "holding" ||
-        timerPhase === "ready_for_move" ||
-        (timerPhase === "ready" && !smartCubeConnected)));
-
+  // ── Stage navigation (driven by the LeftSidebar rail) ──────────────────
   const scrollToTimer = useCallback(() => {
-    document.getElementById("timer-section")?.scrollIntoView({
-      behavior: "smooth",
-    });
+    document.getElementById("timer-section")?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // ── Stage navigation (driven by the LeftSidebar rail) ───────────────────
   const handleNavigate = useCallback(
     (view: ViewId) => {
       setActiveView(view);
-      // Close the 3D cube panel when leaving the timer stage — the split
-      // only makes sense alongside the timer, not Stats/Analysis/Practice.
-      if (view !== "timer") setCubePanelOpen(false);
       if (view === "timer") scrollToTimer();
     },
     [scrollToTimer],
   );
 
-  // Open the 3D cube panel from the floating button. Always returns to the
-  // timer stage so the split is timer | cube.
-  const handleOpenCube = useCallback(() => {
-    setActiveView("timer");
-    setCube3DReady(true);
-    setCubePanelOpen(true);
-  }, []);
-
-  const handleCloseCube = useCallback(() => setCubePanelOpen(false), []);
-
-  // State for the manual solve sheet (opened from the Header "+" button).
-  const [manualOpen, setManualOpen] = useState(false);
-
-  // Manual solve submit — delegates to addSolve (manual entry, no moves,
-  // no analysis). The sheet handles its own scramble generation.
-  // Manual time entry (inputMode === 'manual') — inline submit handler.
-  // Bypasses the timer engine completely: saves directly with no moves/analysis.
-  const handleManualSubmit = useCallback(
-    async (time: number, penalty: Penalty) => {
-      await addSolve({
-        time,
-        penalty,
-        scramble: scrambleDisplay ? currentScramble : "",
-        method: methodPref,
-        source: "manual",
-        puzzleType: puzzleCategoryToType(puzzle),
-      });
-      toast.success(`Logged: ${(time / 1000).toFixed(2)}s`);
-      setCurrentScramble(generateScrambleFor(puzzle));
-      setScrambleIndex((i) => i + 1);
-    },
-    [addSolve, currentScramble, methodPref, puzzle, scrambleDisplay],
-  );
-
-  const handleAddManual = useCallback(
-    async (input: {
-      time: number;
-      scramble: string;
-      method: SolveMethod;
-      notes: string;
-      penalty: Penalty;
-    }) => {
-      await addSolve({
-        time: input.time,
-        penalty: input.penalty,
-        scramble: input.scramble,
-        method: input.method,
-        source: "manual",
-        puzzleType: puzzleCategoryToType(puzzle),
-      });
-    },
-    [addSolve, puzzle],
-  );
-
-  // Clicking "Analysis" on a solve row jumps to Insights AND selects that
-  // specific solve via the URL param — fixing the old bug where the click
-  // navigated to a *different* solve. The InsightsDashboard reads ?solve=
-  // on mount and selects accordingly.
+  // "Analysis" / "Replay" on a solve row: jump to Insights and select that
+  // exact solve via the URL param.
   const handleAnalyzeSolve = useCallback((solve: Solve) => {
     setActiveView("insights");
-    setCubePanelOpen(false);
-    // Push the selected solve to the URL so InsightsDashboard picks it up.
     const url = new URL(window.location.href);
     url.searchParams.set("solve", solve.id);
     window.history.replaceState(null, "", url.toString());
-    // Force re-read of the URL by toggling a noop state (the dashboard's
-    // mount effect reads ?solve=, so we only need to ensure we're on the
-    // insights view — the URL is already set). A remount via key isn't
-    // needed because the dashboard is conditionally rendered (mounts fresh
-    // when switching from timer → insights).
   }, []);
 
-  // "Replay" from TimesList dropdown: same as analyze — navigate to Insights
-  // with the solve selected. ReplaySection is auto-expanded there.
   const handleReplaySolve = useCallback((solve: Solve) => {
     handleAnalyzeSolve(solve);
   }, [handleAnalyzeSolve]);
 
-  // ── Main stage composition by active view ──────────────────────────────
-  // Timer & Cube 3D share the live stage (scramble + timer + compact stats);
-  // selecting Cube 3D additionally splits the stage with the 3D aside.
-  // Insights takes over the stage fully (sidebar of solves + overview /
-  // per-solve analysis) and owns its own scroll per panel.
-  // Practice takes over the stage fully (method tree + algorithm grid +
-  // detail panel).
-  const renderMain = () => {
-    if (activeView === "insights") {
-      return (
-        <InsightsDashboard
-          key={session?.id ?? "none"}
-          solves={solves}
-          sessions={sessions}
-          fetchSessionSolves={fetchSessionSolves}
-          activeSessionId={session?.id ?? null}
-          pb={currentPB ?? undefined}
-          pendingAnalysis={lastAnalysis}
-          sessionId={session?.id ?? null}
-          onUpdateSolve={handleUpdate}
-          onDeleteSolve={handleDelete}
-        />
-      );
-    }
+  const { remapScramble } = useOrientation();
+  const displayScramble = remapScramble(currentScramble);
 
-    if (activeView === "practice") {
-      return (
-        <PracticeDashboard
-          onPracticeCase={(subsetId, caseId) => {
-            setTrainingPreset({ subsetId, caseId });
-            setActiveView("training");
-          }}
-        />
-      );
-    }
-
-    if (activeView === "training") {
-      return (
-        <TrainingDashboard
-          preset={trainingPreset}
-          onPresetConsumed={() => setTrainingPreset(null)}
-          puzzle={puzzle}
-          onPuzzleChange={handlePuzzleChange}
-        />
-      );
-    }
-
-    if (activeView === "skill-tree") {
-      return <UltraSkillTreeView onNavigate={(view) => setActiveView(view as ViewId)} />;
-    }
-
-    if (activeView === "profile") {
-      return (
-        <ProfileView
-          onNavigate={handleNavigate}
-          onOpenSettings={() => {
-            setSettingsInitialSection("profile");
-            setSettingsOpen(true);
-          }}
-        />
-      );
-    }
-
-    // timer
-    return (
-      <>
-        <AnimatePresence mode="wait">
-          {scrambleDisplay && (scrambleVerification || !isFocused) ? (
-            <motion.div
-              key="scramble-display-container"
-              initial={{ y: "-100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "-100%", opacity: 0 }}
-              transition={SIDEBAR_MOTION.panel}
-              className="w-full"
-            >
-              <ScrambleDisplay
-                scramble={currentScramble}
-                displayScramble={displayScramble}
-                states={isManualMode ? undefined : validation.states}
-                currentIndex={isManualMode ? 0 : validation.currentIndex}
-                errorMoves={isManualMode ? [] : validation.displayErrorMoves}
-                pendingHalfDouble={isManualMode ? false : validation.pendingHalfDouble}
-                isScrambled={isManualMode ? false : validation.isScrambled}
-                needsReset={isManualMode ? false : validation.needsReset}
-                awaitingSolve={isManualMode ? false : validation.awaitingSolve}
-                onRegenerate={handleRegenerate}
-                onCopy={handleCopy}
-                indexLabel={`#${scrambleIndex + 1}`}
-                focusModeAction={
-                  isManualMode && focusMode ? (
-                    <button
-                      type="button"
-                      onClick={() => setManualFocus(!manualFocus)}
-                      className={cn(
-                        "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
-                        manualFocus
-                          ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                          : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
-                      )}
-                      title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
-                    >
-                      <Eye className="size-3.5" />
-                      Focus
-                    </button>
-                  ) : undefined
-                }
-              />
-            </motion.div>
-          ) : isManualMode && focusMode ? (
-            <motion.div
-              key="manual-focus-button"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={SIDEBAR_MOTION.panel}
-              className="flex w-full justify-end mb-2"
-            >
-              <button
-                type="button"
-                onClick={() => setManualFocus(!manualFocus)}
-                className={cn(
-                  "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
-                  manualFocus
-                    ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                    : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
-                )}
-                title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
-              >
-                <Eye className="size-3.5" />
-                Focus
-              </button>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
-        {isManualMode ? (
-          <ManualTimeInput
-            onSubmit={handleManualSubmit}
-            className="mt-1 flex-1"
-          />
-        ) : (
-          <TimerContainer
-            phase={timerPhase}
-            time={timerTime}
-            lastTime={timerLastTime}
-            pb={previousPB}
-            showPbDelta={showPbDelta}
-            pbMilestone={activePbMilestone}
-            onDismissPbBanner={handleDismissPbBanner}
-            hintCtx={{
-              smartCube: smartCubeConnected,
-              scrambleVerif: scrambleDisplay && scrambleVerification,
-              inspection,
-              isScrambled: validation.isScrambled,
-              isLastSolveDnf: timerLastTime !== null && solves[0]?.penalty === "DNF",
-              lastSolvePenalty: timerLastTime !== null ? solves[0]?.penalty : "none",
-            }}
-            onPress={timerPress}
-            onRelease={timerRelease}
-            onCancel={handleTimerCancel}
-            stateRef={timerStateRef}
-            cancelRef={cancelRef}
-            clickToStart={clickToStart}
-            holdDelay={spacebarHoldDelay}
-            lastSolve={solves[0] ?? null}
-            onUpdatePenalty={(id, pen) => {
-              updateSolve(id, { penalty: pen }).catch(() => toast.error("Update failed"));
-              timerReset();
-            }}
-            onDeleteSolve={(id) => {
-              handleDelete(id);
-              timerReset();
-            }}
-            className="mt-1 flex-1"
-          />
-        )}
-
-        {!isFocused && (
-          <SessionStats
-            solves={solves}
-            onExpand={() => setActiveView("insights")}
-            puzzleFilter={puzzleCategoryToType(puzzle)}
-          />
-        )}
-      </>
-    );
-  };
-
-  return (
-    <div className="antialiased bg-background text-foreground h-dvh w-full overflow-hidden">
-      <ThemeProvider>
-        <MainLayout
-          sessionCount={solves.length}
-          sessions={sessions}
-          activeSessionId={session?.id ?? null}
-          hideHeader={activeView === "skill-tree"}
-          onSwitchSession={handleSwitchSession}
-          onNewSession={handleNewSession}
-          onRenameSession={renameSession}
-          onDeleteSession={deleteSession}
-          puzzle={puzzle}
-          onPuzzleChange={handlePuzzleChange}
-          cube3DActive={cubePanelOpen}
-          cube3DReady={cube3DReady}
-          onCloseCube={handleCloseCube}
-          cube3D={<Cube3DPanel onClose={handleCloseCube} order={puzzleCategoryToOrder(puzzle)} scramble={currentScramble} />}
-          leftSidebar={
-            <LeftSidebar
-              activeView={activeView}
-              onNavigate={handleNavigate}
-              timerActive={timerRunning}
-              mobileOpen={mobileNavOpen}
-              onMobileOpenChange={setMobileNavOpen}
-              solves={solves}
-              sessionName={session?.name}
-              onImportSolves={handleImportSolves}
-              settingsOpen={settingsOpen}
-              onSettingsOpenChange={(open) => {
-                setSettingsOpen(open);
-                if (!open) setSettingsInitialSection(undefined);
-              }}
-              settingsInitialSection={settingsInitialSection}
-              widgetExplorerOpen={widgetExplorerOpen}
-              onWidgetExplorerOpenChange={setWidgetExplorerOpen}
-              cubeConnectorOpen={cubeConnectorOpen}
-              onCubeConnectorOpenChange={setCubeConnectorOpen}
-              profileSeed={profileSeed}
-              profile={profile}
-              onExportAllJSON={handleExportAllJSON}
-            />
-          }
-          isFocused={isFocused}
-          onAddManual={() => setManualOpen(true)}
-          onOpenProfile={() => handleNavigate("profile")}
-          profileSeed={profileSeed ?? undefined}
-          profile={profile}
-          main={renderMain()}
-        />
-
-        {/* Bottom tab bar — touch regime only (mobile + tablet <1024px). */}
-        {!isFocused && (
-          <MobileTabBar
-            activeView={activeView}
-            onNavigate={handleNavigate}
-            onOpenMore={() => setMobileMoreOpen(true)}
-          />
-        )}
-
-        {/* Mobile grid options bottom sheet (Settings, Smart Cube, Theme) */}
-        <MobileMoreSheet
-          open={mobileMoreOpen}
-          onOpenChange={setMobileMoreOpen}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenCubeConnector={() => setCubeConnectorOpen(true)}
-          onOpenProfile={() => handleNavigate("profile")}
-        />
-
-        {/* Manual solve sheet — mounted at App level (opened from the
-            Header "+" button). A manual entry is a session action, not an
-            analysis action, so it lives here rather than inside the
-            Insights dashboard. */}
-        <ManualSolveSheet
-          open={manualOpen}
-          onClose={() => setManualOpen(false)}
-          defaultMethod={methodPref}
-          onSubmit={handleAddManual}
-        />
-        {/* WidgetHost renders all active floating widgets (Solve Log,
-            Scramble Visualizer, Time Distribution, PB Progression, Solve
-            Timeline, Metronome, Notes, etc.) driven by the Widget Store.
-            The 3D cube button is rendered separately below as a circular
-            floating button (not through WidgetHost/dock system). */}
-        {activeView === "timer" && !isFocused && !tourActive && (
-          <WidgetHost
-            solves={solves}
-            onUpdate={handleUpdate}
-            onDelete={handleDelete}
-            onClear={handleClear}
-            onAnalyze={handleAnalyzeSolve}
-            onReplay={handleReplaySolve}
-            scramble={currentScramble}
-            smartCubeConnected={smartCubeConnected}
-            cubePanelOpen={cubePanelOpen}
-            onOpenCube={handleOpenCube}
-            lastAnalysis={lastAnalysis}
-            puzzle={puzzle}
-          />
-        )}
-
-        {/* 3D Cube launcher — circular floating button, always present when
-            cube panel is closed and widget is toggled on. Independent from
-            the dock system but toggleable in the Widget Explorer. */}
-        {activeView === "timer" && !isFocused && !tourActive && (
-          <CubeButtonGate
-            cubePanelOpen={cubePanelOpen}
-            smartCubeConnected={smartCubeConnected}
-            onOpenCube={handleOpenCube}
-          />
-        )}
-
-        {/* First-load onboarding spotlight tour — one-shot (TDD-0020). */}
-        <AnimatePresence>
-          {tourActive && (
-            <OnboardingTour
-              activeView={activeView}
-              currentStep={tourStep}
-              onNavigate={handleNavigate}
-              onNext={tourNext}
-              onBack={tourBack}
-              onSkip={tourSkip}
-            />
-          )}
-        </AnimatePresence>
-
-        <Toaster
-          // On touch, toasts float at the top so they never collide with the
-          // fixed bottom tab bar (or the mobile Times bottom sheet). Desktop
-          // keeps the bottom-center position unchanged.
-          position={isTouch ? "top-center" : "bottom-center"}
-          richColors={false}
-        />
-      </ThemeProvider>
-    </div>
+  // Penalty update from the timer row: persist + reset the timer engine.
+  const handleUpdatePenalty = useCallback(
+    (id: string, penalty: Solve["penalty"]) => {
+      updateSolve(id, { penalty }).catch(() => toast.error("Update failed"));
+      resetTimer();
+    },
+    [updateSolve, resetTimer],
   );
-}
-
-// ── Cube button gate ────────────────────────────────────────────────────
-
-/**
- * Reads the cube-button's status from the widget store.
- * Only renders the FloatingCubeButton if the user has it toggled ON
- * in the Widget Explorer (status !== "inactive").
- */
-function CubeButtonGate({
-  cubePanelOpen,
-  smartCubeConnected,
-  onOpenCube,
-}: {
-  cubePanelOpen: boolean;
-  smartCubeConnected: boolean;
-  onOpenCube: () => void;
-}) {
-  const status = useWidgetStore((s) => s.instances["cube-button"]?.status);
-
-  // Self-healing: force status back to safe values if corrupted (e.g.
-  // old localStorage migration set it to "floating").
-  useEffect(() => {
-    if (status === "floating" || status === "minimized") {
-      widgetStore.getState().setStatus("cube-button", "docked");
-    }
-  }, [status]);
-
-  if (status === "inactive") return null;
 
   return (
-    <FloatingCubeButton
-      onClick={onOpenCube}
-      cubePanelOpen={cubePanelOpen}
-      smartCubeConnected={smartCubeConnected}
+    <AppShell
+      solves={solves}
+      sessions={sessions}
+      activeSessionId={session?.id ?? null}
+      sessionName={session?.name}
+      activeView={activeView}
+      profileSeed={profileSeed}
+      profile={profile}
+      puzzle={puzzle}
+      currentScramble={currentScramble}
+      displayScramble={displayScramble}
+      scrambleIndex={scrambleIndex}
+      onPuzzleChange={handlePuzzleChange}
+      onRegenerate={handleRegenerate}
+      onCopy={handleCopy}
+      onSwitchSession={handleSwitchSession}
+      onNewSession={handleNewSession}
+      onRenameSession={renameSession}
+      onDeleteSession={deleteSession}
+      onImportSolves={handleImportSolves}
+      onExportAllJSON={handleExportAllJSON}
+      onNavigate={handleNavigate}
+      onOpenProfile={() => handleNavigate("profile")}
+      isFocused={isFocused}
+      session$={session$}
+      timerStateRef={timerStateRef}
+      cancelRef={cancelRef}
+      manualFocus={manualFocus}
+      onManualFocusToggle={toggleManualFocus}
+      activePbMilestone={activePbMilestone}
+      onDismissPbBanner={handleDismissPbBanner}
+      fetchSessionSolves={fetchSessionSolves}
+      onUpdateSolve={handleUpdate}
+      onDeleteSolve={handleDelete}
+      onClear={handleClear}
+      onAnalyze={handleAnalyzeSolve}
+      onReplay={handleReplaySolve}
+      onUpdatePenalty={handleUpdatePenalty}
+      onManualSubmit={handleManualSubmit}
+      defaultMethod={methodPref}
+      onManualSubmitSheet={handleAddManual}
+      lastAnalysis={lastAnalysis}
+      tourActive={tourActive}
+      tourStep={tour.tourStep}
+      onTourNext={tour.tourNext}
+      onTourBack={tour.tourBack}
+      onTourSkip={tour.tourSkip}
     />
   );
 }

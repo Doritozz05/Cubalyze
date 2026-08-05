@@ -2,9 +2,12 @@
 
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
-import { CUBE_SKINS } from '@cubeforge/cube-3d-engine';
+// Import from the side-effect-free "/skins" subpath: the engine's main entry
+// pulls in three.js (~545 kB), which would otherwise land in the initial
+// bundle just for this settings list.
+import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
-import { Palette } from 'lucide-react';
+import { Palette, Sun, Moon, Monitor } from 'lucide-react';
 
 import {
   Select,
@@ -17,8 +20,8 @@ import {
 /**
  * Appearance settings section.
  *
- * Contains visual preferences like the 3D cube appearance and custom sticker colors.
- * When the 'custom' skin is selected, per-face color pickers appear below.
+ * Contains visual preferences like the interface theme, the 3D cube appearance, and
+ * custom sticker colors. When the 'custom' skin is selected, per-face color pickers appear below.
  */
 const FACE_LABELS: Record<string, string> = {
   U: 'Up (White)',
@@ -30,6 +33,8 @@ const FACE_LABELS: Record<string, string> = {
 };
 
 export function AppearanceSection() {
+  const theme = useStore(preferencesStore, (s) => s.theme);
+  const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
   const setAppearance3d = useStore(preferencesStore, (s) => s.setAppearance3d);
   const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
@@ -42,8 +47,45 @@ export function AppearanceSection() {
           <Palette className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] text-ink-2">
-          Customize the visual style and rendering preferences for the 3D cube representation.
+          Customize the look and feel of your workspace, from the interface theme to the 3D cube representation.
         </p>
+      </div>
+
+      {/* Theme selector */}
+      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[0.85rem] font-medium text-ink">Theme</h4>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            Select your preferred interface color mode.
+          </p>
+        </div>
+        <div className="mt-0.5 shrink-0">
+          <Select value={theme} onValueChange={setTheme}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select theme" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="system">
+                <div className="flex items-center gap-2">
+                  <Monitor className="size-3.5" />
+                  <span>System</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="dark">
+                <div className="flex items-center gap-2">
+                  <Moon className="size-3.5" />
+                  <span>Dark</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="light">
+                <div className="flex items-center gap-2">
+                  <Sun className="size-3.5" />
+                  <span>Light</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Skin selector */}

@@ -3,6 +3,7 @@ use btleplug::platform::{Adapter, Peripheral};
 use btleplug::api::Characteristic;
 use futures::StreamExt;
 use tauri::{AppHandle, Emitter, Manager, State};
+use crate::debug_log;
 use crate::state::AppState;
 use super::{
     GAN_CUBE_NAME_PREFIXES,
@@ -15,30 +16,30 @@ use super::{
 
 async fn get_or_init_adapter(state: &AppState) -> Result<Adapter, String> {
     if let Some(adapter) = state.ble_adapter.lock().clone() {
-        eprintln!("[BLE DEBUG] Reusing cached BLE adapter");
+        debug_log!("[BLE DEBUG] Reusing cached BLE adapter");
         return Ok(adapter);
     }
-    eprintln!("[BLE DEBUG] Initializing BLE Manager...");
+    debug_log!("[BLE DEBUG] Initializing BLE Manager...");
     let manager = btleplug::platform::Manager::new().await
         .map_err(|e| {
-            eprintln!("[BLE DEBUG] BLE Manager init FAILED: {}", e);
+            debug_log!("[BLE DEBUG] BLE Manager init FAILED: {}", e);
             format!("BLE manager init failed: {}", e)
         })?;
-    eprintln!("[BLE DEBUG] BLE Manager initialized OK");
+    debug_log!("[BLE DEBUG] BLE Manager initialized OK");
 
     let adapters = manager.adapters().await
         .map_err(|e| {
-            eprintln!("[BLE DEBUG] No BLE adapters: {}", e);
+            debug_log!("[BLE DEBUG] No BLE adapters: {}", e);
             format!("No BLE adapters found: {}", e)
         })?;
-    eprintln!("[BLE DEBUG] Found {} BLE adapter(s)", adapters.len());
+    debug_log!("[BLE DEBUG] Found {} BLE adapter(s)", adapters.len());
 
     let adapter = adapters.into_iter().next()
         .ok_or_else(|| {
-            eprintln!("[BLE DEBUG] No BLE adapter available");
+            debug_log!("[BLE DEBUG] No BLE adapter available");
             "No BLE adapter available — check Bluetooth is enabled"
         })?;
-    eprintln!("[BLE DEBUG] Using BLE adapter");
+    debug_log!("[BLE DEBUG] Using BLE adapter");
     state.ble_adapter.lock().replace(adapter.clone());
     Ok(adapter)
 }
@@ -51,24 +52,24 @@ fn is_gan_cube(name: &str) -> bool {
 /// (not advertised services — those may be empty after GATT connect).
 /// Mirrors the Web Bluetooth approach: iterates gatt.getPrimaryServices().
 fn detect_cube_gen_from_services(services: &std::collections::BTreeSet<btleplug::api::Service>) -> Option<(&'static str, &'static str, &'static str)> {
-    eprintln!("[BLE DEBUG] detect_cube_gen_from_services: {} discovered services", services.len());
+    debug_log!("[BLE DEBUG] detect_cube_gen_from_services: {} discovered services", services.len());
     for svc in services {
         let uuid_str = svc.uuid.to_string().to_lowercase();
-        eprintln!("[BLE DEBUG]   service: {}", uuid_str);
+        debug_log!("[BLE DEBUG]   service: {}", uuid_str);
         if uuid_str == GAN_GEN2_SERVICE {
-            eprintln!("[BLE DEBUG]   → matched GEN2");
+            debug_log!("[BLE DEBUG]   → matched GEN2");
             return Some((GAN_GEN2_SERVICE, GAN_GEN2_COMMAND, GAN_GEN2_STATE));
         }
         if uuid_str == GAN_GEN3_SERVICE {
-            eprintln!("[BLE DEBUG]   → matched GEN3");
+            debug_log!("[BLE DEBUG]   → matched GEN3");
             return Some((GAN_GEN3_SERVICE, GAN_GEN3_COMMAND, GAN_GEN3_STATE));
         }
         if uuid_str == GAN_GEN4_SERVICE {
-            eprintln!("[BLE DEBUG]   → matched GEN4");
+            debug_log!("[BLE DEBUG]   → matched GEN4");
             return Some((GAN_GEN4_SERVICE, GAN_GEN4_COMMAND, GAN_GEN4_STATE));
         }
     }
-    eprintln!("[BLE DEBUG]   → no GAN generation matched");
+    debug_log!("[BLE DEBUG]   → no GAN generation matched");
     None
 }
 
@@ -78,26 +79,26 @@ async fn find_cached_gan_cube(
     target_mac: Option<&str>,
 ) -> Option<Peripheral> {
     let peripherals = adapter.peripherals().await.ok()?;
-    eprintln!("[BLE DEBUG] find_cached: {} cached peripherals, target_mac={:?}", peripherals.len(), target_mac);
-    for (i, p) in peripherals.iter().enumerate() {
+    debug_log!("[BLE DEBUG] find_cached: {} cached peripherals, target_mac={:?}", peripherals.len(), target_mac);
+    for (_i, p) in peripherals.iter().enumerate() {
         let addr = p.address().to_string();
         if let Some(mac) = target_mac {
             if addr.eq_ignore_ascii_case(mac) {
-                eprintln!("[BLE DEBUG] find_cached: FOUND by MAC match: {}", addr);
+                debug_log!("[BLE DEBUG] find_cached: FOUND by MAC match: {}", addr);
                 return Some(p.clone());
             }
             continue;
         }
         if let Ok(Some(props)) = p.properties().await {
             let name = props.local_name.unwrap_or_default();
-            eprintln!("[BLE DEBUG] find_cached[{}]: addr={} name=\"{}\"", i, addr, name);
+            debug_log!("[BLE DEBUG] find_cached[{}]: addr={} name=\"{}\"", _i, addr, name);
             if is_gan_cube(&name) {
-                eprintln!("[BLE DEBUG] find_cached: FOUND GAN cube: {}", name);
+                debug_log!("[BLE DEBUG] find_cached: FOUND GAN cube: {}", name);
                 return Some(p.clone());
             }
         }
     }
-    eprintln!("[BLE DEBUG] find_cached: no GAN cube in cache");
+    debug_log!("[BLE DEBUG] find_cached: no GAN cube in cache");
     None
 }
 
@@ -110,23 +111,23 @@ async fn scan_for_gan_cube(
 ) -> Option<Peripheral> {
     adapter.stop_scan().await.ok();
 
-    eprintln!("[BLE DEBUG] Starting BLE scan (ScanFilter::default)...");
-    if let Err(e) = adapter.start_scan(ScanFilter::default()).await {
-        eprintln!("[BLE DEBUG] Scan start FAILED: {}", e);
+    debug_log!("[BLE DEBUG] Starting BLE scan (ScanFilter::default)...");
+    if let Err(_e) = adapter.start_scan(ScanFilter::default()).await {
+        debug_log!("[BLE DEBUG] Scan start FAILED: {}", _e);
         return None;
     }
-    eprintln!("[BLE DEBUG] Scan active — polling every 500ms...");
+    debug_log!("[BLE DEBUG] Scan active — polling every 500ms...");
 
-    for attempt in 0..16 {
+    for _attempt in 0..16 {
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         if let Ok(peripherals) = adapter.peripherals().await {
-            eprintln!("[BLE DEBUG] Scan poll #{}: {} peripherals visible", attempt + 1, peripherals.len());
-            for (i, p) in peripherals.iter().enumerate() {
+            debug_log!("[BLE DEBUG] Scan poll #{}: {} peripherals visible", _attempt + 1, peripherals.len());
+            for (_i, p) in peripherals.iter().enumerate() {
                 let addr = p.address().to_string();
 
                 if let Some(mac) = target_mac {
                     if addr.eq_ignore_ascii_case(mac) {
-                        eprintln!("[BLE DEBUG]   [{}] addr={} → FOUND by MAC", i, addr);
+                        debug_log!("[BLE DEBUG]   [{}] addr={} → FOUND by MAC", _i, addr);
                         adapter.stop_scan().await.ok();
                         return Some(p.clone());
                     }
@@ -135,28 +136,28 @@ async fn scan_for_gan_cube(
                 match p.properties().await {
                     Ok(Some(props)) => {
                         let name = props.local_name.unwrap_or_default();
-                        let rssi = props.rssi.map(|r| r.to_string()).unwrap_or_default();
-                        let svc_count = props.services.len();
-                        eprintln!("[BLE DEBUG]   [{}] addr={} name=\"{}\" rssi={} services={}",
-                            i, addr, name, rssi, svc_count);
+                        let _rssi = props.rssi.map(|r| r.to_string()).unwrap_or_default();
+                        let _svc_count = props.services.len();
+                        debug_log!("[BLE DEBUG]   [{}] addr={} name=\"{}\" rssi={} services={}",
+                            _i, addr, name, _rssi, _svc_count);
                         if is_gan_cube(&name) {
-                            eprintln!("[BLE DEBUG]   → STOPPING SCAN: GAN cube found!");
+                            debug_log!("[BLE DEBUG]   → STOPPING SCAN: GAN cube found!");
                             adapter.stop_scan().await.ok();
                             return Some(p.clone());
                         }
                     }
                     Ok(None) => {
-                        eprintln!("[BLE DEBUG]   [{}] addr={} (no properties)", i, addr);
+                        debug_log!("[BLE DEBUG]   [{}] addr={} (no properties)", _i, addr);
                     }
-                    Err(e) => {
-                        eprintln!("[BLE DEBUG]   [{}] addr={} props error: {}", i, addr, e);
+                    Err(_e) => {
+                        debug_log!("[BLE DEBUG]   [{}] addr={} props error: {}", _i, addr, _e);
                     }
                 }
             }
         }
     }
 
-    eprintln!("[BLE DEBUG] Scan exhausted — no GAN cube found");
+    debug_log!("[BLE DEBUG] Scan exhausted — no GAN cube found");
     adapter.stop_scan().await.ok();
     None
 }
@@ -168,21 +169,21 @@ async fn do_gatt_connect(
     state: &AppState,
     app: &AppHandle,
 ) -> Result<serde_json::Value, String> {
-    eprintln!("[BLE DEBUG] GATT connecting to {}...", device.address());
+    debug_log!("[BLE DEBUG] GATT connecting to {}...", device.address());
     device.connect().await
         .map_err(|e| {
-            eprintln!("[BLE DEBUG] GATT connect FAILED: {}", e);
+            debug_log!("[BLE DEBUG] GATT connect FAILED: {}", e);
             format!("GATT connect failed: {}", e)
         })?;
-    eprintln!("[BLE DEBUG] GATT connected OK");
+    debug_log!("[BLE DEBUG] GATT connected OK");
 
-    eprintln!("[BLE DEBUG] Discovering services...");
+    debug_log!("[BLE DEBUG] Discovering services...");
     device.discover_services().await
         .map_err(|e| {
-            eprintln!("[BLE DEBUG] Service discovery FAILED: {}", e);
+            debug_log!("[BLE DEBUG] Service discovery FAILED: {}", e);
             format!("Service discovery failed: {}", e)
         })?;
-    eprintln!("[BLE DEBUG] Services discovered OK");
+    debug_log!("[BLE DEBUG] Services discovered OK");
 
     // ⚠ CRITICAL: Use discovered GATT services (device.services()), NOT
     // advertised services (props.services). After GATT connect, the
@@ -220,10 +221,10 @@ async fn do_gatt_connect(
     let cmd_char = cmd_char.ok_or("Command characteristic not found")?;
     let state_char = state_char.ok_or("State characteristic not found")?;
 
-    eprintln!("[BLE DEBUG] Subscribing to notifications...");
+    debug_log!("[BLE DEBUG] Subscribing to notifications...");
     device.subscribe(&state_char).await
         .map_err(|e| format!("Notification subscribe failed: {}", e))?;
-    eprintln!("[BLE DEBUG] Subscribed OK");
+    debug_log!("[BLE DEBUG] Subscribed OK");
 
     let device_owned = device.clone();
 
@@ -236,8 +237,8 @@ async fn do_gatt_connect(
     tauri::async_runtime::spawn(async move {
         let mut stream = match device_owned.notifications().await {
             Ok(s) => s,
-            Err(e) => {
-                eprintln!("[BLE] Failed to get notification stream: {}", e);
+            Err(_e) => {
+                debug_log!("[BLE] Failed to get notification stream: {}", _e);
                 return;
             }
         };
@@ -261,7 +262,7 @@ async fn do_gatt_connect(
         "generation": service_uuid,
     });
     let _ = app.emit("ble:status", payload.clone());
-    eprintln!("[BLE DEBUG] Connection complete: {} ({})", name, address);
+    debug_log!("[BLE DEBUG] Connection complete: {} ({})", name, address);
 
     Ok(payload)
 }
@@ -270,12 +271,12 @@ async fn do_gatt_connect(
 
 #[tauri::command]
 pub async fn debug_ble_status(app: AppHandle) -> Result<serde_json::Value, String> {
-    eprintln!("[BLE DEBUG] === BLE DIAGNOSTIC ===");
+    debug_log!("[BLE DEBUG] === BLE DIAGNOSTIC ===");
     let state = app.state::<AppState>();
 
     // Check if adapter is cached
     let has_cached = state.ble_adapter.lock().is_some();
-    eprintln!("[BLE DEBUG] Cached adapter: {}", has_cached);
+    debug_log!("[BLE DEBUG] Cached adapter: {}", has_cached);
 
     // Try to init adapter
     let adapter = match get_or_init_adapter(&state).await {
@@ -292,7 +293,7 @@ pub async fn debug_ble_status(app: AppHandle) -> Result<serde_json::Value, Strin
     // List cached peripherals (no scan)
     let cached = adapter.peripherals().await
         .map_err(|e| format!("Failed to list: {}", e))?;
-    eprintln!("[BLE DEBUG] Cached peripherals: {}", cached.len());
+    debug_log!("[BLE DEBUG] Cached peripherals: {}", cached.len());
 
     let mut cached_info = Vec::new();
     for p in &cached {
@@ -315,7 +316,7 @@ pub async fn debug_ble_status(app: AppHandle) -> Result<serde_json::Value, Strin
     let connected_mac = state.last_cube_mac.lock().clone();
     let has_connected = state.connected_cube.lock().is_some();
 
-    eprintln!("[BLE DEBUG] === DIAGNOSTIC COMPLETE ===");
+    debug_log!("[BLE DEBUG] === DIAGNOSTIC COMPLETE ===");
 
     Ok(serde_json::json!({
         "ok": true,
@@ -331,13 +332,13 @@ pub async fn debug_ble_status(app: AppHandle) -> Result<serde_json::Value, Strin
 
 #[tauri::command]
 pub async fn start_auto_scan(app: AppHandle) -> Result<(), String> {
-    eprintln!("[BLE DEBUG] === start_auto_scan ===");
+    debug_log!("[BLE DEBUG] === start_auto_scan ===");
     let state = app.state::<AppState>();
     let adapter = get_or_init_adapter(&state).await?;
 
     let peripherals = adapter.peripherals().await
         .map_err(|e| format!("Failed to list peripherals: {}", e))?;
-    eprintln!("[BLE DEBUG] Auto-scan: {} cached peripherals", peripherals.len());
+    debug_log!("[BLE DEBUG] Auto-scan: {} cached peripherals", peripherals.len());
 
     let mut has_cubes = false;
     for p in &peripherals {
@@ -351,7 +352,7 @@ pub async fn start_auto_scan(app: AppHandle) -> Result<(), String> {
     }
 
     if !has_cubes {
-        eprintln!("[BLE DEBUG] Auto-scan: no GAN in cache, starting scan...");
+        debug_log!("[BLE DEBUG] Auto-scan: no GAN in cache, starting scan...");
         let _ = app.emit("ble:status", serde_json::json!({
             "status": "scanning",
             "message": "Looking for GAN cubes..."
@@ -419,7 +420,7 @@ pub async fn connect_gan_cube(
     state: State<'_, AppState>,
     mac: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    eprintln!("[BLE DEBUG] === connect_gan_cube mac={:?} ===", mac);
+    debug_log!("[BLE DEBUG] === connect_gan_cube mac={:?} ===", mac);
     let adapter = get_or_init_adapter(&state).await?;
 
     let _ = app.emit("ble:status", serde_json::json!({
@@ -431,31 +432,31 @@ pub async fn connect_gan_cube(
     if mac.is_none() {
         let cached_mac = state.last_cube_mac.lock().clone();
         if let Some(ref addr) = cached_mac {
-            eprintln!("[BLE DEBUG] Strategy 1: trying cached MAC {}", addr);
+            debug_log!("[BLE DEBUG] Strategy 1: trying cached MAC {}", addr);
             if let Some(device) = find_cached_gan_cube(&adapter, Some(addr)).await {
                 let result = do_gatt_connect(&device, &state, &app).await;
                 if result.is_ok() {
                     return result;
                 }
-                eprintln!("[BLE DEBUG] Strategy 1 FAILED for {} — falling through", addr);
+                debug_log!("[BLE DEBUG] Strategy 1 FAILED for {} — falling through", addr);
             }
         }
     }
 
     // Strategy 2: cached peripherals (no scan)
-    eprintln!("[BLE DEBUG] Strategy 2: checking cached peripherals");
+    debug_log!("[BLE DEBUG] Strategy 2: checking cached peripherals");
     let target_mac = mac.as_deref();
     if let Some(device) = find_cached_gan_cube(&adapter, target_mac).await {
         return do_gatt_connect(&device, &state, &app).await;
     }
 
     // Strategy 3: active scan
-    eprintln!("[BLE DEBUG] Strategy 3: active scan");
+    debug_log!("[BLE DEBUG] Strategy 3: active scan");
     if let Some(device) = scan_for_gan_cube(&adapter, target_mac).await {
         return do_gatt_connect(&device, &state, &app).await;
     }
 
-    eprintln!("[BLE DEBUG] === ALL STRATEGIES FAILED ===");
+    debug_log!("[BLE DEBUG] === ALL STRATEGIES FAILED ===");
     Err("No GAN cube found nearby. Make sure the cube is turned on and in range.".into())
 }
 

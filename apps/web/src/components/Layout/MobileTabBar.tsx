@@ -31,7 +31,7 @@ type TabItem = {
 
 const MAIN_TABS: TabItem[] = [
   { id: "training", label: "Training", icon: Dumbbell },
-  { id: "practice", label: "Algorithms", icon: BookOpen },
+  { id: "algorithms", label: "Algorithms", icon: BookOpen },
   { id: "timer", label: "Timer", icon: Timer },
   { id: "insights", label: "Stats", icon: BarChart3 },
   { id: "skill-tree", label: "Skills", icon: Network },
@@ -89,8 +89,14 @@ export function MobileTabBar({
           {/* More — opens the touch grid sheet (Settings, Smart Cube, Theme) */}
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
               hapticTap();
+              // Drop focus before the modal drawer marks this nav `aria-hidden`
+              // (background sibling of the portal). Keeping focus here would
+              // trigger Chrome's "Blocked aria-hidden ... descendant retained
+              // focus" warning. The drawer's own focus trap re-focuses its
+              // content for keyboard users.
+              e.currentTarget.blur();
               onOpenMore?.();
             }}
             aria-label="More options"

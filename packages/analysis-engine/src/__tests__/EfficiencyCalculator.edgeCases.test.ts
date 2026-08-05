@@ -1,12 +1,12 @@
 /**
- * Nivel 2 — Edge cases para EfficiencyCalculator
+ * Level 2 — Edge cases for EfficiencyCalculator
  *
- * Casos frontera:
- * • compute con timeline vacío → defaults
- * • solveOptimal con scramble inválido/vacío → ''
- * • Redundancy & cancellation: secuencias límite
- * • computeForwardDriftFast: sin entries, solved state, sin progreso
- * • overturns: siempre 0 (documentado como limitación)
+ * Boundary cases:
+ * • compute with an empty timeline → defaults
+ * • solveOptimal with invalid/empty scramble → ''
+ * • Redundancy & cancellation: boundary sequences
+ * • computeForwardDriftFast: no entries, solved state, no progress
+ * • overturns: always 0 (documented limitation)
  */
 import { describe, it, expect } from 'vitest';
 import { EfficiencyCalculator } from '../metrics/EfficiencyCalculator';
@@ -30,10 +30,10 @@ function makeTimeline(moves: Array<{ face: string; direction: number }>): SolveT
   return { entries, solveId: 'test', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: moves.length * 100 };
 }
 
-describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
-  // ── compute: timeline vacío ────────────────────────────────────────
+describe('EfficiencyCalculator — Level 2 Edge Cases', () => {
+  // ── compute: empty timeline ────────────────────────────────────────
 
-  it('compute con timeline vacío devuelve valores por defecto', async () => {
+  it('compute with an empty timeline returns defaults', async () => {
     const timeline: SolveTimeline = { entries: [], solveId: 'empty', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: 0 };
     const result = await EfficiencyCalculator.compute(timeline, 'R U R\'');
     expect(result).toEqual({
@@ -46,7 +46,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
     });
   });
 
-  it('compute con timeline vacío y scramble vacío devuelve defaults', async () => {
+  it('compute with an empty timeline and empty scramble returns defaults', async () => {
     const timeline: SolveTimeline = { entries: [], solveId: 'empty', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: 0 };
     const result = await EfficiencyCalculator.compute(timeline, '');
     expect(result.optimalMoveCount).toBe(0);
@@ -55,19 +55,19 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
 
   // ── solveOptimal ───────────────────────────────────────────────────
 
-  it('solveOptimal con scramble vacío devuelve string vacío', async () => {
+  it('solveOptimal with an empty scramble returns an empty string', async () => {
     const result = await EfficiencyCalculator.solveOptimal('');
     expect(result).toBe('');
   });
 
-  it('solveOptimal con scramble inválido no lanza (catch → "")', async () => {
+  it('solveOptimal with an invalid scramble does not throw (catch → "")', async () => {
     const result = await EfficiencyCalculator.solveOptimal('INVALID SCRAMBLE X Y Z');
     expect(result).toBe('');
   });
 
   // ── Redundancy & cancellation ──────────────────────────────────────
 
-  it('detección: U seguido de U\' es cancellation (no redundancy)', async () => {
+  it('detection: U followed by U\' is a cancellation (not redundancy)', async () => {
     const timeline = makeTimeline([
       { face: 'U', direction: 1 },
       { face: 'U', direction: -1 },
@@ -77,7 +77,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
     expect(result.redundancies).toBe(0);
   });
 
-  it('detección: U seguido de U es redundancy (no cancellation)', async () => {
+  it('detection: U followed by U is redundancy (not cancellation)', async () => {
     const timeline = makeTimeline([
       { face: 'U', direction: 1 },
       { face: 'U', direction: 1 },
@@ -87,7 +87,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
     expect(result.cancellations).toBe(0);
   });
 
-  it('detección: R2 no es cancellation ni redundancy', async () => {
+  it('detection: R2 is neither a cancellation nor redundancy', async () => {
     const timeline = makeTimeline([
       { face: 'R', direction: 2 },
       { face: 'R', direction: 2 },
@@ -97,7 +97,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
     expect(result.cancellations).toBe(0);
   });
 
-  it('detección: caras diferentes no cuentan', async () => {
+  it('detection: different faces do not count', async () => {
     const timeline = makeTimeline([
       { face: 'U', direction: 1 },
       { face: 'R', direction: 1 },
@@ -107,7 +107,7 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
     expect(result.cancellations).toBe(0);
   });
 
-  it('múltiples redundancias: U U R U U = 2 redundancias', async () => {
+  it('multiple redundancies: U U R U U = 2 redundancies', async () => {
     const timeline = makeTimeline([
       { face: 'U', direction: 1 },
       { face: 'U', direction: 1 },
@@ -135,43 +135,43 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
 
   // ── forwardDrift ───────────────────────────────────────────────────
 
-  it('computeForwardDriftFast con timeline vacío devuelve 1', () => {
+  it('computeForwardDriftFast with an empty timeline returns 1', () => {
     const result = EfficiencyCalculator.computeForwardDriftFast({ entries: [], solveId: 'test', method: 'CFOP', phases: [], startTimestamp: 0, endTimestamp: 0 });
     expect(result).toBe(1);
   });
 
-  it('computeForwardDriftFast con 1 entry y estado solved devuelve...', () => {
-    // Con un solo entry y estado solved, no hay entries previos para comparar
-    // así que progressSteps = 0 (ningún entry tiene menos unsolved que el anterior)
+  it('computeForwardDriftFast with 1 entry in solved state returns...', () => {
+    // With a single solved-state entry there are no previous entries to compare,
+    // so progressSteps = 0 (no entry has fewer unsolved than the previous one)
     // forwardDrift = 0/1 = 0
     const timeline = makeTimeline([{ face: 'U', direction: 1 }]);
-    // El estado del entry es solved (cp=identity, co=0, etc.), así que unsolved=0
-    // previousUnsolved empieza en 20, unsolved=0 < 20 → progressSteps++ = 1
+    // The entry state is solved (cp=identity, co=0, etc.), so unsolved=0
+    // previousUnsolved starts at 20, unsolved=0 < 20 → progressSteps++ = 1
     // forwardDrift = 1/1 = 1
     const result = EfficiencyCalculator.computeForwardDriftFast(timeline);
     expect(result).toBe(1);
   });
 
-  it('computeForwardDriftFast con todos los estados en solved = 0.5 (2 entries, 1 progresa)', () => {
-    // buildTimeline con solved state produce unsolved=0 para cada entry
-    // primer entry: 0 < 20 → progress++, prev=0
-    // segundo entry: 0 < 0? No → no progress
-    // Así que progress=1, entries.length=2, forwardDrift=0.5
+  it('computeForwardDriftFast with all entries solved = 0.5 (2 entries, 1 progresses)', () => {
+    // buildTimeline with a solved state produces unsolved=0 for each entry
+    // first entry: 0 < 20 → progress++, prev=0
+    // second entry: 0 < 0? No → no progress
+    // So progress=1, entries.length=2, forwardDrift=0.5
     const timeline = makeTimeline([
       { face: 'U', direction: 1 },
       { face: 'R', direction: 1 },
     ]);
     const result = EfficiencyCalculator.computeForwardDriftFast(timeline);
-    // Ambos entradas tienen estado solved (unsolved=0)
-    // Primera: 0 < 20 → progress++ (1)
-    // Segunda: 0 < 0 → no progress
+    // Both entries are in the solved state (unsolved=0)
+    // First: 0 < 20 → progress++ (1)
+    // Second: 0 < 0 → no progress
     // forwardDrift = 1/2 = 0.5
     expect(result).toBe(0.5);
   });
 
   // ── overturns ──────────────────────────────────────────────────────
 
-  it('overturns siempre es 0 (limitación documentada)', async () => {
+  it('overturns is always 0 (documented limitation)', async () => {
     const timeline = makeTimeline([
       { face: 'U', direction: 1 },
       { face: 'R', direction: 1 },
@@ -180,9 +180,9 @@ describe('EfficiencyCalculator — Nivel 2 Edge Cases', () => {
     expect(result.overturns).toBe(0);
   });
 
-  // ── forwardDrift con 0 entries (vía compute) ───────────────────────
+  // ── forwardDrift with 0 entries (via compute) ──────────────────────
 
-  it('compute con entries.length=1 no da error', async () => {
+  it('compute with entries.length=1 does not error', async () => {
     const timeline = makeTimeline([{ face: 'U', direction: 1 }]);
     const result = await EfficiencyCalculator.compute(timeline, 'R U R\'');
     expect(result.forwardDrift).toBeGreaterThanOrEqual(0);

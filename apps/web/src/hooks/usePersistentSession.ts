@@ -199,19 +199,17 @@ export function usePersistentSession(): UsePersistentSessionResult {
 
         if (!isMounted) return;
 
-        // Fetch counts and map to SessionMeta
-        const metaSessions: SessionMeta[] = [];
-        for (const s of allSessions) {
-          const sessionSolves = await solvesRepo.findAll(s.id);
-          metaSessions.push({
-            id: s.id,
-            name: s.name,
-            puzzle: s.puzzleType,
-            createdAt: s.createdAt,
-            updatedAt: s.updatedAt ?? s.createdAt,
-            solveCount: sessionSolves.length,
-          });
-        }
+        // Fetch counts in one GROUP BY query instead of N findAll() calls
+        // (startup cost no longer scales with the number of sessions).
+        const sessionCounts = await solvesRepo.countBySession();
+        const metaSessions: SessionMeta[] = allSessions.map((s) => ({
+          id: s.id,
+          name: s.name,
+          puzzle: s.puzzleType,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt ?? s.createdAt,
+          solveCount: sessionCounts.get(s.id) ?? 0,
+        }));
         
         setSessions(metaSessions);
         setActiveSessionId(lastActive);
@@ -412,50 +410,53 @@ export function usePersistentSession(): UsePersistentSessionResult {
     }>,
   ): Promise<number> => {
     if (!session || !reposRef.current) return 0;
+    if (inputs.length === 0) return 0;
 
+    const dbSolves: DBSolve[] = inputs.map((input) => ({
+      id: uuidv4(),
+      sessionId: session.id,
+      timeMs: input.time,
+      timestamp: input.timestamp,
+      scramble: input.scramble,
+      penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
+      method: input.method,
+      note: input.note,
+      source: input.source ?? "manual",
+      moves: [],
+      orientationTimeline: undefined,
+      analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
+      analysis: undefined,
+      puzzleType: input.puzzleType ?? '3x3x3',
+    } as DBSolve));
+
+    // All-or-nothing: the whole batch lands inside one SQLite transaction.
+    // On failure nothing is imported (no partial file).
     let imported = 0;
-    const solvesToAdd: UISolve[] = [];
-
-    for (const input of inputs) {
-      const solveId = uuidv4();
-
-      const dbSolve: DBSolve = {
-        id: solveId,
-        sessionId: session.id,
-        timeMs: input.time,
-        timestamp: input.timestamp,
-        scramble: input.scramble,
-        penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
-        method: input.method,
-        note: input.note,
-        source: input.source ?? "manual",
-        moves: [],
-        orientationTimeline: undefined,
-        analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
-        analysis: undefined,
-        puzzleType: input.puzzleType ?? '3x3x3',
-      } as DBSolve;
-
-      try {
-        await reposRef.current.solves.insert(dbSolve);
-        imported++;
-
-        solvesToAdd.push({
-          ...toUISolve(dbSolve),
-          method: input.method as UISolve['method'] || undefined,
-          source: input.source ?? "manual",
-        });
-      } catch (err) {
-        console.error('[importSolves] Failed to insert solve:', err);
-      }
+    try {
+      imported = await reposRef.current.solves.insertMany(dbSolves);
+    } catch (err) {
+      console.error('[importSolves] Batch insert failed — rolled back:', err);
     }
 
-    if (solvesToAdd.length > 0) {
-      setSolves((prev) => [...solvesToAdd, ...prev]);
+    if (imported > 0) {
+      const solvesToAdd: UISolve[] = dbSolves.slice(0, imported).map((s) => ({
+        ...toUISolve(s),
+        method: s.method as UISolve['method'] || undefined,
+        source: s.source ?? "manual",
+      }));
+      // IMPORTANT: keep the array sorted newest-first BY TIMESTAMP.
+      // Imported files are usually oldest→newest, so prepending them as-is
+      // would make the first (oldest) imported solve land at `solves[0]` —
+      // and the UI treats `solves[0]` as the most recent solve (PB baseline,
+      // "last solve" badge, etc.). Sorting here matches the DB order
+      // (ORDER BY timestamp ASC, then reversed) for every load.
+      setSolves((prev) =>
+        [...solvesToAdd, ...prev].sort((a, b) => b.timestamp - a.timestamp),
+      );
       setSessions((prev) =>
         prev.map((s) =>
           s.id === session.id
-            ? { ...s, solveCount: s.solveCount + solvesToAdd.length, updatedAt: Date.now() }
+            ? { ...s, solveCount: s.solveCount + imported, updatedAt: Date.now() }
             : s,
         ),
       );
@@ -467,12 +468,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
   const clearSession = useCallback(async () => {
     if (!session || !reposRef.current) return;
     const { solves: solvesRepo } = reposRef.current;
-    
-    const allSolves = await solvesRepo.findAll(session.id);
-    for (const s of allSolves) {
-      await solvesRepo.delete(s.id);
-    }
-    
+
+    // Single statement instead of delete-one-by-one (fast on large sessions).
+    await solvesRepo.deleteBySession(session.id);
+
     setSolves([]);
     setSessions(prev => prev.map(s => 
       s.id === session.id ? { ...s, solveCount: 0, updatedAt: Date.now() } : s
@@ -539,13 +538,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
     if (!reposRef.current) return;
     const { sessions: sessionsRepo, solves: solvesRepo } = reposRef.current;
     
-    // Delete all solves for this session
-    const allSolves = await solvesRepo.findAll(id);
-    for (const s of allSolves) {
-      await solvesRepo.delete(s.id);
-    }
-    
-    // Delete the session from DB
+    // Delete all solves for this session in one statement, then the session.
+    // (The FK also cascades, but being explicit keeps it safe even if the
+    // pragma is ever disabled.)
+    await solvesRepo.deleteBySession(id);
     await sessionsRepo.delete(id);
     
     // Optimistically remove from React state

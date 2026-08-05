@@ -3,7 +3,7 @@ import { TimerEngine } from '../src/TimerEngine';
 import { TimerState } from '../src/TimerState';
 import { Penalty } from '../src/WcaRules';
 
-describe('TimerEngine — Nivel 2 Edge Cases', () => {
+describe('TimerEngine — Level 2 Edge Cases', () => {
   let timer: TimerEngine;
 
   beforeEach(() => {

@@ -15,6 +15,7 @@ export * from './styles/cubeSkins';
 // Animation
 export * from './animation/RotationEngine';
 export * from './animation/Easing';
+export * from './animation/ScrambleAnimator';
 
 // Hardware Bridge
 export * from './hardware/GyroFusion';

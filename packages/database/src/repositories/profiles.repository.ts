@@ -22,6 +22,7 @@ export interface ProfileRow {
   avatar_data: string | null;
   main_puzzle: string;
   declared_methods: string;
+  country: string;
   created_at: number;
   updated_at: number;
 }
@@ -46,6 +47,7 @@ function rowToProfile(row: ProfileRow): Profile {
     avatarData: row.avatar_data ?? undefined,
     mainPuzzle: row.main_puzzle,
     declaredMethods: parseDeclaredMethods(row.declared_methods),
+    country: row.country ?? '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -61,6 +63,7 @@ function defaultProfile(userId: string): Profile {
     avatarKind: 'identicon',
     mainPuzzle: '3x3x3',
     declaredMethods: [],
+    country: '',
     createdAt: 0,
     updatedAt: 0,
   };
@@ -90,9 +93,9 @@ export class ProfilesRepository {
     const now = Date.now();
     await this.db(
       `INSERT OR IGNORE INTO profiles
-        (user_id, display_name, handle, bio, avatar_kind, avatar_data, main_puzzle, declared_methods, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, '', '', '', 'identicon', null, '3x3x3', '[]', now, now],
+        (user_id, display_name, handle, bio, avatar_kind, avatar_data, main_puzzle, declared_methods, country, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, '', '', '', 'identicon', null, '3x3x3', '[]', '', now, now],
     );
 
     const created = await this.findById(userId);
@@ -103,8 +106,8 @@ export class ProfilesRepository {
   async upsert(profile: Profile): Promise<void> {
     await this.db(
       `INSERT OR REPLACE INTO profiles
-        (user_id, display_name, handle, bio, avatar_kind, avatar_data, main_puzzle, declared_methods, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (user_id, display_name, handle, bio, avatar_kind, avatar_data, main_puzzle, declared_methods, country, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         profile.userId,
         profile.displayName,
@@ -114,6 +117,7 @@ export class ProfilesRepository {
         profile.avatarData ?? null,
         profile.mainPuzzle,
         JSON.stringify(profile.declaredMethods),
+        profile.country ?? '',
         profile.createdAt,
         profile.updatedAt,
       ],

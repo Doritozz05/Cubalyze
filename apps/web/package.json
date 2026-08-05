@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:clean": "vite --force",
     "build": "tsc -b && vite build",
+    "analyze": "vite build --mode analyze",
     "typecheck": "tsc -b --pretty",
     "typecheck:watch": "tsc -b --watch",
     "lint": "eslint .",
@@ -62,6 +63,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "comlink": "^4.4.2",
+    "country-flag-icons": "^1.6.20",
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.42.2",
@@ -96,6 +98,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
     "postcss": "^8.5.17",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.3.2",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"

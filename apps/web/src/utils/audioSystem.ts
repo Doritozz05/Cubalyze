@@ -56,6 +56,8 @@ export class AudioSystem {
   private voices: SpeechSynthesisVoice[] = [];
   private voicesLoaded = false;
   private loadingStarted = false;
+  /** Master volume 0–100, applied to every synthesized/Web Audio sound. */
+  private volume = 80;
 
   /**
    * Initializes the speech synthesis engine. Begins loading the available
@@ -109,6 +111,18 @@ export class AudioSystem {
 
   public getVoice(): VoiceType {
     return this.voice;
+  }
+
+  /**
+   * Sets the master volume (0–100). Applied to inspection voice and the PB
+   * fanfare on the next playback.
+   */
+  public setVolume(value: number): void {
+    this.volume = Math.max(0, Math.min(100, value));
+  }
+
+  public getVolume(): number {
+    return this.volume;
   }
 
   /**
@@ -179,7 +193,7 @@ export class AudioSystem {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     utterance.rate = 0.88; // Slightly slower for clarity in competition
-    utterance.volume = 1;
+    utterance.volume = this.volume / 100;
 
     const voice = this.getPreferredVoice();
     if (voice) {
@@ -246,10 +260,11 @@ export class AudioSystem {
         osc.type = idx === freqs.length - 1 ? "sine" : "triangle";
         osc.frequency.setValueAtTime(freq, now + idx * stagger);
 
-        // ADSR Envelope: Punchy, bright, smooth decay
+        // ADSR Envelope: Punchy, bright, smooth decay (scaled by master volume)
         const startTime = now + idx * stagger;
+        const peak = 0.22 * (this.volume / 100);
         gain.gain.setValueAtTime(0.001, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0001), startTime + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + 0.35);
 
         osc.connect(gain);

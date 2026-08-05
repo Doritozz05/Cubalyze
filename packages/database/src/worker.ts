@@ -1,7 +1,7 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import * as Comlink from 'comlink';
 import { MIGRATIONS } from './migrations/index.js';
-import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, restoreMissingCountSql } from './migrations/restore.js';
+import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL, backupHasDateColumnSql, backupCreatedAtTypeSql, restoreMissingCountSql } from './migrations/restore.js';
 
 // The @sqlite.org/sqlite-wasm package exposes a runtime API that is not
 // fully typed by the bundled type declarations. We use `any` for the `db`
@@ -77,6 +77,32 @@ function migrationApplied(id: string): boolean {
   return !!rows && rows.length > 0;
 }
 
+/** True when a `_backup_v1_*` snapshot is REAL v1 data (has a `date` column). */
+function backupIsV1(backupTable: string): boolean {
+  if (!db) throw new Error('Database not initialized');
+  const rows = db.exec({
+    sql: backupHasDateColumnSql(backupTable),
+    rowMode: 'array',
+  }) as unknown[][];
+  return Number(rows?.[0]?.[0]) > 0;
+}
+
+/**
+ * True when a `_backup_v1_*` snapshot stores v1-style dates (TEXT ISO or
+ * NULL): anything that is NOT a numeric epoch-ms value routes to the v1
+ * conversion path, whose COALESCE repairs NULL timestamps — the v2 snapshot
+ * path cannot (v2 `created_at` is NOT NULL).
+ */
+function backupHasTextDates(backupTable: string): boolean {
+  if (!db) throw new Error('Database not initialized');
+  const rows = db.exec({
+    sql: backupCreatedAtTypeSql(backupTable),
+    rowMode: 'array',
+  }) as unknown[][];
+  const type = rows?.[0]?.[0];
+  return type !== 'integer' && type !== 'real';
+}
+
 /**
  * Restore user data that migration 022 (baseline v2) dropped and recreated
  * empty: copies `_backup_v1_sessions`/`_backup_v1_solves` back into the new
@@ -86,6 +112,21 @@ function migrationApplied(id: string): boolean {
  * IGNORE + re-running is a no-op). Once every backup row is verified to
  * exist in the v2 table, the v1 snapshot is dropped so the DB stays clean;
  * otherwise the backup is kept as a recovery net.
+ *
+ * Schema-aware: a snapshot with a `date` column (or TEXT `created_at`) is
+ * REAL v1 data and goes through the conversion path. A stale v2-shaped
+ * snapshot (created when the backup gate ran against an already-v2 DB that
+ * lacked the 022 marker — e.g. a dev DB from an earlier refactor iteration)
+ * is copied straight across; converting its INTEGER timestamps with
+ * `julianday` would corrupt them (and previously failed with
+ * "no such column: date").
+ *
+ * NOTE: only `_backup_v1_sessions`/`_backup_v1_solves` are restored. The
+ * other snapshots (`_backup_v1_training_attempts`, `_backup_v1_algorithm_progress`,
+ * `_backup_v1_exercise_progress`, `_backup_v1_training_sessions`, `_backup_v1_algorithms`)
+ * are intentionally left in place as a manual-recovery net: the v2 training
+ * catalog was re-seeded with new ids, so those rows cannot be mapped across
+ * without breaking FKs.
  */
 function restoreLegacyData(): void {
   if (!db) throw new Error('Database not initialized');
@@ -96,11 +137,11 @@ function restoreLegacyData(): void {
 
   // Sessions first: v2 solves has a real FK on sessions.id.
   if (hasSessions) {
-    db.exec(RESTORE_SESSIONS_SQL);
+    db.exec(backupHasTextDates('_backup_v1_sessions') ? RESTORE_SESSIONS_SQL : RESTORE_SESSIONS_V2_SNAPSHOT_SQL);
   }
 
   if (hasSolves) {
-    db.exec(RESTORE_SOLVES_SQL);
+    db.exec(backupIsV1('_backup_v1_solves') ? RESTORE_SOLVES_SQL : RESTORE_SOLVES_V2_SNAPSHOT_SQL);
   }
 
   // Cleanup: drop the v1 snapshot only after proving every row landed in
@@ -135,10 +176,28 @@ function runMigrations(): void {
 
   for (const migration of MIGRATIONS) {
     if (applied.has(migration.id)) continue;
-    db.exec(migration.sql);
-    // Use INSERT OR IGNORE so that reloads over an already-migrated OPFS
-    // database don't crash on the UNIQUE constraint.
-    db.exec('INSERT OR IGNORE INTO _migrations (id) VALUES (?)', { bind: [migration.id] });
+
+    // Each migration runs in its own transaction. If a statement fails — or
+    // the worker is killed mid-run (e.g. a Vite HMR reload while exec() is
+    // in flight) — the transaction is left uncommitted and SQLite rolls it
+    // back on the next open. Without this, a crash between statements left
+    // orphan tables such as `training_exercises` with no _migrations record,
+    // wedging every later init with "table ... already exists".
+    db.exec('BEGIN');
+    try {
+      db.exec(migration.sql);
+      // Use INSERT OR IGNORE so that reloads over an already-migrated OPFS
+      // database don't crash on the UNIQUE constraint.
+      db.exec('INSERT OR IGNORE INTO _migrations (id) VALUES (?)', { bind: [migration.id] });
+      db.exec('COMMIT');
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // Transaction already gone — nothing left to unwind.
+      }
+      throw err;
+    }
   }
 }
 

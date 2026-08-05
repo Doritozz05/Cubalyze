@@ -44,7 +44,7 @@ function profilesFake(initial: Record<string, unknown>[] = []) {
       return matches.map((r) => ({ ...r }));
     }
     if (sql.includes('INSERT OR IGNORE') || sql.includes('INSERT OR REPLACE')) {
-      const [userId, displayName, handle, bio, avatarKind, avatarData, mainPuzzle, declaredMethods, createdAt, updatedAt] =
+      const [userId, displayName, handle, bio, avatarKind, avatarData, mainPuzzle, declaredMethods, country, createdAt, updatedAt] =
         bind as unknown[];
       const row: Record<string, unknown> = {
         user_id: userId,
@@ -55,6 +55,7 @@ function profilesFake(initial: Record<string, unknown>[] = []) {
         avatar_data: avatarData,
         main_puzzle: mainPuzzle,
         declared_methods: declaredMethods,
+        country: country ?? '',
         created_at: createdAt,
         updated_at: updatedAt,
       };
@@ -84,6 +85,7 @@ const SAMPLE_PROFILE_ROW: Record<string, unknown> = {
   avatar_data: 'data:image/png;base64,AAAA',
   main_puzzle: '3x3x3',
   declared_methods: '["CFOP","Roux"]',
+  country: 'MX',
   created_at: 1750000000000,
   updated_at: 1750000000001,
 };
@@ -184,6 +186,7 @@ describe('ProfilesRepository', () => {
     expect(profile!.avatarData).toBe('data:image/png;base64,AAAA');
     expect(profile!.declaredMethods).toEqual(['CFOP', 'Roux']);
     expect(profile!.mainPuzzle).toBe('3x3x3');
+    expect(profile!.country).toBe('MX');
     expect(profile!.createdAt).toBe(1750000000000);
   });
 
@@ -237,6 +240,7 @@ describe('ProfilesRepository', () => {
       avatarKind: 'identicon',
       mainPuzzle: '2x2x2',
       declaredMethods: ['ZZ'],
+      country: 'AU',
       createdAt: 1750000000000,
       updatedAt: 1750000000001,
     };
@@ -245,6 +249,7 @@ describe('ProfilesRepository', () => {
     expect(rows).toHaveLength(1);
     expect((rows[0] as Record<string, unknown>).declared_methods).toBe('["ZZ"]');
     expect((rows[0] as Record<string, unknown>).avatar_data).toBeNull();
+    expect((rows[0] as Record<string, unknown>).country).toBe('AU');
   });
 
   it('delete removes the profile row', async () => {

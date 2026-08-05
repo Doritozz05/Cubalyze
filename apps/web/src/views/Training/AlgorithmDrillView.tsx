@@ -13,9 +13,9 @@ import {
 } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
 import { useCaseAlgorithms, getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
-import { CaseDiagram } from "@/views/Practice/components/CaseDiagram";
-import { Case2x2Diagram } from "@/views/Practice/components/Case2x2Diagram";
-import { Case3DDiagram } from "@/views/Practice/components/Case3DDiagram";
+import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
+import { Case2x2Diagram } from "@/views/Algorithms/components/Case2x2Diagram";
+import { Case3DDiagram } from "@/views/Algorithms/components/Case3DDiagram";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
