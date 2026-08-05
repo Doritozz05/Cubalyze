@@ -40,7 +40,7 @@ export function ScrambleSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Shuffle className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] text-ink-2">
+        <p className="text-[0.82rem] leading-5 text-ink-2">
           Configure how scramble sequences are generated, displayed, verified, and aligned with your cube.
         </p>
       </div>

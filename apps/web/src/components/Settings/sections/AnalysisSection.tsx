@@ -25,7 +25,7 @@ export function AnalysisSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <BarChart3 className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] text-ink-2">
+        <p className="text-[0.82rem] leading-5 text-ink-2">
           Select your solving method. Phase detection and metrics will adapt
           automatically. Analysis runs when a Smart Cube is connected.
         </p>
@@ -64,7 +64,7 @@ export function AnalysisSection() {
                   >
                     {m.label}
                   </span>
-                  <p className="mt-0.5 text-[0.72rem] text-ink-3 leading-relaxed">
+                  <p className="mt-0.5 text-[0.72rem] text-ink-3 leading-5">
                     {m.desc}
                   </p>
                 </div>

@@ -174,10 +174,10 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
 
         {/* Desktop section header (>=1024px) */}
         <div className="shrink-0 border-b border-line px-8 py-6 max-lg:hidden">
-          <h2 className="text-[0.95rem] font-semibold text-ink">
+          <h2 className="text-[0.95rem] font-semibold leading-5 text-ink">
             {activeMeta?.label ?? 'Settings'}
           </h2>
-          <p className="mt-1 text-[0.78rem] text-ink-3">
+          <p className="mt-1 text-[0.78rem] leading-5 text-ink-3">
             {activeMeta?.description ?? ''}
           </p>
         </div>

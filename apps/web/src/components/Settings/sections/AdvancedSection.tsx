@@ -170,7 +170,7 @@ export function AdvancedSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Wrench className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] text-ink-2">
+        <p className="text-[0.82rem] leading-5 text-ink-2">
           Developer tools, data and debugging. Use with care.
         </p>
       </div>
@@ -178,11 +178,11 @@ export function AdvancedSection() {
       {/* ── Reset options ───────────────────────────────────────────── */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-dnf/25 bg-dnf/[0.03] p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <RotateCcw className="size-3.5 text-dnf" />
             Reset all options
           </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
             Restore every preference — theme, timer, scramble, notifications — to its
             default value. Your solves, profile and training data are untouched.
           </p>
@@ -238,11 +238,11 @@ export function AdvancedSection() {
       <div className="rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <Database className="size-3.5 text-ink-2" />
               Storage inspector
             </h4>
-            <p className="mt-1.5 text-[0.72rem] leading-relaxed text-ink-3">
+            <p className="mt-1.5 text-[0.72rem] leading-5 text-ink-3">
               Where your data lives and how much space it uses.
             </p>
           </div>
@@ -303,11 +303,11 @@ export function AdvancedSection() {
 
       {/* ── Dev flags ───────────────────────────────────────────────── */}
       <div className="rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+        <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
           <Flag className="size-3.5 text-ink-2" />
           Environment flags
         </h4>
-        <p className="mt-1.5 text-[0.72rem] leading-relaxed text-ink-3">
+        <p className="mt-1.5 text-[0.72rem] leading-5 text-ink-3">
           Runtime environment detected by the app — useful when sharing bug reports.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -337,7 +337,7 @@ export function AdvancedSection() {
 
       <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
         <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-ink-3" />
-        <span className="text-[0.65rem] leading-relaxed text-ink-3">
+        <span className="text-[0.65rem] leading-5 text-ink-3">
           Changes here affect only this device. Reset options is safe — it never deletes
           solves, profile or training progress.
         </span>

@@ -54,7 +54,7 @@ export function TimerSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Clock className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] text-ink-2">
+        <p className="text-[0.82rem] leading-5 text-ink-2">
           Configure how a solve should begin. These settings also apply
           when no Smart Cube is connected.
         </p>
@@ -63,11 +63,11 @@ export function TimerSection() {
       {/* ── Input Mode: Timer vs Manual ──────────────────────────── */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <Keyboard className="size-3.5 text-ink-2" />
             Manual time entry
           </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
             Replace the timer with a text input to type times directly (like csTimer). Type "1450" or "14.50" to log a solve. Inspection and hold-to-start are bypassed.
           </p>
         </div>
@@ -105,10 +105,10 @@ export function TimerSection() {
       {/* ── Spacebar Hold Delay ────────────────────────────────────── */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             Spacebar hold duration
           </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
             Amount of time required holding the spacebar down before the timer turns green and is ready to start.
           </p>
         </div>
@@ -133,11 +133,11 @@ export function TimerSection() {
       {/* ── Hardware Timer ─────────────────────────────────────────── */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <Cpu className="size-3.5 text-ink-2" />
             Hardware timer
           </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
             Use an external physical timer (Stackmat via audio jack or GAN Smart Timer via Bluetooth) instead of the space bar.
           </p>
           {hardwareTimer === 'stackmat' && (
@@ -197,7 +197,7 @@ export function TimerSection() {
       {audioCues && (
         <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               {voiceType === 'male' ? (
                 <Mic className="size-3.5 text-ink-2" />
               ) : (
@@ -205,7 +205,7 @@ export function TimerSection() {
               )}
               Voice
             </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
               Choose between male and female voice for the inspection alerts.
               Uses the official WCA audio clips.
             </p>
