@@ -12,7 +12,12 @@ const TOUCH_BREAKPOINT = 1024
  * Desktop (>=1024px) always returns false.
  */
 export function useIsTouch() {
-  const [isTouch, setIsTouch] = React.useState<boolean | undefined>(undefined)
+  // Initialise synchronously (not in an effect) so the first render already
+  // matches the real viewport — otherwise touch devices would flash the
+  // desktop layout (and every pill would visibly jump) for one frame.
+  const [isTouch, setIsTouch] = React.useState<boolean>(
+    () => typeof window !== "undefined" && window.innerWidth < TOUCH_BREAKPOINT
+  )
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${TOUCH_BREAKPOINT - 1}px)`)
@@ -24,5 +29,5 @@ export function useIsTouch() {
     return () => mql.removeEventListener("change", onChange)
   }, [])
 
-  return !!isTouch
+  return isTouch
 }

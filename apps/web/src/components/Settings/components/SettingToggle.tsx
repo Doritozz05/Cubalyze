@@ -31,11 +31,12 @@ export function SettingToggle({
   const isTouch = useIsTouch();
 
   const switchEl = (
-    <Switch
-      checked={checked}
-      onCheckedChange={onCheckedChange}
-      className="mt-0.5 shrink-0"
-    />
+    <div className="flex h-5 shrink-0 items-center">
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+      />
+    </div>
   );
 
   return (
@@ -53,14 +54,17 @@ export function SettingToggle({
         </p>
       </div>
       {isTouch ? (
+        // The pill sits top-right inside the 44px cell — pixel-identical to
+        // the desktop path — so touch and desktop pills always align with
+        // the row title (centering it here pushed it ~12px down).
         <div
           role="switch"
           aria-checked={checked}
           aria-label={title}
           onClick={() => onCheckedChange(!checked)}
-          className="mt-0.5 grid size-11 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-lg"
+          className="grid size-11 shrink-0 cursor-pointer touch-manipulation items-start justify-items-end rounded-lg"
         >
-          <span className="pointer-events-none" aria-hidden="true">
+          <span className="pointer-events-none flex h-5 items-center" aria-hidden="true">
             <Switch checked={checked} onCheckedChange={onCheckedChange} />
           </span>
         </div>

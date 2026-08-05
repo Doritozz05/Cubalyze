@@ -146,7 +146,7 @@ export function NotificationsSection() {
               notification (if allowed) and an in-app toast.
             </p>
           </div>
-          <div className="mt-0.5 flex shrink-0 items-center gap-3">
+          <div className="flex h-5 shrink-0 items-center gap-3">
             {practiceReminders && (
               <TimeInput
                 id="practice-reminder-time"
@@ -159,7 +159,6 @@ export function NotificationsSection() {
               checked={practiceReminders}
               onCheckedChange={setPracticeReminders}
               aria-label="Daily practice reminder"
-              className="mt-0.5 shrink-0"
             />
           </div>
         </div>
@@ -176,7 +175,7 @@ export function NotificationsSection() {
               at a set time each day.
             </p>
           </div>
-          <div className="mt-0.5 flex shrink-0 items-center gap-3">
+          <div className="flex h-5 shrink-0 items-center gap-3">
             {reviewReminders && (
               <TimeInput
                 id="review-reminder-time"
@@ -189,7 +188,6 @@ export function NotificationsSection() {
               checked={reviewReminders}
               onCheckedChange={setReviewReminders}
               aria-label="Daily review reminder"
-              className="mt-0.5 shrink-0"
             />
           </div>
         </div>

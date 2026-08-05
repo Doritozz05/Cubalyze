@@ -137,6 +137,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
         />
 
         <div
+          className="flex h-5 items-center"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           role="presentation"

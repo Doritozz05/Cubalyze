@@ -41,14 +41,15 @@ function Switch({
           // Soft directional shadow trailing the thumb's travel direction.
           "data-[state=unchecked]:shadow-[3px_0_10px_rgba(0,0,0,0.10)]",
           "data-[state=checked]:shadow-[-3px_0_10px_rgba(0,0,0,0.10)]",
-          // Thumb floats 2px inset from each edge (30px inner track, 16px
-          // thumb → 14px of travel, 2px inset each side).
+          // Thumb floats 2px inset from each edge (32px track incl. 1px
+          // borders → 30px inner, 16px thumb → 10px of travel, 2px inset
+          // each side).
           "translate-x-[0.125rem]",
           "data-[state=checked]:translate-x-[0.75rem]",
           // Pressing stretches the thumb in the travel direction, pinned to
-          // the same 2px inset edge: right when checked, left when unchecked.
-          "group-active:size-[1.4rem]",
-          "group-active:data-[state=checked]:translate-x-[0.35rem]",
+          // the same 2px inset edge (height stays 16px so zero track overflow).
+          "group-active:w-5",
+          "group-active:data-[state=checked]:translate-x-[0.5rem]",
           // Dark mode keeps the inverted thumb (light on dark track and vice
           // versa) exactly as the previous switch did.
           "dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-background"
