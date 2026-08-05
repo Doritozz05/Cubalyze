@@ -405,6 +405,9 @@ export const MIGRATIONS: Migration[] = [
     description: 'Baseline v2 — recreate the schema clean: INTEGER epoch timestamps everywhere, real FKs, CHECKs, exact exec/rec counters, training_exercises registry, legacy algorithms table removed',
     sql: `
       -- ── Drop legacy / patch-worked tables (no users → safe wipe) ──────────
+      -- training_exercises is dropped too: on a wedged DB (a worker killed
+      -- mid-migration left the table with no _migrations record) this forces
+      -- the canonical registry schema; the catalog re-seed repopulates it.
       DROP TABLE IF EXISTS training_attempts;
       DROP TABLE IF EXISTS algorithm_progress;
       DROP TABLE IF EXISTS exercise_progress;
@@ -412,6 +415,7 @@ export const MIGRATIONS: Migration[] = [
       DROP TABLE IF EXISTS algorithms;
       DROP TABLE IF EXISTS solves;
       DROP TABLE IF EXISTS sessions;
+      DROP TABLE IF EXISTS training_exercises;
 
       -- ── Sessions (INTEGER ms timestamps) ─────────────────────────────────
       CREATE TABLE IF NOT EXISTS sessions (

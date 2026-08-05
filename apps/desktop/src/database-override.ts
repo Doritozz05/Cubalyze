@@ -231,14 +231,28 @@ async function initDB(): Promise<DBClient> {
     );
     const applied = new Set(appliedRows.map((r) => r.id));
 
-    // Apply pending migrations in order
+    // Apply pending migrations in order. Each migration runs in its own
+    // transaction: a failure (or the app being killed mid-run) can never
+    // leave a partially-applied migration behind — the migration and its
+    // _migrations record are committed (or rolled back) atomically.
     for (const migration of MIGRATIONS) {
       if (applied.has(migration.id)) continue;
-      await db.execute(migration.sql);
-      await db.execute(
-        'INSERT OR IGNORE INTO _migrations (id) VALUES ($1)',
-        [migration.id],
-      );
+      await db.execute('BEGIN');
+      try {
+        await db.execute(migration.sql);
+        await db.execute(
+          'INSERT OR IGNORE INTO _migrations (id) VALUES ($1)',
+          [migration.id],
+        );
+        await db.execute('COMMIT');
+      } catch (err) {
+        try {
+          await db.execute('ROLLBACK');
+        } catch {
+          // Transaction already gone — nothing left to unwind.
+        }
+        throw err;
+      }
     }
 
     // Migration 022 drops + recreates solves/sessions empty; bring the
