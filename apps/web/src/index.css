@@ -503,7 +503,6 @@ input[type="image"],
   width: var(--cf-spinner-sq, 14px);
   height: var(--cf-spinner-sq, 14px);
   border-radius: var(--cf-spinner-radius, 2.5px);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .cf-sq-1 {
