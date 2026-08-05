@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import { MainLayout } from "@/components/Layout/MainLayout";
@@ -8,7 +8,20 @@ import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { StageOverlays } from "@/components/Layout/StageOverlays";
 import { MainStage } from "@/components/Stage/MainStage";
 import { TimerStage } from "@/components/Stage/TimerStage";
-import { Cube3DPanel } from "@/components/Cube3D/Cube3DPanel";
+// Lazy: the 3D engine (three.js, ~600 kB) only downloads the first time the
+// user opens the cube view — never on initial page load.
+const Cube3DPanel = lazy(() =>
+  import("@/components/Cube3D/Cube3DPanel").then((m) => ({ default: m.Cube3DPanel }))
+);
+
+/** Minimal placeholder shown while the 3D chunk downloads on first open. */
+function CubePanelFallback() {
+  return (
+    <div className="flex h-full min-h-0 w-full items-center justify-center">
+      <span className="animate-pulse text-xs text-ink-3">Loading 3D cube…</span>
+    </div>
+  );
+}
 import { ThemeProvider } from "@/components/theme-provider";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -175,11 +188,13 @@ export function AppShell(props: AppShellProps) {
           cube3DReady={cube3DReady}
           onCloseCube={handleCloseCube}
           cube3D={
-            <Cube3DPanel
-              onClose={handleCloseCube}
-              order={puzzleCategoryToOrder(puzzle)}
-              scramble={currentScramble}
-            />
+            <Suspense fallback={<CubePanelFallback />}>
+              <Cube3DPanel
+                onClose={handleCloseCube}
+                order={puzzleCategoryToOrder(puzzle)}
+                scramble={currentScramble}
+              />
+            </Suspense>
           }
           leftSidebar={
             <LeftSidebar

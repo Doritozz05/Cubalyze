@@ -3,124 +3,132 @@
 import { WidgetRegistry } from "@/widgets/WidgetRegistry";
 import type { WidgetHostProps } from "@/widgets/WidgetHostProps";
 
-// Components from implementations/
-import { FloatingTimesPanel } from "@/widgets/implementations/times-log/FloatingTimesPanel";
-import { FloatingTimeDistribution } from "@/widgets/implementations/time-distribution/FloatingTimeDistribution";
-import { FloatingPbProgression } from "@/widgets/implementations/pb-progression/FloatingPbProgression";
-import { FloatingPhaseTimeline } from "@/widgets/implementations/solve-timeline/FloatingPhaseTimeline";
-import { FloatingPhaseBalance } from "@/widgets/implementations/phase-balance/FloatingPhaseBalance";
-import { FloatingCube2DPanel } from "@/widgets/implementations/scramble-2d/FloatingCube2DPanel";
-import { FloatingCubeButton } from "@/widgets/implementations/cube-button/FloatingCubeButton";
-import { FloatingMetronomePanel } from "@/widgets/implementations/metronome/FloatingMetronomePanel";
-import { FloatingNotesPanel } from "@/widgets/implementations/notes/FloatingNotesPanel";
-import { FloatingAlgorithmDbPanel } from "@/widgets/implementations/algorithm-db/FloatingAlgorithmDbPanel";
-import { FloatingLayoutOrganizer } from "@/widgets/implementations/layout-organizer/FloatingLayoutOrganizer";
-
-// Previews from implementations/
-import { TimesLogPreview } from "@/widgets/implementations/times-log/TimesLogPreview";
-import { TimeDistributionPreview } from "@/widgets/implementations/time-distribution/TimeDistributionPreview";
-import { PbProgressionPreview } from "@/widgets/implementations/pb-progression/PbProgressionPreview";
-import { SolveTimelinePreview } from "@/widgets/implementations/solve-timeline/SolveTimelinePreview";
-import { PhaseBalancePreview } from "@/widgets/implementations/phase-balance/PhaseBalancePreview";
-import { Scramble2DPreview } from "@/widgets/implementations/scramble-2d/Scramble2DPreview";
-import { Cube3DPreview } from "@/widgets/implementations/cube-button/Cube3DPreview";
-import { MetronomePreview } from "@/widgets/implementations/metronome/MetronomePreview";
-import { NotesPreview } from "@/widgets/implementations/notes/NotesPreview";
-import { AlgorithmDbPreview } from "@/widgets/implementations/algorithm-db/AlgorithmDbPreview";
-import { LayoutOrganizerPreview } from "@/widgets/implementations/layout-organizer/LayoutOrganizerPreview";
-
 /**
  * Registers all built-in widgets with the WidgetRegistry.
- * Each widget declares its own `mapProps` — no switch-case in WidgetHost.
+ *
+ * Registration is LAZY: each widget's component, preview and prop mapper are
+ * loaded via dynamic import() the first time the widget is actually needed
+ * (the explorer's preview card or a floating panel). This keeps heavy widget
+ * dependencies — e.g. the 3D engine pulled in by the algorithm-db panel or
+ * the country-flag icons used by the notes panel — OUT of the initial bundle.
+ *
  * Called once on app startup (module-level side-effect).
  */
 export function registerAllWidgets(): void {
-  WidgetRegistry.register("times-log", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingTimesPanel as any,
-    preview: TimesLogPreview,
-    mapProps: ({ solves, onUpdate, onDelete, onClear, onAnalyze, onReplay, puzzle }: WidgetHostProps) => ({
-      solves,
-      onUpdate,
-      onDelete,
-      onClear,
-      onAnalyze,
-      onReplay,
-      puzzle,
-    }),
-  });
+  WidgetRegistry.registerLazy("times-log", () =>
+    import("@/widgets/implementations/times-log").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingTimesPanel as any,
+      preview: m.TimesLogPreview,
+      mapProps: ({ solves, onUpdate, onDelete, onClear, onAnalyze, onReplay, puzzle }: WidgetHostProps) => ({
+        solves,
+        onUpdate,
+        onDelete,
+        onClear,
+        onAnalyze,
+        onReplay,
+        puzzle,
+      }),
+    })),
+  );
 
-  WidgetRegistry.register("time-distribution", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingTimeDistribution as any,
-    preview: TimeDistributionPreview,
-    mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
-  });
+  WidgetRegistry.registerLazy("time-distribution", () =>
+    import("@/widgets/implementations/time-distribution").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingTimeDistribution as any,
+      preview: m.TimeDistributionPreview,
+      mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
+    })),
+  );
 
-  WidgetRegistry.register("pb-progression", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingPbProgression as any,
-    preview: PbProgressionPreview,
-    mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
-  });
+  WidgetRegistry.registerLazy("pb-progression", () =>
+    import("@/widgets/implementations/pb-progression").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingPbProgression as any,
+      preview: m.PbProgressionPreview,
+      mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
+    })),
+  );
 
-  WidgetRegistry.register("phase-balance", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingPhaseBalance as any,
-    preview: PhaseBalancePreview,
-    mapProps: ({ solves, lastAnalysis }: WidgetHostProps) => ({ solves, lastAnalysis }),
-  });
+  WidgetRegistry.registerLazy("phase-balance", () =>
+    import("@/widgets/implementations/phase-balance").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingPhaseBalance as any,
+      preview: m.PhaseBalancePreview,
+      mapProps: ({ solves, lastAnalysis }: WidgetHostProps) => ({ solves, lastAnalysis }),
+    })),
+  );
 
-  WidgetRegistry.register("solve-timeline", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingPhaseTimeline as any,
-    preview: SolveTimelinePreview,
-    mapProps: ({ solves, lastAnalysis }: WidgetHostProps) => ({ solves, lastAnalysis }),
-  });
+  WidgetRegistry.registerLazy("solve-timeline", () =>
+    import("@/widgets/implementations/solve-timeline").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingPhaseTimeline as any,
+      preview: m.SolveTimelinePreview,
+      mapProps: ({ solves, lastAnalysis }: WidgetHostProps) => ({ solves, lastAnalysis }),
+    })),
+  );
 
-  WidgetRegistry.register("scramble-2d", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingCube2DPanel as any,
-    preview: Scramble2DPreview,
-    mapProps: ({ scramble }: WidgetHostProps) => ({ scramble }),
-  });
+  WidgetRegistry.registerLazy("scramble-2d", () =>
+    import("@/widgets/implementations/scramble-2d").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingCube2DPanel as any,
+      preview: m.Scramble2DPreview,
+      mapProps: ({ scramble }: WidgetHostProps) => ({ scramble }),
+    })),
+  );
 
-  WidgetRegistry.register("cube-button", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingCubeButton as any,
-    preview: Cube3DPreview,
-    mapProps: ({ onOpenCube, cubePanelOpen, smartCubeConnected }: WidgetHostProps) => ({
-      onClick: onOpenCube,
-      cubePanelOpen,
-      smartCubeConnected,
-    }),
-  });
+  WidgetRegistry.registerLazy("cube-button", () =>
+    import("@/widgets/implementations/cube-button").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingCubeButton as any,
+      preview: m.Cube3DPreview,
+      mapProps: ({ onOpenCube, cubePanelOpen, smartCubeConnected }: WidgetHostProps) => ({
+        onClick: onOpenCube,
+        cubePanelOpen,
+        smartCubeConnected,
+      }),
+    })),
+  );
 
-  WidgetRegistry.register("metronome", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingMetronomePanel as any,
-    preview: MetronomePreview,
-    mapProps: () => ({}),
-  });
+  WidgetRegistry.registerLazy("metronome", () =>
+    import("@/widgets/implementations/metronome").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingMetronomePanel as any,
+      preview: m.MetronomePreview,
+      mapProps: () => ({}),
+    })),
+  );
 
-  WidgetRegistry.register("notes", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingNotesPanel as any,
-    preview: NotesPreview,
-    mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
-  });
+  WidgetRegistry.registerLazy("notes", () =>
+    Promise.all([
+      import("@/widgets/implementations/notes/FloatingNotesPanel"),
+      import("@/widgets/implementations/notes/NotesPreview"),
+    ]).then(([panel, preview]) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: panel.FloatingNotesPanel as any,
+      preview: preview.NotesPreview,
+      mapProps: ({ solves }: WidgetHostProps) => ({ solves }),
+    })),
+  );
 
-  WidgetRegistry.register("algorithm-db", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingAlgorithmDbPanel as any,
-    preview: AlgorithmDbPreview,
-    mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
-  });
+  WidgetRegistry.registerLazy("algorithm-db", () =>
+    import("@/widgets/implementations/algorithm-db").then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: m.FloatingAlgorithmDbPanel as any,
+      preview: m.AlgorithmDbPreview,
+      mapProps: ({ solves, puzzle }: WidgetHostProps) => ({ solves, puzzle }),
+    })),
+  );
 
-  WidgetRegistry.register("layout-organizer", {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: FloatingLayoutOrganizer as any,
-    preview: LayoutOrganizerPreview,
-    mapProps: () => ({}),
-  });
+  WidgetRegistry.registerLazy("layout-organizer", () =>
+    Promise.all([
+      import("@/widgets/implementations/layout-organizer/FloatingLayoutOrganizer"),
+      import("@/widgets/implementations/layout-organizer/LayoutOrganizerPreview"),
+    ]).then(([panel, preview]) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: panel.FloatingLayoutOrganizer as any,
+      preview: preview.LayoutOrganizerPreview,
+      mapProps: () => ({}),
+    })),
+  );
 }

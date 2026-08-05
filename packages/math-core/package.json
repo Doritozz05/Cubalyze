@@ -22,14 +22,14 @@
   },
   "dependencies": {
     "@cubeforge/types": "workspace:*",
-    "min2phase.js": "^0.0.4",
-    "three": "^0.185.1"
+    "min2phase.js": "^0.0.4"
   },
   "devDependencies": {
     "@cubeforge/config-typescript": "workspace:*",
     "@cubeforge/hardware-hal": "workspace:*",
     "@cubeforge/timer-engine": "workspace:*",
     "@types/three": "^0.185.1",
+    "three": "^0.185.1",
     "tsup": "^8.0.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"

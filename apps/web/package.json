@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:clean": "vite --force",
     "build": "tsc -b && vite build",
+    "analyze": "vite build --mode analyze",
     "typecheck": "tsc -b --pretty",
     "typecheck:watch": "tsc -b --watch",
     "lint": "eslint .",
@@ -97,6 +98,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
     "postcss": "^8.5.17",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.3.2",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"

@@ -1,4 +1,4 @@
-import { Quaternion, Vector3 } from 'three';
+import { Quaternion } from '../math3d';
 import type { CubeFace, FacePermutation } from '@cubeforge/types';
 
 /**

@@ -374,14 +374,21 @@ export class Cube3DEngine {
 
     if (duration <= 0) {
       this.orientationAnim = null;
-      this.model.root.quaternion.copy(entry.quaternion);
+      // math-core ships its own dependency-free Quaternion (same convention
+      // as three.js); three's copy() only reads x/y/z/w, so the cast is safe.
+      this.model.root.quaternion.copy(entry.quaternion as unknown as Quaternion);
       this.requestRender();
       return;
     }
 
     this.orientationAnim = {
       startQuat: this.model.root.quaternion.clone(),
-      targetQuat: entry.quaternion.clone(),
+      // entry.quaternion is math-core's own Quaternion (public x/y/z/w only).
+      // three's Quaternion.copy() reads those public getters, so this builds a
+      // genuine three.js Quaternion with its internal _x/_y/_z/_w populated —
+      // REQUIRED because three's slerp()/slerpQuaternions() read the private
+      // fields directly (a bare math3d Quaternion would yield NaN).
+      targetQuat: new Quaternion().copy(entry.quaternion as unknown as Quaternion),
       startTime: performance.now(),
       durationMs: duration,
     };
