@@ -27,7 +27,7 @@ export function SettingToggle({
   return (
     <div
       className={cn(
-        'group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5',
+        'group flex items-center justify-between gap-6 rounded-xl border border-line bg-surface p-5',
         'transition-shadow duration-200 hover:shadow-sm',
         className,
       )}
@@ -38,7 +38,7 @@ export function SettingToggle({
           {description}
         </p>
       </div>
-      <div className="flex h-5 shrink-0 items-center">
+      <div className="flex shrink-0 items-center">
         <Switch
           checked={checked}
           onCheckedChange={onCheckedChange}
