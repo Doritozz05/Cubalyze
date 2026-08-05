@@ -111,12 +111,18 @@ async function backupIsV1(backupTable: string): Promise<boolean> {
   return Number(rows?.[0]?.c) > 0;
 }
 
-/** True when a `_backup_v1_*` snapshot stores TEXT ISO dates (v1 format). */
+/**
+ * True when a `_backup_v1_*` snapshot stores v1-style dates (TEXT ISO or
+ * NULL): anything that is NOT a numeric epoch-ms value routes to the v1
+ * conversion path, whose COALESCE repairs NULL timestamps — the v2 snapshot
+ * path cannot (v2 `created_at` is NOT NULL).
+ */
 async function backupHasTextDates(backupTable: string): Promise<boolean> {
   const database = db;
   if (!database) throw new Error('Database not initialized');
   const rows = await database.select<{ t: string | null }[]>(backupCreatedAtTypeSql(backupTable));
-  return rows?.[0]?.t === 'text';
+  const type = rows?.[0]?.t;
+  return type !== 'integer' && type !== 'real';
 }
 
 /**
@@ -131,6 +137,13 @@ async function backupHasTextDates(backupTable: string): Promise<boolean> {
  * snapshot (created when the backup gate ran against an already-v2 DB that
  * lacked the 022 marker) is copied straight across — converting its INTEGER
  * timestamps with `julianday` would corrupt them.
+ *
+ * NOTE: only `_backup_v1_sessions`/`_backup_v1_solves` are restored. The
+ * other snapshots (`_backup_v1_training_attempts`, `_backup_v1_algorithm_progress`,
+ * `_backup_v1_exercise_progress`, `_backup_v1_training_sessions`, `_backup_v1_algorithms`)
+ * are intentionally left in place as a manual-recovery net: the v2 training
+ * catalog was re-seeded with new ids, so those rows cannot be mapped across
+ * without breaking FKs.
  */
 async function restoreLegacyData(): Promise<void> {
   const database = db;
