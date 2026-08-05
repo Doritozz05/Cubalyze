@@ -373,7 +373,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-surface">
+                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-ink text-surface">
                   {importState === 'done' ? <Check className="size-3.5" /> : importState === 'importing' ? <Spinner size="xs" /> : <Upload className="size-3.5" />}
                 </div>
                 <span className="text-sm font-medium text-ink">

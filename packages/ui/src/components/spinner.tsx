@@ -49,9 +49,18 @@ export function Spinner({
     "--cf-spinner-radius": `${cfg.radius}px`,
   } as React.CSSProperties;
 
+  // A11y: the sticker animation is decorative. When a label is provided the
+  // container becomes a polite status region (announced on mount). Without a
+  // label the whole spinner is hidden from AT — it is only used inside
+  // buttons/icon boxes that already carry adjacent text ("Saving…",
+  // "Importing…"), matching the aria-hidden behaviour of the old Loader2 icon.
+  const statusProps = {
+    ...(label !== undefined ? { role: "status" as const } : { "aria-hidden": true }),
+  };
+
   const contentNode = (
     <>
-      <div className="cf-rubik-lateral-spinner" aria-label="Cargando">
+      <div className="cf-rubik-lateral-spinner" aria-hidden="true">
         <div className="cf-rubik-lateral-square cf-sq-1" />
         <div className="cf-rubik-lateral-square cf-sq-2" />
         <div className="cf-rubik-lateral-square cf-sq-3" />
@@ -77,6 +86,7 @@ export function Spinner({
         <div
           className="cf-rubik-spinner-container inline-flex flex-col items-center justify-center gap-3"
           style={styleObj}
+          {...statusProps}
           {...props}
         >
           {contentNode}
@@ -96,6 +106,7 @@ export function Spinner({
         <div
           className="cf-rubik-spinner-container inline-flex flex-col items-center justify-center gap-3"
           style={styleObj}
+          {...statusProps}
           {...props}
         >
           {contentNode}
@@ -111,11 +122,10 @@ export function Spinner({
         className
       )}
       style={styleObj}
+      {...statusProps}
       {...props}
     >
       {contentNode}
     </div>
   );
 }
-
-export { Spinner as CubeSpinner, Spinner as RubikSpinner };

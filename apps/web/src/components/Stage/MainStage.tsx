@@ -30,7 +30,7 @@ const ProfileView = lazy(() =>
 
 /** Tiny fallback shown while a lazy view chunk downloads. */
 function ViewFallback() {
-  return <Spinner size="lg" variant="centered" />;
+  return <Spinner size="lg" variant="centered" label="Loading…" />;
 }
 
 export interface MainStageProps {
