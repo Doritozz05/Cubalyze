@@ -58,7 +58,8 @@ describe('restoreLegacyData — v1 → v2 restore statements', () => {
     expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('INSERT OR IGNORE INTO solves');
     expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('timestamp');
     expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).not.toContain('julianday');
-    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).not.toContain('date');
+    // No bare v1 `date` column reference (the `date` inside `updated_at` is fine).
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).not.toMatch(/\bdate\b/);
     expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('FROM _backup_v1_solves');
   });
 
