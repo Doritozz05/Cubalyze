@@ -6,6 +6,7 @@ import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
+import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 import { useProfile } from "@/hooks/useProfile";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useScrambleState } from "@/hooks/useScrambleState";
@@ -65,6 +66,9 @@ export default function App() {
   useEffect(() => {
     preloadSolvers();
   }, []);
+
+  // ── Daily practice/review reminders (Settings → Notifications) ────────
+  useReminderScheduler();
 
   // ── First-load onboarding tour (TDD-0020) ─────────────────────────────
   // (AppShell closes its own overlays when the tour activates.)

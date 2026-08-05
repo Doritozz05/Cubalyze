@@ -408,9 +408,12 @@ export function useSolveSession(
       }
     });
     const sub4 = engine.inspectionWarning$.subscribe((warning) => {
-      // Read fresh value from store each time (avoids stale closure)
-      const cues = preferencesStore.getState().audioCues;
-      if (!cues) return;
+      // Read fresh values from the store each time (avoids stale closures).
+      // Inspection voice cues are gated by the audio-cue toggle AND the
+      // master notifications/sound switches (Settings → Notifications).
+      const prefs = preferencesStore.getState();
+      if (!prefs.audioCues) return;
+      if (!prefs.notificationsEnabled || !prefs.soundsEnabled) return;
       if (warning === "8s") globalAudioSystem.play8s();
       if (warning === "12s") globalAudioSystem.play12s();
     });
@@ -702,12 +705,15 @@ export function useSolveSession(
     return unsub;
   }, []);
 
-  // ── Audio system: voice type sync ────────────────────────────────────────
+  // ── Audio system: voice type + volume sync ───────────────────────────────
   // Sync the voice type preference to the global audio system whenever it
   // changes. The Web Speech API will use a voice matching the selected type.
+  // Volume comes from Settings → Notifications and scales every playback.
+  const soundVolumePref = useStore(preferencesStore, (s) => s.soundVolume);
   useEffect(() => {
     globalAudioSystem.setVoice(voiceTypePref);
-  }, [voiceTypePref]);
+    globalAudioSystem.setVolume(soundVolumePref);
+  }, [voiceTypePref, soundVolumePref]);
 
   // ── Audio system: init on first user interaction ─────────────────────────
   // Browsers block audio playback until the user has interacted with the page.

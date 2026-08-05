@@ -67,6 +67,9 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
   const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
+  const notificationsEnabled = useStore(preferencesStore, (s) => s.notificationsEnabled);
+  const soundsEnabled = useStore(preferencesStore, (s) => s.soundsEnabled);
+  const soundVolume = useStore(preferencesStore, (s) => s.soundVolume);
 
   const [lastAnalysis, setLastAnalysis] = useState<SolveMetrics | null>(null);
   const completionTokenRef = useRef(0);
@@ -101,10 +104,13 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       );
       if (pbResult.types.length > 0) {
         hapticCelebrate();
-        if (pbCelebrationAudio) {
+        // PB audio is gated by the master notifications switch, the sounds
+        // toggle and the per-celebration toggle (Settings → Notifications).
+        if (pbCelebrationAudio && notificationsEnabled && soundsEnabled) {
+          globalAudioSystem.setVolume(soundVolume);
           globalAudioSystem.playPbFanfare(pbResult.types);
         }
-        if (pbCelebrationAnimation) {
+        if (pbCelebrationAnimation && notificationsEnabled) {
           onPbMilestone(pbResult);
         }
       } else {
@@ -186,6 +192,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       addSolve,
       currentScramble,
       methodPref,
+      notificationsEnabled,
       onNextScramble,
       onPbMilestone,
       pbCelebrationAnimation,
@@ -194,6 +201,8 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       scrambleDisplay,
       smartCubeConnectedRef,
       solvesRef,
+      soundVolume,
+      soundsEnabled,
       updateSolve,
     ],
   );

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
+import { CountryFlag } from "./CountryFlag";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
@@ -97,9 +98,10 @@ export function ProfileHero({
   const chips = [
     { key: "handle", value: handle },
     { key: "member", value: memberSince },
+    { key: "country", value: profile.country ?? "" },
     { key: "puzzle", value: profile.mainPuzzle },
     ...profile.declaredMethods.map((method) => ({ key: `method-${method}`, value: method })),
-  ];
+  ].filter((chip) => chip.value !== "");
 
   return (
     <div
@@ -133,7 +135,11 @@ export function ProfileHero({
               {chips.map((chip, i) => (
                 <span key={chip.key} className="inline-flex items-center gap-2">
                   {i > 0 && <span aria-hidden="true">·</span>}
-                  <span className="whitespace-nowrap">{chip.value}</span>
+                  {chip.key === "country" ? (
+                    <CountryFlag country={chip.value} />
+                  ) : (
+                    <span className="whitespace-nowrap">{chip.value}</span>
+                  )}
                 </span>
               ))}
             </div>

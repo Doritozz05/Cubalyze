@@ -18,6 +18,8 @@ export const ProfileSchema = z.object({
   avatarData: z.string().optional(),
   mainPuzzle: z.string().default('3x3x3'),
   declaredMethods: z.array(z.string()).default([]),
+  /** ISO 3166-1 alpha-2 country code (e.g. 'ES'); empty string = unset. */
+  country: z.string().default(''),
   createdAt: z.number().int().default(0),
   updatedAt: z.number().int().default(0),
 });

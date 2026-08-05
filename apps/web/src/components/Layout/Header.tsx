@@ -445,32 +445,34 @@ export function Header({
 
           {/* Profile avatar chip — ubiquitous entry to the identity center. */}
           {(profileSeed || profile) && onOpenProfile ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={onOpenProfile}
-                  aria-label="Open profile"
-                  className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
-                >
-                  {profile?.avatarKind === "photo" && profile.avatarData ? (
-                    <img
-                      src={profile.avatarData}
-                      alt=""
-                      className="size-5 rounded-[0.3rem] object-cover"
-                    />
-                  ) : profileSeed ? (
-                    <IdenticonAvatar
-                      seed={profileSeed}
-                      size={20}
-                      tile="transparent"
-                      className="rounded-[0.3rem]"
-                    />
-                  ) : null}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Profile</TooltipContent>
-            </Tooltip>
+            <div className="flex shrink-0 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onOpenProfile}
+                    aria-label="Open profile"
+                    className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
+                  >
+                    {profile?.avatarKind === "photo" && profile.avatarData ? (
+                      <img
+                        src={profile.avatarData}
+                        alt=""
+                        className="size-5 rounded-[0.3rem] object-cover"
+                      />
+                    ) : profileSeed ? (
+                      <IdenticonAvatar
+                        seed={profileSeed}
+                        size={20}
+                        tile="transparent"
+                        className="rounded-[0.3rem]"
+                      />
+                    ) : null}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Profile</TooltipContent>
+              </Tooltip>
+            </div>
           ) : null}
         </div>
       </div>

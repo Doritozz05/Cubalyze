@@ -570,4 +570,11 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE exercise_progress ADD COLUMN exec_time_attempts INTEGER NOT NULL DEFAULT 0;
     `,
   },
+  {
+    id: '024_add_country_to_profiles',
+    description: 'Add country (ISO alpha-2 code, empty = unset) to profiles for the profile identity row',
+    sql: `
+      ALTER TABLE profiles ADD COLUMN country TEXT NOT NULL DEFAULT '';
+    `,
+  },
 ];

@@ -36,10 +36,6 @@ export function TimerSection() {
   const setVoiceType = useStore(preferencesStore, (s) => s.setVoiceType);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const setShowPbDelta = useStore(preferencesStore, (s) => s.setShowPbDelta);
-  const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
-  const setPbCelebrationAudio = useStore(preferencesStore, (s) => s.setPbCelebrationAudio);
-  const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
-  const setPbCelebrationAnimation = useStore(preferencesStore, (s) => s.setPbCelebrationAnimation);
   const hardwareTimer = useStore(preferencesStore, (s) => s.hardwareTimer);
   const setHardwareTimer = useStore(preferencesStore, (s) => s.setHardwareTimer);
 
@@ -241,20 +237,6 @@ export function TimerSection() {
         description="Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best."
         checked={showPbDelta}
         onCheckedChange={setShowPbDelta}
-      />
-
-      <SettingToggle
-        title="PB victory sound"
-        description="Play a subtle, elegant victory fanfare (Web Audio chime) when achieving a new Personal Best (Single, Ao5, Ao12)."
-        checked={pbCelebrationAudio}
-        onCheckedChange={setPbCelebrationAudio}
-      />
-
-      <SettingToggle
-        title="PB celebration animation"
-        description="Display a minimalist floating banner upon setting a new Personal Best."
-        checked={pbCelebrationAnimation}
-        onCheckedChange={setPbCelebrationAnimation}
       />
 
       <SettingToggle

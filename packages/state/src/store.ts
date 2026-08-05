@@ -121,6 +121,45 @@ export interface PreferencesState {
   /** Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Default ON. */
   showSessionStats: boolean;
   setShowSessionStats: (value: boolean) => void;
+
+  // ── Notifications & sound (Settings → Notifications) ──────────────────
+
+  /** Master switch: when OFF, every notification (sound, toast, reminder) is suppressed. */
+  notificationsEnabled: boolean;
+  setNotificationsEnabled: (value: boolean) => void;
+
+  /** Sounds on/off — gates inspection voice cues and PB fanfare audio. */
+  soundsEnabled: boolean;
+  setSoundsEnabled: (value: boolean) => void;
+
+  /** Master sound volume 0–100 (applies to inspection voice and PB fanfare). */
+  soundVolume: number;
+  setSoundVolume: (value: number) => void;
+
+  /** Daily practice reminder (browser notification + in-app toast). */
+  practiceReminders: boolean;
+  setPracticeReminders: (value: boolean) => void;
+
+  /** Time of day (HH:MM, 24h) for the practice reminder. */
+  practiceReminderTime: string;
+  setPracticeReminderTime: (value: string) => void;
+
+  /** Daily SRS review-queue reminder. */
+  reviewReminders: boolean;
+  setReviewReminders: (value: boolean) => void;
+
+  /** Time of day (HH:MM, 24h) for the review reminder. */
+  reviewReminderTime: string;
+  setReviewReminderTime: (value: string) => void;
+
+  // ── Advanced (Settings → Advanced) ─────────────────────────────────────
+
+  /** Opt-in beta features (hidden unless enabled). */
+  betaFeatures: boolean;
+  setBetaFeatures: (value: boolean) => void;
+
+  /** Restore every preference to its default value (Settings → Advanced → Reset options). */
+  resetPreferences: () => void;
 }
 
 // zustand/middleware/persist falls back to a JSON storage backed by the
@@ -128,95 +167,97 @@ export interface PreferencesState {
 // persist works equally in browser, vitest (jsdom) and any future SSR
 // env that shims storage.
 
+const DEFAULT_VALUES = {
+  theme: 'system' as const,
+  appearance3d: 'default',
+  scrambleFollowsCube: true,
+  inspection: true,
+  scrambleDisplay: true,
+  scrambleVerification: true,
+  method: 'CFOP' as const,
+  focusMode: false,
+  audioCues: true,
+  voiceType: 'male' as const,
+  showPbDelta: false,
+  pbCelebrationAudio: true,
+  pbCelebrationAnimation: true,
+  customStickerColors: {
+    U: '#ece8e2',
+    D: '#ffe62a',
+    F: '#1abe57',
+    B: '#3d7ce0',
+    R: '#eb4242',
+    L: '#ff801f',
+  },
+  hardwareTimer: 'none' as const,
+  shortcuts: {
+    newScramble: 'n',
+    copyScramble: 'c',
+    cancelTimer: 'escape',
+  },
+  spacebarHoldDelay: 300,
+  showBpaWpa: true,
+  timePrecision: 'centiseconds' as const,
+  inputMode: 'timer' as const,
+  clickToStart: false,
+  haptics: true,
+  showSessionStats: true,
+  notificationsEnabled: true,
+  soundsEnabled: true,
+  soundVolume: 80,
+  practiceReminders: false,
+  practiceReminderTime: '19:00',
+  reviewReminders: false,
+  reviewReminderTime: '19:30',
+  betaFeatures: false,
+};
+
 export const createPreferencesStore = () => {
   return createStore<PreferencesState>()(
     persist(
       (set) => ({
-        theme: 'system',
+        ...DEFAULT_VALUES,
+
         setTheme: (theme) => set({ theme }),
-
-        appearance3d: 'default',
-        setAppearance3d: (value) => set({ appearance3d: value }),
-
-        scrambleFollowsCube: true,
-        setScrambleFollowsCube: (value) => set({ scrambleFollowsCube: value }),
-
-        inspection: true,
-        setInspection: (value) => set({ inspection: value }),
-
-        scrambleDisplay: true,
-        setScrambleDisplay: (value) => set({ scrambleDisplay: value }),
-
-        scrambleVerification: true,
-        setScrambleVerification: (value) => set({ scrambleVerification: value }),
-
-        method: 'CFOP',
-        setMethod: (value) => set({ method: value }),
-
-        focusMode: false,
-        setFocusMode: (value) => set({ focusMode: value }),
-
-        audioCues: true,
-        setAudioCues: (value) => set({ audioCues: value }),
-
-        voiceType: 'male',
-        setVoiceType: (value) => set({ voiceType: value }),
-
-        showPbDelta: false,
-        setShowPbDelta: (value) => set({ showPbDelta: value }),
-
-        pbCelebrationAudio: true,
-        setPbCelebrationAudio: (value) => set({ pbCelebrationAudio: value }),
-
-        pbCelebrationAnimation: true,
-        setPbCelebrationAnimation: (value) => set({ pbCelebrationAnimation: value }),
-
-        customStickerColors: {
-          U: '#ece8e2',
-          D: '#ffe62a',
-          F: '#1abe57',
-          B: '#3d7ce0',
-          R: '#eb4242',
-          L: '#ff801f',
-        },
+        setAppearance3d: (appearance3d) => set({ appearance3d }),
+        setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),
+        setInspection: (inspection) => set({ inspection }),
+        setScrambleDisplay: (scrambleDisplay) => set({ scrambleDisplay }),
+        setScrambleVerification: (scrambleVerification) => set({ scrambleVerification }),
+        setMethod: (method) => set({ method }),
+        setFocusMode: (focusMode) => set({ focusMode }),
+        setAudioCues: (audioCues) => set({ audioCues }),
+        setVoiceType: (voiceType) => set({ voiceType }),
+        setShowPbDelta: (showPbDelta) => set({ showPbDelta }),
+        setPbCelebrationAudio: (pbCelebrationAudio) => set({ pbCelebrationAudio }),
+        setPbCelebrationAnimation: (pbCelebrationAnimation) => set({ pbCelebrationAnimation }),
         setCustomStickerColors: (colors) =>
           set((state) => ({
             customStickerColors: { ...state.customStickerColors, ...colors },
           })),
-
-        hardwareTimer: 'none',
-        setHardwareTimer: (value) => set({ hardwareTimer: value }),
-
-        shortcuts: {
-          newScramble: 'n',
-          copyScramble: 'c',
-          cancelTimer: 'escape',
-        },
+        setHardwareTimer: (hardwareTimer) => set({ hardwareTimer }),
         setShortcut: (key, value) =>
           set((state) => ({
             shortcuts: { ...state.shortcuts, [key]: value },
           })),
+        setSpacebarHoldDelay: (spacebarHoldDelay) => set({ spacebarHoldDelay }),
+        setShowBpaWpa: (showBpaWpa) => set({ showBpaWpa }),
+        setTimePrecision: (timePrecision) => set({ timePrecision }),
+        setInputMode: (inputMode) => set({ inputMode }),
+        setClickToStart: (clickToStart) => set({ clickToStart }),
+        setHaptics: (haptics) => set({ haptics }),
+        setShowSessionStats: (showSessionStats) => set({ showSessionStats }),
 
-        spacebarHoldDelay: 300,
-        setSpacebarHoldDelay: (value) => set({ spacebarHoldDelay: value }),
+        setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
+        setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
+        setSoundVolume: (soundVolume) => set({ soundVolume }),
+        setPracticeReminders: (practiceReminders) => set({ practiceReminders }),
+        setPracticeReminderTime: (practiceReminderTime) => set({ practiceReminderTime }),
+        setReviewReminders: (reviewReminders) => set({ reviewReminders }),
+        setReviewReminderTime: (reviewReminderTime) => set({ reviewReminderTime }),
+        setBetaFeatures: (betaFeatures) => set({ betaFeatures }),
 
-        showBpaWpa: true,
-        setShowBpaWpa: (value) => set({ showBpaWpa: value }),
-
-        timePrecision: 'centiseconds',
-        setTimePrecision: (value) => set({ timePrecision: value }),
-
-        inputMode: 'timer',
-        setInputMode: (value) => set({ inputMode: value }),
-
-        clickToStart: false,
-        setClickToStart: (value) => set({ clickToStart: value }),
-
-        haptics: true,
-        setHaptics: (value) => set({ haptics: value }),
-
-        showSessionStats: true,
-        setShowSessionStats: (value) => set({ showSessionStats: value }),
+        resetPreferences: () => set({ ...DEFAULT_VALUES }),
       }),
       {
         name: 'cubeforge-prefs',
@@ -244,6 +285,14 @@ export const createPreferencesStore = () => {
           clickToStart: state.clickToStart,
           haptics: state.haptics,
           showSessionStats: state.showSessionStats,
+          notificationsEnabled: state.notificationsEnabled,
+          soundsEnabled: state.soundsEnabled,
+          soundVolume: state.soundVolume,
+          practiceReminders: state.practiceReminders,
+          practiceReminderTime: state.practiceReminderTime,
+          reviewReminders: state.reviewReminders,
+          reviewReminderTime: state.reviewReminderTime,
+          betaFeatures: state.betaFeatures,
         }),
         version: 1,
       },

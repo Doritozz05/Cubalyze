@@ -43,6 +43,62 @@ describe('PreferencesStore', () => {
     expect(updated.showBpaWpa).toBe(false);
     expect(updated.timePrecision).toBe('milliseconds');
   });
+
+  it('initializes notification & sound preferences with defaults', () => {
+    const s = preferencesStore.getState();
+    expect(s.notificationsEnabled).toBe(true);
+    expect(s.soundsEnabled).toBe(true);
+    expect(s.soundVolume).toBe(80);
+    expect(s.practiceReminders).toBe(false);
+    expect(s.practiceReminderTime).toBe('19:00');
+    expect(s.reviewReminders).toBe(false);
+    expect(s.reviewReminderTime).toBe('19:30');
+    expect(s.betaFeatures).toBe(false);
+  });
+
+  it('updates notification & sound preferences', () => {
+    const store = preferencesStore.getState();
+    store.setNotificationsEnabled(false);
+    store.setSoundsEnabled(false);
+    store.setSoundVolume(35);
+    store.setPracticeReminders(true);
+    store.setPracticeReminderTime('07:30');
+    store.setReviewReminders(true);
+    store.setReviewReminderTime('20:15');
+    store.setBetaFeatures(true);
+
+    const updated = preferencesStore.getState();
+    expect(updated.notificationsEnabled).toBe(false);
+    expect(updated.soundsEnabled).toBe(false);
+    expect(updated.soundVolume).toBe(35);
+    expect(updated.practiceReminders).toBe(true);
+    expect(updated.practiceReminderTime).toBe('07:30');
+    expect(updated.reviewReminders).toBe(true);
+    expect(updated.reviewReminderTime).toBe('20:15');
+    expect(updated.betaFeatures).toBe(true);
+  });
+
+  it('resetPreferences restores every preference to its default', () => {
+    const store = preferencesStore.getState();
+    store.setTheme('dark');
+    store.setSoundVolume(10);
+    store.setPracticeReminders(true);
+    store.setReviewReminders(true);
+    store.setBetaFeatures(true);
+    store.setMethod('Roux');
+
+    store.resetPreferences();
+
+    const reset = preferencesStore.getState();
+    expect(reset.theme).toBe('system');
+    expect(reset.soundVolume).toBe(80);
+    expect(reset.practiceReminders).toBe(false);
+    expect(reset.reviewReminders).toBe(false);
+    expect(reset.betaFeatures).toBe(false);
+    expect(reset.method).toBe('CFOP');
+    expect(reset.notificationsEnabled).toBe(true);
+    expect(reset.soundsEnabled).toBe(true);
+  });
 });
 
 describe('ConnectionStore', () => {
