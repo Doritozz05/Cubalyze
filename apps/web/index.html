@@ -17,7 +17,107 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('theme');
+        var isDark = t === 'dark' || ((!t || t === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
+  <div id="root">
+    <style>
+      #root-loader-wrapper {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        color: #14171b;
+        z-index: 9999;
+      }
+      html.dark #root-loader-wrapper {
+        background-color: #14171b;
+        color: #f8f9fa;
+      }
+      .cf-rubik-lateral-root {
+        --offset: 18px;
+        --sq: 14px;
+        position: relative;
+        width: calc(3 * var(--offset) + var(--sq));
+        height: calc(2 * var(--offset) + var(--sq));
+      }
+      .cf-rubik-sq-root {
+        position: absolute;
+        width: var(--sq);
+        height: var(--sq);
+        border-radius: 2.5px;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
+      }
+      .cf-sq1-r { background-color: #f97316; animation: cf-sq1-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.1s ease-out both; }
+      .cf-sq2-r { background-color: #3b82f6; animation: cf-sq2-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.2s ease-out both; }
+      .cf-sq3-r { background-color: #fbbf24; animation: cf-sq3-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.3s ease-out both; }
+      .cf-sq4-r { background-color: #34d399; animation: cf-sq4-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.4s ease-out both; }
+      .cf-sq5-r { background-color: #a78bfa; animation: cf-sq5-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.5s ease-out both; }
+
+      @keyframes cf-sq1-r {
+        0% { left: 0px; top: 0px; }
+        8.333% { left: 0px; top: 18px; }
+        100% { left: 0px; top: 18px; }
+      }
+      @keyframes cf-sq2-r {
+        0% { left: 0px; top: 18px; }
+        8.333% { left: 0px; top: 36px; }
+        16.67% { left: 18px; top: 36px; }
+        25.00% { left: 18px; top: 18px; }
+        83.33% { left: 18px; top: 18px; }
+        91.67% { left: 18px; top: 0px; }
+        100% { left: 0px; top: 0px; }
+      }
+      @keyframes cf-sq3-r {
+        0%, 100% { left: 18px; top: 18px; }
+        16.67% { left: 18px; top: 18px; }
+        25.00% { left: 18px; top: 0px; }
+        33.33% { left: 36px; top: 0px; }
+        41.67% { left: 36px; top: 18px; }
+        66.67% { left: 36px; top: 18px; }
+        75.00% { left: 36px; top: 36px; }
+        83.33% { left: 18px; top: 36px; }
+        91.67% { left: 18px; top: 18px; }
+      }
+      @keyframes cf-sq4-r {
+        0% { left: 36px; top: 18px; }
+        33.33% { left: 36px; top: 18px; }
+        41.67% { left: 36px; top: 36px; }
+        50.00% { left: 54px; top: 36px; }
+        58.33% { left: 54px; top: 18px; }
+        100% { left: 54px; top: 18px; }
+      }
+      @keyframes cf-sq5-r {
+        0% { left: 54px; top: 18px; }
+        50.00% { left: 54px; top: 18px; }
+        58.33% { left: 54px; top: 0px; }
+        66.67% { left: 36px; top: 0px; }
+        75.00% { left: 36px; top: 18px; }
+        100% { left: 36px; top: 18px; }
+      }
+      @keyframes cf-sqin-r {
+        0% { transform: scale(0.75); opacity: 0; }
+        100% { transform: scale(1.0); opacity: 1; }
+      }
+    </style>
+    <div id="root-loader-wrapper">
+      <div class="cf-rubik-lateral-root" aria-label="Cargando">
+        <div class="cf-rubik-sq-root cf-sq1-r"></div>
+        <div class="cf-rubik-sq-root cf-sq2-r"></div>
+        <div class="cf-rubik-sq-root cf-sq3-r"></div>
+        <div class="cf-rubik-sq-root cf-sq4-r"></div>
+        <div class="cf-rubik-sq-root cf-sq5-r"></div>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

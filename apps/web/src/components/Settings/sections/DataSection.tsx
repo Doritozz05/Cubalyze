@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Loader2, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { useStorageStatusStore } from '@/stores/storageStatus';
 import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
@@ -373,7 +374,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
               <div className="flex items-center gap-2.5">
                 <div className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-surface">
-                  {importState === 'done' ? <Check className="size-3.5" /> : importState === 'importing' ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
+                  {importState === 'done' ? <Check className="size-3.5" /> : importState === 'importing' ? <Spinner size="xs" /> : <Upload className="size-3.5" />}
                 </div>
                 <span className="text-sm font-medium text-ink">
                   {importState === 'idle' ? 'Import solves' : importState === 'preview' ? 'Preview import' : importState === 'importing' ? 'Importing...' : importState === 'done' ? 'Import complete' : 'Import failed'}
@@ -606,10 +607,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
               )}
 
               {importState === 'importing' && (
-                <div className="flex flex-col items-center justify-center gap-3 py-10">
-                  <Loader2 className="size-6 text-ink-2 animate-spin" />
-                  <p className="text-[0.72rem] text-ink-2">Importing solves...</p>
-                </div>
+                <Spinner variant="centered" size="md" label="Importing solves..." />
               )}
 
               {importState === 'done' && importResult && (

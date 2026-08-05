@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
@@ -30,11 +30,7 @@ const ProfileView = lazy(() =>
 
 /** Tiny fallback shown while a lazy view chunk downloads. */
 function ViewFallback() {
-  return (
-    <div className="flex h-full min-h-[60vh] w-full items-center justify-center">
-      <Loader2 className="size-8 animate-spin text-ink-3" />
-    </div>
-  );
+  return <Spinner size="lg" variant="centered" />;
 }
 
 export interface MainStageProps {

@@ -491,3 +491,96 @@ input[type="image"],
   }
 }
 
+/* ── 2D Rubik's Lateral White Sticker Loading Spinner ─────────────────────── */
+.cf-rubik-lateral-spinner {
+  position: relative;
+  width: calc(3 * var(--cf-spinner-offset, 18px) + var(--cf-spinner-sq, 14px));
+  height: calc(2 * var(--cf-spinner-offset, 18px) + var(--cf-spinner-sq, 14px));
+}
+
+.cf-rubik-lateral-square {
+  position: absolute;
+  width: var(--cf-spinner-sq, 14px);
+  height: var(--cf-spinner-sq, 14px);
+  border-radius: var(--cf-spinner-radius, 2.5px);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.cf-sq-1 {
+  background-color: var(--phase-orange, #f97316);
+  animation: cf-sq1 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.1s ease-out both;
+}
+
+.cf-sq-2 {
+  background-color: var(--phase-blue, #3b82f6);
+  animation: cf-sq2 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.2s ease-out both;
+}
+
+.cf-sq-3 {
+  background-color: var(--phase-amber, #fbbf24);
+  animation: cf-sq3 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.3s ease-out both;
+}
+
+.cf-sq-4 {
+  background-color: var(--phase-emerald, #34d399);
+  animation: cf-sq4 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.4s ease-out both;
+}
+
+.cf-sq-5 {
+  background-color: var(--phase-violet, #a78bfa);
+  animation: cf-sq5 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.5s ease-out both;
+}
+
+@keyframes cf-sq1 {
+  0% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  8.333% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  100% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+}
+
+@keyframes cf-sq2 {
+  0% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  8.333% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
+  16.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
+  25.00% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  83.33% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  91.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  100% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+}
+
+@keyframes cf-sq3 {
+  0%, 100% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  16.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  25.00% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  33.33% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  41.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  66.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  75.00% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
+  83.33% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
+  91.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+}
+
+@keyframes cf-sq4 {
+  0% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  33.33% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  41.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
+  50.00% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
+  58.33% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  100% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+}
+
+@keyframes cf-sq5 {
+  0% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  50.00% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  58.33% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  66.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  75.00% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  100% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+}
+
+@keyframes cf-sqfadein {
+  0% { transform: scale(0.75); opacity: 0; }
+  100% { transform: scale(1.0); opacity: 1; }
+}
+
+
+

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { METHODS } from "@cubeforge/algorithm-db";
 import type { QueueReason } from "@cubeforge/training";
+import { Spinner } from "@/components/ui/spinner";
 import {
   RotateCcw,
   Play,
@@ -23,7 +24,6 @@ import {
   TriangleAlert,
   Flame,
   Sparkles,
-  Loader2,
   BarChart3,
 } from "lucide-react";
 
@@ -97,9 +97,9 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
           <RotateCcw className="size-3.5 text-ink-2" />
           <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
         </div>
-        <p className="flex items-center gap-1.5 text-[0.62rem] text-ink-3">
-          <Loader2 className="size-3 animate-spin" /> Loading today&apos;s queue…
-        </p>
+        <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
+          <Spinner size="xs" /> Loading today&apos;s queue…
+        </div>
       </section>
     );
   }

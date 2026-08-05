@@ -45,9 +45,9 @@ import {
   calculateTps,
 } from "./components/ReviewSteps";
 import type { ReviewStage } from "./components/ReviewSteps";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Flame,
-  Loader2,
   TriangleAlert,
 } from "lucide-react";
 
@@ -288,10 +288,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
   if (!ready || loading || sessionPending) {
     return (
       <Shell onBack={onBack}>
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="size-6 text-ink-3 animate-spin" />
-          <p className="text-[0.7rem] text-ink-3">Loading review queue…</p>
-        </div>
+        <Spinner variant="centered" size="md" label="Loading review queue…" />
       </Shell>
     );
   }

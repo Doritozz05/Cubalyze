@@ -89,8 +89,14 @@ export function MobileTabBar({
           {/* More — opens the touch grid sheet (Settings, Smart Cube, Theme) */}
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
               hapticTap();
+              // Drop focus before the modal drawer marks this nav `aria-hidden`
+              // (background sibling of the portal). Keeping focus here would
+              // trigger Chrome's "Blocked aria-hidden ... descendant retained
+              // focus" warning. The drawer's own focus trap re-focuses its
+              // content for keyboard users.
+              e.currentTarget.blur();
               onOpenMore?.();
             }}
             aria-label="More options"

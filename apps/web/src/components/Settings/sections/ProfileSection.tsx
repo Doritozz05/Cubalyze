@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 import {
   UserRound,
   Camera,
   RotateCcw,
   Download,
   Check,
-  Loader2,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
@@ -184,12 +184,7 @@ export function ProfileSection() {
   }, [profile]);
 
   if (loading || !profile) {
-    return (
-      <div className="flex items-center justify-center py-16 text-sm text-ink-3">
-        <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading profile…
-      </div>
-    );
+    return <Spinner variant="centered" size="md" label="Loading profile…" />;
   }
 
   const isPhoto = profile.avatarKind === "photo";
@@ -237,7 +232,7 @@ export function ProfileSection() {
               disabled={uploadingAvatar}
             >
               {uploadingAvatar ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner size="xs" />
               ) : (
                 <Camera className="size-3.5" />
               )}
@@ -434,7 +429,7 @@ export function ProfileSection() {
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-line pt-4">
         <Button type="button" size="sm" onClick={() => void handleSave()} disabled={saving}>
-          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+          {saving ? <Spinner size="xs" /> : <Check className="size-3.5" />}
           {saving ? "Saving…" : "Save profile"}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={handleExport}>
