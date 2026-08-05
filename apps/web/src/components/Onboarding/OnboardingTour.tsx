@@ -216,7 +216,7 @@ export function OnboardingTour({
       // header "Widgets" button next to the desktop sidebar item) must never
       // be measured, whatever its DOM order.
       let el: HTMLElement | null = null;
-      for (const candidate of document.querySelectorAll<HTMLElement>(target)) {
+      for (const candidate of Array.from(document.querySelectorAll<HTMLElement>(target))) {
         if (candidate.getClientRects().length > 0) {
           el = candidate;
           break;
@@ -356,7 +356,7 @@ export function OnboardingTour({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      className="fixed inset-0 z-[70]"
+      className="fixed inset-0 z-70"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}

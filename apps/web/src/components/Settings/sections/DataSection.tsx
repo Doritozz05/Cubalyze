@@ -311,7 +311,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
         </div>
 
         {/* ── Export ALL sessions (JSON) ───────────────────────────── */}
-        <div className="group flex items-center justify-between gap-6 rounded-xl border border-ready/20 bg-ready/[0.03] p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="group flex items-center justify-between gap-6 rounded-xl border border-ready/20 bg-ready/3 p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <FileJson className="size-4 text-ready" />
