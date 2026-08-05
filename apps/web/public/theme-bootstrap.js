@@ -14,7 +14,7 @@
       ((!t || t === 'system') &&
         window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (isDark) document.documentElement.classList.add('dark');
-  } catch (e) {
+  } catch {
     /* localStorage unavailable — fall back to the default light theme */
   }
 })();
