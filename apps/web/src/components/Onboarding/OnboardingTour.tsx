@@ -63,6 +63,8 @@ export interface OnboardingTourProps {
 interface Placement {
   style: React.CSSProperties;
   arrowSide?: ArrowSide;
+  /** Arrow center, px from the tooltip's left edge (top/bottom arrows). */
+  arrowOffset?: number;
 }
 
 function computePlacement(
@@ -109,7 +111,18 @@ function computePlacement(
     vw - TOOLTIP_WIDTH - VIEWPORT_MARGIN,
   );
 
-  return { style: { top, left, width: TOOLTIP_WIDTH }, arrowSide };
+  // The arrow must point at the target's horizontal center even when the card
+  // is clamped to the viewport edge — the left-rail "Widgets" button sits at
+  // x≈28 while its clamped card lands at x=16, so a dead-centered arrow used
+  // to point at empty space instead of at the button. Clamped so the arrow
+  // never pokes outside the card.
+  const ARROW_EDGE_PAD = 12;
+  const arrowOffset = Math.min(
+    Math.max(rect.x + rect.width / 2 - left, ARROW_EDGE_PAD),
+    TOOLTIP_WIDTH - ARROW_EDGE_PAD,
+  );
+
+  return { style: { top, left, width: TOOLTIP_WIDTH }, arrowSide, arrowOffset };
 }
 
 /**
@@ -332,7 +345,7 @@ export function OnboardingTour({
 
   if (!step) return null;
 
-  const { style, arrowSide } = computePlacement(rect, isTouch, vw, vh);
+  const { style, arrowSide, arrowOffset } = computePlacement(rect, isTouch, vw, vh);
   const titleId = `onboarding-title-${step.id}`;
   const bodyId = `onboarding-body-${step.id}`;
 
@@ -368,6 +381,7 @@ export function OnboardingTour({
           isLast={currentStep === TOUR_STEPS.length - 1}
           isTouch={isTouch}
           arrowSide={arrowSide}
+          arrowOffset={arrowOffset}
           titleId={titleId}
           bodyId={bodyId}
           onNext={onNext}
