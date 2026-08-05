@@ -13,7 +13,7 @@
 
 import Database from '@tauri-apps/plugin-sql';
 import { MIGRATIONS } from '../../../packages/database/src/migrations/index.js';
-import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, restoreMissingCountSql } from '../../../packages/database/src/migrations/restore.js';
+import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL, backupHasDateColumnSql, backupCreatedAtTypeSql, restoreMissingCountSql } from '../../../packages/database/src/migrations/restore.js';
 
 // ── Re-export repositories (pure logic, unchanged) ────────────────────
 // NOTE: keep in sync with packages/database/src/repositories/index.js —
@@ -103,12 +103,34 @@ async function migrationApplied(id: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+/** True when a `_backup_v1_*` snapshot is REAL v1 data (has a `date` column). */
+async function backupIsV1(backupTable: string): Promise<boolean> {
+  const database = db;
+  if (!database) throw new Error('Database not initialized');
+  const rows = await database.select<{ c: number }[]>(backupHasDateColumnSql(backupTable));
+  return Number(rows?.[0]?.c) > 0;
+}
+
+/** True when a `_backup_v1_*` snapshot stores TEXT ISO dates (v1 format). */
+async function backupHasTextDates(backupTable: string): Promise<boolean> {
+  const database = db;
+  if (!database) throw new Error('Database not initialized');
+  const rows = await database.select<{ t: string | null }[]>(backupCreatedAtTypeSql(backupTable));
+  return rows?.[0]?.t === 'text';
+}
+
 /**
  * Restore user data that migration 022 (baseline v2) dropped and recreated
  * empty: copies `_backup_v1_sessions`/`_backup_v1_solves` back into the new
  * v2 schema, converting v1 TEXT ISO dates → v2 INTEGER epoch-milliseconds.
  * Runs AFTER migrations so the v2 tables exist. Idempotent. Drops the v1
  * snapshot only once every row is verified to exist in v2.
+ *
+ * Schema-aware: a snapshot with a `date` column (or TEXT `created_at`) is
+ * REAL v1 data and goes through the conversion path. A stale v2-shaped
+ * snapshot (created when the backup gate ran against an already-v2 DB that
+ * lacked the 022 marker) is copied straight across — converting its INTEGER
+ * timestamps with `julianday` would corrupt them.
  */
 async function restoreLegacyData(): Promise<void> {
   const database = db;
@@ -118,12 +140,17 @@ async function restoreLegacyData(): Promise<void> {
   const hasSolves = await tableExists('_backup_v1_solves');
   if (!hasSessions && !hasSolves) return;
 
+  // Sessions first: v2 solves has a real FK on sessions.id.
   if (hasSessions) {
-    await database.execute(RESTORE_SESSIONS_SQL);
+    await database.execute(
+      (await backupHasTextDates('_backup_v1_sessions')) ? RESTORE_SESSIONS_SQL : RESTORE_SESSIONS_V2_SNAPSHOT_SQL,
+    );
   }
 
   if (hasSolves) {
-    await database.execute(RESTORE_SOLVES_SQL);
+    await database.execute(
+      (await backupIsV1('_backup_v1_solves')) ? RESTORE_SOLVES_SQL : RESTORE_SOLVES_V2_SNAPSHOT_SQL,
+    );
   }
 
   // Cleanup: drop the v1 snapshot only after proving every row landed in v2.

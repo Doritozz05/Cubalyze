@@ -358,27 +358,27 @@ export function InsightsDashboard({
           )}
         />
 
-        {/* Column B: content — hidden on touch while in the Solves section
-            (the detail renders as a full-screen overlay instead) */}
-        <div
-          className={cn(
-            "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-canvas",
-            isTouch && touchSection === "list" && "hidden",
-          )}
-        >
-          {selected && !isTouch ? (
-            <SolveAnalysisPanel
-              solve={selected}
-              liveMetrics={liveMetrics}
-              isLive={isLive}
-              onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
-              onDeleteSolve={() => handleDelete(selected.id)}
-              onBackToOverview={handleBackToOverview}
-            />
-          ) : (
-            <OverviewPanel solves={filtered} pb={pb} />
-          )}
-        </div>
+        {/* Column B: content — NOT mounted on touch while the Solves section
+            is active. Mounting OverviewPanel (Recharts) inside a display:none
+            container makes ResponsiveContainer measure 0×0 and spam
+            "width(0) and height(0)" warnings on every hidden re-render. The
+            solve list stays mounted so its scroll survives the toggle. */}
+        {isTouch && touchSection === "list" ? null : (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-canvas">
+            {selected && !isTouch ? (
+              <SolveAnalysisPanel
+                solve={selected}
+                liveMetrics={liveMetrics}
+                isLive={isLive}
+                onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
+                onDeleteSolve={() => handleDelete(selected.id)}
+                onBackToOverview={handleBackToOverview}
+              />
+            ) : (
+              <OverviewPanel solves={filtered} pb={pb} />
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Touch: solve detail as full-screen overlay ────────────────── */}
