@@ -162,6 +162,7 @@ export function AppShell(props: AppShellProps) {
       cancelRef={cancelRef}
       solves={solves}
       onUpdatePenalty={onUpdatePenalty}
+      onUpdateSolve={onUpdateSolve}
       onDeleteSolve={onDeleteSolve}
       onManualSubmit={onManualSubmit}
       onExpand={() => onNavigate("insights")}

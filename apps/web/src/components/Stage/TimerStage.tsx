@@ -33,6 +33,7 @@ export interface TimerStageProps {
   cancelRef: React.MutableRefObject<(() => void) | null>;
   solves: Solve[];
   onUpdatePenalty: (id: string, penalty: Penalty) => void;
+  onUpdateSolve?: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
   onDeleteSolve: (id: string) => void;
   onManualSubmit: (time: number, penalty: Penalty) => void;
   onExpand: () => void;
@@ -62,6 +63,7 @@ export function TimerStage(props: TimerStageProps) {
     cancelRef,
     solves,
     onUpdatePenalty,
+    onUpdateSolve,
     onDeleteSolve,
     onManualSubmit,
     onExpand,
@@ -203,6 +205,7 @@ export function TimerStage(props: TimerStageProps) {
           holdDelay={holdDelay}
           lastSolve={solves[0] ?? null}
           onUpdatePenalty={onUpdatePenalty}
+          onUpdateSolve={onUpdateSolve}
           onDeleteSolve={onDeleteSolve}
           className="mt-1 flex-1"
         />
