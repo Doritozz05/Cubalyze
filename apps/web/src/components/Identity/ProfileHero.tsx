@@ -10,62 +10,62 @@ import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
 
 /**
- * Rainbow badge styles per phase token (static strings so Tailwind sees the
- * full class names). Linear-style soft pill: 10% tinted fill, deeper text in
- * the same hue, a 1px hue-matched border, and a small status dot.
+ * Rainbow badge styles per phase token for 3D sticker badges.
+ * Outer background gives the 3D bottom rim color, matching the phase hue.
  */
-const BADGE_COLOR_STYLES: Record<string, { pill: string; dot: string }> = {
+const BADGE_COLOR_STYLES: Record<string, { bg: string; dot: string }> = {
   "phase-blue": {
-    pill: "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-    dot: "bg-blue-500",
+    bg: "bg-[#60a5fa]",
+    dot: "bg-blue-600 dark:bg-blue-400",
   },
   "phase-emerald": {
-    pill: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    dot: "bg-emerald-500",
+    bg: "bg-[#5cdb95]",
+    dot: "bg-emerald-600 dark:bg-emerald-400",
   },
   "phase-teal": {
-    pill: "border-teal-500/25 bg-teal-500/10 text-teal-700 dark:text-teal-300",
-    dot: "bg-teal-500",
+    bg: "bg-[#2dd4bf]",
+    dot: "bg-teal-600 dark:bg-teal-400",
   },
   "phase-amber": {
-    pill: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-    dot: "bg-amber-500",
+    bg: "bg-[#fbbf24]",
+    dot: "bg-amber-600 dark:bg-amber-400",
   },
   "phase-violet": {
-    pill: "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-    dot: "bg-violet-500",
+    bg: "bg-[#a78bfa]",
+    dot: "bg-violet-600 dark:bg-violet-400",
   },
   "phase-purple": {
-    pill: "border-purple-500/25 bg-purple-500/10 text-purple-700 dark:text-purple-300",
-    dot: "bg-purple-500",
+    bg: "bg-[#c084fc]",
+    dot: "bg-purple-600 dark:bg-purple-400",
   },
   "phase-indigo": {
-    pill: "border-indigo-500/25 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
-    dot: "bg-indigo-500",
+    bg: "bg-[#818cf8]",
+    dot: "bg-indigo-600 dark:bg-indigo-400",
   },
   "phase-rose": {
-    pill: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-    dot: "bg-rose-500",
+    bg: "bg-[#fb7185]",
+    dot: "bg-rose-600 dark:bg-rose-400",
   },
   "phase-cyan": {
-    pill: "border-cyan-500/25 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
-    dot: "bg-cyan-500",
+    bg: "bg-[#22d3ee]",
+    dot: "bg-cyan-600 dark:bg-cyan-400",
   },
   "phase-orange": {
-    pill: "border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-    dot: "bg-orange-500",
+    bg: "bg-[#fb923c]",
+    dot: "bg-orange-600 dark:bg-orange-400",
   },
   "phase-sky": {
-    pill: "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-    dot: "bg-sky-500",
+    bg: "bg-[#38bdf8]",
+    dot: "bg-sky-600 dark:bg-sky-400",
   },
   "phase-pink": {
-    pill: "border-pink-500/25 bg-pink-500/10 text-pink-700 dark:text-pink-300",
-    dot: "bg-pink-500",
+    bg: "bg-[#f472b6]",
+    dot: "bg-pink-600 dark:bg-pink-400",
   },
 };
 
-const DEFAULT_BADGE_STYLE = BADGE_COLOR_STYLES["phase-blue"];
+const DEFAULT_BADGE_STYLE = BADGE_COLOR_STYLES["phase-emerald"];
+const BADGE_ROTATIONS = [-3, 3, -2, 4];
 
 export interface ProfileHeroProps {
   profile: Profile | null;
@@ -180,36 +180,48 @@ export function ProfileHero({
               ))}
             </div>
             {badges.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                {badges.slice(0, 4).map((badge) => {
+              <div className="mt-3 flex flex-wrap items-center gap-2.5 py-1">
+                {badges.slice(0, 4).map((badge, idx) => {
                   const style =
                     BADGE_COLOR_STYLES[badge.color] ?? DEFAULT_BADGE_STYLE;
+                  const rotation = BADGE_ROTATIONS[idx % BADGE_ROTATIONS.length];
                   return (
                     <span
                       key={badge.puzzle}
                       title={`PB ${badge.puzzleLabel} is Sub ${badge.thresholdLabel}`}
+                      style={{
+                        transform: `rotate(${rotation}deg)`,
+                        transformOrigin: "center",
+                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                      }}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold nums",
-                        style.pill,
+                        "group inline-block p-0 border-none pb-[3px] rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
+                        "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
+                        "active:translate-y-[2px] active:pb-[1px] active:shadow-[0_1px_0_#494a4b]",
+                        style.bg,
                       )}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={cn("size-1.5 rounded-full", style.dot)}
-                      />
-                      Sub {badge.thresholdLabel}
-                      <span aria-hidden="true" className="opacity-50">
-                        ·
-                      </span>
-                      <span className="font-sans font-medium tracking-normal">
-                        {badge.puzzleLabel}
+                      <span className="flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap dark:bg-[#1a202c] dark:text-[#f1f5f8] dark:border-[#494a4b]">
+                        <span className="nums">Sub {badge.thresholdLabel}</span>
+                        <span className="opacity-75">{badge.puzzleLabel}</span>
                       </span>
                     </span>
                   );
                 })}
                 {badges.length > 4 && (
-                  <span className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[0.65rem] font-medium text-ink-3">
-                    +{badges.length - 4}
+                  <span
+                    style={{
+                      transform: "rotate(2deg)",
+                      transformOrigin: "center",
+                      transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                    }}
+                    className="group inline-block p-0 border-none pb-[3px] rounded-[6px] shadow-[0_2px_0_#494a4b] bg-slate-300 dark:bg-slate-700 cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
+                  >
+                    <span className="flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] dark:bg-[#1a202c] dark:text-[#f1f5f8] dark:border-[#494a4b]">
+                      <span className="nums">
+                        +{badges.length - 4}
+                      </span>
+                    </span>
                   </span>
                 )}
               </div>
