@@ -22,6 +22,28 @@ const STABLE_FRAMES = 2;
 // Upper bound on re-measure attempts (~500ms at 60fps) before falling back.
 const MAX_MEASURE_ATTEMPTS = 30;
 
+/**
+ * True while the target (or any of its ancestors) is mid-animation.
+ *
+ * A still-moving element must never be measured: the timer scramble's slide-in
+ * (y: -100% → 0) starts translated up over the header widget dock, and a couple
+ * of dropped frames there (busy main thread mid view-switch) can make two
+ * consecutive samples look "stable" — locking the spotlight onto the dock.
+ * CSS animations/transitions on ancestors are caught too, so this covers both
+ * framer-motion tweens and pure-CSS motion.
+ */
+function inFlight(el: Element): boolean {
+  let node: Element | null = el;
+  for (let depth = 0; node && depth < 8; depth += 1, node = node.parentElement) {
+    // "running" also covers animations whose start is still pending (the
+    // spec reports them as running until they actually begin).
+    if (node.getAnimations().some((a) => a.playState === "running")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export interface OnboardingTourProps {
   /** Currently active stage view (drives re-measure after navigation). */
   activeView: ViewId;
@@ -126,11 +148,20 @@ export function OnboardingTour({
   // actually mounted.
   //
   // Measurement is deliberately conservative: the target's rect is only
-  // committed once it has been identical for STABLE_FRAMES consecutive frames,
-  // so a slide-in animation, a view transition or a layout shift can never
-  // leave the highlight stranded on stale coordinates (it used to sit over the
+  // committed once it has been identical for STABLE_FRAMES consecutive frames
+  // AND is not mid-animation AND sits inside the stage container, so a
+  // slide-in animation, a view transition or a layout shift can never leave
+  // the highlight stranded on stale coordinates (it used to sit over the
   // header when the scramble was still animating in, or off the widgets tab
   // while the sidebar was collapsing). Hidden/zero-size targets are skipped.
+  //
+  // The frame-stability window alone was NOT enough: the timer scramble's
+  // slide-in (y: -100% → 0) starts translated up over the header dock, and a
+  // couple of dropped frames while the main thread is busy (view switch,
+  // settings dialog closing) can make two consecutive samples look stable
+  // there — locking the spotlight onto the dock ~1 in 10 replays. The
+  // animation + stage-bound checks below reject those in-transit rects
+  // outright, so the spotlight can only ever commit at the final position.
   useEffect(() => {
     if (!step) return;
     if (activeView !== step.view) onNavigate(step.view);
@@ -162,9 +193,6 @@ export function OnboardingTour({
       }
 
       if (el) {
-        // Target found: don't let the missing-element budget eat settling
-        // time (a long slide-in should keep waiting, not give up).
-        attempts = 0;
         const r = el.getBoundingClientRect();
         const next: SpotlightRect = {
           x: r.x,
@@ -173,28 +201,58 @@ export function OnboardingTour({
           height: r.height,
         };
 
-        const settled =
-          lastRect !== null &&
-          Math.abs(lastRect.x - next.x) < 0.5 &&
-          Math.abs(lastRect.y - next.y) < 0.5 &&
-          Math.abs(lastRect.width - next.width) < 0.5 &&
-          Math.abs(lastRect.height - next.height) < 0.5;
-        lastRect = next;
+        // Reject "in transit" rects, which can never be trusted:
+        //  1. the target or an ancestor is still animating (the scramble's
+        //     slide-in starts translated up over the header dock), or
+        //  2. the rect sits above the stage container — the slide-in's start
+        //     position parks the element up there, so a rect above
+        //     #timer-section is always a stale start position, even when it
+        //     looks frame-stable. Header-anchored targets (widgets-entry)
+        //     are outside the stage and skip this bound.
+        const stageEl = document.getElementById("timer-section");
+        const stageTop = stageEl?.contains(el)
+          ? stageEl.getBoundingClientRect().top
+          : undefined;
+        const inTransit =
+          inFlight(el) || (stageTop !== undefined && next.y < stageTop - 2);
 
-        if (settled) {
-          if (++stableFrames >= STABLE_FRAMES) {
-            // Expand the box slightly so the ring/rounded corners never clip
-            // content that sits flush against the target's edges.
-            setRect({
-              x: next.x - SPOTLIGHT_PAD,
-              y: next.y - SPOTLIGHT_PAD,
-              width: next.width + SPOTLIGHT_PAD * 2,
-              height: next.height + SPOTLIGHT_PAD * 2,
-            });
-            return;
+        if (!inTransit) {
+          // Target found in a usable spot: don't let the missing-element
+          // budget eat settling time (a long slide-in should keep waiting,
+          // not give up).
+          attempts = 0;
+          const settled =
+            lastRect !== null &&
+            Math.abs(lastRect.x - next.x) < 0.5 &&
+            Math.abs(lastRect.y - next.y) < 0.5 &&
+            Math.abs(lastRect.width - next.width) < 0.5 &&
+            Math.abs(lastRect.height - next.height) < 0.5;
+          lastRect = next;
+
+          if (settled) {
+            if (++stableFrames >= STABLE_FRAMES) {
+              // Expand the box slightly so the ring/rounded corners never clip
+              // content that sits flush against the target's edges.
+              setRect({
+                x: next.x - SPOTLIGHT_PAD,
+                y: next.y - SPOTLIGHT_PAD,
+                width: next.width + SPOTLIGHT_PAD * 2,
+                height: next.height + SPOTLIGHT_PAD * 2,
+              });
+              return;
+            }
+          } else {
+            stableFrames = 0;
           }
         } else {
+          // In transit: restart the stability window so a stale rect can
+          // never count as "settled" when the target reaches its final spot.
+          // In-transit ticks still count toward the fallback budget, so a
+          // target stuck mid-animation (e.g. a perpetual animation on an
+          // ancestor) can never loop forever — after ~500ms the spotlight
+          // falls back to a centered tooltip instead of hanging.
           stableFrames = 0;
+          lastRect = null;
         }
       } else {
         // Target missing/hidden: restart the stability window so a stale
