@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, memo, useState, useRef, useEffect } from "react";
-import { MoreHorizontal, Plus, XCircle, Eraser, Trash2, Activity, RotateCcw, Pencil, Check, X } from "lucide-react";
+import { MoreHorizontal, Plus, XCircle, Eraser, Trash2, Activity, RotateCcw, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime } from "@/utils/formatTime";
@@ -261,10 +261,11 @@ const SolveRow = memo(function SolveRow({
           <TooltipTrigger asChild>
             <button
               onClick={handleNoteClick}
-              className="max-w-25 shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-ink-2 italic hover:bg-surface-2 hover:text-ink transition-colors"
+              className="max-w-25 shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-accent bg-accent/10 hover:bg-accent/20 italic transition-colors flex items-center gap-1 cursor-pointer font-medium"
               title={solve.note}
             >
-              {solve.note}
+              <MessageSquare className="size-3 shrink-0" />
+              <span className="truncate">{solve.note}</span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">{solve.note}</TooltipContent>
@@ -274,10 +275,10 @@ const SolveRow = memo(function SolveRow({
           <TooltipTrigger asChild>
             <button
               onClick={handleNoteClick}
-              className="shrink-0 grid size-7 place-items-center rounded text-ink-3 hover:text-ink transition-colors"
+              className="shrink-0 grid size-7 place-items-center rounded text-ink-3 hover:text-ink transition-colors cursor-pointer"
               aria-label="Add note"
             >
-              <Pencil className="size-3.5" />
+              <MessageSquare className="size-3.5" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">Add note</TooltipContent>

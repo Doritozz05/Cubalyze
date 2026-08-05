@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trash2, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
 import { TimerDisplay } from "./TimerDisplay";
@@ -49,6 +49,10 @@ export interface TimerContainerProps {
   lastSolve?: Solve | null;
   /** Callback to update penalty of a solve. */
   onUpdatePenalty?: (id: string, penalty: Penalty) => void;
+  /** Callback to update solve penalty or note. */
+  onUpdateSolve?: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
+  /** Optional direct note update callback. */
+  onUpdateNote?: (id: string, note: string | null) => void;
   /** Callback to delete a solve by id. */
   onDeleteSolve?: (id: string) => void;
   className?: string;
@@ -78,12 +82,22 @@ export function TimerContainer({
   holdDelay = 300,
   lastSolve,
   onUpdatePenalty,
+  onUpdateSolve,
+  onUpdateNote,
   onDeleteSolve,
   className,
 }: TimerContainerProps) {
   const isTouch = useIsTouch();
   // Touch devices always enable click/tap to start & stop because there is no keyboard.
   const activeClickToStart = clickToStart || isTouch;
+
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteInput, setNoteInput] = useState("");
+
+  useEffect(() => {
+    setIsEditingNote(false);
+    setNoteInput(lastSolve?.note ?? "");
+  }, [lastSolve?.id, lastSolve?.note]);
 
   // Expose the timer phase + cancel to the parent (for shortcut gating) via
   // refs so the parent doesn't re-render on every animation frame.
@@ -283,6 +297,78 @@ export function TimerContainer({
               >
                 <Trash2 className="size-3.5 max-lg:size-4" />
               </button>
+            </>
+          )}
+          {(onUpdateSolve || onUpdateNote) && (
+            <>
+              <div className="h-3 w-px bg-line/40" />
+              {isEditingNote ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!lastSolve) return;
+                    const trimmed = noteInput.trim();
+                    const finalNote = trimmed || null;
+                    if (onUpdateSolve) {
+                      onUpdateSolve(lastSolve.id, { note: finalNote });
+                    } else if (onUpdateNote) {
+                      onUpdateNote(lastSolve.id, finalNote);
+                    }
+                    setIsEditingNote(false);
+                  }}
+                  className="flex items-center gap-1 pl-0.5"
+                >
+                  <input
+                    type="text"
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setIsEditingNote(false);
+                      }
+                    }}
+                    placeholder="Add note..."
+                    autoFocus
+                    className="h-6 w-28 max-lg:w-36 max-lg:h-9 rounded-full bg-surface-3/90 px-2.5 text-xs text-ink placeholder:text-ink-3 outline-none focus:ring-1 focus:ring-accent/50"
+                  />
+                  <button
+                    type="submit"
+                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-accent hover:bg-surface-3 transition-colors cursor-pointer"
+                    title="Save note"
+                  >
+                    <Check className="size-3.5 max-lg:size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingNote(false)}
+                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ink-3 hover:text-ink transition-colors cursor-pointer"
+                    title="Cancel"
+                  >
+                    <X className="size-3.5 max-lg:size-4" />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticTap();
+                    setNoteInput(lastSolve.note ?? "");
+                    setIsEditingNote(true);
+                  }}
+                  className={cn(
+                    "h-6 px-2 rounded-full transition-all duration-150 cursor-pointer outline-none select-none flex items-center gap-1.5 max-lg:h-10 max-lg:px-3 text-[0.72rem] max-lg:text-sm font-medium",
+                    lastSolve.note
+                      ? "text-accent bg-accent/10 hover:bg-accent/20 font-bold ring-1 ring-accent/30"
+                      : "text-ink-3 hover:bg-surface-3 hover:text-ink"
+                  )}
+                  title={lastSolve.note ? `Note: ${lastSolve.note}` : "Add note"}
+                >
+                  <MessageSquare className="size-3.5 max-lg:size-4" />
+                  {lastSolve.note ? (
+                    <span className="max-w-24 truncate text-[0.72rem] max-lg:text-xs">{lastSolve.note}</span>
+                  ) : null}
+                </button>
+              )}
             </>
           )}
         </div>
