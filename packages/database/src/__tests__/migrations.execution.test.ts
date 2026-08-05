@@ -23,9 +23,9 @@ beforeAll(async () => {
 
 let dbSeq = 0;
 /** Open a fresh, uniquely-named in-memory database. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function openDb(): any {
   dbSeq += 1;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new sqlite3.oo1.DB(`/mem-${dbSeq}.sqlite3`, 'c');
 }
 
