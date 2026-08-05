@@ -33,8 +33,8 @@ export function SettingToggle({
       )}
     >
       <div className="min-w-0 flex-1">
-        <h4 className="text-[0.85rem] font-medium text-ink">{title}</h4>
-        <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+        <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{title}</h4>
+        <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
           {description}
         </p>
       </div>

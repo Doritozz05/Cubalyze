@@ -87,7 +87,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           <div className="min-w-0 flex-1">
             <h4
               className={cn(
-                "truncate text-[0.85rem] font-medium transition-colors duration-200",
+                "truncate text-[0.85rem] font-medium leading-5 transition-colors duration-200",
                 active ? "text-ink" : "text-ink-2",
               )}
             >
@@ -99,7 +99,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           </span>
         </div>
 
-        <p className="line-clamp-2 text-[0.75rem] leading-relaxed text-ink-3">
+        <p className="line-clamp-2 text-[0.75rem] leading-5 text-ink-3">
           {widget.description}
         </p>
 

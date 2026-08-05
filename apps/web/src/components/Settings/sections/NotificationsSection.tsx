@@ -73,7 +73,7 @@ export function NotificationsSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <MasterIcon className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] text-ink-2">
+        <p className="text-[0.82rem] leading-5 text-ink-2">
           Control every alert, sound and daily reminder the app can send.
         </p>
       </div>
@@ -97,11 +97,11 @@ export function NotificationsSection() {
 
         <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <Volume2 className="size-3.5 text-ink-2" />
               Volume
             </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
               Master volume for inspection voice cues and the PB fanfare (0–100%).
             </p>
           </div>
@@ -137,11 +137,11 @@ export function NotificationsSection() {
         {/* ── Practice reminder ──────────────────────────────────────── */}
         <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <CalendarClock className="size-3.5 text-ink-2" />
               Daily practice reminder
             </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
               Get a gentle nudge at a set time each day to practice. Shows a browser
               notification (if allowed) and an in-app toast.
             </p>
@@ -166,11 +166,11 @@ export function NotificationsSection() {
         {/* ── Review reminder ────────────────────────────────────────── */}
         <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium text-ink">
+            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <Repeat className="size-3.5 text-ink-2" />
               Daily review reminder
             </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
               Remind yourself to clear the SRS review queue (OLL/PLL/F2L flashcards)
               at a set time each day.
             </p>
