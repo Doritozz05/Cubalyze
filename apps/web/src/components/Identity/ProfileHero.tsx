@@ -13,55 +13,19 @@ import type { SubBadge } from "@/utils/subBadges";
  * Rainbow badge styles per phase token for 3D sticker badges.
  * Outer background gives the 3D bottom rim color, matching the phase hue.
  */
-const BADGE_COLOR_STYLES: Record<string, { bg: string; dot: string }> = {
-  "phase-blue": {
-    bg: "bg-[#60a5fa]",
-    dot: "bg-blue-600 dark:bg-blue-400",
-  },
-  "phase-emerald": {
-    bg: "bg-[#5cdb95]",
-    dot: "bg-emerald-600 dark:bg-emerald-400",
-  },
-  "phase-teal": {
-    bg: "bg-[#2dd4bf]",
-    dot: "bg-teal-600 dark:bg-teal-400",
-  },
-  "phase-amber": {
-    bg: "bg-[#fbbf24]",
-    dot: "bg-amber-600 dark:bg-amber-400",
-  },
-  "phase-violet": {
-    bg: "bg-[#a78bfa]",
-    dot: "bg-violet-600 dark:bg-violet-400",
-  },
-  "phase-purple": {
-    bg: "bg-[#c084fc]",
-    dot: "bg-purple-600 dark:bg-purple-400",
-  },
-  "phase-indigo": {
-    bg: "bg-[#818cf8]",
-    dot: "bg-indigo-600 dark:bg-indigo-400",
-  },
-  "phase-rose": {
-    bg: "bg-[#fb7185]",
-    dot: "bg-rose-600 dark:bg-rose-400",
-  },
-  "phase-cyan": {
-    bg: "bg-[#22d3ee]",
-    dot: "bg-cyan-600 dark:bg-cyan-400",
-  },
-  "phase-orange": {
-    bg: "bg-[#fb923c]",
-    dot: "bg-orange-600 dark:bg-orange-400",
-  },
-  "phase-sky": {
-    bg: "bg-[#38bdf8]",
-    dot: "bg-sky-600 dark:bg-sky-400",
-  },
-  "phase-pink": {
-    bg: "bg-[#f472b6]",
-    dot: "bg-pink-600 dark:bg-pink-400",
-  },
+const BADGE_COLOR_STYLES: Record<string, { bg: string }> = {
+  "phase-blue": { bg: "bg-[#60a5fa]" },
+  "phase-emerald": { bg: "bg-[#5cdb95]" },
+  "phase-teal": { bg: "bg-[#2dd4bf]" },
+  "phase-amber": { bg: "bg-[#fbbf24]" },
+  "phase-violet": { bg: "bg-[#a78bfa]" },
+  "phase-purple": { bg: "bg-[#c084fc]" },
+  "phase-indigo": { bg: "bg-[#818cf8]" },
+  "phase-rose": { bg: "bg-[#fb7185]" },
+  "phase-cyan": { bg: "bg-[#22d3ee]" },
+  "phase-orange": { bg: "bg-[#fb923c]" },
+  "phase-sky": { bg: "bg-[#38bdf8]" },
+  "phase-pink": { bg: "bg-[#f472b6]" },
 };
 
 const DEFAULT_BADGE_STYLE = BADGE_COLOR_STYLES["phase-emerald"];
@@ -201,7 +165,7 @@ export function ProfileHero({
                         style.bg,
                       )}
                     >
-                      <span className="flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap dark:bg-[#1a202c] dark:text-[#f1f5f8] dark:border-[#494a4b]">
+                      <span className="flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
                         <span className="nums">Sub {badge.thresholdLabel}</span>
                         <span className="opacity-75">{badge.puzzleLabel}</span>
                       </span>
@@ -215,9 +179,9 @@ export function ProfileHero({
                       transformOrigin: "center",
                       transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                     }}
-                    className="group inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] bg-slate-300 dark:bg-slate-700 cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
+                    className="group inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] bg-slate-300 cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
                   >
-                    <span className="flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] dark:bg-[#1a202c] dark:text-[#f1f5f8] dark:border-[#494a4b]">
+                    <span className="flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b]">
                       <span className="nums">
                         +{badges.length - 4}
                       </span>
