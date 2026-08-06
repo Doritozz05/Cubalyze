@@ -159,13 +159,19 @@ export function ProfileHero({
                         transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                       }}
                       className={cn(
-                        "group inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
+                        "group relative inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
                         "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
                         "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
-                        style.bg,
                       )}
                     >
-                      <span className="flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
+                      <span
+                        className={cn(
+                          "absolute inset-0 rounded-[6px] dark:scale-[0.985]",
+                          style.bg,
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
                         <span className="nums">Sub {badge.thresholdLabel}</span>
                         <span className="opacity-75">{badge.puzzleLabel}</span>
                       </span>
@@ -179,9 +185,13 @@ export function ProfileHero({
                       transformOrigin: "center",
                       transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                     }}
-                    className="group inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] bg-slate-300 cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
+                    className="group relative inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
                   >
-                    <span className="flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b]">
+                    <span
+                      className="absolute inset-0 rounded-[6px] bg-slate-300 dark:scale-[0.985]"
+                      aria-hidden="true"
+                    />
+                    <span className="relative flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b]">
                       <span className="nums">
                         +{badges.length - 4}
                       </span>
