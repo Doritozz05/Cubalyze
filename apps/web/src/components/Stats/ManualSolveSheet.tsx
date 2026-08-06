@@ -129,7 +129,7 @@ export function ManualSolveSheet({
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { x: 360, opacity: 0 }}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 32 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-[380px] flex-col border-l border-line bg-canvas shadow-2xl"
+            className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-95 flex-col border-l border-line bg-canvas shadow-2xl"
             aria-label="Manual solve"
           >
             {/* Header */}
@@ -207,7 +207,7 @@ export function ManualSolveSheet({
                 <textarea
                   value={scramble}
                   onChange={(e) => setScramble(e.target.value)}
-                  className="min-h-[64px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
+                  className="min-h-16 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                   placeholder="R U R' U'..."
                 />
               </section>
@@ -285,7 +285,7 @@ export function ManualSolveSheet({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. focus on lookahead"
-                  className="min-h-[60px] w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
+                  className="min-h-15 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                 />
               </section>
             </div>

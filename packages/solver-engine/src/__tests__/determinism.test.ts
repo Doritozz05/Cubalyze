@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { CubeState, Cube2x2State } from '@cubeforge/math-core';
-import { Min2PhaseSolver, TwoByTwoSolver, RandomStateGenerator } from '@cubeforge/solver-engine';
+import { Min2PhaseSolver, TwoByTwoSolver, RandomStateGenerator } from '../index';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  DT1: Same scramble → same Min2Phase solution (100 runs)
