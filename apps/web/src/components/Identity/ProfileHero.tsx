@@ -195,9 +195,9 @@ export function ProfileHero({
                         transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                       }}
                       className={cn(
-                        "group inline-block p-0 border-none pb-[3px] rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
+                        "group inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
                         "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
-                        "active:translate-y-[2px] active:pb-[1px] active:shadow-[0_1px_0_#494a4b]",
+                        "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
                         style.bg,
                       )}
                     >
@@ -215,7 +215,7 @@ export function ProfileHero({
                       transformOrigin: "center",
                       transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                     }}
-                    className="group inline-block p-0 border-none pb-[3px] rounded-[6px] shadow-[0_2px_0_#494a4b] bg-slate-300 dark:bg-slate-700 cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
+                    className="group inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] bg-slate-300 dark:bg-slate-700 cursor-default select-none hover:rotate-0 hover:scale-105 hover:-translate-y-1"
                   >
                     <span className="flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] dark:bg-[#1a202c] dark:text-[#f1f5f8] dark:border-[#494a4b]">
                       <span className="nums">
