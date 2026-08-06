@@ -361,7 +361,7 @@ export class Cube3DEngine {
     if (!this.sceneManager) return;
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
-    this.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+    this.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6);
     this.requestRender();
   }
 
@@ -501,12 +501,12 @@ export class Cube3DEngine {
    *
    * @param axis  'x', 'y', or 'z'
    * @param layerValue  -1, 0, or 1
-   * @param grayColor  CSS color string (default '#808080')
+   * @param grayColor  CSS color string (default '#505050')
    */
   public setLayerStickerGray(
     axis: 'x' | 'y' | 'z',
     layerValue: number,
-    grayColor: string = '#808080',
+    grayColor: string = '#505050',
   ): void {
     if (!this.model || !this.factory) return;
     const cubies = this.model.getCubiesByFace(axis, layerValue);
@@ -527,10 +527,10 @@ export class Cube3DEngine {
    * 1. All F2L pair pieces (in Basic F2L) or active AF2L pieces.
    * 2. All solved cross and slot pieces.
    *
-   * @param grayColor CSS color string (default '#808080')
+   * @param grayColor CSS color string (default '#505050')
    * @param isAdvanced If true (AF2L), also grays out White-Orange-Green corner & Orange-Green edge
    */
-  public setF2LMaskGray(grayColor: string = '#808080', isAdvanced: boolean = false): void {
+  public setF2LMaskGray(grayColor: string = '#505050', isAdvanced: boolean = false): void {
     if (!this.model || !this.factory) return;
 
     const cubies = this.model.getLogicalState();
@@ -565,9 +565,9 @@ export class Cube3DEngine {
    * Call {@link clearLayerGray} before re-syncing facelets or changing the mask.
    *
    * @param mask      The PhaseMask whose target pieces should stay colored.
-   * @param grayColor CSS color string (default '#808080').
+   * @param grayColor CSS color string (default '#505050').
    */
-  public setPhaseStickering(mask: PhaseMask, grayColor: string = '#808080'): void {
+  public setPhaseStickering(mask: PhaseMask, grayColor: string = '#505050'): void {
     if (!this.model || !this.factory) return;
 
     // Collect the home grid positions of every target piece in the mask.

@@ -45,7 +45,7 @@ export interface CaseRenderPlan {
 }
 
 export const DEFAULT_CASE_CAMERA: OrbitCamera = {
-  theta: Math.PI / 4,
+  theta: Math.PI / 6,
   phi: Math.PI / 6,
   radius: 7,
 };
@@ -57,7 +57,7 @@ export const F2L_SLOT_MODEL_ROTATIONS: Record<F2LSlotId, number> = {
   3: Math.PI / 2,
 };
 
-const DEFAULT_GRAY = '#808080';
+const DEFAULT_GRAY = '#505050';
 
 function normalizeCamera(camera?: OrbitCamera): OrbitCamera {
   const source = camera ?? DEFAULT_CASE_CAMERA;
