@@ -14,13 +14,12 @@
  *   - COLL/CMLL: setup + alg → the 4 LL corners end solved (home + oriented)
  *           and F2L intact — only EPLL/LSE remains, which is exactly what the
  *           set promises. WV: same criterion as OLL (LL oriented + F2L).
- *
- *   - F2L/AF2L: setup + alg → the case PAIR ends at home. The pair is NOT
- *           always "the FR slot pieces": in advanced cases the pair may be
- *           trapped in the slot (trapped corner / trapped edge) and belong to
- *           ANOTHER slot (the user confirmed by hand: in AF2L 2 the blue-red
- *           pair sits in FR and its home is BL). The identification rule,
- *           derived from the 54 setups and validated on the cube:
+ *   *   - F2L/AF2L: setup + alg → the case PAIR ends at home. The pair is NOT
+   *           always "the FR slot pieces": in advanced cases the pair may be
+   *           trapped in the slot (trapped corner / trapped edge) and belong to
+   *           ANOTHER slot (the user confirmed by hand: in AF2L 2 the blue-red
+   *           pair sits in FR and its home is BL). The identification rule,
+   *           derived from the setups and validated on the cube:
  *             - if the corner in DFR is a displaced D-layer piece →
  *               trapped-corner: pair = {that corner, its edge}
  *             - else, if the edge in FR is a displaced D/E-layer piece →
@@ -102,8 +101,11 @@ interface AlgResult {
 const GENERATED: Record<string, string> = {
   pll: resolve(__dirname, "../../../../pruebas/generated/scdb-pll.json"),
   oll: resolve(__dirname, "../../../../pruebas/generated/scdb-oll.json"),
-  af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l.json"),
-  f2l: resolve(__dirname, "../../../../pruebas/generated/scdb-f2l.json"),
+  // F2L/AdvancedF2L: the seed is generated from the FUSED dumps
+  // (fase5-fuse.ts: SCDB + BirdF2L + SpeedcubeQuest), so the verify gate runs
+  // against those — every alg that lands in the seed must solve its case.
+  af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l-fused.json"),
+  f2l: resolve(__dirname, "../../../../pruebas/generated/scdb-f2l-fused.json"),
   coll: resolve(__dirname, "../../../../pruebas/generated/scdb-coll.json"),
   cmll: resolve(__dirname, "../../../../pruebas/generated/scdb-cmll.json"),
   wv: resolve(__dirname, "../../../../pruebas/generated/scdb-wv.json"),

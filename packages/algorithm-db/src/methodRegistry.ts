@@ -35,7 +35,7 @@ export const SUBSETS: AlgorithmSubset[] = [
   // Training tab, so no subset entry is registered here.)
   { id: sid(100), methodId: mid(1), name: 'F2L', description: 'First Two Layers — algorithmic pairs for each slot.', sortOrder: 2, puzzleType: '3x3x3' },
   { id: '00000000-0000-4000-9000-000000000003', methodId: mid(1), parentId: sid(100), name: 'Basic F2L', description: '41 standard F2L cases (easy to advanced pairs).', sortOrder: 1, puzzleType: '3x3x3' },
-  { id: '00000000-0000-4000-9000-000000000004', methodId: mid(1), parentId: sid(100), name: 'Advanced F2L', description: '54 Advanced F2L cases (trapped corner, trapped edge, both trapped).', sortOrder: 2, puzzleType: '3x3x3' },
+  { id: '00000000-0000-4000-9000-000000000004', methodId: mid(1), parentId: sid(100), name: 'Advanced F2L', description: '126 Advanced F2L cases (BirdF2L patterns: trapped corner, trapped edge, both trapped).', sortOrder: 2, puzzleType: '3x3x3' },
   { id: sid(2), methodId: mid(1), name: 'OLL', description: 'Orientation of Last Layer — 57 cases to orient all last layer pieces.', sortOrder: 3, puzzleType: '3x3x3' },
   { id: sid(1), methodId: mid(1), name: 'PLL', description: 'Permutation of Last Layer — 21 cases to permute the last layer pieces.', sortOrder: 4, puzzleType: '3x3x3' },
   { id: sid(14), methodId: mid(1), name: 'COLL', description: 'Corners of Last Layer — orient + permute corners when edges are oriented.', sortOrder: 5, puzzleType: '3x3x3' },

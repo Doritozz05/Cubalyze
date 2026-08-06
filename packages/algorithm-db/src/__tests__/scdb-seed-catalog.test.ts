@@ -28,8 +28,10 @@ interface GeneratedFile { set: string; subsetId: string; cases: GeneratedCase[] 
 const GENERATED: Record<string, { file: string; set: string }> = {
   pll: { file: "scdb-pll.json", set: "PLL" },
   oll: { file: "scdb-oll.json", set: "OLL" },
-  f2l: { file: "scdb-f2l.json", set: "F2L" },
-  af2l: { file: "scdb-af2l.json", set: "AdvancedF2L" },
+  // F2L/AdvancedF2L: the seed is generated from the FUSED dumps
+  // (pruebas/scripts/fase5-fuse.ts: SCDB + BirdF2L + SpeedcubeQuest).
+  f2l: { file: "scdb-f2l-fused.json", set: "F2L" },
+  af2l: { file: "scdb-af2l-fused.json", set: "AdvancedF2L" },
   coll: { file: "scdb-coll.json", set: "COLL" },
   wv: { file: "scdb-wv.json", set: "WV" },
   // CFOP sets added 2026-08-06 (FRUF is intentionally not seeded: its algs do

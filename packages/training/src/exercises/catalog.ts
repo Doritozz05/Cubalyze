@@ -58,7 +58,7 @@ export const METHOD_PHASES: Record<string, PhaseDefinition[]> = {
   CFOP: [
     { id: 'cross', name: 'Cross', description: 'Solve the cross efficiently. Fewer moves, faster solutions.', sortOrder: 1, hasAlgorithms: false },
     { id: 'f2l', name: 'F2L', description: 'Basic first two layers — 41 algorithmic pairs.', sortOrder: 2, hasAlgorithms: true },
-    { id: 'af2l', name: 'Advanced F2L', description: 'Advanced first two layers — 54 trapped & keyhole cases.', sortOrder: 3, hasAlgorithms: true },
+    { id: 'af2l', name: 'Advanced F2L', description: 'Advanced first two layers — 126 trapped & keyhole cases.', sortOrder: 3, hasAlgorithms: true },
     { id: 'oll', name: 'OLL', description: 'Orient last layer — 57 cases to master.', sortOrder: 4, hasAlgorithms: true },
     { id: 'pll', name: 'PLL', description: 'Permute last layer — 21 cases for the final step.', sortOrder: 5, hasAlgorithms: true },
   ],

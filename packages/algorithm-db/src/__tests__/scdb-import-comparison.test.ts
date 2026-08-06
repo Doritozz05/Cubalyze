@@ -24,7 +24,8 @@ interface GeneratedFile { source: string; set: string; subsetId: string; cases: 
 const GENERATED: Record<string, string> = {
   pll: resolve(__dirname, "../../../../pruebas/generated/scdb-pll.json"),
   oll: resolve(__dirname, "../../../../pruebas/generated/scdb-oll.json"),
-  af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l.json"),
+  // AdvancedF2L is seeded from the FUSED dump (fase5-fuse.ts: SCDB+BirdF2L+Quest).
+  af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l-fused.json"),
 };
 
 const SUBSET_IDS = {
@@ -76,7 +77,7 @@ describe.runIf(hasAll)("SCDB Import (parser) vs seed catalog", () => {
   for (const [key, label, expectedCases] of [
     ["pll", "PLL", 21],
     ["oll", "OLL", 57],
-    ["af2l", "AdvancedF2L", 54],
+    ["af2l", "AdvancedF2L", 126],
   ] as const) {
     const gen = loadGenerated(key)!;
     const subsetId = SUBSET_IDS[key];
