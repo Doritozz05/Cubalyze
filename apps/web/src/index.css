@@ -142,7 +142,7 @@
   --ring: #adb5bd;
   --chart-1: #4c9a6a;
   --chart-2: #3a6ea5;
-  --chart-3: #a8650a;
+  --chart-3: #ea580c;
   --chart-4: #868e96;
   --chart-5: #b3261e;
 
@@ -181,21 +181,20 @@
   /* Accent text (light) — each darkened along its own hue so normal-size
      accent text passes WCAG AA on the bone canvas AND on its --*-soft bg:
      ready #2b7749 (5.19:1 bone / 4.73:1 soft), hold #8c3c34 (7.09:1),
-     plus2 #96641e (4.81:1). Pairs stay mutually distinct (ready vs
-     accent-emerald, hold vs dnf, plus2 vs caution). */
+     plus2 #ea580c, pairs stay mutually distinct. */
   --ready: #2b7749;
   --ready-soft: #e7f1ea;
   --hold: #8c3c34;
   --hold-soft: #fbeae8;
   --dnf: #b3261e;
   --dnf-soft: #fcebec;
-  --plus2: #96641e;
-  --plus2-soft: #fbf0dc;
+  --plus2: #ea580c;
+  --plus2-soft: #ffedd5;
   /* Caution accent token (light mode) — warm, clean golden amber (#d97706). */
   --caution: #d97706;
   --caution-soft: #fef3c7;
   /* Chart series (light) — PB / Ao5 / Ao12 for the solve progression chart. */
-  --chart-pb: #fbbf24;
+  --chart-pb: var(--caution);
   --chart-ao5: #ef4444;
   --chart-ao12: #22c55e;
   --sidebar: #ffffff;

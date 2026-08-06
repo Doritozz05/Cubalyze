@@ -3,7 +3,7 @@
 const phases = [
   { label: "Cross", width: "14%", color: "#4c9a6a" },
   { label: "F2L", width: "51%", color: "#3a6ea5" },
-  { label: "OLL", width: "16%", color: "#a8650a" },
+  { label: "OLL", width: "16%", color: "var(--color-caution)" },
   { label: "PLL", width: "19%", color: "#b3261e" },
 ];
 
