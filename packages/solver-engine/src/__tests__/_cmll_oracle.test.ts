@@ -1,15 +1,15 @@
 /**
- * Oráculo min2phase para CMLL: tras setup+alg, ¿el estado es "resuelto excepto
- * M-slice" (estado Roux LSE válido)? min2phase resuelve cualquier estado; si
- * el estado es CMLL-válido, la solución óptima usará pocos movimientos y solo
- * piezas del M-slice (se comprueba pieza a pieza, no por la solución).
+ * min2phase oracle for CMLL: after setup+alg, is the state "solved except the
+ * M-slice" (a valid Roux LSE state)? min2phase solves any state; if the state
+ * is CMLL-valid, the optimal solution will use few moves and only M-slice
+ * pieces (checked piece by piece, not via the solution).
  */
 import { it } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
 
-// generateFromScramble solo aplica el setup a un cubo resuelto:
+// generateFromScramble only applies the setup to a solved cube:
 function setupState(setup: string): CubeState {
   const s = new CubeState();
   for (const tok of setup.split(/\s+/).filter(Boolean)) s.applySequence(tok);
@@ -32,7 +32,7 @@ function cubieHome(kind: "c" | "e", pos: number, fl: string): number {
   return table.findIndex((c) => c.slice().sort().join("") === cols);
 }
 
-it("oráculo: ¿los 39 fallos son estados LSE válidos?", () => {
+it("oracle: are the 39 failures valid LSE states?", () => {
   const gen = JSON.parse(readFileSync(CMLL, "utf-8"));
   let total = 0, lseOkCount = 0;
   const fails: string[] = [];
@@ -42,19 +42,19 @@ it("oráculo: ¿los 39 fallos son estados LSE válidos?", () => {
       const t = s.clone();
       t.applySequence(a.moves.join(" "));
       const fl = flOf(t);
-      // LSE válido: 8 esquinas en casa + aristas E (8-11) y D (4-7) en casa.
-      // Solo U-edges (0-3) y centros libres.
+      // Valid LSE: 8 corners home + E edges (8-11) and D edges (4-7) home.
+      // Only U-edges (0-3) and centers are free.
       const cs = [0, 1, 2, 3, 4, 5, 6, 7].map((p) => cubieHome("c", p, fl));
       const es = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((p) => cubieHome("e", p, fl));
       const cornersOk = cs.every((h, i) => h === i);
       const fixedEdgesOk = [4, 5, 6, 7, 8, 9, 10, 11].every((p) => es[p] === p);
-      const uEdgesFree = es.slice(0, 4); // no importa dónde estén
+      const uEdgesFree = es.slice(0, 4); // their location does not matter
       total++;
       if (cornersOk && fixedEdgesOk) { lseOkCount++; }
       else if (!a.isDefault) fails.push(`${c.caseDef.caseNumber} | ${a.moves.join(" ").slice(0, 45)}`);
     }
   }
-  console.log(`TOTAL: ${total} | estados LSE válidos: ${lseOkCount} (${(100 * lseOkCount / total).toFixed(1)}%)`);
-  console.log(`No-LSE no-default (${fails.length}):`);
+  console.log(`TOTAL: ${total} | valid LSE states: ${lseOkCount} (${(100 * lseOkCount / total).toFixed(1)}%)`);
+  console.log(`Non-LSE non-default (${fails.length}):`);
   for (const f of fails.slice(0, 12)) console.log("  " + f);
 });

@@ -30,7 +30,8 @@ export const METHODS: AlgorithmMethod[] = [
 
 export const SUBSETS: AlgorithmSubset[] = [
   // CFOP
-  { id: sid(8), methodId: mid(1), name: 'Cross', description: 'Cross patterns and X-Cross techniques.', sortOrder: 1, puzzleType: '3x3x3' },
+  // (Cross has no algorithm cases — it's an intuitive phase handled by the
+  // Training tab, so no subset entry is registered here.)
   { id: sid(100), methodId: mid(1), name: 'F2L', description: 'First Two Layers — algorithmic pairs for each slot.', sortOrder: 2, puzzleType: '3x3x3' },
   { id: '00000000-0000-4000-9000-000000000003', methodId: mid(1), parentId: sid(100), name: 'Basic F2L', description: '41 standard F2L cases (easy to advanced pairs).', sortOrder: 1, puzzleType: '3x3x3' },
   { id: '00000000-0000-4000-9000-000000000004', methodId: mid(1), parentId: sid(100), name: 'Advanced F2L', description: '54 Advanced F2L cases (trapped corner, trapped edge, both trapped).', sortOrder: 2, puzzleType: '3x3x3' },

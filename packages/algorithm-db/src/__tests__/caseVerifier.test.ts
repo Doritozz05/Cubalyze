@@ -25,14 +25,14 @@ describe('CaseVerifier — Min2Phase oracle validation', () => {
       expect(result.warnings).toEqual([]);
     });
 
-    it('V perm (has y rotation) passes verification but has warnings', () => {
+    it('F perm (has y rotation) passes verification but has warnings', () => {
       const verifier = new CaseVerifier();
-      const vPermCase = pllCases.find((c) => c.caseNumber === 'V')!;
-      const vPermAlg = algorithms.find(
-        (a) => a.caseId === vPermCase.id && a.isDefault,
+      const fPermCase = pllCases.find((c) => c.caseNumber === 'F')!;
+      const fPermAlg = algorithms.find(
+        (a) => a.caseId === fPermCase.id && a.isDefault,
       )!;
 
-      const result = verifier.verifyAlgorithm(vPermCase, vPermAlg);
+      const result = verifier.verifyAlgorithm(fPermCase, fPermAlg);
 
       // Clean state IS valid → solver works
       expect(result.checks.solverFindsSolution).toBe(true);
@@ -42,7 +42,7 @@ describe('CaseVerifier — Min2Phase oracle validation', () => {
       expect(result.warnings.length).toBeGreaterThan(0);
     });
 
-    it('E perm (net rotation = identity: x\'...x) has no warnings', () => {
+    it('E perm (rotations cancel out: y x\'...x) has no errors', () => {
       const verifier = new CaseVerifier();
       const ePermCase = pllCases.find((c) => c.caseNumber === 'E')!;
       const ePermAlg = algorithms.find(
@@ -54,8 +54,7 @@ describe('CaseVerifier — Min2Phase oracle validation', () => {
       expect(result.passed).toBe(true);
       expect(result.checks.solverFindsSolution).toBe(true);
       expect(result.checks.solverSolutionWorks).toBe(true);
-      // Net rotation = identity → raw state should be clean
-      // Actually, x' and x individually may leave artifacts. Let's just check solver passes.
+      // Rotations individually may leave artifacts; the solver must still pass.
       expect(result.errors).toEqual([]);
     });
 

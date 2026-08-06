@@ -2,11 +2,14 @@ import { PLL_CASES } from './cfop-pll';
 import { OLL_CASES } from './cfop-oll';
 import { ALL_F2L_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES } from './cfop-f2l';
 import { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES } from './ortega';
+import { COLL_CASES } from './coll';
+import { WV_CASES } from './wv';
 import type { AlgorithmCase, Algorithm } from '../schema';
 import { METHODS, SUBSETS } from '../methodRegistry';
 
 export { BASIC_F2L_CASES, ADVANCED_F2L_CASES, ALL_F2L_CASES };
 export { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES };
+export { COLL_CASES, WV_CASES };
 
 /** All seed cases from all methods/subsets. */
 export interface SeedData {
@@ -35,7 +38,7 @@ export function getSeedData(): SeedData {
     }
   }
 
-  // ─── CFOP → F2L (Basic & Advanced) ───────────────────────────────────
+  // ─── CFOP → F2L (Basic & Advanced) ─────────────────────────────────
   for (const f2l of ALL_F2L_CASES) {
     cases.push(f2l.caseDef);
     for (const a of f2l.algorithms) {
@@ -55,6 +58,22 @@ export function getSeedData(): SeedData {
   for (const pbl of ORTEGA_PBL_CASES) {
     cases.push(pbl.caseDef);
     for (const a of pbl.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── CFOP → COLL (generated from SCDB) ─────────────────────────────
+  for (const coll of COLL_CASES) {
+    cases.push(coll.caseDef);
+    for (const a of coll.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── CFOP → Winter Variation (generated from SCDB) ─────────────────
+  for (const wv of WV_CASES) {
+    cases.push(wv.caseDef);
+    for (const a of wv.algorithms) {
       algorithms.push(a);
     }
   }
