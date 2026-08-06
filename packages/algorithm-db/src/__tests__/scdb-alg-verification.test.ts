@@ -31,6 +31,28 @@
  *           solving it) fail this criterion on purpose — they are audited
  *           separately.
  *
+ *   - CLS/SV (last-slot sets, added 2026-08-06): setup + alg → F2L intact and
+ *           the last layer fully ORIENTED (U face all U) — same as OLL. On SCDB
+ *           most of these algs actually SOLVE the cube from their setup (they
+ *           are full last-slot+LL solutions), which implies the OLL state, so
+ *           the OLL criterion is the strict superset that validates both.
+ *           The 2 CLS cases whose algs do neither (CLS FRU23, CLS RFU23) fail
+ *           verification on purpose (SCDB data quirk, same class as the known
+ *           PLL Ub one) and are excluded from the seeds.
+ *
+ *   - ELL/AntiPLL: setup + alg → solved cube (ELL solves the LL edges from a
+ *           corners-solved setup; AntiPLL algs solve their PLL-named cases),
+ *           tolerating a final AUF and whole-cube rotation — same as PLL.
+ *
+ *   - FRUF ("F <R,U> F'"): NOT verified — excluded from the seed catalog.
+ *           Empirical audit (2026-08-06): only 6/42 cases have an alg that
+ *           solves the case; the rest leave F2L solved but the last layer in
+ *           inconsistent states (neither OLL-oriented nor solved), and the
+ *           inverse-alg hypothesis is rejected too. The algs are user-submitted
+ *           "F [RU-gen] F' tricks" without a solve guarantee, so they fail the
+ *           plan's "every alg solves its case" rule and the dump/JSON is kept
+ *           as audit trail only.
+ *
  * The test writes the full report to
  *   pruebas/generated/verification-report.json
  * and prints a console summary.
@@ -39,9 +61,14 @@
  * notation and manual tests on a real cube):
  *   - PLL Ub, alternative `R2 U R U R' U' R3 U' R' U R'`: book Ub but needs a
  *     leading `y2` for this setup (the next alternative on the page DOES carry
- *     it). Without the y2 it leaves a Z-perm.
+ *     it). Without the y2 it leaves a Z-perm. NOTE: the `R3` token is invalid
+ *     under MOVE_RE, so since 2026-08-06 it is excluded by the token filter
+ *     below (and dropped from the seeds) instead of being verified-and-failed.
  *   - PLL T, alternative `l b d' L' U' F U2 L' U' L' U L U' f' S M r u E U' R'`
  *     (expanded in the JSON): does not solve the T setup as listed.
+ *   - SV 7, alternative `R U2' R' U R U' R' …` (the same 9-move sequence
+ *     repeated 4×): a copy-paste artifact that never solves — fails
+ *     verification and is excluded from the seeds.
  *   - The parser normalizes `R2'`→`R2` / `M2'`→`M2` / `U2'`→`U2` on purpose
  *     (a 180° turn is identical either way) and expands wide moves replicating
  *     expandWideMoves() — physically equivalent.
@@ -80,6 +107,12 @@ const GENERATED: Record<string, string> = {
   coll: resolve(__dirname, "../../../../pruebas/generated/scdb-coll.json"),
   cmll: resolve(__dirname, "../../../../pruebas/generated/scdb-cmll.json"),
   wv: resolve(__dirname, "../../../../pruebas/generated/scdb-wv.json"),
+  // CFOP sets added 2026-08-06 (non-AJAX SCDB dumps). FRUF is intentionally
+  // NOT here: its algs do not satisfy the solve criterion (see header).
+  cls: resolve(__dirname, "../../../../pruebas/generated/scdb-cls.json"),
+  sv: resolve(__dirname, "../../../../pruebas/generated/scdb-sv.json"),
+  ell: resolve(__dirname, "../../../../pruebas/generated/scdb-ell.json"),
+  antipll: resolve(__dirname, "../../../../pruebas/generated/scdb-antipll.json"),
 };
 const REPORT_PATH = resolve(__dirname, "../../../../pruebas/generated/verification-report.json");
 
@@ -215,6 +248,12 @@ describe.runIf(hasAll)("SCDB Import: every algorithm solves its case", () => {
   it("verifies all algorithms and writes the report", () => {
     const allResults: AlgResult[] = [];
 
+    // Algs with invalid move tokens (e.g. SCDB typo "U3' F3" on FRUF 2, which
+    // never reaches the seeds — generate_seed_catalog drops them via MOVE_RE)
+    // are skipped so the verifier does not crash on them.
+    const VALID_MOVE = /^([RLUDFB]w?|[rludfbMES]|[xyz])(2|'|\u2032)?$/;
+    const validAlgs = (algs: GenAlg[]) => algs.filter((a) => a.moves.every((m) => VALID_MOVE.test(m)));
+
     for (const [key, label, verifier] of [
       ["pll", "PLL", verifyPll],
       ["oll", "OLL", verifyOll],
@@ -223,9 +262,13 @@ describe.runIf(hasAll)("SCDB Import: every algorithm solves its case", () => {
       ["coll", "COLL", verifyCornersOnly],
       ["cmll", "CMLL", verifyCornersOnly],
       ["wv", "WV", verifyOll],
+      ["cls", "CLS", verifyOll],
+      ["sv", "SV", verifyOll],
+      ["ell", "ELL", verifyPll],
+      ["antipll", "AntiPLL", verifyPll],
     ] as const) {
       const gen = JSON.parse(readFileSync(GENERATED[key], "utf-8")) as GenFile;
-      const results = gen.cases.flatMap((c) => c.algorithms.map((a) => ({ ...verifier(c.caseDef, a), set: label })));
+      const results = gen.cases.flatMap((c) => validAlgs(c.algorithms).map((a) => ({ ...verifier(c.caseDef, a), set: label })));
       allResults.push(...results);
 
       const byStatus = groupBy(results, (r) => r.status);

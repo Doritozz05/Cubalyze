@@ -32,6 +32,12 @@ const GENERATED: Record<string, { file: string; set: string }> = {
   af2l: { file: "scdb-af2l.json", set: "AdvancedF2L" },
   coll: { file: "scdb-coll.json", set: "COLL" },
   wv: { file: "scdb-wv.json", set: "WV" },
+  // CFOP sets added 2026-08-06 (FRUF is intentionally not seeded: its algs do
+  // not pass verification, so the seed never contains it).
+  cls: { file: "scdb-cls.json", set: "CLS" },
+  sv: { file: "scdb-sv.json", set: "SV" },
+  ell: { file: "scdb-ell.json", set: "ELL" },
+  antipll: { file: "scdb-antipll.json", set: "AntiPLL" },
 };
 
 const REPORT_PATH = resolve(__dirname, "../../../../pruebas/generated/verification-report.json");
@@ -62,6 +68,12 @@ function collapseConsecutive(moves: string[]): string[] {
   return out;
 }
 
+// Algs with invalid move tokens (e.g. SCDB "R3" on PLL Ub, "U3' F3" on FRUF 2)
+// are dropped from the seeds by generate_seed_catalog's MOVE_RE, so the
+// catalog tests ignore them too (same rule as the verifier).
+const VALID_MOVE = /^([RLUDFB]w?|[rludfbMES]|[xyz])(2|'|\u2032)?$/;
+const isInvalidAlg = (moves: string[]) => !moves.every((m) => VALID_MOVE.test(m));
+
 const hasAll = Object.values(GENERATED).every(({ file }) =>
   existsSync(resolve(GEN_ROOT, file)),
 ) && existsSync(REPORT_PATH);
@@ -90,6 +102,13 @@ describe.runIf(hasAll)("SCDB seed catalog (full regeneration)", () => {
       let checked = 0;
       const missing: string[] = [];
       for (const c of gen.cases) {
+        // Cases where EVERY alg failed verification (or has invalid move
+        // tokens) are legitimately absent from the seed — generate_seed_catalog
+        // skips them, because the web requires exactly 1 default alg per case.
+        const hasVerified = c.algorithms.some(
+          (a) => !isInvalidAlg(a.moves) && !failKeys.has(`${set}|${c.caseDef.caseNumber}|${a.moves.join(" ")}`),
+        );
+        if (!hasVerified) continue;
         const caseDef = casesByKey.get(`${c.caseDef.subsetId}|${c.caseDef.caseNumber}`);
         if (!caseDef) {
           missing.push(`case ${c.caseDef.caseNumber} not in seed`);
@@ -101,6 +120,7 @@ describe.runIf(hasAll)("SCDB seed catalog (full regeneration)", () => {
         for (const a of c.algorithms) {
           const rk = `${set}|${c.caseDef.caseNumber}|${a.moves.join(" ")}`;
           if (failKeys.has(rk)) continue; // only verified algs are required
+          if (isInvalidAlg(a.moves)) continue; // invalid tokens are dropped from the seed
           const slot = a.notes?.match(/Slot:\s*(FR|FL|BL|BR)/)?.[1] ?? "";
           checked++;
           if (!present.has(`${slot}|${JSON.stringify(collapseConsecutive(a.moves))}`)) {
@@ -181,6 +201,24 @@ describe.runIf(hasAll)("SCDB seed catalog (full regeneration)", () => {
       }
     }
     expect([...slots].sort()).toEqual(["BL", "BR", "FL", "FR"]);
+  });
+
+  it("CLS / SV / ELL / AntiPLL are complete in the seed (every case with verified algs)", () => {
+    for (const [file, subsetId] of [
+      ["scdb-cls.json", "00000000-0000-4000-9000-000000000008"],
+      ["scdb-sv.json", "00000000-0000-4000-9000-000000000009"],
+      ["scdb-ell.json", "00000000-0000-4000-9000-000000000010"],
+      ["scdb-antipll.json", "00000000-0000-4000-9000-000000000012"],
+    ] as const) {
+      const gen = loadJson<GeneratedFile>(resolve(GEN_ROOT, file))!;
+      const expected = gen.cases.filter((c) =>
+        c.algorithms.some((a) => !isInvalidAlg(a.moves) && !failKeys.has(`${gen.set}|${c.caseDef.caseNumber}|${a.moves.join(" ")}`)),
+      ).length;
+      const actual = seed.cases.filter((c) => c.subsetId === subsetId).length;
+      console.log(`[${gen.set}] seed cases: ${actual}/${gen.cases.length} (expected with verified algs: ${expected})`);
+      expect(actual).toBe(expected);
+      expect(actual).toBeGreaterThan(0);
+    }
   });
 
   it("catalog summary", () => {

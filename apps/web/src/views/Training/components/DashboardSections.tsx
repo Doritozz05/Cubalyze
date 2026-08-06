@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, type AlgorithmMethod } from "@cubeforge/algorithm-db";
+import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubeforge/algorithm-db";
+import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
 import { ReviewQueueSection } from "./";
 import { TrainingCalendar } from "../TrainingCalendar";
 import type { PuzzleCategory } from "@/types";
@@ -85,10 +87,12 @@ export function getPhaseModesWithIcons(phaseType: PhasePracticeType): PhaseModeD
 
 const METHOD_ACCENTS: Record<string, string> = {
   CFOP: "bg-ink/70", Roux: "bg-ink/60", ZZ: "bg-ink/50", Petrus: "bg-ink/40",
+  "Advanced 3x3": "bg-ink/30",
   Ortega: "bg-ink/70", CLL: "bg-ink/60", EG: "bg-ink/50",
 };
 const METHOD_ICONS: Record<string, React.ElementType> = {
   CFOP: Layers, Roux: Box, ZZ: Zap, Petrus: Pyramid,
+  "Advanced 3x3": Sparkles,
   Ortega: Grid2x2, CLL: Layers, EG: Grid2x2,
 };
 
@@ -150,6 +154,50 @@ export function FlatDashboard({
   const method = METHODS.find((m) => m.id === activeMethodId);
   const phases = method ? getPhasesForMethod(method.name) : [];
   const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
+
+  // ── Subset drill/recognize cards ("Algorithm Sets") ───────────────
+  // Subsets of the active method that are NOT already surfaced by a phase
+  // card (e.g. COLL, Winter Variation, or every subset of "Advanced 3x3",
+  // a method that has no phases). Subsets with zero seed cases (VLS, ZBLL,
+  // CMLL…) are omitted — they cannot be drilled yet. Case counts include
+  // child subsets (drilling a parent drills its children).
+  const phaseSubsetIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!method) return ids;
+    for (const phase of phases) {
+      const sid = findSubsetId(method.id, phase.id);
+      if (sid) ids.add(sid);
+    }
+    return ids;
+  }, [method, phases]);
+
+  const subsetCards = useMemo(() => {
+    if (!method) return [];
+    const { cases } = getSeedData();
+    const countBySubset = new Map<string, number>();
+    for (const c of cases) {
+      countBySubset.set(c.subsetId, (countBySubset.get(c.subsetId) ?? 0) + 1);
+    }
+    // A subset is already covered when it (or any descendant) matches the
+    // subset resolved by one of the method's phase cards.
+    const coversPhaseSubset = (subset: AlgorithmSubset): boolean => {
+      if (phaseSubsetIds.has(subset.id)) return true;
+      return getChildSubsets(subset.id).some((c) => phaseSubsetIds.has(c.id));
+    };
+    const cards: { subset: AlgorithmSubset; caseCount: number }[] = [];
+    for (const subset of getSubsetsForMethod(method.id)) {
+      if (coversPhaseSubset(subset)) continue;
+      const direct = countBySubset.get(subset.id) ?? 0;
+      const childCount = getChildSubsets(subset.id).reduce(
+        (s, c) => s + (countBySubset.get(c.id) ?? 0),
+        0,
+      );
+      const caseCount = direct + childCount;
+      if (caseCount <= 0) continue;
+      cards.push({ subset, caseCount });
+    }
+    return cards.sort((a, b) => a.subset.sortOrder - b.subset.sortOrder);
+  }, [method, phaseSubsetIds]);
 
   return (
     <>
@@ -246,12 +294,14 @@ export function FlatDashboard({
                   <p className="text-[0.62rem] text-ink-3">{method.description}</p>
                 </div>
               </div>
-              <button
-                onClick={() => onFullSolve(method.id)}
-                className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
-              >
-                <Target className="size-3" />Full Solve
-              </button>
+              {phases.length > 0 && (
+                <button
+                  onClick={() => onFullSolve(method.id)}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
+                >
+                  <Target className="size-3" />Full Solve
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -269,65 +319,95 @@ export function FlatDashboard({
             </div>
           </section>
 
-          {/* Exercise cards */}
-          <section className="shrink-0">
-            <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">Exercises</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {phases.map((phase) => (
-                <ExerciseCard
-                  key={phase.id}
-                  phase={phase}
-                  onDrill={() => {
-                    const sid = findSubsetId(method.id, phase.id);
-                    if (sid) onDrill(method.id, phase.id, sid);
-                  }}
-                  onRecognize={() => {
-                    const sid = findSubsetId(method.id, phase.id);
-                    if (sid) onRecognize(method.id, phase.id, sid);
-                  }}
-                  onPracticeMode={(modeId) => {
-                    const pt = getPhasePracticeType(phase.id);
-                    if (pt) onPracticeMode(method.id, phase.id, phase.name, pt, modeId);
-                  }}
-                  onStats={() => onStats(method.id, phase.id, phase.name)}
-                  phaseModes={
-                    !phase.hasAlgorithms
-                      ? (() => { const pt = getPhasePracticeType(phase.id); return pt ? getPhaseModesWithIcons(pt) : []; })()
-                      : null
-                  }
-                />
-              ))}
-            </div>
-          </section>
+          {/* Exercise cards — only for methods with training phases (CFOP,
+              Roux…). "Advanced 3x3" has no phases, so its subsets below are
+              the only practice surface. */}
+          {phases.length > 0 && (
+            <section className="shrink-0">
+              <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">Exercises</h2>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {phases.map((phase) => (
+                  <ExerciseCard
+                    key={phase.id}
+                    phase={phase}
+                    onDrill={() => {
+                      const sid = findSubsetId(method.id, phase.id);
+                      if (sid) onDrill(method.id, phase.id, sid);
+                    }}
+                    onRecognize={() => {
+                      const sid = findSubsetId(method.id, phase.id);
+                      if (sid) onRecognize(method.id, phase.id, sid);
+                    }}
+                    onPracticeMode={(modeId) => {
+                      const pt = getPhasePracticeType(phase.id);
+                      if (pt) onPracticeMode(method.id, phase.id, phase.name, pt, modeId);
+                    }}
+                    onStats={() => onStats(method.id, phase.id, phase.name)}
+                    phaseModes={
+                      !phase.hasAlgorithms
+                        ? (() => { const pt = getPhasePracticeType(phase.id); return pt ? getPhaseModesWithIcons(pt) : []; })()
+                        : null
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Algorithm Sets — subset drill/recognize cards for every subset
+              not already surfaced by a phase card (COLL, Winter Variation,
+              CLS, SV, ELL, Anti PLL…). Drill/Recognize use phaseId "" exactly
+              like the Algorithms → Training bridge. */}
+          {subsetCards.length > 0 && (
+            <section className="shrink-0">
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3">Algorithm Sets</h2>
+                <span className="text-[0.58rem] text-ink-3/60">drill or recognize each set</span>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {subsetCards.map(({ subset, caseCount }) => (
+                  <SubsetCard
+                    key={subset.id}
+                    subset={subset}
+                    caseCount={caseCount}
+                    onDrill={() => onDrill(method.id, "", subset.id)}
+                    onRecognize={() => onRecognize(method.id, "", subset.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Quick Summary + Calendar */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <section className="lg:col-span-1 rounded-xl border border-line bg-surface p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="size-3.5 text-ink-2" />
-                <h2 className="text-[0.7rem] font-semibold text-ink">Quick Summary</h2>
-              </div>
-              <div className="space-y-2.5">
-                {phases.slice(0, 5).map((phase) => {
-                  const stats = phaseStatsMap[phase.id];
-                  const hasData = stats != null && stats.totalAttempts > 0;
-                  return (
-                    <div key={phase.id} className="flex items-center gap-2">
-                      <div className={cn("size-1.5 rounded-full", PHASE_DOT[phase.id] ?? "bg-ink-3")} />
-                      <span className="text-[0.62rem] text-ink-2 flex-1">{phase.name}</span>
-                      <span className={cn(
-                        "nums text-[0.58rem] font-medium",
-                        hasData ? (stats.accuracy >= 80 ? "text-ready" : stats.accuracy >= 50 ? "text-caution" : "text-hold") : "text-ink-3/50",
-                      )}>
-                        {hasData ? `${stats.accuracy}%` : "—"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+            {phases.length > 0 && (
+              <section className="lg:col-span-1 rounded-xl border border-line bg-surface p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="size-3.5 text-ink-2" />
+                  <h2 className="text-[0.7rem] font-semibold text-ink">Quick Summary</h2>
+                </div>
+                <div className="space-y-2.5">
+                  {phases.slice(0, 5).map((phase) => {
+                    const stats = phaseStatsMap[phase.id];
+                    const hasData = stats != null && stats.totalAttempts > 0;
+                    return (
+                      <div key={phase.id} className="flex items-center gap-2">
+                        <div className={cn("size-1.5 rounded-full", PHASE_DOT[phase.id] ?? "bg-ink-3")} />
+                        <span className="text-[0.62rem] text-ink-2 flex-1">{phase.name}</span>
+                        <span className={cn(
+                          "nums text-[0.58rem] font-medium",
+                          hasData ? (stats.accuracy >= 80 ? "text-ready" : stats.accuracy >= 50 ? "text-caution" : "text-hold") : "text-ink-3/50",
+                        )}>
+                          {hasData ? `${stats.accuracy}%` : "—"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
-            <section className="lg:col-span-2 rounded-xl border border-line bg-surface p-4">
+            <section className={cn("rounded-xl border border-line bg-surface p-4", phases.length > 0 ? "lg:col-span-2" : "lg:col-span-3")}>
               <TrainingCalendar />
             </section>
           </div>
@@ -343,6 +423,50 @@ export function FlatDashboard({
         </div>
       )}
     </>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Subset card (Algorithm Sets — drill/recognize a whole subset)
+   ─────────────────────────────────────────────────────────────────────── */
+
+export function SubsetCard({
+  subset,
+  caseCount,
+  onDrill,
+  onRecognize,
+}: {
+  subset: AlgorithmSubset;
+  caseCount: number;
+  onDrill: () => void;
+  onRecognize: () => void;
+}) {
+  return (
+    <motion.div
+      whileTap={{ scale: 0.98 }}
+      className="group flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:border-ink/12 hover:bg-surface-2/60 hover:shadow-sm"
+    >
+      <div className="flex items-center gap-2.5">
+        <div className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
+          <Sparkles className="size-3.5 text-ink-2" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{subset.name}</span>
+          </div>
+          <span className="nums text-[0.6rem] text-ink-3">{caseCount} case{caseCount !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{subset.description}</p>
+      <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:pt-2">
+        <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
+          Drill
+        </button>
+        <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
+          Recognize
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
