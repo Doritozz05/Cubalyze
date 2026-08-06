@@ -201,11 +201,11 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
           {/* Diagram — uses primaryAlgorithm (first in order) */}
-          {caseData.diagramType === "2d-top" && caseData.diagram2D && (
+          {(caseData.diagramType === "2d-top" || caseData.diagram2D) && (
             <div className="flex justify-center">
               {caseData.puzzleType === "2x2x2" ? (
                 <Case2x2Diagram
-                  faceletColors={caseData.diagram2D.faceletColors}
+                  faceletColors={caseData.diagram2D?.faceletColors}
                   setupScramble={caseData.setupScramble}
                   moves={undefined}
                   style={visualizationStyle ?? "full-color"}
@@ -214,7 +214,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                 />
               ) : (
                 <CaseDiagram
-                  arrows={caseData.diagram2D.arrows}
+                  arrows={caseData.diagram2D?.arrows}
                   setupScramble={caseData.setupScramble}
                   moves={undefined}
                   style={visualizationStyle ?? "full-color"}

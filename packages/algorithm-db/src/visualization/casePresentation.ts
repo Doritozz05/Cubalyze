@@ -81,8 +81,14 @@ export function resolveVisualizationStyleForSubset(
   subsetName: string | undefined,
 ): VisualizationStyle {
   if (!subsetName) return 'full-color';
-  return SUBSET_VISUALIZATION[subsetName]?.style
-    ?? (subsetName.toLowerCase().includes('oll') ? 'yellow-gray' : 'full-color');
+  if (SUBSET_VISUALIZATION[subsetName]?.style) {
+    return SUBSET_VISUALIZATION[subsetName].style;
+  }
+  const lower = subsetName.toLowerCase();
+  if (lower === 'coll') return 'coll';
+  if (lower.includes('winter') || lower.includes('wv') || lower.includes('vls')) return 'wv';
+  if (lower.includes('oll')) return 'yellow-gray';
+  return 'full-color';
 }
 
 /** Resolve the visual policy from the case's canonical subset. */

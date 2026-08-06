@@ -410,12 +410,12 @@ export function AlgorithmDrillView({
             <div className="shrink-0 flex items-stretch gap-4 rounded-xl border border-line bg-surface p-4">
               {/* Left: Case diagram */}
               <div className="shrink-0 flex items-center justify-center">
-                {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d" || (!selectedCase.diagram2D && selectedCase.setupScramble)) ? (
+                {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d") ? (
                   <Case3DDiagram caseData={selectedCase} algorithm={defaultAlgorithm} className="w-28 sm:w-36" />
-                ) : selectedCase && selectedCase.diagramType === "2d-top" && selectedCase.diagram2D ? (
+                ) : selectedCase && (selectedCase.diagramType === "2d-top" || selectedCase.diagram2D) ? (
                   selectedCase.puzzleType === '2x2x2' ? (
                     <Case2x2Diagram
-                      faceletColors={selectedCase.diagram2D.faceletColors}
+                      faceletColors={selectedCase.diagram2D?.faceletColors}
                       setupScramble={selectedCase.setupScramble}
                       moves={undefined}
                       style={visualizationStyle}
@@ -424,7 +424,7 @@ export function AlgorithmDrillView({
                     />
                   ) : (
                     <CaseDiagram
-                      arrows={selectedCase.diagram2D.arrows}
+                      arrows={selectedCase.diagram2D?.arrows}
                       setupScramble={selectedCase.setupScramble}
                       moves={undefined}
                       style={visualizationStyle}

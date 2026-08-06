@@ -13,21 +13,39 @@ import { getSeedData } from '../seed/index';
 describe('canonical case presentation', () => {
   const { cases, algorithms } = getSeedData();
 
-  it('uses subset policy: OLL is yellow-gray and PLL is full-color', () => {
+  it('uses subset policy: OLL is yellow-gray, PLL is full-color, COLL is coll, and WV is wv', () => {
     expect(resolveVisualizationStyleForSubset('OLL')).toBe('yellow-gray');
     expect(resolveVisualizationStyleForSubset('PLL')).toBe('full-color');
+    expect(resolveVisualizationStyleForSubset('COLL')).toBe('coll');
+    expect(resolveVisualizationStyleForSubset('Winter Variation')).toBe('wv');
 
     const ollCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000002');
     const pllCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000001');
+    const collCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000014');
+    const wvCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000005');
     expect(ollCase).toBeDefined();
     expect(pllCase).toBeDefined();
+    expect(collCase).toBeDefined();
+    expect(wvCase).toBeDefined();
 
     const ollPlan = buildCaseRenderPlan(ollCase!);
     const pllPlan = buildCaseRenderPlan(pllCase!);
+    const collPlan = buildCaseRenderPlan(collCase!);
+    const wvPlan = buildCaseRenderPlan(wvCase!);
+
     expect(ollPlan.visualizationStyle).toBe('yellow-gray');
     expect(pllPlan.visualizationStyle).toBe('full-color');
-    expect(ollPlan.diagramColors.every((color) => color === 'Y' || color === '#')).toBe(true);
-    expect(pllPlan.diagramColors.some((color) => color !== '#' && color !== 'Y')).toBe(true);
+    expect(collPlan.visualizationStyle).toBe('coll');
+    expect(wvPlan.visualizationStyle).toBe('wv');
+
+    // COLL: top edges are 'Y', side strip edges are '#'
+    expect(collPlan.diagramColors[1]).toBe('Y'); // UB top edge
+    expect(collPlan.diagramColors[46]).toBe('#'); // UB side edge
+    expect(collPlan.diagramColors[47]).not.toBe('#'); // ULB corner side sticker is colored
+
+    // WV: top layer uses yellow-gray, middle/bottom layers use full color
+    expect(wvPlan.diagramColors[4]).toBe('Y'); // U center
+    expect(wvPlan.diagramColors[22]).toBe('G'); // F center in middle layer
   });
 
   it('always derives the case state from setupScramble when algorithm moves disagree', () => {

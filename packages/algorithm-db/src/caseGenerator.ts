@@ -3,7 +3,7 @@ import type { Algorithm, AlgorithmCase } from './schema';
 
 // ─── Visualization Styles ───────────────────────────────────────────────────
 
-export type VisualizationStyle = 'full-color' | 'yellow-gray' | 'orientation-only';
+export type VisualizationStyle = 'full-color' | 'yellow-gray' | 'orientation-only' | 'coll' | 'wv';
 
 export interface VisualizationConfig {
   style: VisualizationStyle;
@@ -14,7 +14,10 @@ export interface VisualizationConfig {
 export const SUBSET_VISUALIZATION: Record<string, VisualizationConfig> = {
   PLL: { style: 'full-color', topFace: 'U', frontFace: 'F' },
   OLL: { style: 'yellow-gray', topFace: 'U', frontFace: 'F' },
-  COLL: { style: 'full-color', topFace: 'U', frontFace: 'F' },
+  COLL: { style: 'coll', topFace: 'U', frontFace: 'F' },
+  'Winter Variation': { style: 'wv', topFace: 'U', frontFace: 'F' },
+  WV: { style: 'wv', topFace: 'U', frontFace: 'F' },
+  VLS: { style: 'wv', topFace: 'U', frontFace: 'F' },
   CMLL: { style: 'full-color', topFace: 'U', frontFace: 'F' },
   ZBLL: { style: 'full-color', topFace: 'U', frontFace: 'F' },
   F2L: { style: 'full-color', topFace: 'U', frontFace: 'F' },
@@ -98,6 +101,35 @@ function getInversions(array: number[]): number {
   return inversions;
 }
 
+const CUBE_PIECES: number[][] = [
+  // 8 corners
+  [6, 18, 38],  // UFL
+  [8, 9, 20],   // URF
+  [2, 11, 45],  // UBR
+  [0, 36, 47],  // ULB
+  [24, 44, 27], // DFL
+  [26, 15, 29], // DFR
+  [53, 42, 33], // DBL
+  [51, 17, 35], // DBR
+
+  // 12 edges
+  [3, 37],      // UL
+  [5, 10],      // UR
+  [7, 19],      // UF
+  [1, 46],      // UB
+  [21, 41],     // FL
+  [23, 12],     // FR
+  [50, 39],     // BL
+  [48, 14],     // BR
+  [25, 28],     // DF
+  [16, 30],     // DR
+  [52, 32],     // DB
+  [43, 34],     // DL
+
+  // 6 centers
+  [4], [13], [22], [31], [40], [49],
+];
+
 // ─── Case State Generator ───────────────────────────────────────────────────
 
 export class CaseStateGenerator {
@@ -154,6 +186,32 @@ export class CaseStateGenerator {
       const color = FACE_TO_COLOR[face] ?? '#';
       if (style === 'yellow-gray') {
         result[i] = color === 'Y' ? 'Y' : '#';
+      } else if (style === 'coll') {
+        // COLL style:
+        // - Top edges (1, 3, 5, 7) and top center (4): always Yellow 'Y'
+        // - Side strip edges (46 on B, 37 on L, 10 on R, 19 on F): grayed out '#'
+        // - All corner facelets: full color to show corner orientation and permutation
+        if (i === 4 || i === 1 || i === 3 || i === 5 || i === 7) {
+          result[i] = 'Y';
+        } else if (i === 46 || i === 37 || i === 10 || i === 19) {
+          result[i] = '#';
+        } else {
+          result[i] = color;
+        }
+      } else if (style === 'wv') {
+        // Winter Variation (WV) style:
+        // - OLL style (yellow/gray) for pieces that HAVE Yellow
+        // - Full WCA color for non-top (F2L) pieces that DO NOT HAVE Yellow (e.g. F2L corner with White sticker)
+        const piece = CUBE_PIECES.find((p) => p.includes(i));
+        const pieceHasYellow = piece
+          ? piece.some((idx) => (FACE_TO_COLOR[faceletString[idx]] ?? '#') === 'Y')
+          : false;
+
+        if (pieceHasYellow) {
+          result[i] = color === 'Y' ? 'Y' : '#';
+        } else {
+          result[i] = color;
+        }
       } else {
         result[i] = color;
       }
