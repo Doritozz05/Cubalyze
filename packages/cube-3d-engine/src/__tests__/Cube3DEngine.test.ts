@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Mesh, MeshBasicMaterial } from 'three';
 import { CubeMeshFactory } from '../core/CubeMeshFactory';
 import { CubeModel } from '../core/CubeModel';
+import { CORNER_HOME_POSITION, EDGE_HOME_POSITION } from '../core/Cube3DEngine';
 
 describe('setF2LMaskGray logic', () => {
   let factory: CubeMeshFactory;
@@ -12,35 +13,77 @@ describe('setF2LMaskGray logic', () => {
     model = new CubeModel(factory);
   });
 
-  it('identifies yellow U-layer pieces and FR slot pieces correctly', () => {
+  // Mirrors the engine's mask rule (SpeedcubeQuest stickering): the pair stays
+  // colored wherever it is; U-layer pieces and out-of-place F2L pieces gray.
+  function maskGrayed(cubies: ReadonlyArray<{
+    gridX: number; gridY: number; gridZ: number;
+    initialGridX: number; initialGridY: number; initialGridZ: number;
+  }>, pair?: { homeC: number; homeE: number } | null) {
+    const pairKeys = pair
+      ? new Set([
+          `${CORNER_HOME_POSITION[pair.homeC].x},${CORNER_HOME_POSITION[pair.homeC].y},${CORNER_HOME_POSITION[pair.homeC].z}`,
+          `${EDGE_HOME_POSITION[pair.homeE].x},${EDGE_HOME_POSITION[pair.homeE].y},${EDGE_HOME_POSITION[pair.homeE].z}`,
+        ])
+      : null;
+    return cubies.filter((c) => {
+      const key = `${c.initialGridX},${c.initialGridY},${c.initialGridZ}`;
+      if (pairKeys?.has(key)) return false;
+      const inHome = c.gridX === c.initialGridX && c.gridY === c.initialGridY && c.gridZ === c.initialGridZ;
+      return c.initialGridY === 1 || !inHome;
+    });
+  }
+
+  it('in a solved cube grays exactly the U layer (9 pieces) and keeps the pair colored', () => {
     const cubies = model.getLogicalState();
-    
-    // In Basic F2L: only initialGridY === 1 is grayed
-    const basicYellowPieces = cubies.filter(c => c.initialGridY === 1);
-    expect(basicYellowPieces.length).toBe(9);
 
-    // In Advanced F2L: initialGridY === 1 PLUS corner (1, -1, 1) and edge (1, 0, 1)
-    const af2lCorner = cubies.find(
-      c => c.initialGridX === 1 && c.initialGridY === -1 && c.initialGridZ === 1
-    );
-    const af2lEdge = cubies.find(
-      c => c.initialGridX === 1 && c.initialGridY === 0 && c.initialGridZ === 1
-    );
+    // Basic F2L pair = FR slot pieces (DFR corner + FR edge).
+    const grayed = maskGrayed(cubies, { homeC: 4, homeE: 8 });
+    expect(grayed.length).toBe(9); // U layer only
 
-    expect(af2lCorner).toBeDefined();
-    expect(af2lEdge).toBeDefined();
+    const grayedKeys = new Set(grayed.map((c) => `${c.initialGridX},${c.initialGridY},${c.initialGridZ}`));
+    // The pair is never grayed.
+    expect(grayedKeys.has('1,-1,1')).toBe(false); // DFR corner
+    expect(grayedKeys.has('1,0,1')).toBe(false); // FR edge
+    // Solved cross + other slots stay colored.
+    expect(grayedKeys.has('0,-1,1')).toBe(false); // DF edge
+  });
 
-    const af2lGrayedPieces = cubies.filter(
-      c =>
-        c.initialGridY === 1 ||
-        (c.initialGridX === 1 && c.initialGridY === -1 && c.initialGridZ === 1) ||
-        (c.initialGridX === 1 && c.initialGridY === 0 && c.initialGridZ === 1)
-    );
+  it('keeps a both-on-top pair colored while the displaced U pieces gray', () => {
+    // Emulate a both-on-top state with a real 4-piece swap: the pair (DFR
+    // corner 4 + FR edge 8) sits in the U layer, and two U pieces moved into
+    // the DFR/FR slots.
+    const cubies = model.getLogicalState();
+    const dfr = cubies.find((c) => c.initialGridX === 1 && c.initialGridY === -1 && c.initialGridZ === 1)!;
+    const fr = cubies.find((c) => c.initialGridX === 1 && c.initialGridY === 0 && c.initialGridZ === 1)!;
+    const u1 = cubies.find((c) => c.initialGridX === 0 && c.initialGridY === 1 && c.initialGridZ === 1)!; // UF corner home
+    const u2 = cubies.find((c) => c.initialGridX === 1 && c.initialGridY === 1 && c.initialGridZ === 0)!; // UR edge home
 
-    // 9 (U layer) + 1 (DFR corner) + 1 (FR edge) = 11 pieces total in AF2L
-    expect(af2lGrayedPieces.length).toBe(11);
+    // Swap current positions: pair → U layer, U pieces → slots.
+    const swap = (a: any, b: any) => {
+      [a.gridX, a.gridY, a.gridZ, b.gridX, b.gridY, b.gridZ] =
+        [b.gridX, b.gridY, b.gridZ, a.gridX, a.gridY, a.gridZ];
+    };
+    swap(dfr, u1);
+    swap(fr, u2);
+
+    const grayed = maskGrayed(cubies, { homeC: 4, homeE: 8 });
+    const grayedKeys = new Set(grayed.map((c) => `${c.initialGridX},${c.initialGridY},${c.initialGridZ}`));
+    // The pair stays colored even though it now sits in the U layer.
+    expect(grayedKeys.has('1,-1,1')).toBe(false);
+    expect(grayedKeys.has('1,0,1')).toBe(false);
+    // The displaced U pieces (now in the slots) gray out.
+    expect(grayedKeys.has('0,1,1')).toBe(true);
+    expect(grayedKeys.has('1,1,0')).toBe(true);
+    // Exactly the U layer (9) is grayed; all solved F2L stays colored.
+    expect(grayed.length).toBe(9);
+  });
+
+  it('without a pair grays the U layer only (legacy 2×2 / no-setup behavior)', () => {
+    const cubies = model.getLogicalState();
+    expect(maskGrayed(cubies, null).length).toBe(9);
   });
 });
+
 
 describe('sticker z-fighting guard', () => {
   let factory: CubeMeshFactory;

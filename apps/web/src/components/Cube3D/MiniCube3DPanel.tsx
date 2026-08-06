@@ -26,7 +26,7 @@ export interface MiniCube3DPanelProps {
  */
 export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
   const { canvasRef, containerRef, isReady, initFailed, contextEvicted, recentMoves, calibrate, reset, applyScramble } =
-    useCube3D({ maxRecentMoves: 8, scramble });
+    useCube3D({ maxRecentMoves: 8, scramble, connectSmartCube: true });
 
   return (
     <div

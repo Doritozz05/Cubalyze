@@ -42,7 +42,7 @@ export function applyCaseRenderPlan(
   }
 
   if (plan.isF2L) {
-    engine.setF2LMaskGray(CASE_RENDER_GRAY, plan.isAdvancedF2L);
+    engine.setF2LMaskGray(CASE_RENDER_GRAY, plan.pair);
   }
 
   engine.sceneManager.render();

@@ -97,6 +97,26 @@ describe('canonical case presentation', () => {
     expect(resolveAlgorithmDiagramRotation(current)).toBe(135);
   });
 
+  it('identifies the case pair for F2L and Advanced F2L plans (SpeedcubeQuest stickering)', () => {
+    const f2lCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000003');
+    expect(f2lCase).toBeDefined();
+
+    const plan = buildCaseRenderPlan(f2lCase!);
+    expect(plan.isF2L).toBe(true);
+    // Basic F2L pair = FR slot pieces (DFR corner 4 + FR edge 8).
+    expect(plan.pair).toEqual({ homeC: 4, homeE: 8 });
+
+    const advCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000004');
+    expect(advCase).toBeDefined();
+    const advPlan = buildCaseRenderPlan(advCase!);
+    expect(advPlan.isF2L).toBe(true);
+    expect(advPlan.isAdvancedF2L).toBe(true);
+    // The pair comes from the trapped-piece rule, never hardcoded to FR.
+    expect(advPlan.pair).toBeDefined();
+    expect(advPlan.pair!.homeC).toBeGreaterThanOrEqual(4);
+    expect(advPlan.pair!.homeE).toBeGreaterThanOrEqual(4);
+  });
+
   it('keeps the preferred F2L slot and camera radius in the render plan', () => {
     const f2lCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000003');
     expect(f2lCase).toBeDefined();

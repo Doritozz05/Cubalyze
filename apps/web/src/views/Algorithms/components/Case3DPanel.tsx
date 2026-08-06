@@ -47,7 +47,7 @@ const SLOT_LABELS = [
 
 /** F2L slot of an alg from its `notes` (e.g. "Slot: FR"). Null if it has none. */
 function slotOfAlgorithm(alg: Algorithm): string | null {
-  const match = alg.notes?.match(/Slot:\s*(FR|FL|BL|BR)/);
+  const match = alg.notes?.match(/Slot:\s*(FR|FL|BL|BR|ALL)/);
   return match ? match[1] : null;
 }
 
@@ -88,12 +88,16 @@ export function Case3DPanel({
   // Every F2L alg declares its slot in `notes` ("Slot: FR/FL/BL/BR"). The slot
   // selector rotates the camera AND filters the list, like SpeedcubeQuest.
   // Algs without a slot (customs) are always shown.
+  //
+  // "Slot: ALL" = canonic algs (BirdF2L/quest) written for the FR slot: the
+  // case is solved in every slot by rotating the cube (slots-model verified
+  // 672/672), so they are universal and shown in any slot.
   const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";
   const filteredAlgorithms = useMemo(() => {
     if (!isF2L) return algorithms;
     return algorithms.filter((a) => {
       const slot = slotOfAlgorithm(a);
-      return slot === null || slot === slotKey;
+      return slot === null || slot === "ALL" || slot === slotKey;
     });
   }, [algorithms, isF2L, slotKey]);
 

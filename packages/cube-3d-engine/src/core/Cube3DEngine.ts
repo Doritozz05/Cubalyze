@@ -442,7 +442,7 @@ export class Cube3DEngine {
   // graying across OLL / PLL / F2L / Cross / XCross / EOCross visualizations:
   //
   //   setLayerStickerGray(axis, value)   — gray a whole face layer (U-layer)
-  //   setF2LMaskGray(grayColor, adv)     — gray U-layer + AF2L slot pieces
+  //   setF2LMaskGray(grayColor, pair)    — gray U-layer except the case pair
   //   setPhaseStickering(mask)           — gray every non-target piece (generic)
   //
   // All three push into `grayedStickers` and are restored by `clearLayerGray`.
@@ -519,33 +519,59 @@ export class Cube3DEngine {
   /**
    * Applies F2L-specific masking to the 3D cube model.
    *
-   * Grays out:
-   * 1. All Last-Layer / OLL pieces containing Yellow (initialGridY === 1).
-   * 2. In Advanced F2L (isAdvanced === true): White-Orange-Green corner & Orange-Green edge.
+   * Mirrors SpeedcubeQuest's F2L stickering exactly:
+   *   - colored: the case pair (corner + edge) wherever it is (own slot, U
+   *     layer, or trapped in another slot), and every piece of layers 1-2
+   *     (F2L) that is currently in its solved home position;
+   *   - grayed: the whole U layer except the pair, and any F2L piece that is
+   *     out of place (e.g. the displaced corner of a trapped-slot case).
    *
-   * Keeps colored:
-   * 1. All F2L pair pieces (in Basic F2L) or active AF2L pieces.
-   * 2. All solved cross and slot pieces.
+   * A cubie is part of the pair when its home grid position (initialGridX/Y/Z)
+   * matches the home position of `pair.homeC` (corner) or `pair.homeE` (edge).
+   * A cubie is "in its place" when its current grid position (gridX/Y/Z)
+   * equals its home position. When no pair is given (or the case is 2×2), the
+   * whole U layer is grayed (legacy behavior).
    *
    * @param grayColor CSS color string (default '#505050')
-   * @param isAdvanced If true (AF2L), also grays out White-Orange-Green corner & Orange-Green edge
+   * @param pair The case pair piece IDs ({@link CORNER_HOME_POSITION} / {@link EDGE_HOME_POSITION}
+   *   indices) identified from the setup — see casePresentation.identifyPairFromState.
    */
-  public setF2LMaskGray(grayColor: string = '#505050', isAdvanced: boolean = false): void {
+  public setF2LMaskGray(
+    grayColor: string = '#505050',
+    pair?: { homeC: number; homeE: number } | null,
+  ): void {
     if (!this.model || !this.factory) return;
+
+    // Home grid positions of the pair pieces (which cubie permanently carries
+    // each piece, even after scrambling).
+    let pairKeys: Set<string> | null = null;
+    if (pair) {
+      const c = CORNER_HOME_POSITION[pair.homeC];
+      const e = EDGE_HOME_POSITION[pair.homeE];
+      if (c && e) {
+        pairKeys = new Set([
+          `${c.x},${c.y},${c.z}`,
+          `${e.x},${e.y},${e.z}`,
+        ]);
+      }
+    }
 
     const cubies = this.model.getLogicalState();
     for (const cubie of cubies) {
-      // In F2L, pieces with initialGridY === 1 belong to the U-layer (Yellow facelets / OLL pieces).
-      const isYellowPiece = cubie.initialGridY === 1;
+      const key = `${cubie.initialGridX},${cubie.initialGridY},${cubie.initialGridZ}`;
+      // The pair is always kept colored (even when it sits in the U layer for
+      // both-on-top cases, or trapped in a wrong slot for advanced cases).
+      if (pairKeys?.has(key)) continue;
 
-      // In Advanced F2L (AF2L), the White-Orange-Green corner (1, -1, 1) and
-      // Orange-Green edge (1, 0, 1) should also be grayed out.
-      const isAdvancedF2LSlotPiece =
-        isAdvanced &&
-        ((cubie.initialGridX === 1 && cubie.initialGridY === -1 && cubie.initialGridZ === 1) ||
-         (cubie.initialGridX === 1 && cubie.initialGridY === 0 && cubie.initialGridZ === 1));
+      const inHome =
+        cubie.gridX === cubie.initialGridX &&
+        cubie.gridY === cubie.initialGridY &&
+        cubie.gridZ === cubie.initialGridZ;
 
-      if (isYellowPiece || isAdvancedF2LSlotPiece) {
+      // U-layer pieces (Yellow facelets / OLL pieces) are grayed, plus any F2L
+      // piece that is out of its solved place (it belongs to a slot that is
+      // currently being occupied by the trapped pair).
+      if (cubie.initialGridY === 1 || !inHome) {
         this.grayCubieGroup(cubie.mesh, grayColor);
       }
     }
