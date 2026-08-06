@@ -191,13 +191,8 @@
   --dnf-soft: #fcebec;
   --plus2: #96641e;
   --plus2-soft: #fbf0dc;
-  /* Inspection countdown — dark amber on the light canvas so caution text
-     clears WCAG AA. #eab308 (yellow-500) sat at 1.82:1 on bone — unusable
-     for the normal-size caution text in training views and solve lists —
-     so light mode drops to amber-700 (#b45309, 4.76:1 on bone), which keeps
-     a warm hue distinct from +2's ochre (#a8650a). Dark mode keeps the
-     bright yellow-400 (#facc15, 10.8:1 on the dark surface). */
-  --caution: #b45309;
+  /* Caution accent token (light mode) — warm, clean golden amber (#d97706). */
+  --caution: #d97706;
   --caution-soft: #fef3c7;
   /* Chart series (light) — PB / Ao5 / Ao12 for the solve progression chart. */
   --chart-pb: #fbbf24;

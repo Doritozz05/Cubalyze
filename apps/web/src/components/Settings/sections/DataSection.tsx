@@ -255,10 +255,10 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             <button
               onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); setImportMode('json'); }}
               disabled={!onImportSolves}
-              className="rounded-lg border border-ready/25 bg-ready/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ready transition-all hover:bg-ready/10 hover:border-ready/40 cursor-pointer"
+              className="rounded-lg border border-phase-indigo/25 bg-phase-indigo/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-phase-indigo/10 hover:border-phase-indigo/40 cursor-pointer"
               title="Restores a CubeForge JSON export exactly — per-solve puzzle type and all metadata preserved."
             >
-              Import CubeForge JSON (no data loss)
+              Import CubeForge JSON <span className="text-phase-indigo text-[0.7rem] font-normal">(no data loss)</span>
             </button>
           </div>
         </div>
@@ -292,7 +292,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             <div className="flex items-center gap-2">
               <Brain className="size-4 text-ink-2" />
               <h4 className="text-[0.85rem] font-medium text-ink">csTimer format</h4>
-              <span className="rounded-full bg-caution/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-caution">Recommended</span>
+              <span className="rounded-full border border-caution/30 bg-caution/10 px-2 py-0.5 text-[0.58rem] font-medium text-caution">Recommended</span>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
               Semicolon-delimited format natively importable by csTimer, Twisty Timer, and most cubing apps. Times in milliseconds, epoch dates.
@@ -311,12 +311,12 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
         </div>
 
         {/* ── Export ALL sessions (JSON) ───────────────────────────── */}
-        <div className="group flex items-center justify-between gap-6 rounded-xl border border-ready/20 bg-ready/3 p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="group flex items-center justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <FileJson className="size-4 text-ready" />
+              <FileJson className="size-4 text-ink-2" />
               <h4 className="text-[0.85rem] font-medium text-ink">Export all sessions (JSON)</h4>
-              <span className="rounded-full bg-ready/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-ready">No data loss</span>
+              <span className="rounded-full border border-phase-indigo/30 bg-phase-indigo/10 px-2 py-0.5 text-[0.58rem] font-medium text-phase-indigo">No data loss</span>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
               Exports <strong className="text-ink-2">every session</strong> with all metadata per solve (including puzzle type and smart/manual source).
@@ -326,7 +326,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <button
             onClick={handleExportAllJSON}
             disabled={!onExportAllJSON || exportingAll}
-            className="shrink-0 rounded-lg border border-ready/30 bg-ready/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ready transition-all hover:bg-ready/10 hover:border-ready/50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {exportingAll ? 'Exporting…' : 'Export all'}
           </button>
@@ -395,11 +395,11 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                   {importMode === 'json' ? (
                     /* ── Full-fidelity CubeForge JSON flow (no category) ── */
                     <>
-                      <div className="flex items-start gap-3 rounded-lg border border-ready/20 bg-ready/5 p-3">
-                        <Check className="mt-0.5 size-4 shrink-0 text-ready" />
+                      <div className="flex items-start gap-3 rounded-lg border border-phase-indigo/25 bg-phase-indigo/5 p-3">
+                        <Check className="mt-0.5 size-4 shrink-0 text-phase-indigo" />
                         <div>
-                          <p className="text-[0.72rem] font-medium text-ready">
-                            CubeForge JSON — no data loss
+                          <p className="text-[0.72rem] font-medium text-ink flex items-center gap-2">
+                            CubeForge JSON <span className="rounded-full border border-phase-indigo/30 bg-phase-indigo/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-phase-indigo">no data loss</span>
                           </p>
                           <p className="mt-0.5 text-[0.62rem] text-ink-3 leading-relaxed">
                             Every solve keeps its original puzzle type (2x2, 3x3, …), method, notes, source and timestamp —
@@ -423,12 +423,12 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         className={cn(
                           'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 px-6 transition-colors cursor-pointer',
                           dragOver
-                            ? 'border-ready bg-ready/5'
-                            : 'border-line hover:border-ready/30 hover:bg-surface-2/50',
+                            ? 'border-ink bg-surface-2'
+                            : 'border-line hover:border-ink/30 hover:bg-surface-2/50',
                         )}
                       >
                         <div className="grid size-12 place-items-center rounded-full bg-surface-2">
-                          <FileUp className={cn('size-5', dragOver ? 'text-ready' : 'text-ink-3/50')} />
+                          <FileUp className={cn('size-5', dragOver ? 'text-ink' : 'text-ink-3/50')} />
                         </div>
                         <div className="text-center">
                           <p className="text-[0.78rem] font-medium text-ink">
@@ -476,9 +476,9 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                     <>
                       <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-2/50 px-3 py-2">
                         <div className="flex min-w-0 items-center gap-2">
-                          <Grid3x3 className="size-3.5 shrink-0 text-ready" />
+                          <Grid3x3 className="size-3.5 shrink-0 text-ink-2" />
                           <p className="truncate text-[0.7rem] text-ink">
-                            Importing into <strong className="text-ready font-semibold">{importCategory}</strong>
+                            Importing into <strong className="text-ink font-semibold">{importCategory}</strong>
                           </p>
                         </div>
                         <button
@@ -539,10 +539,10 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
 
               {importState === 'preview' && importPreview && (
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-3 rounded-lg border border-ready/20 bg-ready/5 p-3">
-                    <Check className="size-4 text-ready shrink-0" />
+                  <div className="flex items-center gap-3 rounded-lg border border-line bg-surface-2/60 p-3">
+                    <Check className="size-4 text-ink-2 shrink-0" />
                     <div>
-                      <p className="text-[0.72rem] font-medium text-ready">
+                      <p className="text-[0.72rem] font-medium text-ink">
                         Detected: {importPreview.format === 'cstimer' || importPreview.format === 'cstimer-json' ? 'csTimer' : importPreview.format === 'twistytimer' ? 'Twisty Timer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
                         {importCategory && <span className="text-ink-2"> · into <strong>{importCategory}</strong></span>}
                       </p>
