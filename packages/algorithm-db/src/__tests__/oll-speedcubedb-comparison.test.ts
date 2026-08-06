@@ -26,7 +26,7 @@ import { getSeedData } from "../seed/index";
 
 // ─── Parse SpeedCubeDB jcube data from the HTML ────────────────────────────
 
-const HTML_PATH = resolve(__dirname, "../../../../pruebas/speedcubedboll.html");
+const HTML_PATH = resolve(__dirname, "../../../../pruebas/raw/scdb/speedcubedboll.html");
 const HAS_HTML = existsSync(HTML_PATH);
 
 interface JcubeData {
