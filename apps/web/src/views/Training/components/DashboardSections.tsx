@@ -169,7 +169,11 @@ export function FlatDashboard({
       if (sid) ids.add(sid);
     }
     return ids;
-  }, [method, phases]);
+    // phases is recreated on every render (getPhasesForMethod maps a new
+    // array); depend on a stable key (method id + phase ids) so the memo
+    // actually caches instead of recomputing every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [method?.id, phases.map((p) => p.id).join(",")]);
 
   const subsetCards = useMemo(() => {
     if (!method) return [];
@@ -179,7 +183,8 @@ export function FlatDashboard({
       countBySubset.set(c.subsetId, (countBySubset.get(c.subsetId) ?? 0) + 1);
     }
     // A subset is already covered when it (or any descendant) matches the
-    // subset resolved by one of the method's phase cards.
+    // subset resolved by one of the method's phase cards. (Parent/child
+    // relationships in the registry are 1 level deep today.)
     const coversPhaseSubset = (subset: AlgorithmSubset): boolean => {
       if (phaseSubsetIds.has(subset.id)) return true;
       return getChildSubsets(subset.id).some((c) => phaseSubsetIds.has(c.id));
@@ -192,9 +197,9 @@ export function FlatDashboard({
         (s, c) => s + (countBySubset.get(c.id) ?? 0),
         0,
       );
-      const caseCount = direct + childCount;
-      if (caseCount <= 0) continue;
-      cards.push({ subset, caseCount });
+      // Every subset the user asked for gets a card; zero-case sets (VLS,
+      // ZBLL…) render disabled as "coming soon" instead of being hidden.
+      cards.push({ subset, caseCount: direct + childCount });
     }
     return cards.sort((a, b) => a.subset.sortOrder - b.subset.sortOrder);
   }, [method, phaseSubsetIds]);
@@ -441,28 +446,42 @@ export function SubsetCard({
   onDrill: () => void;
   onRecognize: () => void;
 }) {
+  const disabled = caseCount <= 0;
   return (
     <motion.div
-      whileTap={{ scale: 0.98 }}
-      className="group flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:border-ink/12 hover:bg-surface-2/60 hover:shadow-sm"
+      whileTap={disabled ? undefined : { scale: 0.98 }}
+      className={cn(
+        "group flex flex-col gap-3 rounded-xl border p-4 transition-all duration-200",
+        disabled
+          ? "border-line/50 bg-surface/60 opacity-70"
+          : "border-line bg-surface hover:border-ink/12 hover:bg-surface-2/60 hover:shadow-sm",
+      )}
     >
       <div className="flex items-center gap-2.5">
         <div className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
           <Sparkles className="size-3.5 text-ink-2" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{subset.name}</span>
-          </div>
-          <span className="nums text-[0.6rem] text-ink-3">{caseCount} case{caseCount !== 1 ? "s" : ""}</span>
+          <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{subset.name}</span>
+          <span className="nums text-[0.6rem] text-ink-3">
+            {disabled ? "coming soon" : `${caseCount} case${caseCount !== 1 ? "s" : ""}`}
+          </span>
         </div>
       </div>
       <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{subset.description}</p>
       <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:pt-2">
-        <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
+        <button
+          onClick={onDrill}
+          disabled={disabled}
+          className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
+        >
           Drill
         </button>
-        <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
+        <button
+          onClick={onRecognize}
+          disabled={disabled}
+          className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
+        >
           Recognize
         </button>
       </div>
