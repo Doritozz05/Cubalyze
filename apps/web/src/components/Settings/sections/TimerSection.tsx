@@ -68,7 +68,7 @@ export function TimerSection() {
             Manual time entry
           </h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Replace the timer with a text input to type times directly (like csTimer). Type "1450" or "14.50" to log a solve. Inspection and hold-to-start are bypassed.
+            Replace the timer with a text input to type times directly (like csTimer). Integers are centiseconds: "10" → 0.10s, "1450" → 14.50s. Also accepts "1:23.45", "DNF", "15.50+" (+2) and several times separated by commas. Inspection and hold-to-start are bypassed.
           </p>
         </div>
         <div className="mt-0.5 shrink-0">

@@ -36,7 +36,13 @@ export function useManualSolves(deps: ManualSolvesDeps) {
         source: "manual",
         puzzleType: puzzleCategoryToType(puzzle),
       });
-      toast.success(`Logged: ${(time / 1000).toFixed(2)}s`);
+      const label =
+        penalty === "DNF"
+          ? "DNF"
+          : penalty === "+2"
+            ? `${(time / 1000).toFixed(2)}s+2`
+            : `${(time / 1000).toFixed(2)}s`;
+      toast.success(`Logged: ${label}`);
       resetScramble();
     },
     [addSolve, currentScramble, puzzle, resetScramble, methodPref, scrambleDisplay],

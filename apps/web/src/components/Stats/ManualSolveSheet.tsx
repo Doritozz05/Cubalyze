@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import type { Penalty, SolveMethod, SolveMethod as _SM } from "@/types";
 import { RandomStateGenerator } from "@cubeforge/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
+import {
+  formatManualPreview,
+  parseTimeInput,
+} from "@/utils/parseTimeInput";
 import { toast } from "sonner";
 
 export interface ManualSolveSheetProps {
@@ -29,40 +33,6 @@ export interface ManualSolveSheetProps {
 
 const METHODS: SolveMethod[] = ["CFOP", "Roux", "ZZ", "Petrus"];
 const PENALTIES: Penalty[] = ["none", "+2", "DNF"];
-
-/**
- * Parse a time string into milliseconds. Accepts:
- *  - "12.34"     → 12340 ms
- *  - "1:23.45"   → 83450 ms
- *  - "1:02.03"   → 62030 ms
- *  - "75"        → 75000 ms
- * Returns null if invalid.
- */
-function parseTime(input: string): number | null {
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return null;
-  if (trimmed.includes(":")) {
-    const parts = trimmed.split(":");
-    if (parts.length !== 2) return null;
-    const m = Number(parts[0]);
-    const s = Number(parts[1]);
-    if (!Number.isFinite(m) || !Number.isFinite(s) || m < 0 || s < 0)
-      return null;
-    return Math.round(m * 60_000 + s * 1000);
-  }
-  if (trimmed.includes(".")) {
-    const [secStr, csStr = ""] = trimmed.split(".");
-    const sec = Number(secStr);
-    const csExp = Math.pow(10, csStr.length || 0);
-    const cs = Number(csStr);
-    if (!Number.isFinite(sec) || !Number.isFinite(cs) || sec < 0 || cs < 0)
-      return null;
-    return Math.round(sec * 1000 + (cs / csExp) * 1000);
-  }
-  const sec = Number(trimmed);
-  if (!Number.isFinite(sec) || sec < 0) return null;
-  return Math.round(sec * 1000);
-}
 
 /**
  * Right-side drawer Sheet for manual solve entry. Submitting calls the
@@ -97,9 +67,8 @@ export function ManualSolveSheet({
     }
   }, [open, initialScramble, defaultMethod]);
 
-  const parsedMs = useMemo(() => parseTime(time), [time]);
-  const timeValid =
-    parsedMs != null && parsedMs > 0 && parsedMs <= 600_000; // cap at 10 min
+  const parsed = useMemo(() => parseTimeInput(time), [time]);
+  const timeValid = parsed != null && parsed.length > 0;
   const scrambleValid = scramble.trim().length > 0;
   const canSubmit = timeValid && scrambleValid && !submitting;
 
@@ -108,17 +77,26 @@ export function ManualSolveSheet({
   };
 
   const submit = async () => {
-    if (!canSubmit || parsedMs == null) return;
+    if (!canSubmit || parsed == null || parsed.length === 0) return;
     setSubmitting(true);
     try {
-      await onSubmit({
-        time: parsedMs,
-        scramble: scramble.trim(),
-        method,
-        notes: notes.trim(),
-        penalty,
-      });
-      toast.success("Solve logged");
+      // Multi-solve support: every parsed entry is logged with the same
+      // scramble / method / notes. Penalties written in the string
+      // ("DNF", "15.50+") win; otherwise fall back to the toggle buttons.
+      const scrambleValue = scramble.trim();
+      const notesValue = notes.trim();
+      for (const entry of parsed) {
+        await onSubmit({
+          time: entry.timeMs,
+          scramble: scrambleValue,
+          method,
+          notes: notesValue,
+          penalty: entry.penalty !== "none" ? entry.penalty : penalty,
+        });
+      }
+      toast.success(
+        parsed.length > 1 ? `${parsed.length} solves logged` : "Solve logged",
+      );
       onClose();
     } catch (e) {
       toast.error("Couldn't add solve");
@@ -188,22 +166,26 @@ export function ManualSolveSheet({
                       timeValid ? "text-ink-3" : "text-dnf",
                     )}
                   >
-                    {parsedMs != null && timeValid
-                      ? `${(parsedMs / 1000).toFixed(2)} s`
+                    {parsed != null && parsed.length > 0
+                      ? formatManualPreview(parsed)
                       : "—"}
                   </span>
                 </div>
                 <Input
-                  placeholder="e.g. 12.34"
+                  placeholder="e.g. 12.34, 1450, 1:23.45"
                   inputMode="decimal"
+                  maxLength={80}
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   className="h-10 text-base"
                   autoFocus
                 />
                 <p className="mt-2 text-[0.6rem] text-ink-3">
-                  Accepts <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">ss.cs</code> or{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">m:ss.cs</code>.
+                  Integers are centiseconds ({" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">10</code> → 0.10s,{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">1450</code> → 14.50s). Add{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">DNF</code> or{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">15.50+</code>; separate several with commas.
                 </p>
               </section>
 
