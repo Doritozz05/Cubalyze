@@ -329,11 +329,11 @@ export function TimerContainer({
                     }}
                     placeholder="Add note..."
                     autoFocus
-                    className="h-6 w-28 max-lg:w-36 max-lg:h-9 rounded-full bg-surface-3/90 px-2.5 text-xs text-ink placeholder:text-ink-3 outline-none focus:ring-1 focus:ring-accent/50"
+                    className="h-6 w-28 max-lg:w-36 max-lg:h-9 rounded-full bg-surface-2 border border-line px-2.5 text-xs text-ink placeholder:text-ink-3 outline-none focus:border-ink/40"
                   />
                   <button
                     type="submit"
-                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-accent hover:bg-surface-3 transition-colors cursor-pointer"
+                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ready hover:bg-ready-soft transition-colors cursor-pointer"
                     title="Save note"
                   >
                     <Check className="size-3.5 max-lg:size-4" />
@@ -341,7 +341,7 @@ export function TimerContainer({
                   <button
                     type="button"
                     onClick={() => setIsEditingNote(false)}
-                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ink-3 hover:text-ink transition-colors cursor-pointer"
+                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                     title="Cancel"
                   >
                     <X className="size-3.5 max-lg:size-4" />
@@ -358,8 +358,8 @@ export function TimerContainer({
                   className={cn(
                     "h-6 px-2 rounded-full transition-all duration-150 cursor-pointer outline-none select-none flex items-center gap-1.5 max-lg:h-10 max-lg:px-3 text-[0.72rem] max-lg:text-sm font-medium",
                     lastSolve.note
-                      ? "text-accent bg-accent/10 hover:bg-accent/20 font-bold ring-1 ring-accent/30"
-                      : "text-ink-3 hover:bg-surface-3 hover:text-ink"
+                      ? "text-phase-indigo bg-phase-indigo/10 hover:bg-phase-indigo/20 font-semibold ring-1 ring-phase-indigo/30"
+                      : "text-ink-3 hover:bg-surface-2 hover:text-ink"
                   )}
                   title={lastSolve.note ? `Note: ${lastSolve.note}` : "Add note"}
                 >

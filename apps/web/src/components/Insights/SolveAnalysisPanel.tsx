@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, MessageSquare, Check, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
@@ -88,6 +88,8 @@ export function SolveAnalysisPanel({
   // ── Replay state ──────────────────────────────────────────────────────────
   const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
   const [, setReplaying] = useState(false);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteText, setNoteText] = useState(solve.note ?? "");
 
   // Stable solve object for the ReplaySection (avoids unnecessary re-creates).
   const replaySolve = useMemo(
@@ -119,12 +121,12 @@ export function SolveAnalysisPanel({
                 <button
                   onClick={cyclePenalty}
                   className={cn(
-                    "rounded px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide transition-colors hover:opacity-80",
+                    "rounded border px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide transition-colors hover:opacity-80 cursor-pointer",
                     solve.penalty === "DNF"
-                      ? "bg-dnf-soft text-dnf"
+                      ? "border-dnf/30 bg-dnf-soft text-dnf"
                       : solve.penalty === "+2"
-                        ? "bg-plus2-soft text-plus2"
-                        : "bg-surface-2 text-ink-3",
+                        ? "border-plus2/30 bg-plus2-soft text-plus2"
+                        : "border-ready/30 bg-ready-soft text-ready",
                   )}
                 >
                   {solve.penalty === "none" ? "Clean" : solve.penalty}
@@ -133,14 +135,16 @@ export function SolveAnalysisPanel({
               <TooltipContent side="bottom">Click to cycle penalty</TooltipContent>
             </Tooltip>
             {solve.method ? (
-              <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-ink-2">
+              <span className="rounded border border-phase-indigo/30 bg-phase-indigo/10 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-phase-indigo">
                 {solve.method}
               </span>
             ) : null}
             <span
               className={cn(
-                "rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide",
-                solve.source === "smart" ? "text-ink-2" : "text-ink-3",
+                "rounded border px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide",
+                solve.source === "smart"
+                  ? "border-phase-emerald/30 bg-phase-emerald/10 text-phase-emerald"
+                  : "border-line bg-surface-2 text-ink-2",
               )}
             >
               {solve.source === "smart" ? "Smart cube" : "Manual"}
@@ -181,6 +185,70 @@ export function SolveAnalysisPanel({
           </p>
         ) : (
           <p className="text-[0.7rem] text-ink-3">No analysis yet</p>
+        )}
+      </div>
+
+      {/* ── Note section ── */}
+      <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-3.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="size-3.5 text-phase-indigo" />
+            <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-ink-3">
+              Note
+            </span>
+          </div>
+          {!isEditingNote && (
+            <button
+              onClick={() => {
+                setNoteText(solve.note ?? "");
+                setIsEditingNote(true);
+              }}
+              className="flex items-center gap-1 text-[0.68rem] text-ink-3 transition-colors hover:text-ink cursor-pointer"
+            >
+              <Pencil className="size-3" />
+              {solve.note ? "Edit" : "Add note"}
+            </button>
+          )}
+        </div>
+
+        {isEditingNote ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const trimmed = noteText.trim();
+              onUpdateSolve({ note: trimmed || null });
+              setIsEditingNote(false);
+            }}
+            className="flex items-center gap-2 mt-1"
+          >
+            <input
+              type="text"
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Add a note for this solve..."
+              autoFocus
+              className="flex-1 rounded-md border border-line bg-surface-2/60 px-3 py-1.5 text-[0.78rem] text-ink placeholder:text-ink-3/60 outline-none focus:border-ink/40"
+            />
+            <Button type="submit" size="sm" className="h-8 px-3 text-xs bg-ink text-surface hover:bg-ink/90 cursor-pointer">
+              <Check className="size-3.5 mr-1" />
+              Save
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditingNote(false)}
+              className="h-8 px-2 text-xs text-ink-3 hover:text-ink cursor-pointer"
+            >
+              <X className="size-3.5" />
+            </Button>
+          </form>
+        ) : solve.note ? (
+          <p className="text-[0.78rem] text-ink leading-relaxed whitespace-pre-wrap">
+            {solve.note}
+          </p>
+        ) : (
+          <p className="text-[0.7rem] text-ink-3/60 italic">No notes added to this solve.</p>
         )}
       </div>
 
