@@ -267,7 +267,11 @@ export default function App() {
   // ?solve= from window.location.search).
   const handleAnalyzeSolve = useCallback(
     (solve: Solve) => {
-      navigate(`/insights?solve=${encodeURIComponent(solve.id)}`);
+      // replace: don't spam history when analyzing several solves in a row
+      // (the previous implementation used history.replaceState too).
+      navigate(`/insights?solve=${encodeURIComponent(solve.id)}`, {
+        replace: true,
+      });
     },
     [navigate],
   );
