@@ -1096,6 +1096,20 @@ function PhaseBreakdownSection({
                   {p.phaseName}
                 </span>
                 {p.phaseName === "Cross" &&
+                  metrics.detectionReport?.crossColor && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30 cursor-help"
+                          style={{ background: FACE_HEX[metrics.detectionReport.crossColor] }}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {colorName(metrics.detectionReport.crossColor)} cross
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                {p.phaseName === "Cross" &&
                   metrics.detectionReport?.crossType &&
                   metrics.detectionReport.crossType !== "plain" && (
                     <Tooltip>
@@ -1159,8 +1173,6 @@ function PhaseBreakdownSection({
 function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
   const cfop = metrics.cfop!;
   const crossType = metrics.detectionReport?.crossType;
-  const crossColor = metrics.detectionReport?.crossColor;
-  const crossFace = metrics.detectionReport?.crossFace;
   const crossValue =
     crossType === "xcross"
       ? "XCross"
@@ -1169,10 +1181,6 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
         : crossType === "plain"
           ? "Plain"
           : "—";
-  const crossSub =
-    crossColor && crossFace
-      ? `${colorName(crossColor)} on ${crossFace}`
-      : undefined;
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="CFOP details" />
@@ -1180,7 +1188,6 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
         <DetailTile
           label="Cross"
           value={crossValue}
-          sub={crossSub}
           accent={
             crossType === "xxcross"
               ? "amber"
@@ -1274,13 +1281,13 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
                 {colors && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="flex items-center gap-0.5">
+                      <span className="flex items-center gap-1">
                         <span
-                          className="inline-block size-2.5 rounded-sm border border-white/20"
+                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
                           style={{ background: colors[0] }}
                         />
                         <span
-                          className="inline-block size-2.5 rounded-sm border border-white/20"
+                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
                           style={{ background: colors[1] }}
                         />
                       </span>
