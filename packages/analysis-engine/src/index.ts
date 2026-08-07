@@ -20,6 +20,14 @@ export { ANALYSIS_PIPELINE_VERSION } from './version';
 // ─── Phase Recognition ───────────────────────────────────────────────────────
 export { PhaseSplitter } from './phases/PhaseSplitter';
 
+// ─── Reconstruction Case Recognition (formal, convention-independent) ────────
+export { recognizeSolve } from './recognition/solveRecognition';
+export type {
+  SolveRecognition,
+  RecognizedPair,
+  RecognizeSolveOptions,
+} from './recognition/solveRecognition';
+
 // ─── Metrics ────────────────────────────────────────────────────────────────
 export { TPSCalculator } from './metrics/TPSCalculator';
 export { PauseDetector } from './metrics/PauseDetector';

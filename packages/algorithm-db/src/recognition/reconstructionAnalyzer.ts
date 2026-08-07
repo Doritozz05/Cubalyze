@@ -254,6 +254,14 @@ export function analyzeReconstruction(input: {
   phases: InputPhase[];
   initialState?: CubeState;
   /**
+   * The EXACT state to start the replay from (smart-cube solves: the cube's
+   * real state at solve start, e.g. derived from the timeline's first
+   * entry). When provided, `scramble` is NOT applied — the caller supplies
+   * the full initial state. This is what keeps the recognition bit-for-bit
+   * aligned with a timeline seeded from real facelets.
+   */
+  startState?: CubeState;
+  /**
    * The solver's inspection (e.g. "x2") — reconstructions from CubeRoot /
    * Quest write the moves in the solver's coordinate system, so the replay
    * must start from inspection·solved (the solver's grip) instead of solved.
@@ -302,17 +310,22 @@ export function analyzeReconstruction(input: {
   // numbered turns, glued tokens), so setups like "r U2' R' … M" replay
   // exactly as the seed's CaseStateGenerator parses them.
   const scrambleTokens = input.scramble ? tokenize(input.scramble) : [];
-  const rawStart = input.initialState
-    ? input.initialState.clone()
-    : input.inspection
-      ? (() => {
-          const s = new CubeState();
-          s.applySequence(input.inspection!);
-          return s;
-        })()
-      : new CubeState();
+  // startState (exact replay start) wins over the scramble pipeline.
+  const rawStart = input.startState
+    ? input.startState.clone()
+    : input.initialState
+      ? input.initialState.clone()
+      : input.inspection
+        ? (() => {
+            const s = new CubeState();
+            s.applySequence(input.inspection!);
+            return s;
+          })()
+        : new CubeState();
   const scrambled = rawStart.clone();
-  for (const t of scrambleTokens) scrambled.applySequence(t);
+  if (!input.startState) {
+    for (const t of scrambleTokens) scrambled.applySequence(t);
+  }
 
   // ── 2a. Inspection recovery (Quest-style streams strip it) ─────────────
   // First check the raw replay (no inspection): if it already returns to a
