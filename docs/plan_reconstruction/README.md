@@ -505,7 +505,7 @@ smartcube de captura no cambia (solo la presentación del replay).
 
 ---
 
-## Fase 3 — (opcional) UI de pegado y futuro
+
 
 - **Pegado en web:** caja de texto en `ReconstructionsView` → `analyzeSolveText()` →
   render con `ReplaySection` existente (el adaptador `reconToSolve` de `reconData.ts` ya da el
@@ -514,6 +514,66 @@ smartcube de captura no cambia (solo la presentación del replay).
   rehaciendo `signatures`/`caseIndex` limpios sobre el catálogo que sí se quedó. No antes.
 
 ---
+
+---
+
+## Fase 3 — Conectar `analyzeSolveText` a la vista de Reconstructions — ✅ ejecutada (2026-08-07)
+
+**Lo que pediste:** pasar `setup + inspection + solution` desde el record y **mostrar el
+reconstruction resultante** en la vista de detalle.
+
+**Implementación:**
+
+- **`apps/web/src/views/Reconstructions/OurDetectionPanel.tsx`** (nuevo): corre
+  `analyzeSolveText({ setup: record.scramble, inspection: record.recognition.inspection, solution:
+  record.text, method: 'CFOP', totalTimeMs })` en un `useMemo` (guard: solo CFOP 3×3; try/catch
+  para que un transcript incoherente nunca rompa la vista). Renderiza NUESTRA detección:
+  - Cross: badge `plain/xcross/xxcross` (con tooltip del par) + cuadrado del color de la cruz.
+  - 4 pares F2L: chip de slot (`FR/BR/BL/FL`), los **dos cuadrados de color** del par, badge
+    `premade`, chip `auf`, moves y conteo.
+  - OLL/PLL: moves + badge `skipped`.
+  - Footer: rotaciones (con tokens), TPS, badge `Coherent/Inconsistent` + contador de warnings
+    (tooltip con la lista).
+  - **Moves en el frame del solver**: cada move se remapea con
+    `getOrientationAtIndex(reconstruction.orientationTimeline, idx)` +
+    `MoveTransformer.toDisplayNotation` (la misma dinámica del replay) — así `R' D R` se lee
+    como lo escribió el reconstructor y compara 1:1 con el raw text de abajo.
+- **`ReconstructionDetailView.tsx`**: `<OurDetectionPanel record={record} />` entre el Replay
+  y la tabla Steps raw (contraste directo raw vs nuestro).
+- **`SolveAnalysisPanel.tsx`**: `FACE_HEX`/`FACE_NAME`/`colorName` ahora son exports (los
+  reutiliza el panel en vez de duplicarlos).
+
+**Validación:** web typecheck 0 errores · eslint limpio · analysis-engine 195/195 · build
+analysis-engine + math-core OK.
+
+**🔬 Hallazgo de datos importante (verificado sobre los 3007 solves CFOP 3×3 `crossVerified`):**
+
+| Camino | Resuelve |
+|---|---|
+| `scramble + stream conjugado (con slices M/E/S)` | **27.4%** |
+| `scramble + stream conjugado (solo caras — pipeline actual)` | **20.1%** |
+| `scramble + baked phases como rotaciones reales` | 21.2% |
+| baked `recognition.finalSolved` (analyzer viejo, borrado) | **93.7%** (optimista: contaba no-resueltos como resueltos) |
+
+**Conclusión:** el baked `finalSolved: true` del 93.7% es del analyzer viejo "horrible" —
+sobrestimaba. La verdad física está en el 20-27%. La causa dominante del resto:
+transcripciones imperfectas de CubeRoot/reconz (moves que faltan/sobran, wide moves con slice
+no conjugable, rotaciones eliminadas). **Los slices arreglan +7.3pp** (20.1→27.4) — los
+wide moves (`u`, `r`, `f'`…) se expanden a cara+slice, y el slice no se conjuga ni se aplica
+(hoy se dropea). Fix viable = aplicarlos al estado en `analyzeSolveText` + soporte de slices
+en el engine (queda como decisión para Fase 4). El ejemplo exacto del usuario (cuberoot-2510,
+Liam Walton, `z y // Inspection`, 62 STM) resuelve **perfecto** y el panel lo muestra completo.
+
+---
+
+## Fase 4 — (futuro) UI de pegado y casos
+
+- **Pegado en web:** caja de texto en `ReconstructionsView` → `analyzeSolveText()` →
+  render con `ReplaySection` existente (el adaptador `reconToSolve` de `reconData.ts` ya da el
+  shape a `Solve`; se reemplaza por el output real en vez de JSON bakeado).
+- **Slices:** aplicar M/E/S al estado en `analyzeSolveText` (+engine) para recuperar el +7pp.
+- **Futuro (solo si la base está sólida):** detección de casos con nombres (F2L nº, OLL/PLL)
+  rehaciendo `signatures`/`caseIndex` limpios sobre el catálogo que sí se quedó. No antes.
 
 ## Orden de ejecución y validación
 

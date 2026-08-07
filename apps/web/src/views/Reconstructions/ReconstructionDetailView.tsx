@@ -27,6 +27,7 @@ import {
   type ReconFullRecord,
   type ReconPhase,
 } from "./reconData";
+import { OurDetectionPanel } from "./OurDetectionPanel";
 import { formatDisplayDate } from "./ReconstructionsView";
 
 // ─── Phase type / color helpers ─────────────────────────────────────────────
@@ -370,6 +371,9 @@ export function ReconstructionDetailView({
               <ReplaySection solve={solve} />
             </div>
           )}
+
+          {/* ── Our detection (Fase 3) ── */}
+          <OurDetectionPanel record={record} />
 
           {/* ── Phase table (Quest-style) ── */}
           {record.phases.length > 0 && (

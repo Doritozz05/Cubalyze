@@ -1219,13 +1219,13 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
 // ─── F2L slot color mapping (derived from face letters) ────────────────────
 
 /** Maps face letters (U,R,F,D,L,B) to hex colors (standard Rubik's cube). */
-const FACE_HEX: Record<string, string> = {
+export const FACE_HEX: Record<string, string> = {
   U: "#FFFFFF", R: "#EF4444", F: "#22C55E",
   D: "#FACC15", L: "#F97316", B: "#3B82F6",
 };
 
 /** Maps face letters to color names (U=White, R=Red, F=Green, D=Yellow, …). */
-const FACE_NAME: Record<string, string> = {
+export const FACE_NAME: Record<string, string> = {
   U: "White",
   R: "Red",
   F: "Green",
@@ -1234,7 +1234,7 @@ const FACE_NAME: Record<string, string> = {
   B: "Blue",
 };
 
-function colorName(face: string): string {
+export function colorName(face: string): string {
   return FACE_NAME[face] ?? face;
 }
 
