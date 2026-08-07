@@ -183,6 +183,53 @@ math-core 522/522, typecheck web 0 errores, eslint limpio. Scope: solo la vista 
 
 ---
 
+## Bug 2 — Moves "perdidos" y cubos que no resuelven en Reconstructions — ✅ arreglado (2026-08-07)
+
+**Síntoma:** tras el fix de conjugación, "algunos cubos se resuelven y otros no", la tabla de
+Steps decía 66 moves y el replay 61 ("5 moves perdidos").
+
+**Causa raíz (2 cosas, verificadas con los datos reales de los chunks):**
+1. **Tokens pegados de CubeRoot** (`U'D`, `UD`, `U2U` — **727 + 439 ocurrencias** en los
+   chunks): la web partía solo por espacios, así que `U'D` se interpretaba como `U` y se
+   **perdía la `D'`** → el cubo no resolvía. `tokenize` (math-core) ya los parte bien.
+2. **Las 5 rotaciones** (`z y x' y' y'`): el engine 3D no puede animar x/y/z; la conjugación
+   las pliega en los moves. El contador del replay (61) no coincidía con la tabla (66).
+   **El smartcube hace exactamente lo mismo** (rotaciones = cambios de orientación
+   silenciosos que no cuentan como moves).
+
+**Fix (opción smartcube, elegida por el usuario):**
+- `tokenize` ahora también: expande grupos con multiplicador `(F D)3` → `F D F D F D`
+  (108 records con este patrón), y descarta comentarios `// ...` (reconz los incrusta).
+- `reconData.normalizeReconMoves` (reemplaza el split naive): tokeniza + conjuga por fase
+  con grip secuencial (`conjugatePhaseStream` nuevo en math-core), conserva solo face moves
+  (filtro `FACE_MOVE_RE`), y guarda `record.rotationCount` (todas las rotaciones del stream).
+- Scrambles con separadores (`↓F2`) también se limpian con `tokenize` en el load.
+- La tabla de Steps y el replay muestran ahora **exactamente lo mismo** (moves de cara,
+  conteos conjugados), y el chip "Rotations" del header muestra el contador derivado.
+
+**Métricas reales (chunks 0-3, 970 records 3x3 CFOP):**
+| Camino | Resuelve |
+|---|---|
+| Antes (split naive) | **4.9%** |
+| Ahora (tokenize + conjugación, web-realista) | **25.7%** |
+| + búsqueda de grip en las 24 orientaciones | 39.0% |
+| pipeline viejo (check literal tolerante) | 87.4% (contaba "rotación de resuelto" = cubo **no** resuelto físicamente) |
+
+**Limitación conocida (documentada, no es bug):** el **76%** de los records CFOP tienen wide
+moves (`u`, `r`, `f'`…) en la solución; su componente de slice no se puede animar en el
+engine 3D (ni se conjuga). Esos records no resuelven visualmente de forma exacta — es la
+causa dominante del resto de no-resueltos (junto a transcripciones imperfectas de Quest que
+eliminan rotaciones). Arreglarlo = soporte de slices en el engine (fuera de alcance; se puede
+revisar en Fase 2+).
+
+**Gotchas para Fase 2 (`analyzeSolveText`):** (a) `tokenize` no expande paréntesis anidados
+con multiplicador (`(F (D))2` deja un dígito suelto — filtrar con un regex de face move al
+consumir); (b) `useCrossScramble.ts` tiene su propia copia local del split naive — si esa ruta
+recibe notación con pegados, sufre el mismo bug; (c) el scramble se filtra con `FACE_MOVE_RE`
+al cargar, igual que las fases.
+
+---
+
 ## Fase 1 — Mejoras del PhaseSplitter: XCross y reconocimiento (sin casos)
 
 Base: el `PhaseSplitter` actual ya emite por fase (`Cross/F2L/OLL/PLL`) con

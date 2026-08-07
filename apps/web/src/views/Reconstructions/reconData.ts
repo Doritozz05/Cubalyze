@@ -134,7 +134,8 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
 
 // ─── Replay helper ──────────────────────────────────────────────────────────
 
-const SLICE_RE = /^[MSE]'?2?$/;
+/** Valid outer-face moves — the only tokens the 3D engine can animate. */
+const FACE_MOVE_RE = /^[URFDLB][2']?$/;
 
 /**
  * Normalize a record's phase moves at load time, once:
@@ -157,10 +158,20 @@ function normalizeReconMoves(record: ReconFullRecord): void {
   );
   record.rotationCount = rotationCount;
   record.phases.forEach((p, i) => {
-    const faceMoves = perPhase[i].filter((t) => !SLICE_RE.test(t));
+    // Keep only outer-face moves: slices (from wide moves) and any residual
+    // garbage can't be animated by the ReplayEngine and would break the
+    // count consistency between the Steps table and the replay.
+    const faceMoves = perPhase[i].filter((t) => FACE_MOVE_RE.test(t));
     p.moves = faceMoves.join(" ");
     p.moveCount = faceMoves.length;
   });
+  // Scrambles can carry CubeRoot separators too ("↓F2") — tokenize them so
+  // the ReplayEngine's applyInitialScramble gets clean elementary tokens, and
+  // keep only outer-face moves (a slice token would become a phantom
+  // middle-layer rotation in FACE_ROTATION_MAP).
+  record.scramble = tokenize(record.scramble)
+    .filter((t) => FACE_MOVE_RE.test(t))
+    .join(" ");
 }
 
 /**
@@ -180,7 +191,7 @@ export function notationToReplayMoves(notation: string, start = 0): CubeMoveEven
   const events: CubeMoveEvent[] = [];
   let ts = start;
   for (const token of tokens) {
-    if (SLICE_RE.test(token)) continue;
+    if (!FACE_MOVE_RE.test(token)) continue; // slices / garbage can't animate
     const face = token[0] as CubeMoveEvent["face"];
     const suffix = token.slice(1);
     const direction = suffix === "2" ? 2 : suffix === "'" ? -1 : 1;

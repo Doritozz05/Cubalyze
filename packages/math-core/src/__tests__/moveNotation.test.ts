@@ -31,6 +31,18 @@ describe('moveNotation.tokenize', () => {
     expect(tokenize('(R U R\' U\') ↑ D')).toEqual(['R', 'U', "R'", "U'", 'D']);
   });
 
+  it('expands parenthesized groups with a multiplier: (F D)3 → F D F D F D', () => {
+    expect(tokenize('(F D)3')).toEqual(['F', 'D', 'F', 'D', 'F', 'D']);
+    expect(tokenize("U (R U R' U')2")).toEqual([
+      'U', 'R', 'U', "R'", "U'", 'R', 'U', "R'", "U'",
+    ]);
+  });
+
+  it('drops inline // comments from phase segments', () => {
+    expect(tokenize('U R // pair insert')).toEqual(['U', 'R']);
+    expect(tokenize("R' D R // W Cross\nU L' U L")).toEqual(["R'", 'D', 'R', 'U', "L'", 'U', 'L']);
+  });
+
   it('splits CubeRoot ↓ / ↑ / · / . separators (regrip markers)', () => {
     // Note: expandWideMoves normalizes `2'` → `2` (U2' ≡ U2), so "U2'" → "U2".
     expect(tokenize("x'↓R U2 R U'")).toEqual(["x'", 'R', 'U2', 'R', "U'"]);

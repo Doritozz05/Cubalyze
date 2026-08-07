@@ -31,6 +31,19 @@ const U_MOVE_RE = /^U[2']?$/;
 export function tokenize(moves: string): string[] {
   let s = moves.replace(PRIME, "'");
   s = s.replace(/[↑·↓.]/g, ' ');
+  // Drop inline comments ("U R // pair"): everything from // to end of the
+  // line is not a move. CubeRoot / Quest embed them inside phase segments.
+  // The m flag makes $ match at every line end.
+  s = s.replace(/\/\/.*$/gm, ' ');
+  // Expand parenthesized groups with a multiplier: "(F D)3" → F D F D F D.
+  // Handles a trailing digit after the closing paren (CubeRoot convention).
+  for (let i = 0; i < 8; i++) {
+    const next = s.replace(/\(([^()]*)\)([0-9]+)/g, (_m, group: string, nS: string) =>
+      group.trim().repeat(Number(nS)),
+    );
+    if (next === s) break;
+    s = next;
+  }
   s = s.replace(/[()]/g, ' ');
   // Insert a space between a token char and a following face char (glued moves).
   s = s.replace(new RegExp(`([${FACE}2-9'])(?=[${FACE}])`, 'g'), '$1 ');
