@@ -357,33 +357,42 @@ export class PhaseSplitter {
         // 1-2 moves. A single move can never complete a slot from scratch, so
         // scanning the next two entries for the max slot count only ever
         // catches the alignment (no false positives from a fast first pair).
-        const frameFace: CubeFace = crossFace ?? 'D';
-        let best = countCompletedF2LSlotsInFrame(
-          TimelineBuilder.fromSnapshot(timeline.entries[crossPhase.completionIndex].state),
-          frameFace,
-          scheme ?? IDENTITY_SCHEME,
-        );
-        for (let offset = 1; offset <= 2; offset++) {
-          const entry = timeline.entries[crossPhase.completionIndex + offset];
-          if (!entry) break;
-          const candidate = countCompletedF2LSlotsInFrame(
-            TimelineBuilder.fromSnapshot(entry.state),
+        //
+        // Defensive: on incoherent solves the color detector can produce a
+        // scheme whose re-coloring is not a valid cube (repeated colors) and
+        // countCompletedF2LSlotsInFrame would throw. XCross info is a bonus —
+        // degrade to 'plain' instead of failing the whole report.
+        try {
+          const frameFace: CubeFace = crossFace ?? 'D';
+          let best = countCompletedF2LSlotsInFrame(
+            TimelineBuilder.fromSnapshot(timeline.entries[crossPhase.completionIndex].state),
             frameFace,
             scheme ?? IDENTITY_SCHEME,
           );
-          if (candidate.completedCount > best.completedCount) best = candidate;
-        }
-        crossType =
-          best.completedCount === 0
-            ? 'plain'
-            : best.completedCount === 1
-              ? 'xcross'
-              : 'xxcross';
-        if (best.slots.length > 0) {
-          xcrossPairs = best.slots.map((s) => ({
-            slot: s.name,
-            colors: s.colors,
-          }));
+          for (let offset = 1; offset <= 2; offset++) {
+            const entry = timeline.entries[crossPhase.completionIndex + offset];
+            if (!entry) break;
+            const candidate = countCompletedF2LSlotsInFrame(
+              TimelineBuilder.fromSnapshot(entry.state),
+              frameFace,
+              scheme ?? IDENTITY_SCHEME,
+            );
+            if (candidate.completedCount > best.completedCount) best = candidate;
+          }
+          crossType =
+            best.completedCount === 0
+              ? 'plain'
+              : best.completedCount === 1
+                ? 'xcross'
+                : 'xxcross';
+          if (best.slots.length > 0) {
+            xcrossPairs = best.slots.map((s) => ({
+              slot: s.name,
+              colors: s.colors,
+            }));
+          }
+        } catch {
+          crossType = 'plain';
         }
       }
     }

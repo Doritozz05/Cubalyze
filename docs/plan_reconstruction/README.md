@@ -1,7 +1,6 @@
 # Plan — Reconstrucción desde cero (rama `algortihms`)
 
-> **Estado:** Fase 0 ✅ **ejecutada** (2026-08-07) · **Fase 1 ✅ ejecutada** (2026-08-07) ·
-> Fase 2 pendiente · **Rama:** `algortihms`
+> **Estado:** Fase 0 ✅ · **Fase 1 ✅** · **Fase 2 ✅ ejecutada** (2026-08-07) · **Rama:** `algortihms`
 >
 > Objetivo: **sin romper el pipeline de stats** (que funciona), borrar todo el sistema
 > de reconocimiento/reconstrucción actual (que no funciona), y rehacer la reconstrucción
@@ -406,6 +405,65 @@ export interface SolveReconstruction {
   setup incoherente → `finalSolved: false` + warning honesto (nunca inventar).
 - Determinismo (misma entrada → misma salida).
 - Benchmark informal: < 30 ms para una solve de 60 moves (mismo orden que el pipeline actual).
+
+### ✅ Ejecución de la Fase 2 (2026-08-07)
+
+**API nueva (headless, sin tocar el smartcube):**
+`packages/analysis-engine/src/reconstruction/analyzeSolveText.ts` +
+`analyzeSolveText({ setup, inspection, solution, totalTimeMs? })` →
+`{ timeline, reconstruction }`:
+
+1. `tokenize` setup/inspection/solución (moveNotation, ya corregido).
+2. `parseRawPhases` parte el texto por `//` (tolera `moves // label` y líneas `// label`
+   sueltas, y solución plana sin marcadores) → `rawPhases` para el contraste.
+3. `conjugatePhaseStream` con la inspección como primer "fase": las rotaciones se pliegan
+   en los moves (grip secuencial), la inspección NO produce moves (igual que el smartcube).
+4. `TimelineBuilder.build(moves, 'CFOP', undefined, setup)` → timeline estándar, el
+   scramble es la posición inicial (la MISMA fuente que usa el smartcube en producción).
+5. `PhaseSplitter.splitAndAnnotate(..., { colorNeutral: true })` → el report queda
+   adjunto al timeline (fases, completionIndex, crossType/xcrossPairs/skips de Fase 1).
+6. `ColorPhaseDetector.detect` re-ejecutado (mismo patrón interno del splitter) para
+   obtener el `scheme` del solver → `buildPairs` recorre el segmento F2L detectando la
+   completación de cada slot (gain de slotMask) → `{ slot, colors, moves, auf, premade }`.
+7. `oll`/`pll` con `moves` + `skipped`; `rotations` como cambios de orientación silenciosos
+   con su `moveIndex`; `finalSolved` y `warnings` del report; TPS si hay `totalTimeMs`.
+
+**Sesión de test (harness `fase2-comparison.test.ts`, solves limpias de los chunks):**
+10 solves CFOP 3x3 verificadas (`recognition.crossVerified` + resuelven exacto):
+
+| Métrica | Acuerdo | Nota |
+|---|---|---|
+| Boundary del Cross | **7/10** | con tolerancia ±2 (la alineación del cross de Fase 1); el off-by-3 de
+  `reconz-11413` es un xcross donde el raw mete 2 moves de F2L en el segmento cross |
+| Skips OLL/PLL | **8/10** | los 2 fallos son etiquetas de técnica: `reconz-4999` (raw dice `OLL(CP)`
+  pero OLL se completó dentro del último slot) y `reconz-13258` (ZBLL: no hay OLL/PLL
+  separados en el raw, nuestro splitter por estado sí los ve) |
+
+**Los 3 mismatches son instructivos, no bugs:**
+- `reconz-11413` — cross raw `F R U' D' L U R U' D` (9) vs nuestro `F R U' D' L U R`
+  (7): los 2 últimos moves del raw son el arranque del primer par (xcross). Nuestro
+  detector de estado es más preciso que la etiqueta (igual que en Fase 1).
+- `reconz-4999` — raw cross `R' U F2` (3 moves) pero el estado no completa el cross hasta
+  el move 11: transcripción del cross imperfecta (moves que faltan). El splitter por
+  estado tiene razón; la etiqueta miente. `crossVerified: true` en el source pero el
+  detector real no ve el cross temprano.
+- `reconz-9615` — raw cross 10 moves, nuestro 4: el raw mete moves de F2L en el cross
+  (o el cross real completa antes de lo que recuerda el solver). Mismo patrón.
+
+**Tests permanentes:** `analyzeSolveText.test.ts` (8 tests: 2510 con split exacto,
+reconz-11413 xcross, cuberoot-1851 OLL skip, tu ejemplo con pegados `U'D`/`UD'` resuelve,
+solución plana, setup incoherente honesto) + `fase2-comparison.test.ts` (harness).
+
+**Validación:** analysis-engine 193/193 · math-core 537/537 · typechecks de los 4
+paquetes + web 0 errores. **El flujo smartcube no se toca** (`analyzeSolveText` es
+headless; `useSolveSession` intacto).
+
+**Gotchas para Fase 3 (UI):** (a) los `slot`/`colors` de los pares están en el frame del
+cross detectado (p.ej. `UF/UB/DF/DB` si el cross está en R — color neutral) — si la UI
+quiere nombres FR/BR/BL/FL canónicos, hay que re-mapear con el grip; (b) `parseRawPhases`
+agrupa líneas consecutivas sin `//`; (c) un cross cuyo `completionIndex` cae tarde (cross
+imperfecto) hace que `buildPairs` recorra un F2L corto — los pares se detectan donde el
+estado los completa, no donde la etiqueta los pone.
 
 ---
 

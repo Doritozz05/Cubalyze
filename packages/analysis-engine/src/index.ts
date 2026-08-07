@@ -20,8 +20,16 @@ export { ANALYSIS_PIPELINE_VERSION } from './version';
 // ─── Phase Recognition ───────────────────────────────────────────────────────
 export { PhaseSplitter } from './phases/PhaseSplitter';
 
-// Reconstruction (string → phases/pairs) is rebuilt on the stats pipeline —
-// see docs/plan_reconstruction (Fase 2: analyzeSolveText).
+// ─── Reconstruction (Fase 2) ────────────────────────────────────────────────
+// Headless string → phases/pairs API, rebuilt on the stats pipeline
+// (TimelineBuilder + PhaseSplitter). See docs/plan_reconstruction.
+export { analyzeSolveText } from './reconstruction/analyzeSolveText';
+export type {
+  SolveTextInput,
+  SolveReconstruction,
+  F2LPairResult,
+  AnalyzeSolveTextResult,
+} from './reconstruction/analyzeSolveText';
 
 // ─── Metrics ────────────────────────────────────────────────────────────────
 export { TPSCalculator } from './metrics/TPSCalculator';
