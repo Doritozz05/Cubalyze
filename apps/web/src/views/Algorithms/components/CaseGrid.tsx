@@ -126,7 +126,7 @@ function CaseCard({
       {/* Case info — algorithm moves primary, case number & name secondary */}
       <div className="flex flex-col items-center gap-0.5 w-full mt-1">
         {algorithm && (
-          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1 break-words max-w-full">
+          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1 wrap-break-word max-w-full">
             {algorithm.moves.join(" ")}
           </span>
         )}
