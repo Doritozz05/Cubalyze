@@ -289,6 +289,20 @@ export class OrientationTable {
   }
 
   /**
+   * Look up a base whole-cube rotation (x, x', x2, y, y', y2, z, z', z2) by
+   * its notation token. Returns null for anything else (face moves, wide
+   * moves, slices, malformed tokens).
+   *
+   * Used to fold solver-frame rotations into a running grip (conjugation)
+   * when replaying text reconstructions on a fixed cube.
+   */
+  static rotationEntryFor(token: string): OrientationEntry | null {
+    const rot = BASE_ROTATIONS.find((r) => r.name === token);
+    if (!rot) return null;
+    return OrientationTable.fromFaceMap(rot.faceMap);
+  }
+
+  /**
    * Compose two orientations: apply `a` first, then `b`.
    * The resulting face map is `b(a(pos))` and the quaternion is `q_b * q_a`.
    */

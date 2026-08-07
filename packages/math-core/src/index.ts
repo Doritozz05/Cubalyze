@@ -6,6 +6,7 @@ export * from './MoveExpander';
 
 // Move parsing / reconstruction notation (CubeRoot, Quest, …)
 export * from './notation/moveNotation';
+export * from './notation/conjugateToBaseFrame';
 
 // 2×2 (Pocket Cube) state representation
 export * from './Cube2x2State';

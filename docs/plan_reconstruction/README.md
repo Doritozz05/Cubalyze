@@ -112,11 +112,11 @@ el módulo a math-core en esta fase solo se traslada, ya corregido.
   `tokenize, foldAdjacentSameFace, stripRotations, leadingUMoves, withoutLeadingUMoves,
   isRotation, isFaceMove, isUMove, joinMoves`.
 - Mover el test a `packages/math-core/src/__tests__/moveNotation.test.ts`.
-- **Nota Fase 2:** la detección de pares F2L necesita 2 helpers puros que hoy viven en
-  `rotationGroup` (aplicar rotación a un `CubeState` + mapa de caras por rotación para nombrar
-  slots FR/FL/BL/BR). Se reimplementan limpios en math-core durante la Fase 2
-  (`packages/math-core/src/notation/rotationFrame.ts`, ~60 líneas, sin conventions). No se
-  rescata `rotationGroup` entero.
+- **Nota Fase 2:** la detección de pares F2L necesita helpers puros de rotación (mapa de caras
+  por rotación para nombrar slots FR/FL/BL/BR). **Ya no hay que reimplementar nada**: el
+  sistema de orientación de math-core (`OrientationTable` con mapas x/y/z verificados contra
+  `CubeState` + `compose`/`inverse`) + `conjugateToBaseFrame` (ver "Bug del replay" abajo)
+  cubren eso. No se rescata `rotationGroup` entero.
 
 ### 0.4 Ajustes de configuración
 
@@ -142,6 +142,44 @@ pnpm knip
 Criterio de salida: **0 imports rotos, tests verdes en math-core/algorithm-db/analysis-engine**,
 sin menciones a `recognizeSolve|analyzeReconstruction|findCrossOnDFrames|applyColorRemap` fuera
 de nada.
+
+---
+
+## Bug del replay de Reconstructions — ✅ arreglado (2026-08-07, antes de la Fase 1)
+
+**Síntoma:** en la vista web de Reconstructions el replay no resolvía el cubo: aplicaba el
+scramble y los moves de la solución, pero el cubo quedaba sin resolver.
+
+**Diagnóstico (confirmado con tests, no a ojo):** las reconstrucciones por texto escriben los
+moves **en el frame del solver** (después de la rotación de inspección `x2 y'`).
+`reconData.notationToReplayMoves` descartaba las rotaciones y soltaba los moves tal cual, en el
+frame del cubo → `scramble + moves ≠ resuelto`. En el smartcube esto no pasa porque los moves
+BLE ya son **físicos** (frame-independientes) y el `orientationTimeline` solo remapea las
+**etiquetas** de display — por eso "en stats rota y se muestra bien" y aquí no.
+
+**Fix (reutilización, sin duplicar matemática):**
+- `OrientationTable.rotationEntryFor(token)` (nuevo, ~8 líneas): expone la búsqueda de las 9
+  rotaciones base x/x'/x2/y/…/z2 que ya existían internamente.
+- `math-core/notation/conjugateToBaseFrame.ts` (nuevo, ~30 líneas): camina los tokens,
+  mantiene el grip acumulado y reescribe cada move del frame del solver al frame del cubo con
+  `MoveTransformer.toRaw` (el mismo remap display→raw que ya usa el sistema de dynamic
+  notation). Las rotaciones se consumen como actualizaciones del grip.
+- `reconData.notationToReplayMoves`: `expandWideMoves` → `conjugateToBaseFrame` → eventos.
+  `rotationFrame.ts` (versión scratch) se **borró**: era duplicado del sistema existente.
+
+**⚠️ Hallazgo importante (el dato real lo cazó):** la composición del grip es
+`grip = compose(rotaciónNueva, grip)` — el giro nuevo va **primero**. Empíricamente, tras
+rotar `z` y luego `y`, el grip correcto es `compose(y, z)` (verificado contra `CubeState`:
+`scramble + conjugado` termina **exactamente resuelto**, mientras el enfoque literal del
+pipeline viejo solo daba "rotación de resuelto" — nunca quitaba el grip). Los tests de ida y
+vuelta sintéticos **no** detectan este orden (son auto-consistentes); solo un solve real con
+inspección genuina (`z y` de CubeRoot 2510) lo revela.
+
+**Validación:** `conjugateToBaseFrame.test.ts` con el solve real 2510 (inspección `z y` +
+rotaciones mid-solve `x' y' y'` → exactamente resuelto), solve sintético con rotación a mitad,
+casos hand-computed y pass-through; `OrientationTable.test.ts` con `rotationEntryFor`;
+math-core 522/522, typecheck web 0 errores, eslint limpio. Scope: solo la vista Reconstructions
+(`reconData.ts`) — el flujo smartcube no usa `conjugateToBaseFrame` y no se toca.
 
 ---
 

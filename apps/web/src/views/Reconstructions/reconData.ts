@@ -15,7 +15,7 @@
  */
 import type { Solve } from "@/types";
 import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
-import { expandWideMoves } from "@cubeforge/math-core";
+import { conjugateToBaseFrame, expandWideMoves } from "@cubeforge/math-core";
 
 // ─── Types (mirror of the build script output) ──────────────────────────────
 
@@ -126,7 +126,6 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
 
 // ─── Replay helper ──────────────────────────────────────────────────────────
 
-const ROTATION_RE = /^[xyz]'?2?$/;
 const SLICE_RE = /^[MSE]'?2?$/;
 
 /**
@@ -148,18 +147,20 @@ function normalizeReconSeparators(record: ReconFullRecord): void {
 /**
  * Turn a notation string into CubeMoveEvents for the ReplayEngine.
  *
- * Wide moves are expanded to their face turn (r → R) and slice/rotation
- * tokens are dropped: the ReplayEngine can only animate outer-face turns
- * (FACE_ROTATION_MAP has no M/S/E/x/y/z). The turn SEQUENCE is preserved —
- * rotations are visual-only and do not affect the solution. Events are
- * spaced at a fixed 550ms so the replay timeline is proportional to moves.
+ * Wide moves are expanded to their face turn (r → R). The whole sequence is
+ * then CONJUGATED to the cube-fixed frame (conjugateToBaseFrame): inspection
+ * and mid-solve rotations are folded into the moves, so replaying
+ * scramble → moves ends SOLVED. Rotations are consumed by the conjugation
+ * and slice tokens are dropped — the ReplayEngine can only animate
+ * outer-face turns (FACE_ROTATION_MAP has no M/S/E). Events are spaced at a
+ * fixed 550ms so the replay timeline is proportional to moves.
  */
 export function notationToReplayMoves(notation: string, start = 0): CubeMoveEvent[] {
   const tokens = expandWideMoves(notation.trim().split(/[\s↓↑·.]+/).filter(Boolean));
   const events: CubeMoveEvent[] = [];
   let ts = start;
-  for (const token of tokens) {
-    if (ROTATION_RE.test(token) || SLICE_RE.test(token)) continue;
+  for (const token of conjugateToBaseFrame(tokens)) {
+    if (SLICE_RE.test(token)) continue;
     const face = token[0] as CubeMoveEvent["face"];
     const suffix = token.slice(1);
     const direction = suffix === "2" ? 2 : suffix === "'" ? -1 : 1;
