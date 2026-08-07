@@ -64,3 +64,64 @@ export {
 // Case verifier (Min2Phase oracle)
 export { CaseVerifier } from './caseVerifier';
 export type { CaseVerificationResult, SubsetVerificationReport } from './caseVerifier';
+
+// ─── Reconstruction recognition pipeline (formal, convention-independent) ──
+export {
+  tokenize,
+  foldAdjacentSameFace,
+  stripRotations,
+  leadingUMoves,
+  withoutLeadingUMoves,
+  isRotation,
+  isFaceMove,
+  isUMove,
+  joinMoves,
+} from './recognition/moveNotation';
+export {
+  ROTATION_GROUP,
+  applyRotation,
+  findRotationOfSolved,
+  isRotationOfSolved,
+  findCrossOnDFrames,
+  facePermutationOf,
+  invertToken,
+  invertSequence,
+  stateSignature,
+} from './recognition/rotationGroup';
+export {
+  CATALOG_CONVENTION,
+  INVERTED_CONVENTION,
+  FALLBACK_CONVENTIONS,
+  detectCrossColor,
+  buildCatalogRemap,
+  applyColorRemap,
+  detectConventionFromColors,
+} from './recognition/conventions';
+export type { Convention, ColorRemap } from './recognition/conventions';
+export {
+  F2L_SLOTS,
+  f2lPairSignature,
+  pairSolved,
+  ollSignature,
+  ollSignatureWithAuf,
+  pllSignature,
+  pllSignatureWithAuf,
+} from './recognition/signatures';
+export {
+  getRecognitionIndex,
+  resolveMatch,
+  __resetRecognitionIndex,
+} from './recognition/caseIndex';
+export type { RecognitionIndex, CaseMatch } from './recognition/caseIndex';
+export {
+  analyzeReconstruction,
+} from './recognition/reconstructionAnalyzer';
+export type {
+  SlotName,
+  InputPhase,
+  AnalyzedPhase,
+  PairResult,
+  OllResult,
+  PllResult,
+  ReconstructionAnalysis,
+} from './recognition/reconstructionAnalyzer';
