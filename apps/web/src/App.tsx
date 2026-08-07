@@ -172,6 +172,8 @@ export default function App() {
     fetchSessionSolves,
     puzzle,
     resetScramble,
+    resetTimer,
+    lastSolveId: solves[0]?.id,
   });
 
   // ── Manual solve entry (inline manual mode + header "+" sheet) ─────────
