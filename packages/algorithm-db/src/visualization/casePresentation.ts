@@ -148,21 +148,21 @@ export function resolveAlgorithmDiagramRotation(
   return resolveAlgorithmViewPreferences(algorithm).diagramRotation;
 }
 
+export const F2L_SLOT_PIECES: Record<F2LSlotId, { homeC: number; homeE: number }> = {
+  0: { homeC: 4, homeE: 8 },  // FR slot (DFR corner 4 + FR edge 8)
+  1: { homeC: 5, homeE: 9 },  // FL slot (DLF corner 5 + FL edge 9)
+  2: { homeC: 6, homeE: 10 }, // BL slot (DBL corner 6 + BL edge 10)
+  3: { homeC: 7, homeE: 11 }, // BR slot (DRB corner 7 + BR edge 11)
+};
+
 // ─── Case pair identification (F2L) ────────────────────────────────────────
 //
-// Same rule as the seed verifier (scdb-alg-verification.test.ts), validated on
-// a real cube: a trapped corner/edge in the FR slot means the pair belongs to
-// ANOTHER slot; otherwise the pair is the FR slot pieces. Piece IDs follow the
-// math-core Corner/Edge enums (corners 4-7 = D layer, edges 4-11 = D/E layer).
-const MATE_EDGE_OF_CORNER = [8, 9, 10, 11, 8, 9, 10, 11];
-const MATE_CORNER_OF_EDGE = [-1, -1, -1, -1, 7, 4, 5, 6, 4, 5, 6, 7];
-
-function identifyPairFromState(s: CubeState): { homeC: number; homeE: number } {
-  const c = s.cp[4];
-  const e = s.ep[8];
-  if (c >= 4 && c !== 4) return { homeC: c, homeE: MATE_EDGE_OF_CORNER[c] };
-  if (e >= 4 && e !== 8) return { homeC: MATE_CORNER_OF_EDGE[e], homeE: e };
-  return { homeC: 4, homeE: 8 };
+// The pair pieces corresponding to the selected F2L slot (default FR: DFR corner 4
+// + FR edge 8) are always kept colored wherever they are on the cube (whether in
+// the slot, in the U layer, or trapped in another position), while foreign pieces
+// are grayed out.
+function identifyPairForSlot(slot: F2LSlotId): { homeC: number; homeE: number } {
+  return F2L_SLOT_PIECES[slot] ?? F2L_SLOT_PIECES[0];
 }
 
 function generateCanonical3x3(caseData: AlgorithmCase, algorithm?: CasePresentationOptions['algorithm'] | null) {
@@ -220,7 +220,7 @@ export function buildCaseRenderPlan(
     const rawState = CaseStateGenerator.generateFromScramble(caseData.setupScramble);
     engineFacelets = CaseStateGenerator.toFaceletString(rawState);
     if (f2l && !is2x2) {
-      pair = identifyPairFromState(rawState);
+      pair = identifyPairForSlot(selectedSlot);
     }
   }
   if (is2x2) {

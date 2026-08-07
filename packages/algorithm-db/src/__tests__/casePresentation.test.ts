@@ -111,10 +111,8 @@ describe('canonical case presentation', () => {
     const advPlan = buildCaseRenderPlan(advCase!);
     expect(advPlan.isF2L).toBe(true);
     expect(advPlan.isAdvancedF2L).toBe(true);
-    // The pair comes from the trapped-piece rule, never hardcoded to FR.
-    expect(advPlan.pair).toBeDefined();
-    expect(advPlan.pair!.homeC).toBeGreaterThanOrEqual(4);
-    expect(advPlan.pair!.homeE).toBeGreaterThanOrEqual(4);
+    // F2L/Advanced F2L pair corresponds to the selected slot (default FR: corner 4 + edge 8).
+    expect(advPlan.pair).toEqual({ homeC: 4, homeE: 8 });
   });
 
   it('keeps the preferred F2L slot and camera radius in the render plan', () => {

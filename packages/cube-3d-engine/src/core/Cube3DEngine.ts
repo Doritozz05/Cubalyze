@@ -563,14 +563,21 @@ export class Cube3DEngine {
       // both-on-top cases, or trapped in a wrong slot for advanced cases).
       if (pairKeys?.has(key)) continue;
 
+      const q = cubie.mesh.quaternion;
+      const isOriented =
+        Math.abs(q.w) > 0.999 &&
+        Math.abs(q.x) < 0.01 &&
+        Math.abs(q.y) < 0.01 &&
+        Math.abs(q.z) < 0.01;
+
       const inHome =
         cubie.gridX === cubie.initialGridX &&
         cubie.gridY === cubie.initialGridY &&
-        cubie.gridZ === cubie.initialGridZ;
+        cubie.gridZ === cubie.initialGridZ &&
+        isOriented;
 
       // U-layer pieces (Yellow facelets / OLL pieces) are grayed, plus any F2L
-      // piece that is out of its solved place (it belongs to a slot that is
-      // currently being occupied by the trapped pair).
+      // piece that is out of its solved place or misoriented/flipped.
       if (cubie.initialGridY === 1 || !inHome) {
         this.grayCubieGroup(cubie.mesh, grayColor);
       }
