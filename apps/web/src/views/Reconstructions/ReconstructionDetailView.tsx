@@ -27,6 +27,7 @@ import {
   type ReconFullRecord,
   type ReconPhase,
 } from "./reconData";
+import { formatDisplayDate } from "./ReconstructionsView";
 
 // ─── Phase type / color helpers ─────────────────────────────────────────────
 
@@ -49,13 +50,23 @@ const KIND_DOT: Record<PhaseKind, string> = {
   other: "bg-line-2",
 };
 
-const KIND_BADGE: Record<PhaseKind, string> = {
-  cross: "border-phase-blue/40 bg-phase-blue/10 text-phase-blue",
-  f2l: "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald",
-  oll: "border-phase-amber/40 bg-phase-amber/10 text-phase-amber",
-  pll: "border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
-  other: "border-line bg-surface-2 text-ink-3",
-};
+
+export function getMethodBadgeClass(method: string): string {
+  const m = (method || "").toUpperCase();
+  if (m.includes("CFOP") || m.includes("CROSS") || m.includes("F2L")) {
+    return "border-phase-blue/40 bg-phase-blue/10 text-phase-blue";
+  }
+  if (m.includes("ROUX") || m.includes("PLL")) {
+    return "border-phase-violet/40 bg-phase-violet/10 text-phase-violet";
+  }
+  if (m.includes("EG") || m.includes("CLL") || m.includes("ORTEGA") || m.includes("PBL")) {
+    return "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald";
+  }
+  if (m.includes("ZB") || m.includes("YAU") || m.includes("HOYA") || m.includes("L4E") || m.includes("L2L")) {
+    return "border-phase-amber/40 bg-phase-amber/10 text-phase-amber";
+  }
+  return "border-line bg-surface-2 text-ink-3";
+}
 
 // ─── Stat chip ──────────────────────────────────────────────────────────────
 
@@ -234,7 +245,7 @@ export function ReconstructionDetailView({
                 <span
                   className={cn(
                     "rounded border px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider",
-                    KIND_BADGE[record.methodGroup === "CFOP" ? "cross" : record.methodGroup === "Roux" ? "pll" : "other"],
+                    getMethodBadgeClass(record.method),
                   )}
                 >
                   {record.method}
@@ -254,7 +265,7 @@ export function ReconstructionDetailView({
                   <Trophy className="size-3" /> {record.competition || "—"}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Calendar className="size-3" /> {record.date ?? "—"}
+                  <Calendar className="size-3" /> {formatDisplayDate(record.date, record.competition, record.url)}
                 </span>
                 <span className="nums flex items-center gap-1">
                   <span className="text-ink-2">#{record.id}</span>

@@ -16,7 +16,6 @@ import {
 import {
   useReconIndex,
   type ReconIndexEntry,
-  type ReconMethodGroup,
 } from "./reconData";
 import { ReconstructionDetailView } from "./ReconstructionDetailView";
 
@@ -24,7 +23,12 @@ import { ReconstructionDetailView } from "./ReconstructionDetailView";
 
 type SortOrder = "fastest" | "slowest" | "newest" | "oldest";
 
-const METHOD_CHIPS: (ReconMethodGroup | "All")[] = ["All", "CFOP", "Roux", "Other"];
+function normalizeMethodName(m: string): string {
+  if (!m) return "Other";
+  if (m.toUpperCase() === "ORTEGA") return "Ortega";
+  return m;
+}
+
 const SOURCE_CHIPS: ("All" | "cuberoot" | "reconz")[] = ["All", "cuberoot", "reconz"];
 
 /** Distinct puzzles present in the dataset, sorted (the Select adds "All"). */
@@ -45,9 +49,30 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
   { id: "oldest", label: "Oldest" },
 ];
 
-function formatDate(date: string | null): string {
-  if (!date) return "—";
-  return date; // ISO yyyy-mm-dd, already compact + sortable
+export function formatDisplayDate(date: string | null, competition?: string, url?: string | null): string {
+  if (date) return date;
+  if (competition) {
+    const m = competition.match(/\b(?:20|19)\d{2}(?:-\d{2}-\d{2})?\b/) || competition.match(/(?:20|19)\d{2}/);
+    if (m) return m[0];
+  }
+  if (url) {
+    const m = url.match(/(?:20|19)\d{2}/);
+    if (m) return m[0];
+  }
+  return "—";
+}
+
+export function getSortDate(e: ReconIndexEntry): string {
+  if (e.date) return e.date;
+  if (e.competition) {
+    const m = e.competition.match(/\b(?:20|19)\d{2}(?:-\d{2}-\d{2})?\b/) || e.competition.match(/(?:20|19)\d{2}/);
+    if (m) return m[0];
+  }
+  if (e.url) {
+    const m = e.url.match(/(?:20|19)\d{2}/);
+    if (m) return m[0];
+  }
+  return "";
 }
 
 // ─── Row ────────────────────────────────────────────────────────────────────
@@ -90,7 +115,7 @@ function ReconRow({
       </span>
 
       <span className="nums text-xs text-ink-2 max-xl:hidden">
-        {formatDate(entry.date)}
+        {formatDisplayDate(entry.date, entry.competition, entry.url)}
       </span>
 
       <span className="truncate text-xs text-ink-2 max-lg:hidden">
@@ -101,9 +126,11 @@ function ReconRow({
         <span
           className={cn(
             "inline-block rounded border px-1.5 py-0.5 text-[0.58rem] font-semibold uppercase tracking-wider",
-            entry.methodGroup === "CFOP" && "border-phase-blue/40 bg-phase-blue/10 text-phase-blue",
-            entry.methodGroup === "Roux" && "border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
-            entry.methodGroup === "Other" && "border-line bg-surface-2 text-ink-3",
+            (entry.method === "CFOP" || entry.methodGroup === "CFOP") && "border-phase-blue/40 bg-phase-blue/10 text-phase-blue",
+            (entry.method === "Roux" || entry.methodGroup === "Roux") && "border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+            (entry.method === "EG" || entry.method === "CLL" || entry.method === "Ortega" || entry.method === "ORTEGA") && "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald",
+            (entry.method === "ZB" || entry.method === "Yau" || entry.method === "Hoya" || entry.method === "L4E") && "border-phase-amber/40 bg-phase-amber/10 text-phase-amber",
+            !["CFOP", "Roux", "EG", "CLL", "Ortega", "ORTEGA", "ZB", "Yau", "Hoya", "L4E"].includes(entry.method) && entry.methodGroup !== "CFOP" && entry.methodGroup !== "Roux" && "border-line bg-surface-2 text-ink-3",
           )}
         >
           {entry.method}
@@ -135,7 +162,7 @@ export function ReconstructionsView() {
   const [index, setIndex] = useState<ReconIndexEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [method, setMethod] = useState<ReconMethodGroup | "All">("All");
+  const [method, setMethod] = useState<string>("All");
   const [source, setSource] = useState<"All" | "cuberoot" | "reconz">("All");
   const [puzzle, setPuzzle] = useState<string>("all");
   const [sort, setSort] = useState<SortOrder>("fastest");
@@ -157,21 +184,93 @@ export function ReconstructionsView() {
     };
   }, []);
 
+  // Solves matching puzzle + source filters (before method and search)
+  const puzzleScopedSolves = useMemo(() => {
+    if (!index) return [];
+    return index.filter((e) => {
+      if (source !== "All" && e.source !== source) return false;
+      if (puzzle !== "all" && e.puzzle !== puzzle) return false;
+      return true;
+    });
+  }, [index, puzzle, source]);
+
+  // Dynamic method counts and chips for the currently selected puzzle and source
+  const { methodChips, methodCounts, totalScopedCount } = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of puzzleScopedSolves) {
+      const norm = normalizeMethodName(e.method);
+      counts.set(norm, (counts.get(norm) ?? 0) + 1);
+    }
+    // Sort methods by count descending, placing 'Other' at the end if present
+    let sortedMethods = [...counts.keys()].sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+      return (counts.get(b) ?? 0) - (counts.get(a) ?? 0);
+    });
+
+    // In "All puzzles" mode, limit to top primary methods + Other so it doesn't overflow
+    if (puzzle === "all" && sortedMethods.length > 6) {
+      const top = sortedMethods.filter((m) => m !== "Other").slice(0, 5);
+      if (counts.has("Other") || sortedMethods.length > 5) {
+        top.push("Other");
+      }
+      sortedMethods = top;
+    }
+
+    return {
+      methodChips: ["All", ...sortedMethods],
+      methodCounts: counts,
+      totalScopedCount: puzzleScopedSolves.length,
+    };
+  }, [puzzleScopedSolves, puzzle]);
+
+  const getChipCount = useCallback(
+    (m: string): number => {
+      if (m === "All") return totalScopedCount;
+      if (m === "Other" && puzzle === "all" && methodChips.length > 1) {
+        const topExplicit = new Set(methodChips.filter((c) => c !== "All" && c !== "Other"));
+        let count = 0;
+        for (const [key, cnt] of methodCounts.entries()) {
+          if (!topExplicit.has(key)) count += cnt;
+        }
+        return count;
+      }
+      return methodCounts.get(m) ?? 0;
+    },
+    [totalScopedCount, puzzle, methodChips, methodCounts],
+  );
+
+  // Auto-reset method filter if selected method is not in the new scope
+  useEffect(() => {
+    if (method !== "All" && !methodChips.includes(method)) {
+      setMethod("All");
+    }
+  }, [method, methodChips]);
+
   const filtered = useMemo(() => {
     if (!index) return [];
     const q = search.trim().toLowerCase();
-    return index.filter((e) => {
-      if (method !== "All" && e.methodGroup !== method) return false;
-      if (source !== "All" && e.source !== source) return false;
-      if (puzzle !== "all" && e.puzzle !== puzzle) return false;
+    return puzzleScopedSolves.filter((e) => {
+      if (method !== "All") {
+        const norm = normalizeMethodName(e.method);
+        if (method === "Other") {
+          const isExplicitTop = methodChips.filter((c) => c !== "All" && c !== "Other").includes(norm);
+          if (isExplicitTop) return false;
+        } else {
+          if (norm !== method && e.method !== method) {
+            return false;
+          }
+        }
+      }
       if (!q) return true;
       return (
         e.solver.toLowerCase().includes(q) ||
         e.competition.toLowerCase().includes(q) ||
-        e.tags.some((t) => t.toLowerCase().includes(q))
+        e.tags.some((t) => t.toLowerCase().includes(q)) ||
+        e.method.toLowerCase().includes(q)
       );
     });
-  }, [index, search, method, source, puzzle]);
+  }, [puzzleScopedSolves, method, methodChips, search]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -183,20 +282,14 @@ export function ReconstructionsView() {
         arr.sort((a, b) => (b.time <= 0 ? -1e9 : b.time) - (a.time <= 0 ? -1e9 : a.time));
         break;
       case "newest":
-        arr.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+        arr.sort((a, b) => getSortDate(b).localeCompare(getSortDate(a)));
         break;
       case "oldest":
-        arr.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+        arr.sort((a, b) => getSortDate(a).localeCompare(getSortDate(b)));
         break;
     }
     return arr;
   }, [filtered, sort]);
-
-  const groupCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: index?.length ?? 0, CFOP: 0, Roux: 0, Other: 0 };
-    for (const e of index ?? []) counts[e.methodGroup] += 1;
-    return counts;
-  }, [index]);
 
   // ── Virtualizer ─────────────────────────────────────────────────────────
   const rowVirtualizer = useVirtualizer({
@@ -249,22 +342,25 @@ export function ReconstructionsView() {
 
         {/* Chips + sort */}
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
-            {METHOD_CHIPS.map((m) => (
-              <button
-                key={m}
-                onClick={() => setMethod(m)}
-                className={cn(
-                  "rounded px-2.5 py-1 text-[0.66rem] font-medium transition-all",
-                  method === m
-                    ? "bg-ink text-background"
-                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                )}
-              >
-                {m}
-                <span className="nums ml-1 opacity-60">{groupCounts[m]}</span>
-              </button>
-            ))}
+          <div className="flex items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5 overflow-x-auto max-w-full">
+            {methodChips.map((m) => {
+              const count = getChipCount(m);
+              return (
+                <button
+                  key={m}
+                  onClick={() => setMethod(m)}
+                  className={cn(
+                    "rounded px-2.5 py-1 text-[0.66rem] font-medium transition-all shrink-0 whitespace-nowrap",
+                    method === m
+                      ? "bg-ink text-background"
+                      : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                  )}
+                >
+                  {m}
+                  <span className="nums ml-1 opacity-60">{count.toLocaleString()}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
