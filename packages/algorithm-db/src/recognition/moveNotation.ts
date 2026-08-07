@@ -24,12 +24,12 @@ const U_MOVE_RE = /^U[2']?$/;
 /**
  * Split a move string into elementary tokens.
  *
- * Handles: Unicode primes, '↑'/'·' separators, glued tokens (U2U), numbered
+ * Handles: Unicode primes, '↑'/'·'/'↓'/'.' separators, glued tokens (U2U), numbered
  * turns (R3 → R'), wide moves (expanded to face+slice), parenthesized groups.
  */
 export function tokenize(moves: string): string[] {
   let s = moves.replace(PRIME, "'");
-  s = s.replace(/[↑·]/g, ' ');
+  s = s.replace(/[↑·↓.]/g, ' ');
   s = s.replace(/[()]/g, ' ');
   // Insert a space between a token char and a following face char (glued moves).
   s = s.replace(new RegExp(`([${FACE}2-9'])(?=[${FACE}])`, 'g'), '$1 ');

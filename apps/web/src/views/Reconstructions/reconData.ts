@@ -115,7 +115,9 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
     const res = await fetch(file);
     if (!res.ok) throw new Error(`reconstructions chunk ${chunk}: HTTP ${res.status}`);
     const data = (await res.json()) as { solves: ReconFullRecord[] };
-    return data.solves.find((s) => s.key === key) ?? null;
+    const record = data.solves.find((s) => s.key === key) ?? null;
+    if (record) normalizeReconSeparators(record);
+    return record;
   })();
 
   recordCache.set(key, promise);
@@ -128,6 +130,22 @@ const ROTATION_RE = /^[xyz]'?2?$/;
 const SLICE_RE = /^[MSE]'?2?$/;
 
 /**
+ * CubeRoot / Quest write separators between moves (↓ ↑ · .) to mark regrips
+ * / cancellations. The baked JSON kept them inside `phase.moves`, which breaks
+ * both the Steps table render and the replay. We normalize phase moves on load
+ * (display + replay) but leave the raw `text` untouched for copy.
+ */
+const SEPARATOR_RE = /[↓↑·.]/g;
+
+function normalizeReconSeparators(record: ReconFullRecord): void {
+  for (const phase of record.phases) {
+    const cleaned = phase.moves.replace(SEPARATOR_RE, " ").replace(/\s+/g, " ").trim();
+    phase.moves = cleaned;
+    phase.moveCount = cleaned ? cleaned.split(/\s+/).length : 0;
+  }
+}
+
+/**
  * Turn a notation string into CubeMoveEvents for the ReplayEngine.
  *
  * Wide moves are expanded to their face turn (r → R) and slice/rotation
@@ -137,7 +155,7 @@ const SLICE_RE = /^[MSE]'?2?$/;
  * spaced at a fixed 550ms so the replay timeline is proportional to moves.
  */
 export function notationToReplayMoves(notation: string, start = 0): CubeMoveEvent[] {
-  const tokens = expandWideMoves(notation.trim().split(/\s+/).filter(Boolean));
+  const tokens = expandWideMoves(notation.trim().split(/[\s↓↑·.]+/).filter(Boolean));
   const events: CubeMoveEvent[] = [];
   let ts = start;
   for (const token of tokens) {

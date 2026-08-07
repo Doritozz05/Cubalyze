@@ -31,6 +31,14 @@ describe('moveNotation.tokenize', () => {
     expect(tokenize('(R U R\' U\') ↑ D')).toEqual(['R', 'U', "R'", "U'", 'D']);
   });
 
+  it('splits CubeRoot ↓ / ↑ / · / . separators (regrip markers)', () => {
+    // Note: expandWideMoves normalizes `2'` → `2` (U2' ≡ U2), so "U2'" → "U2".
+    expect(tokenize("x'↓R U2 R U'")).toEqual(["x'", 'R', 'U2', 'R', "U'"]);
+    expect(tokenize("R U'.R U' R' U R U'")).toEqual(['R', "U'", 'R', "U'", "R'", 'U', 'R', "U'"]);
+    expect(tokenize("↑B U2'")).toEqual(['B', 'U2']);
+    expect(tokenize("x'↓R2 U R2'")).toEqual(["x'", 'R2', 'U', 'R2']);
+  });
+
   it('keeps rotations and slices', () => {
     expect(tokenize("z y x' M2 E")).toEqual(['z', 'y', "x'", 'M2', 'E']);
   });
