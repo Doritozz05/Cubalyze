@@ -4,7 +4,11 @@ import { CubeState } from './CubeState';
 export const SOLVED_FACELETS = /^(.)\1{8}(.)\2{8}(.)\3{8}(.)\4{8}(.)\5{8}(.)\6{8}$/;
 
 // Facelet offsets: U: 0..8, R: 9..17, F: 18..26, D: 27..35, L: 36..44, B: 45..53
-const cornerFacelet = [
+//
+// The four tables below are exported for color-based phase detection
+// (ColorPhaseDetector): they map positions to facelet indices and piece ids
+// to their color sets, independently of any color convention.
+export const cornerFacelet = [
   [8, 9, 20],   // URF
   [6, 18, 38],  // UFL
   [0, 36, 47],  // ULB
@@ -15,7 +19,7 @@ const cornerFacelet = [
   [35, 17, 51]  // DRB
 ];
 
-const edgeFacelet = [
+export const edgeFacelet = [
   [5, 10],  // UR
   [7, 19],  // UF
   [3, 37],  // UL
@@ -30,7 +34,7 @@ const edgeFacelet = [
   [48, 14]  // BR
 ];
 
-const cornerColor = [
+export const cornerColor = [
   ['U', 'R', 'F'],
   ['U', 'F', 'L'],
   ['U', 'L', 'B'],
@@ -41,7 +45,7 @@ const cornerColor = [
   ['D', 'R', 'B']
 ];
 
-const edgeColor = [
+export const edgeColor = [
   ['U', 'R'],
   ['U', 'F'],
   ['U', 'L'],

@@ -1,5 +1,6 @@
 import {
   StateMatcher,
+  ColorPhaseDetector,
   type MethodDefinition,
   type PhaseMask,
   COLOR_NEUTRAL_CFOP_MASKS,
@@ -100,17 +101,25 @@ export class PhaseSplitter {
     const report = PhaseSplitter.buildReport(timeline, method, options);
     if (report.phases.length === 0) return false;
 
-    const masks = PhaseSplitter.masksForReport(method, report);
-    for (let phaseIndex = 0; phaseIndex < report.phases.length; phaseIndex++) {
-      const phase = report.phases[phaseIndex];
-      if (phase.skipped || phase.completionIndex === undefined) continue;
+    // Color-based detection verifies each phase by sticker GEOMETRY (any
+    // cross color on any face). Re-checking those phases against the
+    // piece-anchored masks would reject every non-canonical style (e.g. the
+    // standard white cross on D), so the mask re-verification only applies to
+    // canonical mask detection.
+    const useColorNeutral = options?.colorNeutral === true && method.name === 'CFOP';
+    if (!useColorNeutral) {
+      const masks = PhaseSplitter.masksForReport(method, report);
+      for (let phaseIndex = 0; phaseIndex < report.phases.length; phaseIndex++) {
+        const phase = report.phases[phaseIndex];
+        if (phase.skipped || phase.completionIndex === undefined) continue;
 
-      const entry = timeline.entries[phase.completionIndex];
-      const mask = masks[phaseIndex];
-      if (!entry || !mask) return false;
+        const entry = timeline.entries[phase.completionIndex];
+        const mask = masks[phaseIndex];
+        if (!entry || !mask) return false;
 
-      const state = TimelineBuilder.fromSnapshot(entry.state);
-      if (!StateMatcher.matchesMask(state, mask)) return false;
+        const state = TimelineBuilder.fromSnapshot(entry.state);
+        if (!StateMatcher.matchesMask(state, mask)) return false;
+      }
     }
 
     if (options?.strict && (!report.complete || !report.finalStateSolved)) {
@@ -130,33 +139,42 @@ export class PhaseSplitter {
     }
 
     const useColorNeutral = options?.colorNeutral === true && method.name === 'CFOP';
-    if (!useColorNeutral) {
-      return { phases: PhaseSplitter.runDetection(timeline, method.phases) };
+    if (useColorNeutral) {
+      // Color-based detection: recognizes the cross by the sticker geometry,
+      // so any cross color on any face (including the standard white-on-D
+      // style, which piece-anchored masks cannot see) is detected.
+      const colorRun = PhaseSplitter.detectColorNeutral(timeline);
+      if (colorRun.phases.length > 0) return colorRun;
     }
 
-    // Do not lock onto the first cross that happens to match. Evaluate all six
-    // possible faces and choose the candidate with the strongest complete,
-    // earliest-progressing phase sequence.
-    const candidates = COLOR_NEUTRAL_CFOP_MASKS.map((faceMasks) => ({
-      faceMasks,
-      run: {
-        phases: PhaseSplitter.runDetection(timeline, faceMasks.masks),
-        crossFace: faceMasks.face as CubeFace,
-      },
-    }));
+    return { phases: PhaseSplitter.runDetection(timeline, method.phases) };
+  }
 
-    const best = candidates.reduce((current, candidate) => {
-      return PhaseSplitter.compareRuns(candidate.run, current.run)
-        ? candidate
-        : current;
-    });
+  /**
+   * Color-based CFOP detection: any cross color on any face, re-colored to the
+   * solver's scheme. Falls back to an empty run when no cross is ever complete.
+   */
+  private static detectColorNeutral(timeline: SolveTimeline): DetectionRun {
+    const states = timeline.entries.map((entry) =>
+      TimelineBuilder.fromSnapshot(entry.state),
+    );
+    const result = ColorPhaseDetector.detect(states);
+    if (!result || result.completions[0] < 0) return { phases: [] };
 
-    // If no color-neutral candidate found anything, retain the historical
-    // canonical-mask fallback so generic/incomplete timelines remain useful.
-    if (best.run.phases.length === 0) {
-      return { phases: PhaseSplitter.runDetection(timeline, method.phases) };
+    // Only found completions become segments (mirroring runDetection, which
+    // stops at the first missing mask). Trailing -1 means the phase never
+    // completed and must not be indexed.
+    const found: number[] = [];
+    for (const completion of result.completions) {
+      if (completion < 0) break;
+      found.push(completion);
     }
-    return best.run;
+    const phases = PhaseSplitter.buildSegments(
+      timeline,
+      ['Cross', 'F2L', 'OLL', 'PLL'],
+      found,
+    );
+    return { phases, crossFace: result.crossFace as CubeFace };
   }
 
   private static runDetection(
@@ -164,15 +182,11 @@ export class PhaseSplitter {
     masks: readonly PhaseMask[],
   ): PhaseSegment[] {
     const { entries } = timeline;
-    const phases: PhaseSegment[] = [];
-    let phaseIndex = 0;
-    let previousCompletion = -1;
+    const completions: number[] = [];
     let searchFrom = 0;
 
-    while (phaseIndex < masks.length) {
-      const mask = masks[phaseIndex];
+    for (const mask of masks) {
       let completionIndex = -1;
-
       for (let i = searchFrom; i < entries.length; i++) {
         const state = TimelineBuilder.fromSnapshot(entries[i].state);
         if (StateMatcher.matchesMask(state, mask)) {
@@ -180,14 +194,42 @@ export class PhaseSplitter {
           break;
         }
       }
-
       if (completionIndex < 0) break;
+      completions.push(completionIndex);
+      // Start at the same state to allow OLL/PLL (or other nested masks) to
+      // complete simultaneously. A later phase naturally searches forward.
+      searchFrom = completionIndex;
+    }
 
+    return PhaseSplitter.buildSegments(
+      timeline,
+      masks.map((mask) => mask.name),
+      completions,
+    );
+  }
+
+  /**
+   * Build ordered phase segments from precomputed completion indices.
+   *
+   * A non-skipped phase owns the moves after the previous completion up to and
+   * including its completion move. A skipped phase (same completion index as
+   * the previous one) owns no move; its indices remain addressable for
+   * compatibility consumers, while `skipped` is the source of truth for
+   * annotation and metrics.
+   */
+  private static buildSegments(
+    timeline: SolveTimeline,
+    names: readonly string[],
+    completions: readonly number[],
+  ): PhaseSegment[] {
+    const { entries } = timeline;
+    const phases: PhaseSegment[] = [];
+    let previousCompletion = -1;
+
+    for (let k = 0; k < completions.length; k++) {
+      const phaseName = names[k];
+      const completionIndex = completions[k];
       const skipped = completionIndex === previousCompletion;
-      // A non-skipped phase owns the moves after the previous completion up to
-      // and including its completion move. A skipped phase owns no move; its
-      // indices remain addressable for compatibility consumers, while `skipped` is
-      // the source of truth for annotation and metrics.
       const startIndex = skipped ? completionIndex : previousCompletion + 1;
       const endIndex = completionIndex;
       const startTimestamp = skipped
@@ -205,7 +247,7 @@ export class PhaseSplitter {
         : 0;
 
       phases.push({
-        phaseName: mask.name,
+        phaseName,
         startIndex,
         endIndex,
         completionIndex,
@@ -220,16 +262,12 @@ export class PhaseSplitter {
       });
 
       previousCompletion = completionIndex;
-      phaseIndex++;
-      // Start at the same state to allow OLL/PLL (or other nested masks) to
-      // complete simultaneously. A later phase naturally searches forward.
-      searchFrom = completionIndex;
     }
 
-    // Preserve the invariant that a fully detected solve covers any
-    // trailing events after the last mask match. Those events belong to the
-    // final non-skipped phase; a skipped terminal phase remains zero-move.
-    if (phaseIndex === masks.length && phases.length > 0) {
+    // Preserve the invariant that a fully detected solve covers any trailing
+    // events after the last completion. Those events belong to the final
+    // non-skipped phase; a skipped terminal phase remains zero-move.
+    if (completions.length === names.length && phases.length > 0) {
       const lastPhase = [...phases].reverse().find((phase) => !phase.skipped);
       if (lastPhase && lastPhase.endIndex < entries.length - 1) {
         lastPhase.endIndex = entries.length - 1;
@@ -244,35 +282,6 @@ export class PhaseSplitter {
     }
 
     return phases;
-  }
-
-  private static compareRuns(
-    candidate: DetectionRun,
-    current: DetectionRun,
-  ): boolean {
-    const expected = 4;
-    const candidateComplete = candidate.phases.length >= expected;
-    const currentComplete = current.phases.length >= expected;
-    if (candidateComplete !== currentComplete) return candidateComplete;
-    if (candidate.phases.length !== current.phases.length) {
-      return candidate.phases.length > current.phases.length;
-    }
-
-    // Earlier cross completion is preferable when multiple candidates can
-    // match the final solved state. This avoids the old greedy late-face lock.
-    const candidateCross = candidate.phases[0]?.completionIndex ?? Number.MAX_SAFE_INTEGER;
-    const currentCross = current.phases[0]?.completionIndex ?? Number.MAX_SAFE_INTEGER;
-    if (candidateCross !== currentCross) return candidateCross < currentCross;
-
-    const candidateProgress = candidate.phases.reduce(
-      (sum, phase) => sum + (phase.completionIndex ?? 0),
-      0,
-    );
-    const currentProgress = current.phases.reduce(
-      (sum, phase) => sum + (phase.completionIndex ?? 0),
-      0,
-    );
-    return candidateProgress < currentProgress;
   }
 
   private static buildReport(

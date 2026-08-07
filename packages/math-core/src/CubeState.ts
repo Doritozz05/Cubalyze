@@ -94,6 +94,41 @@ const baseS = {
   eo: [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0]
 };
 
+// ── Pure-rotation helpers (solid-face re-derivation) ───────────────────────
+// A whole-cube rotation of the solved cube must leave every face
+// monochromatic. The face colors of each cubie (Kociemba order) are used to
+// re-derive co/eo from a known-correct piece permutation. These tables mirror
+// FaceletStringConverter.cornerColor/edgeColor (kept here to avoid an import
+// cycle).
+
+const ROT_FACES = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
+
+const ROT_CORNER_COLORS: string[][] = [
+  ['U', 'R', 'F'], // URF
+  ['U', 'F', 'L'], // UFL
+  ['U', 'L', 'B'], // ULB
+  ['U', 'B', 'R'], // UBR
+  ['D', 'F', 'R'], // DFR
+  ['D', 'L', 'F'], // DLF
+  ['D', 'B', 'L'], // DBL
+  ['D', 'R', 'B'], // DRB
+];
+
+const ROT_EDGE_COLORS: string[][] = [
+  ['U', 'R'], // UR
+  ['U', 'F'], // UF
+  ['U', 'L'], // UL
+  ['U', 'B'], // UB
+  ['D', 'R'], // DR
+  ['D', 'F'], // DF
+  ['D', 'L'], // DL
+  ['D', 'B'], // DB
+  ['F', 'R'], // FR
+  ['F', 'L'], // FL
+  ['B', 'L'], // BL
+  ['B', 'R'], // BR
+];
+
 // ── Bit-level constants ────────────────────────────────────────────────────
 
 const BITS = 5n;
@@ -433,36 +468,46 @@ export class CubeState implements CubeStateInternal {
     }
     // inverses indices: [0]=U' [1]=R' [2]=F' [3]=D' [4]=L' [5]=B' [6]=M' [7]=E' [8]=S'
 
-    // ── Build whole-cube rotations as composites ─────────────────────────
-    // x = R · L' · M'  (all X layers rotated like R, CW from +X)
-    // y = U · D' · E'  (all Y layers rotated like U, CW from +Y)
-    // z = F · B' · S'  (all Z layers rotated like F, CW from +Z)
+    // ── Build whole-cube rotations as PURE rotations ─────────────────────
+    // The piece permutation of each composite (x = R·L'·M', y = U·D'·E',
+    // z = F·B'·S') is correct, but the composition inherits the slice
+    // moves' edge-flips/twists, so the naive composite is NOT a pure
+    // rotation: applying it to a solved cube scrambles the faces instead
+    // of reorienting them. (Verified empirically: <x,y,z> generated 192
+    // states instead of the 24 of the rotation group, z ∉ <x,y>, and only
+    // 1 of the 24 generated states kept every face monochromatic.)
     //
-    // Components affect non-overlapping layers → they commute, so order
-    // doesn't matter. The composition via multiply() produces the correct
-    // cubie permutation + orientation for the entire-cube rotation.
+    // Fix: keep the permutation (cp/ep) and re-derive the orientation
+    // (co/eo) from the "solid faces" constraint — a rotation of the solved
+    // cube must leave every face monochromatic.
     //
     // Enum layout: [X1-3][Y1-3][Z1-3] = indices 27–35
     const ROT_BASE = 27;
 
-    // x = R * L' * M'
-    const x1 = R.clone();
-    x1.multiply(inverses[4]); // R * L'
-    x1.multiply(inverses[6]); // R * L' * M'
+    // x = R * L' * M'  (permutation is correct; orientations re-derived)
+    const xPerm = R.clone();
+    xPerm.multiply(inverses[4]); // R * L'
+    xPerm.multiply(inverses[6]); // R * L' * M'
+    const x1 = CubeState.pureRotationState(xPerm.cp, xPerm.ep);
     const x2 = x1.clone(); x2.multiply(x1.clone());
     const x3 = x2.clone(); x3.multiply(x1.clone());
 
     // y = U * D' * E'
-    const y1 = U.clone();
-    y1.multiply(inverses[3]); // U * D'
-    y1.multiply(inverses[7]); // U * D' * E'
+    const yPerm = U.clone();
+    yPerm.multiply(inverses[3]); // U * D'
+    yPerm.multiply(inverses[7]); // U * D' * E'
+    const y1 = CubeState.pureRotationState(yPerm.cp, yPerm.ep);
     const y2 = y1.clone(); y2.multiply(y1.clone());
     const y3 = y2.clone(); y3.multiply(y1.clone());
 
-    // z = F * B' * S'
-    const z1 = F.clone();
-    z1.multiply(inverses[5]); // F * B'
-    z1.multiply(inverses[8]); // F * B' * S'
+    // z = F * B' * S  — the middle ring of a CW-from-+Z rotation cycles
+    // UR→DR→DL→UL→UR, which is the S direction, NOT S' (the old composite
+    // reversed the ring and produced an inconsistent permutation: no valid
+    // face map existed for z, while x and y solved cleanly).
+    const zPerm = F.clone();
+    zPerm.multiply(inverses[5]); // F * B'
+    zPerm.multiply(elementaryBases[8]); // F * B' * S
+    const z1 = CubeState.pureRotationState(zPerm.cp, zPerm.ep);
     const z2 = z1.clone(); z2.multiply(z1.clone());
     const z3 = z2.clone(); z3.multiply(z1.clone());
 
@@ -511,5 +556,154 @@ export class CubeState implements CubeStateInternal {
   public static __getMoveBitTableLive(move: Move): Readonly<MoveBitTable> {
     CubeState.initTables();
     return CubeState.moveBitTables[move];
+  }
+
+  /**
+   * Build the CubeState of a whole-cube rotation from its piece permutation.
+   *
+   * The permutation (cp/ep) is assumed correct (it comes from the
+   * R·L'·M' / U·D'·E' / F·B'·S' composites, which permute the pieces like a
+   * rotation). The orientation flags (co/eo) are re-derived from the
+   * "solid faces" constraint: a rotation of the solved cube leaves every
+   * face monochromatic, which fixes each cubie's twist in the Kociemba frame.
+   */
+  private static pureRotationState(
+    cp: ArrayLike<number>,
+    ep: ArrayLike<number>,
+  ): CubeState {
+    const g = CubeState.rotationFaceMap(cp, ep);
+    const inv: Record<string, string> = {};
+    for (const key of Object.keys(g)) inv[g[key]] = key;
+
+    const ncp = new Int8Array(8);
+    const nco = new Int8Array(8);
+    const nep = new Int8Array(12);
+    const neo = new Int8Array(12);
+
+    for (let p = 0; p < 8; p++) {
+      const piece = cp[p];
+      ncp[p] = piece;
+      let found = -1;
+      for (let o = 0; o < 3; o++) {
+        let ok = true;
+        for (let j = 0; j < 3; j++) {
+          // Slot j of position p sits on face ROT_CORNER_COLORS[p][j]; after
+          // the rotation it shows the color of face g⁻¹(that face).
+          const expected = inv[ROT_CORNER_COLORS[p][j]];
+          if (ROT_CORNER_COLORS[piece][(j - o + 3) % 3] !== expected) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) {
+          found = o;
+          break;
+        }
+      }
+      if (found < 0) {
+        throw new Error(`pureRotationState: no corner orientation for position ${p}`);
+      }
+      nco[p] = found;
+    }
+
+    for (let p = 0; p < 12; p++) {
+      const piece = ep[p];
+      nep[p] = piece;
+      let found = -1;
+      for (let o = 0; o < 2; o++) {
+        let ok = true;
+        for (let j = 0; j < 2; j++) {
+          const expected = inv[ROT_EDGE_COLORS[p][j]];
+          if (ROT_EDGE_COLORS[piece][(j - o + 2) % 2] !== expected) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) {
+          found = o;
+          break;
+        }
+      }
+      if (found < 0) {
+        throw new Error(`pureRotationState: no edge orientation for position ${p}`);
+      }
+      neo[p] = found;
+    }
+
+    return new CubeState(ncp, nco, nep, neo);
+  }
+
+  /**
+   * Recover the face-to-face map of a rotation from its piece permutation.
+   *
+   * For each edge/corner, the home faces of the piece now occupying a
+   * position must map (under the rotation) onto that position's faces.
+   * Solved by backtracking over the 6! face permutations with forward
+   * pruning.
+   */
+  private static rotationFaceMap(
+    cp: ArrayLike<number>,
+    ep: ArrayLike<number>,
+  ): Record<string, string> {
+    const constraints: { src: string[]; dst: string[] }[] = [];
+    for (let p = 0; p < 12; p++) {
+      constraints.push({ src: ROT_EDGE_COLORS[ep[p]], dst: ROT_EDGE_COLORS[p] });
+    }
+    for (let p = 0; p < 8; p++) {
+      constraints.push({ src: ROT_CORNER_COLORS[cp[p]], dst: ROT_CORNER_COLORS[p] });
+    }
+
+    const g: Partial<Record<string, string>> = {};
+    // NOTE: `targets` is MUTATED (delete/add) as part of the backtracking
+    // search — it is search state, not a fixed input.
+    const targets = new Set<string>(ROT_FACES);
+
+    const satisfies = (c: { src: string[]; dst: string[] }): boolean => {
+      const mapped = c.src.map((s) => g[s]);
+      if (mapped.some((m) => m === undefined)) return true; // not fully assigned
+      const set = new Set(mapped as string[]);
+      return (
+        set.size === mapped.length &&
+        (mapped as string[]).every((m) => c.dst.includes(m)) &&
+        set.size === new Set(c.dst).size
+      );
+    };
+
+    const assign = (): boolean => {
+      const src = ROT_FACES.find((f) => !(f in g));
+      if (!src) {
+        return constraints.every(satisfies);
+      }
+      for (const t of [...targets]) {
+        // src → t must respect every constraint mentioning src, and leave
+        // enough room for the remaining unassigned faces of each constraint.
+        let ok = true;
+        for (const c of constraints) {
+          if (!c.src.includes(src)) continue;
+          if (!c.dst.includes(t)) {
+            ok = false;
+            break;
+          }
+          const unassigned = c.src.filter((s) => !(s in g) && s !== src).length;
+          const remaining = c.dst.filter((d) => targets.has(d) && d !== t).length;
+          if (unassigned > remaining) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+        g[src] = t;
+        targets.delete(t);
+        if (assign()) return true;
+        targets.add(t);
+        delete g[src];
+      }
+      return false;
+    };
+
+    if (!assign()) {
+      throw new Error('rotationFaceMap: no face map found for the given permutation');
+    }
+    return g as Record<string, string>;
   }
 }

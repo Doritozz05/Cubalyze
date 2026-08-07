@@ -1,0 +1,385 @@
+import { CubeState } from '../../CubeState';
+import {
+  cornerFacelet,
+  edgeFacelet,
+  cornerColor,
+  edgeColor,
+  FaceletStringConverter,
+} from '../../FaceletStringConverter';
+import { FACE_LAYERS } from './cfopMasks';
+
+/**
+ * ColorPhaseDetector — CFOP phase detection by COLOR, not by piece anchors.
+ *
+ * ── Why this exists ─────────────────────────────────────────────────────────
+ * The piece-anchored masks (CrossMask / F2LMask / OLLMask / PLLMask and the
+ * 6-face COLOR_NEUTRAL_CFOP_MASKS) require the cross edges of a FIXED color at
+ * FIXED positions (e.g. the yellow edges on D). A solver who builds a white
+ * cross on D — the standard style — is invisible to all 24 masks, because
+ * piece identities are rotation-invariant: rotating the cube can never turn
+ * the white edges (UR/UF/UL/UB) into the yellow edges (DR/DF/DL/DB).
+ *
+ * ── How it works ───────────────────────────────────────────────────────────
+ * Phases are recognized from the GEOMETRY of the stickers:
+ *
+ *   Cross done — the 4 edge stickers of SOME face are all the same color C.
+ *                (Exactly "the 4 C-colored edges sit on that face with their
+ *                C sticker facing out", for ANY face and ANY color — so a
+ *                white cross on D, a yellow cross on U, any CN style all
+ *                register.)
+ *   F2L done   — every sticker that does NOT belong to a last-layer piece
+ *                matches the solved layout, after re-coloring the state into
+ *                the solver's color scheme (derived from the completed cross).
+ *   OLL done   — F2L done and the 8 non-center stickers of the last-layer
+ *                face are all the last-layer color.
+ *   PLL done   — the cube is actually solved.
+ *
+ * The last layer of the solver is always the layer OPPOSITE the cross color,
+ * so the detector is fully independent of both the cross color and the cross
+ * face. Rotated frames (reconstructions written in the solver's grip) are
+ * handled by the caller trying the 24 cube rotations.
+ *
+ * ── Cross alignment (AUF) ──────────────────────────────────────────────────
+ * A cross is detected the moment its 4 edges sit on the cross face — but the
+ * solver usually completes it DISALIGNED and only aligns it with a U/U'/U2
+ * immediately after. The color scheme is derived from the cross edges' side
+ * stickers, which are wrong until the cross is aligned; the derived scheme
+ * can therefore be rotated by any of the 4 AUF rotations. We try all 4 and
+ * keep the one that yields the best downstream phase chain.
+ *
+ * ── Output ─────────────────────────────────────────────────────────────────
+ * `detect()` scans all 6 faces as potential cross faces, keeps every candidate
+ * that ever holds a completed cross, and returns the best one (complete 4
+ * phases > more phases > non-spurious F2L/OLL > earlier cross > earlier
+ * progress) — mirroring PhaseSplitter.compareRuns so a spurious face cross
+ * never wins over the solver's real one.
+ */
+export const FACE_LETTERS = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
+export type FaceLetter = (typeof FACE_LETTERS)[number];
+
+const OPPOSITE: Record<FaceLetter, FaceLetter> = {
+  U: 'D',
+  D: 'U',
+  R: 'L',
+  L: 'R',
+  F: 'B',
+  B: 'F',
+};
+
+const FACE_OFFSET: Record<FaceLetter, number> = {
+  U: 0,
+  R: 9,
+  F: 18,
+  D: 27,
+  L: 36,
+  B: 45,
+};
+
+/** Canonical solved facelet string (9× each face letter in U,R,F,D,L,B order). */
+const SOLVED_FACELETS = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+
+const CENTER_FACELETS = [4, 13, 22, 31, 40, 49];
+
+function faceOfFacelet(i: number): FaceLetter {
+  if (i < 9) return 'U';
+  if (i < 18) return 'R';
+  if (i < 27) return 'F';
+  if (i < 36) return 'D';
+  if (i < 45) return 'L';
+  return 'B';
+}
+
+/** For each face F, the 4 facelet indices of F's edge ring that lie ON F. */
+const CROSS_EDGE_FACELETS: Record<FaceLetter, number[]> = (() => {
+  const out = {} as Record<FaceLetter, number[]>;
+  for (const face of FACE_LETTERS) {
+    out[face] = FACE_LAYERS[face].crossEdges.map((pos) => {
+      const [a, b] = edgeFacelet[pos];
+      return faceOfFacelet(a) === face ? a : b;
+    });
+  }
+  return out;
+})();
+
+/**
+ * The side face adjacent to each cross-edge POSITION, in the same order as
+ * FACE_LAYERS[face].crossEdges. Used both to derive the color scheme (which
+ * color each side face shows) and to generate the 4 AUF-aligned variants.
+ */
+const CROSS_SIDE_FACES: Record<FaceLetter, FaceLetter[]> = (() => {
+  const out = {} as Record<FaceLetter, FaceLetter[]>;
+  for (const face of FACE_LETTERS) {
+    out[face] = FACE_LAYERS[face].crossEdges.map((pos) => {
+      const [a, b] = edgeColor[pos];
+      return (a === face ? b : a) as FaceLetter;
+    });
+  }
+  return out;
+})();
+
+/**
+ * For each FACE f: the facelet indices of the 8 pieces that sit on that face
+ * in the solved state (4 corners × 3 stickers + 4 edges × 2 stickers) PLUS
+ * all 6 centers.
+ *
+ * This is the "last layer" exclusion set for the F2L test. It is keyed by
+ * FACE (not by the last-layer color!): at F2L completion the last-layer
+ * pieces physically occupy the facelets of the face opposite the cross face,
+ * and those positions are exactly the home facelets of the pieces containing
+ * that face's canonical color.
+ *
+ * The centers are added because after re-coloring to the solver's scheme they
+ * no longer match the canonical solved layout; centers are fixed and carry no
+ * piece information, so comparing them is meaningless.
+ */
+const LAST_LAYER_FACELETS: Record<FaceLetter, Set<number>> = (() => {
+  const out = {} as Record<FaceLetter, Set<number>>;
+  for (const color of FACE_LETTERS) {
+    const set = new Set<number>();
+    for (let c = 0; c < 8; c++) {
+      if (cornerColor[c].includes(color)) cornerFacelet[c].forEach((i) => set.add(i));
+    }
+    for (let e = 0; e < 12; e++) {
+      if (edgeColor[e].includes(color)) edgeFacelet[e].forEach((i) => set.add(i));
+    }
+    CENTER_FACELETS.forEach((i) => set.add(i));
+    out[color] = set;
+  }
+  return out;
+})();
+
+export interface ColorDetectionResult {
+  /** Face where the cross was detected. */
+  crossFace: FaceLetter;
+  /** The cross color (a face letter). */
+  crossColor: FaceLetter;
+  /** Entry indices [cross, f2l, oll, pll]; -1 when a phase never completed. */
+  completions: [number, number, number, number];
+}
+
+/**
+ * Read the cross edges' side stickers at the cross state: `sideColors[j]` is
+ * the color the cross edge at cross-edge position j shows on its adjacent
+ * side face. For an ALIGNED cross this IS the solver's color scheme (rotated
+ * by 0); for a disaligned one it is rotated by some AUF (handled by trying
+ * the 4 rotations).
+ */
+function crossSideColors(
+  state: CubeState,
+  crossFace: FaceLetter,
+  crossColor: FaceLetter,
+): FaceLetter[] | null {
+  const sideColors: FaceLetter[] = [];
+  for (const pos of FACE_LAYERS[crossFace].crossEdges) {
+    const pieceColors = edgeColor[state.ep[pos]];
+    const sideColor = pieceColors[0] === crossColor ? pieceColors[1] : pieceColors[0];
+    if (sideColor === crossColor) return null;
+    sideColors.push(sideColor as FaceLetter);
+  }
+  // The 4 C-colored edges have 4 distinct side colors; any collision means the
+  // state is inconsistent and cannot anchor a scheme.
+  if (new Set(sideColors).size !== 4) return null;
+  return sideColors;
+}
+
+/**
+ * Build the full color scheme (face → color) for one AUF rotation of the
+ * derived side colors. `rotation` 0 is the scheme as-read; 1..3 are the AUF
+ * variants. Returns null when the scheme is not a bijection.
+ */
+function buildScheme(
+  crossFace: FaceLetter,
+  crossColor: FaceLetter,
+  sideFaces: readonly FaceLetter[],
+  sideColors: readonly FaceLetter[],
+  rotation: number,
+): Record<FaceLetter, FaceLetter> | null {
+  const scheme = {} as Record<FaceLetter, FaceLetter>;
+  scheme[crossFace] = crossColor;
+  for (let j = 0; j < 4; j++) {
+    scheme[sideFaces[j]] = sideColors[(j + rotation) % 4];
+  }
+  const assigned = new Set(Object.values(scheme));
+  const remaining = FACE_LETTERS.find((f) => !assigned.has(f));
+  if (remaining === undefined) return null;
+  scheme[OPPOSITE[crossFace]] = remaining;
+  if (new Set(Object.values(scheme)).size !== FACE_LETTERS.length) return null;
+  return scheme;
+}
+
+/** Re-color a facelet string into the canonical color scheme. */
+function canonicalize(facelets: string, inverseScheme: Record<string, string>): string {
+  let out = '';
+  for (let i = 0; i < facelets.length; i++) {
+    out += inverseScheme[facelets[i]] ?? facelets[i];
+  }
+  return out;
+}
+
+/** The cross color shown by face F's 4 edge stickers, or null if not a cross. */
+function crossColorAt(facelets: string, face: FaceLetter): FaceLetter | null {
+  const idxs = CROSS_EDGE_FACELETS[face];
+  const c = facelets[idxs[0]];
+  for (const i of idxs) {
+    if (facelets[i] !== c) return null;
+  }
+  return c as FaceLetter;
+}
+
+/**
+ * F2L complete: every sticker not on the last-layer layer (the face opposite
+ * the cross face) matches the solved layout.
+ */
+function f2lComplete(facelets: string, lastLayerFace: FaceLetter): boolean {
+  const excluded = LAST_LAYER_FACELETS[lastLayerFace];
+  for (let i = 0; i < 54; i++) {
+    if (!excluded.has(i) && facelets[i] !== SOLVED_FACELETS[i]) return false;
+  }
+  return true;
+}
+
+/** OLL complete: the 8 non-center stickers of the last-layer face are all its color. */
+function ollComplete(facelets: string, lastLayerFace: FaceLetter): boolean {
+  const base = FACE_OFFSET[lastLayerFace];
+  for (let j = 0; j < 9; j++) {
+    if (j === 4) continue; // center
+    if (facelets[base + j] !== lastLayerFace) return false;
+  }
+  return true;
+}
+
+/**
+ * Prefer: complete 4 phases > more phases > non-spurious F2L/OLL (completing
+ * only at the final solved state is a sign of a wrong scheme) > earlier
+ * cross > earlier progress.
+ */
+function better(
+  a: ColorDetectionResult,
+  b: ColorDetectionResult,
+  lastIndex: number,
+): boolean {
+  const aComplete = a.completions.every((c) => c >= 0);
+  const bComplete = b.completions.every((c) => c >= 0);
+  if (aComplete !== bComplete) return aComplete;
+  const aCount = a.completions.filter((c) => c >= 0).length;
+  const bCount = b.completions.filter((c) => c >= 0).length;
+  if (aCount !== bCount) return aCount > bCount;
+  // A completion of F2L/OLL at the very last entry is only ever legitimate
+  // for a solve that reaches F2L/OLL on the final move; in practice it marks
+  // a scheme that merely "fits" the solved state (any face works there).
+  const aSpurious =
+    (a.completions[1] >= 0 && a.completions[1] >= lastIndex) ||
+    (a.completions[2] >= 0 && a.completions[2] >= lastIndex);
+  const bSpurious =
+    (b.completions[1] >= 0 && b.completions[1] >= lastIndex) ||
+    (b.completions[2] >= 0 && b.completions[2] >= lastIndex);
+  if (aSpurious !== bSpurious) return !aSpurious;
+  if (a.completions[0] !== b.completions[0]) return a.completions[0] < b.completions[0];
+  const aSum = a.completions.filter((c) => c >= 0).reduce((s, c) => s + c, 0);
+  const bSum = b.completions.filter((c) => c >= 0).reduce((s, c) => s + c, 0);
+  return aSum < bSum;
+}
+
+/** Compute the full phase chain for one (crossFace, scheme) candidate. */
+function evaluateCandidate(
+  raw: string[],
+  states: CubeState[],
+  crossIdx: number,
+  crossFace: FaceLetter,
+  crossColor: FaceLetter,
+  scheme: Record<FaceLetter, FaceLetter>,
+): ColorDetectionResult {
+  const inverseScheme: Record<string, string> = {};
+  for (const f of FACE_LETTERS) inverseScheme[scheme[f]] = f;
+  const canonical = raw.map((s, i) => (i >= crossIdx ? canonicalize(s, inverseScheme) : s));
+  const lastLayerFace = OPPOSITE[crossFace];
+
+  let f2lIdx = -1;
+  for (let i = crossIdx; i < raw.length; i++) {
+    if (f2lComplete(canonical[i], lastLayerFace)) {
+      f2lIdx = i;
+      break;
+    }
+  }
+
+  let ollIdx = -1;
+  if (f2lIdx >= 0) {
+    for (let i = f2lIdx; i < raw.length; i++) {
+      if (
+        f2lComplete(canonical[i], lastLayerFace) &&
+        ollComplete(canonical[i], lastLayerFace)
+      ) {
+        ollIdx = i;
+        break;
+      }
+    }
+  }
+
+  let pllIdx = -1;
+  if (ollIdx >= 0) {
+    for (let i = ollIdx; i < states.length; i++) {
+      if (states[i].isSolved()) {
+        pllIdx = i;
+        break;
+      }
+    }
+  }
+
+  return {
+    crossFace,
+    crossColor,
+    completions: [crossIdx, f2lIdx, ollIdx, pllIdx],
+  };
+}
+
+export class ColorPhaseDetector {
+  /**
+   * Detect the best CFOP phase sequence by color.
+   *
+   * Returns null when no face ever holds a completed cross (e.g. an
+   * incoherent reconstruction) — callers fall back to canonical masks.
+   */
+  static detect(states: CubeState[]): ColorDetectionResult | null {
+    if (states.length === 0) return null;
+    const raw = states.map((s) => FaceletStringConverter.toFaceletString(s));
+    const lastIndex = states.length - 1;
+
+    let best: ColorDetectionResult | null = null;
+
+    for (const face of FACE_LETTERS) {
+      let crossIdx = -1;
+      let crossColor: FaceLetter | null = null;
+      for (let i = 0; i < raw.length; i++) {
+        const c = crossColorAt(raw[i], face);
+        if (c !== null) {
+          crossIdx = i;
+          crossColor = c;
+          break;
+        }
+      }
+      if (crossIdx < 0 || crossColor === null) continue;
+
+      const sideColors = crossSideColors(states[crossIdx], face, crossColor);
+      if (sideColors === null) continue;
+      const sideFaces = CROSS_SIDE_FACES[face];
+
+      // The cross may be complete but disaligned; try all 4 AUF rotations of
+      // the scheme and keep the best chain for this face.
+      for (let rotation = 0; rotation < 4; rotation++) {
+        const scheme = buildScheme(face, crossColor, sideFaces, sideColors, rotation);
+        if (scheme === null) continue;
+        const candidate = evaluateCandidate(
+          raw,
+          states,
+          crossIdx,
+          face,
+          crossColor,
+          scheme,
+        );
+        if (best === null || better(candidate, best, lastIndex)) best = candidate;
+      }
+    }
+
+    return best;
+  }
+}
