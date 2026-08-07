@@ -156,13 +156,14 @@ const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
 const ROW_LINE = "border-b border-line";
 
 /** Moves column: every token rendered identically (face moves and
- *  rotations alike) so all phases read in the same style. */
+ *  rotations alike), sized/colored exactly like the phase titles so the
+ *  algorithm reads as strong as its label. */
 function MovesSeq({ tokens }: { tokens: string[] | null }) {
   if (!tokens || tokens.length === 0) {
-    return <span className="text-xs text-ink-3">—</span>;
+    return <span className="text-[0.74rem] text-ink-3">—</span>;
   }
   return (
-    <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
+    <span className="min-w-0 truncate font-mono text-[0.74rem] font-medium text-ink">
       {tokens.join(" ")}
     </span>
   );
