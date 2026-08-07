@@ -467,6 +467,44 @@ estado los completa, no donde la etiqueta los pone.
 
 ---
 
+## Notación dinámica en el replay — ✅ implementado (2026-08-07, decisión del usuario)
+
+**Debate:** en el replay de reconstrucción salían moves "físicos" (`B`) donde el
+reconstructooor escribió `R` — la conjugación (correcta para el estado) rompía la
+notación visible. En el smartcube esto no pasa en vivo: `MoveTransformer.toDisplay` + la
+otación del frame del solver hacen que "la fila derecha siempre sea la derecha".
+
+**Decisión (usuario):** (1) la etiqueta del replay muestra la **notación del solver**
+(dinámica), y (2) el cubo 3D **rota a la perspectiva del solver** en reconstrucción,
+igual que en stats.
+
+**Implementación (física en el dato, notación en el render — la regla de oro):**
+
+1. **math-core `conjugatePhaseStream`** ahora devuelve también `orientationTimeline`
+   sintético: `[moveIndex, orientationIndex][]` (keyframes compactados, mismo formato que
+   `compactOrientationTimeline` del smartcube). Cada rotación consumida emite un keyframe
+   en el índice del move que la sigue; la inspección emite en el move 0; rotaciones
+   consecutivas antes del mismo move colapsan a una (el último grip gana); sin rotaciones
+   → `[]`.
+2. **reconData**: `normalizeReconMoves` guarda `record.orientationTimeline`;
+   `reconToSolve` lo pasa al `Solve` (undefined si vacío). El dato sigue siendo físico
+   (los moves conjugados no se tocan) — solo se añade la capa de presentación.
+3. **ReplaySection** (stats Y reconstrucción, mismo componente): la etiqueta del move usa
+   `getOrientationAtIndex(solve.orientationTimeline, idx)` +
+   `MoveTransformer.toDisplayNotation(move, entry)` → notación del solver. Sin timeline
+   (record sin rotaciones) cae a notación física canónica. El cubo ya rotaba vía
+   `orientationTimeline` en ambos caminos (ReplayEngine) — ahora la etiqueta coincide.
+4. **analyzeSolveText** expone `reconstruction.orientationTimeline` (para la Fase 3).
+
+**Tests:** `conjugateToBaseFrame.test.ts` +2 (keyframes sintéticos del 2510: inspección
+`z y` → keyframe @0, `x'` mid-solve → keyframe @5; vacío sin rotaciones).
+
+**Validación:** math-core 539/539 · analysis-engine 195/195 · web typecheck 0 errores ·
+eslint limpio. `ReplaySection` y `reconData` son los únicos archivos web tocados; el flujo
+smartcube de captura no cambia (solo la presentación del replay).
+
+---
+
 ## Fase 3 — (opcional) UI de pegado y futuro
 
 - **Pegado en web:** caja de texto en `ReconstructionsView` → `analyzeSolveText()` →

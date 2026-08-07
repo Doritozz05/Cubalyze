@@ -69,6 +69,15 @@ export interface F2LPairResult {
 export interface SolveReconstruction {
   method: 'CFOP';
   inspection: string;
+  /** Synthetic orientation keyframes ([moveIndex, orientationIndex]) so the
+   *  3D replay rotates the cube to the solver's perspective, exactly like
+   *  the smartcube path (empty when no rotations).
+   *
+   *  CONTRACT: indices are in FACE-MOVE space (slices / wide / garbage
+   *  tokens are excluded from counting, same as conjugatePhaseStream).
+   *  Consumers must index a moves array that contains ONLY face moves,
+   *  or they will drift off-index. */
+  orientationTimeline: [number, number][];
   crossColor: FaceLetter | undefined;
   cross: {
     moves: string[];
@@ -217,7 +226,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // Conjugate inspection + every phase with a running grip. Rotations are
   // consumed (folded into the moves), so perPhase[0] (inspection) yields no
   // face moves and every later phase is already in the cube-fixed frame.
-  const { perPhase } = conjugatePhaseStream([
+  const { perPhase, orientationTimeline } = conjugatePhaseStream([
     inspectionTokens,
     ...rawPhases.map((p) => p.tokens),
   ]);
@@ -247,6 +256,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   const reconstruction: SolveReconstruction = {
     method: 'CFOP',
     inspection,
+    orientationTimeline,
     crossColor: (detection?.crossColor as FaceLetter | undefined) ?? report.crossColor,
     cross: buildCross(report, timeline),
     pairs: buildPairs(timeline, report, crossFace, scheme),

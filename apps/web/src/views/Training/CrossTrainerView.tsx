@@ -333,10 +333,14 @@ export function CrossTrainerView({
   const handleRestart = useCallback(async () => {
     const r = replayRef.current;
     if (!r) return;
-    if (stickeringOn) engineRef.current?.clearLayerGray();
+    r.pause();
     await r.seek(0);
-    await r.play();
-  }, [stickeringOn, engineRef]);
+    // seek(0) resets the cube, so stickering must be re-applied AFTER it.
+    if (stickeringOn) {
+      engineRef.current?.clearLayerGray();
+      engineRef.current?.setPhaseStickering(cross.stickeringMask, "#6b7280");
+    }
+  }, [stickeringOn, cross.stickeringMask, engineRef]);
 
   const handleSetSpeed = useCallback((s: number) => {
     replayRef.current?.setSpeed(s);

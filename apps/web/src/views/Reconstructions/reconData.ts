@@ -14,7 +14,11 @@
  * per phase (case number, slot, verified) was baked at build time.
  */
 import type { Solve } from "@/types";
-import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
+import type {
+  CubeMoveEvent,
+  OrientationTimeline,
+  SolveMetrics,
+} from "@cubeforge/types";
 import {
   conjugatePhaseStream,
   conjugateToBaseFrame,
@@ -80,6 +84,10 @@ export interface ReconFullRecord extends ReconIndexEntry {
    *  engine cannot animate them, so they are folded into the conjugated
    *  moves and never shown as replay steps (same as the smartcube path). */
   rotationCount: number;
+  /** Synthetic orientation keyframes ([moveIndex, orientationIndex]) so the
+   *  3D replay rotates the cube to the solver's perspective like the
+   *  smartcube path (empty when the record has no rotations). */
+  orientationTimeline: OrientationTimeline;
 }
 
 interface ReconIndexFile {
@@ -153,10 +161,11 @@ const FACE_MOVE_RE = /^[URFDLB][2']?$/;
  * The raw `text` is left untouched for copy.
  */
 function normalizeReconMoves(record: ReconFullRecord): void {
-  const { perPhase, rotationCount } = conjugatePhaseStream(
+  const { perPhase, rotationCount, orientationTimeline } = conjugatePhaseStream(
     record.phases.map((p) => tokenize(p.moves)),
   );
   record.rotationCount = rotationCount;
+  record.orientationTimeline = orientationTimeline;
   record.phases.forEach((p, i) => {
     // Keep only outer-face moves: slices (from wide moves) and any residual
     // garbage can't be animated by the ReplayEngine and would break the
@@ -214,6 +223,15 @@ export function reconToSolve(record: ReconFullRecord): Solve {
   const allMoves = record.phases.map((p) => p.moves).join(" ");
   const moves = notationToReplayMoves(allMoves);
 
+  // The synthetic orientation timeline rotates the 3D cube to the solver's
+  // perspective during replay (same as the smartcube path), so the displayed
+  // notation matches what the reconstructor wrote instead of the physical
+  // cube-frame letters.
+  const orientationTimeline =
+    record.orientationTimeline && record.orientationTimeline.length > 0
+      ? record.orientationTimeline
+      : undefined;
+
   // p.moveCount is the CONJUGATED face-move count (normalizeReconMoves), so
   // it matches the replay `moves` array below exactly — rotations are folded
   // into the moves and never counted, same as the smartcube path.
@@ -237,6 +255,7 @@ export function reconToSolve(record: ReconFullRecord): Solve {
     method: record.method as Solve["method"],
     source: "manual",
     moves,
+    orientationTimeline,
     // So 2×2 reconstructions replay on a 2×2 cube (not a 3×3).
     puzzleType:
       record.puzzle === "2x2"

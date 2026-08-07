@@ -151,6 +151,43 @@ describe('conjugatePhaseStream', () => {
     expect(b.rotationCount).toBe(1);
   });
 
+  it('emits a synthetic orientation timeline from the grip (smartcube-compatible)', () => {
+    const { perPhase, rotationCount, orientationTimeline } = conjugatePhaseStream([
+      tokenize('z y'),
+      tokenize("D2 L U R' U'"),
+      tokenize("x' D' L' U L U' L' U L D"),
+    ]);
+
+    expect(rotationCount).toBe(3); // z y (inspection) + x' (mid-solve)
+    // z y inspection: both rotations happen before move 0 → one keyframe @0.
+    // x' mid-solve: happens after the 5 cross moves → keyframe @5.
+    expect(orientationTimeline.length).toBe(2);
+    expect(orientationTimeline[0][0]).toBe(0);
+    expect(orientationTimeline[1][0]).toBe(5);
+    // Orientation ids must be valid table indices (0-23) and differ.
+    expect(orientationTimeline[0][1]).toBeGreaterThanOrEqual(0);
+    expect(orientationTimeline[0][1]).toBeLessThan(24);
+    expect(orientationTimeline[1][1]).toBeGreaterThanOrEqual(0);
+    expect(orientationTimeline[1][1]).toBeLessThan(24);
+    expect(orientationTimeline[0][1]).not.toBe(0); // inspection ≠ identity
+    expect(orientationTimeline[1][1]).not.toBe(0);
+    // Per-phase face moves are unchanged by the new output field (the cross
+    // "D2 L U R' U'" written in the solver's frame conjugates to the
+    // physical frame under the z y grip — same count, different letters).
+    expect(perPhase[1].length).toBe(5);
+    // F2L 1 raw "x' D' L' U L U' L' U L D": the x' is a rotation (not a
+    // face move), so the phase contributes 9 conjugated face moves.
+    expect(perPhase[2].length).toBe(9);
+  });
+
+  it('emits an empty orientation timeline when there are no rotations', () => {
+    const { orientationTimeline } = conjugatePhaseStream([
+      tokenize('R U R\''),
+      tokenize("U' R' F"),
+    ]);
+    expect(orientationTimeline).toEqual([]);
+  });
+
   it('leaves an inspection-only phase empty and counts its rotations', () => {
     const { perPhase, rotationCount } = conjugatePhaseStream([
       tokenize('z y'),

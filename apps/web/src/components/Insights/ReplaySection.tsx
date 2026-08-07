@@ -6,6 +6,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
 import { ReplayEngine, type ReplayState, getSkinStyle } from "@cubeforge/cube-3d-engine";
+import {
+  MoveTransformer,
+  OrientationTable,
+  getOrientationAtIndex,
+} from "@cubeforge/math-core";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import {
@@ -152,8 +157,18 @@ export function ReplaySection({
   const liveStats = useMemo(() => {
     if (currentMoveIdx < 0 || currentMoveIdx >= moves.length) return null;
     const move = moves[currentMoveIdx];
-    const suffix = move.direction === 2 ? "2" : move.direction === -1 ? "'" : "";
-    const notation = `${move.face}${suffix}`;
+    // The stored moves are PHYSICAL (cube frame). Display them in the
+    // solver's frame by remapping with the orientation active at this move
+    // (same dynamic notation the smartcube shows live — right is always
+    // right). Falls back to physical notation when no orientation timeline
+    // exists (e.g. reconstruction records without rotations).
+    const orientationIndex = getOrientationAtIndex(
+      solve.orientationTimeline,
+      currentMoveIdx,
+    );
+    const orientationEntry =
+      OrientationTable.ENTRIES[orientationIndex] ?? OrientationTable.IDENTITY;
+    const notation = MoveTransformer.toDisplayNotation(move, orientationEntry);
 
     // Find current phase from analysis phases (cumulative move counts)
     const phases = solve.analysis?.phases ?? [];
@@ -172,7 +187,7 @@ export function ReplaySection({
     }
 
     return { notation, phaseName, phaseProgress };
-  }, [currentMoveIdx, moves, solve.analysis?.phases]);
+  }, [currentMoveIdx, moves, solve.analysis?.phases, solve.orientationTimeline]);
 
   /**
    * Clean up worker + engine resources.
@@ -384,10 +399,8 @@ export function ReplaySection({
   const handleRestart = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine) return;
+    engine.pause();
     await engine.seek(0);
-    // seek(0) already fires onPosition(0,-1) which sets positionMs/idx —
-    // no need to set them again here. Just start playback.
-    await engine.play();
   }, []);
 
   const canPlay = hasMoves && replayState !== "seeking";
