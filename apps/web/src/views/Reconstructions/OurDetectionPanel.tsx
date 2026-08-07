@@ -290,7 +290,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface">
       <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-        <SectionHeader title="Our detection" eyebrow="by cube state · CFOP" />
+        <SectionHeader title="Our detection" eyebrow="CFOP" />
         <div className="flex items-center gap-2">
           {warnings.length > 0 && (
             <Tooltip>
