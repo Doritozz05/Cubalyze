@@ -183,6 +183,12 @@ export function reconToSolve(record: ReconFullRecord): Solve {
   const allMoves = record.phases.map((p) => p.moves).join(" ");
   const moves = notationToReplayMoves(allMoves);
 
+  // NOTE: p.moveCount counts ALL tokens including rotations (recomputed by
+  // normalizeReconSeparators), while the replay `moves` array below excludes
+  // them (conjugated away). The ReplaySection phase progress indicator is
+  // therefore approximate for phases containing rotations — pre-existing
+  // quirk; Fase 2's analyzeSolveText must compute phase move counts from the
+  // conjugated token stream instead of inheriting this.
   const phases: SolveMetrics["phases"] = record.phases.map((p) => ({
     phaseName: p.label,
     durationMs: 0,

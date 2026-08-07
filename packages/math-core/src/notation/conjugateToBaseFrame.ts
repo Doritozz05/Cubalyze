@@ -17,8 +17,11 @@
  * rotation data is duplicated here.
  *
  * Rotations are consumed as grip updates and do NOT appear in the output;
- * slice / wide / unknown tokens pass through unchanged (callers should
- * expand wide moves with `expandWideMoves` first).
+ * slice / wide / unknown tokens pass through unchanged.
+ *
+ * **MUST be called AFTER `expandWideMoves`**: solver-frame wide moves (r, u,
+ * …) are only correct when conjugated after expansion to their face turn;
+ * unconjugated wides would be applied in the wrong frame.
  */
 import type { CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { OrientationTable, type OrientationEntry } from '../orientation/OrientationTable';

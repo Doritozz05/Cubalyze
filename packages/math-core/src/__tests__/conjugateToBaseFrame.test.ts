@@ -95,6 +95,7 @@ describe('conjugateToBaseFrame', () => {
     // After y: faceMap = {F:'R', R:'B', L:'F', B:'L', U:'U', D:'D'}
     // Written R → physical B, written F' → physical R'.
     expect(conjugateToBaseFrame(['y', 'R', "F'"])).toEqual(['B', "R'"]);
+    expect(conjugateToBaseFrame(['y', 'R2'])).toEqual(['B2']);
     // A second rotation composes on the running grip (y then x):
     // grip = compose(x, y) = {U:'R',D:'L',F:'D',B:'U',L:'F',R:'B'}
     // → written R → physical B, written F → physical D.
