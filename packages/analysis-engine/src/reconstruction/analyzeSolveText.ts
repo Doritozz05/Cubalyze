@@ -23,6 +23,8 @@ import {
   isRotation,
   tokenize,
   CFOPDefinition,
+  getOrientationAtIndex,
+  OrientationTable,
   type FaceLetter,
   type F2LSlotInfo,
 } from '@cubeforge/math-core';
@@ -78,6 +80,13 @@ export interface SolveReconstruction {
    *  Consumers must index a moves array that contains ONLY face moves,
    *  or they will drift off-index. */
   orientationTimeline: [number, number][];
+  /** The solver's color scheme: solver face → color letter (derived from the
+   *  detected cross). Used to name F2L slots and derive up/front colors. */
+  scheme: Record<FaceLetter, FaceLetter> | undefined;
+  /** Colors on the U and F faces of the SOLVER after the inspection grip
+   *  (e.g. { up: 'U', front: 'F' } for the canonical white-on-top frame) —
+   *  what Quest shows as the "Orientation" row. */
+  orientation: { up: FaceLetter; front: FaceLetter } | undefined;
   crossColor: FaceLetter | undefined;
   cross: {
     moves: string[];
@@ -253,10 +262,24 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   const scheme = detection?.scheme;
   const crossFace = (detection?.crossFace ?? report.crossFace ?? 'D') as string;
 
+  // Up/front colors after the inspection grip: the grip is the orientation
+  // active at move 0 of the synthetic timeline; its faceMap tells which
+  // physical face now sits at each solver position, and the scheme gives
+  // that face's color letter.
+  const gripIndex = getOrientationAtIndex(orientationTimeline, 0);
+  const grip = OrientationTable.ENTRIES[gripIndex] ?? OrientationTable.IDENTITY;
+  const schemeToUse = scheme ?? IDENTITY_SCHEME;
+  const orientation = {
+    up: schemeToUse[grip.faceMap.U] ?? 'U',
+    front: schemeToUse[grip.faceMap.F] ?? 'F',
+  };
+
   const reconstruction: SolveReconstruction = {
     method: 'CFOP',
     inspection,
     orientationTimeline,
+    scheme,
+    orientation,
     crossColor: (detection?.crossColor as FaceLetter | undefined) ?? report.crossColor,
     cross: buildCross(report, timeline),
     pairs: buildPairs(timeline, report, crossFace, scheme),

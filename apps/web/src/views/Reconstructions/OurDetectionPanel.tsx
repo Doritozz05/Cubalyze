@@ -5,8 +5,10 @@
  *
  * Runs the headless `analyzeSolveText` API on a reconstruction record (the
  * SAME setup + inspection + solution the ReplayEngine consumes) and renders
- * OUR state-based detection next to the reconstructor's raw phases:
+ * OUR state-based detection next to the reconstructor's raw phases, in the
+ * Quest table shape (Phase | Case | Moves | #):
  *
+ *   - Orientation row: colors on U and F after the inspection grip
  *   - cross type (plain / xcross / xxcross) + cross color
  *   - per-pair F2L slots with colors, auf and premade flags
  *   - OLL / PLL with skip detection
@@ -15,7 +17,8 @@
  * Moves are displayed in the SOLVER frame (remapped through the synthetic
  * orientation timeline), so they read exactly as the reconstructor wrote them
  * and compare 1:1 with the raw text — the same dynamic notation the replay
- * shows.
+ * shows. Slot labels and pair colors are positioned Quest-style: slot chip
+ * below the phase name, colors to its right.
  */
 import { useMemo } from "react";
 import {
@@ -115,10 +118,30 @@ const DOT: Record<string, string> = {
   f2l: "bg-phase-emerald",
   oll: "bg-phase-amber",
   pll: "bg-phase-violet",
+  other: "bg-line-2",
 };
 
 function Dot({ kind }: { kind: keyof typeof DOT }) {
   return <span className={cn("size-1.5 shrink-0 rounded-full", DOT[kind])} />;
+}
+
+// Quest-style grid: dot | Phase | Case | Moves | # — same template as the
+// raw Steps table, so both panels align visually. Rows get a bottom border
+// between each other (never on the last one, like PhaseRow).
+const ROW_GRID = "grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem]";
+const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
+
+/** Moves column: solver-frame notation, truncated. */
+function MovesCell({ moves }: { moves: string[] | null }) {
+  return (
+    <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
+      {moves?.join(" ") ?? "—"}
+    </span>
+  );
+}
+
+function CountCell({ count }: { count: number }) {
+  return <span className="nums text-right text-xs text-ink-2">{count}</span>;
 }
 
 // ─── Panel ─────────────────────────────────────────────────────────────────
@@ -203,6 +226,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const crossColor = recon.crossColor;
   const isXCross = recon.cross.type !== "plain";
   const warnings = report?.warnings ?? [];
+  const orient = recon.orientation;
 
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface">
@@ -245,116 +269,161 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         </div>
       </div>
 
-      {/* ── Cross ── */}
-      <div className="grid grid-cols-[0.75rem_7.5rem_auto_1fr_2.75rem] items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2">
-        <Dot kind="cross" />
-        <span className="text-[0.74rem] font-medium text-ink">Cross</span>
-        <span className="flex items-center gap-1.5">
-          {isXCross && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
-                    recon.cross.type === "xxcross"
-                      ? "border border-caution/40 bg-caution/10 text-caution"
-                      : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
-                  )}
-                >
-                  {recon.cross.type}
+      {/* ── Column headers (Quest style) ── */}
+      <div
+        className={cn(
+          ROW_GRID,
+          "items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
+        )}
+      >
+        <span />
+        <span>Phase</span>
+        <span>Case</span>
+        <span>Moves</span>
+        <span className="text-right">#</span>
+      </div>
+
+      {/* ── Orientation row (up / front after inspection) ── */}
+      <div className={cn(ROW_GRID, ROW, "border-b border-line/60")}>
+        <Dot kind="other" />
+        <span className="text-[0.74rem] font-medium text-ink">Orientation</span>
+        <span className="text-[0.64rem] text-ink-3">—</span>
+        <span className="flex min-w-0 items-center gap-3">
+          {orient && (
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
+                  up
                 </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {recon.cross.xcrossPair
-                  ? `${recon.cross.xcrossPair.name} pair solved at cross completion`
-                  : "An F2L pair was already solved at cross completion"}
-              </TooltipContent>
-            </Tooltip>
+                <FaceChip face={orient.up} />
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
+                  front
+                </span>
+                <FaceChip face={orient.front} />
+              </span>
+            </>
           )}
-          {crossColor && <FaceChip face={crossColor} />}
+          {!orient && <span className="text-[0.64rem] text-ink-3">—</span>}
         </span>
-        <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
-          {crossMoves.join(" ")}
+        <span />
+      </div>
+
+      {/* ── Cross ── */}
+      <div
+        className={cn(
+          ROW_GRID,
+          ROW,
+          (pairs.length > 0 || recon.oll || recon.pll) && "border-b border-line/60",
+        )}
+      >
+        <Dot kind="cross" />
+        <span className="flex min-w-0 flex-col">
+          <span className="text-[0.74rem] font-medium text-ink">Cross</span>
+          <span className="mt-0.5 flex items-center gap-1.5">
+            {isXCross && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
+                      recon.cross.type === "xxcross"
+                        ? "border border-caution/40 bg-caution/10 text-caution"
+                        : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+                    )}
+                  >
+                    {recon.cross.type}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {recon.cross.xcrossPair
+                    ? `${recon.cross.xcrossPair.name} pair solved at cross completion`
+                    : "An F2L pair was already solved at cross completion"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {crossColor && <FaceChip face={crossColor} />}
+          </span>
         </span>
-        <span className="nums text-right text-xs text-ink-2">
-          {crossMoves.length}
-        </span>
+        <span className="text-[0.64rem] text-ink-3/50">-</span>
+        <MovesCell moves={crossMoves} />
+        <CountCell count={crossMoves.length} />
       </div>
 
       {/* ── F2L pairs ── */}
       {pairs.map((p, i) => (
         <div
           key={p.slot}
-          className="grid grid-cols-[0.75rem_7.5rem_auto_1fr_2.75rem] items-center gap-2 border-t border-line/60 px-3 py-2 transition-colors hover:bg-surface-2"
+          className={cn(
+            ROW_GRID,
+            ROW,
+            (i < pairs.length - 1 || recon.oll || recon.pll) && "border-b border-line/60",
+          )}
         >
           <Dot kind="f2l" />
-          <span className="text-[0.74rem] font-medium text-ink">
-            F2L {i + 1}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
-              {p.slot}
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[0.74rem] font-medium text-ink">
+              F2L {i + 1}
             </span>
-            {p.colors.map((c) => (
-              <FaceChip key={c} face={c} />
-            ))}
-            {p.premade && (
-              <span className="rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
-                premade
+            <span className="mt-0.5 flex items-center gap-1.5">
+              <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
+                {p.slot}
               </span>
-            )}
+              {p.colors.map((c) => (
+                <FaceChip key={c} face={c} />
+              ))}
+              {p.premade && (
+                <span className="rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
+                  premade
+                </span>
+              )}
+            </span>
+          </span>
+          <span className="text-[0.64rem] text-ink-3/50">-</span>
+          <span className="min-w-0">
+            <MovesCell moves={p.moves} />
             {p.auf.length > 0 && (
-              <span className="rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
+              <span className="ml-2 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
                 auf {p.auf.join(" ")}
               </span>
             )}
           </span>
-          <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
-            {p.moves.join(" ")}
-          </span>
-          <span className="nums text-right text-xs text-ink-2">
-            {p.moves.length}
-          </span>
+          <CountCell count={p.moves.length} />
         </div>
       ))}
 
       {/* ── OLL / PLL ── */}
       {recon.oll && (
-        <div className="grid grid-cols-[0.75rem_7.5rem_auto_1fr_2.75rem] items-center gap-2 border-t border-line/60 px-3 py-2 transition-colors hover:bg-surface-2">
+        <div className={cn(ROW_GRID, ROW, recon.pll && "border-b border-line/60")}>
           <Dot kind="oll" />
-          <span className="text-[0.74rem] font-medium text-ink">OLL</span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[0.74rem] font-medium text-ink">OLL</span>
             {recon.oll.skipped && (
-              <span className="rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
+              <span className="mt-0.5 w-fit rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
                 skipped
               </span>
             )}
           </span>
-          <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
-            {ollMoves?.join(" ")}
-          </span>
-          <span className="nums text-right text-xs text-ink-2">
-            {ollMoves?.length ?? 0}
-          </span>
+          <span className="text-[0.64rem] text-ink-3/50">-</span>
+          <MovesCell moves={ollMoves} />
+          <CountCell count={ollMoves?.length ?? 0} />
         </div>
       )}
       {recon.pll && (
-        <div className="grid grid-cols-[0.75rem_7.5rem_auto_1fr_2.75rem] items-center gap-2 border-t border-line/60 px-3 py-2 transition-colors hover:bg-surface-2">
+        <div className={cn(ROW_GRID, ROW)}>
           <Dot kind="pll" />
-          <span className="text-[0.74rem] font-medium text-ink">PLL</span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[0.74rem] font-medium text-ink">PLL</span>
             {recon.pll.skipped && (
-              <span className="rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
+              <span className="mt-0.5 w-fit rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
                 skipped
               </span>
             )}
           </span>
-          <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
-            {pllMoves?.join(" ")}
-          </span>
-          <span className="nums text-right text-xs text-ink-2">
-            {pllMoves?.length ?? 0}
-          </span>
+          <span className="text-[0.64rem] text-ink-3/50">-</span>
+          <MovesCell moves={pllMoves} />
+          <CountCell count={pllMoves?.length ?? 0} />
         </div>
       )}
 
