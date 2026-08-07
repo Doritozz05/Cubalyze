@@ -4,6 +4,9 @@ export * from './CubeState';
 export * from './FaceletStringConverter';
 export * from './MoveExpander';
 
+// Move parsing / reconstruction notation (CubeRoot, Quest, …)
+export * from './notation/moveNotation';
+
 // 2×2 (Pocket Cube) state representation
 export * from './Cube2x2State';
 export * from './Cube2x2FaceletConverter';

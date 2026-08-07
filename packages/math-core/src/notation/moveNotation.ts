@@ -12,7 +12,7 @@
  *   - leadingUMoves(): extract the leading U moves (pair AUF / setup)
  *   - classification helpers (isRotation, isFaceMove, isUMove)
  */
-import { expandWideMoves } from '@cubeforge/math-core';
+import { expandWideMoves } from '../MoveExpander';
 
 const PRIME = /[’′´]/g;
 /** Letters that start a move token (faces + slices + rotations). */
@@ -24,8 +24,9 @@ const U_MOVE_RE = /^U[2']?$/;
 /**
  * Split a move string into elementary tokens.
  *
- * Handles: Unicode primes, '↑'/'·'/'↓'/'.' separators, glued tokens (U2U), numbered
- * turns (R3 → R'), wide moves (expanded to face+slice), parenthesized groups.
+ * Handles: Unicode primes, '↑'/'·'/'↓'/'.' separators, glued tokens (U2U),
+ * numbered turns (R3 → R'), wide moves (expanded to face+slice), parenthesized
+ * groups.
  */
 export function tokenize(moves: string): string[] {
   let s = moves.replace(PRIME, "'");

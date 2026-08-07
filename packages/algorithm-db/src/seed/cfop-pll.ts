@@ -8,7 +8,6 @@ import type { AlgorithmCase, Algorithm } from '../schema';
 
 export interface CaseData { caseDef: AlgorithmCase; algorithms: Algorithm[] }
 
-export const PLL_SUBSET_ID = "00000000-0000-4000-9000-000000000001";
 
 export const PLL_CASES: CaseData[] = [
   {

@@ -20,13 +20,8 @@ export { ANALYSIS_PIPELINE_VERSION } from './version';
 // ─── Phase Recognition ───────────────────────────────────────────────────────
 export { PhaseSplitter } from './phases/PhaseSplitter';
 
-// ─── Reconstruction Case Recognition (formal, convention-independent) ────────
-export { recognizeSolve } from './recognition/solveRecognition';
-export type {
-  SolveRecognition,
-  RecognizedPair,
-  RecognizeSolveOptions,
-} from './recognition/solveRecognition';
+// Reconstruction (string → phases/pairs) is rebuilt on the stats pipeline —
+// see docs/plan_reconstruction (Fase 2: analyzeSolveText).
 
 // ─── Metrics ────────────────────────────────────────────────────────────────
 export { TPSCalculator } from './metrics/TPSCalculator';

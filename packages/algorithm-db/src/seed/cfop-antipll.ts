@@ -8,7 +8,6 @@ import type { AlgorithmCase, Algorithm } from '../schema';
 
 export interface CaseData { caseDef: AlgorithmCase; algorithms: Algorithm[] }
 
-export const ANTIPLL_SUBSET_ID = "00000000-0000-4000-9000-000000000012";
 
 export const ANTIPLL_CASES: CaseData[] = [
   {

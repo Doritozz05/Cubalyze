@@ -6,8 +6,6 @@
 // with their real slots from the SCDB data-ori tabs (FR/FL/BL/BR).
 import type { AlgorithmCase, Algorithm } from '../schema';
 
-export const F2L_BASIC_SUBSET_ID = "00000000-0000-4000-9000-000000000003";
-export const F2L_ADVANCED_SUBSET_ID = "00000000-0000-4000-9000-000000000004";
 
 export interface F2LCaseData { caseDef: AlgorithmCase; algorithms: Algorithm[] }
 

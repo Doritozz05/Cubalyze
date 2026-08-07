@@ -589,9 +589,6 @@ importers:
 
   packages/analysis-engine:
     dependencies:
-      '@cubeforge/algorithm-db':
-        specifier: workspace:*
-        version: link:../algorithm-db
       '@cubeforge/math-core':
         specifier: workspace:*
         version: link:../math-core

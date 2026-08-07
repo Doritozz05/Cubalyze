@@ -6,7 +6,7 @@ import {
   leadingUMoves,
   withoutLeadingUMoves,
   isRotation,
-} from '../../recognition/moveNotation';
+} from '../notation/moveNotation';
 
 describe('moveNotation.tokenize', () => {
   it('normalizes unicode primes', () => {

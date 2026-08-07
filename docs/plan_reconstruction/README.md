@@ -1,6 +1,6 @@
 # Plan — Reconstrucción desde cero (rama `algortihms`)
 
-> **Estado:** Propuesto · **Rama:** `algortihms` · **Fecha:** 2026-08-07
+> **Estado:** Fase 0 ✅ **ejecutada** (2026-08-07) · Fases 1-2 pendientes · **Rama:** `algortihms`
 >
 > Objetivo: **sin romper el pipeline de stats** (que funciona), borrar todo el sistema
 > de reconocimiento/reconstrucción actual (que no funciona), y rehacer la reconstrucción
@@ -123,6 +123,12 @@ el módulo a math-core en esta fase solo se traslada, ya corregido.
 - `knip.jsonc`: el comentario `scripts/*.ts = debug scripts (debug-oll5)` y el `entry` dejan de
   ser ciertos → cambiar a `entry: ["scripts/*.cjs"]` (quedan `find-orphans.cjs` y `lint-lines.cjs`,
   que sí están cableados: `lint:lines` en `package.json` y knip).
+
+**Nota de ejecución (2026-08-07):** al borrar `caseIndex` quedaron huérfanos los exports
+`*_SUBSET_ID` de los seed (`cfop-f2l/oll/pll/cls/ell/sv/coll/wv/antipll`) — único consumidor era
+el índice borrado —, así que se eliminaron (knip los marcaba como unused exports). El catálogo de
+algs no se tocó. También se quitó la dep `@cubeforge/algorithm-db` de `analysis-engine` (pnpm-lock
+actualizado).
 
 ### 0.5 Validación de la Fase 0
 

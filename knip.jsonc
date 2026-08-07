@@ -2,8 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      // scripts/*.cjs = dev utilities (find-orphans); scripts/*.ts = debug scripts (debug-oll5).
-      "entry": ["scripts/*.cjs", "scripts/*.ts"]
+      // scripts/*.cjs = dev utilities (find-orphans, lint-lines).
+      "entry": ["scripts/*.cjs"]
     },
     "apps/desktop": {
       // Desktop is a thin Tauri shell that re-uses apps/web source via cross-app
