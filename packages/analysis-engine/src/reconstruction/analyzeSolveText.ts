@@ -210,7 +210,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   const setup = tokenize(input.setup)
     .filter((t) => FACE_MOVE_RE.test(t))
     .join(' ');
-  const inspection = input.inspection ?? '';
+  let inspection = input.inspection ?? '';
   let inspectionTokens = tokenize(inspection);
   let rawPhases = parseRawPhases(input.solution);
 
@@ -227,6 +227,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     if (embeddedIsRotationsOnly) {
       if (inspectionTokens.length === 0) {
         inspectionTokens = embeddedInspection.tokens;
+        inspection = inspectionTokens.join(' ');
       }
       rawPhases = rawPhases.filter((p) => p !== embeddedInspection);
     }

@@ -8,11 +8,13 @@
  * OUR state-based detection next to the reconstructor's raw phases, in the
  * Quest table shape (Phase | Case | Moves | #):
  *
- *   - Orientation row: colors on U and F after the inspection grip
+ *   - Orientation row: inspection rotations + colors on U and F after the grip
  *   - cross type (plain / xcross / xxcross) + cross color
  *   - per-pair F2L slots with colors, auf and premade flags
  *   - OLL / PLL with skip detection
  *   - coherence (finalSolved) + detection warnings
+ *   - rotations are shown interleaved in the moves column of their phase
+ *     (never counted in the # column), exactly as the reconstructor writes them
  *
  * Moves are displayed in the SOLVER frame (remapped through the synthetic
  * orientation timeline), so they read exactly as the reconstructor wrote them
@@ -39,6 +41,8 @@ import {
   MoveTransformer,
   OrientationTable,
   getOrientationAtIndex,
+  isRotation,
+  tokenize,
 } from "@cubeforge/math-core";
 import type { CubeFace, CubeMoveDirection } from "@cubeforge/types";
 import {
@@ -95,6 +99,25 @@ function leadingU(moves: string[]): string[] {
   return auf;
 }
 
+/** Rotations of a phase, interleaved into the face moves at their position. */
+function interleave(
+  moves: string[],
+  rots: { token: string; moveIndex: number }[],
+  from: number,
+): string[] {
+  const sorted = [...rots].sort((a, b) => a.moveIndex - b.moveIndex);
+  if (sorted.length === 0) return moves;
+  const out: string[] = [];
+  let ri = 0;
+  for (let k = 0; k < moves.length; k++) {
+    while (ri < sorted.length && sorted[ri].moveIndex <= from + k)
+      out.push(sorted[ri++].token);
+    out.push(moves[k]);
+  }
+  while (ri < sorted.length) out.push(sorted[ri++].token);
+  return out;
+}
+
 // ─── Color chip ────────────────────────────────────────────────────────────
 
 function FaceChip({ face }: { face: string }) {
@@ -126,16 +149,21 @@ function Dot({ kind }: { kind: keyof typeof DOT }) {
 }
 
 // Quest-style grid: dot | Phase | Case | Moves | # — same template as the
-// raw Steps table, so both panels align visually. Rows get a bottom border
-// between each other (never on the last one, like PhaseRow).
+// raw Steps table, so both panels align visually. Every data row carries a
+// full-strength bottom border (like the one under the header).
 const ROW_GRID = "grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem]";
 const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
+const ROW_LINE = "border-b border-line";
 
-/** Moves column: solver-frame notation, truncated. */
-function MovesCell({ moves }: { moves: string[] | null }) {
+/** Moves column: every token rendered identically (face moves and
+ *  rotations alike) so all phases read in the same style. */
+function MovesSeq({ tokens }: { tokens: string[] | null }) {
+  if (!tokens || tokens.length === 0) {
+    return <span className="text-xs text-ink-3">—</span>;
+  }
   return (
     <span className="min-w-0 truncate font-mono text-[0.66rem] text-ink-2">
-      {moves?.join(" ") ?? "—"}
+      {tokens.join(" ")}
     </span>
   );
 }
@@ -191,18 +219,30 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const ollPhase = reportPhases.find((p) => p.phaseName === "OLL");
   const pllPhase = reportPhases.find((p) => p.phaseName === "PLL");
   const crossStart = crossPhase?.startIndex ?? 0;
+  const crossEnd = crossPhase?.endIndex ?? crossStart + recon.cross.moves.length - 1;
   const crossMoves = remapPhase(recon.cross.moves, timeline, crossStart);
+
+  // Rotations come from collectRotations(inspectionTokens, solutionTokens):
+  // the inspection ones are always FIRST in the array. Slice them off.
+  const inspectionRotationCount = tokenize(recon.inspection).filter(isRotation)
+    .length;
+  const inspectionRotations = recon.rotations.slice(0, inspectionRotationCount);
+  const solveRotations = recon.rotations.slice(inspectionRotationCount);
 
   // Pairs are contiguous: the first starts after the cross ends, each next
   // after the previous one completed (same segmentStart logic as buildPairs).
-  let pairStart = (crossPhase?.endIndex ?? crossStart + crossMoves.length - 1) + 1;
+  let pairStart = crossEnd + 1;
   const pairs = recon.pairs.map((p) => {
+    const from = pairStart;
     const moves = remapPhase(p.moves, timeline, pairStart);
     pairStart = p.completionIndex + 1;
     // Re-derive auf from the SOLVER-frame moves so the chip matches the
     // moves column (the API's auf is in cube frame).
     const auf = leadingU(moves);
-    return { ...p, moves, auf };
+    const rots = solveRotations.filter(
+      (r) => r.moveIndex >= from && r.moveIndex <= p.completionIndex,
+    );
+    return { ...p, moves, auf, display: interleave(moves, rots, from) };
   });
 
   const ollMoves =
@@ -211,11 +251,28 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       : recon.oll
         ? remapPhase(recon.oll.moves, timeline, pairStart)
         : null;
+  const ollFrom = ollPhase?.startIndex ?? pairStart;
+  const ollTo = ollPhase?.endIndex ?? (ollMoves ? ollFrom + ollMoves.length - 1 : ollFrom - 1);
+  const ollRots = solveRotations.filter(
+    (r) => r.moveIndex >= ollFrom && r.moveIndex <= ollTo,
+  );
+  const ollDisplay = ollMoves ? interleave(ollMoves, ollRots, ollFrom) : null;
+
   const pllStart =
     pllPhase?.startIndex ?? (ollMoves ? pairStart + ollMoves.length : pairStart);
   const pllMoves = recon.pll
     ? remapPhase(recon.pll.moves, timeline, pllStart)
     : null;
+  const pllTo = pllPhase?.endIndex ?? (pllMoves ? pllStart + pllMoves.length - 1 : pllStart - 1);
+  const pllRots = solveRotations.filter(
+    (r) => r.moveIndex >= pllStart && r.moveIndex <= pllTo,
+  );
+  const pllDisplay = pllMoves ? interleave(pllMoves, pllRots, pllStart) : null;
+
+  const crossRots = solveRotations.filter(
+    (r) => r.moveIndex >= crossStart && r.moveIndex <= crossEnd,
+  );
+  const crossDisplay = interleave(crossMoves, crossRots, crossStart);
 
   const totalMoves =
     crossMoves.length +
@@ -227,6 +284,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const isXCross = recon.cross.type !== "plain";
   const warnings = report?.warnings ?? [];
   const orient = recon.orientation;
+  const inspectionTokens = inspectionRotations.map((r) => r.token);
 
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface">
@@ -283,41 +341,31 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         <span className="text-right">#</span>
       </div>
 
-      {/* ── Orientation row (up / front after inspection) ── */}
-      <div className={cn(ROW_GRID, ROW, "border-b border-line/60")}>
+      {/* ── Orientation row: up/front after grip (case) + inspection rot. ── */}
+      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
         <Dot kind="other" />
         <span className="text-[0.74rem] font-medium text-ink">Orientation</span>
-        <span className="text-[0.64rem] text-ink-3">—</span>
-        <span className="flex min-w-0 items-center gap-3">
+        <span className="flex min-w-0 items-center gap-1.5">
           {orient && (
             <>
-              <span className="flex items-center gap-1.5">
-                <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
-                  up
-                </span>
-                <FaceChip face={orient.up} />
+              <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
+                up
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
-                  front
-                </span>
-                <FaceChip face={orient.front} />
+              <FaceChip face={orient.up} />
+              <span className="ml-1 text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
+                front
               </span>
+              <FaceChip face={orient.front} />
             </>
           )}
           {!orient && <span className="text-[0.64rem] text-ink-3">—</span>}
         </span>
-        <span />
+        <MovesSeq tokens={inspectionTokens.length > 0 ? inspectionTokens : null} />
+        <span className="nums text-right text-xs text-ink-3">—</span>
       </div>
 
       {/* ── Cross ── */}
-      <div
-        className={cn(
-          ROW_GRID,
-          ROW,
-          (pairs.length > 0 || recon.oll || recon.pll) && "border-b border-line/60",
-        )}
-      >
+      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
         <Dot kind="cross" />
         <span className="flex min-w-0 flex-col">
           <span className="text-[0.74rem] font-medium text-ink">Cross</span>
@@ -346,21 +394,14 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
             {crossColor && <FaceChip face={crossColor} />}
           </span>
         </span>
-        <span className="text-[0.64rem] text-ink-3/50">-</span>
-        <MovesCell moves={crossMoves} />
+        <span className="text-[0.64rem] text-ink-3/50">—</span>
+        <MovesSeq tokens={crossDisplay} />
         <CountCell count={crossMoves.length} />
       </div>
 
       {/* ── F2L pairs ── */}
       {pairs.map((p, i) => (
-        <div
-          key={p.slot}
-          className={cn(
-            ROW_GRID,
-            ROW,
-            (i < pairs.length - 1 || recon.oll || recon.pll) && "border-b border-line/60",
-          )}
-        >
+        <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <Dot kind="f2l" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">
@@ -380,9 +421,9 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
               )}
             </span>
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">-</span>
+          <span className="text-[0.64rem] text-ink-3/50">—</span>
           <span className="min-w-0">
-            <MovesCell moves={p.moves} />
+            <MovesSeq tokens={p.display} />
             {p.auf.length > 0 && (
               <span className="ml-2 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
                 auf {p.auf.join(" ")}
@@ -395,7 +436,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
 
       {/* ── OLL / PLL ── */}
       {recon.oll && (
-        <div className={cn(ROW_GRID, ROW, recon.pll && "border-b border-line/60")}>
+        <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <Dot kind="oll" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">OLL</span>
@@ -405,13 +446,13 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
               </span>
             )}
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">-</span>
-          <MovesCell moves={ollMoves} />
+          <span className="text-[0.64rem] text-ink-3/50">—</span>
+          <MovesSeq tokens={ollDisplay} />
           <CountCell count={ollMoves?.length ?? 0} />
         </div>
       )}
       {recon.pll && (
-        <div className={cn(ROW_GRID, ROW)}>
+        <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <Dot kind="pll" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">PLL</span>
@@ -421,14 +462,14 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
               </span>
             )}
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">-</span>
-          <MovesCell moves={pllMoves} />
+          <span className="text-[0.64rem] text-ink-3/50">—</span>
+          <MovesSeq tokens={pllDisplay} />
           <CountCell count={pllMoves?.length ?? 0} />
         </div>
       )}
 
       {/* ── Footer: rotations + tps ── */}
-      <div className="flex items-center gap-3 border-t border-line bg-surface-2/60 px-3 py-1.5 text-[0.6rem] text-ink-3">
+      <div className="flex items-center gap-3 bg-surface-2/60 px-3 py-1.5 text-[0.6rem] text-ink-3">
         <span className="flex items-center gap-1">
           <RotateCcw className="size-3" />
           {recon.rotations.length} rotation{recon.rotations.length !== 1 ? "s" : ""}
