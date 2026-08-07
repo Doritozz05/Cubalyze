@@ -329,7 +329,7 @@ export function ReconstructionDetailView({
             <StatChip label="LL" value={record.stats.ll != null ? String(record.stats.ll) : "—"} />
             <StatChip
               label="Rotations"
-              value={record.stats.yRot != null ? String(record.stats.yRot) : "—"}
+              value={String(record.rotationCount ?? 0)}
             />
           </div>
 

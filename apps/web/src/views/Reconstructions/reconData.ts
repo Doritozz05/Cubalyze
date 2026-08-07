@@ -15,7 +15,11 @@
  */
 import type { Solve } from "@/types";
 import type { CubeMoveEvent, SolveMetrics } from "@cubeforge/types";
-import { conjugateToBaseFrame, expandWideMoves } from "@cubeforge/math-core";
+import {
+  conjugatePhaseStream,
+  conjugateToBaseFrame,
+  tokenize,
+} from "@cubeforge/math-core";
 
 // ─── Types (mirror of the build script output) ──────────────────────────────
 
@@ -72,6 +76,10 @@ export interface ReconFullRecord extends ReconIndexEntry {
     inspection: string;
     crossVerified: boolean;
   };
+  /** Whole-cube rotations (x/y/z) in the stream, computed at load — the 3D
+   *  engine cannot animate them, so they are folded into the conjugated
+   *  moves and never shown as replay steps (same as the smartcube path). */
+  rotationCount: number;
 }
 
 interface ReconIndexFile {
@@ -116,7 +124,7 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
     if (!res.ok) throw new Error(`reconstructions chunk ${chunk}: HTTP ${res.status}`);
     const data = (await res.json()) as { solves: ReconFullRecord[] };
     const record = data.solves.find((s) => s.key === key) ?? null;
-    if (record) normalizeReconSeparators(record);
+    if (record) normalizeReconMoves(record);
     return record;
   })();
 
@@ -129,37 +137,49 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
 const SLICE_RE = /^[MSE]'?2?$/;
 
 /**
- * CubeRoot / Quest write separators between moves (↓ ↑ · .) to mark regrips
- * / cancellations. The baked JSON kept them inside `phase.moves`, which breaks
- * both the Steps table render and the replay. We normalize phase moves on load
- * (display + replay) but leave the raw `text` untouched for copy.
+ * Normalize a record's phase moves at load time, once:
+ *
+ * 1. `tokenize` each phase — splits CubeRoot's glued tokens ("U'D" → U' + D,
+ *    727 occurrences in the baked data), Unicode primes, wide moves and the
+ *    ↓ ↑ · . separators (which previously leaked into the Steps table and
+ *    produced phantom replay moves).
+ * 2. `conjugatePhaseStream` the whole stream into the cube-fixed frame — the
+ *    inspection + mid-solve rotations are folded into the moves so replaying
+ *    scramble → moves ends SOLVED. Rotations are counted, not output.
+ * 3. Store the conjugated face moves per phase (slices dropped — the engine
+ *    cannot animate them), so the Steps table and the replay agree exactly.
+ *
+ * The raw `text` is left untouched for copy.
  */
-const SEPARATOR_RE = /[↓↑·.]/g;
-
-function normalizeReconSeparators(record: ReconFullRecord): void {
-  for (const phase of record.phases) {
-    const cleaned = phase.moves.replace(SEPARATOR_RE, " ").replace(/\s+/g, " ").trim();
-    phase.moves = cleaned;
-    phase.moveCount = cleaned ? cleaned.split(/\s+/).length : 0;
-  }
+function normalizeReconMoves(record: ReconFullRecord): void {
+  const { perPhase, rotationCount } = conjugatePhaseStream(
+    record.phases.map((p) => tokenize(p.moves)),
+  );
+  record.rotationCount = rotationCount;
+  record.phases.forEach((p, i) => {
+    const faceMoves = perPhase[i].filter((t) => !SLICE_RE.test(t));
+    p.moves = faceMoves.join(" ");
+    p.moveCount = faceMoves.length;
+  });
 }
 
 /**
  * Turn a notation string into CubeMoveEvents for the ReplayEngine.
  *
- * Wide moves are expanded to their face turn (r → R). The whole sequence is
- * then CONJUGATED to the cube-fixed frame (conjugateToBaseFrame): inspection
- * and mid-solve rotations are folded into the moves, so replaying
- * scramble → moves ends SOLVED. Rotations are consumed by the conjugation
- * and slice tokens are dropped — the ReplayEngine can only animate
- * outer-face turns (FACE_ROTATION_MAP has no M/S/E). Events are spaced at a
- * fixed 550ms so the replay timeline is proportional to moves.
+ * `tokenize` first — it splits glued tokens ("U'D"), Unicode primes, wide
+ * moves and the ↓ ↑ · . separators. The sequence is then CONJUGATED to the
+ * cube-fixed frame (conjugateToBaseFrame): inspection and mid-solve rotations
+ * are folded into the moves, so replaying scramble → moves ends SOLVED.
+ * Rotations are consumed by the conjugation and slice tokens are dropped —
+ * the ReplayEngine can only animate outer-face turns (FACE_ROTATION_MAP has
+ * no M/S/E). Events are spaced at a fixed 550ms so the replay timeline is
+ * proportional to moves.
  */
 export function notationToReplayMoves(notation: string, start = 0): CubeMoveEvent[] {
-  const tokens = expandWideMoves(notation.trim().split(/[\s↓↑·.]+/).filter(Boolean));
+  const tokens = conjugateToBaseFrame(tokenize(notation));
   const events: CubeMoveEvent[] = [];
   let ts = start;
-  for (const token of conjugateToBaseFrame(tokens)) {
+  for (const token of tokens) {
     if (SLICE_RE.test(token)) continue;
     const face = token[0] as CubeMoveEvent["face"];
     const suffix = token.slice(1);
@@ -183,12 +203,9 @@ export function reconToSolve(record: ReconFullRecord): Solve {
   const allMoves = record.phases.map((p) => p.moves).join(" ");
   const moves = notationToReplayMoves(allMoves);
 
-  // NOTE: p.moveCount counts ALL tokens including rotations (recomputed by
-  // normalizeReconSeparators), while the replay `moves` array below excludes
-  // them (conjugated away). The ReplaySection phase progress indicator is
-  // therefore approximate for phases containing rotations — pre-existing
-  // quirk; Fase 2's analyzeSolveText must compute phase move counts from the
-  // conjugated token stream instead of inheriting this.
+  // p.moveCount is the CONJUGATED face-move count (normalizeReconMoves), so
+  // it matches the replay `moves` array below exactly — rotations are folded
+  // into the moves and never counted, same as the smartcube path.
   const phases: SolveMetrics["phases"] = record.phases.map((p) => ({
     phaseName: p.label,
     durationMs: 0,

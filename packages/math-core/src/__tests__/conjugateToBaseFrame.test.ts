@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CubeState } from '../CubeState';
-import { conjugateToBaseFrame } from '../notation/conjugateToBaseFrame';
+import { conjugateToBaseFrame, conjugatePhaseStream } from '../notation/conjugateToBaseFrame';
 import { tokenize } from '../notation/moveNotation';
 import { OrientationTable } from '../orientation/OrientationTable';
 import { MoveTransformer } from '../orientation/MoveTransformer';
@@ -104,5 +104,60 @@ describe('conjugateToBaseFrame', () => {
 
   it('passes tokens through unchanged when there are no rotations', () => {
     expect(conjugateToBaseFrame(['R', "U'", 'M'])).toEqual(['R', "U'", 'M']);
+  });
+});
+
+describe('conjugatePhaseStream', () => {
+  // Real web record #2510 (Liam Walton) from the baked JSON — includes the
+  // glued token "U'D" in PLL that a naive whitespace split mangles (losing
+  // the D' and leaving the cube unsolved). Regression for the reconstruction
+  // replay fix.
+  const SCRAMBLE_WEB_2510 = "U B U2 L U2 R2 F' U' R D2 F' D' B2 U D2 R2 B2 R2";
+  const WEB_2510_PHASES = [
+    'z y', // Inspection
+    "D2 L U R' U'", // W Cross
+    "x' D' L' U L U' L' U L D", // F2L 1
+    "U2 y' L' U L U' L' U L U2 L' U L", // F2L 2
+    "U2 U L U' L'", // F2L 3
+    "y' R' U2 R U R' U' R", // F2L 4
+    "R' U' R' F R F' U R", // OLL
+    "U' R U R' U'D R2 U' R U' R' U R' U R2 D'", // PLL (glued U'D)
+  ];
+
+  it('conjugates the real web #2510 (with glued U\'D) and the cube ends solved', () => {
+    const { perPhase, rotationCount } = conjugatePhaseStream(
+      WEB_2510_PHASES.map((p) => tokenize(p)),
+    );
+
+    // Rotations z y x' y' y' are consumed and counted; the glued U'D is
+    // split by tokenize into U' + D, so the face-move total is 67 − 5 = 62
+    // (66 raw whitespace tokens, +1 from the glued split, −5 rotations).
+    expect(rotationCount).toBe(5);
+    expect(perPhase.map((t) => t.length)).toEqual([0, 5, 9, 12, 5, 7, 8, 16]);
+    expect(perPhase.reduce((n, t) => n + t.length, 0)).toBe(62);
+
+    const s = new CubeState();
+    s.applySequence(SCRAMBLE_WEB_2510);
+    s.applySequence(perPhase.flat().join(' '));
+    expect(s.isSolved()).toBe(true);
+  });
+
+  it('threads the grip across phases (a mid-solve rotation affects later phases)', () => {
+    // Same move before/after a y' — the later phase's face is remapped.
+    const a = conjugatePhaseStream([tokenize('R'), tokenize('R')]);
+    const b = conjugatePhaseStream([tokenize('R'), tokenize("y' R")]);
+    expect(a.perPhase[1][0]).toBe('R');
+    expect(b.perPhase[1][0]).toBe('F'); // after y': written R → physical F
+    expect(b.rotationCount).toBe(1);
+  });
+
+  it('leaves an inspection-only phase empty and counts its rotations', () => {
+    const { perPhase, rotationCount } = conjugatePhaseStream([
+      tokenize('z y'),
+      tokenize("D2 L U R' U'"),
+    ]);
+    expect(perPhase[0]).toEqual([]);
+    expect(rotationCount).toBe(2);
+    expect(perPhase[1].length).toBe(5);
   });
 });

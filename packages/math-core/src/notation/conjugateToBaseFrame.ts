@@ -29,18 +29,13 @@ import { MoveTransformer } from '../orientation/MoveTransformer';
 
 const FACE_LETTERS = 'URFDLB';
 
-/**
- * Conjugate a token list into the cube-fixed frame.
- *
- * @param tokens Moves + rotations as written by the solver (e.g. tokenized
- *               reconstruction text). Rotations may appear anywhere — at the
- *               start (inspection) or mid-solve.
- * @returns The conjugated face-turn tokens (rotations removed), ready to
- *          apply after the scramble on a fixed cube.
- */
-export function conjugateToBaseFrame(tokens: readonly string[]): string[] {
-  let grip: OrientationEntry = OrientationTable.IDENTITY;
+/** One pass over a token list with a running grip. */
+function conjugateWithGrip(
+  tokens: readonly string[],
+  grip: OrientationEntry,
+): { out: string[]; grip: OrientationEntry; rotations: number } {
   const out: string[] = [];
+  let rotations = 0;
 
   for (const token of tokens) {
     const rotation = OrientationTable.rotationEntryFor(token);
@@ -51,6 +46,7 @@ export function conjugateToBaseFrame(tokens: readonly string[]): string[] {
       // `a` first). Round-trip tests cannot catch this — only real solves
       // with genuine inspection rotations do.
       grip = OrientationTable.compose(rotation, grip);
+      rotations++;
       continue;
     }
 
@@ -70,5 +66,46 @@ export function conjugateToBaseFrame(tokens: readonly string[]): string[] {
     out.push(MoveTransformer.moveToNotation(raw.face, raw.direction));
   }
 
-  return out;
+  return { out, grip, rotations };
+}
+
+/**
+ * Conjugate a token list into the cube-fixed frame.
+ *
+ * @param tokens Moves + rotations as written by the solver (e.g. tokenized
+ *               reconstruction text). Rotations may appear anywhere — at the
+ *               start (inspection) or mid-solve.
+ * @returns The conjugated face-turn tokens (rotations removed), ready to
+ *          apply after the scramble on a fixed cube.
+ */
+export function conjugateToBaseFrame(tokens: readonly string[]): string[] {
+  return conjugateWithGrip(tokens, OrientationTable.IDENTITY).out;
+}
+
+/**
+ * Conjugate a reconstruction's token stream phase-by-phase.
+ *
+ * The running grip is threaded ACROSS phases (a rotation inside F2L 2 also
+ * affects every later phase), and each phase keeps only its own conjugated
+ * tokens so phase boundaries survive. Rotations are counted, not output.
+ *
+ * @param phases Token lists per phase, in solve order (e.g. the result of
+ *               tokenizing each `//`-separated segment of a reconstruction).
+ * @returns Per-phase conjugated face tokens plus the total rotation count.
+ */
+export function conjugatePhaseStream(
+  phases: readonly (readonly string[])[],
+): { perPhase: string[][]; rotationCount: number } {
+  let grip: OrientationEntry = OrientationTable.IDENTITY;
+  let rotationCount = 0;
+  const perPhase: string[][] = [];
+
+  for (const phase of phases) {
+    const { out, grip: nextGrip, rotations } = conjugateWithGrip(phase, grip);
+    grip = nextGrip;
+    rotationCount += rotations;
+    perPhase.push(out);
+  }
+
+  return { perPhase, rotationCount };
 }
