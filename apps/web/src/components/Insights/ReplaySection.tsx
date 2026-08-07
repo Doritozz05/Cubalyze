@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatTime } from "@/utils/formatTime";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
@@ -22,6 +21,14 @@ import {
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SPEEDS = [0.25, 0.5, 1, 2] as const;
+
+/**
+ * Playback pace: each move gets a fixed slot on the replay timeline, so the
+ * replay is MOVE-DRIVEN — it always plays EVERY move regardless of the
+ * solve's real time. A 3s / 50-move record replays all 50 moves instead of
+ * cutting off after a few. Must match ReplayEngine.moveSpacingMs.
+ */
+const REPLAY_MOVE_SPACING_MS = 500;
 
 // ─── Props ─────────────────────────────────────────────────────────────────
 
@@ -129,14 +136,14 @@ export function ReplaySection({
   // Depend on primitive/value properties only (not the whole `solve` object)
   // to avoid recomputing on every prop-reference change.
   const moves = useMemo(() => solve.moves ?? [], [solve.moves]);
-  const firstMoveTimestamp = moves[0]?.hostTimestamp;
-  const lastMoveTimestamp = moves[moves.length - 1]?.hostTimestamp;
 
-  const totalMs = useMemo(() => {
-    if (solve.time > 0) return solve.time;
-    if (moves.length < 2) return solve.time;
-    return (lastMoveTimestamp ?? 0) - (firstMoveTimestamp ?? 0);
-  }, [solve.time, moves.length, firstMoveTimestamp, lastMoveTimestamp]);
+  // MOVE-DRIVEN timeline: duration comes from the move count (each move
+  // gets a fixed slot), NOT from solve.time. This guarantees every move
+  // plays back no matter how fast the solve was.
+  const totalMs = useMemo(
+    () => Math.max(1, moves.length) * REPLAY_MOVE_SPACING_MS,
+    [moves.length],
+  );
 
   const hasMoves = moves.length >= 2;
   const totalMoves = moves.length;
@@ -242,11 +249,20 @@ export function ReplaySection({
         if (!canvas || cancelled) return;
 
         const offscreen = canvas.transferControlToOffscreen();
+        // 2×2 solves render a 2×2 mini cube (order=2); everything else is 3×3.
+        // Cube3DEngine/CubeModel already support order 2 — same FACE_ROTATION_MAP
+        // layerValues (±1) apply unchanged, so the replay moves work as-is.
+        const puzzleOrder =
+          solveRef.current.puzzleType === "2x2x2" ||
+          solveRef.current.puzzleType === "2x2"
+            ? 2
+            : 3;
         await proxy.init(
           Comlink.transfer(offscreen, [offscreen]),
           canvas.clientWidth || 160,
           canvas.clientHeight || 160,
           window.devicePixelRatio,
+          puzzleOrder,
         );
 
         cubeReadyRef.current = true;
@@ -277,8 +293,11 @@ export function ReplaySection({
             setOrientation: orientationTimeline
               ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
-          }, latest.time, orientationTimeline);
+            // Move-driven timeline: length = moves × spacing (not solve.time),
+            // so all moves always play back.
+          }, moves.length * REPLAY_MOVE_SPACING_MS, orientationTimeline);
           engine.moveAnimationDurationMs = 70;
+          engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
           engineRef.current = engine;
 
           // Apply the scramble so the cube starts in the scrambled
@@ -457,17 +476,9 @@ export function ReplaySection({
 
               {/* Controls bar — centered, max-w-sm */}
               <div className="flex flex-col gap-2 w-full max-w-xs">
-                {/* Top row: time + stats */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="nums text-xl font-semibold text-ink tabular-nums">
-                      {formatTime(positionMs)}
-                    </span>
-                    <span className="nums text-xs text-ink-3">
-                      / {formatTime(totalMs)}
-                    </span>
-                  </div>
-
+                {/* Top row: move stats — the replay is move-driven, so there is
+                    no seconds counter (a virtual clock would be misleading). */}
+                <div className="flex items-center justify-end">
                   <div className="flex items-center gap-3 text-[0.62rem] text-ink-3">
                     {/* Move counter */}
                     <span className="nums">

@@ -37,9 +37,10 @@ export interface RotationParams {
   axis: RotationAxis;
   layerValues: number[];
   angle: number;
-  /** When this move happened relative to solve start (ms). */
+  /** When this move plays relative to replay start (ms, move-driven). */
   offsetMs: number;
-  /** The hostTimestamp from the move event (for delta calculations). */
+  /** The original move's hostTimestamp (kept for reference/back-compat; the
+   *  replay timeline no longer depends on it). */
   hostTimestamp: number;
 }
 
@@ -122,6 +123,16 @@ export class ReplayEngine {
   /** Duration per move animation (ms). Shorter = snappier. */
   public moveAnimationDurationMs = 80;
 
+  /**
+   * Milliseconds allocated to each move on the replay timeline.
+   *
+   * Playback is MOVE-DRIVEN: the timeline length is `moves.length * this`
+   * (never capped by the solve's real time), so EVERY move always plays
+   * back — a 3s / 50-move record replays all 50 moves instead of being
+   * cut off after a few. Change before calling setMoves() to alter pace.
+   */
+  public moveSpacingMs = 500;
+
   /** Compact orientation timeline for gyro replay (if IMU was available). */
   private orientationTimeline: OrientationTimeline | undefined;
   private lastAppliedOrientation = -1;
@@ -141,31 +152,41 @@ export class ReplayEngine {
 
   // ─── Public API ──────────────────────────────────────────────────────────
 
-  /** Replace the move sequence (stops playback). */
+  /**
+   * Replace the move sequence (stops playback).
+   *
+   * The timeline is MOVE-DRIVEN: each move gets its own fixed slot
+   * (`moveSpacingMs`) regardless of how fast/slow the solve actually was,
+   * and the total length is `moves.length * moveSpacingMs`. hostTimestamp
+   * deltas are intentionally ignored — on smart cubes and imported
+   * reconstructions they can be bunched, zeroed, or skewed, which used to
+   * cut replays short (e.g. only ~5 of 50 moves played for a 3s record).
+   *
+   * `totalMsOverride` (the old timer-time) is kept as a minimum floor:
+   * it can only EXTEND the timeline, never cap it below the move-driven
+   * duration.
+   */
   public setMoves(moves: CubeMoveEvent[], totalMsOverride?: number): void {
     this.stop();
 
-    const firstTs = moves.length > 0 ? moves[0].hostTimestamp : 0;
-    this.rotations = moves.map((m) => {
+    this.rotations = moves.map((m, i) => {
       const mapping = FACE_ROTATION_MAP[m.face as CubeFace];
       const angle = m.direction * (mapping?.angleSign ?? 1) * 90;
       return {
         axis: (mapping?.axis ?? 'y') as RotationAxis,
         layerValues: [mapping?.layerValue ?? 0],
         angle,
-        offsetMs: m.hostTimestamp - firstTs,
+        offsetMs: i * this.moveSpacingMs,
         hostTimestamp: m.hostTimestamp,
       };
     });
 
-    // Use the override (timer time) when provided; fall back to move span.
-    this._totalMs =
-      totalMsOverride != null && totalMsOverride > 0
-        ? totalMsOverride
-        : moves.length > 1
-          ? moves[moves.length - 1].hostTimestamp - firstTs
-          : 0;
-    if (moves.length === 1 && totalMsOverride == null) this._totalMs = 0;
+    // Timeline must ALWAYS be long enough to contain every move (plus the
+    // last move's full slot), so no move is ever skipped.
+    this._totalMs = Math.max(
+      totalMsOverride != null && totalMsOverride > 0 ? totalMsOverride : 0,
+      moves.length * this.moveSpacingMs,
+    );
 
     this.nextIndex = 0;
     this._positionMs = 0;

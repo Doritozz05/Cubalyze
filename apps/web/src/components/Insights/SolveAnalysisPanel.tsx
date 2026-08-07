@@ -87,6 +87,7 @@ export function SolveAnalysisPanel({
 
   // ── Replay state ──────────────────────────────────────────────────────────
   const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
+  const [replayMoveIdx, setReplayMoveIdx] = useState<number | null>(null);
   const [, setReplaying] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(solve.note ?? "");
@@ -255,12 +256,14 @@ export function SolveAnalysisPanel({
       {/* ── Replay (always visible, even without analysis, as long as there are moves) ── */}
       <ReplaySection
         solve={replaySolve}
-        onReplayPosition={(ms) => {
+        onReplayPosition={(ms, moveIndex) => {
           setReplayPosMs(ms);
+          setReplayMoveIdx(moveIndex);
           setReplaying(true);
         }}
         onReplayComplete={() => {
           setReplayPosMs(null);
+          setReplayMoveIdx(null);
           setReplaying(false);
         }}
       />
@@ -285,6 +288,7 @@ export function SolveAnalysisPanel({
             hoveredPhase={hoveredPhase}
             onHoverPhase={setHoveredPhase}
             replayPositionMs={replayPosMs}
+            replayMoveIdx={replayMoveIdx}
           />
 
           {/* ── Key metric rings ────────────────────────────────────────── */}
@@ -324,6 +328,7 @@ function TimelineSection({
   hoveredPhase,
   onHoverPhase,
   replayPositionMs,
+  replayMoveIdx,
 }: {
   timeline: TimelineData;
   meanTps: number;
@@ -331,6 +336,8 @@ function TimelineSection({
   onHoverPhase: (phase: string | null) => void;
   /** Animated replay playhead position (ms), null when not replaying. */
   replayPositionMs?: number | null;
+  /** Replay move index (aligned with moveTicks) for the playhead. */
+  replayMoveIdx?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
@@ -366,6 +373,26 @@ function TimelineSection({
   const handleLeave = useCallback(() => {
     setHoverMs(null);
   }, []);
+
+  // Replay playhead x-position. The replay clock is MOVE-DRIVEN (its ms are
+  // virtual, independent of solve.time), so anchor the playhead to the
+  // CURRENT MOVE's visual tick instead — that keeps it perfectly aligned
+  // with the phase/pause segments while every move plays back.
+  const replayX = useMemo(() => {
+    if (replayPositionMs == null) return null;
+    // Only anchor to move ticks when the timeline actually has segments
+    // (phaseRuns existed) — otherwise moveVisualMs is all zeros and the
+    // playhead would be pinned to x=0.
+    if (
+      segments.length > 0 &&
+      replayMoveIdx != null &&
+      replayMoveIdx >= 0 &&
+      replayMoveIdx < moveVisualMs.length
+    ) {
+      return xForMs(moveVisualMs[replayMoveIdx]);
+    }
+    return xForMs(replayPositionMs);
+  }, [replayPositionMs, replayMoveIdx, moveVisualMs, segments, xForMs]);
 
   // TPS area path — always closes at the right edge (totalMs).
   const tpsPath = useMemo(() => {
@@ -590,21 +617,21 @@ function TimelineSection({
               )}
 
               {/* Replay playhead — centered on segment blocks (does not extend into TPS area) */}
-              {replayPositionMs !== null && replayPositionMs !== undefined && (
+              {replayX !== null && (
                 <>
                   {/* Tail: subtle fill behind the playhead */}
                   <rect
                     x={0}
                     y={SEG_TOP}
-                    width={xForMs(replayPositionMs)}
+                    width={replayX}
                     height={SEG_BOTTOM - SEG_TOP}
                     fill="#4F8CF7"
                     fillOpacity={0.08}
                   />
                   <line
-                    x1={xForMs(replayPositionMs)}
+                    x1={replayX}
                     y1={SEG_TOP}
-                    x2={xForMs(replayPositionMs)}
+                    x2={replayX}
                     y2={SEG_BOTTOM}
                     stroke="#4F8CF7"
                     strokeWidth={1.5}

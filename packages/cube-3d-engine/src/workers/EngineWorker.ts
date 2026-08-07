@@ -9,11 +9,21 @@ export class EngineWorkerAPI {
   private savedOnOrientationChangeCb?: (o: CubeOrientation) => void;
   private savedOnRotationEventCb?: (e: RotationEvent) => void;
 
-  public init(canvas: OffscreenCanvas, width: number, height: number, pixelRatio: number) {
+  /**
+   * Initialize the renderer. `order` selects the puzzle: 2 (2×2×2) or
+   * 3 (3×3×3, default).
+   */
+  public init(
+    canvas: OffscreenCanvas,
+    width: number,
+    height: number,
+    pixelRatio: number,
+    order = 3,
+  ) {
     if (this.engine) {
       this.engine.dispose();
     }
-    this.engine = new Cube3DEngine({ canvas, width, height, pixelRatio });
+    this.engine = new Cube3DEngine({ canvas, width, height, pixelRatio, order });
     if (this.savedOnOrientationChangeCb) {
       this.engine.onOrientationChange(this.savedOnOrientationChangeCb);
     }
@@ -22,8 +32,14 @@ export class EngineWorkerAPI {
     }
   }
 
-  public reconnect(canvas: OffscreenCanvas, width: number, height: number, pixelRatio: number) {
-    this.init(canvas, width, height, pixelRatio);
+  public reconnect(
+    canvas: OffscreenCanvas,
+    width: number,
+    height: number,
+    pixelRatio: number,
+    order = 3,
+  ) {
+    this.init(canvas, width, height, pixelRatio, order);
   }
 
   public resize(width: number, height: number) {

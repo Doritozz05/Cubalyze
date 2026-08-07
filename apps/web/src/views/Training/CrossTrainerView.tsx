@@ -213,7 +213,7 @@ export function CrossTrainerView({
     replayRef.current = null;
 
     const replay = new ReplayEngine(
-      cross.replayMoves,
+      [],
       {
         resetCube: () => {
           engine.resetCube();
@@ -221,8 +221,12 @@ export function CrossTrainerView({
         rotateLayers: (axis, layers, angle, dur, elapsed) =>
           engine.rotateLayers(axis, layers, angle, dur, elapsed ?? 0),
       },
-      cross.replayMoves.length * 600,
     );
+    // Move-driven playback at the same 600ms-per-move pace used to build
+    // the moves and totalMs here, so the progress bar stays in sync.
+    // NOTE: moveSpacingMs must be set BEFORE setMoves() builds the timeline.
+    replay.moveSpacingMs = 600;
+    replay.setMoves(cross.replayMoves, cross.replayMoves.length * 600);
     replay.moveAnimationDurationMs = 120;
     replay.onPosition = (pos, idx) => {
       if (!cancelled) {
