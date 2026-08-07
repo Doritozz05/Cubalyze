@@ -141,6 +141,35 @@ export interface PhaseDetectionReport {
   complete: boolean;
   finalStateSolved: boolean;
   crossFace?: CubeFace;
+
+  /**
+   * The solver's cross color, as a face letter in the canonical scheme
+   * (e.g. 'U' for a white cross on D). Derived from the sticker geometry
+   * at cross completion, so it is independent of the cross face.
+   */
+  crossColor?: CubeFace;
+
+  /**
+   * How the cross completed: 'plain' (no F2L pair solved at cross
+   * completion), 'xcross' (exactly one pair in its slot), 'xxcross'
+   * (two or more pairs already solved).
+   */
+  crossType?: 'plain' | 'xcross' | 'xxcross';
+
+  /**
+   * The F2L slots that were already complete when the cross completed
+   * (empty for 'plain', one entry for 'xcross', two+ for 'xxcross').
+   */
+  xcrossPairs?: Array<{
+    /** Slot name in the cross frame, e.g. 'FR', 'BR', 'BL', 'FL'. */
+    slot: string;
+    /** The pair's two side colors (canonical face letters). */
+    colors: [CubeFace, CubeFace];
+  }>;
+
+  /** Explicitly listed phase skips, e.g. ['oll'] for an OLL skip. */
+  skips?: Array<'oll' | 'pll'>;
+
   confidence: PhaseDetectionConfidence;
   warnings: PhaseDetectionWarning[];
   initialStateSource: InitialStateSource;

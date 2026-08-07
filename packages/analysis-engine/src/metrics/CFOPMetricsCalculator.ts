@@ -4,8 +4,8 @@ import {
   StateMatcher,
   COLOR_NEUTRAL_CFOP_MASKS,
   FACE_LAYERS,
-  Edge,
-  Corner,
+  countCompletedF2LSlotsCanonical,
+  f2lSlotNames,
 } from '@cubeforge/math-core';
 
 /**
@@ -159,7 +159,8 @@ export class CFOPMetricsCalculator {
   }
 
   /**
-   * Count how many of the 4 F2L slots are completed in the given cube state.
+   * Count how many of the 4 F2L slots are completed in the given cube state
+   * (canonical frame — delegates to math-core, shared with PhaseSplitter).
    *
    * A slot is "complete" when:
    *   - The correct edge piece is in its home position with eo=0
@@ -170,24 +171,7 @@ export class CFOPMetricsCalculator {
    * @returns Number of completed F2L slots (0–4).
    */
   private static countCompletedF2LSlots(state: CubeState, crossFace: string): number {
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) return 0;
-
-    let count = 0;
-    for (let i = 0; i < 4; i++) {
-      const edgePos = faceData.f2lEdges[i];
-      const cornerPos = faceData.f2lCorners[i];
-
-      const edgeOk =
-        state.ep[edgePos] === edgePos && state.eo[edgePos] === 0;
-      const cornerOk =
-        state.cp[cornerPos] === cornerPos && state.co[cornerPos] === 0;
-
-      if (edgeOk && cornerOk) {
-        count++;
-      }
-    }
-    return count;
+    return countCompletedF2LSlotsCanonical(state, crossFace).completedCount;
   }
 
   /**
@@ -305,24 +289,7 @@ export class CFOPMetricsCalculator {
    * Get a bitmask of which F2L slots (0-3) are completed in the given state.
    */
   private static getCompletedSlotMask(state: CubeState, crossFace: string): number {
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) return 0;
-
-    let mask = 0;
-    for (let i = 0; i < 4; i++) {
-      const edgePos = faceData.f2lEdges[i];
-      const cornerPos = faceData.f2lCorners[i];
-
-      const edgeOk =
-        state.ep[edgePos] === edgePos && state.eo[edgePos] === 0;
-      const cornerOk =
-        state.cp[cornerPos] === cornerPos && state.co[cornerPos] === 0;
-
-      if (edgeOk && cornerOk) {
-        mask |= (1 << i);
-      }
-    }
-    return mask;
+    return countCompletedF2LSlotsCanonical(state, crossFace).slotMask;
   }
 
   /**
@@ -330,14 +297,7 @@ export class CFOPMetricsCalculator {
    * These are relative to the cross face (e.g. for D-cross: "FR", "BR", "BL", "FL").
    */
   private static getF2LSlotNames(crossFace: string): string[] {
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) return ['SLOT-0', 'SLOT-1', 'SLOT-2', 'SLOT-3'];
-
-    // Derive slot names from the edge position names
-    return faceData.f2lEdges.map((e) => {
-      const name = Edge[e] ?? '??';
-      return name;
-    });
+    return f2lSlotNames(crossFace);
   }
 
   /**

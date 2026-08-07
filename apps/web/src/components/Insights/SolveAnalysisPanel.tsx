@@ -1095,6 +1095,32 @@ function PhaseBreakdownSection({
                 <span className="text-xs font-medium uppercase tracking-wide text-ink-2">
                   {p.phaseName}
                 </span>
+                {p.phaseName === "Cross" &&
+                  metrics.detectionReport?.crossType &&
+                  metrics.detectionReport.crossType !== "plain" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
+                            metrics.detectionReport.crossType === "xxcross"
+                              ? "border border-caution/40 bg-caution/10 text-caution"
+                              : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+                          )}
+                        >
+                          {metrics.detectionReport.crossType === "xxcross"
+                            ? "XXCross"
+                            : "XCross"}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {metrics.detectionReport.xcrossPairs
+                          ?.map((pair) => pair.slot)
+                          .join(", ") || "An F2L pair was already solved"}{" "}
+                        at cross completion
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
               </div>
               <div className="flex items-center gap-3 nums text-xs text-ink-3">
                 <span>{p.moveCount}m</span>
@@ -1132,10 +1158,37 @@ function PhaseBreakdownSection({
 
 function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
   const cfop = metrics.cfop!;
+  const crossType = metrics.detectionReport?.crossType;
+  const crossColor = metrics.detectionReport?.crossColor;
+  const crossFace = metrics.detectionReport?.crossFace;
+  const crossValue =
+    crossType === "xcross"
+      ? "XCross"
+      : crossType === "xxcross"
+        ? "XXCross"
+        : crossType === "plain"
+          ? "Plain"
+          : "—";
+  const crossSub =
+    crossColor && crossFace
+      ? `${colorName(crossColor)} on ${crossFace}`
+      : undefined;
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="CFOP details" />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
+        <DetailTile
+          label="Cross"
+          value={crossValue}
+          sub={crossSub}
+          accent={
+            crossType === "xxcross"
+              ? "amber"
+              : crossType === "xcross"
+                ? "ready"
+                : undefined
+          }
+        />
         <DetailTile label="Cross eff" value={cfop.crossEfficiency.toFixed(2)} />
         <DetailTile label="Cross→F2L" value={formatTime(cfop.crossToF2LTransitionMs)} />
         <DetailTile label="OLL recog" value={formatTime(cfop.ollRecognitionMs)} />
@@ -1163,6 +1216,20 @@ const FACE_HEX: Record<string, string> = {
   U: "#FFFFFF", R: "#EF4444", F: "#22C55E",
   D: "#FACC15", L: "#F97316", B: "#3B82F6",
 };
+
+/** Maps face letters to color names (U=White, R=Red, F=Green, D=Yellow, …). */
+const FACE_NAME: Record<string, string> = {
+  U: "White",
+  R: "Red",
+  F: "Green",
+  D: "Yellow",
+  L: "Orange",
+  B: "Blue",
+};
+
+function colorName(face: string): string {
+  return FACE_NAME[face] ?? face;
+}
 
 /**
  * Derive two face colors from an edge slotId (e.g. "FR" → ["#22C55E", "#EF4444"]).

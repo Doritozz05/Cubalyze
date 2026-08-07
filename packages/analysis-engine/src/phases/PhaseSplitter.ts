@@ -4,6 +4,8 @@ import {
   type MethodDefinition,
   type PhaseMask,
   COLOR_NEUTRAL_CFOP_MASKS,
+  countCompletedF2LSlotsInFrame,
+  IDENTITY_SCHEME,
 } from '@cubeforge/math-core';
 import type {
   CubeFace,
@@ -25,6 +27,10 @@ type SplitOptions = {
 type DetectionRun = {
   phases: PhaseSegment[];
   crossFace?: CubeFace;
+  /** The solver's cross color (canonical face letter), from color-neutral detection. */
+  crossColor?: CubeFace;
+  /** The winning AUF-corrected scheme (face → color) used to evaluate F2L slots. */
+  scheme?: Record<string, string>;
 };
 
 /**
@@ -174,7 +180,12 @@ export class PhaseSplitter {
       ['Cross', 'F2L', 'OLL', 'PLL'],
       found,
     );
-    return { phases, crossFace: result.crossFace as CubeFace };
+    return {
+      phases,
+      crossFace: result.crossFace as CubeFace,
+      crossColor: result.crossColor as CubeFace,
+      scheme: result.scheme as Record<string, string>,
+    };
   }
 
   private static runDetection(
@@ -320,6 +331,63 @@ export class PhaseSplitter {
       warnings.push('phase-skip', 'advanced-technique-possible');
     }
 
+    // ─── CFOP advanced techniques: XCross / XXCross + explicit skips ────
+    // XCross: an F2L pair is already solved (edge+corner home, oriented) at
+    // the moment the cross completes. Evaluated in the SOLVER's frame via the
+    // ColorPhaseDetector scheme (any cross color); the canonical mask path
+    // falls back to the identity scheme (canonical D-cross).
+    const crossColor = detection.crossColor;
+    const scheme = detection.scheme;
+    let crossType: PhaseDetectionReport['crossType'];
+    let xcrossPairs: PhaseDetectionReport['xcrossPairs'];
+    const skips: NonNullable<PhaseDetectionReport['skips']> = [];
+
+    if (method.name === 'CFOP') {
+      if (detection.phases.some((p) => p.phaseName === 'OLL' && p.skipped)) {
+        skips.push('oll');
+      }
+      if (detection.phases.some((p) => p.phaseName === 'PLL' && p.skipped)) {
+        skips.push('pll');
+      }
+
+      const crossPhase = detection.phases.find((p) => p.phaseName === 'Cross');
+      if (crossPhase && crossPhase.completionIndex !== undefined) {
+        // The cross may complete DISALIGNED (its edges on the cross face but
+        // not yet aligned with the side centers); the solver aligns it within
+        // 1-2 moves. A single move can never complete a slot from scratch, so
+        // scanning the next two entries for the max slot count only ever
+        // catches the alignment (no false positives from a fast first pair).
+        const frameFace: CubeFace = crossFace ?? 'D';
+        let best = countCompletedF2LSlotsInFrame(
+          TimelineBuilder.fromSnapshot(timeline.entries[crossPhase.completionIndex].state),
+          frameFace,
+          scheme ?? IDENTITY_SCHEME,
+        );
+        for (let offset = 1; offset <= 2; offset++) {
+          const entry = timeline.entries[crossPhase.completionIndex + offset];
+          if (!entry) break;
+          const candidate = countCompletedF2LSlotsInFrame(
+            TimelineBuilder.fromSnapshot(entry.state),
+            frameFace,
+            scheme ?? IDENTITY_SCHEME,
+          );
+          if (candidate.completedCount > best.completedCount) best = candidate;
+        }
+        crossType =
+          best.completedCount === 0
+            ? 'plain'
+            : best.completedCount === 1
+              ? 'xcross'
+              : 'xxcross';
+        if (best.slots.length > 0) {
+          xcrossPairs = best.slots.map((s) => ({
+            slot: s.name,
+            colors: s.colors,
+          }));
+        }
+      }
+    }
+
     const durationMs = PhaseSplitter.solveDuration(timeline);
     const phaseTimeMs = detection.phases.reduce(
       (sum, phase) => sum + Math.max(0, phase.durationMs),
@@ -360,6 +428,10 @@ export class PhaseSplitter {
       complete,
       finalStateSolved,
       crossFace,
+      crossColor,
+      crossType,
+      xcrossPairs,
+      skips,
       confidence,
       warnings: uniqueWarnings,
       initialStateSource,

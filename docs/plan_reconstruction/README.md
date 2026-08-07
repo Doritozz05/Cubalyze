@@ -1,6 +1,7 @@
 # Plan — Reconstrucción desde cero (rama `algortihms`)
 
-> **Estado:** Fase 0 ✅ **ejecutada** (2026-08-07) · Fases 1-2 pendientes · **Rama:** `algortihms`
+> **Estado:** Fase 0 ✅ **ejecutada** (2026-08-07) · **Fase 1 ✅ ejecutada** (2026-08-07) ·
+> Fase 2 pendiente · **Rama:** `algortihms`
 >
 > Objetivo: **sin romper el pipeline de stats** (que funciona), borrar todo el sistema
 > de reconocimiento/reconstrucción actual (que no funciona), y rehacer la reconstrucción
@@ -248,7 +249,7 @@ Base: el `PhaseSplitter` actual ya emite por fase (`Cross/F2L/OLL/PLL`) con
   - `crossType: 'plain' | 'xcross' | 'xxcross'`
   - `xcrossPairs: Array<{ slot: 'FR'|'FL'|'BL'|'BR'; color: FaceLetter }>`
   - `crossColor: FaceLetter` (ya está `crossFace`; añadir el color)
-  - El helper de slot-completion vive en math-core (`notation/rotationFrame.ts`, 0.3) y se
+  - El helper de slot-completion vive en math-core (`methods/cfop/slotDetection.ts`) y se
     reutiliza aquí y en Fase 2.
 
 ### 1.2 Otros reconocimientos (sin nombres de caso)
@@ -268,6 +269,56 @@ Base: el `PhaseSplitter` actual ya emite por fase (`Cross/F2L/OLL/PLL`) con
 - Caso cross puro → `'plain'`.
 - Skips: solve sin OLL (PLL directo) → `skips: ['oll']`.
 - Determinismo e invariantes del report (`complete`, `finalStateSolved`, `confidence`).
+
+### ✅ Ejecución de la Fase 1 (2026-08-07)
+
+**Código nuevo (sin romper el pipeline):**
+
+- **math-core** — `methods/cfop/slotDetection.ts` (nuevo): `countCompletedF2LSlotsInFrame`,
+  `countCompletedF2LSlotsCanonical` (que delega en el de frame con el esquema canónico
+  yellow-on-D), `completedF2LSlotNames` y `F2LSlot` (`slot`, `color`, `solved`). Evalúa los 4
+  slots sobre `FACE_LAYERS` (esquina+arista en hueco, orientadas) en el frame que ya deriva el
+  detector. `ColorPhaseDetector` ahora expone el **`scheme`** en `ColorDetectionResult` (era
+  interno y necesario para evaluar el frame del solver con su cross color).
+- **types** — `PhaseDetectionReport` ampliado: `crossColor: FaceLetter`, `crossType:
+  'plain'|'xcross'|'xxcross'`, `xcrossPairs: F2LSlot[]`, `skips: ('oll'|'pll')[]`.
+- **analysis-engine** — `PhaseSplitter`: hila `scheme`/`crossColor` desde la detección
+  color-neutral; en el índice de completación del Cross evalúa los slots con una **ventana de
+  ±2 entries** (ver más abajo) y etiqueta `crossType` + `xcrossPairs`; `buildReport` expone
+  `skips` a partir de las fases `skipped`. `CFOPMetricsCalculator` ahora **delega** en
+  `countCompletedF2LSlotsCanonical` (DRY — antes tenía su propia copia de la lógica de slots).
+- **UI** — `SolveAnalysisPanel`: badge `XCross`/`XXCross` en el phase breakdown (violeta,
+  `phase-violet`), tile con el color del cross y los pares XCross en CFOP details.
+
+**🔬 Validación contra datos reales (los chunks de `public/reconstructions/`):**
+
+- Fixtures de oro: **936 records XCross** resuelven exacto (conjugación + recuperación de grip
+  en las 24 orientaciones) → recall medido de verdad, no sintético.
+- **Recall 82.2%** sobre los 936 (window=2). El resto: transcripciones imperfectas que no
+  completan el cross en el estado (moves que faltan o sobran), no falsos negativos del detector.
+- **Falsos positivos en records "plain": son XCrosses reales no declarados.** La etiqueta de
+  CubeRoot/reconz separa fases por lo que el solver *recuerda*, no por estado: `reconz-7715`
+  (cross `R' B' U' R` deja un par en sitio) y `cuberoot-2175` ("W cross **cancel into**" —
+  cancela con el primer par). El detector de estado es más preciso que la etiqueta.
+- **La ventana +2 (forward-only)**: el cross completa 1-2 moves *antes* de que el solver deje
+  de tocar D — `reconz-11413` (plain según etiqueta) tiene su par resuelto al completar.
+  Window=1 daba 76.9% recall; window=2 sube +5.3pp con solo +0.7pp de FP. 1 move no puede
+  completar un slot desde cero → sin falsos positivos con F2L rápido. Es *solo hacia delante*
+  (offsets 1..2 desde `completionIndex`), nunca hacia atrás: no captura pares completos antes
+  del fin del cross.
+- **Edge documentado (no hay cap):** si 3-4 slots ya estuvieran en sitio al completar el cross
+  (pares premade de scramble, caso casi imposible en datos reales), `crossType` sería 'xxcross'
+  con 3-4 pares — la etiqueta XXCross es una convención para 2; se deja sin cap por honestidad
+  de estado (sigue siendo verdad "2+ pares").
+
+**Tests permanentes:** `slotDetection.test.ts` (10/10, mecánica pura determinista — el
+reconz-11413 xcross y el 2510 white-cross viven en los tests de integración de
+`PhaseSplitter.xcross.test.ts`, porque `detect` con un solo estado es ambiguo de frame) y
+`PhaseSplitter.xcross.test.ts` (6/6: reconz-11413 → xcross, reconz-13069 → xxcross,
+cuberoot-1851 → xcross + OLL skip, cross plain, invariantes del report).
+
+**Validación final:** math-core 537/537 · analysis-engine 184/184 · typecheck de los 3 paquetes
++ web 0 errores · eslint limpio. **El flujo smartcube y el catálogo no se tocan.**
 
 ---
 
@@ -309,8 +360,8 @@ Si falta `//` no pasa nada (solución plana). Se tolera el formato sucio de Cube
 4. `PhaseSplitter.splitAndAnnotate(timeline, CFOPDefinition, { colorNeutral: true })` →
    `PhaseDetectionReport` (fases, completions, skips, XCross de la Fase 1).
 5. **Pares F2L:** dentro del segmento F2L, detectar las 4 completaciones de slots en el frame
-   del cross (`notation/rotationFrame.ts`) → por par: `slot (FR/FL/BL/BR)`, `color`, `moves`,
-   `auf` (leading-U), `premade`.
+   del cross (`methods/cfop/slotDetection.ts` — `F2LSlot` + `completedF2LSlotNames`) → por par:
+   `slot (FR/FL/BL/BR)`, `color`, `moves`, `auf` (leading-U), `premade`.
 6. **OLL/PLL:** desde las fases + `skipped` + estado final (`finalStateSolved`).
 7. **Salida:** `SolveTimeline` (para replay/3D) + `SolveReconstruction` (datos semánticos).
 

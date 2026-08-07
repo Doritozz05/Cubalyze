@@ -90,7 +90,7 @@ function faceOfFacelet(i: number): FaceLetter {
 }
 
 /** For each face F, the 4 facelet indices of F's edge ring that lie ON F. */
-const CROSS_EDGE_FACELETS: Record<FaceLetter, number[]> = (() => {
+export const CROSS_EDGE_FACELETS: Record<FaceLetter, number[]> = (() => {
   const out = {} as Record<FaceLetter, number[]>;
   for (const face of FACE_LETTERS) {
     out[face] = FACE_LAYERS[face].crossEdges.map((pos) => {
@@ -155,6 +155,12 @@ export interface ColorDetectionResult {
   crossColor: FaceLetter;
   /** Entry indices [cross, f2l, oll, pll]; -1 when a phase never completed. */
   completions: [number, number, number, number];
+  /**
+   * The winning AUF-corrected color scheme: solver face → color letter.
+   * This is the frame the solver's F2L slots are defined in — XCross and
+   * per-pair analysis re-color the state with it before checking slots.
+   */
+  scheme: Record<FaceLetter, FaceLetter>;
 }
 
 /**
@@ -329,6 +335,7 @@ function evaluateCandidate(
     crossFace,
     crossColor,
     completions: [crossIdx, f2lIdx, ollIdx, pllIdx],
+    scheme,
   };
 }
 
