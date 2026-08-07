@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon, User } from "lucide-react";
+import { Settings, Bluetooth, Sun, Moon, User, History } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -13,6 +13,7 @@ import {
 import { preferencesStore } from "@cubeforge/state";
 import { hapticTap } from "@/utils/haptics";
 import { cn } from "@/lib/utils";
+import type { ViewId } from "./sidebar.constants";
 
 interface MobileMoreSheetProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface MobileMoreSheetProps {
   onOpenSettings: () => void;
   onOpenCubeConnector: () => void;
   onOpenProfile: () => void;
+  onNavigate?: (view: ViewId) => void;
 }
 
 interface MoreItem {
@@ -36,6 +38,7 @@ export function MobileMoreSheet({
   onOpenSettings,
   onOpenCubeConnector,
   onOpenProfile,
+  onNavigate,
 }: MobileMoreSheetProps) {
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
@@ -74,6 +77,13 @@ export function MobileMoreSheet({
       title: "Profile",
       subtitle: "Your identity & progress",
       onClick: () => handleAction(onOpenProfile),
+    },
+    {
+      key: "reconstructions",
+      icon: History,
+      title: "Reconstructions",
+      subtitle: "Solve database & replays",
+      onClick: () => handleAction(() => onNavigate?.("reconstructions")),
     },
     {
       key: "smart-cube",

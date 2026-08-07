@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import { AppShell } from "@/components/Layout/AppShell";
@@ -30,6 +31,32 @@ import "@/index.css";
 // can resolve components from WidgetRegistry immediately.
 registerAllWidgets();
 
+/**
+ * ViewId ↔ URL path mapping (deep-linkable routes). The pathname's first
+ * segment names the view; unknown paths fall back to the timer.
+ */
+const VIEW_PATH: Record<ViewId, string> = {
+  timer: "/timer",
+  insights: "/insights",
+  algorithms: "/algorithms",
+  training: "/training",
+  "skill-tree": "/skill-tree",
+  profile: "/profile",
+  reconstructions: "/reconstructions",
+};
+
+function pathForView(view: ViewId): string {
+  return VIEW_PATH[view];
+}
+
+function viewFromPath(pathname: string): ViewId {
+  const segment = pathname.split("/").filter(Boolean)[0] ?? "";
+  const match = Object.entries(VIEW_PATH).find(
+    ([, path]) => path === `/${segment}`,
+  );
+  return (match?.[0] as ViewId | undefined) ?? "timer";
+}
+
 export default function App() {
   // Anonymous local identity (docs/plan_profile F0): `userId` is the stable
   // seed for the CubeMark identicon shown in the header chip and Profile view.
@@ -55,8 +82,17 @@ export default function App() {
   const { puzzle, scrambleIndex, currentScramble, handlePuzzleChange, handleRegenerate, resetScramble } =
     useScrambleState();
 
-  // Single source of truth for what the main stage shows.
-  const [activeView, setActiveView] = useState<ViewId>("timer");
+  // Single source of truth for what the main stage shows. The URL is the
+  // owner: activeView is derived from the pathname (/timer, /insights,
+  // /reconstructions/2510, …) and setActiveView navigates — so every view is
+  // deep-linkable and survives reloads.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeView = viewFromPath(location.pathname);
+  const setActiveView = useCallback(
+    (view: ViewId) => navigate(pathForView(view)),
+    [navigate],
+  );
 
   // Refs to avoid stale closures in lifecycle callbacks.
   const solvesRef = useRef(solves);
@@ -93,7 +129,7 @@ export default function App() {
       onNavigate: (view) => setActiveView(view),
     }));
     return disconnect;
-  }, []);
+  }, [setActiveView]);
 
   // Tracks the live Smart Cube connection state so `handleComplete` (which
   // must be defined *before* `useSolveSession` provides the value) can read
@@ -223,17 +259,18 @@ export default function App() {
       setActiveView(view);
       if (view === "timer") scrollToTimer();
     },
-    [scrollToTimer],
+    [scrollToTimer, setActiveView],
   );
 
   // "Analysis" / "Replay" on a solve row: jump to Insights and select that
-  // exact solve via the URL param.
-  const handleAnalyzeSolve = useCallback((solve: Solve) => {
-    setActiveView("insights");
-    const url = new URL(window.location.href);
-    url.searchParams.set("solve", solve.id);
-    window.history.replaceState(null, "", url.toString());
-  }, []);
+  // exact solve via the URL param (InsightsDashboard already reads
+  // ?solve= from window.location.search).
+  const handleAnalyzeSolve = useCallback(
+    (solve: Solve) => {
+      navigate(`/insights?solve=${encodeURIComponent(solve.id)}`);
+    },
+    [navigate],
+  );
 
   const handleReplaySolve = useCallback((solve: Solve) => {
     handleAnalyzeSolve(solve);

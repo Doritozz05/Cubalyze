@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs';
 import { HardwareTimerAdapter, HardwareTimerEvent } from '../interfaces/HardwareTimerAdapter';
-import { connectGanTimer, GanTimerConnection, GanTimerState } from '@cubeforge/gan-protocol';
+import { connectGanTimer, type GanTimerConnection, GanTimerState, type GanTimerEvent } from '@cubeforge/gan-protocol';
 export class GanTimerAdapter implements HardwareTimerAdapter {
   public readonly name = 'GAN Smart Timer';
   
@@ -35,7 +35,7 @@ export class GanTimerAdapter implements HardwareTimerAdapter {
       throw error;
     }
     
-    this.connection.events$.subscribe((evt) => {
+    this.connection.events$.subscribe((evt: GanTimerEvent) => {
       switch (evt.state) {
         case GanTimerState.DISCONNECT:
           this.disconnect();

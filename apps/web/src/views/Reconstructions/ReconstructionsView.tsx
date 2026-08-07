@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  useReconIndex,
+  fetchReconIndex,
   type ReconIndexEntry,
 } from "./reconData";
 import { ReconstructionDetailView } from "./ReconstructionDetailView";
@@ -166,13 +167,19 @@ export function ReconstructionsView() {
   const [source, setSource] = useState<"All" | "cuberoot" | "reconz">("All");
   const [puzzle, setPuzzle] = useState<string>("all");
   const [sort, setSort] = useState<SortOrder>("fastest");
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+  // The selected reconstruction lives in the URL (/reconstructions/:key) so
+  // details are deep-linkable, shareable and survive reloads.
+  const location = useLocation();
+  const match = location.pathname.match(/^\/reconstructions\/([^/?#]+)/);
+  const selectedKey = match ? decodeURIComponent(match[1]) : undefined;
+  const navigate = useNavigate();
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    useReconIndex()
+    fetchReconIndex()
       .then((entries) => {
         if (!cancelled) setIndex(entries);
       })
@@ -270,7 +277,7 @@ export function ReconstructionsView() {
         e.method.toLowerCase().includes(q)
       );
     });
-  }, [puzzleScopedSolves, method, methodChips, search]);
+  }, [index, puzzleScopedSolves, method, methodChips, search]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -299,8 +306,11 @@ export function ReconstructionsView() {
     overscan: 14,
   });
 
-  const handleSelect = useCallback((key: string) => setSelectedKey(key), []);
-  const handleBack = useCallback(() => setSelectedKey(null), []);
+  const handleSelect = useCallback(
+    (key: string) => navigate(`/reconstructions/${encodeURIComponent(key)}`),
+    [navigate],
+  );
+  const handleBack = useCallback(() => navigate("/reconstructions"), [navigate]);
 
   // ── Detail mode ─────────────────────────────────────────────────────────
   if (selectedKey) {

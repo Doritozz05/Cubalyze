@@ -113,7 +113,7 @@ function loadIndex(): Promise<ReconIndexFile> {
 }
 
 /** All list entries (memoised). Throws on fetch failure. */
-export function useReconIndex(): Promise<ReconIndexEntry[]> {
+export function fetchReconIndex(): Promise<ReconIndexEntry[]> {
   return loadIndex().then((f) => f.solves);
 }
 

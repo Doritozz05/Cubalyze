@@ -3,7 +3,7 @@ import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
 import { ClockDriftReconciler } from '../sync/ClockDrift';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { connectGanCube, reconnectGanCube, type GanCubeConnection, type BluetoothDeviceWithMAC } from '@cubeforge/gan-protocol';
+import { connectGanCube, reconnectGanCube, type GanCubeConnection, type BluetoothDeviceWithMAC, type GanCubeEvent } from '@cubeforge/gan-protocol';
 
 function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
   const match = move.match(/^([UDRLBF])(2|'|2')?$/);
@@ -73,7 +73,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.isUserDisconnect = false;
 
     try {
-      this.connection = await connectGanCube(async (device, isFallback) => {
+      this.connection = await connectGanCube(async (device: BluetoothDeviceWithMAC, isFallback?: boolean) => {
         this.device = device;
         if (manualMac) return manualMac;
         if (isFallback) {
@@ -113,7 +113,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     if (this.faceletsRequestPromise) return this.faceletsRequestPromise;
     this.faceletsRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_FACELETS" })
       .finally(() => { this.faceletsRequestPromise = null; });
-    return this.faceletsRequestPromise;
+    await this.faceletsRequestPromise;
   }
 
   /**
@@ -126,7 +126,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     if (this.hardwareRequestPromise) return this.hardwareRequestPromise;
     this.hardwareRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_HARDWARE" })
       .finally(() => { this.hardwareRequestPromise = null; });
-    return this.hardwareRequestPromise;
+    await this.hardwareRequestPromise;
   }
 
   /**
@@ -138,7 +138,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     if (this.batteryRequestPromise) return this.batteryRequestPromise;
     this.batteryRequestPromise = this.connection.sendCubeCommand({ type: "REQUEST_BATTERY" })
       .finally(() => { this.batteryRequestPromise = null; });
-    return this.batteryRequestPromise;
+    await this.batteryRequestPromise;
   }
 
   async disconnect(): Promise<void> {
@@ -162,7 +162,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.eventsSub?.unsubscribe();
     // Reset clock drift reconciler on (re)connect — cube clock may have reset
     this.clockReconciler = new ClockDriftReconciler();
-    this.eventsSub = this.connection!.events$.subscribe((evt) => {
+    this.eventsSub = this.connection!.events$.subscribe((evt: GanCubeEvent) => {
       if (evt.type === 'DISCONNECT') {
         this.handleDisconnect();
       } else if (evt.type === 'BATTERY') {
