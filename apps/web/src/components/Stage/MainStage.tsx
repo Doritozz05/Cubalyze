@@ -27,6 +27,9 @@ const UltraSkillTreeView = lazy(() =>
 const ProfileView = lazy(() =>
   import("@/views/Profile/ProfileView").then((m) => ({ default: m.ProfileView })),
 );
+const ReconstructionsView = lazy(() =>
+  import("@/views/Reconstructions/ReconstructionsView").then((m) => ({ default: m.ReconstructionsView })),
+);
 
 /** Tiny fallback shown while a lazy view chunk downloads. */
 function ViewFallback() {
@@ -146,6 +149,14 @@ export function MainStage(props: MainStageProps) {
     return (
       <Suspense fallback={<ViewFallback />}>
         <ProfileView onNavigate={onNavigate} onOpenSettings={onOpenSettings} />
+      </Suspense>
+    );
+  }
+
+  if (activeView === "reconstructions") {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <ReconstructionsView />
       </Suspense>
     );
   }
