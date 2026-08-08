@@ -111,9 +111,13 @@ export interface ReconFullRecord extends ReconIndexEntry {
    *  engine cannot animate them, so they are folded into the conjugated
    *  moves and never shown as replay steps (same as the smartcube path). */
   rotationCount: number;
-  /** Synthetic orientation keyframes ([moveIndex, orientationIndex]) so the
+  /** Synthetic orientation keyframes ([eventIndex, orientationIndex]) so the
    *  3D replay rotates the cube to the solver's perspective like the
-   *  smartcube path (empty when the record has no rotations). */
+   *  smartcube path (empty when the record has no rotations).
+   *
+   *  IMPORTANT: indices are in EVENT space — the same space as the replay
+   *  `moves` array, which includes the slice half of wide moves. Do NOT
+   *  index this against the face-only display moves of `p.moves`. */
   orientationTimeline: OrientationTimeline;
 }
 
@@ -169,6 +173,10 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
 
 // ─── Replay helper ──────────────────────────────────────────────────────────
 
+/** Valid outer-face turns — the tokens `conjugatePhaseStream` counts when
+ *  emitting orientation keyframes (mirror of its `isSliceToken`). */
+const FACE_MOVE_RE = /^[URFDLB][2']?$/;
+
 /** Valid animatable moves — outer faces PLUS slices. The 3D engine now
  *  animates M/E/S as middle-layer turns (FACE_ROTATION_MAP), so the slice
  *  half of a wide move becomes a real replay event instead of being dropped. */
@@ -176,10 +184,15 @@ const ANIMATABLE_MOVE_RE = /^[URFDLBMES][2']?$/;
 
 /**
  * Re-index the synthetic orientation timeline from FACE-move space to EVENT
- * space. `conjugatePhaseStream` counts only outer-face turns when emitting
- * keyframes; the replay event array now ALSO contains slice turns (each wide
- * move's slice half), so every keyframe's move index must shift by the number
- * of slice tokens before that face turn.
+ * space. `conjugatePhaseStream` counts only outer-face turns (FACE_MOVE_RE)
+ * when emitting keyframes; the replay event array now ALSO contains slice
+ * turns (each wide move's slice half), so every keyframe's move index must
+ * shift by the number of slice tokens before that face turn.
+ *
+ * The flattened stream is filtered with the SAME regex `notationToReplayMoves`
+ * uses, so event indices here are definitionally identical to the replay
+ * event array — garbage tokens are dropped in both places and can never
+ * cause an off-by-N drift between the two spaces.
  */
 function reindexTimelineToEventSpace(
   timeline: OrientationTimeline,
@@ -191,7 +204,8 @@ function reindexTimelineToEventSpace(
   let eventIdx = 0;
   for (const phase of perPhase) {
     for (const token of phase) {
-      if (/^[URFDLB][2']?$/.test(token)) faceToEvent[faceIdx++] = eventIdx;
+      if (!ANIMATABLE_MOVE_RE.test(token)) continue;
+      if (FACE_MOVE_RE.test(token)) faceToEvent[faceIdx++] = eventIdx;
       eventIdx++;
     }
   }

@@ -37,9 +37,10 @@ describe('reconz-12564 (rotated-frame solve)', () => {
   });
 
   it('still marks a genuinely inconsistent solve as incoherent', () => {
+    // +1 extra move breaks the (rotated) solved state → non-uniform faces.
     const result = analyzeSolveText({
       setup: FIXTURE.scramble,
-      solution: "x' // inspection\nr' U F U' r U' r' U2 r' U r // xxxcross\nR U2' R2' U' R U R U2' R' // 4th pair\nU' F' r U R' U' r' F R // ZBLL\nR'", // +1 extra move → broken
+      solution: FIXTURE.text + "\nR'",
       method: 'CFOP',
     });
     expect(result).not.toBeNull();

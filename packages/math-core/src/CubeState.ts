@@ -318,6 +318,12 @@ export class CubeState implements CubeStateInternal {
    * otherwise) AND its stored orientations (co/eo) match the canonical
    * orientations of that rotation (pureRotationState). A twisted corner or
    * flipped edge in place therefore fails the check.
+   *
+   * NOTE: rotationFaceMap constrains only sticker COLORS, so a mirror
+   * (reflection) of the solved cube would also satisfy it in principle — but
+   * such a state is unreachable by legal moves, and the orientation compare
+   * plus the permutation legality of real states make this a non-issue in
+   * practice.
    */
   public isSolvedUpToRotation(): boolean {
     if (this.isSolved()) return true;
