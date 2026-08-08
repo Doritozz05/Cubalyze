@@ -157,23 +157,29 @@ export function ReplaySection({
   const liveStats = useMemo(() => {
     if (currentMoveIdx < 0 || currentMoveIdx >= moves.length) return null;
     const move = moves[currentMoveIdx];
-    // The stored moves are PHYSICAL (cube frame). Display them in the
-    // solver's frame by remapping with the orientation active at this move
-    // (same dynamic notation the smartcube shows live — right is always
-    // right). Falls back to physical notation when no orientation timeline
-    // exists (e.g. reconstruction records without rotations).
-    const orientationIndex = getOrientationAtIndex(
-      solve.orientationTimeline,
-      currentMoveIdx,
-    );
-    const orientationEntry =
-      OrientationTable.ENTRIES[orientationIndex] ?? OrientationTable.IDENTITY;
-    // WIDE events carry the solver's written token (e.g. "r'") so the replay
-    // shows exactly what the reconstructor wrote; everything else is remapped
-    // to the solver frame via the active orientation.
-    const notation =
+    // The written token for this event (wides carry it via displayNotation).
+    const rawNotation =
       move.displayNotation ??
-      MoveTransformer.toDisplayNotation(move, orientationEntry);
+      move.face + (move.direction === 2 ? "2" : move.direction === -1 ? "'" : "");
+    // Reconstruction records replay RAW solver-frame letters — the notation
+    // IS already the solver's own (no remapping). Smart-cube solves store
+    // PHYSICAL (cube-frame) moves and need the dynamic remap to the solver's
+    // perspective via the orientation active at this move (right is always
+    // right).
+    const notation =
+      solve.replayMovesConjugated === false
+        ? rawNotation
+        : move.displayNotation ??
+          (() => {
+            const orientationIndex = getOrientationAtIndex(
+              solve.orientationTimeline,
+              currentMoveIdx,
+            );
+            const orientationEntry =
+              OrientationTable.ENTRIES[orientationIndex] ??
+              OrientationTable.IDENTITY;
+            return MoveTransformer.toDisplayNotation(move, orientationEntry);
+          })();
 
     // Find current phase from analysis phases (cumulative move counts)
     const phases = solve.analysis?.phases ?? [];
@@ -301,12 +307,13 @@ export function ReplaySection({
         const moves = latest.moves ?? [];
         if (moves.length >= 2) {
           const orientationTimeline = latest.orientationTimeline;
-          // For reconstruction records the replay moves are ALREADY conjugated
-          // (inspection/mid-solve rotations were folded into the moves), so the
-          // orientation timeline only remaps the DISPLAY notation — it must NOT
-          // rotate the 3D cube again, or the inspection rotation plays twice
-          // (the cube would end solved in a doubly-rotated frame, e.g.
-          // blue-front/yellow-up instead of the solver's white-front/blue-up).
+          // Reconstruction records replay RAW solver-frame moves; the
+          // orientation timeline rotates the cube root to the solver's grip
+          // (inspection pre-roll before move 1 + mid-solve keyframes) while
+          // the moves play in the cube's own frame — ending solved in the
+          // solver's perspective. Only CONJUGATED solves (legacy/smartcube
+          // streams with rotations already folded in) must NOT rotate again,
+          // or the inspection rotation would play twice.
           const engineOrientationTimeline = latest.replayMovesConjugated
             ? undefined
             : orientationTimeline;
@@ -327,6 +334,10 @@ export function ReplaySection({
           }, moves.length * REPLAY_MOVE_SPACING_MS, engineOrientationTimeline);
           engine.moveAnimationDurationMs = 70;
           engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
+          // Whole-cube grips (inspection pre-roll + mid-solve rotations) turn
+          // slowly — they are the solver turning the cube in hand, not moves.
+          engine.preRollDurationMs = 600;
+          engine.orientationAnimationDurationMs = 280;
           engineRef.current = engine;
 
           // Apply the scramble so the cube starts in the scrambled

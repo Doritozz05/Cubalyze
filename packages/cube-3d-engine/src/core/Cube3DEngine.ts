@@ -52,6 +52,9 @@ export class Cube3DEngine {
     targetQuat: Quaternion;
     startTime: number;
     durationMs: number;
+    /** Resolves the Promise returned by {@link setCubeOrientation} when the
+     *  SLERP completes (or immediately when replaced/snapped). */
+    resolve?: () => void;
   } | null = null;
 
   private lastTime: number = 0;
@@ -207,6 +210,11 @@ export class Cube3DEngine {
   public resetCube(): void {
     if (this.model) {
       this.model.resetCube();
+      // The whole-cube grip (solver's frame) lives on the root quaternion.
+      // Resetting a replay/seek must also return the root to the base frame,
+      // so a restart shows the original scrambled view and the next play's
+      // inspection pre-roll replays cleanly from identity.
+      this.model.root.quaternion.identity();
     }
     this.requestRender();
   }
@@ -365,35 +373,65 @@ export class Cube3DEngine {
     this.requestRender();
   }
 
-  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): void {
-    if (!this.model) return;
-    const entry = OrientationTable.ENTRIES[orientationIndex];
-    if (!entry) return;
+  /**
+   * Rotate the whole cube root to a solver-frame orientation, optionally
+   * animated.
+   *
+   * Returns a Promise that resolves when the SLERP animation completes
+   * (immediately for duration 0 / snap / identical orientation). The replay
+   * engine awaits this for the inspection pre-roll so the next move never
+   * starts while the cube is still turning.
+   */
+  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.model) {
+        resolve();
+        return;
+      }
+      const entry = OrientationTable.ENTRIES[orientationIndex];
+      if (!entry) {
+        resolve();
+        return;
+      }
 
-    const duration = animationDurationMs ?? 0;
+      const duration = animationDurationMs ?? 0;
 
-    if (duration <= 0) {
-      this.orientationAnim = null;
-      // math-core ships its own dependency-free Quaternion (same convention
-      // as three.js); three's copy() only reads x/y/z/w, so the cast is safe.
-      this.model.root.quaternion.copy(entry.quaternion as unknown as Quaternion);
+      if (duration <= 0) {
+        // Snap: replace any in-flight animation and resolve its awaiter now.
+        this.finishOrientationAnim();
+        // math-core ships its own dependency-free Quaternion (same convention
+        // as three.js); three's copy() only reads x/y/z/w, so the cast is safe.
+        this.model.root.quaternion.copy(entry.quaternion as unknown as Quaternion);
+        this.requestRender();
+        resolve();
+        return;
+      }
+
+      // A running orientation animation is replaced — resolve its awaiter now.
+      this.finishOrientationAnim();
+
+      this.orientationAnim = {
+        startQuat: this.model.root.quaternion.clone(),
+        // entry.quaternion is math-core's own Quaternion (public x/y/z/w only).
+        // three's Quaternion.copy() reads those public getters, so this builds a
+        // genuine three.js Quaternion with its internal _x/_y/_z/_w populated —
+        // REQUIRED because three's slerp()/slerpQuaternions() read the private
+        // fields directly (a bare math3d Quaternion would yield NaN).
+        targetQuat: new Quaternion().copy(entry.quaternion as unknown as Quaternion),
+        startTime: performance.now(),
+        durationMs: duration,
+        resolve,
+      };
+      // Kick off the render loop — the orientation animation keeps it alive.
       this.requestRender();
-      return;
-    }
+    });
+  }
 
-    this.orientationAnim = {
-      startQuat: this.model.root.quaternion.clone(),
-      // entry.quaternion is math-core's own Quaternion (public x/y/z/w only).
-      // three's Quaternion.copy() reads those public getters, so this builds a
-      // genuine three.js Quaternion with its internal _x/_y/_z/_w populated —
-      // REQUIRED because three's slerp()/slerpQuaternions() read the private
-      // fields directly (a bare math3d Quaternion would yield NaN).
-      targetQuat: new Quaternion().copy(entry.quaternion as unknown as Quaternion),
-      startTime: performance.now(),
-      durationMs: duration,
-    };
-    // Kick off the render loop — the orientation animation keeps it alive.
-    this.requestRender();
+  /** Resolve any in-flight orientation animation awaiter and clear it. */
+  private finishOrientationAnim(): void {
+    const anim = this.orientationAnim;
+    this.orientationAnim = null;
+    anim?.resolve?.();
   }
 
   public setFaceColor(face: string, color: string): void {
@@ -733,7 +771,9 @@ export class Cube3DEngine {
 
       if (t >= 1.0) {
         this.model.root.quaternion.copy(this.orientationAnim.targetQuat);
+        const resolve = this.orientationAnim.resolve;
         this.orientationAnim = null;
+        resolve?.();
       } else {
         const eased = 1 - Math.pow(1 - t, 3);
         this.model.root.quaternion.slerpQuaternions(
@@ -764,6 +804,7 @@ export class Cube3DEngine {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
+    this.finishOrientationAnim();
     this.needsRender = false;
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';

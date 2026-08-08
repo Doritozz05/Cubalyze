@@ -113,8 +113,11 @@ export class EngineWorkerAPI {
     this.engine?.setIsometricView();
   }
 
-  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number) {
-    this.engine?.setCubeOrientation(orientationIndex, animationDurationMs);
+  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): Promise<void> | undefined {
+    // Return the engine's promise so Comlink proxies it — the replay engine
+    // awaits the orientation animation (inspection pre-roll) before the next
+    // move is applied.
+    return this.engine?.setCubeOrientation(orientationIndex, animationDurationMs);
   }
 
   public setFaceColor(face: string, color: string) {

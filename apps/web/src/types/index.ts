@@ -38,13 +38,18 @@ export interface Solve {
   /** Compact orientation timeline for smart cube solves with IMU. */
   orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
   /**
-   * True when `moves` are ALREADY conjugated to the cube-fixed frame (text
-   * reconstruction records: inspection/mid-solve rotations were folded into
-   * the moves, so the cube ends solved — up to a whole-cube rotation — with
-   * no rotation left to animate). The 3D replay must NOT rotate the cube by
-   * `orientationTimeline` for these solves, or the inspection rotation plays
-   * twice (the cube ends in a doubly-rotated frame). The timeline is still
-   * used to remap the DISPLAY notation to the solver's perspective.
+   * Whether `moves` are pre-conjugated to the cube-fixed frame.
+   *
+   * - `false` (reconstruction records): the moves are RAW solver-frame
+   *   letters (rotations NOT folded in). The 3D replay MUST rotate the cube
+   *   root by `orientationTimeline` (the solver's grip: inspection pre-roll
+   *   + mid-solve keyframes) while the moves play in the cube's own frame;
+   *   the displayed notation is already the solver's own letters.
+   * - `true` (legacy conjugated streams): rotations are folded into the
+   *   moves, so the replay must NOT rotate the cube again (the inspection
+   *   would play twice) — the timeline only remaps display notation.
+   * - `undefined` (smart-cube solves): physical moves + an IMU timeline;
+   *   the cube root follows the timeline.
    */
   replayMovesConjugated?: boolean;
   /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */

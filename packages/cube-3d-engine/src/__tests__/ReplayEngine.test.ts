@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ReplayEngine } from '../replay/ReplayEngine';
 import type { CubeFace, CubeMoveDirection, CubeMoveEvent } from '@cubeforge/types';
 
@@ -170,5 +170,126 @@ describe('ReplayEngine — move-driven timeline', () => {
     );
     await engine.stepForward();
     expect(orientationCalls).toEqual([2]);
+  });
+});
+
+describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
+  // Deterministic rAF: the tick loop schedules frames we never let fire, so
+  // play() applies exactly the moves whose slot has passed and then parks.
+  const stubRaf = () => {
+    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  };
+
+  it('grips the inspection orientation BEFORE move 0 and blocks moves until the grip finishes', async () => {
+    stubRaf();
+    try {
+      const calls: string[] = [];
+      let releaseGrip: (() => void) | null = null;
+      const gripDone = new Promise<void>((r) => (releaseGrip = r));
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1)],
+        {
+          resetCube: () => { calls.push('reset'); },
+          rotateLayers: () => { calls.push('rotate'); },
+          setOrientation: (oi, dur) => {
+            calls.push(`orient:${oi}:${dur}`);
+            return gripDone; // unresolved — the grip is still turning
+          },
+        },
+        undefined,
+        [[0, 2]], // keyframe at move 0 → inspection grip = orientation 2
+      );
+
+      const playing = engine.play(); // suspends on the grip
+      await Promise.resolve();
+      // While the grip is in flight NO move may have been applied.
+      expect(calls.filter((c) => c.startsWith('rotate'))).toHaveLength(0);
+      expect(calls).toContain(`orient:2:${engine.preRollDurationMs}`);
+
+      releaseGrip!();
+      await playing;
+      // Only after the grip completed does move 0 apply.
+      expect(calls.filter((c) => c.startsWith('rotate'))).toHaveLength(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('no pre-roll when the timeline starts with identity or is absent', async () => {
+    stubRaf();
+    try {
+      let orientCalls = 0;
+      const engine = new ReplayEngine(
+        [bunchedMove(0)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: () => { orientCalls++; },
+        },
+        undefined,
+        [[0, 0]], // identity grip → nothing to animate
+      );
+      await engine.play();
+      expect(orientCalls).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('replays the grip after a restart (seek to 0), not on resume mid-timeline', async () => {
+    stubRaf();
+    try {
+      const orientCalls: number[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1), bunchedMove(2)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (oi) => { orientCalls.push(oi); },
+        },
+        undefined,
+        [[0, 2]],
+      );
+
+      await engine.play(); // grip once, then move 0 applies
+      expect(orientCalls).toEqual([2]);
+
+      // Resume from mid-timeline: no re-grip.
+      engine.pause();
+      const before = orientCalls.length;
+      await engine.play();
+      expect(orientCalls).toHaveLength(before);
+
+      // Restart (seek 0) → the inspection grip plays again.
+      await engine.seek(0);
+      await engine.play();
+      expect(orientCalls).toEqual([2, 2]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('mid-solve orientation keyframes animate with the orientation duration', async () => {
+    const durations: number[] = [];
+    const engine = new ReplayEngine(
+      [bunchedMove(0), bunchedMove(1), bunchedMove(2)],
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: (_oi, dur) => { durations.push(dur ?? 0); },
+      },
+      undefined,
+      [[0, 2], [2, 5]],
+    );
+    await engine.stepForward(); // move 0 → grip 2
+    expect(durations).toEqual([engine.orientationAnimationDurationMs]);
+    await engine.stepForward(); // move 1 → same grip, no new keyframe
+    expect(durations).toHaveLength(1);
+    await engine.stepForward(); // move 2 → grip 5
+    expect(durations).toEqual([
+      engine.orientationAnimationDurationMs,
+      engine.orientationAnimationDurationMs,
+    ]);
   });
 });

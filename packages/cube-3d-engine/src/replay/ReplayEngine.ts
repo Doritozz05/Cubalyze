@@ -124,6 +124,23 @@ export class ReplayEngine {
   public moveAnimationDurationMs = 80;
 
   /**
+   * Duration for whole-cube GRIP rotations (inspection + mid-solve
+   * orientation keyframes). These are not moves — the solver turning the
+   * cube in hand — so they get a slower, deliberate feel. The next move
+   * continues on its own timeline slot, so a sub-slot rotation never
+   * delays playback.
+   */
+  public orientationAnimationDurationMs = 260;
+
+  /**
+   * Duration of the INSPECTION pre-roll: the slow grip rotation the cube
+   * performs when playback starts at position 0, BEFORE move 1 runs. The
+   * engine awaits its completion, so no move starts while the cube is
+   * still turning to the solver's starting perspective.
+   */
+  public preRollDurationMs = 600;
+
+  /**
    * Milliseconds allocated to each move on the replay timeline.
    *
    * Playback is MOVE-DRIVEN: the timeline length is `moves.length * this`
@@ -136,6 +153,20 @@ export class ReplayEngine {
   /** Compact orientation timeline for gyro replay (if IMU was available). */
   private orientationTimeline: OrientationTimeline | undefined;
   private lastAppliedOrientation = -1;
+
+  /**
+   * The orientation the cube must GRIP at position 0 (the inspection
+   * rotation), or -1 when there is none. Derived from the timeline's first
+   * keyframe when it sits at move 0 and is not the identity orientation.
+   */
+  private preRollOrientation = -1;
+  /** True once the pre-roll grip has been applied for the current session
+   *  (reset by seek/stop/setMoves so restart replays the inspection). */
+  private preRollApplied = false;
+  /** True while the pre-roll grip animation is awaiting completion. */
+  private gripAnimating = false;
+  /** The in-flight pre-roll promise (so step/seek can wait for it). */
+  private gripPromise: Promise<void> | null = null;
 
   // ─── Constructor ────────────────────────────────────────────────────────
 
@@ -199,13 +230,33 @@ export class ReplayEngine {
     this._positionMs = 0;
     this.lastAppliedOrientation = -1;
     this.scrambleRotations = [];
+    this.computePreRoll();
     this.setState('idle');
+  }
+
+  /**
+   * Derive the inspection pre-roll orientation from the timeline.
+   *
+   * A keyframe `[0, oi]` means "from the first move on the cube is gripped
+   * as orientation oi" — i.e. the inspection rotation happened BEFORE move
+   * 1. Playback should re-enact that grip (slowly, non-blocking of the
+   * state) before applying any move. Identity or absent keyframes mean no
+   * pre-roll.
+   */
+  private computePreRoll(): void {
+    this.preRollOrientation = -1;
+    if (this.orientationTimeline && this.orientationTimeline.length > 0) {
+      const [firstMove, firstOi] = this.orientationTimeline[0];
+      if (firstMove === 0 && firstOi !== 0) this.preRollOrientation = firstOi;
+    }
+    this.preRollApplied = false;
   }
 
   /** Update the orientation timeline (e.g., after reloading solve data). */
   public setOrientationTimeline(timeline: OrientationTimeline | undefined): void {
     this.orientationTimeline = timeline;
     this.lastAppliedOrientation = -1;
+    this.computePreRoll();
   }
 
   /**
@@ -257,6 +308,39 @@ export class ReplayEngine {
     this.resumePositionMs = this._positionMs;
     this.playStartWall = performance.now();
     this.setState('playing');
+
+    // ── Inspection pre-roll ─────────────────────────────────────────────
+    // Reconstructions write their moves in the SOLVER frame. The cube root
+    // must grip the solver's starting orientation (the inspection rotation)
+    // BEFORE move 1 — a slow, deliberate turn that does NOT count as a move.
+    // Playback waits for it to finish: the next move is never applied while
+    // the cube is still turning.
+    if (
+      this.preRollOrientation >= 0 &&
+      !this.preRollApplied &&
+      this._positionMs === 0 &&
+      this.callbacks.setOrientation
+    ) {
+      this.preRollApplied = true;
+      this.gripAnimating = true;
+      const prom = this.callbacks.setOrientation(
+        this.preRollOrientation,
+        this.preRollDurationMs,
+      );
+      if (prom instanceof Promise) {
+        this.gripPromise = prom;
+        await prom.catch(() => {});
+        this.gripPromise = null;
+      }
+      this.gripAnimating = false;
+      // Paused/stopped mid-grip → don't start playback.
+      if (this._state !== 'playing') return;
+      // The wall clock advanced during the grip — reset it so move 0
+      // starts fresh from position 0.
+      this.resumePositionMs = 0;
+      this.playStartWall = performance.now();
+    }
+
     this.tick();
   }
 
@@ -264,7 +348,9 @@ export class ReplayEngine {
   public pause(): void {
     if (this._state !== 'playing') return;
     this.cancelRaf();
-    this._positionMs = this.computePosition();
+    // Mid-grip pause: the virtual clock hasn't started yet (no move applied),
+    // so stay at position 0 instead of sampling a bogus wall-clock offset.
+    this._positionMs = this.gripAnimating ? 0 : this.computePosition();
     this.setState('paused');
   }
 
@@ -273,6 +359,7 @@ export class ReplayEngine {
     this.cancelRaf();
     this._positionMs = 0;
     this.nextIndex = 0;
+    this.preRollApplied = false;
     this.setState('idle');
   }
 
@@ -283,6 +370,12 @@ export class ReplayEngine {
   public async seek(targetMs: number): Promise<void> {
     const wasPlaying = this._state === 'playing';
     this.cancelRaf();
+    // Wait out any in-flight inspection grip before rewinding.
+    if (this.gripPromise) {
+      try { await this.gripPromise; } catch { /* aborted grip */ }
+      this.gripPromise = null;
+      this.gripAnimating = false;
+    }
 
     const clampedMs = Math.max(0, Math.min(targetMs, this._totalMs));
     this._positionMs = clampedMs;
@@ -308,6 +401,9 @@ export class ReplayEngine {
       // Apply orientation at this move index during seek (instant snap, no animation)
       this.applyOrientationAt(i, 0);
     }
+    // Rewinding to the start resets the session so the next play() replays
+    // the inspection pre-roll grip.
+    if (clampedMs === 0) this.preRollApplied = false;
 
     this.onPosition?.(clampedMs, this.nextIndex - 1);
 
@@ -340,6 +436,12 @@ export class ReplayEngine {
   public async stepForward(): Promise<void> {
     const wasPlaying = this._state === 'playing';
     this.cancelRaf();
+    // Wait out any in-flight inspection grip so the step applies after it.
+    if (this.gripPromise) {
+      try { await this.gripPromise; } catch { /* aborted grip */ }
+      this.gripPromise = null;
+      this.gripAnimating = false;
+    }
 
     if (wasPlaying) {
       this._positionMs = this.computePosition();
@@ -365,14 +467,21 @@ export class ReplayEngine {
     this.onMove?.(targetIdx, this.rotations.length);
     // Apply orientation at the new position (smooth, like stepBackward) so
     // stepping through a solve with an orientation timeline follows the
-    // solver's perspective instead of freezing the cube.
-    this.applyOrientationAt(targetIdx, this.moveAnimationDurationMs);
+    // solver's perspective instead of freezing the cube. Whole-cube grips
+    // use the slower orientation duration.
+    this.applyOrientationAt(targetIdx, this.orientationAnimationDurationMs);
     this.setState('paused');
   }
 
   /** Step backward one move (pauses playback). */
   public async stepBackward(): Promise<void> {
     this.cancelRaf();
+    // Wait out any in-flight inspection grip before undoing.
+    if (this.gripPromise) {
+      try { await this.gripPromise; } catch { /* aborted grip */ }
+      this.gripPromise = null;
+      this.gripAnimating = false;
+    }
 
     // No moves applied → already at start
     if (this.nextIndex === 0) return;
@@ -396,8 +505,8 @@ export class ReplayEngine {
     this._positionMs = targetIdx > 0 ? this.rotations[targetIdx - 1].offsetMs : 0;
 
     // Apply orientation at the new position (the move before the undone one)
-    // Use animation duration for smooth visual during step-backward
-    this.applyOrientationAt(Math.max(0, this.nextIndex - 1), this.moveAnimationDurationMs);
+    // Use animation duration for smooth visual during step-backward.
+    this.applyOrientationAt(Math.max(0, this.nextIndex - 1), this.orientationAnimationDurationMs);
 
     this.onPosition?.(this._positionMs, this.nextIndex - 1);
     this.setState('paused');
@@ -457,7 +566,7 @@ export class ReplayEngine {
       this.nextIndex++;
       this.onMove?.(this.nextIndex - 1, this.rotations.length);
       // Apply orientation at this move index with smooth animation
-      this.applyOrientationAt(this.nextIndex - 1, this.moveAnimationDurationMs);
+      this.applyOrientationAt(this.nextIndex - 1, this.orientationAnimationDurationMs);
     }
 
     this._positionMs = pos;

@@ -181,46 +181,54 @@ export function fetchReconRecord(key: string): Promise<ReconFullRecord | null> {
 
 // ─── Replay helper ──────────────────────────────────────────────────────────
 
+/**
+ * Suffix-aware move forms — CubeRoot writes `U2'` and `R2'` (three chars),
+ * which `expandWideMoves` normalizes to `U2`/`R2` before conjugation. Every
+ * regex here accepts the `2'` form so RAW display tokens and their expanded
+ * counterparts count identically as face turns.
+ */
+const SUFFIX = "(?:2'|2|')?";
+
 /** Valid outer-face turns — the tokens `conjugatePhaseStream` counts when
  *  emitting orientation keyframes (mirror of its `isSliceToken`). */
-const FACE_MOVE_RE = /^[URFDLB][2']?$/;
+const FACE_MOVE_RE = new RegExp(`^[URFDLB]${SUFFIX}$`);
 
-/** Valid animatable moves — outer faces PLUS slices. The 3D engine now
- *  animates M/E/S as middle-layer turns (FACE_ROTATION_MAP), so the slice
- *  half of a wide move becomes a real replay event instead of being dropped. */
-const ANIMATABLE_MOVE_RE = /^[URFDLBMES][2']?$/;
+/** Valid animatable moves — outer faces PLUS slices plus lowercase wides.
+ *  The 3D engine animates M/E/S as middle-layer turns (FACE_ROTATION_MAP)
+ *  and lowercase wides as two-layer turns. */
+const ANIMATABLE_MOVE_RE = new RegExp(`^[URFDLBMESrludfb]${SUFFIX}$`);
 
 /** Wide moves as written by the solver (r, l', u2, Rw, Uw2, …). A wide is a
  *  SINGLE replay event that rotates the outer layer AND the middle layer
  *  together; the display keeps the written token verbatim. */
-const WIDE_MOVE_RE = /^([rludfb][2']?|[RLUDFB]w[2']?)$/;
+const WIDE_MOVE_RE = new RegExp(`^([rludfb]${SUFFIX}|[RLUDFB]w${SUFFIX})$`);
 
 /**
- * Re-index the synthetic orientation timeline from FACE-move space to EVENT
- * space. `conjugatePhaseStream` counts only outer-face turns (FACE_MOVE_RE)
- * when emitting keyframes; the replay event array now ALSO contains slice
- * turns (each wide move's slice half), so every keyframe's move index must
- * shift by the number of slice tokens before that face turn.
+ * Re-index the synthetic orientation timeline from FACE-move space to RAW
+ * EVENT space. `conjugatePhaseStream` counts only outer-face turns (their
+ * `isSliceToken` counter) when emitting keyframes — a written wide `r'`
+ * counts as ONE face turn (its expanded face half), a slice `M'` counts as
+ * ZERO. In the raw replay the event array holds every written token except
+ * rotations (wides stay whole), so the mapping is:
  *
- * The flattened stream is filtered with the SAME regex `notationToReplayMoves`
- * uses, so event indices here are definitionally identical to the replay
- * event array — garbage tokens are dropped in both places and can never
- * cause an off-by-N drift between the two spaces.
+ *   face turn k → the raw event index of the k-th face-or-wide token
+ *
+ * Slices and wides therefore never cause an off-by-N drift between the
+ * timeline's face space and the replay's event space.
  */
-function reindexTimelineToEventSpace(
+function reindexTimelineToRawEventSpace(
   timeline: OrientationTimeline,
-  phaseEvents: { token: string; wide: boolean }[][],
+  displayTokensPerPhase: string[][],
 ): OrientationTimeline {
   if (timeline.length === 0) return timeline;
   const faceToEvent: number[] = [];
   let faceIdx = 0;
   let eventIdx = 0;
-  for (const phase of phaseEvents) {
-    for (const ev of phase) {
-      if (!ANIMATABLE_MOVE_RE.test(ev.token)) continue;
-      // Every replay event counts exactly once; a wide event owns its face
-      // slot (the outer layer IS one of the counted face turns).
-      if (ev.wide || FACE_MOVE_RE.test(ev.token)) faceToEvent[faceIdx++] = eventIdx;
+  for (const phase of displayTokensPerPhase) {
+    for (const tok of phase) {
+      if (isRotation(tok)) continue;
+      // A wide's outer layer IS the counted face turn; a slice is not.
+      if (WIDE_MOVE_RE.test(tok) || FACE_MOVE_RE.test(tok)) faceToEvent[faceIdx++] = eventIdx;
       eventIdx++;
     }
   }
@@ -240,59 +248,57 @@ function reindexTimelineToEventSpace(
  *    tokens ("U'D" → U' + D), Unicode primes and the ↓ ↑ · . separators, but
  *    keeps wide moves (`r'`) and rotations (`x'`) as written. The Steps
  *    table shows exactly what the reconstructor wrote.
- * 2. **Replay (`p.replayMoves` / `p.replayMoveCount`)** — `conjugatePhaseStream`
- *    folds inspection + mid-solve rotations into the cube-fixed frame so
- *    replaying scramble → moves ends SOLVED, keeping BOTH the face and the
- *    slice half of wide moves (the 3D engine animates M/E/S middle layers).
+ * 2. **Replay (`p.replayMoves` / `p.replayMoveCount`)** — the SAME written
+ *    tokens minus rotations, one event per token (wides stay whole — the 3D
+ *    engine rotates outer + middle layer TOGETHER). These are SOLVER-frame
+ *    moves: the 3D replay rotates the cube root to the solver's grip
+ *    (inspection + mid-solve rotations from `orientationTimeline`) while the
+ *    moves play in the cube's own frame — exactly like the smartcube path,
+ *    so the cube ends solved in the solver's perspective.
+ *
+ * `conjugatePhaseStream` is still used to derive the rotation count and the
+ * synthetic orientation timeline (its conjugated stream itself is NOT used
+ * for replay anymore — the root rotation replaces conjugation visually).
  *
  * The raw `text` is left untouched for copy.
  */
 function normalizeReconMoves(record: ReconFullRecord): void {
-  const { perPhase, rotationCount, orientationTimeline } = conjugatePhaseStream(
+  const { rotationCount, orientationTimeline } = conjugatePhaseStream(
     record.phases.map((p) => tokenize(p.moves)),
   );
   record.rotationCount = rotationCount;
 
-  // Per phase, walk the WRITTEN tokens (wide moves still whole) against the
-  // CONJUGATED physical stream (wide moves expanded to face + slice). A wide
-  // consumes two physical tokens but becomes ONE replay event (outer layer +
-  // middle layer rotating together); its written token is kept as the
-  // display override. Rotations were consumed by the conjugation (0 physical
-  // tokens); garbage physical tokens are dropped along with their marks.
-  const phaseEvents: { token: string; wide: boolean }[][] = [];
-  record.phases.forEach((p, i) => {
+  const displayTokensPerPhase: string[][] = [];
+  record.phases.forEach((p) => {
     // Display: direct parse of the raw phase — no wide expansion, so the
     // written notation (r', U2', x') survives for the Steps table.
     const displayTokens = tokenize(p.moves, { expandWide: false });
     p.moves = displayTokens.join(" ");
     p.moveCount = displayTokens.length;
 
-    const physical = perPhase[i];
+    // RAW replay events: every written token except rotations, one event per
+    // token. Wides stay whole (single two-layer event, written token kept as
+    // the display override); slices (M/E/S) are real middle-layer turns;
+    // rotations live on the orientation timeline (0 events).
     const events: { token: string; wide: boolean; display: string | null }[] = [];
-    let pi = 0;
     for (const dt of displayTokens) {
-      if (isRotation(dt)) continue; // 0 physical tokens (folded into the grip)
+      if (isRotation(dt)) continue; // grip rotation → orientation keyframe
       const isWide = WIDE_MOVE_RE.test(dt);
-      const n = isWide ? 2 : 1; // wide → face + slice halves
-      const tok = physical[pi] ?? "";
-      if (ANIMATABLE_MOVE_RE.test(tok)) {
-        events.push({ token: tok, wide: isWide, display: isWide ? dt : null });
-      }
-      pi += n;
+      events.push({ token: dt, wide: isWide, display: isWide ? dt : null });
     }
-    phaseEvents.push(events);
+    displayTokensPerPhase.push(displayTokens);
     p.replayMoves = events.map((e) => e.token).join(" ");
     p.replayMoveCount = events.length;
     p.replayWide = events.map((e) => e.wide);
     p.replayDisplay = events.map((e) => e.display);
   });
 
-  // The orientation timeline is emitted in FACE-move space; the replay events
-  // now also include slices AND grouped wide moves, so re-index every
-  // keyframe to event space for the 3D cube's solver-perspective.
-  record.orientationTimeline = reindexTimelineToEventSpace(
+  // The orientation timeline is emitted in FACE-move space; re-index every
+  // keyframe to raw-event space so the 3D replay grips the solver's frame at
+  // the right event (inspection → keyframe at event 0).
+  record.orientationTimeline = reindexTimelineToRawEventSpace(
     orientationTimeline,
-    phaseEvents,
+    displayTokensPerPhase,
   );
   // Scrambles can carry CubeRoot separators too ("↓F2") — tokenize them so
   // the ReplayEngine's applyInitialScramble gets clean elementary tokens.
@@ -302,13 +308,23 @@ function normalizeReconMoves(record: ReconFullRecord): void {
 }
 
 /**
- * Turn a (conjugated, physical-frame) notation string into CubeMoveEvents for
- * the ReplayEngine. The tokens are already cube-fixed (rotations were folded
- * by `normalizeReconMoves`), so no re-conjugation happens here — `tokenize`
- * only re-splits them. `options.wide`/`options.display` (parallel to the
- * tokens) mark which events were WIDE moves as written by the solver: those
- * get `wide: true` (the engine rotates outer + middle layer TOGETHER) and a
- * `displayNotation` override so the UI shows "r'" instead of "R' M".
+ * Turn a RAW solver-frame notation string into CubeMoveEvents for the
+ * ReplayEngine. The tokens are the solver's own letters (wide moves kept
+ * whole — NOT conjugated): the 3D replay rotates the cube root to the
+ * solver's grip (orientation timeline) while the moves play in the cube's
+ * own frame, exactly like the smartcube path.
+ *
+ * `options.wide`/`options.display` (parallel to the tokens) mark which
+ * events were WIDE moves as written: those get `wide: true` (the engine
+ * rotates outer + middle layer TOGETHER) and a `displayNotation` override so
+ * the UI shows "r'" instead of "R".
+ *
+ * Normalizations applied here (display tokens keep the written form for the
+ * Steps table, events need the animatable form):
+ *   - `U2'` / `R2'` → direction 2 (a 180° turn, `2'` ≡ `2`);
+ *   - lowercase wides `r'` → face `R` + `wide: true` (FACE_ROTATION_MAP is
+ *     keyed by uppercase faces; the wide flag restores the written token).
+ *
  * Events are spaced at a fixed 550ms so the replay timeline is proportional
  * to moves.
  */
@@ -324,10 +340,13 @@ export function notationToReplayMoves(
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
     if (!ANIMATABLE_MOVE_RE.test(token)) continue; // garbage can't animate
-    const face = token[0] as CubeMoveEvent["face"];
-    const suffix = token.slice(1);
-    const direction = suffix === "2" ? 2 : suffix === "'" ? -1 : 1;
     const isWide = wide?.[i] === true;
+    // Wides are written lowercase (r'); the engine's FACE_ROTATION_MAP is
+    // keyed uppercase — normalize while keeping the wide flag + token.
+    const face = (isWide ? token[0].toUpperCase() : token[0]) as CubeMoveEvent["face"];
+    const rawSuffix = token.slice(1);
+    const suffix = rawSuffix === "2'" ? "2" : rawSuffix; // U2' ≡ U2
+    const direction = suffix === "2" ? 2 : suffix === "'" ? -1 : 1;
     events.push({
       face,
       direction,
@@ -346,10 +365,13 @@ export function notationToReplayMoves(
  * consumes (replay canvas + transport + live phase indicator).
  */
 export function reconToSolve(record: ReconFullRecord): Solve {
-  // Replay path uses the CONJUGATED moves (replayMoves), NOT the raw display
-  // moves — rotations are already folded and slices are real events, so the
-  // cube ends SOLVED in the 3D replay. Wide marks + display overrides travel
-  // alongside so a written `r'` replays as ONE two-layer move showing "r'".
+  // Replay path uses the RAW SOLVER-FRAME moves (replayMoves = written tokens
+  // minus rotations), NOT a conjugated stream — the 3D engine rotates the
+  // cube root to the solver's grip (inspection + mid-solve rotations from
+  // `orientationTimeline`) while the moves play in the cube's own frame, so
+  // the cube ends solved IN THE SOLVER'S PERSPECTIVE. Wide marks + display
+  // overrides travel alongside so a written `r'` replays as ONE two-layer
+  // move showing "r'".
   const allTokens: string[] = [];
   const allWide: boolean[] = [];
   const allDisplay: (string | null)[] = [];
@@ -397,15 +419,12 @@ export function reconToSolve(record: ReconFullRecord): Solve {
     source: "manual",
     moves,
     orientationTimeline,
-    // The replay moves are the CONJUGATED stream — the inspection / mid-solve
-    // rotations are already folded into them, so the 3D engine must not also
-    // rotate the cube by `orientationTimeline` (that would play the
-    // inspection rotation TWICE: once implicit in the conjugated moves, once
-    // as the visible keyframe — the cube would end solved in a doubly-rotated
-    // frame, e.g. blue-front/yellow-up instead of the solver's
-    // white-front/blue-up). The timeline is still shipped for the replay
-    // section to remap the DISPLAY notation to the solver's perspective.
-    replayMovesConjugated: true,
+    // The replay moves are RAW SOLVER-FRAME letters (rotations NOT folded in)
+    // — `replayMovesConjugated: false` tells the replay section that the
+    // orientation timeline MUST rotate the cube root (the solver's grip:
+    // inspection pre-roll + mid-solve keyframes), and that the displayed
+    // notation is already the solver's own letters (no remapping needed).
+    replayMovesConjugated: false,
     // So 2×2 reconstructions replay on a 2×2 cube (not a 3×3).
     puzzleType:
       record.puzzle === "2x2"
