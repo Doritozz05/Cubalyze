@@ -36,7 +36,7 @@ describe('reconz-12564 (rotated-frame solve)', () => {
     );
   });
 
-  it('P2: recovers the solver\'s frame and detects the real cross', () => {
+  it('P2+P4: recovers the solver\'s frame and detects the real xxxcross', () => {
     const result = analyzeSolveText({
       setup: FIXTURE.scramble,
       solution: FIXTURE.text,
@@ -52,20 +52,39 @@ describe('reconz-12564 (rotated-frame solve)', () => {
     expect(reconstruction.scheme).toEqual({
       U: 'U', R: 'R', F: 'F', D: 'D', L: 'L', B: 'B',
     });
-    // The real cross wins the detector: a multi-slot cross, not a spurious
-    // single-face coincidence (the raw writes "xxxcross").
-    expect(report.crossType).toBe('xxcross');
+    // The real cross wins the detector — with the wide-slice fix the cross
+    // completes exactly at the written segment end (11 moves) instead of a
+    // coincidental late completion, so it is a genuine XXXCROSS: three pairs
+    // were solved inside the cross (the raw writes "xxxcross").
+    expect(report.crossType).toBe('xxxcross');
     expect(report.crossFace).toBe('U');
     expect(report.crossColor).toBe('U');
-    // 3 pairs were made inside the cross; the raw's standalone "4th pair"
-    // (BR) is the only free F2L pair left.
+    // The Cross phase ends at entry 10 (11 moves) — matching the raw, NOT 16.
+    const crossPhase = report.phases.find((p) => p.phaseName === 'Cross');
+    expect(crossPhase?.endIndex).toBe(10);
+    expect(crossPhase?.completionIndex).toBe(10);
+    // The cross moves are the SOLVER's raw notation, wides as written.
+    expect(reconstruction.cross.moves).toEqual([
+      "r'", 'U', 'F', "U'", 'r', "U'", "r'", 'U2', "r'", 'U', 'r',
+    ]);
+    // 3 pairs were made inside the cross (BR/BL/FL); the raw's standalone
+    // "4th pair" solves the only free slot (FR) and owns the WHOLE written
+    // 9-move segment — the trailing moves restore the BR slot the insertion
+    // temporarily displaced.
     expect(reconstruction.pairs).toHaveLength(1);
-    expect(reconstruction.pairs[0].slot).toBe('BR');
-    expect(reconstruction.pairs[0].colors).toEqual(['B', 'R']);
-    // ZBLL (1-look LL) lands on OLL; PLL is skipped.
-    expect(reconstruction.oll?.moves.length).toBe(9);
+    expect(reconstruction.pairs[0].slot).toBe('FR');
+    expect(reconstruction.pairs[0].colors).toEqual(['F', 'R']);
+    expect(reconstruction.pairs[0].moves).toEqual([
+      'R', "U2'", "R2'", "U'", 'R', 'U', 'R', "U2'", "R'",
+    ]);
+    // ZBLL (1-look LL) lands on OLL (raw notation, wide moves kept); the
+    // skipped PLL owns no moves (nothing to double-count).
+    expect(reconstruction.oll?.moves).toEqual([
+      "U'", "F'", 'r', 'U', "R'", "U'", "r'", 'F', 'R',
+    ]);
     expect(reconstruction.oll?.skipped).toBe(false);
     expect(reconstruction.pll?.skipped).toBe(true);
+    expect(reconstruction.pll?.moves).toEqual([]);
   });
 
   it('flat (comment-free) solutions never degrade to an end-of-solve cross', () => {

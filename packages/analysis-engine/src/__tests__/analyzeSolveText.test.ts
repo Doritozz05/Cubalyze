@@ -128,8 +128,11 @@ describe('analyzeSolveText — wide-move record (reconz-7856)', () => {
 
     expect(reconstruction.finalSolved).toBe(true);
     expect(reconstruction.inspection).toBe('x2');
-    // D' r U2 L l D → face tokens D' R U2 L L D (6), slices folded into state.
-    expect(reconstruction.cross.moves).toHaveLength(6);
+    // The white cross completes after "D' r U2 L l" (5 moves — the 'l' wide's
+    // slice half completes it at entry 4, verified: the cross persists from
+    // entry 4 onward). The written trailing "D" is an alignment move that
+    // keeps the cross complete, so it belongs to F2L (the first pair's moves).
+    expect(reconstruction.cross.moves).toEqual(["D'", 'r', 'U2', 'L', 'l']);
     expect(reconstruction.cross.type).toBe('xcross');
   });
 

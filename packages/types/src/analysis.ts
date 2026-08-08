@@ -152,9 +152,10 @@ export interface PhaseDetectionReport {
   /**
    * How the cross completed: 'plain' (no F2L pair solved at cross
    * completion), 'xcross' (exactly one pair in its slot), 'xxcross'
-   * (two or more pairs already solved).
+   * (exactly two), 'xxxcross' (three — the whole F2L except one slot
+   * is already solved when the cross completes).
    */
-  crossType?: 'plain' | 'xcross' | 'xxcross';
+  crossType?: 'plain' | 'xcross' | 'xxcross' | 'xxxcross';
 
   /**
    * The F2L slots that were already complete when the cross completed

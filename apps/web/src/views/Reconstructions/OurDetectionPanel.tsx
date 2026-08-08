@@ -16,11 +16,12 @@
  *   - rotations are shown interleaved in the moves column of their phase
  *     (never counted in the # column), exactly as the reconstructor writes them
  *
- * Moves are displayed in the SOLVER frame (remapped through the synthetic
- * orientation timeline), so they read exactly as the reconstructor wrote them
- * and compare 1:1 with the raw text — the same dynamic notation the replay
- * shows. Slot labels and pair colors sit with the phase: the slot chip
- * below the phase name, colors to its right.
+ * Moves arrive from `analyzeSolveText` in the SOLVER's raw notation (wide
+ * moves as written: r', u2, … — one token per timeline entry), so they read
+ * exactly as the reconstructor wrote them and compare 1:1 with the raw text.
+ * Rotations are interleaved back at their entry position. Slot labels and
+ * pair colors sit with the phase: the slot chip below the phase name, colors
+ * to its right.
  */
 import { useMemo } from "react";
 import {
@@ -37,57 +38,14 @@ import {
   analyzeSolveText,
   type SolveReconstruction,
 } from "@cubeforge/analysis-engine";
-import {
-  MoveTransformer,
-  OrientationTable,
-  getOrientationAtIndex,
-  isRotation,
-  tokenize,
-} from "@cubeforge/math-core";
-import type { CubeFace, CubeMoveDirection } from "@cubeforge/types";
+import { isRotation, tokenize } from "@cubeforge/math-core";
 import {
   FACE_HEX,
   colorName,
 } from "@/components/Insights/SolveAnalysisPanel";
 import type { ReconFullRecord } from "./reconData";
 
-// ─── Solver-frame remap ────────────────────────────────────────────────────
-
-/**
- * Remap a cube-frame move token to the solver frame using the orientation
- * active at `globalIndex` of the move stream. Falls back to the token as-is
- * when no timeline exists (no rotations → frames coincide).
- */
-function remapToken(
-  token: string,
-  timeline: [number, number][] | undefined,
-  globalIndex: number,
-): string {
-  const face = token[0] as CubeFace;
-  let direction: CubeMoveDirection = 1;
-  if (token.includes("'")) direction = -1;
-  else if (token.includes("2")) direction = 2;
-  const oi = getOrientationAtIndex(timeline, globalIndex);
-  const entry = OrientationTable.ENTRIES[oi] ?? OrientationTable.IDENTITY;
-  return MoveTransformer.toDisplayNotation(
-    { face, direction, cubeTimestamp: 0, hostTimestamp: 0 },
-    entry,
-  );
-}
-
-/**
- * Remap a phase's moves to the solver frame. Each move gets its REAL global
- * index (`baseIndex + k`), where `baseIndex` is the phase's `startIndex` from
- * the detection report — not a running cursor, so it stays correct even when
- * phases are non-contiguous (late cross, capped pairs, degenerate solves).
- */
-function remapPhase(
-  tokens: string[],
-  timeline: [number, number][] | undefined,
-  baseIndex: number,
-): string[] {
-  return tokens.map((t, k) => remapToken(t, timeline, baseIndex + k));
-}
+// ─── Moves arrive in the solver's raw notation (one token per entry) ──────
 
 /** Leading U moves (AUF-style) at the start of a move list. */
 function leadingU(moves: string[]): string[] {
@@ -209,7 +167,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   if (!result) return null;
   const recon: SolveReconstruction = result.reconstruction;
   const report = result.timeline.detectionReport;
-  const timeline = recon.orientationTimeline;
   const reportPhases = report?.phases ?? [];
 
   // Real global indices from the detection report (startIndex/endIndex are
@@ -221,10 +178,12 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const pllPhase = reportPhases.find((p) => p.phaseName === "PLL");
   const crossStart = crossPhase?.startIndex ?? 0;
   const crossEnd = crossPhase?.endIndex ?? crossStart + recon.cross.moves.length - 1;
-  const crossMoves = remapPhase(recon.cross.moves, timeline, crossStart);
+  // Moves are already the SOLVER's raw notation (wides as written, one token
+  // per timeline entry) — no remap needed.
+  const crossMoves = recon.cross.moves;
 
-  // Rotations come from collectRotations(inspectionTokens, solutionTokens):
-  // the inspection ones are always FIRST in the array. Slice them off.
+  // Rotations are entry-indexed by the API (inspection ones first, always at
+  // moveIndex 0). Slice the inspection ones off for the solve-phase rows.
   const inspectionRotationCount = tokenize(recon.inspection).filter(isRotation)
     .length;
   const inspectionRotations = recon.rotations.slice(0, inspectionRotationCount);
@@ -235,10 +194,8 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   let pairStart = crossEnd + 1;
   const pairs = recon.pairs.map((p) => {
     const from = pairStart;
-    const moves = remapPhase(p.moves, timeline, pairStart);
+    const moves = p.moves; // already the solver's raw notation
     pairStart = p.completionIndex + 1;
-    // Re-derive auf from the SOLVER-frame moves so the chip matches the
-    // moves column (the API's auf is in cube frame).
     const auf = leadingU(moves);
     const rots = solveRotations.filter(
       (r) => r.moveIndex >= from && r.moveIndex <= p.completionIndex,
@@ -246,12 +203,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
     return { ...p, moves, auf, display: interleave(moves, rots, from) };
   });
 
-  const ollMoves =
-    recon.oll && ollPhase?.startIndex != null
-      ? remapPhase(recon.oll.moves, timeline, ollPhase.startIndex)
-      : recon.oll
-        ? remapPhase(recon.oll.moves, timeline, pairStart)
-        : null;
+  const ollMoves = recon.oll ? recon.oll.moves : null;
   const ollFrom = ollPhase?.startIndex ?? pairStart;
   const ollTo = ollPhase?.endIndex ?? (ollMoves ? ollFrom + ollMoves.length - 1 : ollFrom - 1);
   const ollRots = solveRotations.filter(
@@ -261,9 +213,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
 
   const pllStart =
     pllPhase?.startIndex ?? (ollMoves ? pairStart + ollMoves.length : pairStart);
-  const pllMoves = recon.pll
-    ? remapPhase(recon.pll.moves, timeline, pllStart)
-    : null;
+  const pllMoves = recon.pll ? recon.pll.moves : null;
   const pllTo = pllPhase?.endIndex ?? (pllMoves ? pllStart + pllMoves.length - 1 : pllStart - 1);
   const pllRots = solveRotations.filter(
     (r) => r.moveIndex >= pllStart && r.moveIndex <= pllTo,
@@ -283,6 +233,17 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
 
   const crossColor = recon.crossColor;
   const isXCross = recon.cross.type !== "plain";
+  // How many F2L pairs were already solved INSIDE the cross: the detected
+  // F2L pairs then continue after them (xcross → pairs 2-4, xxcross → 3-4,
+  // xxxcross → only the 4th), matching how the raw labels them.
+  const crossPairCount =
+    recon.cross.type === "xxxcross"
+      ? 3
+      : recon.cross.type === "xxcross"
+        ? 2
+        : recon.cross.type === "xcross"
+          ? 1
+          : 0;
   const warnings = report?.warnings ?? [];
   const orient = recon.orientation;
   const inspectionTokens = inspectionRotations.map((r) => r.token);
@@ -377,7 +338,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                   <span
                     className={cn(
                       "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
-                      recon.cross.type === "xxcross"
+                      recon.cross.type !== "xcross"
                         ? "border border-caution/40 bg-caution/10 text-caution"
                         : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
                     )}
@@ -406,7 +367,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           <Dot kind="f2l" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">
-              F2L {i + 1}
+              F2L {crossPairCount + i + 1}
             </span>
             <span className="mt-0.5 flex items-center gap-1.5">
               <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">

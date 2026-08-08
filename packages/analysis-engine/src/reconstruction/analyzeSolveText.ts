@@ -58,7 +58,13 @@ export interface F2LPairResult {
   slot: string;
   /** The pair's two side colors (canonical face letters). */
   colors: [FaceLetter, FaceLetter];
-  /** Face moves (cube frame) that completed this pair. */
+  /**
+   * The moves that completed this pair, in the SOLVER's raw notation
+   * (wide moves as written: r', u2, …), one token per timeline entry —
+   * exactly what the reconstructor wrote, so the panel reads 1:1 with
+   * the raw text. Rotations are not included (they are reported
+   * separately in `rotations`).
+   */
   moves: string[];
   /** Timeline index where the pair completed. */
   completionIndex: number;
@@ -89,14 +95,17 @@ export interface SolveReconstruction {
   orientation: { up: FaceLetter; front: FaceLetter } | undefined;
   crossColor: FaceLetter | undefined;
   cross: {
+    /** The cross moves in the SOLVER's raw notation (wides as written),
+     *  one token per timeline entry. */
     moves: string[];
-    type: 'plain' | 'xcross' | 'xxcross';
+    type: 'plain' | 'xcross' | 'xxcross' | 'xxxcross';
     xcrossPair?: F2LSlotInfo;
   };
   pairs: F2LPairResult[];
   /** Rotations (x/y/z) with the index of the move they happened before —
    *  silent orientation changes, exactly like the smartcube. */
   rotations: { token: string; moveIndex: number }[];
+  /** Last-layer phases in the SOLVER's raw notation (empty when skipped). */
   oll: { moves: string[]; skipped: boolean } | null;
   pll: { moves: string[]; skipped: boolean } | null;
   finalSolved: boolean;
@@ -120,6 +129,15 @@ const FACE_MOVE_RE = /^[URFDLB][2']?$/;
 /** Valid face + slice tokens — the state path may consume these (garbage is
  *  dropped so `CubeState.applySequence` never throws on noisy transcripts). */
 const STATE_TOKEN_RE = /^[URFDLBMES][2']?$/;
+
+/** Wide moves as the solver writes them (r', u2, Rw, …) — each expands to
+ *  a face + slice pair in the conjugated stream, but is ONE entry.
+ *
+ *  CASE-SENSITIVE on the lowercase forms: with the `i` flag, "U" would match
+ *  as the wide "u" and every face move would be treated as a 2-token wide
+ *  (the "display tokens duplicated" bug). Only the uppercase Rw-style forms
+ *  are case-insensitive on the w. */
+const WIDE_MOVE_RE = /^[rludfb][2']?$|^[RLUDFB][wW][2']?$/;
 
 interface RawPhase {
   label: string;
@@ -186,20 +204,6 @@ function movesFromTokens(tokens: string[], base = 1000, gapMs = 100): CubeMoveEv
   });
 }
 
-/** Rotations as silent orientation changes with their preceding move index. */
-function collectRotations(inspectionTokens: string[], solutionTokens: string[]): {
-  token: string;
-  moveIndex: number;
-}[] {
-  const rotations: { token: string; moveIndex: number }[] = [];
-  let faceMoves = 0;
-  for (const token of [...inspectionTokens, ...solutionTokens]) {
-    if (isRotation(token)) rotations.push({ token, moveIndex: faceMoves });
-    else if (FACE_MOVE_RE.test(token)) faceMoves++;
-  }
-  return rotations;
-}
-
 // ─── Main API ───────────────────────────────────────────────────────────────
 
 /**
@@ -254,16 +258,52 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // tokens are filtered out so `CubeState.applySequence` never throws.
   const stateTokens = solveTokens.filter((t) => STATE_TOKEN_RE.test(t));
 
+  // ── Display tokens + rotations (entry space) ─────────────────────────────
+  // Timeline entries are CONJUGATED face tokens (cube frame). For the panel
+  // to read 1:1 with the raw text, every entry maps back to the RAW token
+  // that produced it — wide moves keep their written form (r' not "R' M")
+  // — and rotations get the entry index of the move they precede (the same
+  // convention as conjugatePhaseStream's orientation timeline).
+  const displayTokens: string[] = [];
+  const solveRotations: { token: string; moveIndex: number }[] = [];
+  {
+    let entryCursor = 0;
+    for (let k = 0; k < rawPhases.length; k++) {
+      const rawTokens = tokenize(rawPhases[k].raw, { expandWide: false });
+      const conjPhase = perPhase[k + 1];
+      let ci = 0;
+      for (const rawToken of rawTokens) {
+        if (isRotation(rawToken)) {
+          // A rotation between moves applies to the NEXT move's index.
+          solveRotations.push({ token: rawToken, moveIndex: entryCursor });
+          continue;
+        }
+        const n = WIDE_MOVE_RE.test(rawToken) ? 2 : 1; // face+slice, or one
+        for (let j = 0; j < n && ci + j < conjPhase.length; j++) {
+          if (FACE_MOVE_RE.test(conjPhase[ci + j])) {
+            displayTokens.push(rawToken);
+            entryCursor++;
+          }
+        }
+        ci += n;
+      }
+    }
+  }
+  const rotations = [
+    ...inspectionTokens.map((t) => ({ token: t, moveIndex: 0 })),
+    ...solveRotations,
+  ];
+
   // ── Preferred cross index (tiebreak only) ────────────────────────────────
   // The solver's written cross segment (the first non-rotation raw phase) is
   // the ONLY signal that tells apart two crosses that are indistinguishable
   // by state — e.g. a persistent coincidental cross on a layer the solve
   // never touches vs the real cross. It is a TIEBREAK over equally-valid
   // candidates, never a detector: no label is trusted, only the segment
-  // LENGTH. The index is measured in the CONJUGATED physical stream (faces +
-  // the slice half of wide moves), because that is where the cross completion
-  // actually materializes — timeline entries only count face turns, so a
-  // wide-heavy cross visibly completes a few entries after its written end.
+  // LENGTH. The index is measured in ENTRY space (conjugated FACE tokens,
+  // one per timeline entry) — with the wide-slice fix the cross completion
+  // materializes exactly where the written segment ends, so the face count
+  // of the segments up to and including the cross phase gives the index.
   const firstFacePhase = rawPhases.find((p) =>
     p.tokens.some((t) => FACE_MOVE_RE.test(t)),
   );
@@ -277,11 +317,11 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // tie. Disable the tiebreak there and let the spurious/duration tests decide.
   if (firstFacePhase && rawPhases.indexOf(firstFacePhase) < rawPhases.length - 1) {
     const idx = rawPhases.indexOf(firstFacePhase);
-    let physicalCount = 0;
+    let faceCount = 0;
     for (let k = 0; k <= idx; k++) {
-      physicalCount += perPhase[k + 1].length; // conjugated tokens (face+slice)
+      faceCount += perPhase[k + 1].filter((t) => FACE_MOVE_RE.test(t)).length;
     }
-    preferredCrossIdx = physicalCount - 1;
+    preferredCrossIdx = faceCount - 1;
   }
 
   const solveMoves = movesFromTokens(faceTokens);
@@ -359,11 +399,11 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     crossColor:
       (detection?.crossColor as FaceLetter | undefined) ??
       (report.crossColor as FaceLetter | undefined),
-    cross: buildCross(report, timeline),
-    pairs: buildPairs(timeline, report, crossFace, scheme),
-    rotations: collectRotations(inspectionTokens, rawPhases.flatMap((p) => p.tokens)),
-    oll: buildLLPhase(timeline, report, 'OLL'),
-    pll: buildLLPhase(timeline, report, 'PLL'),
+    cross: buildCross(report, displayTokens),
+    pairs: buildPairs(timeline, report, crossFace, scheme, displayTokens),
+    rotations,
+    oll: buildLLPhase(report, 'OLL', displayTokens),
+    pll: buildLLPhase(report, 'PLL', displayTokens),
     finalSolved: report.finalStateSolved,
     warnings: report.warnings,
     rawPhases: rawPhases.map((p) => ({ label: p.label, moves: tokenize(p.raw) })),
@@ -380,9 +420,14 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
 
 function buildCross(
   report: PhaseDetectionReport,
-  timeline: SolveTimeline,
+  displayTokens: readonly string[],
 ): SolveReconstruction['cross'] {
-  const moves = phaseFaceMoves(timeline, report, 'Cross');
+  const phase = report.phases.find((p) => p.phaseName === 'Cross');
+  const start = phase?.startIndex ?? 0;
+  const end = phase?.endIndex ?? start;
+  const moves = phase
+    ? displayTokens.slice(start, end + 1)
+    : [];
   const type = report.crossType ?? 'plain';
   return {
     moves,
@@ -396,6 +441,7 @@ function buildPairs(
   report: PhaseDetectionReport,
   crossFace: string,
   scheme: Record<string, string> | undefined,
+  displayTokens: readonly string[],
 ): F2LPairResult[] {
   const f2l = report.phases.find((p) => p.phaseName === 'F2L');
   const cross = report.phases.find((p) => p.phaseName === 'Cross');
@@ -415,7 +461,8 @@ function buildPairs(
   const start = (cross?.endIndex ?? f2l.startIndex - 1) + 1;
   const end = f2l.endIndex ?? timeline.entries.length - 1;
 
-  const pairs: F2LPairResult[] = [];
+  type PairAcc = F2LPairResult & { segStart: number };
+  const pairs: PairAcc[] = [];
   // Seed prevMask with the state just before F2L starts (the cross end) so
   // a pair already home when F2L begins is correctly flagged `premade`.
   let prevMask = 0;
@@ -426,19 +473,25 @@ function buildPairs(
       schemeToUse,
     ).slotMask;
   }
+  // Slots already solved when F2L began are the XCross pairs — they are NOT
+  // new pairs even if they dip and re-complete (advanced solves temporarily
+  // break the cross during F2L: the insertion moves displace a cross edge and
+  // restore it, which would otherwise fabricate a "pair" for every slot the
+  // cross-breaking touched). Only the slots UNSOLVED at the cross end count.
+  const unsolvedMask = 0xf & ~prevMask;
   let segmentStart = start;
 
   for (let i = start; i <= end; i++) {
     const state = TimelineBuilder.fromSnapshot(timeline.entries[i].state);
     const comp = countCompletedF2LSlotsInFrame(state, crossFace, schemeToUse);
 
-    // A new slot completed → the pair finished at this entry.
-    const newBits = comp.slotMask & ~prevMask;
+    // A previously-unsolved slot completed → the pair finished at this entry.
+    const newBits = (comp.slotMask & unsolvedMask) & ~prevMask;
     if (newBits) {
       for (let b = 0; b < 4; b++) {
         if (!(newBits & (1 << b))) continue;
         const slotInfo = comp.slots.find((s) => s.slotIndex === b);
-        const rangeMoves = phaseFaceMovesByIndex(timeline, segmentStart, i);
+        const rangeMoves = displayTokens.slice(segmentStart, i + 1);
         const auf = leadingUMoves(rangeMoves);
         pairs.push({
           slot: slotInfo?.name ?? `SLOT-${b}`,
@@ -449,6 +502,7 @@ function buildPairs(
           completionIndex: i,
           auf,
           premade: (prevMask & (1 << b)) !== 0,
+          segStart: segmentStart,
         });
         segmentStart = i + 1;
       }
@@ -459,49 +513,36 @@ function buildPairs(
     if (pairs.length >= 4) break;
   }
 
-  return pairs;
+  // The last pair owns the REST of the F2L segment: when a pair is home
+  // before F2L completes (e.g. an XCross solve where the remaining moves
+  // restore a temporarily-displaced cross edge, or a VLS finish), the trailing
+  // moves belong to it — the raw phase wrote them as the insertion.
+  if (pairs.length > 0) {
+    const last = pairs[pairs.length - 1];
+    if (last.completionIndex < end) {
+      last.moves = displayTokens.slice(last.segStart, end + 1);
+    }
+  }
+
+  return pairs.map(({ segStart: _seg, ...pair }) => pair);
 }
 
 function buildLLPhase(
-  timeline: SolveTimeline,
   report: PhaseDetectionReport,
   name: 'OLL' | 'PLL',
+  displayTokens: readonly string[],
 ): { moves: string[]; skipped: boolean } | null {
   const phase = report.phases.find((p) => p.phaseName === name);
   if (!phase) return null;
-  return { moves: phaseFaceMovesByIndex(timeline, phase), skipped: !!phase.skipped };
-}
-
-// ─── Timeline range helpers ─────────────────────────────────────────────────
-
-function phaseFaceMoves(timeline: SolveTimeline, report: PhaseDetectionReport, name: string): string[] {
-  const phase = report.phases.find((p) => p.phaseName === name);
-  return phase ? phaseFaceMovesByIndex(timeline, phase) : [];
-}
-
-function phaseFaceMovesByIndex(
-  timeline: SolveTimeline,
-  phase: { startIndex?: number; endIndex?: number } | number,
-  explicitEnd?: number,
-): string[] {
-  let start: number;
-  let end: number;
-  if (typeof phase === 'number') {
-    start = phase;
-    end = explicitEnd ?? phase;
-  } else {
-    start = phase.startIndex ?? -1;
-    end = phase.endIndex ?? -1;
-  }
-  const moves: string[] = [];
-  for (let i = start; i <= end; i++) {
-    const entry = timeline.entries[i];
-    if (!entry) break;
-    const { face, direction } = entry.move;
-    const notation = face + (direction === 2 ? '2' : direction === -1 ? "'" : '');
-    moves.push(notation);
-  }
-  return moves;
+  // A skipped phase owns no move (its completion index equals the previous
+  // phase's) — showing the completion move under it double-counts it.
+  const moves = phase.skipped
+    ? []
+    : displayTokens.slice(
+        phase.startIndex ?? 0,
+        (phase.endIndex ?? phase.startIndex ?? 0) + 1,
+      );
+  return { moves, skipped: !!phase.skipped };
 }
 
 /** Leading U moves (AUF-style) at the start of a move list. */

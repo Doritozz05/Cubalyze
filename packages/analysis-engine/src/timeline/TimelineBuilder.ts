@@ -14,6 +14,10 @@ import type {
   TimelineEntry,
 } from '@cubeforge/types';
 
+/** Slice tokens (M/E/S) — the "other half" of a wide move in the expanded
+ *  state stream (r → "R M'"), or a standalone slice. */
+const SLICE_TOKEN_RE = /^[MES][2']?$/;
+
 /**
  * Builds a SolveTimeline from a sequence of raw CubeMoveEvents.
  *
@@ -154,6 +158,18 @@ export class TimelineBuilder {
             matched = true;
             break;
           }
+        }
+        // Wide moves expand to face+slice in the state stream (r → "R M'").
+        // The entry snapshot must include the slice half, or the state at
+        // this entry silently MISSES the full move — e.g. a cross completed
+        // by a wide's slice would only materialize BETWEEN entries, invisible
+        // to phase detection, and the detected cross drifts to a coincidental
+        // late completion (the "cross detected at 16 vs written 11" bug).
+        while (
+          tokenCursor < stateTokens.length &&
+          SLICE_TOKEN_RE.test(stateTokens[tokenCursor])
+        ) {
+          state.applySequence(stateTokens[tokenCursor++]);
         }
         if (!matched) {
           // Defensive (cannot happen by construction — `moves` is derived from

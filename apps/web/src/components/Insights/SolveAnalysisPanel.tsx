@@ -1117,14 +1117,16 @@ function PhaseBreakdownSection({
                         <span
                           className={cn(
                             "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
-                            metrics.detectionReport.crossType === "xxcross"
+                            metrics.detectionReport.crossType !== "xcross"
                               ? "border border-caution/40 bg-caution/10 text-caution"
                               : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
                           )}
                         >
-                          {metrics.detectionReport.crossType === "xxcross"
-                            ? "XXCross"
-                            : "XCross"}
+                          {metrics.detectionReport.crossType === "xxxcross"
+                            ? "XXXCross"
+                            : metrics.detectionReport.crossType === "xxcross"
+                              ? "XXCross"
+                              : "XCross"}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -1178,9 +1180,11 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
       ? "XCross"
       : crossType === "xxcross"
         ? "XXCross"
-        : crossType === "plain"
-          ? "Plain"
-          : "—";
+        : crossType === "xxxcross"
+          ? "XXXCross"
+          : crossType === "plain"
+            ? "Plain"
+            : "—";
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="CFOP details" />
@@ -1189,7 +1193,7 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
           label="Cross"
           value={crossValue}
           accent={
-            crossType === "xxcross"
+            crossType === "xxcross" || crossType === "xxxcross"
               ? "amber"
               : crossType === "xcross"
                 ? "ready"

@@ -394,7 +394,9 @@ export class PhaseSplitter {
               ? 'plain'
               : best.completedCount === 1
                 ? 'xcross'
-                : 'xxcross';
+                : best.completedCount === 2
+                  ? 'xxcross'
+                  : 'xxxcross';
           if (best.slots.length > 0) {
             xcrossPairs = best.slots.map((s) => ({
               slot: s.name,
