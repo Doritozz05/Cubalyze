@@ -268,7 +268,14 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     p.tokens.some((t) => FACE_MOVE_RE.test(t)),
   );
   let preferredCrossIdx: number | undefined;
-  if (firstFacePhase) {
+  // Only meaningful when the written cross segment is a PROPER PREFIX of the
+  // solve (there is at least one later phase). For a flat solution (no `//`
+  // comments → a single phase holding every move) the "written cross end" is
+  // the end of the whole solve, and preferring a cross that completes at the
+  // last entry would let a coincidental end-of-solve cross ([last,last,last,
+  // last] — every solved final state shows a cross on all 6 faces) win every
+  // tie. Disable the tiebreak there and let the spurious/duration tests decide.
+  if (firstFacePhase && rawPhases.indexOf(firstFacePhase) < rawPhases.length - 1) {
     const idx = rawPhases.indexOf(firstFacePhase);
     let physicalCount = 0;
     for (let k = 0; k <= idx; k++) {

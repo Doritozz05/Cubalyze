@@ -68,6 +68,35 @@ describe('reconz-12564 (rotated-frame solve)', () => {
     expect(reconstruction.pll?.skipped).toBe(true);
   });
 
+  it('flat (comment-free) solutions never degrade to an end-of-solve cross', () => {
+    // Without the written `//` phases there is NO signal to tell the real
+    // cross from a persistent coincidence, so the detector falls back to its
+    // pre-P2 heuristics. The regression guard must ensure it never uses the
+    // whole-solve end as the "written cross segment" (that would let a
+    // coincidental end-of-solve cross — completions [last,last,last,last] —
+    // win every tie, collapsing the Cross phase onto the final move).
+    const flat = FIXTURE.text
+      .split('\n')
+      .map((l) => l.replace(/\s*\/\/.*$/, '').trim())
+      .filter(Boolean)
+      .join(' ');
+    const result = analyzeSolveText({
+      setup: FIXTURE.scramble,
+      solution: flat,
+      method: 'CFOP',
+    });
+    const { reconstruction, timeline } = result!;
+    const report = timeline.detectionReport!;
+    const cross = report.phases.find((p) => p.phaseName === 'Cross');
+    // The verdict stays coherent (the solve is still perfect).
+    expect(reconstruction.finalSolved).toBe(true);
+    // The written cross is the first 11 moves; the detected Cross phase must
+    // land inside that window — never at the very end of the solve.
+    expect(cross).toBeDefined();
+    expect(cross!.endIndex ?? -1).toBeLessThan(timeline.entries.length - 1);
+    expect(cross!.endIndex ?? -1).toBeLessThanOrEqual(10);
+  });
+
   it('still marks a genuinely inconsistent solve as incoherent', () => {
     // +1 extra move breaks the (rotated) solved state → non-uniform faces.
     const result = analyzeSolveText({
