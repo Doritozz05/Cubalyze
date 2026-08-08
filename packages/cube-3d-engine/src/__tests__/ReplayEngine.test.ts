@@ -125,4 +125,50 @@ describe('ReplayEngine — move-driven timeline', () => {
     expect(engine.moveCount).toBe(1);
     expect(engine.totalMs).toBe(500);
   });
+
+  it('never rotates the cube by the orientation timeline when none is supplied', async () => {
+    // Reconstructions ship CONJUGATED replay moves (rotations already folded
+    // into the moves), so ReplaySection deliberately passes NO timeline to the
+    // engine — the cube must stay put while the moves play. If the engine ever
+    // rotated by a phantom keyframe, the inspection rotation would play twice.
+    const moves = [bunchedMove(0), bunchedMove(1), bunchedMove(2)];
+    let orientationCalls = 0;
+    const engine = new ReplayEngine(
+      moves,
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: () => {
+          orientationCalls++;
+        },
+      },
+      undefined, // totalMs
+      undefined, // orientationTimeline → contract: NO setOrientation calls
+    );
+    await engine.stepForward();
+    await engine.stepForward();
+    await engine.seek(engine.totalMs);
+    expect(orientationCalls).toBe(0);
+  });
+
+  it('rotates to the solver perspective via the timeline when supplied', async () => {
+    // Smart-cube solves: physical moves + an IMU timeline. The engine must
+    // apply the keyframe at the right move so the cube follows the solver.
+    const moves = [bunchedMove(0), bunchedMove(1)];
+    const orientationCalls: number[] = [];
+    const engine = new ReplayEngine(
+      moves,
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: (orientationIndex) => {
+          orientationCalls.push(orientationIndex);
+        },
+      },
+      undefined,
+      [[0, 2]], // keyframe: move 0 → orientation 2
+    );
+    await engine.stepForward();
+    expect(orientationCalls).toEqual([2]);
+  });
 });

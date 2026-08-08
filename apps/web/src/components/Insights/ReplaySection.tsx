@@ -301,6 +301,15 @@ export function ReplaySection({
         const moves = latest.moves ?? [];
         if (moves.length >= 2) {
           const orientationTimeline = latest.orientationTimeline;
+          // For reconstruction records the replay moves are ALREADY conjugated
+          // (inspection/mid-solve rotations were folded into the moves), so the
+          // orientation timeline only remaps the DISPLAY notation — it must NOT
+          // rotate the 3D cube again, or the inspection rotation plays twice
+          // (the cube would end solved in a doubly-rotated frame, e.g.
+          // blue-front/yellow-up instead of the solver's white-front/blue-up).
+          const engineOrientationTimeline = latest.replayMovesConjugated
+            ? undefined
+            : orientationTimeline;
           const engine = new ReplayEngine(moves, {
             resetCube: () => proxy.resetCube(),
             rotateLayers: (
@@ -310,12 +319,12 @@ export function ReplaySection({
               dur: number,
               elapsed?: number,
             ) => proxy.rotateLayers(axis, layers, angle, dur, elapsed ?? 0),
-            setOrientation: orientationTimeline
+            setOrientation: engineOrientationTimeline
               ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
             // Move-driven timeline: length = moves × spacing (not solve.time),
             // so all moves always play back.
-          }, moves.length * REPLAY_MOVE_SPACING_MS, orientationTimeline);
+          }, moves.length * REPLAY_MOVE_SPACING_MS, engineOrientationTimeline);
           engine.moveAnimationDurationMs = 70;
           engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
           engineRef.current = engine;

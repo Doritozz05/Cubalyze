@@ -363,6 +363,10 @@ export class ReplayEngine {
 
     this.onPosition?.(this._positionMs, targetIdx);
     this.onMove?.(targetIdx, this.rotations.length);
+    // Apply orientation at the new position (smooth, like stepBackward) so
+    // stepping through a solve with an orientation timeline follows the
+    // solver's perspective instead of freezing the cube.
+    this.applyOrientationAt(targetIdx, this.moveAnimationDurationMs);
     this.setState('paused');
   }
 

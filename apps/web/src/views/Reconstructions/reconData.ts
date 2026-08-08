@@ -397,6 +397,15 @@ export function reconToSolve(record: ReconFullRecord): Solve {
     source: "manual",
     moves,
     orientationTimeline,
+    // The replay moves are the CONJUGATED stream — the inspection / mid-solve
+    // rotations are already folded into them, so the 3D engine must not also
+    // rotate the cube by `orientationTimeline` (that would play the
+    // inspection rotation TWICE: once implicit in the conjugated moves, once
+    // as the visible keyframe — the cube would end solved in a doubly-rotated
+    // frame, e.g. blue-front/yellow-up instead of the solver's
+    // white-front/blue-up). The timeline is still shipped for the replay
+    // section to remap the DISPLAY notation to the solver's perspective.
+    replayMovesConjugated: true,
     // So 2×2 reconstructions replay on a 2×2 cube (not a 3×3).
     puzzleType:
       record.puzzle === "2x2"
