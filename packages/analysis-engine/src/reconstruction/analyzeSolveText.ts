@@ -294,6 +294,17 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     ...solveRotations,
   ];
 
+  // Invariant: every timeline entry (conjugated face token) maps back to
+  // exactly one raw display token. A mismatch here means the walk above is
+  // misaligned (e.g. a notation quirk mis-tokenized as a 2-token wide) and
+  // every phase's displayed moves would silently drift — fail loudly.
+  if (displayTokens.length !== faceTokens.length) {
+    throw new Error(
+      `analyzeSolveText: display token walk misaligned (` +
+        `${displayTokens.length} display vs ${faceTokens.length} face entries)`,
+    );
+  }
+
   // ── Preferred cross index (tiebreak only) ────────────────────────────────
   // The solver's written cross segment (the first non-rotation raw phase) is
   // the ONLY signal that tells apart two crosses that are indistinguishable

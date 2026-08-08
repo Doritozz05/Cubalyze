@@ -63,6 +63,7 @@ function interleave(
   rots: { token: string; moveIndex: number }[],
   from: number,
 ): string[] {
+  if (moves.length === 0) return []; // a skipped phase owns no moves
   const sorted = [...rots].sort((a, b) => a.moveIndex - b.moveIndex);
   if (sorted.length === 0) return moves;
   const out: string[] = [];
@@ -197,8 +198,10 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
     const moves = p.moves; // already the solver's raw notation
     pairStart = p.completionIndex + 1;
     const auf = leadingU(moves);
+    // Rotation range covers the DISPLAY span — the API extends the last pair
+    // through the F2L end, so a rotation in that tail must stay visible.
     const rots = solveRotations.filter(
-      (r) => r.moveIndex >= from && r.moveIndex <= p.completionIndex,
+      (r) => r.moveIndex >= from && r.moveIndex <= from + moves.length - 1,
     );
     return { ...p, moves, auf, display: interleave(moves, rots, from) };
   });

@@ -53,7 +53,12 @@ export class TimelineBuilder {
    *                      but text reconstructions do) are applied to the
    *                      state WITHOUT creating their own timeline entry, so
    *                      the reconstructed states are exact while the entry
-   *                      indices stay in face-move space. Defaults to applying
+   *                      indices stay in face-move space. Each entry's state
+   *                      also consumes the slice tokens immediately following
+   *                      its face token — the slice half of a wide move (r →
+   *                      "R M'") — so the snapshot reflects the FULL move and a
+   *                      phase completed by a wide's slice lands ON its entry
+   *                      (not invisibly between entries). Defaults to applying
    *                      `moves` alone.
    * @returns A fully reconstructed SolveTimeline ready for phase recognition.
    */

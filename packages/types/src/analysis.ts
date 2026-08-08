@@ -159,7 +159,8 @@ export interface PhaseDetectionReport {
 
   /**
    * The F2L slots that were already complete when the cross completed
-   * (empty for 'plain', one entry for 'xcross', two+ for 'xxcross').
+   * (empty for 'plain', one entry for 'xcross', two for 'xxcross',
+   * three for 'xxxcross').
    */
   xcrossPairs?: Array<{
     /** Slot name in the cross frame, e.g. 'FR', 'BR', 'BL', 'FL'. */
