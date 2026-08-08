@@ -56,7 +56,7 @@ describe('moveNotation.tokenize', () => {
   });
 });
 
-describe('moveNotation.foldAdjacentSameFace (Quest-style)', () => {
+describe('moveNotation.foldAdjacentSameFace', () => {
   it('folds U U into U2', () => {
     expect(foldAdjacentSameFace(['U', 'U'])).toEqual(['U2']);
   });
@@ -83,7 +83,7 @@ describe('moveNotation.foldAdjacentSameFace (Quest-style)', () => {
     expect(foldAdjacentSameFace(["y'", 'U', 'U', "U'", 'R'])).toEqual(["y'", 'U', 'R']);
   });
 
-  it('folds the actual Quest example U2 U → U\'', () => {
+  it('folds U2 U → U\'', () => {
     expect(foldAdjacentSameFace(tokenize('U2 U L U\' L\''))).toEqual(tokenize("U' L U' L'"));
   });
 });

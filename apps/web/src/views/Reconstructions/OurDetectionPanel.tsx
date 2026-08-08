@@ -6,7 +6,7 @@
  * Runs the headless `analyzeSolveText` API on a reconstruction record (the
  * SAME setup + inspection + solution the ReplayEngine consumes) and renders
  * OUR state-based detection next to the reconstructor's raw phases, in the
- * Quest table shape (Phase | Case | Moves | #):
+ * Table shape (Phase | Case | Moves | #):
  *
  *   - Orientation row: inspection rotations + colors on U and F after the grip
  *   - cross type (plain / xcross / xxcross) + cross color
@@ -19,7 +19,7 @@
  * Moves are displayed in the SOLVER frame (remapped through the synthetic
  * orientation timeline), so they read exactly as the reconstructor wrote them
  * and compare 1:1 with the raw text — the same dynamic notation the replay
- * shows. Slot labels and pair colors are positioned Quest-style: slot chip
+ * shows. Slot labels and pair colors sit with the phase: the slot chip
  * below the phase name, colors to its right.
  */
 import { useMemo } from "react";
@@ -148,7 +148,7 @@ function Dot({ kind }: { kind: keyof typeof DOT }) {
   return <span className={cn("size-1.5 shrink-0 rounded-full", DOT[kind])} />;
 }
 
-// Quest-style grid: dot | Phase | Case | Moves | # — same template as the
+// Grid: dot | Phase | Case | Moves | # — same template as the
 // raw Steps table, so both panels align visually. Every data row carries a
 // full-strength bottom border (like the one under the header).
 const ROW_GRID = "grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem]";
@@ -328,7 +328,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         </div>
       </div>
 
-      {/* ── Column headers (Quest style) ── */}
+      {/* ── Column headers ── */}
       <div
         className={cn(
           ROW_GRID,

@@ -8,6 +8,7 @@ import type { AlgorithmCase, Algorithm } from '../schema';
 
 export interface CaseData { caseDef: AlgorithmCase; algorithms: Algorithm[] }
 
+export const OLL_SUBSET_ID = "00000000-0000-4000-9000-000000000002";
 
 export const OLL_CASES: CaseData[] = [
   {

@@ -10,6 +10,7 @@ The source of truth for all project architecture, roadmap, and engineering gover
 - **[Product Requirements Document (PRD)](docs/00-product/PRD.md)**: The vision, features, and competitive analysis.
 - **[Master Roadmap](docs/01-roadmap/Master_Roadmap.md)**: The execution plan and dependency graph.
 - **[Documentation Bootstrap Guide](docs/Documentation_Bootstrap_Guide.md)**: The authoritative manual on how this repository is governed.
+- **[Data Sources & Attribution](DATA_SOURCES.md)**: Provenance of every dataset and third-party content used in the product.
 - **[Engineering Standards](docs/08-standards/)**: Mandatory coding, testing, and workflow rules.
 
 ## Contributing

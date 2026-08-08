@@ -13,7 +13,7 @@ describe('setF2LMaskGray logic', () => {
     model = new CubeModel(factory);
   });
 
-  // Mirrors the engine's mask rule (SpeedcubeQuest stickering): the pair stays
+  // Mirrors the engine's F2L mask rule: the pair stays
   // colored wherever it is; U-layer pieces and out-of-place F2L pieces gray.
   function maskGrayed(cubies: ReadonlyArray<{
     gridX: number; gridY: number; gridZ: number;

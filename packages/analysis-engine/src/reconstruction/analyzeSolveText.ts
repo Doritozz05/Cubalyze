@@ -85,7 +85,7 @@ export interface SolveReconstruction {
   scheme: Record<FaceLetter, FaceLetter> | undefined;
   /** Colors on the U and F faces of the SOLVER after the inspection grip
    *  (e.g. { up: 'U', front: 'F' } for the canonical white-on-top frame) —
-   *  what Quest shows as the "Orientation" row. */
+   *  the "Orientation" row of the reconstruction. */
   orientation: { up: FaceLetter; front: FaceLetter } | undefined;
   crossColor: FaceLetter | undefined;
   cross: {

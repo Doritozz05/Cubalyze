@@ -1,13 +1,13 @@
 /**
- * moveNotation.ts — Robust move parsing and Quest-style display normalization.
+ * moveNotation.ts — Robust move parsing and display normalization.
  *
- * Reconstruction notation from CubeRoot / reco.nz / SpeedcubeQuest carries
+ * Reconstruction notation from CubeRoot / reco.nz carries
  * quirks: Unicode primes (’ ′ ´), numbered turns (U3), repeated faces with no
  * space (U2U), wide moves (r/l/u/...), parenthesized groups, and adjacent
- * same-face moves that Quest folds (U2 U → U'). This module centralizes:
+ * same-face moves (U2 U → U'). This module centralizes:
  *
  *   - tokenize(): normalize + split any move string into elementary tokens
- *   - foldAdjacentSameFace(): Quest-style cancellation (U U → U2, U2 U → U', ...)
+ *   - foldAdjacentSameFace(): adjacent-same-face cancellation (U U → U2, U2 U → U', ...)
  *   - stripRotations(): remove x/y/z tokens from a sequence
  *   - leadingUMoves(): extract the leading U moves (pair AUF / setup)
  *   - classification helpers (isRotation, isFaceMove, isUMove)
@@ -32,7 +32,7 @@ export function tokenize(moves: string): string[] {
   let s = moves.replace(PRIME, "'");
   s = s.replace(/[↑·↓.]/g, ' ');
   // Drop inline comments ("U R // pair"): everything from // to end of the
-  // line is not a move. CubeRoot / Quest embed them inside phase segments.
+  // line is not a move. CubeRoot / reco.nz embed them inside phase segments.
   // The m flag makes $ match at every line end.
   s = s.replace(/\/\/.*$/gm, ' ');
   // Expand parenthesized groups with a multiplier: "(F D)3" → F D F D F D.
@@ -85,7 +85,7 @@ export function stripRotations(moves: string[]): string[] {
 }
 
 /**
- * Fold adjacent same-face moves into their minimal form (Quest-style):
+ * Fold adjacent same-face moves into their minimal form:
  *   U U  → U2        U2 U  → U'       U U' → (removed)
  *   U2 U2 → (removed)                 U' U' → U2
  * Rotations are passed through untouched. Only ADJACENT same-face moves are

@@ -46,7 +46,7 @@ export interface CaseRenderPlan {
    * The case pair (corner + edge piece IDs) identified from the setup, for
    * F2L/Advanced F2L. The 3D mask keeps these two pieces colored wherever
    * they are (own slot, U layer, or trapped in another slot) and grays the
-   * rest — matching SpeedcubeQuest's stickering.
+   * rest — matching the standard F2L stickering.
    */
   pair?: { homeC: number; homeE: number } | null;
 }

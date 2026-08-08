@@ -86,10 +86,10 @@ export function Case3DPanel({
 
   // ── Slot-filtered algorithm list (F2L only) ──────────────────────────
   // Every F2L alg declares its slot in `notes` ("Slot: FR/FL/BL/BR"). The slot
-  // selector rotates the camera AND filters the list, like SpeedcubeQuest.
+  // selector rotates the camera AND filters the list.
   // Algs without a slot (customs) are always shown.
   //
-  // "Slot: ALL" = canonic algs (BirdF2L/quest) written for the FR slot: the
+  // "Slot: ALL" = canonic algs (BirdF2L) written for the FR slot: the
   // case is solved in every slot by rotating the cube (slots-model verified
   // 672/672), so they are universal and shown in any slot.
   const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";

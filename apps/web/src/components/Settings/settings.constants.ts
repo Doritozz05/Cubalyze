@@ -12,6 +12,7 @@ import {
   Keyboard,
   Download,
   UserRound,
+  Heart,
 } from 'lucide-react';
 
 export interface SettingsSection {
@@ -93,6 +94,12 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Advanced',
     icon: Wrench,
     description: 'Developer tools, data, and debugging.',
+  },
+  {
+    id: 'credits',
+    label: 'Credits',
+    icon: Heart,
+    description: 'Data sources, libraries, and community contributions.',
   },
 ];
 

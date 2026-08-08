@@ -411,7 +411,7 @@ export function ReconstructionDetailView({
           {/* ── Our detection (Fase 3) ── */}
           <OurDetectionPanel record={record} />
 
-          {/* ── Phase table (Quest-style) ── */}
+          {/* ── Phase table ── */}
           {record.phases.length > 0 && (
             <div className="mt-4 rounded-lg border border-line bg-surface">
               <div className="flex items-center justify-between border-b border-line px-3 py-2.5">

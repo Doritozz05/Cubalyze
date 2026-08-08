@@ -37,6 +37,7 @@ import { DataSection } from './sections/DataSection';
 import { ProfileSection } from './sections/ProfileSection';
 import { NotificationsSection } from './sections/NotificationsSection';
 import { AdvancedSection } from './sections/AdvancedSection';
+import { CreditsSection } from './sections/CreditsSection';
 import type { Solve } from '@/types';
 
 export interface SettingsDialogProps {
@@ -132,6 +133,8 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return <NotificationsSection />;
       case 'advanced':
         return <AdvancedSection />;
+      case 'credits':
+        return <CreditsSection />;
       default: {
         const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
         if (section) {

@@ -24,7 +24,7 @@ interface GeneratedFile { source: string; set: string; subsetId: string; cases: 
 const GENERATED: Record<string, string> = {
   pll: resolve(__dirname, "../../../../pruebas/generated/scdb-pll.json"),
   oll: resolve(__dirname, "../../../../pruebas/generated/scdb-oll.json"),
-  // AdvancedF2L is seeded from the FUSED dump (fase5-fuse.ts: SCDB+BirdF2L+Quest).
+  // AdvancedF2L is seeded from the FUSED dump (fase5-fuse.ts: SCDB+BirdF2L).
   af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l-fused.json"),
 };
 

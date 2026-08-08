@@ -120,7 +120,7 @@ const GENERATED: Record<string, string> = {
   pll: resolve(__dirname, "../../../../pruebas/generated/scdb-pll.json"),
   oll: resolve(__dirname, "../../../../pruebas/generated/scdb-oll.json"),
   // F2L/AdvancedF2L: the seed is generated from the FUSED dumps
-  // (fase5-fuse.ts: SCDB + BirdF2L + SpeedcubeQuest), so the verify gate runs
+  // (fase5-fuse.ts: SCDB + BirdF2L), so the verify gate runs
   // against those — every alg that lands in the seed must solve its case.
   af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l-fused.json"),
   f2l: resolve(__dirname, "../../../../pruebas/generated/scdb-f2l-fused.json"),

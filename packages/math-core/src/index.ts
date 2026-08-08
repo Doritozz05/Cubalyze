@@ -4,7 +4,7 @@ export * from './CubeState';
 export * from './FaceletStringConverter';
 export * from './MoveExpander';
 
-// Move parsing / reconstruction notation (CubeRoot, Quest, …)
+// Move parsing / reconstruction notation (CubeRoot, …)
 export * from './notation/moveNotation';
 export * from './notation/conjugateToBaseFrame';
 

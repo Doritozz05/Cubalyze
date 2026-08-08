@@ -1,7 +1,7 @@
 /**
  * conjugateToBaseFrame.ts — Rewrite solver-frame moves to cube-fixed moves.
  *
- * Text reconstructions (CubeRoot / Quest / reco.nz) write moves from the
+ * Text reconstructions (CubeRoot / reco.nz) write moves from the
  * SOLVER's point of view. After an inspection rotation (e.g. `x2 y'`), a
  * written `R` means "turn the face currently at the R position", which is a
  * different cube face depending on the rotations that came before it. A

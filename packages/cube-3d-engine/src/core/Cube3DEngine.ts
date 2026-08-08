@@ -519,7 +519,7 @@ export class Cube3DEngine {
   /**
    * Applies F2L-specific masking to the 3D cube model.
    *
-   * Mirrors SpeedcubeQuest's F2L stickering exactly:
+   * Mirrors the standard F2L stickering:
    *   - colored: the case pair (corner + edge) wherever it is (own slot, U
    *     layer, or trapped in another slot), and every piece of layers 1-2
    *     (F2L) that is currently in its solved home position;

@@ -97,7 +97,7 @@ describe('canonical case presentation', () => {
     expect(resolveAlgorithmDiagramRotation(current)).toBe(135);
   });
 
-  it('identifies the case pair for F2L and Advanced F2L plans (SpeedcubeQuest stickering)', () => {
+  it('identifies the case pair for F2L and Advanced F2L plans (F2L stickering)', () => {
     const f2lCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000003');
     expect(f2lCase).toBeDefined();
 
