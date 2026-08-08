@@ -40,14 +40,12 @@ export interface Solve {
   /**
    * Whether `moves` are pre-conjugated to the cube-fixed frame.
    *
-   * - `false` (reconstruction records): the moves are RAW solver-frame
-   *   letters (rotations NOT folded in). The 3D replay MUST rotate the cube
-   *   root by `orientationTimeline` (the solver's grip: inspection pre-roll
-   *   + mid-solve keyframes) while the moves play in the cube's own frame;
-   *   the displayed notation is already the solver's own letters.
-   * - `true` (legacy conjugated streams): rotations are folded into the
-   *   moves, so the replay must NOT rotate the cube again (the inspection
-   *   would play twice) — the timeline only remaps display notation.
+   * - `true` (reconstruction records): the moves are CONJUGATED base-frame
+   *   letters (rotations folded in) that solve the cube in the cube's own
+   *   frame. The 3D replay rotates the cube ROOT by `orientationTimeline`
+   *   (the solver's grip: inspection pre-roll + mid-solve keyframes) so the
+   *   cube follows the solver's perspective and ends solved in it; per-event
+   *   `displayNotation` overrides show the writer's raw notation.
    * - `undefined` (smart-cube solves): physical moves + an IMU timeline;
    *   the cube root follows the timeline.
    */

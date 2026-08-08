@@ -243,6 +243,29 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
     }
   });
 
+  it('skips the pre-roll when preRollEnabled is false (smart-cube held orientation)', async () => {
+    stubRaf();
+    try {
+      const calls: { oi: number; dur: number }[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+        },
+        undefined,
+        [[0, 2]],
+      );
+      engine.preRollEnabled = false;
+      await engine.play();
+      // No 600ms inspection pre-roll — only the tick's keyframe snap at move 0.
+      expect(calls).toEqual([{ oi: 2, dur: engine.orientationAnimationDurationMs }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('replays the grip after a restart (seek to 0), not on resume mid-timeline', async () => {
     stubRaf();
     try {
@@ -298,5 +321,63 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
       engine.orientationAnimationDurationMs,
       engine.orientationAnimationDurationMs,
     ]);
+  });
+
+  it('inspection with TWO rotations animates them ONE AFTER ANOTHER (z, then y2 — no diagonal swing)', async () => {
+    stubRaf();
+    try {
+      const orientCalls: number[] = [];
+      let releaseStep1: (() => void) | null = null;
+      // Step 1 is async-gated; step 2 must NOT fire until step 1 completes.
+      const step1 = new Promise<void>((r) => (releaseStep1 = r));
+      let call = 0;
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (oi) => {
+            call++;
+            orientCalls.push(oi);
+            // Only the FIRST rotation is gated — the second would be illegal
+            // before it resolves.
+            return call === 1 ? step1 : undefined;
+          },
+        },
+        undefined,
+        [[0, 5], [0, 9]], // inspection "z y2" → two keyframes at event 0
+      );
+
+      const playing = engine.play();
+      await Promise.resolve();
+      // Step 1 started, step 2 must NOT have: rotations are sequential.
+      expect(orientCalls).toEqual([5]);
+
+      releaseStep1!();
+      await playing;
+      // Both steps ran in order, each with the per-rotation pre-roll duration.
+      expect(orientCalls).toEqual([5, 9]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('mid-solve consecutive rotations chain ONE AFTER ANOTHER (not one composed SLERP)', async () => {
+    const orientCalls: number[] = [];
+    const engine = new ReplayEngine(
+      [bunchedMove(0), bunchedMove(1), bunchedMove(2), bunchedMove(3)],
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: (oi) => { orientCalls.push(oi); },
+      },
+      undefined,
+      [[0, 2], [3, 5], [3, 8]], // two rotations between moves 2 and 3
+    );
+    await engine.stepForward(); // move 0 → grip 2
+    await engine.stepForward(); // move 1 → same grip
+    await engine.stepForward(); // move 2 → same grip
+    await engine.stepForward(); // move 3 → rotations 5 then 8, in order
+    expect(orientCalls).toEqual([2, 5, 8]);
   });
 });

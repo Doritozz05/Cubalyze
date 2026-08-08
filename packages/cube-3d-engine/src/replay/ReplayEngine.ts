@@ -141,6 +141,15 @@ export class ReplayEngine {
   public preRollDurationMs = 600;
 
   /**
+   * Whether the inspection pre-roll may run at all. Reconstruction solves
+   * (raw solver-frame moves) re-enact the solver's grip — enabled. Smart-cube
+   * solves (physical moves + IMU timeline) can carry a first keyframe that is
+   * merely a HELD orientation (no rotation happened in the solve window), so
+   * callers disable this to avoid a phantom grip.
+   */
+  public preRollEnabled = true;
+
+  /**
    * Milliseconds allocated to each move on the replay timeline.
    *
    * Playback is MOVE-DRIVEN: the timeline length is `moves.length * this`
@@ -155,11 +164,12 @@ export class ReplayEngine {
   private lastAppliedOrientation = -1;
 
   /**
-   * The orientation the cube must GRIP at position 0 (the inspection
-   * rotation), or -1 when there is none. Derived from the timeline's first
-   * keyframe when it sits at move 0 and is not the identity orientation.
+   * The orientation SEQUENCE the cube must GRIP at position 0 (the
+   * inspection rotations), or [] when there is none. Every timeline keyframe
+   * at event 0 is one rotation token (uncompressed timeline) — the pre-roll
+   * animates them ONE AFTER ANOTHER (z, then y2 — not one diagonal SLERP).
    */
-  private preRollOrientation = -1;
+  private preRollOrientations: number[] = [];
   /** True once the pre-roll grip has been applied for the current session
    *  (reset by seek/stop/setMoves so restart replays the inspection). */
   private preRollApplied = false;
@@ -167,6 +177,26 @@ export class ReplayEngine {
   private gripAnimating = false;
   /** The in-flight pre-roll promise (so step/seek can wait for it). */
   private gripPromise: Promise<void> | null = null;
+  /**
+   * True while the tick's mid-solve orientation CHAIN is animating (one or
+   * more consecutive rotations). The next move waits for it to finish — a
+   * rotation completes before the following move starts, like the solver
+   * turning the cube in hand.
+   */
+  private orientationBusy = false;
+  /** The in-flight mid-solve chain promise (so seek/step can wait for it,
+   *  exactly like gripPromise). */
+  private orientationChainPromise: Promise<void> | null = null;
+  /**
+   * Monotonic generation for the orientation chain — a stale chain's
+   * `.finally()` only clears the busy flag if its generation is still
+   * current, so a newer chain can never have its gate opened early by an
+   * older one's cleanup.
+   */
+  private orientationChainGen = 0;
+  /** Index (into preRollOrientations) of the grip step currently animating.
+   *  Pause snaps the cube to THIS step's target, not the composed final. */
+  private preRollStepIndex = 0;
 
   // ─── Constructor ────────────────────────────────────────────────────────
 
@@ -229,25 +259,34 @@ export class ReplayEngine {
     this.nextIndex = 0;
     this._positionMs = 0;
     this.lastAppliedOrientation = -1;
+    this.orientationBusy = false;
+    this.orientationChainGen = 0;
+    this.orientationChainPromise = null;
     this.scrambleRotations = [];
     this.computePreRoll();
     this.setState('idle');
   }
 
   /**
-   * Derive the inspection pre-roll orientation from the timeline.
+   * Derive the inspection pre-roll orientation SEQUENCE from the timeline.
    *
-   * A keyframe `[0, oi]` means "from the first move on the cube is gripped
-   * as orientation oi" — i.e. the inspection rotation happened BEFORE move
-   * 1. Playback should re-enact that grip (slowly, non-blocking of the
-   * state) before applying any move. Identity or absent keyframes mean no
-   * pre-roll.
+   * Every keyframe at move 0 is a rotation token that happened BEFORE move 1
+   * (the inspection) — e.g. "z y2" yields keyframes [0, z] and [0, z∘y2].
+   * Playback re-enacts each grip step in order, slowly, before any move is
+   * applied. Identity or absent keyframes mean no pre-roll.
    */
   private computePreRoll(): void {
-    this.preRollOrientation = -1;
-    if (this.orientationTimeline && this.orientationTimeline.length > 0) {
-      const [firstMove, firstOi] = this.orientationTimeline[0];
-      if (firstMove === 0 && firstOi !== 0) this.preRollOrientation = firstOi;
+    this.preRollOrientations = [];
+    this.preRollStepIndex = 0;
+    if (this.orientationTimeline) {
+      // Timeline is sorted by move index — all event-0 entries come first.
+      for (const [mi, oi] of this.orientationTimeline) {
+        if (mi !== 0) break;
+        if (oi === 0) continue; // identity — nothing to grip
+        // Skip consecutive duplicates (a no-op rotation adds no visual step).
+        if (oi === this.preRollOrientations[this.preRollOrientations.length - 1]) continue;
+        this.preRollOrientations.push(oi);
+      }
     }
     this.preRollApplied = false;
   }
@@ -316,33 +355,42 @@ export class ReplayEngine {
     // Playback waits for it to finish: the next move is never applied while
     // the cube is still turning.
     if (
-      this.preRollOrientation >= 0 &&
+      this.preRollEnabled &&
+      this.preRollOrientations.length > 0 &&
       !this.preRollApplied &&
       this._positionMs === 0 &&
       this.callbacks.setOrientation
     ) {
-      this.preRollApplied = true;
       this.gripAnimating = true;
-      const prom = this.callbacks.setOrientation(
-        this.preRollOrientation,
-        this.preRollDurationMs,
-      );
-      if (prom instanceof Promise) {
-        this.gripPromise = prom;
-        await prom.catch(() => {});
-        this.gripPromise = null;
+      // Sequential grip: each inspection rotation animates fully BEFORE the
+      // next one starts (z, then y2 — never one diagonal rotation), and no
+      // move runs until every step has finished.
+      for (const oi of this.preRollOrientations) {
+        const prom = this.callbacks.setOrientation(oi, this.preRollDurationMs);
+        if (prom instanceof Promise) {
+          this.gripPromise = prom;
+          await prom.catch(() => {});
+          this.gripPromise = null;
+        }
+        // This step completed — pause() now snaps to the CURRENT step's
+        // target (not the composed final) so the cube doesn't jump grips.
+        this.preRollStepIndex++;
+        this.gripAnimating = false;
+        // Paused/stopped mid-grip → don't start playback, and DON'T mark the
+        // grip as applied — the next play() retries the pre-roll from wherever
+        // the root is. (Read through the getter: TS cannot see setState()
+        // mutating _state, and the earlier `if (this._state === 'playing')
+        // return` would narrow it away.)
+        if (this.state !== 'playing') return;
       }
-      this.gripAnimating = false;
-      // Paused/stopped mid-grip → don't start playback. (Read through the
-      // getter: TS cannot see setState() mutating _state, and the earlier
-      // `if (this._state === 'playing') return` would narrow it away.)
-      if (this.state !== 'playing') return;
+      this.preRollApplied = true;
       // The wall clock advanced during the grip — reset it so move 0
-      // starts fresh from position 0. Also mark the orientation as applied
-      // so the tick doesn't re-fire setOrientation on move 0.
+      // starts fresh from position 0. Also mark the final orientation as
+      // applied so the tick doesn't re-fire setOrientation on move 0.
       this.resumePositionMs = 0;
       this.playStartWall = performance.now();
-      this.lastAppliedOrientation = this.preRollOrientation;
+      this.lastAppliedOrientation =
+        this.preRollOrientations[this.preRollOrientations.length - 1];
     }
 
     this.tick();
@@ -354,7 +402,25 @@ export class ReplayEngine {
     this.cancelRaf();
     // Mid-grip pause: the virtual clock hasn't started yet (no move applied),
     // so stay at position 0 instead of sampling a bogus wall-clock offset.
+    // Snap the cube to the grip orientation so the slow turn doesn't keep
+    // playing while the transport says "paused" (this also resolves the
+    // in-flight grip promise, letting play() exit cleanly at its guard).
     this._positionMs = this.gripAnimating ? 0 : this.computePosition();
+    if (
+      this.gripAnimating &&
+      this.preRollOrientations.length > 0 &&
+      this.callbacks.setOrientation
+    ) {
+      // Snap the cube to the step currently turning so the slow turn doesn't
+      // keep playing while the transport says "paused" (this also resolves
+      // the in-flight grip promise, letting play() exit cleanly at its
+      // guard) — and the cube stops at THIS step's grip, not the final one.
+      const snapOi = this.preRollOrientations[
+        Math.min(this.preRollStepIndex, this.preRollOrientations.length - 1)
+      ];
+      const prom = this.callbacks.setOrientation(snapOi, 0);
+      if (prom instanceof Promise) prom.catch(() => {});
+    }
     this.setState('paused');
   }
 
@@ -364,6 +430,9 @@ export class ReplayEngine {
     this._positionMs = 0;
     this.nextIndex = 0;
     this.preRollApplied = false;
+    this.orientationBusy = false;
+    this.orientationChainGen = 0;
+    this.orientationChainPromise = null;
     this.setState('idle');
   }
 
@@ -380,6 +449,13 @@ export class ReplayEngine {
       this.gripPromise = null;
       this.gripAnimating = false;
     }
+    // …and any in-flight mid-solve orientation chain, so the rewind's snaps
+    // don't interleave with a still-running rotation.
+    if (this.orientationChainPromise) {
+      try { await this.orientationChainPromise; } catch { /* aborted chain */ }
+      this.orientationChainPromise = null;
+      this.orientationBusy = false;
+    }
 
     const clampedMs = Math.max(0, Math.min(targetMs, this._totalMs));
     this._positionMs = clampedMs;
@@ -388,6 +464,8 @@ export class ReplayEngine {
     this.setState('seeking');
     await this.callbacks.resetCube();
     this.lastAppliedOrientation = -1;
+    this.orientationBusy = false;
+    this.orientationChainGen = 0;
 
     // Apply stored scramble rotations so the cube starts from the
     // correct scrambled state, not from solved.
@@ -446,6 +524,13 @@ export class ReplayEngine {
       this.gripPromise = null;
       this.gripAnimating = false;
     }
+    // …and any in-flight orientation chain, so the step doesn't interleave
+    // rotations with a still-running one (last-wins in the engine, but racy).
+    if (this.orientationChainPromise) {
+      try { await this.orientationChainPromise; } catch { /* aborted chain */ }
+      this.orientationChainPromise = null;
+      this.orientationBusy = false;
+    }
 
     if (wasPlaying) {
       this._positionMs = this.computePosition();
@@ -485,6 +570,13 @@ export class ReplayEngine {
       try { await this.gripPromise; } catch { /* aborted grip */ }
       this.gripPromise = null;
       this.gripAnimating = false;
+    }
+    // …and any in-flight orientation chain, so the undo doesn't interleave
+    // rotations with a still-running one.
+    if (this.orientationChainPromise) {
+      try { await this.orientationChainPromise; } catch { /* aborted chain */ }
+      this.orientationChainPromise = null;
+      this.orientationBusy = false;
     }
 
     // No moves applied → already at start
@@ -543,10 +635,14 @@ export class ReplayEngine {
 
     const pos = this.computePosition();
 
-    // Apply all moves whose offset <= current position
+    // Apply all moves whose offset <= current position. A move WAITS while
+    // the previous move's orientation chain is still animating — rotations
+    // finish before the next move starts (the solver turns the cube in hand,
+    // then turns the layer).
     while (
       this.nextIndex < this.rotations.length &&
-      this.rotations[this.nextIndex].offsetMs <= pos
+      this.rotations[this.nextIndex].offsetMs <= pos &&
+      !this.orientationBusy
     ) {
       const r = this.rotations[this.nextIndex];
       // Calculate how much of this move's time window has elapsed,
@@ -569,8 +665,14 @@ export class ReplayEngine {
       if (prom instanceof Promise) prom.catch(() => {});
       this.nextIndex++;
       this.onMove?.(this.nextIndex - 1, this.rotations.length);
-      // Apply orientation at this move index with smooth animation
-      this.applyOrientationAt(this.nextIndex - 1, this.orientationAnimationDurationMs);
+      // Apply orientation at this move index with smooth animation. Cap the
+      // duration by the remaining slot (speed-adjusted) so a grip rotation
+      // never overlaps the next move's start at higher speeds.
+      const orientationDuration = Math.min(
+        this.orientationAnimationDurationMs,
+        this.moveSpacingMs / Math.max(1, this._speed),
+      );
+      this.applyOrientationAt(this.nextIndex - 1, orientationDuration);
     }
 
     this._positionMs = pos;
@@ -608,30 +710,90 @@ export class ReplayEngine {
 
   /**
    * Apply the orientation for the given move index from the timeline.
-   * Uses getOrientationAtIndex to find the correct keyframe.
-   * Passes animationDurationMs so the renderer can smoothly SLERP the
-   * cube root instead of hard-snapping.
+   *
+   * The timeline is UNCOMPRESSED: every rotation token is its own keyframe,
+   * so consecutive rotations that happened before the same move (e.g. the
+   * inspection "z y2" both at event 0) form a RUN sharing that move index.
+   * This method animates the run's orientations ONE AFTER ANOTHER — z fully,
+   * then y2 — instead of one diagonal SLERP straight to the composed
+   * orientation.
+   *
+   * The next move in the tick waits while the chain runs (orientationBusy),
+   * so a rotation always finishes before the following move starts.
    *
    * @param moveIndex - Current move index in the solve
-   * @param animateMs - Duration for the orientation animation (0 = instant snap for seeking)
+   * @param animateMs - Per-step animation duration (0 = instant snap for seeking)
    */
   private applyOrientationAt(moveIndex: number, animateMs = 0): void {
     if (!this.orientationTimeline || !this.callbacks.setOrientation) return;
-    
-    // Find the orientation index for this move
-    let orientationIndex = 0;
-    for (const [mi, oi] of this.orientationTimeline) {
-      if (mi <= moveIndex) {
-        orientationIndex = oi;
-      } else {
-        break;
-      }
+
+    // Last keyframe whose move index is <= moveIndex (timeline is sorted).
+    let lastIdx = -1;
+    for (let k = 0; k < this.orientationTimeline.length; k++) {
+      if (this.orientationTimeline[k][0] <= moveIndex) lastIdx = k;
+      else break;
+    }
+    if (lastIdx < 0) return;
+
+    const prevApplied = this.lastAppliedOrientation;
+    const finalOi = this.orientationTimeline[lastIdx][1];
+    if (finalOi === prevApplied) return;
+    this.lastAppliedOrientation = finalOi;
+
+    // Collect the run of keyframes sharing the last keyframe's move index
+    // (the consecutive rotations that happened before this move), preserving
+    // order and dropping no-op duplicates. A leading orientation already
+    // applied (e.g. re-firing [5,8] when at 5) is skipped — only the unseen
+    // tail animates.
+    const atMove = this.orientationTimeline[lastIdx][0];
+    let runStart = lastIdx;
+    while (runStart > 0 && this.orientationTimeline[runStart - 1][0] === atMove) runStart--;
+    const pending: number[] = [];
+    for (let k = runStart; k <= lastIdx; k++) {
+      const oi = this.orientationTimeline[k][1];
+      if (oi === prevApplied && pending.length === 0) continue; // already there
+      if (oi !== pending[pending.length - 1]) pending.push(oi);
+    }
+    if (pending.length === 0) return;
+
+    if (animateMs <= 0) {
+      // Snap (seeking): only the composed final orientation matters.
+      const prom = this.callbacks.setOrientation(finalOi, 0);
+      if (prom instanceof Promise) prom.catch(() => {});
+      return;
     }
 
-    if (orientationIndex !== this.lastAppliedOrientation) {
-      this.lastAppliedOrientation = orientationIndex;
-      const prom = this.callbacks.setOrientation(orientationIndex, animateMs);
-      if (prom instanceof Promise) prom.catch(() => {});
-    }
+    // Animated chain — sequential, one rotation at a time. Each step gets
+    // the orientation duration, capped so the chain stays within the next
+    // move's slot (the tick's orientationBusy gate catches any overrun).
+    // Playback-initiated chains stop as soon as the transport leaves
+    // 'playing' (pause/stop); step-driven chains (state 'paused' throughout)
+    // always run to the end.
+    const perStep = Math.min(
+      animateMs,
+      this.moveSpacingMs / Math.max(1, this._speed),
+    );
+    const gen = ++this.orientationChainGen;
+    const fromPlayback = this._state === 'playing';
+    this.orientationBusy = true;
+    const chain = (async () => {
+      for (const oi of pending) {
+        const prom = this.callbacks.setOrientation!(oi, perStep);
+        if (prom instanceof Promise) await prom.catch(() => {});
+        if (
+          this._state === 'seeking' ||
+          this._state === 'idle' ||
+          (fromPlayback && this._state !== 'playing')
+        ) break;
+      }
+    })();
+    this.orientationChainPromise = chain;
+    chain.finally(() => {
+      // Only the CURRENT generation's cleanup may clear the busy flag — a
+      // stale chain finishing after a newer one started must not open the
+      // tick's gate early.
+      if (gen === this.orientationChainGen) this.orientationBusy = false;
+      if (this.orientationChainPromise === chain) this.orientationChainPromise = null;
+    }).catch(() => {});
   }
 }

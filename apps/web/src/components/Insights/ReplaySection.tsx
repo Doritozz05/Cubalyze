@@ -166,20 +166,20 @@ export function ReplaySection({
     // PHYSICAL (cube-frame) moves and need the dynamic remap to the solver's
     // perspective via the orientation active at this move (right is always
     // right).
-    const notation =
-      solve.replayMovesConjugated === false
-        ? rawNotation
-        : move.displayNotation ??
-          (() => {
-            const orientationIndex = getOrientationAtIndex(
-              solve.orientationTimeline,
-              currentMoveIdx,
-            );
-            const orientationEntry =
-              OrientationTable.ENTRIES[orientationIndex] ??
-              OrientationTable.IDENTITY;
-            return MoveTransformer.toDisplayNotation(move, orientationEntry);
-          })();
+    let notation: string;
+    if (solve.replayMovesConjugated === false) {
+      notation = rawNotation;
+    } else if (move.displayNotation) {
+      notation = move.displayNotation;
+    } else {
+      const orientationIndex = getOrientationAtIndex(
+        solve.orientationTimeline,
+        currentMoveIdx,
+      );
+      const orientationEntry =
+        OrientationTable.ENTRIES[orientationIndex] ?? OrientationTable.IDENTITY;
+      notation = MoveTransformer.toDisplayNotation(move, orientationEntry);
+    }
 
     // Find current phase from analysis phases (cumulative move counts)
     const phases = solve.analysis?.phases ?? [];
@@ -313,16 +313,12 @@ export function ReplaySection({
         const moves = latest.moves ?? [];
         if (moves.length >= 2) {
           const orientationTimeline = latest.orientationTimeline;
-          // Reconstruction records replay RAW solver-frame moves; the
-          // orientation timeline rotates the cube root to the solver's grip
-          // (inspection pre-roll before move 1 + mid-solve keyframes) while
-          // the moves play in the cube's own frame — ending solved in the
-          // solver's perspective. Only CONJUGATED solves (legacy/smartcube
-          // streams with rotations already folded in) must NOT rotate again,
-          // or the inspection rotation would play twice.
-          const engineOrientationTimeline = latest.replayMovesConjugated
-            ? undefined
-            : orientationTimeline;
+          // The orientation timeline rotates the cube ROOT to the solver's
+          // grip (inspection pre-roll before move 1 + mid-solve keyframes)
+          // while the CONJUGATED moves play in the cube's own frame — the
+          // cube both SOLVES (conjugated = base-frame) and follows the
+          // solver's perspective (root grip), ending solved in the solver's
+          // frame. Slices/wides/smartcube all share this path.
           const engine = new ReplayEngine(moves, {
             resetCube: () => proxy.resetCube(),
             rotateLayers: (
@@ -332,18 +328,23 @@ export function ReplaySection({
               dur: number,
               elapsed?: number,
             ) => proxy.rotateLayers(axis, layers, angle, dur, elapsed ?? 0),
-            setOrientation: engineOrientationTimeline
+            setOrientation: orientationTimeline
               ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
             // Move-driven timeline: length = moves × spacing (not solve.time),
             // so all moves always play back.
-          }, moves.length * REPLAY_MOVE_SPACING_MS, engineOrientationTimeline);
+          }, moves.length * REPLAY_MOVE_SPACING_MS, orientationTimeline);
           engine.moveAnimationDurationMs = 70;
           engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
           // Whole-cube grips (inspection pre-roll + mid-solve rotations) turn
           // slowly — they are the solver turning the cube in hand, not moves.
+          // The pre-roll re-enacts the solver's inspection grip; only
+          // reconstruction solves (conjugated moves) get it — smart-cube IMU
+          // timelines can carry a merely-held first orientation that never
+          // rotated during the solve window.
           engine.preRollDurationMs = 600;
           engine.orientationAnimationDurationMs = 280;
+          engine.preRollEnabled = latest.replayMovesConjugated === true;
           engineRef.current = engine;
 
           // Apply the scramble so the cube starts in the scrambled
