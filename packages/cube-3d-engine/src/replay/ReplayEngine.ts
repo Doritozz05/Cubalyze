@@ -174,7 +174,14 @@ export class ReplayEngine {
       const angle = m.direction * (mapping?.angleSign ?? 1) * 90;
       return {
         axis: (mapping?.axis ?? 'y') as RotationAxis,
-        layerValues: [mapping?.layerValue ?? 0],
+        // A WIDE move rotates the outer layer AND the middle layer TOGETHER
+        // in one animation (layerValue 0 = the middle slice). The angle sign
+        // of the outer face is always the correct sign for the adjacent
+        // middle layer too (r = R M', u = U E', f = F S — verified against
+        // MoveExpander), so one shared angle drives both layers.
+        layerValues: m.wide
+          ? [mapping?.layerValue ?? 0, 0]
+          : [mapping?.layerValue ?? 0],
         angle,
         offsetMs: i * this.moveSpacingMs,
         hostTimestamp: m.hostTimestamp,

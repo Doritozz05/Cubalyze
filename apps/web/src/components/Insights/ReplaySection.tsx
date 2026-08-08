@@ -168,7 +168,12 @@ export function ReplaySection({
     );
     const orientationEntry =
       OrientationTable.ENTRIES[orientationIndex] ?? OrientationTable.IDENTITY;
-    const notation = MoveTransformer.toDisplayNotation(move, orientationEntry);
+    // WIDE events carry the solver's written token (e.g. "r'") so the replay
+    // shows exactly what the reconstructor wrote; everything else is remapped
+    // to the solver frame via the active orientation.
+    const notation =
+      move.displayNotation ??
+      MoveTransformer.toDisplayNotation(move, orientationEntry);
 
     // Find current phase from analysis phases (cumulative move counts)
     const phases = solve.analysis?.phases ?? [];

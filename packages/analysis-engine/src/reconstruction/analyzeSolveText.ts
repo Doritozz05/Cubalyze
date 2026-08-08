@@ -254,23 +254,78 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // tokens are filtered out so `CubeState.applySequence` never throws.
   const stateTokens = solveTokens.filter((t) => STATE_TOKEN_RE.test(t));
 
+  // ── Preferred cross index (tiebreak only) ────────────────────────────────
+  // The solver's written cross segment (the first non-rotation raw phase) is
+  // the ONLY signal that tells apart two crosses that are indistinguishable
+  // by state — e.g. a persistent coincidental cross on a layer the solve
+  // never touches vs the real cross. It is a TIEBREAK over equally-valid
+  // candidates, never a detector: no label is trusted, only the segment
+  // LENGTH. The index is measured in the CONJUGATED physical stream (faces +
+  // the slice half of wide moves), because that is where the cross completion
+  // actually materializes — timeline entries only count face turns, so a
+  // wide-heavy cross visibly completes a few entries after its written end.
+  const firstFacePhase = rawPhases.find((p) =>
+    p.tokens.some((t) => FACE_MOVE_RE.test(t)),
+  );
+  let preferredCrossIdx: number | undefined;
+  if (firstFacePhase) {
+    const idx = rawPhases.indexOf(firstFacePhase);
+    let physicalCount = 0;
+    for (let k = 0; k <= idx; k++) {
+      physicalCount += perPhase[k + 1].length; // conjugated tokens (face+slice)
+    }
+    preferredCrossIdx = physicalCount - 1;
+  }
+
   const solveMoves = movesFromTokens(faceTokens);
-  const timeline = PhaseSplitter.splitAndAnnotate(
+  let timeline = PhaseSplitter.splitAndAnnotate(
     TimelineBuilder.build(solveMoves, 'CFOP', undefined, setup, undefined, stateTokens),
     CFOPDefinition,
-    { colorNeutral: true },
+    { colorNeutral: true, preferredCrossIdx },
   );
   if (input.totalTimeMs !== undefined && Number.isFinite(input.totalTimeMs)) {
     timeline.solveTimeMs = Math.max(0, input.totalTimeMs);
   }
-  const report = timeline.detectionReport ??
+  let report = timeline.detectionReport ??
     PhaseSplitter.getDetectionReport(timeline, CFOPDefinition, { colorNeutral: true });
+
+  // ── P2: frame recovery ──────────────────────────────────────────────────
+  // Text reconstructions can end PERFECT but in a rotated frame (the stored
+  // scramble and the solver's frame differ by one whole-cube rotation — the
+  // known recon.nz quirk). The base analysis then runs on a rotated cube:
+  // spurious early crosses win, slots read as UF/DF/UB/DB garbage, and the
+  // Orientation row gets a wrong scheme. When the final state is uniform but
+  // NOT canonically solved, rotate EVERY snapshot by the rotation that
+  // resolves the final state and re-detect: with an exactly solved end state,
+  // the real cross completes the full 4-phase chain and wins the detector's
+  // heuristic over any spurious cross.
+  let states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
+  const finalState = states[states.length - 1];
+  if (report.finalStateSolved && finalState && !finalState.isSolved()) {
+    const recovery = finalState.findRecoveryRotation();
+    if (recovery) {
+      for (const entry of timeline.entries) {
+        const c = TimelineBuilder.fromSnapshot(entry.state);
+        c.multiply(recovery);
+        entry.state = TimelineBuilder.toSnapshot(c);
+      }
+      const rotated = PhaseSplitter.splitAndAnnotate(
+        timeline,
+        CFOPDefinition,
+        { colorNeutral: true, preferredCrossIdx },
+      );
+      if (rotated.detectionReport) {
+        report = rotated.detectionReport;
+      }
+    }
+  }
 
   // Re-run the color detection to obtain the solver's scheme (cross color /
   // frame) — needed to name F2L slots in the SOLVER's frame. Same call the
-  // PhaseSplitter makes internally; no duplicated math.
-  const states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
-  const detection = ColorPhaseDetector.detect(states);
+  // PhaseSplitter makes internally; no duplicated math. (Recomputed AFTER the
+  // P2 frame recovery: the snapshots may have been rotated above.)
+  states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
+  const detection = ColorPhaseDetector.detect(states, preferredCrossIdx);
   const scheme = detection?.scheme;
   const crossFace = (detection?.crossFace ?? report.crossFace ?? 'D') as string;
 

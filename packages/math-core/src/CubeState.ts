@@ -231,6 +231,8 @@ export class CubeState implements CubeStateInternal {
   // Static pre-computed bit tables for all 18 moves (PASO 3)
   private static moveBitTables: MoveBitTable[] = [];
   private static isInitialized = false;
+  /** The 24 whole-cube rotation states (rotation group), lazily built once. */
+  private static rotationGroup: CubeState[] | null = null;
 
   constructor();
   constructor(
@@ -561,6 +563,72 @@ export class CubeState implements CubeStateInternal {
     CubeState.moveBitTables[ROT_BASE + 8] = extractBitTable(z3);
 
     CubeState.isInitialized = true;
+  }
+
+  /**
+   * The 24 whole-cube rotation states (the rotation group of the cube).
+   *
+   * Built lazily ONCE from the 9 pure-rotation move tables (indices 27–35:
+   * x/x'/x2, y/y'/y2, z/z'/z2) by closing the group under composition. Each
+   * entry is a CubeState equal to "the solved cube rotated by g" — an
+   * element of the octahedral rotation group (|O| = 24).
+   *
+   * These states let us both TEST whether an arbitrary state is a rotation
+   * of solved and ROTATE any state into (or out of) the canonical frame.
+   */
+  private static rotationGroupStates(): CubeState[] {
+    if (CubeState.rotationGroup) return CubeState.rotationGroup;
+    CubeState.initTables();
+    const bases: CubeState[] = [];
+    for (let i = 27; i < 36; i++) {
+      const tbl = CubeState.moveBitTables[i];
+      bases.push(
+        new CubeState(
+          Array.from(tbl.cornersSrc),
+          Array.from(tbl.cornersTwist),
+          Array.from(tbl.edgesSrc),
+          Array.from(tbl.edgesFlip),
+        ),
+      );
+    }
+    const key = (c: CubeState) =>
+      `${Array.from(c.cp).join(',')}|${Array.from(c.ep).join(',')}`;
+    const solved = new CubeState();
+    const seen = new Set<string>([key(solved)]);
+    const group: CubeState[] = [solved];
+    const queue: CubeState[] = [solved];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      for (const base of bases) {
+        const next = cur.clone();
+        next.multiply(base);
+        const k = key(next);
+        if (!seen.has(k)) {
+          seen.add(k);
+          group.push(next);
+          queue.push(next);
+        }
+      }
+    }
+    CubeState.rotationGroup = group;
+    return group;
+  }
+
+  /**
+   * Find the whole-cube rotation (a rotation-group state) that, applied to
+   * this state, yields the CANONICAL solved cube.
+   *
+   * Returns null when this state is NOT solved up to a rotation (i.e. some
+   * face is not monochromatic). Used by the analysis pipeline to recover
+   * the solver's frame when a reconstruction ends "solved but rotated".
+   */
+  public findRecoveryRotation(): CubeState | null {
+    for (const rot of CubeState.rotationGroupStates()) {
+      const candidate = this.clone();
+      candidate.multiply(rot);
+      if (candidate.isSolved()) return rot;
+    }
+    return null;
   }
 
   /**

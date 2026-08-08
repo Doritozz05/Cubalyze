@@ -53,6 +53,46 @@ describe('slice moves in the 3D replay (P0)', () => {
     expect(applied[1]).toMatchObject({ axis: 'y', layers: [0], angle: -90 });
   });
 
+  it('a wide event rotates outer + middle layer together and keeps its display token', async () => {
+    const applied: { axis: string; layers: number[]; angle: number }[] = [];
+    const engine = new ReplayEngine(
+      [
+        {
+          face: 'R',
+          direction: -1,
+          cubeTimestamp: 0,
+          hostTimestamp: 0,
+          wide: true,
+          displayNotation: "r'",
+        },
+      ],
+      {
+        resetCube: () => {},
+        rotateLayers: (axis, layers, angle) => {
+          applied.push({ axis, layers, angle });
+        },
+      },
+    );
+    expect(engine.moveCount).toBe(1);
+    await engine.stepForward();
+    expect(applied).toHaveLength(1);
+    // r' = R' + M: ONE rotation that spins the R layer AND the middle layer.
+    expect(applied[0]).toMatchObject({ axis: 'x', layers: [1, 0], angle: 90 });
+  });
+
+  it('a non-wide face event still rotates a single layer (regression)', async () => {
+    const applied: { axis: string; layers: number[]; angle: number }[] = [];
+    const engine = new ReplayEngine([ev('R', -1)], {
+      resetCube: () => {},
+      rotateLayers: (axis, layers, angle) => {
+        applied.push({ axis, layers, angle });
+      },
+    });
+    await engine.stepForward();
+    expect(applied).toHaveLength(1);
+    expect(applied[0]).toMatchObject({ axis: 'x', layers: [1], angle: 90 });
+  });
+
   it('the six outer faces still map to their own layers (regression)', () => {
     expect(FACE_ROTATION_MAP.U).toMatchObject({ axis: 'y', layerValue: 1 });
     expect(FACE_ROTATION_MAP.D).toMatchObject({ axis: 'y', layerValue: -1 });

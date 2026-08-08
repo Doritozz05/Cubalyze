@@ -22,6 +22,13 @@ type SplitOptions = {
   colorNeutral?: boolean;
   /** Require every phase and a solved final state when validating. */
   strict?: boolean;
+  /**
+   * TIEBREAK-ONLY hint for color-neutral detection: the timeline index where
+   * the solver's written cross segment ends (from the reconstruction text).
+   * Used only when two crosses are indistinguishable by state (same phase
+   * chain, same longevity); never used to detect a cross. Undefined = no hint.
+   */
+  preferredCrossIdx?: number;
 };
 
 type DetectionRun = {
@@ -149,7 +156,7 @@ export class PhaseSplitter {
       // Color-based detection: recognizes the cross by the sticker geometry,
       // so any cross color on any face (including the standard white-on-D
       // style, which piece-anchored masks cannot see) is detected.
-      const colorRun = PhaseSplitter.detectColorNeutral(timeline);
+      const colorRun = PhaseSplitter.detectColorNeutral(timeline, options?.preferredCrossIdx);
       if (colorRun.phases.length > 0) return colorRun;
     }
 
@@ -160,11 +167,14 @@ export class PhaseSplitter {
    * Color-based CFOP detection: any cross color on any face, re-colored to the
    * solver's scheme. Falls back to an empty run when no cross is ever complete.
    */
-  private static detectColorNeutral(timeline: SolveTimeline): DetectionRun {
+  private static detectColorNeutral(
+    timeline: SolveTimeline,
+    preferredCrossIdx?: number,
+  ): DetectionRun {
     const states = timeline.entries.map((entry) =>
       TimelineBuilder.fromSnapshot(entry.state),
     );
-    const result = ColorPhaseDetector.detect(states);
+    const result = ColorPhaseDetector.detect(states, preferredCrossIdx);
     if (!result || result.completions[0] < 0) return { phases: [] };
 
     // Only found completions become segments (mirroring runDetection, which

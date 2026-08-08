@@ -36,6 +36,38 @@ describe('reconz-12564 (rotated-frame solve)', () => {
     );
   });
 
+  it('P2: recovers the solver\'s frame and detects the real cross', () => {
+    const result = analyzeSolveText({
+      setup: FIXTURE.scramble,
+      solution: FIXTURE.text,
+      method: 'CFOP',
+    });
+    const { reconstruction } = result!;
+    const report = result!.timeline.detectionReport!;
+
+    // The solver holds white front / blue up after the x' grip — the frame
+    // the user verified by hand. The panel's Orientation row must match.
+    expect(reconstruction.orientation).toEqual({ up: 'B', front: 'U' });
+    // Identity scheme: the scramble frame colors are the canonical ones.
+    expect(reconstruction.scheme).toEqual({
+      U: 'U', R: 'R', F: 'F', D: 'D', L: 'L', B: 'B',
+    });
+    // The real cross wins the detector: a multi-slot cross, not a spurious
+    // single-face coincidence (the raw writes "xxxcross").
+    expect(report.crossType).toBe('xxcross');
+    expect(report.crossFace).toBe('U');
+    expect(report.crossColor).toBe('U');
+    // 3 pairs were made inside the cross; the raw's standalone "4th pair"
+    // (BR) is the only free F2L pair left.
+    expect(reconstruction.pairs).toHaveLength(1);
+    expect(reconstruction.pairs[0].slot).toBe('BR');
+    expect(reconstruction.pairs[0].colors).toEqual(['B', 'R']);
+    // ZBLL (1-look LL) lands on OLL; PLL is skipped.
+    expect(reconstruction.oll?.moves.length).toBe(9);
+    expect(reconstruction.oll?.skipped).toBe(false);
+    expect(reconstruction.pll?.skipped).toBe(true);
+  });
+
   it('still marks a genuinely inconsistent solve as incoherent', () => {
     // +1 extra move breaks the (rotated) solved state → non-uniform faces.
     const result = analyzeSolveText({

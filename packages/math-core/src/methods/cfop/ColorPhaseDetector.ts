@@ -50,9 +50,10 @@ import { FACE_LAYERS } from './cfopMasks';
  * ── Output ─────────────────────────────────────────────────────────────────
  * `detect()` scans all 6 faces as potential cross faces, keeps every candidate
  * that ever holds a completed cross, and returns the best one (complete 4
- * phases > more phases > non-spurious F2L/OLL > earlier cross > earlier
- * progress) — mirroring PhaseSplitter.compareRuns so a spurious face cross
- * never wins over the solver's real one.
+ * phases > more phases > closest to the solver's written cross segment (when
+ * the caller provides it) > non-spurious F2L/OLL > longest-lived cross >
+ * earlier cross > earlier progress) — mirroring PhaseSplitter.compareRuns so
+ * a spurious face cross never wins over the solver's real one.
  */
 export const FACE_LETTERS = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
 export type FaceLetter = (typeof FACE_LETTERS)[number];
@@ -156,6 +157,14 @@ export interface ColorDetectionResult {
   /** Entry indices [cross, f2l, oll, pll]; -1 when a phase never completed. */
   completions: [number, number, number, number];
   /**
+   * Number of timeline indices (from the cross completion onward) where the
+   * cross of `crossColor` stays complete on `crossFace`. The solver's REAL
+   * cross persists until the end of the solve (it is never disturbed), so a
+   * long-lived cross is the genuine one; a cross that only existed for a
+   * move or two is a coincidence of the scrambled state.
+   */
+  crossDuration: number;
+  /**
    * The winning AUF-corrected color scheme: solver face → color letter.
    * This is the frame the solver's F2L slots are defined in — XCross and
    * per-pair analysis re-color the state with it before checking slots.
@@ -255,14 +264,16 @@ function ollComplete(facelets: string, lastLayerFace: FaceLetter): boolean {
 }
 
 /**
- * Prefer: complete 4 phases > more phases > non-spurious F2L/OLL (completing
- * only at the final solved state is a sign of a wrong scheme) > earlier
- * cross > earlier progress.
+ * Prefer: complete 4 phases > more phases > closest to the solver's written
+ * cross segment > non-spurious F2L/OLL (completing only at the final solved
+ * state is a sign of a wrong scheme) > longest-lived cross > earlier cross
+ * > earlier progress.
  */
 function better(
   a: ColorDetectionResult,
   b: ColorDetectionResult,
   lastIndex: number,
+  preferredCrossIdx?: number,
 ): boolean {
   const aComplete = a.completions.every((c) => c >= 0);
   const bComplete = b.completions.every((c) => c >= 0);
@@ -270,6 +281,17 @@ function better(
   const aCount = a.completions.filter((c) => c >= 0).length;
   const bCount = b.completions.filter((c) => c >= 0).length;
   if (aCount !== bCount) return aCount > bCount;
+  // The solver's written cross segment (when known) is the strongest signal:
+  // it separates the real cross (completed exactly where the reconstructor
+  // stopped writing moves) from a coincidental cross that happens to produce
+  // an equally complete chain. Placed BEFORE the spurious heuristic because
+  // one-look LL (ZBLL) legitimately completes OLL on the final move, which
+  // the spurious test would penalize. NEVER used to detect — tiebreak only.
+  if (preferredCrossIdx !== undefined) {
+    const aDist = Math.abs(a.completions[0] - preferredCrossIdx);
+    const bDist = Math.abs(b.completions[0] - preferredCrossIdx);
+    if (aDist !== bDist) return aDist < bDist;
+  }
   // A completion of F2L/OLL at the very last entry is only ever legitimate
   // for a solve that reaches F2L/OLL on the final move; in practice it marks
   // a scheme that merely "fits" the solved state (any face works there).
@@ -280,6 +302,14 @@ function better(
     (b.completions[1] >= 0 && b.completions[1] >= lastIndex) ||
     (b.completions[2] >= 0 && b.completions[2] >= lastIndex);
   if (aSpurious !== bSpurious) return !aSpurious;
+  // The solver's cross is never disturbed after it is built, so it stays
+  // complete for (nearly) the whole solve; a cross that only coincides for a
+  // couple of moves is spurious. Decides when two crosses produce equally
+  // valid full chains (e.g. after frame recovery) and no written segment is
+  // available. Note this rewards EARLIER crosses that persist (a genuine
+  // persistent coincidence can beat the real one — the preferred index
+  // above is the stronger signal when it exists).
+  if (a.crossDuration !== b.crossDuration) return a.crossDuration > b.crossDuration;
   if (a.completions[0] !== b.completions[0]) return a.completions[0] < b.completions[0];
   const aSum = a.completions.filter((c) => c >= 0).reduce((s, c) => s + c, 0);
   const bSum = b.completions.filter((c) => c >= 0).reduce((s, c) => s + c, 0);
@@ -295,6 +325,15 @@ function evaluateCandidate(
   crossColor: FaceLetter,
   scheme: Record<FaceLetter, FaceLetter>,
 ): ColorDetectionResult {
+  // How long the cross of `crossColor` stays complete on `crossFace` — the
+  // solver's real cross is built once and never disturbed afterwards, so it
+  // survives to (near) the end of the solve; a coincidental cross vanishes
+  // within a few moves.
+  let crossDuration = 0;
+  for (let j = crossIdx; j < raw.length; j++) {
+    if (crossColorAt(raw[j], crossFace) === crossColor) crossDuration++;
+  }
+
   const inverseScheme: Record<string, string> = {};
   for (const f of FACE_LETTERS) inverseScheme[scheme[f]] = f;
   const canonical = raw.map((s, i) => (i >= crossIdx ? canonicalize(s, inverseScheme) : s));
@@ -335,6 +374,7 @@ function evaluateCandidate(
     crossFace,
     crossColor,
     completions: [crossIdx, f2lIdx, ollIdx, pllIdx],
+    crossDuration,
     scheme,
   };
 }
@@ -346,7 +386,10 @@ export class ColorPhaseDetector {
    * Returns null when no face ever holds a completed cross (e.g. an
    * incoherent reconstruction) — callers fall back to canonical masks.
    */
-  static detect(states: CubeState[]): ColorDetectionResult | null {
+  static detect(
+    states: CubeState[],
+    preferredCrossIdx?: number,
+  ): ColorDetectionResult | null {
     if (states.length === 0) return null;
     const raw = states.map((s) => FaceletStringConverter.toFaceletString(s));
     const lastIndex = states.length - 1;
@@ -372,6 +415,7 @@ export class ColorPhaseDetector {
 
       // The cross may be complete but disaligned; try all 4 AUF rotations of
       // the scheme and keep the best chain for this face.
+      let faceBest: ColorDetectionResult | null = null;
       for (let rotation = 0; rotation < 4; rotation++) {
         const scheme = buildScheme(face, crossColor, sideFaces, sideColors, rotation);
         if (scheme === null) continue;
@@ -383,7 +427,10 @@ export class ColorPhaseDetector {
           crossColor,
           scheme,
         );
-        if (best === null || better(candidate, best, lastIndex)) best = candidate;
+        if (faceBest === null || better(candidate, faceBest, lastIndex, preferredCrossIdx)) {
+          faceBest = candidate;
+        }
+        if (best === null || better(candidate, best, lastIndex, preferredCrossIdx)) best = candidate;
       }
     }
 

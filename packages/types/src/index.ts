@@ -21,6 +21,18 @@ export interface CubeMoveEvent {
   cubeTimestamp: number;
   /** Browser's performance.now() at the moment the event was received */
   hostTimestamp: number;
+  /**
+   * True for a WIDE move (r/l/u/d/f/b) synthesized by the reconstruction
+   * replay path. The outer face AND the middle layer rotate TOGETHER as one
+   * animation. Hardware events never set this.
+   */
+  wide?: boolean;
+  /**
+   * Display notation override (e.g. "r'") — the token the solver actually
+   * wrote, shown verbatim by the replay UI instead of the decomposed
+   * face+slice letters. Only present on synthetic reconstruction events.
+   */
+  displayNotation?: string;
 }
 
 /** The six outer faces of a standard cube in Singmaster notation. */
