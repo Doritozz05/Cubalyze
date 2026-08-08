@@ -333,8 +333,10 @@ export class ReplayEngine {
         this.gripPromise = null;
       }
       this.gripAnimating = false;
-      // Paused/stopped mid-grip → don't start playback.
-      if (this._state !== 'playing') return;
+      // Paused/stopped mid-grip → don't start playback. (Read through the
+      // getter: TS cannot see setState() mutating _state, and the earlier
+      // `if (this._state === 'playing') return` would narrow it away.)
+      if (this.state !== 'playing') return;
       // The wall clock advanced during the grip — reset it so move 0
       // starts fresh from position 0. Also mark the orientation as applied
       // so the tick doesn't re-fire setOrientation on move 0.
