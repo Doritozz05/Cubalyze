@@ -334,7 +334,7 @@ export function ReplaySection({
             // Move-driven timeline: length = moves × spacing (not solve.time),
             // so all moves always play back.
           }, moves.length * REPLAY_MOVE_SPACING_MS, orientationTimeline);
-          engine.moveAnimationDurationMs = 70;
+          engine.moveAnimationDurationMs = 350;
           engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
           // Whole-cube grips (inspection pre-roll + mid-solve rotations) turn
           // slowly — they are the solver turning the cube in hand, not moves.

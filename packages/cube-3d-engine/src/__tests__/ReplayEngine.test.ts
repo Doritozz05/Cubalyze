@@ -381,3 +381,54 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
     expect(orientCalls).toEqual([2, 5, 8]);
   });
 });
+
+describe('ReplayEngine — speed scaling of animation durations', () => {
+  const stubRaf = () => {
+    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  };
+
+  it('scales move rotation animation duration inversely by speed (0.25x -> 4x duration)', async () => {
+    stubRaf();
+    try {
+      const durations: number[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0)],
+        {
+          resetCube: () => {},
+          rotateLayers: (_axis, _layers, _angle, dur) => { durations.push(dur); },
+        },
+      );
+      engine.preRollEnabled = false;
+      engine.setSpeed(0.25);
+      await engine.play();
+      // Base duration is 350ms, at 0.25x speed it should be 350 / 0.25 = 1400ms.
+      expect(durations).toEqual([1400]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('scales pre-roll inspection grip duration inversely by speed (0.25x -> 4x duration)', async () => {
+    stubRaf();
+    try {
+      const gripDurations: number[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (_oi, dur) => { gripDurations.push(dur ?? 0); },
+        },
+        undefined,
+        [[0, 2]],
+      );
+      engine.setSpeed(0.25);
+      await engine.play();
+      // Pre-roll base duration is 600ms, at 0.25x speed it should be 600 / 0.25 = 2400ms.
+      expect(gripDurations[0]).toBe(2400);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

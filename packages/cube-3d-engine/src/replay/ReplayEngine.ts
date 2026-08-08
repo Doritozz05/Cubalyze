@@ -120,8 +120,8 @@ export class ReplayEngine {
   /** Fired on state change. */
   public onStateChange: ((state: ReplayState) => void) | null = null;
 
-  /** Duration per move animation (ms). Shorter = snappier. */
-  public moveAnimationDurationMs = 80;
+  /** Duration per move animation (ms). Default is 350ms (~70% of standard move slot). */
+  public moveAnimationDurationMs = 350;
 
   /**
    * Duration for whole-cube GRIP rotations (inspection + mid-solve
@@ -366,7 +366,8 @@ export class ReplayEngine {
       // next one starts (z, then y2 — never one diagonal rotation), and no
       // move runs until every step has finished.
       for (const oi of this.preRollOrientations) {
-        const prom = this.callbacks.setOrientation(oi, this.preRollDurationMs);
+        const duration = this.preRollDurationMs / Math.max(0.1, this._speed);
+        const prom = this.callbacks.setOrientation(oi, duration);
         if (prom instanceof Promise) {
           this.gripPromise = prom;
           await prom.catch(() => {});
@@ -653,11 +654,15 @@ export class ReplayEngine {
       const moveDuration = Math.max(0, r.offsetMs - prevOffsetMs);
       const elapsedWithinMove = Math.max(0, pos - r.offsetMs);
 
-      // Use a fixed animation duration that feels natural,
-      // with dead-reckoning via elapsedMs for speed > 1.
-      const animDuration = Math.min(this.moveAnimationDurationMs, moveDuration || this.moveAnimationDurationMs);
+      // Scale animation duration inversely by playback speed so that
+      // at slow speeds (e.g. 0.25x), the 3D rotation animation itself plays slowly
+      // across the move slot rather than snapping quickly and pausing.
+      const moveSlot = moveDuration || this.moveSpacingMs;
+      const targetAnimDuration = this.moveAnimationDurationMs / Math.max(0.1, this._speed);
+      const maxAnimDuration = (moveSlot / Math.max(0.1, this._speed)) * 0.85;
+      const animDuration = Math.min(targetAnimDuration, maxAnimDuration);
       const elapsedAnim = elapsedWithinMove > 0
-        ? Math.min(elapsedWithinMove * this._speed, animDuration)
+        ? Math.min(elapsedWithinMove / Math.max(0.1, this._speed), animDuration)
         : 0;
 
       // The callback may return void or a Promise; handle both.
@@ -669,8 +674,8 @@ export class ReplayEngine {
       // duration by the remaining slot (speed-adjusted) so a grip rotation
       // never overlaps the next move's start at higher speeds.
       const orientationDuration = Math.min(
-        this.orientationAnimationDurationMs,
-        this.moveSpacingMs / Math.max(1, this._speed),
+        this.orientationAnimationDurationMs / Math.max(0.1, this._speed),
+        this.moveSpacingMs / Math.max(0.1, this._speed),
       );
       this.applyOrientationAt(this.nextIndex - 1, orientationDuration);
     }
@@ -771,7 +776,7 @@ export class ReplayEngine {
     // always run to the end.
     const perStep = Math.min(
       animateMs,
-      this.moveSpacingMs / Math.max(1, this._speed),
+      this.moveSpacingMs / Math.max(0.1, this._speed),
     );
     const gen = ++this.orientationChainGen;
     const fromPlayback = this._state === 'playing';

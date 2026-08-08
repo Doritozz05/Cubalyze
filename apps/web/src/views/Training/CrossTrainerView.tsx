@@ -227,7 +227,7 @@ export function CrossTrainerView({
     // NOTE: moveSpacingMs must be set BEFORE setMoves() builds the timeline.
     replay.moveSpacingMs = 600;
     replay.setMoves(cross.replayMoves, cross.replayMoves.length * 600);
-    replay.moveAnimationDurationMs = 120;
+    replay.moveAnimationDurationMs = 420;
     replay.onPosition = (pos, idx) => {
       if (!cancelled) {
         setPositionMs(pos);
