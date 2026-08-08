@@ -29,7 +29,7 @@ const GENERATED: Record<string, { file: string; set: string }> = {
   pll: { file: "scdb-pll.json", set: "PLL" },
   oll: { file: "scdb-oll.json", set: "OLL" },
   // F2L/AdvancedF2L: the seed is generated from the FUSED dumps
-  // (pruebas/scripts/fase5-fuse.ts: SCDB + BirdF2L + SpeedcubeQuest).
+  // (pruebas/scripts/fase5-fuse.ts: SCDB + BirdF2L).
   f2l: { file: "scdb-f2l-fused.json", set: "F2L" },
   af2l: { file: "scdb-af2l-fused.json", set: "AdvancedF2L" },
   coll: { file: "scdb-coll.json", set: "COLL" },

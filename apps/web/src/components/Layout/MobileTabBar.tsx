@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, LayoutGroup } from "framer-motion";
-import { Timer, Dumbbell, BookOpen, BarChart3, Network, Menu } from "lucide-react";
+import { Timer, Target, BookOpen, BarChart3, Network, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
 import { ACTIVE_PILL_SPRING } from "./sidebar.constants";
@@ -30,7 +30,7 @@ type TabItem = {
 };
 
 const MAIN_TABS: TabItem[] = [
-  { id: "training", label: "Training", icon: Dumbbell },
+  { id: "training", label: "Training", icon: Target },
   { id: "algorithms", label: "Algorithms", icon: BookOpen },
   { id: "timer", label: "Timer", icon: Timer },
   { id: "insights", label: "Stats", icon: BarChart3 },

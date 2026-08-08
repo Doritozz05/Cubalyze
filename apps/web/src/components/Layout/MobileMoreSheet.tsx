@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon, User, History } from "lucide-react";
+import { Settings, Bluetooth, Sun, Moon, User, FileSearch } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -80,7 +80,7 @@ export function MobileMoreSheet({
     },
     {
       key: "reconstructions",
-      icon: History,
+      icon: FileSearch,
       title: "Reconstructions",
       subtitle: "Solve database & replays",
       onClick: () => handleAction(() => onNavigate?.("reconstructions")),

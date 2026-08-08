@@ -28,7 +28,7 @@ con suerte muy distinta:
 ### Respuestas a tus preguntas
 
 **¿Qué es `moveNotation.ts` y no existe ya algo bueno en el repo?**
-Es el **tokenizador** de strings de reconstrucción reales (CubeRoot / Quest / lo que pegues):
+Es el **tokenizador** de strings de reconstrucción reales (CubeRoot / lo que pegues):
 normaliza primes Unicode (`’ ′ ´`), movimientos pegados (`U2U`), giros numerados (`R3 → R'`),
 separadores `↑ ·`, grupos `()`, y expande wide moves (`r → R M'`). Es **la única parte buena
 de `recognition`**: tiene su test (`moveNotation.test.ts`) y es exactamente lo que la Fase 2
@@ -218,7 +218,7 @@ Steps decía 66 moves y el replay 61 ("5 moves perdidos").
 **Limitación conocida (documentada, no es bug):** el **76%** de los records CFOP tienen wide
 moves (`u`, `r`, `f'`…) en la solución; su componente de slice no se puede animar en el
 engine 3D (ni se conjuga). Esos records no resuelven visualmente de forma exacta — es la
-causa dominante del resto de no-resueltos (junto a transcripciones imperfectas de Quest que
+causa dominante del resto de no-resueltos (junto a transcripciones imperfectas que
 eliminan rotaciones). Arreglarlo = soporte de slices en el engine (fuera de alcance; se puede
 revisar en Fase 2+).
 
@@ -342,7 +342,7 @@ export interface SolveTextInput {
 
 El texto con `//` se parsea para **mostrar** los nombres de fase (`W Cross`, `F2L 1 (GO)`, …)
 pero **no se confía en ellos**: las fases se detectan por estado, igual que en el smartcube.
-Si falta `//` no pasa nada (solución plana). Se tolera el formato sucio de CubeRoot/Quest
+Si falta `//` no pasa nada (solución plana). Se tolera el formato sucio de CubeRoot
 (primes Unicode, `↑ ·`, pegados, wide moves) gracias al tokenizador de `moveNotation`.
 
 ### 2.2 Pipeline (nuevo módulo headless)

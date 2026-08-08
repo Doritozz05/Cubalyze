@@ -1,12 +1,12 @@
-import { Grid3x3 } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import type { WidgetDefinition } from "@/widgets/types";
 
 export const scramble2DDefinition: WidgetDefinition = {
   id: "scramble-2d",
-  name: "Scramble visualizer",
+  name: "Scramble",
   description:
     "2D cube net showing the current scramble state. csTimer-style layout with WCA-standard colors.",
-  icon: Grid3x3,
+  icon: Shuffle,
   category: "visual",
   author: "cubeforge",
   version: "1.0.0",
