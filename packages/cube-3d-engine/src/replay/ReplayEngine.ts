@@ -336,9 +336,11 @@ export class ReplayEngine {
       // Paused/stopped mid-grip → don't start playback.
       if (this._state !== 'playing') return;
       // The wall clock advanced during the grip — reset it so move 0
-      // starts fresh from position 0.
+      // starts fresh from position 0. Also mark the orientation as applied
+      // so the tick doesn't re-fire setOrientation on move 0.
       this.resumePositionMs = 0;
       this.playStartWall = performance.now();
+      this.lastAppliedOrientation = this.preRollOrientation;
     }
 
     this.tick();

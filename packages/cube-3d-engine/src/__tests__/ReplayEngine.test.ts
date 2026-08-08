@@ -209,29 +209,35 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
 
       releaseGrip!();
       await playing;
-      // Only after the grip completed does move 0 apply.
+      // Only after the grip completed does move 0 apply — and the grip's
+      // orientation is NOT re-fired by the tick (marked as applied).
       expect(calls.filter((c) => c.startsWith('rotate'))).toHaveLength(1);
+      expect(calls.filter((c) => c.startsWith('orient'))).toEqual([
+        `orient:2:${engine.preRollDurationMs}`,
+      ]);
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it('no pre-roll when the timeline starts with identity or is absent', async () => {
+  it('no pre-roll grip when the timeline starts with identity', async () => {
     stubRaf();
     try {
-      let orientCalls = 0;
+      const calls: { oi: number; dur: number }[] = [];
       const engine = new ReplayEngine(
         [bunchedMove(0)],
         {
           resetCube: () => {},
           rotateLayers: () => {},
-          setOrientation: () => { orientCalls++; },
+          setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
         },
         undefined,
-        [[0, 0]], // identity grip → nothing to animate
+        [[0, 0]], // identity keyframe → nothing to grip before move 0
       );
       await engine.play();
-      expect(orientCalls).toBe(0);
+      // Only the tick's identity snap at move 0 (orientation duration) — no
+      // 600ms inspection pre-roll.
+      expect(calls).toEqual([{ oi: 0, dur: engine.orientationAnimationDurationMs }]);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -254,6 +260,7 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
 
       await engine.play(); // grip once, then move 0 applies
       expect(orientCalls).toEqual([2]);
+
 
       // Resume from mid-timeline: no re-grip.
       engine.pause();
