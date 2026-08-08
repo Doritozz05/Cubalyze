@@ -54,6 +54,17 @@ describe('moveNotation.tokenize', () => {
   it('keeps rotations and slices', () => {
     expect(tokenize("z y x' M2 E")).toEqual(['z', 'y', "x'", 'M2', 'E']);
   });
+
+  it('keeps wide moves as written when expandWide is false (display path)', () => {
+    expect(tokenize("r' U F U' r U' r' U2 r' U r", { expandWide: false })).toEqual([
+      "r'", 'U', 'F', "U'", 'r', "U'", "r'", 'U2', "r'", 'U', 'r',
+    ]);
+    // U2' is left as written for display (no 2' → 2 normalization happens
+    // inside expandWideMoves, which is skipped here).
+    expect(tokenize("x' R U2' R2' U'", { expandWide: false })).toEqual([
+      "x'", 'R', "U2'", "R2'", "U'",
+    ]);
+  });
 });
 
 describe('moveNotation.foldAdjacentSameFace', () => {

@@ -105,6 +105,59 @@ describe('conjugateToBaseFrame', () => {
   it('passes tokens through unchanged when there are no rotations', () => {
     expect(conjugateToBaseFrame(['R', "U'", 'M'])).toEqual(['R', "U'", 'M']);
   });
+
+  it('conjugates slice moves (M/E/S) through the running grip', () => {
+    // x' grip (faceMap {U:B, D:F, F:U, B:D, L:L, R:R}):
+    //   solver M keeps L side → physical M
+    expect(conjugateToBaseFrame(["x'", 'M'])).toEqual(['M']);
+    //   solver S = CW from solver F side = CW from physical U = E'
+    expect(conjugateToBaseFrame(["x'", 'S'])).toEqual(["E'"]);
+    expect(conjugateToBaseFrame(["x'", "S'"])).toEqual(['E']);
+    //   solver E = CW from solver D side = CW from physical F = S
+    expect(conjugateToBaseFrame(["x'", 'E'])).toEqual(['S']);
+    // 180° turns map to the same slice regardless of direction
+    expect(conjugateToBaseFrame(["x'", 'S2'])).toEqual(['E2']);
+  });
+
+  it('conjugates wide moves expanded to face+slice (f\' under x\' → u\')', () => {
+    // tokenize expands f' → F' S'; under x' the F face sits on U, so the
+    // solver's f' is the physical u' = U' E.
+    expect(conjugateToBaseFrame(tokenize("x' f'"))).toEqual(["U'", 'E']);
+    expect(conjugateToBaseFrame(tokenize("x' r'"))).toEqual(["R'", 'M']);
+  });
+
+  it('conjugates slices under a composed grip (x\' then y\')', () => {
+    // Grip after x' then y': compose(y', x') = {U:B, D:F, F:L, B:R, L:D, R:U}.
+    // Solver M' = CCW from solver L side = CCW from physical D = E'.
+    expect(conjugateToBaseFrame(["x'", "y'", "M'"])).toEqual(["E'"]);
+    expect(conjugateToBaseFrame(["x'", "y'", 'L'])).toEqual(['D']);
+    expect(conjugateToBaseFrame(["x'", "y'", 'B2'])).toEqual(['R2']);
+    // Full stream: rotations consumed, every face+slice remapped. The
+    // reconz-7856 record test below independently proves this is correct
+    // (it ends exactly solved on a real scramble).
+    expect(
+      conjugateToBaseFrame(["x'", 'M', 'U', "R'", 'S2', "E'", "y'", "L'", "M'", 'B2']),
+    ).toEqual(['M', 'B', "R'", 'E2', "S'", "D'", "E'", 'R2']);
+  });
+
+  it('conjugates a real wide-move record (reconz-7856: x2 + r/l/M\') to exactly solved', () => {
+    // Real record verified against CubeState. The wide moves (r, l) and the
+    // explicit M' slice MUST be conjugated under the x2 grip (L↔R) — a naive
+    // slice pass-through would apply them in the wrong sense.
+    const s = new CubeState();
+    s.applySequence("R2 U' R2 F2 R2 D' U L2 B2 U B' D F2 D2 B U R D' U R' U2");
+    const conjugated = conjugateToBaseFrame(
+      tokenize(
+        "x2 D' r U2 L l D " +
+        "U L' U' L " +
+        "U' R U' R' U R U' R' " +
+        "U' R' U' R r' U' R U M' " +
+        "U",
+      ),
+    );
+    s.applySequence(conjugated.join(' '));
+    expect(s.isSolved()).toBe(true);
+  });
 });
 
 describe('conjugatePhaseStream', () => {

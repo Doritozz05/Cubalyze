@@ -42,6 +42,15 @@ export class TimelineBuilder {
    *                          Smart Cube state at solve start. When provided
    *                          (and not a stale "solved" state), this is used
    *                          as ground truth INSTEAD of the scramble.
+   * @param stateTokens - Optional FULL token stream (face + slice moves) to
+   *                      drive the cube state. `moves` must be exactly the
+   *                      face tokens of `stateTokens` in order. When provided,
+   *                      slice tokens (M/E/S — which a smart cube never emits
+   *                      but text reconstructions do) are applied to the
+   *                      state WITHOUT creating their own timeline entry, so
+   *                      the reconstructed states are exact while the entry
+   *                      indices stay in face-move space. Defaults to applying
+   *                      `moves` alone.
    * @returns A fully reconstructed SolveTimeline ready for phase recognition.
    */
   static build(
@@ -50,6 +59,7 @@ export class TimelineBuilder {
     orientations?: (CubeOrientation | undefined)[],
     scramble?: string,
     initialFacelets?: string,
+    stateTokens?: readonly string[],
   ): SolveTimeline {
     if (moves.length === 0) {
       return {
@@ -124,13 +134,36 @@ export class TimelineBuilder {
       ? moves[moves.length - 1].hostTimestamp
       : startTimestamp;
 
+    let tokenCursor = 0;
     for (let i = 0; i < moves.length; i++) {
       const move = moves[i];
       const hostTs = move.hostTimestamp;
 
-      // Apply the move to the cube state using move notation
-      const moveNotation = MoveTransformer.moveToNotation(move.face, move.direction);
-      state.applySequence(moveNotation);
+      // Apply the move to the cube state using move notation. When a full
+      // `stateTokens` stream is provided, walk it applying every token (face
+      // AND slice) until the face token for this entry is consumed — slice
+      // moves update the state without becoming timeline entries, so the
+      // state at each face-move index is EXACT even for M/E/S/wide solves.
+      if (stateTokens && tokenCursor < stateTokens.length) {
+        const target = MoveTransformer.moveToNotation(move.face, move.direction);
+        let matched = false;
+        while (tokenCursor < stateTokens.length) {
+          const token = stateTokens[tokenCursor++];
+          state.applySequence(token);
+          if (token === target) {
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          // Defensive (cannot happen by construction — `moves` is derived from
+          // `stateTokens`): the face token was missing, so apply it alone.
+          state.applySequence(target);
+        }
+      } else {
+        const moveNotation = MoveTransformer.moveToNotation(move.face, move.direction);
+        state.applySequence(moveNotation);
+      }
 
       // Build the display move (face remapped by orientation if available)
       const orientation = orientations?.[i];

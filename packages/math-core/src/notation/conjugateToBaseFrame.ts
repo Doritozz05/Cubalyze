@@ -16,18 +16,73 @@
  * single-move display→raw remap used by the dynamic notation system) — so no
  * rotation data is duplicated here.
  *
- * Rotations are consumed as grip updates and do NOT appear in the output;
- * slice / wide / unknown tokens pass through unchanged.
+ * Rotations are consumed as grip updates and do NOT appear in the output.
+ * Slice moves (M/E/S) are ALSO conjugated through the grip (axis + sense
+ * map onto a possibly different physical slice); only wide / unknown tokens
+ * pass through unchanged.
  *
  * **MUST be called AFTER `expandWideMoves`**: solver-frame wide moves (r, u,
  * …) are only correct when conjugated after expansion to their face turn;
  * unconjugated wides would be applied in the wrong frame.
  */
-import type { CubeFace, CubeMoveDirection } from '@cubeforge/types';
+import type {
+  CubeFace,
+  CubeMoveDirection,
+  FacePermutation,
+  OuterFace,
+} from '@cubeforge/types';
 import { OrientationTable, type OrientationEntry } from '../orientation/OrientationTable';
 import { MoveTransformer } from '../orientation/MoveTransformer';
 
 const FACE_LETTERS = 'URFDLB';
+const SLICE_MOVE_RE = /^[MES][2']?$/;
+
+/** The solver-side face a slice move turns "CW from" (M→L, E→D, S→F). */
+const SLICE_FROM_SIDE: Record<'M' | 'E' | 'S', OuterFace> = {
+  M: 'L',
+  E: 'D',
+  S: 'F',
+};
+
+/**
+ * Physical slice + inversion flag for a turn that is CW viewed from each
+ * face, following the project conventions (verified against MoveExpander):
+ *   r = R M'  → CW from R is M'      l = L M  → CW from L is M
+ *   u = U E'  → CW from U is E'      d = D E  → CW from D is E
+ *   f = F S   → CW from F is S       b = B S' → CW from B is S'
+ */
+const CW_FROM_FACE: Record<OuterFace, [slice: 'M' | 'E' | 'S', invert: boolean]> = {
+  R: ['M', true],
+  L: ['M', false],
+  U: ['E', true],
+  D: ['E', false],
+  F: ['S', false],
+  B: ['S', true],
+};
+
+function isSliceMove(token: string): boolean {
+  return SLICE_MOVE_RE.test(token);
+}
+
+/**
+ * Conjugate a slice move (M/E/S) through the grip's face map.
+ *
+ * A whole-cube rotation maps the slice's body axis AND its turn sense onto a
+ * (possibly different) physical slice with the direction preserved (proper
+ * rotation). E.g. under an `x'` grip the solver's `F'`-wide slice becomes a
+ * physical `u'` — so pass-through would silently apply the wrong slice.
+ */
+function conjugateSlice(token: string, faceMap: FacePermutation): string {
+  const base = token[0] as 'M' | 'E' | 'S';
+  const suffix = token.slice(1);
+  // The physical face now at the solver's "from" side decides the slice.
+  const fromFace = faceMap[SLICE_FROM_SIDE[base]];
+  const [slice, invert] = CW_FROM_FACE[fromFace];
+  if (suffix === '2') return `${slice}2`; // 180° is its own inverse
+  let prime = suffix === "'";
+  if (invert) prime = !prime;
+  return slice + (prime ? "'" : '');
+}
 
 /** One pass over a token list with a running grip. */
 function conjugateWithGrip(
@@ -68,8 +123,14 @@ function conjugateWithGrip(
 
     const face = token[0];
     if (!FACE_LETTERS.includes(face)) {
-      // Slice / wide / unknown tokens have no face remap — pass through.
-      out.push(token);
+      if (isSliceMove(token)) {
+        // Slice moves DO get conjugated (axis + sense map through the grip);
+        // only wide / unknown tokens pass through unchanged (wide moves must
+        // be pre-expanded to face+slice before conjugation).
+        out.push(conjugateSlice(token, grip.faceMap));
+      } else {
+        out.push(token);
+      }
       continue;
     }
 

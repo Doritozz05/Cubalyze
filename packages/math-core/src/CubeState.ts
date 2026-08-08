@@ -303,6 +303,39 @@ export class CubeState implements CubeStateInternal {
   }
 
   /**
+   * True when the cube is solved up to a whole-cube rotation — i.e. every
+   * face is monochromatic (each face shows a single color), which is
+   * equivalent to "a rotation of the solved cube".
+   *
+   * Text reconstructions (recon.nz / CubeRoot) routinely finish in a
+   * rotated frame — the solver's inspection rotation vs the stored scramble
+   * frame can differ by one whole-cube rotation even when the solve is
+   * perfect — so a verdict that requires the exact canonical orientation
+   * reports false negatives. This check accepts any rotated solved cube.
+   *
+   * Implementation: a state is a pure rotation of solved iff its piece
+   * permutation (cp/ep) admits a valid face map (rotationFaceMap throws
+   * otherwise) AND its stored orientations (co/eo) match the canonical
+   * orientations of that rotation (pureRotationState). A twisted corner or
+   * flipped edge in place therefore fails the check.
+   */
+  public isSolvedUpToRotation(): boolean {
+    if (this.isSolved()) return true;
+    try {
+      const canonical = CubeState.pureRotationState(this.cp, this.ep);
+      for (let i = 0; i < 8; i++) {
+        if (canonical.co[i] !== this.co[i]) return false;
+      }
+      for (let i = 0; i < 12; i++) {
+        if (canonical.eo[i] !== this.eo[i]) return false;
+      }
+      return true;
+    } catch {
+      return false; // not even a valid whole-cube rotation permutation
+    }
+  }
+
+  /**
    * Multiply this state with another state 'b' → this = this * b
    *
    * Operates DIRECTLY on internal bigints. NEVER touches the Proxy adapters.

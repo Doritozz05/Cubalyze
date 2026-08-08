@@ -1,5 +1,5 @@
 import { Quaternion } from '../math3d';
-import type { CubeFace, FacePermutation } from '@cubeforge/types';
+import type { CubeFace, FacePermutation, OuterFace } from '@cubeforge/types';
 
 /**
  * A single entry in the 24-orientation table.
@@ -23,10 +23,10 @@ export interface OrientationEntry {
 
 // ─── Face utilities ──────────────────────────────────────────────────────────
 
-const ALL_FACES: CubeFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
+const ALL_FACES: OuterFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
 
 function invertFaceMap(map: FacePermutation): FacePermutation {
-  const inv: Partial<Record<CubeFace, CubeFace>> = {};
+  const inv: Partial<Record<OuterFace, OuterFace>> = {};
   for (const pos of ALL_FACES) {
     inv[pos] = 'U'; // placeholder
   }
@@ -39,7 +39,7 @@ function invertFaceMap(map: FacePermutation): FacePermutation {
 
 function composeFaceMap(a: FacePermutation, b: FacePermutation): FacePermutation {
   // Apply a first, then b: result(pos) = b(a(pos))
-  const result: Partial<Record<CubeFace, CubeFace>> = {};
+  const result: Partial<Record<OuterFace, OuterFace>> = {};
   for (const pos of ALL_FACES) {
     result[pos] = b[a[pos]];
   }
@@ -103,7 +103,7 @@ function faceMapKey(map: FacePermutation): string {
 // the rotation matrix method. This guarantees a 1:1 mapping from face map to
 // quaternion, independent of BFS path.
 
-const FACE_NORMALS: Record<CubeFace, [number, number, number]> = {
+const FACE_NORMALS: Record<OuterFace, [number, number, number]> = {
   U: [0, 1, 0],
   D: [0, -1, 0],
   F: [0, 0, 1],

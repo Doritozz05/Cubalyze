@@ -468,7 +468,10 @@ export class PhaseSplitter {
     const last = timeline.entries[timeline.entries.length - 1];
     if (!last) return false;
     try {
-      return TimelineBuilder.fromSnapshot(last.state).isSolved();
+      // A cube solved up to rotation (all faces uniform) IS a solved cube:
+      // reconstructions routinely finish in a rotated frame (recon.nz frame
+      // quirk), so the verdict must not depend on the canonical orientation.
+      return TimelineBuilder.fromSnapshot(last.state).isSolvedUpToRotation();
     } catch {
       return false;
     }

@@ -25,10 +25,16 @@ const U_MOVE_RE = /^U[2']?$/;
  * Split a move string into elementary tokens.
  *
  * Handles: Unicode primes, '↑'/'·'/'↓'/'.' separators, glued tokens (U2U),
- * numbered turns (R3 → R'), wide moves (expanded to face+slice), parenthesized
- * groups.
+ * numbered turns (R3 → R'), wide moves (expanded to face+slice by default),
+ * parenthesized groups.
+ *
+ * @param options.expandWide Set to `false` to KEEP wide moves (r, u, f, Rw,
+ *        …) as single display tokens instead of expanding them to face+slice
+ *        (r → R M'). Display of raw reconstruction text wants the written
+ *        notation; state/replay paths want the expansion.
  */
-export function tokenize(moves: string): string[] {
+export function tokenize(moves: string, options?: { expandWide?: boolean }): string[] {
+  const expandWide = options?.expandWide !== false;
   let s = moves.replace(PRIME, "'");
   s = s.replace(/[↑·↓.]/g, ' ');
   // Drop inline comments ("U R // pair"): everything from // to end of the
@@ -56,6 +62,11 @@ export function tokenize(moves: string): string[] {
     return `${f}'`;
   });
   const tokens = s.trim().split(/\s+/).filter(Boolean);
+  if (!expandWide) {
+    // Display path: keep wide moves / slices / rotations as written so the
+    // text reads exactly like the reconstructor wrote it.
+    return tokens.filter((t) => t !== '2');
+  }
   const expanded: string[] = [];
   for (const token of tokens) {
     if (token === '2') continue; // stray degree symbol residue

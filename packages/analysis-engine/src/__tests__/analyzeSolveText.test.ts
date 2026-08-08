@@ -106,6 +106,44 @@ describe('analyzeSolveText — OLL skip record (cuberoot-1851)', () => {
   });
 });
 
+describe('analyzeSolveText — wide-move record (reconz-7856)', () => {
+  // Real record with an x2 inspection, wide moves (r, l) and an explicit M'
+  // slice. The slice half of wide moves must be applied to the state (not
+  // dropped) for the reconstruction to be exact — previously finalSolved was
+  // false for any solve containing M/E/S or wide moves.
+  const input = {
+    setup: "R2 U' R2 F2 R2 D' U L2 B2 U B' D F2 D2 B U R D' U R' U2",
+    solution: textFromPhases([
+      { label: 'inspection', moves: 'x2' },
+      { label: 'xcross', moves: "D' r U2 L l D" },
+      { label: '2nd pair', moves: "U L' U' L" },
+      { label: '3rd pair', moves: "U' R U' R' U R U' R'" },
+      { label: '4th pair/VLS', moves: "U' R' U' R r' U' R U M'" },
+      { label: 'AUF', moves: 'U' },
+    ]),
+  };
+
+  it('reconstructs the exact state (slices applied) and ends solved', () => {
+    const { reconstruction } = analyzeSolveText(input);
+
+    expect(reconstruction.finalSolved).toBe(true);
+    expect(reconstruction.inspection).toBe('x2');
+    // D' r U2 L l D → face tokens D' R U2 L L D (6), slices folded into state.
+    expect(reconstruction.cross.moves).toHaveLength(6);
+    expect(reconstruction.cross.type).toBe('xcross');
+  });
+
+  it('keeps timeline entries in face-move space despite the slices', () => {
+    const { timeline, reconstruction } = analyzeSolveText(input);
+    const faceTotal =
+      reconstruction.cross.moves.length +
+      reconstruction.pairs.reduce((s, p) => s + p.moves.length, 0) +
+      (reconstruction.oll?.moves.length ?? 0) +
+      (reconstruction.pll?.moves.length ?? 0);
+    expect(timeline.entries.length).toBe(faceTotal);
+  });
+});
+
 describe('analyzeSolveText — raw parsing edge cases', () => {
   it('tolerates CubeRoot separators and glued tokens (the user example)', () => {
     // Your original example: glued U'D / DU tokens inside the solve must be
@@ -175,5 +213,17 @@ describe('analyzeSolveText — raw parsing edge cases', () => {
       solution: "R U R' U' R U R' U'",
     });
     expect(reconstruction.finalSolved).toBe(false);
+  });
+
+  it('tolerates stray garbage tokens (dropped, never throws)', () => {
+    // Q / bare 2 are not valid moves; the state path must drop them instead
+    // of crashing CubeState.applySequence. The valid part U R U' R' is the
+    // exact inverse of the setup R U R' U'.
+    const { reconstruction } = analyzeSolveText({
+      setup: "R U R' U'",
+      inspection: '',
+      solution: "U Q R U' R' 2",
+    });
+    expect(reconstruction.finalSolved).toBe(true);
   });
 });

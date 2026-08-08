@@ -117,6 +117,10 @@ export interface AnalyzeSolveTextResult {
 /** Valid outer-face moves — the only tokens the replay/analysis use. */
 const FACE_MOVE_RE = /^[URFDLB][2']?$/;
 
+/** Valid face + slice tokens — the state path may consume these (garbage is
+ *  dropped so `CubeState.applySequence` never throws on noisy transcripts). */
+const STATE_TOKEN_RE = /^[URFDLBMES][2']?$/;
+
 interface RawPhase {
   label: string;
   /** Raw (un-tokenized) moves segment, e.g. "R' D R". */
@@ -242,10 +246,17 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   ]);
   const solveTokens = perPhase.slice(1).flat();
   const faceTokens = solveTokens.filter((t) => FACE_MOVE_RE.test(t));
+  // `solveTokens` is the FULL conjugated stream — it still contains the slice
+  // half of wide moves (r → R M') and any explicit M/E/S moves. The state
+  // path consumes faces AND slices so the reconstructed states are EXACT
+  // (previously the slices were dropped and M/E/S/wide solves ended
+  // inconsistent), while timeline entries stay face-move indexed. Garbage
+  // tokens are filtered out so `CubeState.applySequence` never throws.
+  const stateTokens = solveTokens.filter((t) => STATE_TOKEN_RE.test(t));
 
   const solveMoves = movesFromTokens(faceTokens);
   const timeline = PhaseSplitter.splitAndAnnotate(
-    TimelineBuilder.build(solveMoves, 'CFOP', undefined, setup),
+    TimelineBuilder.build(solveMoves, 'CFOP', undefined, setup, undefined, stateTokens),
     CFOPDefinition,
     { colorNeutral: true },
   );
@@ -281,7 +292,11 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     orientationTimeline,
     scheme,
     orientation,
-    crossColor: (detection?.crossColor as FaceLetter | undefined) ?? report.crossColor,
+    // crossColor is always an outer face (the cross lives on a face); the
+    // report types it as CubeFace for historical reasons, so narrow it.
+    crossColor:
+      (detection?.crossColor as FaceLetter | undefined) ??
+      (report.crossColor as FaceLetter | undefined),
     cross: buildCross(report, timeline),
     pairs: buildPairs(timeline, report, crossFace, scheme),
     rotations: collectRotations(inspectionTokens, rawPhases.flatMap((p) => p.tokens)),

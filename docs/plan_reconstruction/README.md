@@ -215,12 +215,15 @@ Steps decía 66 moves y el replay 61 ("5 moves perdidos").
 | + búsqueda de grip en las 24 orientaciones | 39.0% |
 | pipeline viejo (check literal tolerante) | 87.4% (contaba "rotación de resuelto" = cubo **no** resuelto físicamente) |
 
-**Limitación conocida (documentada, no es bug):** el **76%** de los records CFOP tienen wide
-moves (`u`, `r`, `f'`…) en la solución; su componente de slice no se puede animar en el
-engine 3D (ni se conjuga). Esos records no resuelven visualmente de forma exacta — es la
-causa dominante del resto de no-resueltos (junto a transcripciones imperfectas que
-eliminan rotaciones). Arreglarlo = soporte de slices en el engine (fuera de alcance; se puede
-revisar en Fase 2+).
+**Limitación conocida — PARCIALMENTE ARREGLADA (2026-08-08):** el **76%** de los records CFOP
+ tienen wide
+moves (`u`, `r`, `f'`…) en la solución. Desde el fix de esta fecha los slices M/E/S **se
+conjugan** correctamente (p.ej. un `f'` bajo grip `x'` → `u'`) y `analyzeSolveText` **los
+ aplica al estado**, así que la reconstrucción de estado es **exacta** con M/E/S y wide
+moves. Lo que sigue sin soporte es solo la **animación 3D** del replay (la mitad slice de un
+wide move se dropea porque `FACE_ROTATION_MAP` no tiene M/E/S) — esos records siguen sin
+resolver visualmente en el replay. Arreglar eso = soporte de slices en `cube-3d-engine`
+(fuera de alcance; ver Fase 4).
 
 **Gotchas para Fase 2 (`analyzeSolveText`):** (a) `tokenize` no expande paréntesis anidados
 con multiplicador (`(F (D))2` deja un dígito suelto — filtrar con un regex de face move al
@@ -517,6 +520,39 @@ smartcube de captura no cambia (solo la presentación del replay).
 
 ---
 
+## Bug 3 — La tabla Steps mostraba moves conjugados sin sentido en vez del raw — ✅ arreglado (2026-08-08)
+
+**Síntoma (reporte del usuario, record `reconz-12564`):** el raw dice
+`x' // inspection` + `r' U F U' r U' r' U2 r' U r // xxxcross` … pero la tabla de Steps
+mostraba `R' B U B' R B' R' B2 R' B R` (11) — la notación no tenía sentido, no salían las
+rotaciones ni los wide moves. Pedía "un parseo directo del raw data".
+
+**Causa raíz:** `reconData.normalizeReconMoves` **sobrescribía** `phases[i].moves` con la
+conjugación (moves de cara en el frame del cubo, slices dropeados) — que es la representación
+que el **replay** necesita, pero la tabla Steps la mostraba como si fuera el raw.
+
+**Fix (dos representaciones separadas):**
+- `ReconPhase` ahora distingue **display** vs **replay**: `moves`/`moveCount` = parseo directo
+del raw (`tokenize(..., { expandWide: false })` — wide moves y rotaciones como se escribieron,
+cada token cuenta 1), y `replayMoves`/`replayMoveCount` = conjugación con solo face moves
+(la que consume el ReplayEngine). La tabla Steps y el chip "moves" del header usan el raw;
+`reconToSolve` usa `replayMoves`.
+- `tokenize(moves, { expandWide: false })` (nuevo opt-in en math-core) para el display.
+- **Pipeline de análisis (M/E/S + wide moves):** `conjugateWithGrip` ahora **conjuga los
+slices M/E/S** a través del grip (antes pasaban tal cual — mal bajo rotaciones x/z), y
+`TimelineBuilder.build(..., stateTokens)` aplica el stream conjugado completo (cara + slice)
+al estado, manteniendo los índices en face-move space. Antes `analyzeSolveText` dropeaba los
+slices → `finalSolved` era false en cualquier solve con M/E/S/wide. Ahora es exacto.
+
+**Validación:** math-core 544/544 · analysis-engine 197/197 (nuevo test `reconz-7856`: x2 +
+wide `r`/`l` + slice `M'` → `finalSolved: true`, cross 6 moves, tipo xcross; conjugación de
+slices hand-computed + grip compuesto) · typechecks math-core/analysis-engine/web 0 errores.
+`reconz-12564` en sí tiene un transcript imperfecto (scramble bakeado que no resuelve con su
+solución — la conjugación correcta tampoco lo resuelve, verificado contra `CubeState`); el
+fix de display aplica igual, y `reconz-7856` cubre el pipeline con datos que sí resuelven.
+
+---
+
 ## Fase 3 — Conectar `analyzeSolveText` a la vista de Reconstructions — ✅ ejecutada (2026-08-07)
 
 **Lo que pediste:** pasar `setup + inspection + solution` desde el record y **mostrar el
@@ -556,13 +592,12 @@ analysis-engine + math-core OK.
 | baked `recognition.finalSolved` (analyzer viejo, borrado) | **93.7%** (optimista: contaba no-resueltos como resueltos) |
 
 **Conclusión:** el baked `finalSolved: true` del 93.7% es del analyzer viejo "horrible" —
-sobrestimaba. La verdad física está en el 20-27%. La causa dominante del resto:
-transcripciones imperfectas de CubeRoot/reconz (moves que faltan/sobran, wide moves con slice
-no conjugable, rotaciones eliminadas). **Los slices arreglan +7.3pp** (20.1→27.4) — los
-wide moves (`u`, `r`, `f'`…) se expanden a cara+slice, y el slice no se conjuga ni se aplica
-(hoy se dropea). Fix viable = aplicarlos al estado en `analyzeSolveText` + soporte de slices
-en el engine (queda como decisión para Fase 4). El ejemplo exacto del usuario (cuberoot-2510,
-Liam Walton, `z y // Inspection`, 62 STM) resuelve **perfecto** y el panel lo muestra completo.
+sobrestimaba. La verdad física está en el 20-27%. **✅ Fix aplicado (2026-08-08):** los slices
+M/E/S ya **se conjugan** y `analyzeSolveText` los **aplica al estado**, así que el +7.3pp
+(20.1→27.4) queda recuperado en el **análisis**: la detección y `finalSolved` son exactas con
+wide moves. Lo que sigue sin resolver es solo el **replay 3D** (el engine no anima slices).
+El ejemplo exacto del usuario (cuberoot-2510, Liam Walton, `z y // Inspection`, 62 STM)
+resuelve **perfecto** y el panel lo muestra completo.
 
 ---
 
@@ -571,7 +606,9 @@ Liam Walton, `z y // Inspection`, 62 STM) resuelve **perfecto** y el panel lo mu
 - **Pegado en web:** caja de texto en `ReconstructionsView` → `analyzeSolveText()` →
   render con `ReplaySection` existente (el adaptador `reconToSolve` de `reconData.ts` ya da el
   shape a `Solve`; se reemplaza por el output real en vez de JSON bakeado).
-- **Slices:** aplicar M/E/S al estado en `analyzeSolveText` (+engine) para recuperar el +7pp.
+- **Slices en el engine 3D:** el análisis ya aplica M/E/S (arreglado 2026-08-08); falta que
+  `cube-3d-engine` anime la mitad slice de los wide moves para que el replay resuelva
+  visualmente.
 - **Futuro (solo si la base está sólida):** detección de casos con nombres (F2L nº, OLL/PLL)
   rehaciendo `signatures`/`caseIndex` limpios sobre el catálogo que sí se quedó. No antes.
 
