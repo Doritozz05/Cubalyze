@@ -50,15 +50,33 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
   { id: "oldest", label: "Oldest" },
 ];
 
+/**
+ * Extract a plausible competition year from a free-text source.
+ *
+ * Returns null when the match is not a real year. CubeRoot URLs embed the
+ * numeric solve id (`/recon/2084-…`) which must never be surfaced as a date,
+ * so URL scans (`dashPrefixed`) only accept years written dash-prefixed
+ * (slugs always write `…-spring-open-2025-f`); the id is never prefixed.
+ */
+function extractYear(text: string, dashPrefixed = false): string | null {
+  const m = text.match(dashPrefixed ? /-(?:19|20)\d{2}/ : /(?:19|20)\d{2}/);
+  if (!m) return null;
+  const raw = dashPrefixed ? m[0].slice(1) : m[0];
+  // WCA competitions exist between 1982 (first World Championship) and the
+  // present. Anything outside 1980–2030 is an id, a z-index, or noise.
+  const year = Number(raw);
+  return year >= 1980 && year <= 2030 ? raw : null;
+}
+
 export function formatDisplayDate(date: string | null, competition?: string, url?: string | null): string {
   if (date) return date;
   if (competition) {
-    const m = competition.match(/\b(?:20|19)\d{2}(?:-\d{2}-\d{2})?\b/) || competition.match(/(?:20|19)\d{2}/);
-    if (m) return m[0];
+    const y = extractYear(competition);
+    if (y) return y;
   }
   if (url) {
-    const m = url.match(/(?:20|19)\d{2}/);
-    if (m) return m[0];
+    const y = extractYear(url, true);
+    if (y) return y;
   }
   return "—";
 }
@@ -66,13 +84,15 @@ export function formatDisplayDate(date: string | null, competition?: string, url
 export function getSortDate(e: ReconIndexEntry): string {
   if (e.date) return e.date;
   if (e.competition) {
-    const m = e.competition.match(/\b(?:20|19)\d{2}(?:-\d{2}-\d{2})?\b/) || e.competition.match(/(?:20|19)\d{2}/);
-    if (m) return m[0];
+    const y = extractYear(e.competition);
+    if (y) return y;
   }
   if (e.url) {
-    const m = e.url.match(/(?:20|19)\d{2}/);
-    if (m) return m[0];
+    const y = extractYear(e.url, true);
+    if (y) return y;
   }
+  // Year-only values ("2023") sort before every ISO date of that year
+  // lexicographically — undated solves rank first within their year.
   return "";
 }
 

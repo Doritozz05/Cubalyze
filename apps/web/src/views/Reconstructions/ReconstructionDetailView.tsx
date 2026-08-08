@@ -13,6 +13,7 @@ import {
   Eye,
   Trophy,
   Calendar,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
@@ -254,6 +255,16 @@ export function ReconstructionDetailView({
                 <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-3">
                   {record.source}
                 </span>
+                {record.record && (
+                  <span className="rounded border border-phase-amber/40 bg-phase-amber/10 px-1.5 py-0.5 text-[0.6rem] font-semibold text-phase-amber">
+                    {record.record}
+                  </span>
+                )}
+                {record.official && record.official !== "" && record.official !== "none" && (
+                  <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase text-ink-3">
+                    {record.official}
+                  </span>
+                )}
                 {record.stats.recordAverage && (
                   <span className="rounded bg-caution/10 px-1.5 py-0.5 text-[0.6rem] font-semibold text-caution border border-caution/30">
                     {record.stats.recordAverage}
@@ -265,12 +276,33 @@ export function ReconstructionDetailView({
                 <span className="flex items-center gap-1">
                   <Trophy className="size-3" /> {record.competition || "—"}
                 </span>
+                {record.country && (
+                  <span className="flex items-center gap-1">
+                    <span className="uppercase">{record.country}</span>
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
                   <Calendar className="size-3" /> {formatDisplayDate(record.date, record.competition, record.url)}
                 </span>
                 <span className="nums flex items-center gap-1">
                   <span className="text-ink-2">#{record.id}</span>
+                  {record.solveNum != null && <span className="text-ink-3">solve {record.solveNum}</span>}
                 </span>
+                {record.reconstructor && (
+                  <span className="flex items-center gap-1">
+                    <UserRound className="size-3" /> recon {record.reconstructor}
+                  </span>
+                )}
+                {record.compWcaId && (
+                  <a
+                    href={`https://www.worldcubeassociation.org/competitions/${record.compWcaId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-ink-3 transition-colors hover:text-ink"
+                  >
+                    <ExternalLink className="size-3" /> wca
+                  </a>
+                )}
               </div>
             </div>
 
@@ -332,6 +364,10 @@ export function ReconstructionDetailView({
               label="Rotations"
               value={String(record.rotationCount ?? 0)}
             />
+            {record.average != null && (
+              <StatChip label="Avg" value={formatTime(record.average * 1000)} />
+            )}
+            {record.cube && <StatChip label="Cube" value={record.cube} />}
           </div>
 
           {/* Recognition summary */}

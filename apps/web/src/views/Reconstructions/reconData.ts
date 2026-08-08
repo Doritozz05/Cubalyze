@@ -63,6 +63,22 @@ export interface ReconFullRecord extends ReconIndexEntry {
   scramble: string;
   text: string;
   phases: ReconPhase[];
+  /** Reconstructor credits (reco.nz: Brest/Stewy/…, CubeRoot: reconer). */
+  reconstructor?: string | null;
+  /** Single-solve record tag (WR/NR/PR…) when the source reports one. */
+  record?: string | null;
+  /** CubeRoot: round average for the solve (seconds). */
+  average?: number | null;
+  /** CubeRoot: solve number within the round (1..5). */
+  solveNum?: number | null;
+  /** CubeRoot: cube model used. */
+  cube?: string | null;
+  /** CubeRoot: ISO country code. */
+  country?: string | null;
+  /** CubeRoot: official flag ("wca"…). */
+  official?: string | null;
+  /** CubeRoot: WCA competition id. */
+  compWcaId?: string | null;
   stats: {
     crossStm?: number | null;
     f2l?: number | null;
