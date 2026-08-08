@@ -301,7 +301,7 @@ export class ReplayEngine {
     this.nextIndex = 0;
     for (let i = 0; i < this.rotations.length; i++) {
       const r = this.rotations[i];
-      if (r.offsetMs > clampedMs) break;
+      if (clampedMs === 0 || r.offsetMs > clampedMs) break;
       const p = this.rotations[i];
       await this.callbacks.rotateLayers(p.axis, p.layerValues, p.angle, 0);
       this.nextIndex = i + 1;
@@ -354,12 +354,12 @@ export class ReplayEngine {
     }
 
     const r = this.rotations[targetIdx];
-    this._positionMs = r.offsetMs;
     
     // Apply with animation
     const duration = Math.min(this.moveAnimationDurationMs, this._totalMs - r.offsetMs);
     await this.callbacks.rotateLayers(r.axis, r.layerValues, r.angle, duration);
     this.nextIndex = targetIdx + 1;
+    this._positionMs = r.offsetMs;
 
     this.onPosition?.(this._positionMs, targetIdx);
     this.onMove?.(targetIdx, this.rotations.length);
@@ -393,8 +393,7 @@ export class ReplayEngine {
 
     // Update position and index to reflect the undone move
     this.nextIndex = targetIdx;
-    this._positionMs =
-      targetIdx > 0 ? this.rotations[targetIdx - 1].offsetMs : 0;
+    this._positionMs = targetIdx > 0 ? this.rotations[targetIdx - 1].offsetMs : 0;
 
     // Apply orientation at the new position (the move before the undone one)
     // Use animation duration for smooth visual during step-backward
@@ -414,7 +413,7 @@ export class ReplayEngine {
   }
   public get moveCount(): number { return this.rotations.length; }
   public get currentMoveIndex(): number {
-    return Math.max(0, this.nextIndex - 1);
+    return this.nextIndex - 1;
   }
 
   // ─── Internal ────────────────────────────────────────────────────────────
