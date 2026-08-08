@@ -198,7 +198,13 @@ export function ReplaySection({
     }
 
     return { notation, phaseName, phaseProgress };
-  }, [currentMoveIdx, moves, solve.analysis?.phases, solve.orientationTimeline]);
+  }, [
+    currentMoveIdx,
+    moves,
+    solve.analysis?.phases,
+    solve.orientationTimeline,
+    solve.replayMovesConjugated,
+  ]);
 
   /**
    * Clean up worker + engine resources.
