@@ -7,8 +7,6 @@ import {
   Copy,
   Check,
   Video,
-  ShieldCheck,
-  ShieldAlert,
   Trophy,
   Calendar,
   UserRound,
@@ -17,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ReplaySection } from "@/components/Insights/ReplaySection";
 import { AlgorithmNotation, SectionHeader } from "@/components/Insights/atoms";
 import {
@@ -87,9 +84,6 @@ function StatChip({ label, value, accent }: { label: string; value: string; acce
 
 function PhaseRow({ phase, last }: { phase: ReconPhase; last: boolean }) {
   const kind = phaseKind(phase.label);
-  const recog = phase.recog;
-  const hasCase = !!recog?.caseNumber;
-  const caseText = recog?.caseNumber ?? null;
 
   return (
     <div
@@ -104,39 +98,10 @@ function PhaseRow({ phase, last }: { phase: ReconPhase; last: boolean }) {
         <span className="truncate text-[0.74rem] font-medium text-ink">{phase.label}</span>
       </span>
 
-      <span className="min-w-0">
-        {hasCase ? (
-          <span className="flex items-center gap-1.5">
-            <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[0.64rem] font-semibold text-ink">
-              {caseText}
-            </span>
-            {recog!.slot && (
-              <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
-                {recog!.slot}
-              </span>
-            )}
-            {recog!.verified ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ShieldCheck className="size-3 shrink-0 text-ready" />
-                </TooltipTrigger>
-                <TooltipContent side="top">Case matched from the cube state</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ShieldAlert className="size-3 shrink-0 text-caution" />
-                </TooltipTrigger>
-                <TooltipContent side="top">Recognized but not fully verified</TooltipContent>
-              </Tooltip>
-            )}
-          </span>
-        ) : recog ? (
-          <span className="text-[0.64rem] text-ink-3">—</span>
-        ) : (
-          <span className="text-[0.64rem] text-ink-3/50">·</span>
-        )}
-      </span>
+      {/* Case column — the v1 case-recognition chips (recog) were removed
+          with the recognition system; the column stays for grid alignment
+          with Our detection, which renders its own F2L slot labels. */}
+      <span className="text-[0.64rem] text-ink-3">—</span>
 
       <span className="min-w-0">
         {phase.moves ? (

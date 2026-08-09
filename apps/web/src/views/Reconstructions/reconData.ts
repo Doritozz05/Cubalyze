@@ -7,11 +7,9 @@
  * `pruebas/scripts/build-recon-web-data.ts` from the CubeRoot + reco.nz
  * crawls):
  *   - index.json               → list metadata for every solve
- *   - data/chunk-XXX.json      → full records (scramble, phases, text, stats,
- *                                baked recognition)
+ *   - data/chunk-XXX.json      → full records (scramble, phases, text, stats)
  *
- * Both are fetched lazily and cached in module scope. The recognition data
- * per phase (case number, slot, verified) was baked at build time.
+ * Both are fetched lazily and cached in module scope.
  */
 import type { Solve } from "@/types";
 import type {
@@ -77,11 +75,6 @@ export interface ReconPhase {
    *  a remapped "F") for every event, so the UI never shows the conjugated
    *  letter. Parallel to `replayMoves`. Absent in baked data. */
   replayDisplay?: (string | null)[];
-  recog?: {
-    caseNumber: string | null;
-    slot: "FR" | "FL" | "BL" | "BR" | null;
-    verified: boolean;
-  } | null;
 }
 
 export interface ReconFullRecord extends ReconIndexEntry {

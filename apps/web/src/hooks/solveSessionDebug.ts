@@ -343,13 +343,11 @@ export function logSolveDiagnostic(args: {
           recognitionMs: cfop.ollRecognitionMs,
           executionMs: cfop.ollExecutionMs,
           tps: cfop.ollTPS,
-          algorithmId: cfop.ollAlgorithmId,
         },
         pll: {
           recognitionMs: cfop.pllRecognitionMs,
           executionMs: cfop.pllExecutionMs,
           tps: cfop.pllTPS,
-          algorithmId: cfop.pllAlgorithmId,
         },
       });
     } else {

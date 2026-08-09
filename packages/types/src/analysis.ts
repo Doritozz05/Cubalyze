@@ -462,13 +462,11 @@ export interface CFOPMetrics {
   ollRecognitionMs: number;
   ollExecutionMs: number;
   ollTPS: number;
-  ollAlgorithmId?: string;
 
   /** PLL recognition + execution. */
   pllRecognitionMs: number;
   pllExecutionMs: number;
   pllTPS: number;
-  pllAlgorithmId?: string;
 }
 
 export interface F2LPairMetrics {
