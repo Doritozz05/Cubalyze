@@ -299,6 +299,14 @@ export class ReplayEngine {
   }
 
   /**
+   * The in-flight initial-scramble application (see applyInitialScramble).
+   * play() awaits it before queueing any solve move so the scramble's
+   * messages can never be interleaved with the solve's. Null when no
+   * scramble is being applied.
+   */
+  private scramblePromise: Promise<void> | null = null;
+
+  /**
    * Parse and apply the initial scramble so the 3D cube shows the
    * scrambled state at position 0 (before any solve moves are replayed).
    *
@@ -308,7 +316,7 @@ export class ReplayEngine {
    *
    * After this, the replay starts from scrambled → ends solved.
    */
-  public async applyInitialScramble(scramble: string): Promise<void> {
+  public applyInitialScramble(scramble: string): Promise<void> {
     const tokens = scramble.trim().split(/\s+/).filter(Boolean);
     this.scrambleRotations = tokens.map((token) => {
       const face = token[0] as CubeFace;
@@ -326,10 +334,44 @@ export class ReplayEngine {
     });
 
     // Apply scramble rotations to the visual cube immediately
-    // (the renderer starts in solved state; this makes it scrambled)
-    for (const sr of this.scrambleRotations) {
-      const prom = this.callbacks.rotateLayers(sr.axis, sr.layerValues, sr.angle, 0);
-      if (prom instanceof Promise) await prom;
+    // (the renderer starts in solved state; this makes it scrambled).
+    //
+    // The whole dispatch is tracked in `scramblePromise`: play() waits for
+    // it before it can queue ANY solve move. Without this, play() called
+    // while the scramble is still being dispatched (the renderer applies
+    // each move over its own async roundtrip) would enqueue the solve moves
+    // BETWEEN the scramble moves — the worker FIFO then processes
+    // [s₁, solve₁, s₂..s₂₀, solve₂..s₃₁], which is NOT scramble→solve, so
+    // the cube ends visually unsolved while the UI counter still reports
+    // "Move 31/31" (the reported random bug — it only reproduces when the
+    // user hits play before the scramble finished dispatching).
+    //
+    // Per-move failures are swallowed: the scramble is best-effort cosmetic
+    // state and a rejection must never block playback or leak as an
+    // unhandled rejection.
+    const dispatch = (async () => {
+      for (const sr of this.scrambleRotations) {
+        const prom = this.callbacks.rotateLayers(sr.axis, sr.layerValues, sr.angle, 0);
+        if (prom instanceof Promise) await prom.catch(() => {});
+      }
+    })();
+    this.scramblePromise = dispatch;
+    void dispatch.then(() => {
+      if (this.scramblePromise === dispatch) this.scramblePromise = null;
+    });
+    return dispatch;
+  }
+
+  /**
+   * Wait for any in-flight initial-scramble dispatch to settle (see
+   * applyInitialScramble). Every move-dispatching entry point (play, seek,
+   * stepForward, stepBackward) calls this first so its messages can never be
+   * queued BETWEEN the scramble messages. Errors are swallowed: the scramble
+   * is best-effort cosmetic state and must never block transport controls.
+   */
+  private async awaitScrambleSettled(): Promise<void> {
+    if (this.scramblePromise) {
+      try { await this.scramblePromise; } catch { /* best-effort */ }
     }
   }
 
@@ -341,8 +383,21 @@ export class ReplayEngine {
       // against the async resetCube + rotateLayers inside seek(0).
       await this.seek(0);
     }
-    if (this._state === 'playing') return;
+    // Bail if a seek is in flight too — the transport owns the cube while
+    // it fast-forwards, and a second tick would double-apply moves.
+    if (this._state === 'playing' || this._state === 'seeking') return;
     if (this.rotations.length === 0) return;
+
+    // ── Initial-scramble gate ────────────────────────────────────────────
+    // The renderer applies the scramble asynchronously (one roundtrip per
+    // move). Starting playback before every scramble message was dispatched
+    // would queue the solve moves BETWEEN the scramble moves (see
+    // applyInitialScramble) and leave the cube visually unsolved at the end.
+    // Wait for the scramble to finish dispatching, then re-check the state:
+    // if a concurrent play() won the gate and already started the tick, bail
+    // out so only ONE tick loop ever runs.
+    await this.awaitScrambleSettled();
+    if (this._state !== 'idle' && this._state !== 'paused') return;
 
     this.resumePositionMs = this._positionMs;
     this.playStartWall = performance.now();
@@ -444,6 +499,10 @@ export class ReplayEngine {
   public async seek(targetMs: number): Promise<void> {
     const wasPlaying = this._state === 'playing';
     this.cancelRaf();
+    // Wait out any in-flight initial-scramble dispatch (the Restart button is
+    // enabled while applyInitialScramble is still round-tripping) so this
+    // rewind's own reset + scramble loop can never interleave with it.
+    await this.awaitScrambleSettled();
     // Wait out any in-flight inspection grip before rewinding.
     if (this.gripPromise) {
       try { await this.gripPromise; } catch { /* aborted grip */ }
@@ -519,6 +578,10 @@ export class ReplayEngine {
   public async stepForward(): Promise<void> {
     const wasPlaying = this._state === 'playing';
     this.cancelRaf();
+    // Same gate as play(): the step buttons are enabled during the initial
+    // scramble apply, and a step's move must never queue between scramble
+    // messages.
+    await this.awaitScrambleSettled();
     // Wait out any in-flight inspection grip so the step applies after it.
     if (this.gripPromise) {
       try { await this.gripPromise; } catch { /* aborted grip */ }
@@ -566,6 +629,10 @@ export class ReplayEngine {
   /** Step backward one move (pauses playback). */
   public async stepBackward(): Promise<void> {
     this.cancelRaf();
+    // Same gate as play(): the step buttons are enabled during the initial
+    // scramble apply, and a step's move must never queue between scramble
+    // messages.
+    await this.awaitScrambleSettled();
     // Wait out any in-flight inspection grip before undoing.
     if (this.gripPromise) {
       try { await this.gripPromise; } catch { /* aborted grip */ }
@@ -707,6 +774,7 @@ export class ReplayEngine {
   /** Clean up resources. */
   public dispose(): void {
     this.cancelRaf();
+    this.scramblePromise = null;
     this.onPosition = null;
     this.onComplete = null;
     this.onMove = null;
