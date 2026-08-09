@@ -104,6 +104,7 @@ export function StageOverlays(props: StageOverlaysProps) {
           activeView={activeView}
           onNavigate={onNavigate}
           onOpenMore={onOpenMore}
+          mobileMoreOpen={mobileMoreOpen}
         />
       )}
 
