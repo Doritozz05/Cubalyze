@@ -91,9 +91,9 @@ describe('hintFor', () => {
       expect(hintFor('idle', false, ctx)).toBe('press & hold to start');
     });
 
-    it('manual mode + inspection shows "press space to start inspection"', () => {
+    it('manual mode + inspection still shows the manual copy (no auto)', () => {
       const ctx: HintContext = { smartCube: false, scrambleVerif: false, inspection: true, isScrambled: false };
-      expect(hintFor('idle', false, ctx)).toBe('press space to start inspection');
+      expect(hintFor('idle', false, ctx)).toBe('press & hold to start');
     });
 
     it('smart cube + scrambleVerif ON + not scrambled shows "complete the scramble"', () => {

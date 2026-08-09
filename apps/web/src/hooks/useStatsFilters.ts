@@ -65,8 +65,14 @@ export function useStatsFilters(
     [],
   );
 
+  // Solves scoped to the active puzzle type (e.g. "3x3x3")
+  const puzzleSolves = useMemo(() => {
+    if (filters.puzzleType == null) return solves;
+    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === filters.puzzleType);
+  }, [solves, filters.puzzleType]);
+
   const filtered = useMemo(() => {
-    return solves.filter((s) => {
+    return puzzleSolves.filter((s) => {
       if (filters.dateFrom != null && s.timestamp < filters.dateFrom)
         return false;
       if (filters.dateTo != null && s.timestamp > filters.dateTo)
@@ -94,17 +100,15 @@ export function useStatsFilters(
         const timeOk = formatTime(effectiveTime(s)).toLowerCase().includes(q);
         if (!noteOk && !scrOk && !penOk && !timeOk) return false;
       }
-      if (filters.puzzleType != null && (s.puzzleType ?? "3x3x3") !== filters.puzzleType) return false;
       return true;
     });
   }, [
-    solves,
+    puzzleSolves,
     filters.dateFrom,
     filters.dateTo,
     filters.activeFilter,
     filters.methods,
     debouncedSearch,
-    filters.puzzleType,
   ]);
 
   const sorted = useMemo(() => {
@@ -123,7 +127,7 @@ export function useStatsFilters(
         arr.sort((a, b) => effectiveTime(b) - effectiveTime(a));
         break;
       case "pbDelta": {
-        const valid = solves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
+        const valid = puzzleSolves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
         if (valid.length === 0) {
           arr.sort((a, b) => b.timestamp - a.timestamp);
           break;
@@ -137,7 +141,7 @@ export function useStatsFilters(
       }
     }
     return arr;
-  }, [filtered, filters.sort, solves]);
+  }, [filtered, filters.sort, puzzleSolves]);
 
   const reset = useCallback(
     () => setFiltersState({ ...DEFAULT_FILTERS }),
@@ -148,7 +152,8 @@ export function useStatsFilters(
     filters,
     setFilters,
     filtered: sorted,
-    totalCount: solves.length,
+    puzzleSolves,
+    totalCount: puzzleSolves.length,
     filteredCount: sorted.length,
     reset,
   };

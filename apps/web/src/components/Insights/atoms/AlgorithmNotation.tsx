@@ -10,7 +10,6 @@ export interface AlgorithmNotationProps {
   /** Mark all moves before the first highlighted index as "passed". */
   highlightCursor?: number;
   size?: "sm" | "md" | "lg";
-  variant?: "chip" | "plain";
   className?: string;
   /** Called when a move chip is clicked (index + notation). */
   onMoveClick?: (index: number, move: string) => void;
@@ -22,55 +21,26 @@ const sizeMap: Record<NonNullable<AlgorithmNotationProps["size"]>, string> = {
   lg: "text-[0.85rem] px-2 py-1",
 };
 
-const plainSizeMap: Record<NonNullable<AlgorithmNotationProps["size"]>, string> = {
-  sm: "text-[0.78rem]",
-  md: "text-[0.85rem]",
-  lg: "text-[0.95rem]",
-};
-
 /**
- * Renders a sequence of moves as individual mono chips or plain notation text.
+ * Renders a sequence of moves as individual mono chips. Supports:
+ * - `highlight`: specific indices to emphasize (the "current" move).
+ * - `highlightCursor`: everything before this index is dimmed as "passed".
+ * - `onMoveClick`: makes each chip interactive (for timeline move streams).
+ *
+ * Flat palette: default chips are `bg-surface` with `text-ink-2`; the
+ * highlighted chip gets `bg-ink text-surface`; passed chips fade to
+ * `text-ink-3/40`.
  */
 export function AlgorithmNotation({
   notation,
   highlight = [],
   highlightCursor,
   size = "md",
-  variant = "chip",
   className,
   onMoveClick,
 }: AlgorithmNotationProps) {
   const moves = notation.trim().split(/\s+/).filter(Boolean);
   const highlightSet = new Set(highlight);
-
-  if (variant === "plain") {
-    return (
-      <div className={cn("flex flex-wrap gap-x-1.5 gap-y-0.5 font-mono text-ink tracking-wide leading-relaxed select-text", plainSizeMap[size], className)}>
-        {moves.map((move, i) => {
-          const isHighlighted = highlightSet.has(i);
-          const isPassed =
-            highlightCursor != null && i < highlightCursor && !isHighlighted;
-          return (
-            <span
-              key={`${move}-${i}`}
-              onClick={onMoveClick ? () => onMoveClick(i, move) : undefined}
-              className={cn(
-                "font-mono transition-colors",
-                onMoveClick && "cursor-pointer hover:underline",
-                isHighlighted
-                  ? "bg-ink text-surface rounded px-1"
-                  : isPassed
-                    ? "text-ink-3/40"
-                    : "text-ink",
-              )}
-            >
-              {move}
-            </span>
-          );
-        })}
-      </div>
-    );
-  }
 
   return (
     <div className={cn("flex flex-wrap gap-1 font-mono", className)}>

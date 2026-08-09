@@ -209,9 +209,6 @@ export function SolveAnalysisPanel({
         )}
       </div>
 
-      {/* ── Scramble block ── */}
-      <ScrambleBlock solve={solve} />
-
       {/* ── Note section ── */}
       <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-3.5">
         <div className="flex items-center justify-between">
@@ -336,6 +333,9 @@ export function SolveAnalysisPanel({
           <RotEfficiencySection metrics={m} />
         </>
       )}
+
+      {/* Scramble block */}
+      <ScrambleBlock solve={solve} />
     </div>
   );
 }
@@ -463,9 +463,8 @@ function TimelineSection({
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader
         title="Timeline"
-        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)} total${
-          totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
-        }`}
+        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)} total${totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
+          }`}
       />
 
       <div className="mt-3">
@@ -1491,7 +1490,7 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
           Scramble
         </span>
         {hasMoves ? (
-          <AlgorithmNotation notation={solve.scramble} size="sm" variant="plain" />
+          <AlgorithmNotation notation={solve.scramble} size="sm" />
         ) : (
           <p className="font-mono text-[0.78rem] text-ink wrap-break-word">
             {solve.scramble}
