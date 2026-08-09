@@ -212,6 +212,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     padding: "4px 8px",
                     boxShadow: "none",
                   }}
+                  itemStyle={{ color: "var(--ink)" }}
                   labelFormatter={(_, payload) => {
                     const pt = payload?.[0]?.payload as { solveNumber?: number } | undefined;
                     return pt?.solveNumber ? `Solve ${pt.solveNumber}` : "";
@@ -261,6 +262,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     padding: "4px 8px",
                     boxShadow: "none",
                   }}
+                  itemStyle={{ color: "var(--ink)" }}
                   formatter={(_, __, entry) => {
                     const bin = entry?.payload as { count?: number; label?: string } | undefined;
                     return [`${bin?.count ?? 0} solves`, `${bin?.label ?? ""}s`];
@@ -334,16 +336,17 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     </Pie>
                     <Tooltip
                       cursor={{ fill: "var(--surface-2)", opacity: 0.5 }}
-                      contentStyle={{
-                        border: "1px solid var(--line)",
-                        borderRadius: "6px",
-                        background: "var(--surface)",
-                        color: "var(--ink)",
-                        fontSize: "0.7rem",
-                        padding: "4px 8px",
-                        boxShadow: "none",
-                      }}
-                      formatter={(v: unknown, name: unknown) => [
+                  contentStyle={{
+                    border: "1px solid var(--line)",
+                    borderRadius: "6px",
+                    background: "var(--surface)",
+                    color: "var(--ink)",
+                    fontSize: "0.7rem",
+                    padding: "4px 8px",
+                    boxShadow: "none",
+                  }}
+                  itemStyle={{ color: "var(--ink)" }}
+                  formatter={(v: unknown, name: unknown) => [
                         `${Math.round(Number(v ?? 0) * 100)}%`,
                         String(name ?? ""),
                       ]}

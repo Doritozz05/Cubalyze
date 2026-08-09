@@ -128,6 +128,7 @@ export function TrendChart({
                   padding: "4px 8px",
                   boxShadow: "none",
                 }}
+                itemStyle={{ color: "var(--ink)" }}
                 labelFormatter={(l) => `Solve ${l}`}
                 formatter={(v) => [formatTime(Number(v)), `Ao${window}`]}
               />
