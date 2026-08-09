@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
-import { formatTime } from "@/utils/formatTime";
+import { formatTime, averageOf } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 
 // ─── Data point ─────────────────────────────────────────────────────────────
@@ -35,8 +35,10 @@ interface SolveProgressionPoint {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * WCA rolling average: solves are in CHRONOLOGICAL order (oldest first).
- * Returns null if not enough solves in the window or >1 DNF.
+ * Rolling average: solves are in CHRONOLOGICAL order (oldest first).
+ * Delegates to the shared `averageOf` engine (5% percentile trim, csTimer
+ * convention). Returns null if not enough solves in the window or the
+ * window average is a DNF.
  */
 function rollingAverage(
   chronoSolves: readonly Solve[],
@@ -44,13 +46,9 @@ function rollingAverage(
   windowSize: number,
 ): number | null {
   if (index + 1 < windowSize) return null;
-  const slice = chronoSolves.slice(index - windowSize + 1, index + 1);
-  const times = slice.map(effectiveTime);
-  const dnfs = times.filter((t) => !Number.isFinite(t)).length;
-  if (dnfs > 1) return null;
-  const sorted = [...times].sort((a, b) => a - b);
-  const trimmed = sorted.slice(1, -1);
-  return trimmed.reduce((a, b) => a + b, 0) / (windowSize - 2);
+  const win = chronoSolves.slice(index - windowSize + 1, index + 1).reverse();
+  const ao = averageOf(win, windowSize);
+  return ao != null && Number.isFinite(ao) ? ao : null;
 }
 
 /** Round ms up to the next `step` ms boundary. */

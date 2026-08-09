@@ -2,7 +2,8 @@
  * @cubeforge/statistics — Headless statistics engine.
  *
  * Pure calculation functions for speedcubing statistics:
- *   - Rolling averages (Ao5, Ao12, Ao100) per WCA regulations
+ *   - Rolling averages (Ao5, Ao12, Ao100) — WCA-style for small windows,
+ *     5% percentile trim (csTimer convention) for large ones
  *   - Session stats (best, worst, mean, session time)
  *   - Standard deviation
  *
@@ -38,7 +39,7 @@ export interface SessionStats {
   ao5: number | null;
   /** Average of 12. null if not enough solves. */
   ao12: number | null;
-  /** Average of 100. null if not enough solves. */
+  /** Average of 100 (5% trim: tolerates up to 5 DNFs). null if not enough solves. */
   ao100: number | null;
   /** Sum of all effective times (DNF excluded). */
   sessionTime: number;
@@ -61,22 +62,44 @@ export function effectiveTime(solve: StatSolve): number {
 }
 
 /**
- * Average of N (WCA-style): trim best & worst, arithmetic mean of the rest.
- * Requires at least N solves; DNFs count as worst.
- * Returns null when not enough data, Infinity when >1 DNF in the window.
+ * Number of solves discarded from each side of an average of N, using the
+ * 5% percentile convention (csTimer default / Twisty Timer default):
+ * `ceil(N / 20)`. For N = 5 and N = 12 this is 1 — the standard WCA-style
+ * single best/worst trim. For larger averages it grows, so an Ao50 discards
+ * the 3 best and 3 worst solves and an Ao100 discards the 5 best and 5 worst.
+ */
+function trimSize(n: number): number {
+  return Math.ceil(n / 20);
+}
+
+/**
+ * Average of N — trimmed mean with the 5% percentile convention used by
+ * csTimer (and the Twisty Timer default): the best `trim` and worst `trim`
+ * solves are discarded, where `trim = ceil(N / 20)`, and the arithmetic mean
+ * of the remaining solves is returned.
+ *
+ * For N = 5 and N = 12 this is the standard WCA Ao5/Ao12 calculation (single
+ * best and worst trimmed). For larger averages the trim grows, so an Ao100
+ * with up to 5 DNFs is still valid: DNFs count as the worst solves and fall
+ * inside the trimmed tail. If more than `trim` DNFs are in the window, the
+ * average is DNF.
+ *
+ * Requires at least N solves (newest first). Returns null when there is not
+ * enough data, Infinity when the average is a DNF.
  */
 export function averageOf(solves: StatSolve[], n: number): number | null {
   if (solves.length < n) return null;
   const slice = solves.slice(0, n).map(effectiveTime);
-  // If more than one DNF in the window, the average is DNF.
+  const trim = trimSize(n);
+  // More than `trim` DNFs in the window → the average is DNF.
   const dnfs = slice.filter((t) => !Number.isFinite(t)).length;
-  if (dnfs > 1) return INF;
+  if (dnfs > trim) return INF;
 
   const sorted = [...slice].sort((a, b) => a - b);
-  // trim best (first) and worst (last)
-  const trimmed = sorted.slice(1, -1);
-  const sum = trimmed.reduce((acc, t) => acc + t, 0);
-  return sum / (n - 2);
+  // Discard the best `trim` (front) and worst `trim` (back; DNFs sort last).
+  const trimmed = sorted.slice(trim, n - trim);
+  if (trimmed.length === 0) return INF;
+  return trimmed.reduce((acc, t) => acc + t, 0) / trimmed.length;
 }
 
 /**

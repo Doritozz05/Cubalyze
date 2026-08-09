@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Re-export statistics functions for backward compatibility.
-export { computeStats, computeBpaWpa } from "@cubeforge/statistics";
+export { computeStats, computeBpaWpa, averageOf } from "@cubeforge/statistics";
 
 const INF = Number.POSITIVE_INFINITY;
 
