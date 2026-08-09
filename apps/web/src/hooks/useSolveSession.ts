@@ -21,6 +21,7 @@ import {
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
 import { shouldAutoArm } from "@/hooks/shouldAutoArm";
+import { resolveIdlePress } from "@/hooks/pressDispatch";
 import {
   moveNotation,
   logSolveDiagnostic,
@@ -744,14 +745,25 @@ export function useSolveSession(
       return;
     }
 
-    if (inspectionPref) {
-      engine.startInspection();
-    } else if (smartCubeConnected) {
+    // Pure decision helper — exhaustive truth-table tests in
+    // pressDispatch.test.ts lock the Mode 3 regression: with a Smart Cube
+    // connected and Scramble Verification OFF, Space/tap must arm the cube
+    // gate (READY_FOR_MOVE) even when Inspection (default ON) is enabled.
+    // Otherwise the space key would launch the inspection ceremony and a
+    // second press would start the timer without any cube move.
+    const action = resolveIdlePress({
+      smartCube: smartCubeConnected,
+      scrambleVerif: scrambleVerificationPref,
+      inspection: inspectionPref,
+    });
+    if (action === "arm") {
       engine.arm();
+    } else if (action === "inspection") {
+      engine.startInspection();
     } else {
       engine.handleDown();
     }
-  }, [engine, inspectionPref, smartCubeConnected]);
+  }, [engine, inspectionPref, smartCubeConnected, scrambleVerificationPref]);
 
   const release = useCallback(() => {
     engine.handleUp();

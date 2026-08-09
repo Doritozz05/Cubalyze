@@ -64,7 +64,9 @@ export function hintFor(
         if (ctx.scrambleVerif && ctx.isScrambled) {
           return ctx.inspection ? "press space to start inspection" : "make a move to start";
         }
-        if (ctx.inspection) return "press space to start inspection";
+        // Scramble Verification OFF (Modes 3 & 4): space/tap arms the cube
+        // gate and the first physical move starts the solve — inspection is
+        // never shown here because pressing space arms instead of starting it.
         return "tap or press space to start";
       }
       return hasLast ? "hold to start next" : "press & hold to start";
