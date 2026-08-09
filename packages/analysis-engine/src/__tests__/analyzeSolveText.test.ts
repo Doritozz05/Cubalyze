@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { isRotation, tokenize } from '@cubeforge/math-core';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 
 /**
@@ -316,5 +317,94 @@ describe('analyzeSolveText — raw parsing edge cases', () => {
       solution: "U Q R U' R' 2",
     });
     expect(reconstruction.finalSolved).toBe(true);
+  });
+});
+
+describe('analyzeSolveText — embedded inspection recognized by POSITION, not label', () => {
+  // Real CubeRoot record cuberoot-2542: the inspection phase is labeled
+  // "insp" (not "inspection"), and the baked `recognition.inspection` field
+  // is empty — the old `/inspect/i` label check missed it. The grip ended up
+  // in `recon.rotations` at moveIndex 0 while `recon.inspection` stayed
+  // empty, so the panel sliced them as SOLVE rotations and interleaved
+  // "z2 y'" into the Cross row instead of the Orientation row.
+  const setup = "F2 B D2 L' D2 L' F' L2 B2 D B2 R2 U' F2 U' L F2 L2";
+  const solution = [
+    "z2 y' // insp",
+    "D' R' L D' F D' F // cross",
+    "R U' R' U' R U R' L U' L' // F2L1",
+    "U2 R U' R' // F2L2",
+    "L' U L U f R' f' // F2L3",
+    "U2 y' U  R U' R' U' R U' R' U R U' R' // F2L4",
+    "F  U R U' R' U R U' R' F' // OLL",
+    "R U' R' U' R U R D R' U' R D' R' U2 R' U // PLL-Ra",
+  ].join('\n');
+
+  it('attributes the leading rotations-only phase to the inspection grip', () => {
+    const { reconstruction } = analyzeSolveText({
+      setup,
+      solution,
+      method: 'CFOP',
+    });
+
+    expect(reconstruction.finalSolved).toBe(true);
+    expect(reconstruction.inspection).toBe("z2 y'");
+    // The embedded inspection phase is consumed, never listed as a solve phase.
+    expect(reconstruction.rawPhases[0].label).toBe('cross');
+    // The cross owns only its face moves — no rotations slipped into them.
+    expect(reconstruction.cross.moves).toEqual(["D'", "R'", 'L', "D'", 'F', "D'", 'F']);
+  });
+
+  it('keeps the panel slicing contract: leading rotations are inspection', () => {
+    const { reconstruction } = analyzeSolveText({
+      setup,
+      solution,
+      method: 'CFOP',
+    });
+
+    // Exactly what OurDetectionPanel does: inspection rotations are the
+    // FIRST `recon.rotations` (moveIndex 0); the solve rotations are the rest.
+    const inspectionRotationCount = tokenize(reconstruction.inspection)
+      .filter(isRotation).length;
+    const inspectionRotations = reconstruction.rotations.slice(
+      0,
+      inspectionRotationCount,
+    );
+    const solveRotations = reconstruction.rotations.slice(inspectionRotationCount);
+
+    expect(inspectionRotationCount).toBe(2);
+    expect(inspectionRotations.map((r) => r.token)).toEqual(["z2", "y'"]);
+    expect(inspectionRotations.every((r) => r.moveIndex === 0)).toBe(true);
+    // The mid-solve y' (F2L4) is the only SOLVE rotation left.
+    expect(solveRotations.map((r) => r.token)).toEqual(["y'"]);
+    expect(solveRotations.every((r) => r.moveIndex > 0)).toBe(true);
+    expect(reconstruction.rotations.map((r) => r.token)).toEqual(["z2", "y'", "y'"]);
+  });
+
+  it('does not treat a MID-SOLVE rotations-only phase as inspection', () => {
+    // "// regrip" between cross and F2L must stay a solve-phase rotation
+    // (moveIndex > 0), never move to the inspection grip at index 0.
+    const { reconstruction } = analyzeSolveText({
+      setup,
+      solution: [
+        "z2 // insp",
+        "D' R' L D' F D' F // cross",
+        "y' // regrip",
+        "R U' R' U' R U R' L U' L' // F2L1",
+        "U2 R U' R' // F2L2",
+        "L' U L U f R' f' // F2L3",
+        "U2 U R U' R' U' R U' R' U R U' R' // F2L4",
+        "F  U R U' R' U R U' R' F' // OLL",
+        "R U' R' U' R U R D R' U' R D' R' U2 R' U // PLL-Ra",
+      ].join('\n'),
+      method: 'CFOP',
+    });
+
+    // The regrip y' stays a solve rotation exactly after the 7 cross moves
+    // (the fixture is synthetic — the y' was moved out of F2L4, so the
+    // physical stream is no longer a real solve; only the ATTRIBUTION is
+    // under test), and the inspection row keeps only the leading grip.
+    expect(reconstruction.inspection).toBe('z2');
+    const solveRots = reconstruction.rotations.filter((r) => r.moveIndex > 0);
+    expect(solveRots.map((r) => [r.token, r.moveIndex])).toEqual([["y'", 7]]);
   });
 });

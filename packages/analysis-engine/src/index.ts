@@ -31,6 +31,16 @@ export type {
   AnalyzeSolveTextResult,
 } from './reconstruction/analyzeSolveText';
 
+// ─── Unified Pipeline (Fase 1+3) — the ONLY place detection runs ───────────
+export {
+  analyzeSolve,
+  buildAnnotatedTimeline,
+  type AnalyzeSolveInput,
+  type AnalyzeSolveResult,
+} from './pipeline/analyzeSolve';
+export { recoverRotatedFrame, type FrameRecoveryOptions } from './pipeline/frameRecovery';
+export { segmentF2LPairs, type SegmentF2LPairsOptions, type UnifiedF2LPair } from './pipeline/segmentF2LPairs';
+
 // ─── Metrics ────────────────────────────────────────────────────────────────
 export { TPSCalculator } from './metrics/TPSCalculator';
 export { PauseDetector } from './metrics/PauseDetector';

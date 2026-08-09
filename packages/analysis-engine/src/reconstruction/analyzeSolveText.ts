@@ -1,9 +1,9 @@
 /**
- * analyzeSolveText.ts — Fase 2 reconstruction API (headless).
+ * analyzeSolveText.ts — Fase 2/3 reconstruction API (headless thin adapter).
  *
  * Given a raw reconstruction string (exactly like the smartcube path does
- * with physical moves), rebuild the cube state and let the STANDARD stats
- * pipeline produce the reconstruction "a nuestra manera":
+ * with physical moves), rebuild the cube state and let the SHARED pipeline
+ * produce the reconstruction "a nuestra manera":
  *
  *   setup + inspection + solution  →  SolveTimeline + SolveReconstruction
  *
@@ -11,14 +11,15 @@
  * and for the Fase 2 contrast (raw labels vs what our splitter detects by
  * STATE). They are never trusted for detection.
  *
- * The smartcube flow (useSolveSession) is NOT touched: this module builds a
- * standard SolveTimeline with the same shape, so PhaseSplitter, metrics and
- * ReplaySection consume it without changes.
+ * Detection is DELEGATED (Fase 3): build + split + P2 frame recovery run in
+ * `buildAnnotatedTimeline` — the same sync core `analyzeSolve` wraps for the
+ * smart route. This module keeps only parsing (phases, inspection,
+ * conjugation, displayTokens, stateTokens, preferredCrossIdx) and the
+ * reconstruction formatting; it never re-implements detection.
  */
 import {
   ColorPhaseDetector,
   conjugatePhaseStream,
-  countCompletedF2LSlotsInFrame,
   IDENTITY_SCHEME,
   isRotation,
   tokenize,
@@ -37,6 +38,8 @@ import type {
 } from '@cubeforge/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
+import { buildAnnotatedTimeline } from '../pipeline/analyzeSolve';
+import { segmentF2LPairs } from '../pipeline/segmentF2LPairs';
 
 // ─── Input / output types ───────────────────────────────────────────────────
 
@@ -70,8 +73,6 @@ export interface F2LPairResult {
   completionIndex: number;
   /** Leading U moves before the pair's insertion. */
   auf: string[];
-  /** True when the pair was already home when F2L started. */
-  premade: boolean;
 }
 
 export interface SolveReconstruction {
@@ -103,7 +104,12 @@ export interface SolveReconstruction {
   };
   pairs: F2LPairResult[];
   /** Rotations (x/y/z) with the index of the move they happened before —
-   *  silent orientation changes, exactly like the smartcube. */
+   *  silent orientation changes, exactly like the smartcube.
+   *
+   *  CONTRACT: the inspection grip rotations come FIRST, all at moveIndex 0,
+   *  and their count equals the rotation tokens in `inspection` — consumers
+   *  (OurDetectionPanel) slice `rotations` by that count to separate the
+   *  grip from the mid-solve rotations. */
   rotations: { token: string; moveIndex: number }[];
   /** Last-layer phases in the SOLVER's raw notation (empty when skipped). */
   oll: { moves: string[]; skipped: boolean } | null;
@@ -238,23 +244,33 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   let inspectionTokens = tokenize(inspection);
   let rawPhases = parseRawPhases(input.solution);
 
-  // CubeRoot text embeds the inspection as a "// Inspection" phase. If the
+  // CubeRoot text embeds the inspection as a "// Inspection"-style phase.
+  // The label varies across the dataset ("insp", "Inspection",
+  // "Inpsection", "Inspección", … — and sometimes no comment at all), so
+  // recognition is by POSITION, not by label: the leading rotations-only
+  // phase — the one before the first face move — is by definition the
+  // solver's grip (a rotation can never be a solve move). Mid-solve
+  // rotations-only phases ("// regrip y") are NOT the inspection. If the
   // caller ALSO passes `inspection`, applying both would rotate the grip
-  // twice and produce a wrong frame. Prefer the explicit `inspection`
-  // parameter and drop the embedded phase; if no explicit inspection was
-  // given, the embedded phase IS the inspection (rotations only).
-  const embeddedInspection = rawPhases.find((p) => /inspect/i.test(p.label));
+  // twice and produce a wrong frame: prefer the explicit parameter and drop
+  // the embedded phase.
+  // The leading rotations-only phase is the grip — recognized by POSITION
+  // (it precedes the first face move), never by label.
+  const firstFaceIdx = rawPhases.findIndex((p) =>
+    p.tokens.some((t) => FACE_MOVE_RE.test(t)),
+  );
+  const embeddedInspection = rawPhases.find(
+    (p, i) =>
+      i < firstFaceIdx &&
+      p.tokens.length > 0 &&
+      p.tokens.every((t) => isRotation(t)),
+  );
   if (embeddedInspection) {
-    const embeddedIsRotationsOnly =
-      embeddedInspection.tokens.length > 0 &&
-      embeddedInspection.tokens.every((t) => isRotation(t));
-    if (embeddedIsRotationsOnly) {
-      if (inspectionTokens.length === 0) {
-        inspectionTokens = embeddedInspection.tokens;
-        inspection = inspectionTokens.join(' ');
-      }
-      rawPhases = rawPhases.filter((p) => p !== embeddedInspection);
+    if (inspectionTokens.length === 0) {
+      inspectionTokens = embeddedInspection.tokens;
+      inspection = inspectionTokens.join(' ');
     }
+    rawPhases = rawPhases.filter((p) => p !== embeddedInspection);
   }
 
   // Conjugate inspection + every phase with a running grip. Rotations are
@@ -335,10 +351,15 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // one per timeline entry) — with the wide-slice fix the cross completion
   // materializes exactly where the written segment ends, so the face count
   // of the segments up to and including the cross phase gives the index.
-  const firstFacePhase = rawPhases.find((p) =>
+  // IMPORTANT: the index must be measured on the FILTERED rawPhases (the
+  // embedded inspection was already consumed above) — `perPhase[k + 1]`
+  // aligns 1:1 with rawPhases[k] after the filter, so counting a leftover
+  // inspection phase here would shift the tiebreak by one phase and the
+  // written cross segment would end past its real entries.
+  let preferredCrossIdx: number | undefined;
+  const firstFacePhaseIndex = rawPhases.findIndex((p) =>
     p.tokens.some((t) => FACE_MOVE_RE.test(t)),
   );
-  let preferredCrossIdx: number | undefined;
   // Only meaningful when the written cross segment is a PROPER PREFIX of the
   // solve (there is at least one later phase). For a flat solution (no `//`
   // comments → a single phase holding every move) the "written cross end" is
@@ -346,63 +367,49 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // last entry would let a coincidental end-of-solve cross ([last,last,last,
   // last] — every solved final state shows a cross on all 6 faces) win every
   // tie. Disable the tiebreak there and let the spurious/duration tests decide.
-  if (firstFacePhase && rawPhases.indexOf(firstFacePhase) < rawPhases.length - 1) {
-    const idx = rawPhases.indexOf(firstFacePhase);
+  if (firstFacePhaseIndex >= 0 && firstFacePhaseIndex < rawPhases.length - 1) {
     let faceCount = 0;
-    for (let k = 0; k <= idx; k++) {
+    for (let k = 0; k <= firstFacePhaseIndex; k++) {
       faceCount += perPhase[k + 1].filter((t) => FACE_MOVE_RE.test(t)).length;
     }
     preferredCrossIdx = faceCount - 1;
   }
 
   const solveMoves = movesFromTokens(faceTokens);
-  let timeline = PhaseSplitter.splitAndAnnotate(
-    TimelineBuilder.build(solveMoves, 'CFOP', undefined, setup, undefined, stateTokens),
-    CFOPDefinition,
-    { colorNeutral: true, preferredCrossIdx },
-  );
+  // DETECTION DELEGATED to the shared core: build + split + P2 frame
+  // recovery all run inside `buildAnnotatedTimeline` — the EXACT synchronous
+  // core the smart route's `analyzeSolve` wraps. This adapter keeps ONLY
+  // parsing (phases, inspection, conjugation, displayTokens, stateTokens,
+  // preferredCrossIdx) and the reconstruction formatting; it never
+  // re-implements detection.
+  //
+  // solveTimeMs is applied AFTER detection on purpose: the text timeline
+  // carries synthetic timestamps, so building the report with the override
+  // would fabricate an 'unattributed-time' warning. The smart route passes
+  // it through the core (real timestamps) — duration semantics stay per
+  // route while phases/report/pairs come from one shared pipeline.
+  const timeline = buildAnnotatedTimeline({
+    moves: solveMoves,
+    method: 'CFOP',
+    scramble: setup,
+    stateTokens,
+    preferredCrossIdx,
+  });
   if (input.totalTimeMs !== undefined && Number.isFinite(input.totalTimeMs)) {
     timeline.solveTimeMs = Math.max(0, input.totalTimeMs);
   }
-  let report = timeline.detectionReport ??
+  // splitAndAnnotate (inside the core) ALWAYS attaches a detection report,
+  // so this fallback is unreachable today — kept defensively so a future
+  // change to the core can never break the reconstruction. Same data, never
+  // re-detects.
+  const report = timeline.detectionReport ??
     PhaseSplitter.getDetectionReport(timeline, CFOPDefinition, { colorNeutral: true });
-
-  // ── P2: frame recovery ──────────────────────────────────────────────────
-  // Text reconstructions can end PERFECT but in a rotated frame (the stored
-  // scramble and the solver's frame differ by one whole-cube rotation — the
-  // known recon.nz quirk). The base analysis then runs on a rotated cube:
-  // spurious early crosses win, slots read as UF/DF/UB/DB garbage, and the
-  // Orientation row gets a wrong scheme. When the final state is uniform but
-  // NOT canonically solved, rotate EVERY snapshot by the rotation that
-  // resolves the final state and re-detect: with an exactly solved end state,
-  // the real cross completes the full 4-phase chain and wins the detector's
-  // heuristic over any spurious cross.
-  let states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
-  const finalState = states[states.length - 1];
-  if (report.finalStateSolved && finalState && !finalState.isSolved()) {
-    const recovery = finalState.findRecoveryRotation();
-    if (recovery) {
-      for (const entry of timeline.entries) {
-        const c = TimelineBuilder.fromSnapshot(entry.state);
-        c.multiply(recovery);
-        entry.state = TimelineBuilder.toSnapshot(c);
-      }
-      const rotated = PhaseSplitter.splitAndAnnotate(
-        timeline,
-        CFOPDefinition,
-        { colorNeutral: true, preferredCrossIdx },
-      );
-      if (rotated.detectionReport) {
-        report = rotated.detectionReport;
-      }
-    }
-  }
 
   // Re-run the color detection to obtain the solver's scheme (cross color /
   // frame) — needed to name F2L slots in the SOLVER's frame. Same call the
   // PhaseSplitter makes internally; no duplicated math. (Recomputed AFTER the
   // P2 frame recovery: the snapshots may have been rotated above.)
-  states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
+  const states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
   const detection = ColorPhaseDetector.detect(states, preferredCrossIdx);
   const scheme = detection?.scheme;
   const crossFace = (detection?.crossFace ?? report.crossFace ?? 'D') as string;
@@ -431,7 +438,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
       (detection?.crossColor as FaceLetter | undefined) ??
       (report.crossColor as FaceLetter | undefined),
     cross: buildCross(report, displayTokens),
-    pairs: buildPairs(timeline, report, crossFace, scheme, displayTokens),
+    pairs: buildPairs(timeline, crossFace, scheme, displayTokens),
     rotations,
     oll: buildLLPhase(report, 'OLL', displayTokens),
     pll: buildLLPhase(report, 'PLL', displayTokens),
@@ -469,93 +476,23 @@ function buildCross(
 
 function buildPairs(
   timeline: SolveTimeline,
-  report: PhaseDetectionReport,
   crossFace: string,
   scheme: Record<string, string> | undefined,
   displayTokens: readonly string[],
 ): F2LPairResult[] {
-  const f2l = report.phases.find((p) => p.phaseName === 'F2L');
-  const cross = report.phases.find((p) => p.phaseName === 'Cross');
-  if (!f2l || f2l.startIndex === undefined) return [];
-
-  // Degenerate transcripts: when the cross never completes until the very
-  // end of the solve, the F2L segment is noise (the PhaseSplitter pushed the
-  // boundary forward). Report no pairs instead of fabricating them.
-  if (cross?.completionIndex !== undefined) {
-    const lateCross =
-      timeline.entries.length > 0 &&
-      cross.completionIndex >= Math.max(0, timeline.entries.length - 4);
-    if (lateCross) return [];
-  }
-
-  const schemeToUse = scheme ?? IDENTITY_SCHEME;
-  const start = (cross?.endIndex ?? f2l.startIndex - 1) + 1;
-  const end = f2l.endIndex ?? timeline.entries.length - 1;
-
-  type PairAcc = F2LPairResult & { segStart: number };
-  const pairs: PairAcc[] = [];
-  // Seed prevMask with the state just before F2L starts (the cross end) so
-  // a pair already home when F2L begins is correctly flagged `premade`.
-  let prevMask = 0;
-  if (start - 1 >= 0 && timeline.entries[start - 1]) {
-    prevMask = countCompletedF2LSlotsInFrame(
-      TimelineBuilder.fromSnapshot(timeline.entries[start - 1].state),
-      crossFace,
-      schemeToUse,
-    ).slotMask;
-  }
-  // Slots already solved when F2L began are the XCross pairs — they are NOT
-  // new pairs even if they dip and re-complete (advanced solves temporarily
-  // break the cross during F2L: the insertion moves displace a cross edge and
-  // restore it, which would otherwise fabricate a "pair" for every slot the
-  // cross-breaking touched). Only the slots UNSOLVED at the cross end count.
-  const unsolvedMask = 0xf & ~prevMask;
-  let segmentStart = start;
-
-  for (let i = start; i <= end; i++) {
-    const state = TimelineBuilder.fromSnapshot(timeline.entries[i].state);
-    const comp = countCompletedF2LSlotsInFrame(state, crossFace, schemeToUse);
-
-    // A previously-unsolved slot completed → the pair finished at this entry.
-    const newBits = (comp.slotMask & unsolvedMask) & ~prevMask;
-    if (newBits) {
-      for (let b = 0; b < 4; b++) {
-        if (!(newBits & (1 << b))) continue;
-        const slotInfo = comp.slots.find((s) => s.slotIndex === b);
-        const rangeMoves = displayTokens.slice(segmentStart, i + 1);
-        const auf = leadingUMoves(rangeMoves);
-        pairs.push({
-          slot: slotInfo?.name ?? `SLOT-${b}`,
-          colors: slotInfo
-            ? slotInfo.colors
-            : (['?', '?'] as unknown as [FaceLetter, FaceLetter]),
-          moves: rangeMoves,
-          completionIndex: i,
-          auf,
-          premade: (prevMask & (1 << b)) !== 0,
-          segStart: segmentStart,
-        });
-        segmentStart = i + 1;
-      }
-      prevMask = comp.slotMask;
-    }
-    // A slot count can never exceed 4; stop scanning once every slot is
-    // accounted for so LL moves can't fabricate extra pairs.
-    if (pairs.length >= 4) break;
-  }
-
-  // The last pair owns the REST of the F2L segment: when a pair is home
-  // before F2L completes (e.g. an XCross solve where the remaining moves
-  // restore a temporarily-displaced cross edge, or a VLS finish), the trailing
-  // moves belong to it — the raw phase wrote them as the insertion.
-  if (pairs.length > 0) {
-    const last = pairs[pairs.length - 1];
-    if (last.completionIndex < end) {
-      last.moves = displayTokens.slice(last.segStart, end + 1);
-    }
-  }
-
-  return pairs.map(({ segStart: _seg, ...pair }) => pair);
+  // UNIFIED segmentation — the same function the smart route consumes via
+  // CFOPMetricsCalculator. Pass the solver-frame crossFace/scheme (already
+  // detected after P2) and the raw notation so the pairs read 1:1 with the
+  // reconstruction text.
+  return segmentF2LPairs(timeline, { crossFace, scheme, displayTokens }).map(
+    (p) => ({
+      slot: p.slot,
+      colors: p.colors as [FaceLetter, FaceLetter],
+      moves: p.moves,
+      completionIndex: p.completionIndex,
+      auf: p.auf,
+    }),
+  );
 }
 
 function buildLLPhase(
@@ -576,12 +513,4 @@ function buildLLPhase(
   return { moves, skipped: !!phase.skipped };
 }
 
-/** Leading U moves (AUF-style) at the start of a move list. */
-function leadingUMoves(moves: string[]): string[] {
-  const auf: string[] = [];
-  for (const m of moves) {
-    if (m[0] === 'U') auf.push(m);
-    else break;
-  }
-  return auf;
-}
+

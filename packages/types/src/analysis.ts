@@ -479,6 +479,19 @@ export interface F2LPairMetrics {
   moves: number;
   tps: number;
   pauseBeforeMs: number;
+
+  // ─── Unified pipeline fields (Fase 2 — shared segmentF2LPairs) ──────────
+  // All optional so persisted/older JSON keeps parsing and the smart route
+  // can omit what it does not track (raw notation).
+
+  /** The pair's two side colors (canonical face letters). */
+  colors?: [string, string] | null;
+  /** Leading U moves (AUF-style) at the start of the pair. */
+  auf?: string[];
+  /** Raw solver notation, one token per timeline entry (text route). */
+  movesNotation?: string[] | null;
+  /** Timeline index where the pair completed. */
+  completionIndex?: number;
 }
 
 // ─── Roux-Specific Metrics ───────────────────────────────────────────────────

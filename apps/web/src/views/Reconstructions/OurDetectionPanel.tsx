@@ -10,7 +10,7 @@
  *
  *   - Orientation row: inspection rotations + colors on U and F after the grip
  *   - cross type (plain / xcross / xxcross) + cross color
- *   - per-pair F2L slots with colors, auf and premade flags
+ *   - per-pair F2L slots with colors and auf
  *   - OLL / PLL with skip detection
  *   - coherence (finalSolved) + detection warnings
  *   - rotations are shown interleaved in the moves column of their phase
@@ -24,25 +24,21 @@
  * to its right.
  */
 import { useMemo } from "react";
-import {
-  CheckCircle2,
-  Eye,
-  RotateCcw,
-  TriangleAlert,
-  XCircle,
-} from "lucide-react";
+import { Eye, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SectionHeader } from "@/components/Insights/atoms";
+import {
+  SectionHeader,
+  FaceChip,
+  CoherenceBadge,
+  WarningsBadge,
+  SkippedBadge,
+} from "@/components/Insights/atoms";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   analyzeSolveText,
   type SolveReconstruction,
 } from "@cubeforge/analysis-engine";
 import { isRotation, tokenize } from "@cubeforge/math-core";
-import {
-  FACE_HEX,
-  colorName,
-} from "@/components/Insights/SolveAnalysisPanel";
 import type { ReconFullRecord } from "./reconData";
 
 // ─── Moves arrive in the solver's raw notation (one token per entry) ──────
@@ -75,22 +71,6 @@ function interleave(
   }
   while (ri < sorted.length) out.push(sorted[ri++].token);
   return out;
-}
-
-// ─── Color chip ────────────────────────────────────────────────────────────
-
-function FaceChip({ face }: { face: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30 cursor-help"
-          style={{ background: FACE_HEX[face] ?? "#6b7280" }}
-        />
-      </TooltipTrigger>
-      <TooltipContent side="top">{colorName(face)}</TooltipContent>
-    </Tooltip>
-  );
 }
 
 // ─── Phase dot colors (matches the raw Steps table) ────────────────────────
@@ -261,38 +241,8 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
         <SectionHeader title="Our detection" eyebrow="CFOP" />
         <div className="flex items-center gap-2">
-          {warnings.length > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center gap-1 rounded border border-caution/40 bg-caution/10 px-1.5 py-0.5 text-[0.58rem] font-semibold text-caution">
-                  <TriangleAlert className="size-3" />
-                  {warnings.length}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <ul className="list-disc pl-4 font-mono text-[0.62rem]">
-                  {warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          <span
-            className={cn(
-              "flex items-center gap-1 rounded border px-1.5 py-0.5 text-[0.58rem] font-medium",
-              recon.finalSolved
-                ? "border-ready/40 bg-ready/10 text-ready"
-                : "border-caution/40 bg-caution/10 text-caution",
-            )}
-          >
-            {recon.finalSolved ? (
-              <CheckCircle2 className="size-3" />
-            ) : (
-              <XCircle className="size-3" />
-            )}
-            {recon.finalSolved ? "Coherent" : "Inconsistent"}
-          </span>
+          <WarningsBadge warnings={warnings} />
+          <CoherenceBadge coherent={recon.finalSolved} />
           <span className="nums text-xs text-ink-3">{totalMoves} moves</span>
         </div>
       </div>
@@ -384,11 +334,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
               {p.colors.map((c) => (
                 <FaceChip key={c} face={c} />
               ))}
-              {p.premade && (
-                <span className="rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
-                  premade
-                </span>
-              )}
             </span>
           </span>
           <span className="text-[0.64rem] text-ink-3/50">—</span>
@@ -410,11 +355,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           <Dot kind="oll" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">OLL</span>
-            {recon.oll.skipped && (
-              <span className="mt-0.5 w-fit rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
-                skipped
-              </span>
-            )}
+            {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
           </span>
           <span className="text-[0.64rem] text-ink-3/50">—</span>
           <MovesSeq tokens={ollDisplay} />
@@ -426,11 +367,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           <Dot kind="pll" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">PLL</span>
-            {recon.pll.skipped && (
-              <span className="mt-0.5 w-fit rounded border border-ready/40 bg-ready/10 px-1 py-0.5 text-[0.54rem] font-semibold uppercase tracking-wide text-ready">
-                skipped
-              </span>
-            )}
+            {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
           </span>
           <span className="text-[0.64rem] text-ink-3/50">—</span>
           <MovesSeq tokens={pllDisplay} />

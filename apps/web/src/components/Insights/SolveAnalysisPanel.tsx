@@ -17,8 +17,18 @@ import {
   EmptyState,
   MetricRing,
   AlgorithmNotation,
+  CoherenceBadge,
+  WarningsBadge,
+  SkippedBadge,
+  FACE_HEX,
+  FACE_NAME,
+  colorName,
 } from "./atoms";
 import { ReplaySection } from "./ReplaySection";
+
+// Backward-compatible re-exports — the face-color constants live in ./atoms
+// now; consumers that imported them from this panel keep working.
+export { FACE_HEX, FACE_NAME, colorName };
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -180,10 +190,20 @@ export function SolveAnalysisPanel({
           {solve.penalty === "DNF" ? "DNF" : formatTime(solve.time)}
         </p>
         {m ? (
-          <p className="text-[0.7rem] text-ink-3">
-            {m.totalMoves} moves · {m.phases.length} phases ·{" "}
-            TPS {m.tps.global.toFixed(2)} · {m.pauses.totalCount} pauses
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <p className="text-[0.7rem] text-ink-3">
+              {m.totalMoves} moves · {m.phases.length} phases ·{" "}
+              TPS {m.tps.global.toFixed(2)} · {m.pauses.totalCount} pauses
+            </p>
+            {/* Detection verdict — same badges the reconstruction panel shows,
+                so a smart-cube solve reads identically in both places. */}
+            {m.detectionReport ? (
+              <>
+                <CoherenceBadge coherent={m.detectionReport.finalStateSolved} />
+                <WarningsBadge warnings={m.detectionReport.warnings} />
+              </>
+            ) : null}
+          </div>
         ) : (
           <p className="text-[0.7rem] text-ink-3">No analysis yet</p>
         )}
@@ -1095,6 +1115,9 @@ function PhaseBreakdownSection({
                 <span className="text-xs font-medium uppercase tracking-wide text-ink-2">
                   {p.phaseName}
                 </span>
+                {/* OLL/PLL skips — same badge the reconstruction panel uses;
+                    a skipped phase owns 0 moves and 0 tps, so make it explicit. */}
+                {p.skipped && <SkippedBadge className="ml-1" />}
                 {p.phaseName === "Cross" &&
                   metrics.detectionReport?.crossColor && (
                     <Tooltip>
@@ -1222,28 +1245,9 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
 
 // ─── F2L slot color mapping (derived from face letters) ────────────────────
 
-/** Maps face letters (U,R,F,D,L,B) to hex colors (standard Rubik's cube). */
-export const FACE_HEX: Record<string, string> = {
-  U: "#FFFFFF", R: "#EF4444", F: "#22C55E",
-  D: "#FACC15", L: "#F97316", B: "#3B82F6",
-};
-
-/** Maps face letters to color names (U=White, R=Red, F=Green, D=Yellow, …). */
-export const FACE_NAME: Record<string, string> = {
-  U: "White",
-  R: "Red",
-  F: "Green",
-  D: "Yellow",
-  L: "Orange",
-  B: "Blue",
-};
-
-export function colorName(face: string): string {
-  return FACE_NAME[face] ?? face;
-}
-
 /**
  * Derive two face colors from an edge slotId (e.g. "FR" → ["#22C55E", "#EF4444"]).
+ * Fallback only — the unified pipeline now provides `pair.colors` directly.
  */
 function slotFaceColors(slotId: string): [string, string] | null {
   if (slotId.length < 2) return null;
@@ -1263,13 +1267,21 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
       <div className="mt-1.5 space-y-0">
         {pairs.map((pair) => {
           const isSlowest = pair.timeMs === slowest;
-          const colors = pair.slotId ? slotFaceColors(pair.slotId) : null;
+          // Unified pipeline colors (canonical face letters from the solver's
+          // scheme) win over the slot-derived fallback for older persisted data.
+          const colors: [string, string] | null =
+            pair.colors && pair.colors.length === 2
+              ? [pair.colors[0], pair.colors[1]]
+              : pair.slotId
+                ? slotFaceColors(pair.slotId)
+                : null;
+          const auf = pair.auf ?? [];
 
           return (
             <div
               key={pair.pairNumber}
               className={cn(
-                "flex items-center justify-between px-2 py-1.5 text-xs border-t border-line/30 first:border-0",
+                "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1.5 text-xs border-t border-line/30 first:border-0",
                 isSlowest && "bg-caution/5",
               )}
             >
@@ -1296,8 +1308,16 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
                         />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top">{pair.slotId}</TooltipContent>
+                    <TooltipContent side="top">
+                      {pair.slotId ?? colors.join(" ")}
+                    </TooltipContent>
                   </Tooltip>
+                )}
+                {/* Leading U moves (AUF-style) before the insertion. */}
+                {auf.length > 0 && (
+                  <span className="rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
+                    auf {auf.join(" ")}
+                  </span>
                 )}
                 <span>{pair.moves}m</span>
                 <span>{formatTime(pair.timeMs)}</span>
