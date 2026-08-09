@@ -147,6 +147,94 @@ describe('analyzeSolveText — wide-move record (reconz-7856)', () => {
   });
 });
 
+describe("analyzeSolveText — the `2'` suffix quirk (reco.nz / CubeRoot)", () => {
+  // REAL records that threw "display token walk misaligned" before the fix:
+  // tokenize's display path keeps the raw `2'` suffix (U2', r2', y2', D2')…
+  // while the conjugated stream normalizes it to `2`. The walk must classify
+  // rotations / wides on the normalized form or every subsequent entry drifts.
+  const records: { key: string; setup: string; text: string }[] = [
+    {
+      key: 'reconz-1508',
+      setup: "B' L2 F D2 U2 F2 U2 B' U2 R2 F U' L2 D B' R D F' L' R D",
+      text: [
+        "y' x // inspection",
+        "U x' U' r' R U' x' D L' D2' // cross",
+        "y L' U L U' L' U' L // 1st pair",
+        "L U2' L' U L U' L' // 2nd pair",
+        "U' R U2' R2' U' R // 3rd pair",
+        "U2' R U R' U2' R U R' U' R U R' // 4th pair",
+        "U2' l U' l2' U l2 U l2' U' l // OLL",
+        "U2' R2 u' R U' R U R' u R2 y R U' R' U' // PLL",
+      ].join('\n'),
+    },
+    {
+      key: 'cuberoot-1296',
+      setup: "F2 L B R D R' F2 U' D2 L2 F2 B D2 L2 B' L2 F U2 F",
+      text: [
+        "x' z' // insp",
+        "U' r' D' F2 R D2 // W cross",
+        "R (U' R' R U') R2' U R // GO",
+        "(U R' R U') R U' R' d' L U' L' // RB",
+        "(U' U') d R U' R' U d R' U' R // GR",
+        "y' (U' U') R' F' R U R U' R' F // BO",
+        "r U' r2' U r2 U r2' U' r // OLL-R+",
+        "(U' U') R' U L' U2 R U' R' U2 R L U' // PLL-L",
+      ].join('\n'),
+    },
+  ];
+
+  for (const { key, setup, text } of records) {
+    it(`${key} no longer throws and keeps the walk aligned`, () => {
+      const { timeline, reconstruction } = analyzeSolveText({
+        setup,
+        solution: text,
+        method: 'CFOP',
+      });
+
+      const faceTotal =
+        reconstruction.cross.moves.length +
+        reconstruction.pairs.reduce((s, p) => s + p.moves.length, 0) +
+        (reconstruction.oll?.moves.length ?? 0) +
+        (reconstruction.pll?.moves.length ?? 0);
+      // The invariant that failed before the fix: every conjugated face
+      // token maps to exactly one raw display token.
+      expect(timeline.entries.length).toBe(faceTotal);
+      expect(reconstruction.finalSolved).toBe(true);
+      expect(reconstruction.pairs.length).toBe(4);
+    });
+  }
+
+  it("keeps the raw `2'` form in the displayed moves (display fidelity)", () => {
+    const { reconstruction } = analyzeSolveText({
+      setup: "B' L2 F D2 U2 F2 U2 B' U2 R2 F U' L2 D B' R D F' L' R D",
+      solution:
+        "y' x // inspection\n" +
+        "U x' U' r' R U' x' D L' D2' // cross\n" +
+        "y L' U L U' L' U' L // 1st pair\n" +
+        "L U2' L' U L U' L' // 2nd pair\n" +
+        "U' R U2' R2' U' R // 3rd pair\n" +
+        "U2' R U R' U2' R U R' U' R U R' // 4th pair\n" +
+        "U2' l U' l2' U l2 U l2' U' l // OLL\n" +
+        "U2' R2 u' R U' R U R' u R2 y R U' R' U' // PLL",
+      method: 'CFOP',
+    });
+
+    // The D2' token survives as written in the displayed moves (the state
+    // splitter may push the trailing alignment moves into the first pair, so
+    // scan every phase); rotations are reported separately, never counted.
+    const allMoves = [
+      ...reconstruction.cross.moves,
+      ...reconstruction.pairs.flatMap((p) => p.moves),
+      ...(reconstruction.oll?.moves ?? []),
+      ...(reconstruction.pll?.moves ?? []),
+    ];
+    expect(allMoves).toContain("D2'");
+    expect(reconstruction.rotations.map((r) => r.token)).toEqual([
+      "y'", "x", "x'", "x'", "y", "y",
+    ]);
+  });
+});
+
 describe('analyzeSolveText — raw parsing edge cases', () => {
   it('tolerates CubeRoot separators and glued tokens (the user example)', () => {
     // Your original example: glued U'D / DU tokens inside the solve must be

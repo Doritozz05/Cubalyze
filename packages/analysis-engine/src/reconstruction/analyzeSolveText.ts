@@ -139,6 +139,22 @@ const STATE_TOKEN_RE = /^[URFDLBMES][2']?$/;
  *  are case-insensitive on the w. */
 const WIDE_MOVE_RE = /^[rludfb][2']?$|^[RLUDFB][wW][2']?$/;
 
+/**
+ * Normalize the `2'` suffix (reco.nz / CubeRoot quirk — "U2'" ≡ "U2",
+ * "r2'" ≡ "r2", "y2'" ≡ "y2"). `tokenize`'s DISPLAY path keeps the raw `2'`
+ * form while the expanded/conjugated stream normalizes it to `2`; the
+ * display walk must mirror that normalization BEFORE classifying a token as
+ * a rotation / wide, or its entry count drifts and the strict
+ * "display token walk misaligned" invariant fires (rotations written `y2'`
+ * were misread as moves; wides written `r2'` consumed one conjugated half
+ * instead of two).
+ */
+function normalizeTwoPrimeSuffix(token: string): string {
+  return token.length >= 3 && token.endsWith("'") && token[token.length - 2] === "2"
+    ? token.slice(0, -1)
+    : token;
+}
+
 interface RawPhase {
   label: string;
   /** Raw (un-tokenized) moves segment, e.g. "R' D R". */
@@ -273,12 +289,16 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
       const conjPhase = perPhase[k + 1];
       let ci = 0;
       for (const rawToken of rawTokens) {
-        if (isRotation(rawToken)) {
+        // Classify on the normalized form ("2'" → "2") so rotations and
+        // wides written with the reco.nz `2'` quirk line up 1:1 with the
+        // conjugated stream; keep the RAW token for display fidelity.
+        const norm = normalizeTwoPrimeSuffix(rawToken);
+        if (isRotation(norm)) {
           // A rotation between moves applies to the NEXT move's index.
           solveRotations.push({ token: rawToken, moveIndex: entryCursor });
           continue;
         }
-        const n = WIDE_MOVE_RE.test(rawToken) ? 2 : 1; // face+slice, or one
+        const n = WIDE_MOVE_RE.test(norm) ? 2 : 1; // face+slice, or one
         for (let j = 0; j < n && ci + j < conjPhase.length; j++) {
           if (FACE_MOVE_RE.test(conjPhase[ci + j])) {
             displayTokens.push(rawToken);

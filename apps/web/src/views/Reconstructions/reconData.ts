@@ -20,6 +20,10 @@ import type {
   SolveMetrics,
 } from "@cubeforge/types";
 import {
+  analyzeSolveText,
+  type AnalyzeSolveTextResult,
+} from "@cubeforge/analysis-engine";
+import {
   conjugatePhaseStream,
   OrientationTable,
   tokenize,
@@ -121,6 +125,14 @@ export interface ReconFullRecord extends ReconIndexEntry {
    *  animate the 3D cube's root (the solver's grip) and never count as
    *  replay moves (same as the smartcube path). */
   rotationCount: number;
+  /**
+   * Computed at load by `normalizeReconMoves` — the CFOP reconstruction
+   * (scramble + text through our pipeline) for CFOP 3×3 records. `null` when
+   * the analysis failed (the detection panel surfaces that), `undefined` when
+   * the record is not CFOP 3×3. Shared with OurDetectionPanel so the stat
+   * chips and the detection table always come from ONE analysis run.
+   */
+  ourDetection?: AnalyzeSolveTextResult | null;
   /** Synthetic orientation keyframes ([eventIndex, orientationIndex]) so the
    *  3D replay rotates the cube to the solver's perspective like the
    *  smartcube path (empty when the record has no rotations).
@@ -396,6 +408,64 @@ function normalizeReconMoves(record: ReconFullRecord): void {
   record.scramble = tokenize(record.scramble)
     .filter((t) => ANIMATABLE_MOVE_RE.test(t))
     .join(" ");
+
+  deriveReconStats(record);
+}
+
+/**
+ * Derive the stat chips from the record's own moves so the UI never depends
+ * on the baked crawl fields (which are null for most records — e.g. TPS is
+ * missing on ~89% of the dataset). Fills ONLY when missing, keeping the
+ * source-reported values authoritative where they exist:
+ *
+ *   - STM: every non-rotation turn token (slice/wide moves count as one,
+ *     matching the source sites' slice-turn metric — verified against the
+ *     baked values, 97.4% agreement).
+ *   - TPS: STM / time (seconds) — the same relation the sources use.
+ *   - Cross STM / F2L / LL: from our own CFOP reconstruction (state-based),
+ *     only for CFOP 3×3 records (Roux/Other have no CFOP phase meaning).
+ */
+function deriveReconStats(record: ReconFullRecord): void {
+  if (record.stm == null) {
+    let stm = 0;
+    for (const p of record.phases) {
+      // displayRotationEntry normalizes the `2'` suffix before classifying,
+      // so rotations written "y2'" are never counted as moves.
+      for (const t of tokenize(p.moves, { expandWide: false })) {
+        if (!displayRotationEntry(t)) stm++;
+      }
+    }
+    record.stm = stm;
+  }
+  if (record.tps == null && record.stm != null && record.time > 0) {
+    record.tps = record.stm / record.time;
+  }
+
+  if (record.methodGroup !== "CFOP" || record.puzzle !== "3x3") return;
+
+  // ONE analysis run feeds both the stat chips and OurDetectionPanel.
+  let result: AnalyzeSolveTextResult | null = null;
+  try {
+    result = analyzeSolveText({
+      setup: record.scramble,
+      inspection: record.recognition.inspection || undefined,
+      solution: record.text,
+      method: "CFOP",
+      totalTimeMs: record.time > 0 ? record.time * 1000 : undefined,
+    });
+  } catch {
+    result = null; // the detection panel surfaces the failure — chips stay "—"
+  }
+  record.ourDetection = result;
+  if (!result) return;
+
+  const recon = result.reconstruction;
+  const crossStm = recon.cross.moves.length;
+  const f2l = recon.pairs.reduce((s, p) => s + p.moves.length, 0);
+  const ll = (recon.oll?.moves.length ?? 0) + (recon.pll?.moves.length ?? 0);
+  record.stats.crossStm ??= crossStm;
+  record.stats.f2l ??= f2l;
+  record.stats.ll ??= ll;
 }
 
 /**

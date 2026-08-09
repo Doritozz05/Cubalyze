@@ -141,6 +141,11 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
 
   const result = useMemo(() => {
     if (!canDetect) return null;
+    // normalizeReconMoves already ran the analysis once at load (it also
+    // fills the Cross STM / F2L / LL stat chips from the same result) — reuse
+    // it so the chips and this table always agree. Fall back to computing for
+    // records that were not normalized (defensive).
+    if (record.ourDetection !== undefined) return record.ourDetection;
     return analyzeSolveText({
       setup: record.scramble,
       // The embedded "// Inspection" phase is handled/deduped by the API
