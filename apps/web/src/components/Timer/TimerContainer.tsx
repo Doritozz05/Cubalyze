@@ -133,7 +133,13 @@ export function TimerContainer({
     [onPress, activeClickToStart],
   );
 
-  const onPointerUp = useCallback(
+  // Shared release path for both `pointerup` and `pointercancel`. The latter
+  // is a CRITICAL mobile fix: browsers fire `pointercancel` instead of
+  // `pointerup` when they take over a held touch (scroll detection,
+  // long-press, system gesture). Without it, a held-and-released touch can
+  // leave the engine stuck in READY (green) forever — handleUp() never runs,
+  // so the timer never starts. Treat both events exactly like a release.
+  const handleReleaseEvent = useCallback(
     (e: React.PointerEvent) => {
       const isTouchPointer = e.pointerType === "touch";
       if (!activeClickToStart && !isTouchPointer) return;
@@ -142,6 +148,8 @@ export function TimerContainer({
     },
     [onRelease, activeClickToStart],
   );
+  const onPointerUp = handleReleaseEvent;
+  const onPointerCancel = handleReleaseEvent;
 
   // Click-to-start: a single click toggles the timer (start/stop like spacebar)
   const onClick = useCallback(() => {
@@ -170,6 +178,7 @@ export function TimerContainer({
       aria-label={activeClickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
       onPointerDown={activeClickToStart ? onPointerDown : undefined}
       onPointerUp={activeClickToStart ? onPointerUp : undefined}
+      onPointerCancel={activeClickToStart ? onPointerCancel : undefined}
       onClick={activeClickToStart ? onClick : undefined}
       onPointerLeave={
         activeClickToStart

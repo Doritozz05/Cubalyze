@@ -389,6 +389,23 @@ describe('TimerEngine — Level 2 Edge Cases', () => {
       expect(timer.getState()).toBe(TimerState.STOPPED);
     });
 
+    it('inspection timeout also DNFs when the user is held in READY (stuck green)', () => {
+      // Regression for the stuck-green mobile bug: a user holding in READY
+      // past the 17s inspection limit must still get DNF'd — previously the
+      // timeout only checked INSPECTION/TOUCHING, so READY (green) could
+      // hang indefinitely.
+      timer.startInspection();
+      expect(timer.getState()).toBe(TimerState.INSPECTION);
+
+      timer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      vi.advanceTimersByTime(17000);
+      expect(timer.getPenalty()).toBe(Penalty.DNF);
+      expect(timer.getState()).toBe(TimerState.COOLDOWN);
+    });
+
     it('inspection emits stop$ with DNF penalty on timeout', () => {
       const stopEvents: unknown[] = [];
       const sub = timer.stop$.subscribe(e => stopEvents.push(e));
@@ -448,6 +465,86 @@ describe('TimerEngine — Level 2 Edge Cases', () => {
 
       vi.advanceTimersByTime(2000);
       expect(longTimer.getState()).toBe(TimerState.READY);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────
+  //  READY safety net — stuck-green prevention
+  // ────────────────────────────────────────────────────────────────────
+
+  describe('READY safety net (lost pointerup/pointercancel)', () => {
+    it('reverts READY → IDLE after readySafetyDelay when handleUp never arrives', () => {
+      timer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      // No handleUp — simulates a browser that fired pointercancel on mobile
+      // and lost the release event entirely.
+      vi.advanceTimersByTime(15000);
+      expect(timer.getState()).toBe(TimerState.IDLE);
+    });
+
+    it('reverts READY → INSPECTION when the hold started from inspection', () => {
+      timer.startInspection();
+      expect(timer.getState()).toBe(TimerState.INSPECTION);
+
+      timer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      vi.advanceTimersByTime(15000);
+      expect(timer.getState()).toBe(TimerState.INSPECTION);
+    });
+
+    it('reverts READY → READY_FOR_MOVE when the hold started from an arm()', () => {
+      timer.arm();
+      expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
+
+      timer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      vi.advanceTimersByTime(15000);
+      expect(timer.getState()).toBe(TimerState.READY_FOR_MOVE);
+    });
+
+    it('does NOT revert when handleUp arrives before the safety delay', () => {
+      timer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      vi.advanceTimersByTime(1000);
+      timer.handleUp();
+      expect(timer.getState()).toBe(TimerState.RUNNING);
+
+      // Advancing past the old safety deadline must not yank the state back.
+      vi.advanceTimersByTime(17000);
+      expect(timer.getState()).toBe(TimerState.RUNNING);
+    });
+
+    it('safety delay is configurable', () => {
+      const shortTimer = new TimerEngine({ holdToStartDelay: 300, cooldownDelay: 500, readySafetyDelay: 2000 });
+      shortTimer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(shortTimer.getState()).toBe(TimerState.READY);
+
+      vi.advanceTimersByTime(2000);
+      expect(shortTimer.getState()).toBe(TimerState.IDLE);
+    });
+
+    it('does not interrupt a legitimate long hold under the safety delay (inspection window)', () => {
+      // A user holding green during inspection (e.g. READY at second 3, holding
+      // to second 14) must never be yanked back mid-hold.
+      timer.startInspection();
+      timer.handleDown();
+      vi.advanceTimersByTime(300);
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      vi.advanceTimersByTime(10000); // 10s in READY — under the 15s default
+      expect(timer.getState()).toBe(TimerState.READY);
+
+      timer.handleUp();
+      expect(timer.getState()).toBe(TimerState.RUNNING);
     });
   });
 
