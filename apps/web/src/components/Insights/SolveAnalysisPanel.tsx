@@ -450,8 +450,10 @@ function TimelineSection({
   // P1.c — Mean TPS reference line y-position (clamped to the TPS band)
   const meanTpsY =
     TPS_AREA_BOTTOM - (Math.min(meanTps, maxTps) / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
-  // Y-axis label column width (px)
-  const Y_LABEL_W = 26;
+  // Y-axis label column width (px). Just needs to fit "tps" and the tick
+  // numbers (avg is only shown in the legend below). The X-axis label row uses
+  // the same constant for its left margin, so changing it keeps axes aligned.
+  const Y_LABEL_W = 36;
 
   // P1.d — Segment highlight state for cross-highlight
   const segHighlight = (seg: TimelineSegment): "active" | "dim" | "normal" => {
@@ -484,19 +486,11 @@ function TimelineSection({
                 </span>
               );
             })}
-            <span className="absolute left-0 text-[0.6rem] uppercase tracking-wider text-ink-3/50 leading-none"
+            <span className="absolute left-0 whitespace-nowrap text-[0.6rem] uppercase tracking-wider text-ink-3/50 leading-none"
               style={{ top: 0, lineHeight: 1 }}
             >
               tps
             </span>
-            {meanTps > 0 && (
-              <span
-                className="absolute left-0 nums text-[0.6rem] leading-none text-ready/70"
-                style={{ top: meanTpsY, transform: "translateY(-50%)" }}
-              >
-                avg&nbsp;{meanTps.toFixed(1)}
-              </span>
-            )}
           </div>
 
           {/* SVG + pause popover overlays */}
