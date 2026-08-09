@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useDebounce } from "use-debounce";
-import type { Solve, Penalty, SolveMethod } from "@/types";
+import type { Solve, SolveMethod } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime } from "@/utils/formatTime";
 

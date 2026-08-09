@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import { deriveSparkline } from "@/utils/insights";
-import type { Solve, Penalty } from "@/types";
+import type { Solve } from "@/types";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {

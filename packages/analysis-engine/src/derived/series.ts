@@ -12,8 +12,35 @@ import type { SolveMetrics } from "@cubeforge/types";
 
 export interface TpsPoint {
   solveIdx: number;
+  solveNumber: number;
   tps: number;
   timeMs: number;
+}
+
+// ─── deriveTpsSeries ─────────────────────────────────────────────────────
+
+/**
+ * TPS across solves with valid turn metrics, oldest → newest.
+ * Solves without TPS data (e.g. manual solves without moves) are excluded
+ * so chart points span full width without blank whitespace padding.
+ */
+export function deriveTpsSeries(solves: SeriesSolve[]): TpsPoint[] {
+  const ordered = [...solves].reverse();
+  const points: TpsPoint[] = [];
+  let seriesIdx = 0;
+  for (let i = 0; i < ordered.length; i++) {
+    const s = ordered[i];
+    const tps = extractSolveTps(s);
+    if (Number.isFinite(tps) && tps > 0) {
+      points.push({
+        solveIdx: seriesIdx++,
+        solveNumber: i + 1,
+        tps,
+        timeMs: effectiveTime(s),
+      });
+    }
+  }
+  return points;
 }
 
 export interface PhaseShare {
@@ -122,22 +149,42 @@ export function isComparablePhaseAnalysis(
   );
 }
 
-// ─── deriveTpsSeries ─────────────────────────────────────────────────────
+export interface SeriesSolve extends StatSolve {
+  analysis?: SolveMetrics;
+  moves?: unknown[];
+  tps?: number;
+  etps?: number;
+}
 
 /**
- * TPS across analysed solves, oldest → newest.
- * Solves without comparable analysis are included as NaN so charts show gaps.
+ * Safely extracts TPS for a solve.
+ * Supports solves with global analysis metrics, direct `tps`/`etps` properties,
+ * or raw move events array (calculating moves.length / timeInSeconds).
  */
-export function deriveTpsSeries(solves: SeriesSolve[]): TpsPoint[] {
-  const ordered = [...solves].reverse();
-  return ordered.map((s, i) => ({
-    solveIdx: i,
-    tps: isComparablePhaseAnalysis(s.analysis) && Number.isFinite(s.analysis.tps.global)
-      ? s.analysis.tps.global
-      : NaN,
-    timeMs: effectiveTime(s),
-  }));
+export function extractSolveTps(solve: SeriesSolve): number {
+  const s = solve as unknown as Record<string, unknown>;
+  if (typeof s.tps === "number" && Number.isFinite(s.tps) && s.tps > 0) return s.tps;
+  if (typeof s.etps === "number" && Number.isFinite(s.etps) && s.etps > 0) return s.etps;
+
+  if (
+    solve.analysis?.tps?.global != null &&
+    Number.isFinite(solve.analysis.tps.global) &&
+    solve.analysis.tps.global > 0
+  ) {
+    return solve.analysis.tps.global;
+  }
+
+  if (Array.isArray(s.moves) && s.moves.length > 0) {
+    const timeMs = effectiveTime(solve);
+    if (Number.isFinite(timeMs) && timeMs > 0) {
+      return s.moves.length / (timeMs / 1000);
+    }
+  }
+
+  return NaN;
 }
+
+
 
 // ─── derivePhaseDistribution ──────────────────────────────────────────────
 
