@@ -14,14 +14,14 @@ export type SortOrder =
   | "worst"
   | "pbDelta";
 
+export type SolveFilterCategory = "clean" | "+2" | "DNF" | "smart" | null;
+
 export interface StatsFilters {
   dateFrom: number | null;
   dateTo: number | null;
-  penalties: Set<Penalty>;
+  activeFilter: SolveFilterCategory;
   methods: Set<SolveMethod>;
   sort: SortOrder;
-  /** Keep only solves recorded with a Smart Cube (i.e. `source === "smart"`). */
-  smartCubeOnly: boolean;
   search: string;
   /** Filter by puzzle type. null = show all. Default "3x3x3". */
   puzzleType: string | null;
@@ -30,10 +30,9 @@ export interface StatsFilters {
 export const DEFAULT_FILTERS: StatsFilters = {
   dateFrom: null,
   dateTo: null,
-  penalties: new Set(["none", "+2", "DNF"]),
+  activeFilter: null,
   methods: new Set(),
   sort: "newest",
-  smartCubeOnly: false,
   search: "",
   puzzleType: "3x3x3",
 };
@@ -73,7 +72,14 @@ export function useStatsFilters(
       if (filters.dateTo != null && s.timestamp > filters.dateTo)
         return false;
       const normalizedPen = normalizePenalty(s.penalty);
-      if (!filters.penalties.has(normalizedPen)) return false;
+      if (filters.activeFilter === "clean" && normalizedPen !== "none")
+        return false;
+      if (filters.activeFilter === "+2" && normalizedPen !== "+2")
+        return false;
+      if (filters.activeFilter === "DNF" && normalizedPen !== "DNF")
+        return false;
+      if (filters.activeFilter === "smart" && s.source !== "smart")
+        return false;
       if (
         s.method &&
         filters.methods.size > 0 &&
@@ -88,7 +94,6 @@ export function useStatsFilters(
         const timeOk = formatTime(effectiveTime(s)).toLowerCase().includes(q);
         if (!noteOk && !scrOk && !penOk && !timeOk) return false;
       }
-      if (filters.smartCubeOnly && s.source !== "smart") return false;
       if (filters.puzzleType != null && (s.puzzleType ?? "3x3x3") !== filters.puzzleType) return false;
       return true;
     });
@@ -96,10 +101,9 @@ export function useStatsFilters(
     solves,
     filters.dateFrom,
     filters.dateTo,
-    filters.penalties,
+    filters.activeFilter,
     filters.methods,
     debouncedSearch,
-    filters.smartCubeOnly,
     filters.puzzleType,
   ]);
 

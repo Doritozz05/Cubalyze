@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ReplayEngine } from '../replay/ReplayEngine';
+import { OrientationTable } from '@cubeforge/math-core';
 import type { CubeFace, CubeMoveDirection, CubeMoveEvent } from '@cubeforge/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -300,6 +301,11 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
   });
 
   it('animates REAL mid-solve rotations after the initial grip snap (smart-cube)', async () => {
+    // Held grip after inspection: y. Mid-solve: ONE real rotation (z) — the
+    // composed grip afterwards is y∘z, a single-axis step from y, so it
+    // animates as ONE turn (never a diagonal).
+    const gripY = OrientationTable.rotationEntryFor('y')!;
+    const afterZ = OrientationTable.compose(gripY, OrientationTable.rotationEntryFor('z')!);
     const calls: { oi: number; dur: number }[] = [];
     const engine = new ReplayEngine(
       [bunchedMove(0), bunchedMove(1), bunchedMove(2)],
@@ -309,25 +315,27 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
         setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
       },
       undefined,
-      [[0, 2], [2, 5]],
+      [[0, gripY.id], [2, afterZ.id]],
     );
     engine.preRollEnabled = false;
 
     // Step to move 0: snap to the held grip, never animate it.
     await engine.stepForward();
-    expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+    expect(calls).toEqual([{ oi: gripY.id, dur: 0 }]);
 
     // Move 1: same grip — nothing new.
     calls.length = 0;
     await engine.stepForward();
     expect(calls).toEqual([]);
 
-    // Move 2: a REAL rotation → animated with the orientation duration.
+    // Move 2: a REAL rotation (z) → animated as ONE single-axis turn.
     await engine.stepForward();
-    expect(calls).toEqual([{ oi: 5, dur: engine.orientationAnimationDurationMs }]);
+    expect(calls).toEqual([{ oi: afterZ.id, dur: engine.orientationAnimationDurationMs }]);
   });
 
   it('step-back to position 0 snaps to the held grip (smart-cube), not a phantom animation', async () => {
+    const gripY = OrientationTable.rotationEntryFor('y')!;
+    const afterZ = OrientationTable.compose(gripY, OrientationTable.rotationEntryFor('z')!);
     const calls: { oi: number; dur: number }[] = [];
     const engine = new ReplayEngine(
       [bunchedMove(0), bunchedMove(1)],
@@ -337,20 +345,49 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
         setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
       },
       undefined,
-      [[0, 2], [1, 7]],
+      [[0, gripY.id], [1, afterZ.id]],
     );
     engine.preRollEnabled = false;
 
-    await engine.stepForward(); // move 0 → snap grip 2
-    await engine.stepForward(); // move 1 → animate grip 7
+    await engine.stepForward(); // move 0 → snap grip y
+    await engine.stepForward(); // move 1 → animate the z rotation
     expect(calls).toEqual([
-      { oi: 2, dur: 0 },
-      { oi: 7, dur: engine.orientationAnimationDurationMs },
+      { oi: gripY.id, dur: 0 },
+      { oi: afterZ.id, dur: engine.orientationAnimationDurationMs },
     ]);
 
     calls.length = 0;
     await engine.stepBackward(); // back to position 0 → snap back to the held grip
-    expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+    expect(calls).toEqual([{ oi: gripY.id, dur: 0 }]);
+  });
+
+  it('decomposes a collapsed multi-step grip change into sequential single-axis rotations (smart-cube)', async () => {
+    // The user rotated y THEN z between two moves — the compact timeline only
+    // kept the collapsed jump (identity → y∘z). The engine must animate the
+    // two single-axis turns one after another, never a diagonal SLERP.
+    const gripY = OrientationTable.rotationEntryFor('y')!;
+    const afterZ = OrientationTable.compose(gripY, OrientationTable.rotationEntryFor('z')!);
+    const calls: { oi: number; dur: number }[] = [];
+    const engine = new ReplayEngine(
+      [bunchedMove(0), bunchedMove(1)],
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+      },
+      undefined,
+      [[0, 0], [1, afterZ.id]],
+    );
+    engine.preRollEnabled = false;
+
+    await engine.stepForward(); // move 0 → identity grip (nothing to animate)
+    calls.length = 0;
+    await engine.stepForward(); // move 1 → TWO single-axis turns, ONE AFTER ANOTHER
+    // (Several valid 2-step decompositions exist for y∘z — e.g. [x', y] or
+    // [y, z] — so only the step count, durations and final grip are asserted.)
+    expect(calls).toHaveLength(2);
+    expect(calls[0].dur).toBe(engine.orientationAnimationDurationMs);
+    expect(calls[1]).toEqual({ oi: afterZ.id, dur: engine.orientationAnimationDurationMs });
   });
 
   it('re-snaps the held grip after stop() + play() (smart-cube, no phantom animation)', async () => {

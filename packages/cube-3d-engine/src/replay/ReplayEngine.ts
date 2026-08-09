@@ -28,6 +28,7 @@
  */
 
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
+import { OrientationTable } from '@cubeforge/math-core';
 import type { CubeFace, CubeMoveEvent, RotationAxis, OrientationTimeline } from '@cubeforge/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -959,6 +960,33 @@ export class ReplayEngine {
       return;
     }
 
+    // Smart-cube timelines are COMPACT (one keyframe per orientation change),
+    // so several rotations between two moves collapse into a single keyframe
+    // jump. A direct SLERP across that jump would tumble diagonally through
+    // non-cube orientations — instead decompose the jump into the shortest
+    // sequence of single-axis rotations and animate them one after another,
+    // exactly like the reconstruction's uncompressed timeline.
+    // Reconstruction (preRollEnabled=true) already carries per-rotation
+    // keyframes, so it is never expanded.
+    let steps = pending;
+    if (!this.preRollEnabled) {
+      steps = [];
+      let cursorId = prevApplied >= 0 ? prevApplied : 0; // identity before the first grip
+      for (const oi of pending) {
+        if (oi === cursorId) continue;
+        const rel = OrientationTable.compose(
+          OrientationTable.inverse(OrientationTable.ENTRIES[cursorId]),
+          OrientationTable.ENTRIES[oi],
+        );
+        let acc = OrientationTable.ENTRIES[cursorId];
+        for (const step of OrientationTable.decompose(rel)) {
+          acc = OrientationTable.compose(acc, step);
+          steps.push(acc.id);
+        }
+        cursorId = oi;
+      }
+    }
+
     // Animated chain — sequential, one rotation at a time. Each step gets
     // the orientation duration, capped so the chain stays within the next
     // move's slot (the tick's orientationBusy gate catches any overrun).
@@ -973,7 +1001,7 @@ export class ReplayEngine {
     const fromPlayback = this._state === 'playing';
     this.orientationBusy = true;
     const chain = (async () => {
-      for (const oi of pending) {
+      for (const oi of steps) {
         const prom = this.callbacks.setOrientation!(oi, perStep);
         if (prom instanceof Promise) await prom.catch(() => {});
         if (

@@ -320,6 +320,72 @@ export class OrientationTable {
   }
 
   /**
+   * Decompose a RELATIVE cube rotation into the shortest sequence of base
+   * rotations (x/y/z ±90°/180°) whose composition equals it. Identity → [].
+   *
+   * Every element of the 24-orientation group is a product of at most two
+   * base rotations, so the returned sequence has length 0–2.
+   *
+   * Used by the replay engine to turn a "diagonal" multi-step grip change
+   * (e.g. compact smart-cube timelines, where several rotations between two
+   * moves collapse into a single keyframe jump) into sequential single-axis
+   * turns — the same visual language as reconstruction replays.
+   */
+  static decompose(relative: OrientationEntry): OrientationEntry[] {
+    OrientationTable.ensureDecompositionPaths();
+    return OrientationTable.decompositionPaths![relative.id] ?? [];
+  }
+
+  /** Shortest base-rotation path from identity, per entry id (BFS). */
+  private static decompositionPaths: OrientationEntry[][] | null = null;
+
+  /**
+   * Precompute the shortest base-rotation path from identity for every one
+   * of the 24 orientations via BFS over the Cayley graph (generators: the 9
+   * base rotations). Cheap (24 nodes) and done once.
+   */
+  private static ensureDecompositionPaths(): void {
+    if (OrientationTable.decompositionPaths) return;
+
+    const base: OrientationEntry[] = [];
+    for (const name of ['x', "x'", 'x2', 'y', "y'", 'y2', 'z', "z'", 'z2']) {
+      const entry = OrientationTable.rotationEntryFor(name);
+      if (entry) base.push(entry);
+    }
+
+    const n = OrientationTable.ENTRIES.length;
+    const parent = new Array<[number, number] | null>(n).fill(null); // [parentId, rotationId]
+    const dist = new Array<number>(n).fill(Infinity);
+    dist[0] = 0;
+    const queue: number[] = [0];
+
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      for (const r of base) {
+        const next = OrientationTable.compose(OrientationTable.ENTRIES[cur], r);
+        if (dist[next.id] > dist[cur] + 1) {
+          dist[next.id] = dist[cur] + 1;
+          parent[next.id] = [cur, r.id];
+          queue.push(next.id);
+        }
+      }
+    }
+
+    const paths: OrientationEntry[][] = new Array(n).fill([]);
+    paths[0] = [];
+    for (let id = 1; id < n; id++) {
+      const path: OrientationEntry[] = [];
+      let cur = parent[id];
+      while (cur) {
+        path.push(OrientationTable.ENTRIES[cur[1]]);
+        cur = parent[cur[0]];
+      }
+      paths[id] = path.reverse();
+    }
+    OrientationTable.decompositionPaths = paths;
+  }
+
+  /**
    * Find the base rotation (one of x, x', x2, y, y', y2, z, z', z2) that
    * transforms `from` into `to`. Returns null if no single base rotation
    * connects them (they differ by more than one step).
