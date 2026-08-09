@@ -331,6 +331,11 @@ export function ReplaySection({
             setOrientation: orientationTimeline
               ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
+            // Force-complete any move still turning in the replay worker BEFORE
+            // a reset/seek — otherwise the stale animation snaps after the
+            // reset and re-applies its rotation on top of the fresh state
+            // ("cube colors lost/buggy" after Restart / step / fast seeks).
+            flushAnimations: () => proxy.flushAnimations(),
             // Move-driven timeline: length = moves × spacing (not solve.time),
             // so all moves always play back.
           }, moves.length * REPLAY_MOVE_SPACING_MS, orientationTimeline);

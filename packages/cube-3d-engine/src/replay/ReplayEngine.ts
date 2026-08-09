@@ -57,6 +57,15 @@ export interface ReplayCallbacks {
   /** Called when orientation changes. orientationIndex is 0-23 (OrientationTable.ENTRIES).
    *  Pass animationDurationMs > 0 for smooth SLERP, 0 for instant snap (seeking). */
   setOrientation?: (orientationIndex: number, animationDurationMs: number) => void | Promise<void>;
+  /**
+   * Force-complete every in-flight animation in the renderer (layer rotations
+   * + root orientation SLERP). Called before every absolute reset (seek) so a
+   * rotation that is still turning when the reset happens can never snap
+   * afterwards and re-apply itself on top of the freshly reset cube (the
+   * "cube colors lost/buggy after restart/step" bug family). Optional: the
+   * renderer may also flush internally inside resetCube().
+   */
+  flushAnimations?: () => void | Promise<void>;
 }
 
 /** Playback states. */
@@ -102,6 +111,25 @@ export class ReplayEngine {
 
   /** rAF handle. */
   private rafId: number | null = null;
+
+  /**
+   * Transport serialization chain: play / pause / seek / stepForward /
+   * stepBackward queue behind each other instead of interleaving their async
+   * bodies. Rapid control clicks (e.g. double-tap Step backward while the
+   * previous step is still animating) used to read the same `nextIndex`
+   * before either completed → double-applied inverses → the cube's visual
+   * state desynced from the move counter.
+   */
+  private opChain: Promise<unknown> = Promise.resolve();
+
+  private enqueueOp<T>(op: () => Promise<T>): Promise<T> {
+    const run = this.opChain.then(op);
+    this.opChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
 
   /** Callbacks supplied by user. */
   private callbacks: ReplayCallbacks;
@@ -232,7 +260,11 @@ export class ReplayEngine {
 
     this.rotations = moves.map((m, i) => {
       const mapping = FACE_ROTATION_MAP[m.face as CubeFace];
-      const angle = m.direction * (mapping?.angleSign ?? 1) * 90;
+      // Sanitize a malformed/NaN direction to a no-op (0°) instead of letting
+      // NaN reach the rotation engine, where setFromAxisAngle(NaN) corrupts
+      // the cubie quaternion → culled/black stickers.
+      const dir = Number.isFinite(m.direction) ? m.direction : 0;
+      const angle = dir * (mapping?.angleSign ?? 1) * 90;
       return {
         axis: (mapping?.axis ?? 'y') as RotationAxis,
         // A WIDE move rotates the outer layer AND the middle layer TOGETHER
@@ -376,12 +408,18 @@ export class ReplayEngine {
   }
 
   /** Start or resume playback. */
-  public async play(): Promise<void> {
+  public play(): Promise<void> {
+    // Serialize behind any in-flight transport op — a play() clicked while a
+    // seek/step is still applying must queue, never interleave.
+    return this.enqueueOp(() => this.playImpl());
+  }
+
+  private async playImpl(): Promise<void> {
     if (this._state === 'complete') {
       // Restart from beginning — await the seek so the cube is fully
       // reset before we start the tick loop. Without this, tick() races
       // against the async resetCube + rotateLayers inside seek(0).
-      await this.seek(0);
+      await this.seekImpl(0);
     }
     // Bail if a seek is in flight too — the transport owns the cube while
     // it fast-forwards, and a second tick would double-apply moves.
@@ -496,7 +534,11 @@ export class ReplayEngine {
    * Seek to a specific time position (ms from solve start).
    * Resets the cube and fast-applies all moves up to that point.
    */
-  public async seek(targetMs: number): Promise<void> {
+  public seek(targetMs: number): Promise<void> {
+    return this.enqueueOp(() => this.seekImpl(targetMs));
+  }
+
+  private async seekImpl(targetMs: number): Promise<void> {
     const wasPlaying = this._state === 'playing';
     this.cancelRaf();
     // Wait out any in-flight initial-scramble dispatch (the Restart button is
@@ -520,8 +562,18 @@ export class ReplayEngine {
     const clampedMs = Math.max(0, Math.min(targetMs, this._totalMs));
     this._positionMs = clampedMs;
 
-    // Fast-forward: reset cube + apply scramble + re-apply solve moves
+    // Fast-forward: reset cube + apply scramble + re-apply solve moves.
+    // CRITICAL: force-complete every animation still turning in the renderer
+    // (the tick dispatches rotateLayers fire-and-forget) BEFORE the reset —
+    // otherwise the stale task snaps after resetCube and re-applies its
+    // rotation + logical update on top of the fresh state (the reported
+    // "replay colors lost/buggy" after Restart / seek / step).
     this.setState('seeking');
+    // Best-effort flush: a renderer torn down mid-seek (worker terminated)
+    // must never surface as an unhandled rejection from the transport.
+    try {
+      await this.callbacks.flushAnimations?.();
+    } catch { /* renderer gone — the reset below is still safe */ }
     await this.callbacks.resetCube();
     this.lastAppliedOrientation = -1;
     this.orientationBusy = false;
@@ -564,7 +616,11 @@ export class ReplayEngine {
 
   /** Change playback speed (0.25, 0.5, 1, 2, etc.). */
   public setSpeed(speed: number): void {
-    const clamped = Math.max(0.1, Math.min(speed, 10));
+    // Sanitize NaN so it can never propagate into tick()'s animation
+    // duration math (NaN / speed → NaN durations → NaN slerp in the engine).
+    const clamped = Number.isFinite(speed)
+      ? Math.max(0.1, Math.min(speed, 10))
+      : 1;
     if (this._state === 'playing') {
       // Adjust timing so we don't jump on speed change
       this._positionMs = this.computePosition();
@@ -575,7 +631,11 @@ export class ReplayEngine {
   }
 
   /** Step forward one move (pauses playback). */
-  public async stepForward(): Promise<void> {
+  public stepForward(): Promise<void> {
+    return this.enqueueOp(() => this.stepForwardImpl());
+  }
+
+  private async stepForwardImpl(): Promise<void> {
     const wasPlaying = this._state === 'playing';
     this.cancelRaf();
     // Same gate as play(): the step buttons are enabled during the initial
@@ -608,6 +668,9 @@ export class ReplayEngine {
       return;
     }
 
+    // Mark the transport as seeking so the UI disables the control buttons
+    // while this step's animation is still turning.
+    this.setState('seeking');
     const r = this.rotations[targetIdx];
     
     // Apply with animation
@@ -618,16 +681,24 @@ export class ReplayEngine {
 
     this.onPosition?.(this._positionMs, targetIdx);
     this.onMove?.(targetIdx, this.rotations.length);
+    // Mark paused BEFORE the grip animation: the orientation chain checks the
+    // transport state and aborts while it is 'seeking' — with the step still
+    // marked 'seeking', only the first rotation of a consecutive run would
+    // animate. The move itself is already applied, so 'paused' is accurate.
+    this.setState('paused');
     // Apply orientation at the new position (smooth, like stepBackward) so
     // stepping through a solve with an orientation timeline follows the
     // solver's perspective instead of freezing the cube. Whole-cube grips
     // use the slower orientation duration.
     this.applyOrientationAt(targetIdx, this.orientationAnimationDurationMs);
-    this.setState('paused');
   }
 
   /** Step backward one move (pauses playback). */
-  public async stepBackward(): Promise<void> {
+  public stepBackward(): Promise<void> {
+    return this.enqueueOp(() => this.stepBackwardImpl());
+  }
+
+  private async stepBackwardImpl(): Promise<void> {
     this.cancelRaf();
     // Same gate as play(): the step buttons are enabled during the initial
     // scramble apply, and a step's move must never queue between scramble
@@ -650,6 +721,10 @@ export class ReplayEngine {
     // No moves applied → already at start
     if (this.nextIndex === 0) return;
 
+    // Mark the transport as seeking so the UI disables the control buttons
+    // while this step's animation is still turning (rapid double-clicks
+    // otherwise re-read the same nextIndex → double-applied inverse).
+    this.setState('seeking');
     const targetIdx = this.nextIndex - 1;
     const lastRot = this.rotations[targetIdx];
 
@@ -668,12 +743,13 @@ export class ReplayEngine {
     this.nextIndex = targetIdx;
     this._positionMs = targetIdx > 0 ? this.rotations[targetIdx - 1].offsetMs : 0;
 
+    this.onPosition?.(this._positionMs, this.nextIndex - 1);
+    // Mark paused BEFORE the grip animation — the orientation chain aborts
+    // while the transport state is 'seeking' (see stepForwardImpl).
+    this.setState('paused');
     // Apply orientation at the new position (the move before the undone one)
     // Use animation duration for smooth visual during step-backward.
     this.applyOrientationAt(Math.max(0, this.nextIndex - 1), this.orientationAnimationDurationMs);
-
-    this.onPosition?.(this._positionMs, this.nextIndex - 1);
-    this.setState('paused');
   }
 
   // ─── Getters ─────────────────────────────────────────────────────────────

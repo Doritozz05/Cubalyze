@@ -208,6 +208,12 @@ export class Cube3DEngine {
   }
 
   public resetCube(): void {
+    // Force-complete any in-flight layer rotations FIRST. A task that is
+    // still turning when we reset would snap AFTER the reset and re-apply its
+    // rotation — plus its logical-grid update — on top of the fresh state,
+    // desyncing the model from the renderer ("cube colors lost/buggy" when
+    // restarting a replay or seeking mid-animation).
+    if (this.rotationEngine) this.rotationEngine.flushAll();
     if (this.model) {
       this.model.resetCube();
       // The whole-cube grip (solver's frame) lives on the root quaternion.
@@ -216,10 +222,35 @@ export class Cube3DEngine {
       // inspection pre-roll replays cleanly from identity.
       this.model.root.quaternion.identity();
     }
+    // Stop any root orientation SLERP from fighting the reset (it would keep
+    // animating to its stale target grip over the freshly-identity root).
+    // NOTE: this also RESOLVES the SLERP's promise — the replay transport
+    // awaits its grip/chain BEFORE calling resetCube, so the pre-roll grip is
+    // never dropped there. Direct engine resets outside the replay (e.g. the
+    // trainer's init effect) simply abort any in-flight grip, which is the
+    // desired "reset wins" semantics.
+    this.finishOrientationAnim();
+    this.requestRender();
+  }
+
+  /**
+   * Force-complete every in-flight animation (layer rotations + root
+   * orientation SLERP) without changing the resulting state. The replay
+   * transport calls this before any absolute reset so a stale animation can
+   * never be applied on top of the freshly reset cube.
+   */
+  public flushAnimations(): void {
+    if (this.rotationEngine) this.rotationEngine.flushAll();
+    this.finishOrientationAnim();
     this.requestRender();
   }
 
   public syncFacelets(facelets: string): void {
+    // Same invariant as resetCube: an in-flight layer rotation must not be
+    // allowed to animate on top of the freshly synced absolute state (the
+    // live smart-cube path syncs facelets while the previous move's animation
+    // may still be turning → colors visibly desync).
+    if (this.rotationEngine) this.rotationEngine.flushAll();
     if (this.model) {
       this.model.applyFacelets(facelets);
     }

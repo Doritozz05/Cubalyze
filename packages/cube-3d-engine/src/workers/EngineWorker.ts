@@ -63,6 +63,15 @@ export class EngineWorkerAPI {
     this.engine?.resetCube();
   }
 
+  /**
+   * Force-complete every in-flight animation (layer rotations + root SLERP).
+   * The ReplayEngine calls this before every reset/seek so a stale animation
+   * can never be applied on top of the freshly reset cube.
+   */
+  public flushAnimations() {
+    this.engine?.flushAnimations();
+  }
+
   public syncFacelets(facelets: string) {
     this.engine?.syncFacelets(facelets);
   }

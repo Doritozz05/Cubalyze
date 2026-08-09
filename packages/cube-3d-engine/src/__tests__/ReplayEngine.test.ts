@@ -202,7 +202,9 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
       );
 
       const playing = engine.play(); // suspends on the grip
-      await Promise.resolve();
+      // play() runs through the transport serialization queue (an extra
+      // microtask), so flush pending microtasks before observing the grip.
+      await new Promise((r) => setTimeout(r, 0));
       // While the grip is in flight NO move may have been applied.
       expect(calls.filter((c) => c.startsWith('rotate'))).toHaveLength(0);
       expect(calls).toContain(`orient:2:${engine.preRollDurationMs}`);
@@ -349,7 +351,9 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
       );
 
       const playing = engine.play();
-      await Promise.resolve();
+      // play() runs through the transport serialization queue (an extra
+      // microtask), so flush pending microtasks before observing step 1.
+      await new Promise((r) => setTimeout(r, 0));
       // Step 1 started, step 2 must NOT have: rotations are sequential.
       expect(orientCalls).toEqual([5]);
 
