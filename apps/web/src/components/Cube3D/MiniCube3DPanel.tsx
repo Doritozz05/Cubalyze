@@ -16,13 +16,14 @@ export interface MiniCube3DPanelProps {
  * Compact 3D cube preview panel for the drill view.
  *
  * Shows a small 3D cube canvas with Calibrate and Reset buttons.
- * Uses its own isolated Cube3DEngine instance via useCube3D — when this
- * component mounts, it starts the orientation tracker, which enables
- * dynamic scramble remapping and display-notation moves throughout
- * the drill view via the Zustand orientationStore.
+ * Uses its own isolated Cube3DEngine instance via useCube3D. The cube's
+ * PHYSICAL orientation is tracked headlessly by services/orientationTracking
+ * (started in CubeConnector) — it feeds the Zustand orientationStore for
+ * dynamic scramble remapping / display-notation moves with no panel mounted.
  *
  * Calibrate sets the current orientation as reference (white on top,
- * green front — standard WCA orientation).
+ * green front — standard WCA orientation) for both the visual and the
+ * headless tracker.
  */
 export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
   const { canvasRef, containerRef, isReady, initFailed, contextEvicted, recentMoves, calibrate, reset, applyScramble } =

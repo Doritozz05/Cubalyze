@@ -261,8 +261,150 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
       );
       engine.preRollEnabled = false;
       await engine.play();
-      // No 600ms inspection pre-roll — only the tick's keyframe snap at move 0.
-      expect(calls).toEqual([{ oi: 2, dur: engine.orientationAnimationDurationMs }]);
+      // No 600ms inspection pre-roll. The HELD grip is snapped at position 0
+      // (duration 0) — the tick must NOT re-animate it as a phantom rotation.
+      expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('snaps to the held starting grip at position 0 for smart-cube solves (seek + play)', async () => {
+    stubRaf();
+    try {
+      const calls: { oi: number; dur: number }[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+        },
+        undefined,
+        [[0, 2], [1, 7]],
+      );
+      engine.preRollEnabled = false;
+
+      await engine.seek(0);
+      // Position 0: instant snap to the held grip — no phantom animation.
+      expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+
+      calls.length = 0;
+      await engine.play();
+      // The grip is already applied — move 0 must not re-animate it (only the
+      // stubbed-rAF move rotations would run, which never fire).
+      expect(calls).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('animates REAL mid-solve rotations after the initial grip snap (smart-cube)', async () => {
+    const calls: { oi: number; dur: number }[] = [];
+    const engine = new ReplayEngine(
+      [bunchedMove(0), bunchedMove(1), bunchedMove(2)],
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+      },
+      undefined,
+      [[0, 2], [2, 5]],
+    );
+    engine.preRollEnabled = false;
+
+    // Step to move 0: snap to the held grip, never animate it.
+    await engine.stepForward();
+    expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+
+    // Move 1: same grip — nothing new.
+    calls.length = 0;
+    await engine.stepForward();
+    expect(calls).toEqual([]);
+
+    // Move 2: a REAL rotation → animated with the orientation duration.
+    await engine.stepForward();
+    expect(calls).toEqual([{ oi: 5, dur: engine.orientationAnimationDurationMs }]);
+  });
+
+  it('step-back to position 0 snaps to the held grip (smart-cube), not a phantom animation', async () => {
+    const calls: { oi: number; dur: number }[] = [];
+    const engine = new ReplayEngine(
+      [bunchedMove(0), bunchedMove(1)],
+      {
+        resetCube: () => {},
+        rotateLayers: () => {},
+        setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+      },
+      undefined,
+      [[0, 2], [1, 7]],
+    );
+    engine.preRollEnabled = false;
+
+    await engine.stepForward(); // move 0 → snap grip 2
+    await engine.stepForward(); // move 1 → animate grip 7
+    expect(calls).toEqual([
+      { oi: 2, dur: 0 },
+      { oi: 7, dur: engine.orientationAnimationDurationMs },
+    ]);
+
+    calls.length = 0;
+    await engine.stepBackward(); // back to position 0 → snap back to the held grip
+    expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+  });
+
+  it('re-snaps the held grip after stop() + play() (smart-cube, no phantom animation)', async () => {
+    stubRaf();
+    try {
+      const calls: { oi: number; dur: number }[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+        },
+        undefined,
+        [[0, 2], [1, 7]],
+      );
+      engine.preRollEnabled = false;
+
+      await engine.play();
+      expect(calls).toContainEqual({ oi: 2, dur: 0 });
+
+      calls.length = 0;
+      engine.stop(); // resets lastAppliedOrientation
+      await engine.play();
+      // The grip is re-snapped (absolute) — never re-animated.
+      expect(calls).toEqual([{ oi: 2, dur: 0 }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('seek to 0 while playing snaps the held grip and the resumed tick does not re-animate it', async () => {
+    stubRaf();
+    try {
+      const calls: { oi: number; dur: number }[] = [];
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => {},
+          setOrientation: (oi, dur) => { calls.push({ oi, dur: dur ?? 0 }); },
+        },
+        undefined,
+        [[0, 2], [1, 7]],
+      );
+      engine.preRollEnabled = false;
+
+      await engine.play(); // snap grip 2 at position 0, move 0 applies
+      calls.length = 0;
+
+      // Rewind to 0 while playback is active (wasPlaying path): reset + snap,
+      // then the resumed tick re-applies move 0 WITHOUT re-animating the grip.
+      await engine.seek(0);
+      expect(calls).toEqual([{ oi: 2, dur: 0 }]);
     } finally {
       vi.unstubAllGlobals();
     }

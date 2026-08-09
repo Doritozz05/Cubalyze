@@ -67,6 +67,9 @@ export function hintFor(
         if (ctx.inspection) return "press space to start inspection";
         return "tap or press space to start";
       }
+      if (ctx.inspection) {
+        return "press space to start inspection";
+      }
       return hasLast ? "hold to start next" : "press & hold to start";
   }
 }

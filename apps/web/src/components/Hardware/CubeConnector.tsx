@@ -28,11 +28,17 @@ import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { orientationStore, connectionStore } from "@cubeforge/state";
+import { startOrientationTracking } from "@/services/orientationTracking";
 
 // Global singleton adapter to keep connection alive across re-renders.
 // Imported by useSolveSession, useScrambleValidator and Cube3DPanel —
 // DO NOT remove this export.
 export const globalCubeAdapter = new GanCubeAdapter();
+
+// Headless orientation tracking — feeds the orientationStore for the WHOLE
+// connection lifetime (solve capture + replay grip + dynamic notation),
+// independent of whether any 3D panel is mounted.
+startOrientationTracking(globalCubeAdapter);
 
 // Wire hardware info events to the orientation store so the UI (e.g.
 // SmartCubeSection) shows the correct gyro status immediately after

@@ -12,6 +12,7 @@ import {
 import type { Subscription } from "rxjs";
 
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
+import { calibrateOrientationTracking } from "@/services/orientationTracking";
 import { orientationStore, preferencesStore } from "@cubeforge/state";
 import {
   MoveTransformer,
@@ -21,11 +22,7 @@ import {
   Cube2x2State,
   Cube2x2FaceletConverter,
 } from "@cubeforge/math-core";
-import type {
-  CubeMoveEvent,
-  CubeOrientation,
-  RotationEvent,
-} from "@cubeforge/types";
+import type { CubeMoveEvent, RotationEvent } from "@cubeforge/types";
 
 export interface UseCube3DOptions {
   /** Max number of recent moves to keep. Default 15. */
@@ -189,26 +186,11 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
         // Bind Bluetooth / Hardware streams ONLY when explicitly connected to Smart Cube
         if (connectSmartCube) {
-          // Register callbacks to feed orientationStore
-          engine.onOrientationChange((o: CubeOrientation) => {
-            orientationStore.getState().setOrientation(o);
-            const caps = orientationStore.getState().capabilities;
-            if (!caps.gyroSupported) {
-              orientationStore.getState().setCapabilities({
-                hasIMU: true,
-                gyroSupported: true,
-              });
-            }
-            if (!globalCubeAdapter.gyroSupported) {
-              globalCubeAdapter.gyroSupported = true;
-            }
-          });
-
-          // Update orientation store capabilities
-          orientationStore.getState().setCapabilities({
-            hasIMU: globalCubeAdapter.gyroSupported,
-            gyroSupported: globalCubeAdapter.gyroSupported,
-          });
+          // NOTE: the cube's PHYSICAL orientation is tracked headlessly by
+          // services/orientationTracking (started in CubeConnector) — it is
+          // the single writer of orientationStore, so it works even with no
+          // panel mounted. This panel only drives the visual (GyroFusion)
+          // and records rotation events for the moves strip.
 
           if (globalCubeAdapter.moves$) {
             movesSub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
@@ -312,7 +294,11 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {
+    // Re-reference the visual (GyroFusion) AND the headless tracker that
+    // feeds the store, so the replay / dynamic notation share the same
+    // calibration reference as the on-screen cube.
     engineRef.current?.calibrateGyro();
+    calibrateOrientationTracking();
   }, []);
 
   const reset = useCallback(() => {

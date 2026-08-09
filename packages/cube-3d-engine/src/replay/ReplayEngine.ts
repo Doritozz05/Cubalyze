@@ -487,6 +487,12 @@ export class ReplayEngine {
         this.preRollOrientations[this.preRollOrientations.length - 1];
     }
 
+    // Smart-cube solves (pre-roll disabled) start with the cube HELD in the
+    // solver's grip — snap the root there instantly so the replay begins
+    // exactly as the cube was at the first move, instead of animating a
+    // phantom rotation when move 0 plays.
+    if (this._positionMs === 0) this.applyStartGripIfNeeded();
+
     this.tick();
   }
 
@@ -527,6 +533,9 @@ export class ReplayEngine {
     this.orientationBusy = false;
     this.orientationChainGen = 0;
     this.orientationChainPromise = null;
+    // Forget the applied orientation so a play() after stop() re-grips the
+    // start orientation (smart-cube solves snap it at position 0).
+    this.lastAppliedOrientation = -1;
     this.setState('idle');
   }
 
@@ -596,8 +605,13 @@ export class ReplayEngine {
       this.applyOrientationAt(i, 0);
     }
     // Rewinding to the start resets the session so the next play() replays
-    // the inspection pre-roll grip.
-    if (clampedMs === 0) this.preRollApplied = false;
+    // the inspection pre-roll grip. Smart-cube solves (pre-roll disabled)
+    // snap to the HELD starting grip instead — the replay starts exactly as
+    // the user held the cube at the first move.
+    if (clampedMs === 0) {
+      this.preRollApplied = false;
+      this.applyStartGripIfNeeded();
+    }
 
     this.onPosition?.(clampedMs, this.nextIndex - 1);
 
@@ -689,8 +703,14 @@ export class ReplayEngine {
     // Apply orientation at the new position (smooth, like stepBackward) so
     // stepping through a solve with an orientation timeline follows the
     // solver's perspective instead of freezing the cube. Whole-cube grips
-    // use the slower orientation duration.
-    this.applyOrientationAt(targetIdx, this.orientationAnimationDurationMs);
+    // use the slower orientation duration. Stepping to move 0 on a
+    // smart-cube solve (pre-roll disabled) snaps to the HELD grip instead of
+    // animating a rotation that never happened.
+    if (targetIdx === 0 && !this.preRollEnabled) {
+      this.applyStartGripIfNeeded();
+    } else {
+      this.applyOrientationAt(targetIdx, this.orientationAnimationDurationMs);
+    }
   }
 
   /** Step backward one move (pauses playback). */
@@ -748,8 +768,16 @@ export class ReplayEngine {
     // while the transport state is 'seeking' (see stepForwardImpl).
     this.setState('paused');
     // Apply orientation at the new position (the move before the undone one)
-    // Use animation duration for smooth visual during step-backward.
-    this.applyOrientationAt(Math.max(0, this.nextIndex - 1), this.orientationAnimationDurationMs);
+    // Use animation duration for smooth visual during step-backward. Undoing
+    // back to position 0 on a smart-cube solve (pre-roll disabled) snaps to
+    // the HELD grip instead of animating a rotation that never happened
+    // (reconstruction keeps the animated inspection chain).
+    const applyIdx = Math.max(0, this.nextIndex - 1);
+    if (applyIdx === 0 && !this.preRollEnabled) {
+      this.applyStartGripIfNeeded();
+    } else {
+      this.applyOrientationAt(applyIdx, this.orientationAnimationDurationMs);
+    }
   }
 
   // ─── Getters ─────────────────────────────────────────────────────────────
@@ -855,6 +883,25 @@ export class ReplayEngine {
     this.onComplete = null;
     this.onMove = null;
     this.onStateChange = null;
+  }
+
+  /**
+   * Snap the cube root to the solve's STARTING grip (the orientation at the
+   * first move) when the inspection pre-roll is disabled (smart-cube solves).
+   *
+   * Reconstruction solves (preRollEnabled=true) re-enact the solver's grip
+   * with an animated pre-roll. Smart-cube IMU timelines can carry a first
+   * keyframe that is merely a HELD orientation — the cube never rotated in
+   * the solve window — so animating it would be a phantom rotation. Instead
+   * snap instantly at position 0 (via {@link applyOrientationAt} with 0ms):
+   * the replay then STARTS exactly as the user held the cube at the first
+   * move, and the mid-solve keyframes (real rotations) still animate.
+   * The preRollEnabled guard is essential — without it, seek(0)/play() would
+   * pre-snap the root before the reconstruction pre-roll animates it.
+   */
+  private applyStartGripIfNeeded(): void {
+    if (this.preRollEnabled) return; // reconstruction animates the grip instead
+    this.applyOrientationAt(0, 0);
   }
 
   /**
