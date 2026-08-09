@@ -9,8 +9,6 @@ import {
   Video,
   ShieldCheck,
   ShieldAlert,
-  RotateCcw,
-  Eye,
   Trophy,
   Calendar,
   UserRound,
@@ -222,7 +220,6 @@ export function ReconstructionDetailView({
 
   const stm = record.stm;
   const tps = record.tps;
-  const recog = record.recognition;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -368,37 +365,6 @@ export function ReconstructionDetailView({
               <StatChip label="Avg" value={formatTime(record.average * 1000)} />
             )}
             {record.cube && <StatChip label="Cube" value={record.cube} />}
-          </div>
-
-          {/* Recognition summary */}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.66rem]">
-            <span
-              className={cn(
-                "flex items-center gap-1 rounded border px-1.5 py-0.5 font-medium",
-                recog.finalSolved
-                  ? "border-ready/40 bg-ready/10 text-ready"
-                  : "border-caution/40 bg-caution/10 text-caution",
-              )}
-            >
-              <ShieldCheck className="size-3" />
-              {recog.finalSolved ? "Coherent solve" : "Stream inconsistent"}
-            </span>
-            {recog.inspection && (
-              <span className="flex items-center gap-1 rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-ink-2">
-                <Eye className="size-3" /> inspection {recog.inspection}
-              </span>
-            )}
-            <span
-              className={cn(
-                "flex items-center gap-1 rounded border px-1.5 py-0.5 font-medium",
-                recog.crossVerified
-                  ? "border-ready/40 bg-ready/10 text-ready"
-                  : "border-line bg-surface-2 text-ink-3",
-              )}
-            >
-              <RotateCcw className="size-3" />
-              cross {recog.crossVerified ? "verified" : "unverified"}
-            </span>
           </div>
 
           {/* ── Replay ── */}
