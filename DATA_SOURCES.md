@@ -60,6 +60,17 @@ Requests were rate-limited, jittered and single-threaded
 (`pruebas/scripts/scrape_polite.py`). Raw HTML stays in `pruebas/raw/`
 (gitignored); only derived, attributed data ships in the product.
 
+**Scramble extraction:** CubeRoot pages carry TWO scrambles in the `initialSolve`
+payload — the official `wcaScramble` (when published) and CubeRoot's own
+`optimalScramble` (present on ~98% of pages, validated to solve the solution
+text on ~95.5% of the records that lack the WCA one). `parse_cuberoot.py` keeps
+both and `build-recon-web-data.ts` prefers `wcaScramble`, falling back to
+`optimalScramble` — this filled scrambles for 275 of the 302 CubeRoot records
+that previously shipped without one (27 remain: no scramble exists in the
+source). reco.nz records without a scramble (130) are pages whose
+`#reconstruction` block is empty on the source site (the recon was never
+posted); they ship as metadata-only.
+
 ---
 
 ## 3. Solvers & algorithms
