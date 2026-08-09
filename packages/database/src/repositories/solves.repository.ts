@@ -46,15 +46,31 @@ function safeParseMoves(raw: string): CubeMoveEvent[] {
 
 /**
  * Safely parse the `orientation_timeline` JSON column.
- * Falls back to `undefined` on any parse failure or non-object result.
+ *
+ * OrientationTimeline is a COMPACT keyframe ARRAY: `[moveIndex, orientationIndex][]`
+ * (see packages/types). The old parser rejected arrays (`!Array.isArray`) — it
+ * was written against a prototype object shape (`{events:[...]}`) that no
+ * producer emits — so every stored timeline came back `undefined` after a
+ * reload and replays lost their grip + rotations ("only works the first
+ * time" bug). Falls back to `undefined` on any parse failure or wrong shape.
  */
 function safeParseOrientationTimeline(raw: string | null): OrientationTimeline | undefined {
   if (!raw) return undefined;
   try {
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as OrientationTimeline)
-      : undefined;
+    if (!Array.isArray(parsed)) return undefined;
+    // Validate the shape: every entry is a [moveIndex, orientationIndex] pair
+    // of finite numbers. Anything else (objects, null, strings) → undefined.
+    const valid = parsed.every(
+      (entry) =>
+        Array.isArray(entry) &&
+        entry.length === 2 &&
+        typeof entry[0] === 'number' &&
+        Number.isFinite(entry[0]) &&
+        typeof entry[1] === 'number' &&
+        Number.isFinite(entry[1]),
+    );
+    return valid ? (parsed as OrientationTimeline) : undefined;
   } catch {
     return undefined;
   }
