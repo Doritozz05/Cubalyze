@@ -58,7 +58,7 @@ function safeParseOrientationTimeline(raw: string | null): OrientationTimeline |
   if (!raw) return undefined;
   try {
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return undefined;
+    if (!Array.isArray(parsed) || parsed.length === 0) return undefined;
     // Validate the shape: every entry is a [moveIndex, orientationIndex] pair
     // of finite numbers. Anything else (objects, null, strings) → undefined.
     const valid = parsed.every(
