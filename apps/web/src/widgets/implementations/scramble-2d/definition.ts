@@ -13,6 +13,5 @@ export const scramble2DDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 24, y: 440 },
-  defaultMinimized: true,
   tags: ["scramble", "2d", "net", "visualizer", "cube"],
 };

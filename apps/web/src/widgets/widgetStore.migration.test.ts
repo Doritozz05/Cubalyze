@@ -59,6 +59,8 @@ describe("widget persistence migration", () => {
           source: "custom",
           defaultActive: false,
           defaultPosition: { x: 5, y: 5 },
+          // Historical persisted shape: `defaultMinimized` was removed from
+          // WidgetDefinition — kept here only to simulate legacy data.
           defaultMinimized: false,
           tags: [],
         },

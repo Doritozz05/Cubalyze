@@ -54,6 +54,11 @@ describe("lazy widget registry integrity", () => {
       expect(getWidget(def.id), `getWidget("${def.id}")`).toBeDefined();
     }
   });
+
+  it("cube-button is the ONLY default-active widget on first-ever load", () => {
+    const defaultActive = BUILT_IN_WIDGETS.filter((w) => w.defaultActive);
+    expect(defaultActive.map((w) => w.id)).toEqual(["cube-button"]);
+  });
 });
 
 describe("lazy widget registry external-store mechanism", () => {

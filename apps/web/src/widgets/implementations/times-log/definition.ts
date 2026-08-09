@@ -13,6 +13,5 @@ export const timesLogDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 24, y: 72 },
-  defaultMinimized: true,
   tags: ["solves", "history", "times", "log", "list"],
 };

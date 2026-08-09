@@ -8,14 +8,13 @@ export const cubeButtonDefinition: WidgetDefinition = {
   id: "cube-button",
   name: "3D cube",
   description:
-    "Floating button to toggle the interactive 3D cube view. Only appears when a smart cube is connected.",
+    "Floating button to toggle the interactive 3D cube view. Drag to reposition.",
   icon: Box,
   category: "visual",
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { ...CUBE_BUTTON_SENTINEL },
-  defaultMinimized: false,
   tags: ["3d", "launcher", "button", "smart", "cube"],
 };

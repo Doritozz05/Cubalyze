@@ -31,8 +31,6 @@ export interface WidgetDefinition {
   defaultActive: boolean;
   /** Default position for the floating panel (viewport-relative). */
   defaultPosition: { x: number; y: number };
-  /** Default minimized state when activated. */
-  defaultMinimized: boolean;
   /** Tags for search/filter. */
   tags: string[];
 }

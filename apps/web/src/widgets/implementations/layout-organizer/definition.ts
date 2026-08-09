@@ -13,6 +13,5 @@ export const layoutOrganizerDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 80, y: 100 },
-  defaultMinimized: false,
   tags: ["layout", "organize", "arrange", "position", "grid", "workspace"],
 };

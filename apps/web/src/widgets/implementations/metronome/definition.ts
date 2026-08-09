@@ -13,7 +13,6 @@ export const metronomeDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 920, y: 72 },
-  defaultMinimized: true,
   tags: ["metronome", "tps", "rhythm", "audio", "timer", "pacing", "fluidity"],
 };
 
