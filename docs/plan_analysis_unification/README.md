@@ -222,8 +222,10 @@ Pendiente — lista priorizada en §5.
 
 ### M2 — Identificación del caso OLL (57) y PLL (21)
 
-- **Qué:** el pipeline detecta las fases OLL/PLL pero `ollAlgorithmId`/`pllAlgorithmId`
-  (ya en `CFOPMetrics`) nunca se rellenan. No sabemos QUÉ algoritmo hizo el solver.
+- **Qué:** el pipeline detecta las fases OLL/PLL pero no identifica el caso concreto.
+  No sabemos QUÉ algoritmo hizo el solver. (Los campos `ollAlgorithmId`/`pllAlgorithmId`
+  que existían en `CFOPMetrics` se eliminaron como dead code junto al reconocimiento de
+  casos — Fase 8c —; M2 deberá re-añadirlos para exponer el caso.)
 - **Cómo:** tras la fase F2L (OLL) y tras OLL (PLL), clasificar el estado de la
   última capa contra las tablas canónicas (orientación de las 8 aristas/corners →
   57 casos; permutación + AUF → 21). El `CubeState` del timeline ya permite leer el
