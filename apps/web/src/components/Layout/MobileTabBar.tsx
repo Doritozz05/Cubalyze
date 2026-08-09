@@ -60,7 +60,7 @@ export function MobileTabBar({
         className,
       )}
     >
-      <div className="mx-auto flex h-14 max-w-lg items-stretch px-1">
+      <div className="flex h-14 w-full items-stretch px-2 sm:px-4 md:px-6">
         {/* Slots 0..3: Primary Navigation Tabs */}
         {MAIN_TABS.map((tab, idx) => {
           const isActive = activeIndex === idx;
