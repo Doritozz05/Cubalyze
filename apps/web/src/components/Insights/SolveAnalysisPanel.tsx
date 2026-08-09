@@ -1267,11 +1267,15 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
       <div className="mt-1.5 space-y-0">
         {pairs.map((pair) => {
           const isSlowest = pair.timeMs === slowest;
-          // Unified pipeline colors (canonical face letters from the solver's
-          // scheme) win over the slot-derived fallback for older persisted data.
+          // Unified pipeline colors are canonical FACE LETTERS (e.g. ["F","R"]),
+          // not CSS colors — map them to hex before painting. Unknown letters
+          // (or missing colors in older persisted data) fall back to the
+          // slot-derived colors.
+          const rawColors =
+            pair.colors && pair.colors.length === 2 ? pair.colors : null;
           const colors: [string, string] | null =
-            pair.colors && pair.colors.length === 2
-              ? [pair.colors[0], pair.colors[1]]
+            rawColors && FACE_HEX[rawColors[0]] && FACE_HEX[rawColors[1]]
+              ? [FACE_HEX[rawColors[0]], FACE_HEX[rawColors[1]]]
               : pair.slotId
                 ? slotFaceColors(pair.slotId)
                 : null;
@@ -1309,7 +1313,7 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      {pair.slotId ?? colors.join(" ")}
+                      {pair.slotId ?? rawColors?.join(" ") ?? "—"}
                     </TooltipContent>
                   </Tooltip>
                 )}
