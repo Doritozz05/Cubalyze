@@ -109,6 +109,25 @@ export interface SolveTimeline {
 
   /** Timestamp of the solve end (last move or solved detection). */
   endTimestamp: number;
+
+  /**
+   * The SOLVER-FRAME state snapshots (one per entry), preserved BEFORE the
+   * P2 frame recovery rotated them. Slot-level analysis (xcross detection,
+   * F2L pairs) is only meaningful in the frame the reconstruction was
+   * written in: after the rotation, piece-anchored checks no longer see the
+   * solver's slots (the reconz-12340 "xcross → plain" regression). Present
+   * only when the timeline was rotated by frame recovery.
+   */
+  solverFrameStates?: CubeStateSnapshot[];
+
+  /**
+   * Accumulated F2L frame offset per entry: how many quarter turns the
+   * bottom two layers (D + E) were rotated by wide d (Dw) regrips up to and
+   * including that entry. The slot analysis applies the inverse offset so
+   * slot identities stay stable across a mid-F2L d regrip (the solver's
+   * frame follows the bottom two layers, not the whole cube).
+   */
+  solverFrameOffsets?: number[];
 }
 
 export type InitialStateSource =

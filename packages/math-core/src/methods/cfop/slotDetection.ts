@@ -1,8 +1,67 @@
 import { CubeState } from '../../CubeState';
 import { FaceletStringConverter, edgeColor } from '../../FaceletStringConverter';
-import { Edge } from '../../Constants';
+import { Corner, Edge } from '../../Constants';
 import { FACE_LAYERS } from './cfopMasks';
 import { FACE_LETTERS, type FaceLetter } from './ColorPhaseDetector';
+
+/**
+ * The pieces a wide d (Dw) move rotates TOGETHER — the whole bottom two
+ * layers (D face + equator), i.e. the solver's F2L frame. A plain D or E
+ * move rotates only one of the groups and is a normal solve move, not a
+ * frame change. Each list is in the cyclic order the D1/E1 base moves use
+ * (verified against CubeState's baseD/baseE): new[i] = old[(i - k + 4) % 4]
+ * for a k-step rotation.
+ */
+const D_PLUS_E_CORNERS = [Corner.DFR, Corner.DRB, Corner.DBL, Corner.DLF];
+const D_PLUS_E_D_EDGES = [Edge.DF, Edge.DR, Edge.DB, Edge.DL];
+const D_PLUS_E_E_EDGES = [Edge.FR, Edge.BR, Edge.BL, Edge.FL];
+
+/**
+ * Rotate the D+E block (D-layer corners + edges and equator edges) of a
+ * CubeState by `steps` quarter turns (mod 4), including the equator edge
+ * orientation flip an odd number of E turns produces.
+ *
+ * A wide d regrip rotates the bottom two layers together without moving the
+ * U layer; undoing the accumulated d-rotations before the piece-anchored
+ * slot check keeps slot identities stable across the regrip (the pieces stay
+ * "home" in the solver's frame). The inverse rotation is `-steps`. Returns a
+ * new state when `steps` is non-zero, the same instance when zero.
+ */
+export function rotateDPlusEBlock(state: CubeState, steps: number): CubeState {
+  const s = steps & 3;
+  if (s === 0) return state;
+  const n = D_PLUS_E_CORNERS.length;
+  const cp = Array.from(state.cp) as number[];
+  const co = Array.from(state.co) as number[];
+  const ep = Array.from(state.ep) as number[];
+  const eo = Array.from(state.eo) as number[];
+
+  // Orientations TRAVEL with their pieces (a corner's twist follows it to its
+  // new position), and an odd number of E turns additionally flips the eo of
+  // the 4 equator edges. Copying only the permutation (cp/ep) while leaving
+  // co/eo in place would corrupt the slot check on real solves.
+  const newCorners: number[] = [];
+  const newCornerOrients: number[] = [];
+  const newDEdges: number[] = [];
+  const newEEdges: number[] = [];
+  const newEEdgeOrients: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const from = (i - s + n) % n;
+    newCorners[i] = cp[D_PLUS_E_CORNERS[from]];
+    newCornerOrients[i] = co[D_PLUS_E_CORNERS[from]];
+    newDEdges[i] = ep[D_PLUS_E_D_EDGES[from]];
+    newEEdges[i] = ep[D_PLUS_E_E_EDGES[from]];
+    newEEdgeOrients[i] = eo[D_PLUS_E_E_EDGES[from]] ^ (s & 1);
+  }
+  for (let i = 0; i < n; i++) {
+    cp[D_PLUS_E_CORNERS[i]] = newCorners[i];
+    co[D_PLUS_E_CORNERS[i]] = newCornerOrients[i];
+    ep[D_PLUS_E_D_EDGES[i]] = newDEdges[i];
+    ep[D_PLUS_E_E_EDGES[i]] = newEEdges[i];
+    eo[D_PLUS_E_E_EDGES[i]] = newEEdgeOrients[i];
+  }
+  return new CubeState(cp, co, ep, eo);
+}
 
 /**
  * @file F2L slot completion detection.

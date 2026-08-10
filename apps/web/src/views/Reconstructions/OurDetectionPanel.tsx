@@ -174,6 +174,18 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
     .length;
   const inspectionRotations = recon.rotations.slice(0, inspectionRotationCount);
   const solveRotations = recon.rotations.slice(inspectionRotationCount);
+  // Standalone slice moves (M/E/S) have no timeline entry; they are reported
+  // with the entry index of the move they precede and interleaved exactly
+  // like rotations so the algorithm reads 1:1 with the raw text.
+  const solveSlices = recon.slices ?? [];
+  const interleavables = (
+    rots: { token: string; moveIndex: number }[],
+    from: number,
+    to: number,
+  ) => [
+    ...rots.filter((r) => r.moveIndex >= from && r.moveIndex <= to),
+    ...solveSlices.filter((s) => s.moveIndex >= from && s.moveIndex <= to),
+  ];
 
   // Pairs are contiguous: the first starts after the cross ends, each next
   // after the previous one completed (same segmentStart logic as buildPairs).
@@ -183,10 +195,13 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
     const moves = p.moves; // already the solver's raw notation
     pairStart = p.completionIndex + 1;
     const auf = leadingU(moves);
-    // Rotation range covers the DISPLAY span — the API extends the last pair
-    // through the F2L end, so a rotation in that tail must stay visible.
-    const rots = solveRotations.filter(
-      (r) => r.moveIndex >= from && r.moveIndex <= from + moves.length - 1,
+    // Rotation/slice range covers the DISPLAY span — the API extends the
+    // last pair through the F2L end, so a rotation in that tail must stay
+    // visible.
+    const rots = interleavables(
+      solveRotations,
+      from,
+      from + moves.length - 1,
     );
     return { ...p, moves, auf, display: interleave(moves, rots, from) };
   });
@@ -194,23 +209,17 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const ollMoves = recon.oll ? recon.oll.moves : null;
   const ollFrom = ollPhase?.startIndex ?? pairStart;
   const ollTo = ollPhase?.endIndex ?? (ollMoves ? ollFrom + ollMoves.length - 1 : ollFrom - 1);
-  const ollRots = solveRotations.filter(
-    (r) => r.moveIndex >= ollFrom && r.moveIndex <= ollTo,
-  );
+  const ollRots = interleavables(solveRotations, ollFrom, ollTo);
   const ollDisplay = ollMoves ? interleave(ollMoves, ollRots, ollFrom) : null;
 
   const pllStart =
     pllPhase?.startIndex ?? (ollMoves ? pairStart + ollMoves.length : pairStart);
   const pllMoves = recon.pll ? recon.pll.moves : null;
   const pllTo = pllPhase?.endIndex ?? (pllMoves ? pllStart + pllMoves.length - 1 : pllStart - 1);
-  const pllRots = solveRotations.filter(
-    (r) => r.moveIndex >= pllStart && r.moveIndex <= pllTo,
-  );
+  const pllRots = interleavables(solveRotations, pllStart, pllTo);
   const pllDisplay = pllMoves ? interleave(pllMoves, pllRots, pllStart) : null;
 
-  const crossRots = solveRotations.filter(
-    (r) => r.moveIndex >= crossStart && r.moveIndex <= crossEnd,
-  );
+  const crossRots = interleavables(solveRotations, crossStart, crossEnd);
   const crossDisplay = interleave(crossMoves, crossRots, crossStart);
 
   const totalMoves =

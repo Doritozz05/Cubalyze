@@ -26,6 +26,7 @@ import {
   CFOPDefinition,
   getOrientationAtIndex,
   OrientationTable,
+  f2lSlotNames,
   type FaceLetter,
   type F2LSlotInfo,
 } from '@cubeforge/math-core';
@@ -111,6 +112,13 @@ export interface SolveReconstruction {
    *  (OurDetectionPanel) slice `rotations` by that count to separate the
    *  grip from the mid-solve rotations. */
   rotations: { token: string; moveIndex: number }[];
+  /** Standalone slice moves (M/E/S, NOT the half of a wide move) with the
+   *  entry index of the move they precede. Slices update the cube state but
+   *  produce no timeline entry (entries are face-move indexed), so they are
+   *  reported separately — consumers interleave them into the phase moves
+   *  for display exactly like rotations, so the algorithm reads 1:1 with
+   *  the raw text (e.g. an OLL "U' S R …" keeps its S visible). */
+  slices: { token: string; moveIndex: number }[];
   /** Last-layer phases in the SOLVER's raw notation (empty when skipped). */
   oll: { moves: string[]; skipped: boolean } | null;
   pll: { moves: string[]; skipped: boolean } | null;
@@ -298,6 +306,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // convention as conjugatePhaseStream's orientation timeline).
   const displayTokens: string[] = [];
   const solveRotations: { token: string; moveIndex: number }[] = [];
+  const solveSlices: { token: string; moveIndex: number }[] = [];
   {
     let entryCursor = 0;
     for (let k = 0; k < rawPhases.length; k++) {
@@ -315,11 +324,21 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
           continue;
         }
         const n = WIDE_MOVE_RE.test(norm) ? 2 : 1; // face+slice, or one
+        let pushed = false;
         for (let j = 0; j < n && ci + j < conjPhase.length; j++) {
           if (FACE_MOVE_RE.test(conjPhase[ci + j])) {
             displayTokens.push(rawToken);
             entryCursor++;
+            pushed = true;
           }
+        }
+        if (!pushed) {
+          // A standalone slice (M/E/S — not the half of a wide move): it
+          // moves the state but produces no timeline entry. Record it with
+          // the index of the move it precedes so the panel can interleave
+          // it into the phase's moves (the algorithm reads 1:1 with the
+          // raw text, e.g. "U' S R …" keeps its S).
+          solveSlices.push({ token: rawToken, moveIndex: entryCursor });
         }
         ci += n;
       }
@@ -394,6 +413,13 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     scramble: setup,
     stateTokens,
     preferredCrossIdx,
+    // Raw display tokens (one per timeline entry) so the shared core can
+    // track wide d (Dw) regrips for the solver-frame F2L slot analysis, and
+    // the inspection grip so the solver-frame states are rotated into the
+    // frame the solver actually held (the conjugated timeline is in the
+    // scramble frame).
+    displayTokens,
+    solverGrip: inspectionTokens.filter(isRotation),
   });
   if (input.totalTimeMs !== undefined && Number.isFinite(input.totalTimeMs)) {
     timeline.solveTimeMs = Math.max(0, input.totalTimeMs);
@@ -437,9 +463,10 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     crossColor:
       (detection?.crossColor as FaceLetter | undefined) ??
       (report.crossColor as FaceLetter | undefined),
-    cross: buildCross(report, displayTokens),
-    pairs: buildPairs(timeline, crossFace, scheme, displayTokens),
+    cross: buildCross(report, displayTokens, crossFace),
+    pairs: buildPairs(timeline, crossFace, scheme, displayTokens, preferredCrossIdx),
     rotations,
+    slices: solveSlices,
     oll: buildLLPhase(report, 'OLL', displayTokens),
     pll: buildLLPhase(report, 'PLL', displayTokens),
     finalSolved: report.finalStateSolved,
@@ -459,6 +486,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
 function buildCross(
   report: PhaseDetectionReport,
   displayTokens: readonly string[],
+  crossFace: string,
 ): SolveReconstruction['cross'] {
   const phase = report.phases.find((p) => p.phaseName === 'Cross');
   const start = phase?.startIndex ?? 0;
@@ -467,10 +495,23 @@ function buildCross(
     ? displayTokens.slice(start, end + 1)
     : [];
   const type = report.crossType ?? 'plain';
+  // The report's xcrossPairs carry {slot, colors}; normalize into a real
+  // F2LSlotInfo (slotIndex + name) so consumers (the panel tooltip) never
+  // read a missing field.
+  const xcrossEntry = report.xcrossPairs?.[0];
+  const slotNames = f2lSlotNames(crossFace);
+  const xcrossPair: F2LSlotInfo | undefined = xcrossEntry
+    ? {
+        slotIndex: Math.max(0, slotNames.indexOf(xcrossEntry.slot)),
+        name: xcrossEntry.slot,
+        // Slot colors are always outer faces (never M/E/S).
+        colors: xcrossEntry.colors as [FaceLetter, FaceLetter],
+      }
+    : undefined;
   return {
     moves,
     type,
-    xcrossPair: report.xcrossPairs?.[0] as F2LSlotInfo | undefined,
+    xcrossPair,
   };
 }
 
@@ -479,12 +520,16 @@ function buildPairs(
   crossFace: string,
   scheme: Record<string, string> | undefined,
   displayTokens: readonly string[],
+  preferredCrossIdx?: number,
 ): F2LPairResult[] {
   // UNIFIED segmentation — the same function the smart route consumes via
   // CFOPMetricsCalculator. Pass the solver-frame crossFace/scheme (already
-  // detected after P2) and the raw notation so the pairs read 1:1 with the
-  // reconstruction text.
-  return segmentF2LPairs(timeline, { crossFace, scheme, displayTokens }).map(
+  // detected after P2), the raw notation so the pairs read 1:1 with the
+  // reconstruction text, and the written-cross tiebreak so the solver-frame
+  // detection picks the SAME cross as the PhaseSplitter did (without it, a
+  // spurious cross on an untouched layer can win the tie and the pair scan
+  // sees the wrong frame — the reconz-12564 empty-pairs regression).
+  return segmentF2LPairs(timeline, { crossFace, scheme, displayTokens, preferredCrossIdx }).map(
     (p) => ({
       slot: p.slot,
       colors: p.colors as [FaceLetter, FaceLetter],

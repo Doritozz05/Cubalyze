@@ -5,6 +5,7 @@ import {
   type PhaseMask,
   COLOR_NEUTRAL_CFOP_MASKS,
   countCompletedF2LSlotsInFrame,
+  rotateDPlusEBlock,
   IDENTITY_SCHEME,
 } from '@cubeforge/math-core';
 import type {
@@ -16,7 +17,9 @@ import type {
   PhaseSegment,
   SolveTimeline,
 } from '@cubeforge/types';
+import type { CubeState } from '@cubeforge/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
+import { pickSlotFrame } from '../pipeline/slotFrame';
 
 type SplitOptions = {
   colorNeutral?: boolean;
@@ -368,24 +371,54 @@ export class PhaseSplitter {
         // scanning the next two entries for the max slot count only ever
         // catches the alignment (no false positives from a fast first pair).
         //
+        // SLOT ANALYSIS RUNS IN THE SOLVER'S FRAME: after P2 frame recovery
+        // rotates the snapshots, piece-anchored slot checks no longer see the
+        // pieces the solver solved (the whole frame shifted), so a genuine
+        // xcross degrades to 'plain' (the Yiheng-12340 regression). The
+        // pre-recovery solver-frame states (already rotated by the inspection
+        // grip when one is known) are preserved on the timeline; the check
+        // reads THOSE (undoing the accumulated D+E d-regrip offsets) instead
+        // of the rotated timeline states. The crossFace/scheme come from
+        // pickSlotFrame (the labeling under which the solver's pairs are
+        // home), shared with the F2L pair scan so the two never diverge.
+        //
         // Defensive: on incoherent solves the color detector can produce a
         // scheme whose re-coloring is not a valid cube (repeated colors) and
         // countCompletedF2LSlotsInFrame would throw. XCross info is a bonus —
         // degrade to 'plain' instead of failing the whole report.
         try {
-          const frameFace: CubeFace = crossFace ?? 'D';
+          const f2lPhase = detection.phases.find((p) => p.phaseName === 'F2L');
+          const picked = f2lPhase
+            ? pickSlotFrame(
+                timeline,
+                crossFace,
+                scheme ?? null,
+                options?.preferredCrossIdx,
+                f2lPhase.startIndex,
+                f2lPhase.endIndex ?? f2lPhase.startIndex,
+              )
+            : { crossFace: crossFace ?? 'D', scheme: scheme ?? IDENTITY_SCHEME };
+          const frameFace: CubeFace = picked.crossFace as CubeFace;
+          const frameScheme = picked.scheme;
+          const solverStates = timeline.solverFrameStates;
+          const solverOffsets = timeline.solverFrameOffsets;
+          const stateAt = (idx: number): CubeState => {
+            const snapshot = solverStates?.[idx] ?? timeline.entries[idx]?.state;
+            const cube = TimelineBuilder.fromSnapshot(snapshot);
+            const offset = solverOffsets?.[idx] ?? 0;
+            return offset === 0 ? cube : rotateDPlusEBlock(cube, -offset);
+          };
           let best = countCompletedF2LSlotsInFrame(
-            TimelineBuilder.fromSnapshot(timeline.entries[crossPhase.completionIndex].state),
+            stateAt(crossPhase.completionIndex),
             frameFace,
-            scheme ?? IDENTITY_SCHEME,
+            frameScheme,
           );
           for (let offset = 1; offset <= 2; offset++) {
-            const entry = timeline.entries[crossPhase.completionIndex + offset];
-            if (!entry) break;
+            if (crossPhase.completionIndex + offset >= timeline.entries.length) break;
             const candidate = countCompletedF2LSlotsInFrame(
-              TimelineBuilder.fromSnapshot(entry.state),
+              stateAt(crossPhase.completionIndex + offset),
               frameFace,
-              scheme ?? IDENTITY_SCHEME,
+              frameScheme,
             );
             if (candidate.completedCount > best.completedCount) best = candidate;
           }

@@ -1,11 +1,32 @@
-import type { FaceLetter } from '@cubeforge/math-core';
+import type { CubeState, FaceLetter } from '@cubeforge/math-core';
 import {
-  ColorPhaseDetector,
   countCompletedF2LSlotsInFrame,
-  IDENTITY_SCHEME,
+  rotateDPlusEBlock,
 } from '@cubeforge/math-core';
 import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
+import { pickSlotFrame } from './slotFrame';
+
+/**
+ * Entry state in the SOLVER's frame: when P2 frame recovery rotated the
+ * timeline, the pre-recovery snapshots were preserved on the timeline and
+ * must drive the slot analysis (piece-anchored checks are only meaningful in
+ * the frame the reconstruction was written in). The accumulated D+E d-regrip
+ * offset is undone so slot identities stay stable across a mid-F2L d move
+ * (the solver's frame follows the bottom two layers, not the whole cube).
+ */
+function solverFrameStateAt(
+  timeline: SolveTimeline,
+  idx: number,
+): CubeState | null {
+  const entry = timeline.entries[idx];
+  if (!entry) return null;
+  const solverStates = timeline.solverFrameStates;
+  const snapshot = solverStates?.[idx] ?? entry.state;
+  const cube = TimelineBuilder.fromSnapshot(snapshot);
+  const offset = timeline.solverFrameOffsets?.[idx] ?? 0;
+  return offset === 0 ? cube : rotateDPlusEBlock(cube, -offset);
+}
 
 /**
  * Unified F2L pair segmentation — the ONLY place pairs are detected.
@@ -136,17 +157,21 @@ export function segmentF2LPairs(
     if (lateCross) return [];
   }
 
-  // Solver frame: derive crossFace/scheme when not provided (smart route).
-  // Same call the text route makes, so identical timelines → identical pairs.
-  let crossFace = options.crossFace ?? report?.crossFace;
-  let scheme = options.scheme ?? null;
-  if (crossFace === undefined || scheme === null) {
-    const states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
-    const detection = ColorPhaseDetector.detect(states, options.preferredCrossIdx);
-    crossFace = crossFace ?? detection?.crossFace ?? 'D';
-    scheme = scheme ?? detection?.scheme ?? IDENTITY_SCHEME;
-  }
-  const schemeToUse = scheme ?? IDENTITY_SCHEME;
+  // Solver frame: the crossFace/scheme come from pickSlotFrame — the labeling
+  // under which the solver's pairs are home, chosen between the report's
+  // scheme (post-recovery detection) and the detection re-derived from the
+  // preserved solver-frame states. The SAME picker drives the PhaseSplitter's
+  // xcross check, so identical timelines → identical pairs.
+  const picked = pickSlotFrame(
+    timeline,
+    options.crossFace ?? report?.crossFace,
+    options.scheme ?? null,
+    options.preferredCrossIdx,
+    f2l.startIndex,
+    f2l.endIndex ?? timeline.entries.length - 1,
+  );
+  const crossFace = picked.crossFace;
+  const schemeToUse = picked.scheme;
 
   const start = (cross?.endIndex ?? f2l.startIndex - 1) + 1;
   const end = f2l.endIndex ?? timeline.entries.length - 1;
@@ -158,9 +183,10 @@ export function segmentF2LPairs(
   // Slots already solved then are the XCross pairs — excluded from the F2L
   // scan (via unsolvedMask below) and reported through xcrossPairs instead.
   let prevMask = 0;
-  if (start - 1 >= 0 && timeline.entries[start - 1]) {
+  const preF2L = solverFrameStateAt(timeline, start - 1);
+  if (preF2L) {
     prevMask = countCompletedF2LSlotsInFrame(
-      TimelineBuilder.fromSnapshot(timeline.entries[start - 1].state),
+      preF2L,
       crossFace,
       schemeToUse,
     ).slotMask;
@@ -169,14 +195,32 @@ export function segmentF2LPairs(
   // new pairs even if they dip and re-complete (advanced solves temporarily
   // break the cross during F2L).
   const unsolvedMask = 0xf & ~prevMask;
+  // Slots already reported as a pair never fire again: a solved slot that
+  // temporarily dips (the next insertion passes through it) would otherwise
+  // re-fire as a duplicate pair.
+  let declaredMask = 0;
   let segmentStart = start;
 
   for (let i = start; i <= end; i++) {
-    const state = TimelineBuilder.fromSnapshot(timeline.entries[i].state);
+    const state = solverFrameStateAt(timeline, i);
+    if (!state) break;
     const comp = countCompletedF2LSlotsInFrame(state, crossFace, schemeToUse);
 
-    // A previously-unsolved slot completed → the pair finished at this entry.
-    const newBits = (comp.slotMask & unsolvedMask) & ~prevMask;
+    // A previously-unsolved, not-yet-reported slot completed → the pair
+    // finished at this entry. Persistence: the completion must survive the
+    // NEXT entry — an insertion often passes through the home position
+    // mid-algorithm (e.g. R U R' U R' F R F' shows FR home at move 20 but
+    // it dips and only really completes at 23); firing the dip would
+    // fabricate a pair and burn the 4-pair cap. The F2L-span end has no
+    // lookahead and fires directly.
+    let newBits = (comp.slotMask & unsolvedMask & ~declaredMask) & ~prevMask;
+    if (newBits && i < end) {
+      const next = solverFrameStateAt(timeline, i + 1);
+      if (next) {
+        const nextComp = countCompletedF2LSlotsInFrame(next, crossFace, schemeToUse);
+        newBits &= nextComp.slotMask;
+      }
+    }
     if (newBits) {
       for (let b = 0; b < 4; b++) {
         if (!(newBits & (1 << b))) continue;
@@ -203,11 +247,17 @@ export function segmentF2LPairs(
         });
         segmentStart = i + 1;
       }
-      prevMask = comp.slotMask;
+      declaredMask |= newBits;
     }
+    // prevMask tracks the LAST entry (fired or not): a slot that completed
+    // mid-algorithm and dipped (killed by the persistence lookahead) must be
+    // able to re-fire when it really completes — pinning prevMask to the last
+    // FIRING entry would carry its un-declared bits forward and silently
+    // suppress the re-fire (the reconz-1296 missing 4th pair).
+    prevMask = comp.slotMask;
     // A slot count can never exceed 4; stop scanning once every slot is
     // accounted for so LL moves can't fabricate extra pairs.
-    if (pairs.length >= 4) break;
+    if (pairs.length >= 4 || declaredMask === unsolvedMask) break;
   }
 
   // The last pair owns the REST of the F2L segment: when a pair is home
