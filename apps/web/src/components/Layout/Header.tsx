@@ -1,7 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, History, Pencil, Trash2, Check, X, Puzzle } from "lucide-react";
+import {
+  Plus,
+  History,
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  Puzzle,
+  Battery,
+  BatteryLow,
+  BatteryMedium,
+  BatteryFull,
+  BatteryWarning,
+} from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
@@ -49,48 +62,32 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
 import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 
 /**
- * Sleek custom SVG Battery icon supporting multi-phase fill & color gradients.
+ * Sleek Lucide Battery icon component changing icon state & vibrant color based on charge percentage.
  */
 function BatteryIcon({ level }: { level: number | null }) {
   if (level === null) {
-    return (
-      <svg className="size-4 text-ink-3" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="18" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M21 4.5V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-      </svg>
-    );
+    return <Battery className="size-4 text-ink-3 opacity-60" />;
   }
 
-  // Clamp level between 0 and 100
   const pct = Math.max(0, Math.min(100, level));
 
-  // Determine fill color & status phase — mapped to the app's semantic
-  // palette tokens (ready / caution / plus2 / dnf) instead of raw Tailwind.
-  let colorClass = "text-ready fill-ready";
+  // Critical low battery (<= 15%): red warning icon
   if (pct <= 15) {
-    colorClass = "text-dnf fill-dnf";
-  } else if (pct <= 35) {
-    colorClass = "text-plus2 fill-plus2";
-  } else if (pct <= 65) {
-    colorClass = "text-caution fill-caution";
-  } else if (pct <= 85) {
-    colorClass = "text-ready fill-ready";
+    return <BatteryWarning className="size-4 text-rose-500" />;
   }
 
-  // Inner fill width (max inner width is 14px, starting at x=3)
-  const fillWidth = Math.max(1.5, (pct / 100) * 14);
+  // Low battery (16% - 35%): warm amber 1-bar icon
+  if (pct <= 35) {
+    return <BatteryLow className="size-4 text-amber-500" />;
+  }
 
-  return (
-    <svg className={cn("size-4 transition-colors duration-300", colorClass)} viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Outer shell */}
-      <rect x="1" y="1" width="18" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-      {/* Battery terminal nub */}
-      <path d="M21 4.5V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      {/* Dynamic inner charge fill */}
-      <rect x="3" y="3" width={fillWidth} height="6" rx="1.2" fill="currentColor" />
-    </svg>
-  );
+  // Medium battery (36% - 75%): vibrant emerald 2-bar medium icon (shows 1/2 / middle stage)
+  if (pct <= 75) {
+    return <BatteryMedium className="size-4 text-emerald-500" />;
+  }
+
+  // Full battery (> 75%): vibrant emerald full icon
+  return <BatteryFull className="size-4 text-emerald-500" />;
 }
 
 export interface HeaderProps {

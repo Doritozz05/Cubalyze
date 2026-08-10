@@ -2,11 +2,19 @@ import { PLL_CASES } from './cfop-pll';
 import { OLL_CASES } from './cfop-oll';
 import { ALL_F2L_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES } from './cfop-f2l';
 import { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES } from './ortega';
+import { COLL_CASES } from './coll';
+import { WV_CASES } from './wv';
+import { CLS_CASES } from './cfop-cls';
+import { SV_CASES } from './cfop-sv';
+import { ELL_CASES } from './cfop-ell';
+import { ANTIPLL_CASES } from './cfop-antipll';
 import type { AlgorithmCase, Algorithm } from '../schema';
 import { METHODS, SUBSETS } from '../methodRegistry';
 
 export { BASIC_F2L_CASES, ADVANCED_F2L_CASES, ALL_F2L_CASES };
 export { ORTEGA_OLL_CASES, ORTEGA_PBL_CASES };
+export { COLL_CASES, WV_CASES };
+export { CLS_CASES, SV_CASES, ELL_CASES, ANTIPLL_CASES };
 
 /** All seed cases from all methods/subsets. */
 export interface SeedData {
@@ -35,7 +43,7 @@ export function getSeedData(): SeedData {
     }
   }
 
-  // ─── CFOP → F2L (Basic & Advanced) ───────────────────────────────────
+  // ─── CFOP → F2L (Basic & Advanced) ─────────────────────────────────
   for (const f2l of ALL_F2L_CASES) {
     cases.push(f2l.caseDef);
     for (const a of f2l.algorithms) {
@@ -55,6 +63,55 @@ export function getSeedData(): SeedData {
   for (const pbl of ORTEGA_PBL_CASES) {
     cases.push(pbl.caseDef);
     for (const a of pbl.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── CFOP → COLL (generated from SCDB) ─────────────────────────────
+  for (const coll of COLL_CASES) {
+    cases.push(coll.caseDef);
+    for (const a of coll.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── CFOP → Winter Variation (generated from SCDB) ─────────────────
+  for (const wv of WV_CASES) {
+    cases.push(wv.caseDef);
+    for (const a of wv.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  // ─── 3×3 Advanced → sets (CLS / SV / ELL / Anti PLL, generated from
+  //      verified SCDB dumps 2026-08-06 — algorithm subsets only, they are
+  //      NOT training phases and NOT CFOP; they live under the "Advanced
+  //      3x3" method because their home methods are CFCE/MGLS/ZZ-Petrus/1LLL)
+  //      ───────────────────────────────────────────────────────────────
+  for (const cls of CLS_CASES) {
+    cases.push(cls.caseDef);
+    for (const a of cls.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  for (const sv of SV_CASES) {
+    cases.push(sv.caseDef);
+    for (const a of sv.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  for (const ell of ELL_CASES) {
+    cases.push(ell.caseDef);
+    for (const a of ell.algorithms) {
+      algorithms.push(a);
+    }
+  }
+
+  for (const antipll of ANTIPLL_CASES) {
+    cases.push(antipll.caseDef);
+    for (const a of antipll.algorithms) {
       algorithms.push(a);
     }
   }

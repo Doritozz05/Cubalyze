@@ -52,6 +52,9 @@ export class Cube3DEngine {
     targetQuat: Quaternion;
     startTime: number;
     durationMs: number;
+    /** Resolves the Promise returned by {@link setCubeOrientation} when the
+     *  SLERP completes (or immediately when replaced/snapped). */
+    resolve?: () => void;
   } | null = null;
 
   private lastTime: number = 0;
@@ -205,13 +208,49 @@ export class Cube3DEngine {
   }
 
   public resetCube(): void {
+    // Force-complete any in-flight layer rotations FIRST. A task that is
+    // still turning when we reset would snap AFTER the reset and re-apply its
+    // rotation — plus its logical-grid update — on top of the fresh state,
+    // desyncing the model from the renderer ("cube colors lost/buggy" when
+    // restarting a replay or seeking mid-animation).
+    if (this.rotationEngine) this.rotationEngine.flushAll();
     if (this.model) {
       this.model.resetCube();
+      // The whole-cube grip (solver's frame) lives on the root quaternion.
+      // Resetting a replay/seek must also return the root to the base frame,
+      // so a restart shows the original scrambled view and the next play's
+      // inspection pre-roll replays cleanly from identity.
+      this.model.root.quaternion.identity();
     }
+    // Stop any root orientation SLERP from fighting the reset (it would keep
+    // animating to its stale target grip over the freshly-identity root).
+    // NOTE: this also RESOLVES the SLERP's promise — the replay transport
+    // awaits its grip/chain BEFORE calling resetCube, so the pre-roll grip is
+    // never dropped there. Direct engine resets outside the replay (e.g. the
+    // trainer's init effect) simply abort any in-flight grip, which is the
+    // desired "reset wins" semantics.
+    this.finishOrientationAnim();
+    this.requestRender();
+  }
+
+  /**
+   * Force-complete every in-flight animation (layer rotations + root
+   * orientation SLERP) without changing the resulting state. The replay
+   * transport calls this before any absolute reset so a stale animation can
+   * never be applied on top of the freshly reset cube.
+   */
+  public flushAnimations(): void {
+    if (this.rotationEngine) this.rotationEngine.flushAll();
+    this.finishOrientationAnim();
     this.requestRender();
   }
 
   public syncFacelets(facelets: string): void {
+    // Same invariant as resetCube: an in-flight layer rotation must not be
+    // allowed to animate on top of the freshly synced absolute state (the
+    // live smart-cube path syncs facelets while the previous move's animation
+    // may still be turning → colors visibly desync).
+    if (this.rotationEngine) this.rotationEngine.flushAll();
     if (this.model) {
       this.model.applyFacelets(facelets);
     }
@@ -361,39 +400,69 @@ export class Cube3DEngine {
     if (!this.sceneManager) return;
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
-    this.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6);
+    this.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6);
     this.requestRender();
   }
 
-  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): void {
-    if (!this.model) return;
-    const entry = OrientationTable.ENTRIES[orientationIndex];
-    if (!entry) return;
+  /**
+   * Rotate the whole cube root to a solver-frame orientation, optionally
+   * animated.
+   *
+   * Returns a Promise that resolves when the SLERP animation completes
+   * (immediately for duration 0 / snap / identical orientation). The replay
+   * engine awaits this for the inspection pre-roll so the next move never
+   * starts while the cube is still turning.
+   */
+  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.model) {
+        resolve();
+        return;
+      }
+      const entry = OrientationTable.ENTRIES[orientationIndex];
+      if (!entry) {
+        resolve();
+        return;
+      }
 
-    const duration = animationDurationMs ?? 0;
+      const duration = animationDurationMs ?? 0;
 
-    if (duration <= 0) {
-      this.orientationAnim = null;
-      // math-core ships its own dependency-free Quaternion (same convention
-      // as three.js); three's copy() only reads x/y/z/w, so the cast is safe.
-      this.model.root.quaternion.copy(entry.quaternion as unknown as Quaternion);
+      if (duration <= 0) {
+        // Snap: replace any in-flight animation and resolve its awaiter now.
+        this.finishOrientationAnim();
+        // math-core ships its own dependency-free Quaternion (same convention
+        // as three.js); three's copy() only reads x/y/z/w, so the cast is safe.
+        this.model.root.quaternion.copy(entry.quaternion as unknown as Quaternion);
+        this.requestRender();
+        resolve();
+        return;
+      }
+
+      // A running orientation animation is replaced — resolve its awaiter now.
+      this.finishOrientationAnim();
+
+      this.orientationAnim = {
+        startQuat: this.model.root.quaternion.clone(),
+        // entry.quaternion is math-core's own Quaternion (public x/y/z/w only).
+        // three's Quaternion.copy() reads those public getters, so this builds a
+        // genuine three.js Quaternion with its internal _x/_y/_z/_w populated —
+        // REQUIRED because three's slerp()/slerpQuaternions() read the private
+        // fields directly (a bare math3d Quaternion would yield NaN).
+        targetQuat: new Quaternion().copy(entry.quaternion as unknown as Quaternion),
+        startTime: performance.now(),
+        durationMs: duration,
+        resolve,
+      };
+      // Kick off the render loop — the orientation animation keeps it alive.
       this.requestRender();
-      return;
-    }
+    });
+  }
 
-    this.orientationAnim = {
-      startQuat: this.model.root.quaternion.clone(),
-      // entry.quaternion is math-core's own Quaternion (public x/y/z/w only).
-      // three's Quaternion.copy() reads those public getters, so this builds a
-      // genuine three.js Quaternion with its internal _x/_y/_z/_w populated —
-      // REQUIRED because three's slerp()/slerpQuaternions() read the private
-      // fields directly (a bare math3d Quaternion would yield NaN).
-      targetQuat: new Quaternion().copy(entry.quaternion as unknown as Quaternion),
-      startTime: performance.now(),
-      durationMs: duration,
-    };
-    // Kick off the render loop — the orientation animation keeps it alive.
-    this.requestRender();
+  /** Resolve any in-flight orientation animation awaiter and clear it. */
+  private finishOrientationAnim(): void {
+    const anim = this.orientationAnim;
+    this.orientationAnim = null;
+    anim?.resolve?.();
   }
 
   public setFaceColor(face: string, color: string): void {
@@ -442,7 +511,7 @@ export class Cube3DEngine {
   // graying across OLL / PLL / F2L / Cross / XCross / EOCross visualizations:
   //
   //   setLayerStickerGray(axis, value)   — gray a whole face layer (U-layer)
-  //   setF2LMaskGray(grayColor, adv)     — gray U-layer + AF2L slot pieces
+  //   setF2LMaskGray(grayColor, pair)    — gray U-layer except the case pair
   //   setPhaseStickering(mask)           — gray every non-target piece (generic)
   //
   // All three push into `grayedStickers` and are restored by `clearLayerGray`.
@@ -501,12 +570,12 @@ export class Cube3DEngine {
    *
    * @param axis  'x', 'y', or 'z'
    * @param layerValue  -1, 0, or 1
-   * @param grayColor  CSS color string (default '#808080')
+   * @param grayColor  CSS color string (default '#505050')
    */
   public setLayerStickerGray(
     axis: 'x' | 'y' | 'z',
     layerValue: number,
-    grayColor: string = '#808080',
+    grayColor: string = '#505050',
   ): void {
     if (!this.model || !this.factory) return;
     const cubies = this.model.getCubiesByFace(axis, layerValue);
@@ -519,33 +588,66 @@ export class Cube3DEngine {
   /**
    * Applies F2L-specific masking to the 3D cube model.
    *
-   * Grays out:
-   * 1. All Last-Layer / OLL pieces containing Yellow (initialGridY === 1).
-   * 2. In Advanced F2L (isAdvanced === true): White-Orange-Green corner & Orange-Green edge.
+   * Mirrors the standard F2L stickering:
+   *   - colored: the case pair (corner + edge) wherever it is (own slot, U
+   *     layer, or trapped in another slot), and every piece of layers 1-2
+   *     (F2L) that is currently in its solved home position;
+   *   - grayed: the whole U layer except the pair, and any F2L piece that is
+   *     out of place (e.g. the displaced corner of a trapped-slot case).
    *
-   * Keeps colored:
-   * 1. All F2L pair pieces (in Basic F2L) or active AF2L pieces.
-   * 2. All solved cross and slot pieces.
+   * A cubie is part of the pair when its home grid position (initialGridX/Y/Z)
+   * matches the home position of `pair.homeC` (corner) or `pair.homeE` (edge).
+   * A cubie is "in its place" when its current grid position (gridX/Y/Z)
+   * equals its home position. When no pair is given (or the case is 2×2), the
+   * whole U layer is grayed (legacy behavior).
    *
-   * @param grayColor CSS color string (default '#808080')
-   * @param isAdvanced If true (AF2L), also grays out White-Orange-Green corner & Orange-Green edge
+   * @param grayColor CSS color string (default '#505050')
+   * @param pair The case pair piece IDs ({@link CORNER_HOME_POSITION} / {@link EDGE_HOME_POSITION}
+   *   indices) identified from the setup — see casePresentation.identifyPairFromState.
    */
-  public setF2LMaskGray(grayColor: string = '#808080', isAdvanced: boolean = false): void {
+  public setF2LMaskGray(
+    grayColor: string = '#505050',
+    pair?: { homeC: number; homeE: number } | null,
+  ): void {
     if (!this.model || !this.factory) return;
+
+    // Home grid positions of the pair pieces (which cubie permanently carries
+    // each piece, even after scrambling).
+    let pairKeys: Set<string> | null = null;
+    if (pair) {
+      const c = CORNER_HOME_POSITION[pair.homeC];
+      const e = EDGE_HOME_POSITION[pair.homeE];
+      if (c && e) {
+        pairKeys = new Set([
+          `${c.x},${c.y},${c.z}`,
+          `${e.x},${e.y},${e.z}`,
+        ]);
+      }
+    }
 
     const cubies = this.model.getLogicalState();
     for (const cubie of cubies) {
-      // In F2L, pieces with initialGridY === 1 belong to the U-layer (Yellow facelets / OLL pieces).
-      const isYellowPiece = cubie.initialGridY === 1;
+      const key = `${cubie.initialGridX},${cubie.initialGridY},${cubie.initialGridZ}`;
+      // The pair is always kept colored (even when it sits in the U layer for
+      // both-on-top cases, or trapped in a wrong slot for advanced cases).
+      if (pairKeys?.has(key)) continue;
 
-      // In Advanced F2L (AF2L), the White-Orange-Green corner (1, -1, 1) and
-      // Orange-Green edge (1, 0, 1) should also be grayed out.
-      const isAdvancedF2LSlotPiece =
-        isAdvanced &&
-        ((cubie.initialGridX === 1 && cubie.initialGridY === -1 && cubie.initialGridZ === 1) ||
-         (cubie.initialGridX === 1 && cubie.initialGridY === 0 && cubie.initialGridZ === 1));
+      const q = cubie.mesh.quaternion;
+      const isOriented =
+        Math.abs(q.w) > 0.999 &&
+        Math.abs(q.x) < 0.01 &&
+        Math.abs(q.y) < 0.01 &&
+        Math.abs(q.z) < 0.01;
 
-      if (isYellowPiece || isAdvancedF2LSlotPiece) {
+      const inHome =
+        cubie.gridX === cubie.initialGridX &&
+        cubie.gridY === cubie.initialGridY &&
+        cubie.gridZ === cubie.initialGridZ &&
+        isOriented;
+
+      // U-layer pieces (Yellow facelets / OLL pieces) are grayed, plus any F2L
+      // piece that is out of its solved place or misoriented/flipped.
+      if (cubie.initialGridY === 1 || !inHome) {
         this.grayCubieGroup(cubie.mesh, grayColor);
       }
     }
@@ -565,9 +667,9 @@ export class Cube3DEngine {
    * Call {@link clearLayerGray} before re-syncing facelets or changing the mask.
    *
    * @param mask      The PhaseMask whose target pieces should stay colored.
-   * @param grayColor CSS color string (default '#808080').
+   * @param grayColor CSS color string (default '#505050').
    */
-  public setPhaseStickering(mask: PhaseMask, grayColor: string = '#808080'): void {
+  public setPhaseStickering(mask: PhaseMask, grayColor: string = '#505050'): void {
     if (!this.model || !this.factory) return;
 
     // Collect the home grid positions of every target piece in the mask.
@@ -700,7 +802,9 @@ export class Cube3DEngine {
 
       if (t >= 1.0) {
         this.model.root.quaternion.copy(this.orientationAnim.targetQuat);
+        const resolve = this.orientationAnim.resolve;
         this.orientationAnim = null;
+        resolve?.();
       } else {
         const eased = 1 - Math.pow(1 - t, 3);
         this.model.root.quaternion.slerpQuaternions(
@@ -731,6 +835,7 @@ export class Cube3DEngine {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
+    this.finishOrientationAnim();
     this.needsRender = false;
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';

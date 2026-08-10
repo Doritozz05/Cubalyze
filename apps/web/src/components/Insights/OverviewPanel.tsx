@@ -57,13 +57,17 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 
   // ── Derived visualization data ────────────────────────────────────────
   const tpsSeries = useMemo(
-    () => deriveTpsSeries(solves).map((p) => ({
-      idx: p.solveIdx,
-      tps: Number.isNaN(p.tps) ? null : p.tps,
-      time: formatTime(p.timeMs),
-    })),
+    () =>
+      deriveTpsSeries(solves).map((p) => ({
+        idx: p.solveIdx,
+        solveNumber: p.solveNumber,
+        tps: p.tps,
+        time: formatTime(p.timeMs),
+      })),
     [solves],
   );
+
+  const solvesWithTpsCount = tpsSeries.length;
 
   const histogram = useMemo(() => deriveHistogram(solves, 500), [solves]);
   // Pre-compute: which bins are the modal (highest count), and which bin
@@ -80,9 +84,9 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
     return { isModal: modal, meanBinLabel: meanLabel };
   }, [histogram, stats.mean]);
   // Touch (<1024px): fewer heatmap weeks so the grid never overflows the
-  // narrower column. Desktop keeps the full 12 weeks.
+  // narrower column. Desktop shows 6 months (26 weeks).
   const isTouch = useIsTouch();
-  const heatmapWeeks = isTouch ? 8 : 12;
+  const heatmapWeeks = isTouch ? 8 : 26;
   const activity = useMemo(
     () => deriveActivityHeatmap(solves, heatmapWeeks),
     [solves, heatmapWeeks],
@@ -171,19 +175,19 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
         <SectionHeader
           title="TPS over time"
-          eyebrow={`${analysedCount} analysed`}
+          eyebrow={`${solvesWithTpsCount} analysed`}
           className="mb-3"
         />
-        {analysedCount < 2 ? (
+        {solvesWithTpsCount < 2 ? (
           <div className="flex h-25 items-center justify-center text-[0.7rem] text-ink-3">
-            Need at least 2 Smart Cube solves with analysis
+            Need at least 2 solves with TPS data
           </div>
         ) : (
           <div className="h-25 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={tpsSeries}
-                margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
+                margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
               >
                 <defs>
                   <linearGradient id="tps-fill" x1="0" y1="0" x2="0" y2="1">
@@ -191,7 +195,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     <stop offset="100%" stopColor="var(--ink-2)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="idx" hide />
+                <XAxis dataKey="idx" hide domain={["dataMin", "dataMax"]} />
                 <YAxis
                   domain={[0, "dataMax + 1"]}
                   hide
@@ -208,8 +212,12 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     padding: "4px 8px",
                     boxShadow: "none",
                   }}
-                  labelFormatter={(l) => `Solve ${Number(l) + 1}`}
-                  formatter={(v) => [`${Number(v).toFixed(2)} tps`, "TPS"]}
+                  itemStyle={{ color: "var(--ink)" }}
+                  labelFormatter={(_, payload) => {
+                    const pt = payload?.[0]?.payload as { solveNumber?: number } | undefined;
+                    return pt?.solveNumber ? `Solve ${pt.solveNumber}` : "";
+                  }}
+                  formatter={(v) => [v != null ? `${Number(v).toFixed(2)} TPS` : "—", "TPS"]}
                 />
                 <Area
                   type="monotone"
@@ -217,9 +225,9 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                   stroke="var(--ink-2)"
                   strokeWidth={1.5}
                   fill="url(#tps-fill)"
-                  dot={false}
-                  activeDot={{ r: 2.5, fill: "var(--ink-2)" }}
-                  connectNulls={false}
+                  dot={{ r: 2, fill: "var(--ink-2)" }}
+                  activeDot={{ r: 3.5, fill: "var(--ink-2)" }}
+                  connectNulls={true}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -254,6 +262,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     padding: "4px 8px",
                     boxShadow: "none",
                   }}
+                  itemStyle={{ color: "var(--ink)" }}
                   formatter={(_, __, entry) => {
                     const bin = entry?.payload as { count?: number; label?: string } | undefined;
                     return [`${bin?.count ?? 0} solves`, `${bin?.label ?? ""}s`];
@@ -327,16 +336,17 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                     </Pie>
                     <Tooltip
                       cursor={{ fill: "var(--surface-2)", opacity: 0.5 }}
-                      contentStyle={{
-                        border: "1px solid var(--line)",
-                        borderRadius: "6px",
-                        background: "var(--surface)",
-                        color: "var(--ink)",
-                        fontSize: "0.7rem",
-                        padding: "4px 8px",
-                        boxShadow: "none",
-                      }}
-                      formatter={(v: unknown, name: unknown) => [
+                  contentStyle={{
+                    border: "1px solid var(--line)",
+                    borderRadius: "6px",
+                    background: "var(--surface)",
+                    color: "var(--ink)",
+                    fontSize: "0.7rem",
+                    padding: "4px 8px",
+                    boxShadow: "none",
+                  }}
+                  itemStyle={{ color: "var(--ink)" }}
+                  formatter={(v: unknown, name: unknown) => [
                         `${Math.round(Number(v ?? 0) * 100)}%`,
                         String(name ?? ""),
                       ]}

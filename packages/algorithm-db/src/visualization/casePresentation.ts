@@ -42,10 +42,17 @@ export interface CaseRenderPlan {
   modelRotationY: number;
   camera: OrbitCamera;
   diagramRotation?: number;
+  /**
+   * The case pair (corner + edge piece IDs) identified from the setup, for
+   * F2L/Advanced F2L. The 3D mask keeps these two pieces colored wherever
+   * they are (own slot, U layer, or trapped in another slot) and grays the
+   * rest — matching the standard F2L stickering.
+   */
+  pair?: { homeC: number; homeE: number } | null;
 }
 
 export const DEFAULT_CASE_CAMERA: OrbitCamera = {
-  theta: Math.PI / 4,
+  theta: Math.PI / 6,
   phi: Math.PI / 6,
   radius: 7,
 };
@@ -57,7 +64,7 @@ export const F2L_SLOT_MODEL_ROTATIONS: Record<F2LSlotId, number> = {
   3: Math.PI / 2,
 };
 
-const DEFAULT_GRAY = '#808080';
+const DEFAULT_GRAY = '#505050';
 
 function normalizeCamera(camera?: OrbitCamera): OrbitCamera {
   const source = camera ?? DEFAULT_CASE_CAMERA;
@@ -81,8 +88,14 @@ export function resolveVisualizationStyleForSubset(
   subsetName: string | undefined,
 ): VisualizationStyle {
   if (!subsetName) return 'full-color';
-  return SUBSET_VISUALIZATION[subsetName]?.style
-    ?? (subsetName.toLowerCase().includes('oll') ? 'yellow-gray' : 'full-color');
+  if (SUBSET_VISUALIZATION[subsetName]?.style) {
+    return SUBSET_VISUALIZATION[subsetName].style;
+  }
+  const lower = subsetName.toLowerCase();
+  if (lower === 'coll') return 'coll';
+  if (lower.includes('winter') || lower.includes('wv') || lower.includes('vls')) return 'wv';
+  if (lower.includes('oll')) return 'yellow-gray';
+  return 'full-color';
 }
 
 /** Resolve the visual policy from the case's canonical subset. */
@@ -135,6 +148,23 @@ export function resolveAlgorithmDiagramRotation(
   return resolveAlgorithmViewPreferences(algorithm).diagramRotation;
 }
 
+export const F2L_SLOT_PIECES: Record<F2LSlotId, { homeC: number; homeE: number }> = {
+  0: { homeC: 4, homeE: 8 },  // FR slot (DFR corner 4 + FR edge 8)
+  1: { homeC: 5, homeE: 9 },  // FL slot (DLF corner 5 + FL edge 9)
+  2: { homeC: 6, homeE: 10 }, // BL slot (DBL corner 6 + BL edge 10)
+  3: { homeC: 7, homeE: 11 }, // BR slot (DRB corner 7 + BR edge 11)
+};
+
+// ─── Case pair identification (F2L) ────────────────────────────────────────
+//
+// The pair pieces corresponding to the selected F2L slot (default FR: DFR corner 4
+// + FR edge 8) are always kept colored wherever they are on the cube (whether in
+// the slot, in the U layer, or trapped in another position), while foreign pieces
+// are grayed out.
+function identifyPairForSlot(slot: F2LSlotId): { homeC: number; homeE: number } {
+  return F2L_SLOT_PIECES[slot] ?? F2L_SLOT_PIECES[0];
+}
+
 function generateCanonical3x3(caseData: AlgorithmCase, algorithm?: CasePresentationOptions['algorithm'] | null) {
   if (caseData.setupScramble) {
     return {
@@ -185,9 +215,13 @@ export function buildCaseRenderPlan(
   // 3D must render the physical state produced by the canonical setup. The
   // clean facelets above are intentionally only for 2D recognition diagrams.
   let engineFacelets = canonical3x3.faceletString;
+  let pair: CaseRenderPlan['pair'] = null;
   if (caseData.setupScramble) {
     const rawState = CaseStateGenerator.generateFromScramble(caseData.setupScramble);
     engineFacelets = CaseStateGenerator.toFaceletString(rawState);
+    if (f2l && !is2x2) {
+      pair = identifyPairForSlot(selectedSlot);
+    }
   }
   if (is2x2) {
     const state = new Cube2x2State();
@@ -217,6 +251,7 @@ export function buildCaseRenderPlan(
     modelRotationY: is2x2 ? 0 : F2L_SLOT_MODEL_ROTATIONS[selectedSlot],
     camera,
     diagramRotation: prefs.diagramRotation,
+    pair,
   };
 }
 

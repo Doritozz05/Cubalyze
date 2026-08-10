@@ -4,7 +4,7 @@
 // to the cube's current physical orientation. See the design document:
 //   docs/02-architecture/Dynamic_Notation_Orientation_System.md
 
-import type { CubeFace, CubeMoveDirection, GyroEvent } from './index';
+import type { CubeFace, CubeMoveDirection, GyroEvent, OuterFace } from './index';
 
 /**
  * A permutation mapping: position → original face currently occupying it.
@@ -13,8 +13,11 @@ import type { CubeFace, CubeMoveDirection, GyroEvent } from './index';
  * to the F position, so `faceMap.F === 'R'`.
  *
  * The identity map is { U:'U', D:'D', F:'F', B:'B', L:'L', R:'R' }.
+ *
+ * Only OUTER faces participate in orientation permutations — slices (M/E/S)
+ * are moves, not positions, so they are excluded here.
  */
-export type FacePermutation = Record<CubeFace, CubeFace>;
+export type FacePermutation = Record<OuterFace, OuterFace>;
 
 /**
  * The cube's current orientation — one of 24 possible orientations in the

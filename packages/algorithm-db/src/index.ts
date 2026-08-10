@@ -64,3 +64,7 @@ export {
 // Case verifier (Min2Phase oracle)
 export { CaseVerifier } from './caseVerifier';
 export type { CaseVerificationResult, SubsetVerificationReport } from './caseVerifier';
+
+// Move parsing / reconstruction notation lives in @cubeforge/math-core
+// (notation/moveNotation). Case recognition was removed — reconstruction is
+// rebuilt on the stats pipeline (see docs/plan_reconstruction).

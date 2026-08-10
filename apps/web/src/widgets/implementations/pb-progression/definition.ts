@@ -13,6 +13,5 @@ export const pbProgressionDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 880, y: 440 },
-  defaultMinimized: true,
   tags: ["pb", "personal-best", "progression", "timeline", "milestones"],
 };

@@ -76,7 +76,7 @@ describe('WcaRules — Level 2 Edge Cases', () => {
     expect(calculateFinalTime(big, Penalty.NONE)).toBe(big);
   });
 
-  it('DNF siempre devuelve Infinity independientemente del solveTime', () => {
+  it('DNF always returns Infinity regardless of solveTime', () => {
     expect(calculateFinalTime(12_345, Penalty.DNF)).toBe(Infinity);
     expect(calculateFinalTime(-5000, Penalty.DNF)).toBe(Infinity);
     expect(calculateFinalTime(Infinity, Penalty.DNF)).toBe(Infinity);

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useDebounce } from "use-debounce";
-import type { Solve, Penalty, SolveMethod } from "@/types";
+import type { Solve, SolveMethod } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime } from "@/utils/formatTime";
 
@@ -14,14 +14,14 @@ export type SortOrder =
   | "worst"
   | "pbDelta";
 
+export type SolveFilterCategory = "clean" | "+2" | "DNF" | "smart" | null;
+
 export interface StatsFilters {
   dateFrom: number | null;
   dateTo: number | null;
-  penalties: Set<Penalty>;
+  activeFilter: SolveFilterCategory;
   methods: Set<SolveMethod>;
   sort: SortOrder;
-  /** Keep only solves recorded with a Smart Cube (i.e. `source === "smart"`). */
-  smartCubeOnly: boolean;
   search: string;
   /** Filter by puzzle type. null = show all. Default "3x3x3". */
   puzzleType: string | null;
@@ -30,10 +30,9 @@ export interface StatsFilters {
 export const DEFAULT_FILTERS: StatsFilters = {
   dateFrom: null,
   dateTo: null,
-  penalties: new Set(["none", "+2", "DNF"]),
+  activeFilter: null,
   methods: new Set(),
   sort: "newest",
-  smartCubeOnly: false,
   search: "",
   puzzleType: "3x3x3",
 };
@@ -66,14 +65,27 @@ export function useStatsFilters(
     [],
   );
 
+  // Solves scoped to the active puzzle type (e.g. "3x3x3")
+  const puzzleSolves = useMemo(() => {
+    if (filters.puzzleType == null) return solves;
+    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === filters.puzzleType);
+  }, [solves, filters.puzzleType]);
+
   const filtered = useMemo(() => {
-    return solves.filter((s) => {
+    return puzzleSolves.filter((s) => {
       if (filters.dateFrom != null && s.timestamp < filters.dateFrom)
         return false;
       if (filters.dateTo != null && s.timestamp > filters.dateTo)
         return false;
       const normalizedPen = normalizePenalty(s.penalty);
-      if (!filters.penalties.has(normalizedPen)) return false;
+      if (filters.activeFilter === "clean" && normalizedPen !== "none")
+        return false;
+      if (filters.activeFilter === "+2" && normalizedPen !== "+2")
+        return false;
+      if (filters.activeFilter === "DNF" && normalizedPen !== "DNF")
+        return false;
+      if (filters.activeFilter === "smart" && s.source !== "smart")
+        return false;
       if (
         s.method &&
         filters.methods.size > 0 &&
@@ -88,19 +100,15 @@ export function useStatsFilters(
         const timeOk = formatTime(effectiveTime(s)).toLowerCase().includes(q);
         if (!noteOk && !scrOk && !penOk && !timeOk) return false;
       }
-      if (filters.smartCubeOnly && s.source !== "smart") return false;
-      if (filters.puzzleType != null && (s.puzzleType ?? "3x3x3") !== filters.puzzleType) return false;
       return true;
     });
   }, [
-    solves,
+    puzzleSolves,
     filters.dateFrom,
     filters.dateTo,
-    filters.penalties,
+    filters.activeFilter,
     filters.methods,
     debouncedSearch,
-    filters.smartCubeOnly,
-    filters.puzzleType,
   ]);
 
   const sorted = useMemo(() => {
@@ -119,7 +127,7 @@ export function useStatsFilters(
         arr.sort((a, b) => effectiveTime(b) - effectiveTime(a));
         break;
       case "pbDelta": {
-        const valid = solves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
+        const valid = puzzleSolves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
         if (valid.length === 0) {
           arr.sort((a, b) => b.timestamp - a.timestamp);
           break;
@@ -133,7 +141,7 @@ export function useStatsFilters(
       }
     }
     return arr;
-  }, [filtered, filters.sort, solves]);
+  }, [filtered, filters.sort, puzzleSolves]);
 
   const reset = useCallback(
     () => setFiltersState({ ...DEFAULT_FILTERS }),
@@ -144,7 +152,8 @@ export function useStatsFilters(
     filters,
     setFilters,
     filtered: sorted,
-    totalCount: solves.length,
+    puzzleSolves,
+    totalCount: puzzleSolves.length,
     filteredCount: sorted.length,
     reset,
   };

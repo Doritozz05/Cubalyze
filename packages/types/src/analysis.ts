@@ -109,6 +109,25 @@ export interface SolveTimeline {
 
   /** Timestamp of the solve end (last move or solved detection). */
   endTimestamp: number;
+
+  /**
+   * The SOLVER-FRAME state snapshots (one per entry), preserved BEFORE the
+   * P2 frame recovery rotated them. Slot-level analysis (xcross detection,
+   * F2L pairs) is only meaningful in the frame the reconstruction was
+   * written in: after the rotation, piece-anchored checks no longer see the
+   * solver's slots (the reconz-12340 "xcross → plain" regression). Present
+   * only when the timeline was rotated by frame recovery.
+   */
+  solverFrameStates?: CubeStateSnapshot[];
+
+  /**
+   * Accumulated F2L frame offset per entry: how many quarter turns the
+   * bottom two layers (D + E) were rotated by wide d (Dw) regrips up to and
+   * including that entry. The slot analysis applies the inverse offset so
+   * slot identities stay stable across a mid-F2L d regrip (the solver's
+   * frame follows the bottom two layers, not the whole cube).
+   */
+  solverFrameOffsets?: number[];
 }
 
 export type InitialStateSource =
@@ -118,18 +137,13 @@ export type InitialStateSource =
   | 'unknown';
 
 export type PhaseDetectionWarning =
-  | 'missing-phase'
   | 'incomplete-solve'
   | 'final-state-not-solved'
   | 'initial-state-unknown'
-  | 'scramble-only-seed'
   | 'side-cross-approximation'
-  | 'simultaneous-phase'
-  | 'phase-skip'
   | 'non-monotonic-timestamps'
   | 'non-finite-timestamps'
-  | 'unattributed-time'
-  | 'advanced-technique-possible';
+  | 'unattributed-time';
 
 export type PhaseDetectionConfidence = 'high' | 'medium' | 'low' | 'invalid';
 
@@ -141,6 +155,45 @@ export interface PhaseDetectionReport {
   complete: boolean;
   finalStateSolved: boolean;
   crossFace?: CubeFace;
+
+  /**
+   * The solver's cross color, as a face letter in the canonical scheme
+   * (e.g. 'U' for a white cross on D). Derived from the sticker geometry
+   * at cross completion, so it is independent of the cross face.
+   */
+  crossColor?: CubeFace;
+
+  /**
+   * How the cross completed: 'plain' (no F2L pair solved at cross
+   * completion), 'xcross' (exactly one pair in its slot), 'xxcross'
+   * (exactly two), 'xxxcross' (three — the whole F2L except one slot
+   * is already solved when the cross completes), 'pseudo xcross' (the
+   * solver never built a real cross in the written block — the edges
+   * were left misordered or partial and fixed inside the F2L pairs;
+   * the Cross phase is cut at the written boundary).
+   */
+  crossType?:
+    | 'plain'
+    | 'xcross'
+    | 'xxcross'
+    | 'xxxcross'
+    | 'pseudo xcross';
+
+  /**
+   * The F2L slots that were already complete when the cross completed
+   * (empty for 'plain', one entry for 'xcross', two for 'xxcross',
+   * three for 'xxxcross').
+   */
+  xcrossPairs?: Array<{
+    /** Slot name in the cross frame, e.g. 'FR', 'BR', 'BL', 'FL'. */
+    slot: string;
+    /** The pair's two side colors (canonical face letters). */
+    colors: [CubeFace, CubeFace];
+  }>;
+
+  /** Explicitly listed phase skips, e.g. ['oll'] for an OLL skip. */
+  skips?: Array<'oll' | 'pll'>;
+
   confidence: PhaseDetectionConfidence;
   warnings: PhaseDetectionWarning[];
   initialStateSource: InitialStateSource;
@@ -152,7 +205,12 @@ export interface PhaseDetectionReport {
   /** Time between adjacent detected phases, not owned by either phase. */
   transitionTimeMs?: number;
 
-  /** Duration that could not be assigned to a phase or transition. */
+  /**
+   * Timeline time that could not be assigned to a phase or transition.
+   * Measured against the timeline's own span (first→last move), never the
+   * timer duration — the timer inherently includes the stop lag, so using it
+   * as the baseline would flag nearly every smart solve.
+   */
   unattributedTimeMs?: number;
 } 
 
@@ -431,13 +489,11 @@ export interface CFOPMetrics {
   ollRecognitionMs: number;
   ollExecutionMs: number;
   ollTPS: number;
-  ollAlgorithmId?: string;
 
   /** PLL recognition + execution. */
   pllRecognitionMs: number;
   pllExecutionMs: number;
   pllTPS: number;
-  pllAlgorithmId?: string;
 }
 
 export interface F2LPairMetrics {
@@ -448,6 +504,19 @@ export interface F2LPairMetrics {
   moves: number;
   tps: number;
   pauseBeforeMs: number;
+
+  // ─── Unified pipeline fields (Fase 2 — shared segmentF2LPairs) ──────────
+  // All optional so persisted/older JSON keeps parsing and the smart route
+  // can omit what it does not track (raw notation).
+
+  /** The pair's two side colors (canonical face letters). */
+  colors?: [string, string] | null;
+  /** Leading U moves (AUF-style) at the start of the pair. */
+  auf?: string[];
+  /** Raw solver notation, one token per timeline entry (text route). */
+  movesNotation?: string[] | null;
+  /** Timeline index where the pair completed. */
+  completionIndex?: number;
 }
 
 // ─── Roux-Specific Metrics ───────────────────────────────────────────────────

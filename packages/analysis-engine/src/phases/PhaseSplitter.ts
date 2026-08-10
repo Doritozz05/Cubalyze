@@ -1,8 +1,13 @@
 import {
   StateMatcher,
+  ColorPhaseDetector,
   type MethodDefinition,
   type PhaseMask,
   COLOR_NEUTRAL_CFOP_MASKS,
+  applyFrameRotation,
+  bestFrameRotationSequence,
+  countCompletedF2LSlotsInFrame,
+  IDENTITY_SCHEME,
 } from '@cubeforge/math-core';
 import type {
   CubeFace,
@@ -13,18 +18,64 @@ import type {
   PhaseSegment,
   SolveTimeline,
 } from '@cubeforge/types';
+import type { CubeState } from '@cubeforge/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
+import { pickSlotFrame } from '../pipeline/slotFrame';
 
 type SplitOptions = {
   colorNeutral?: boolean;
+  /**
+   * Relax the cross-completion criterion to PERMUTATION only: the cross
+   * counts as done the moment its 4 edges occupy their 4 slots, even when
+   * one or more are still flipped (misoriented). Matches how
+   * reconstructionists mark the cross (the flip fix lands in the first F2L
+   * pair). Default false = current strict behavior (position + orientation).
+   * Only affects the CFOP color-neutral path.
+   */
+  relaxedCross?: boolean;
   /** Require every phase and a solved final state when validating. */
   strict?: boolean;
+  /**
+   * TIEBREAK-ONLY hint for color-neutral detection: the timeline index where
+   * the solver's written cross segment ends (from the reconstruction text).
+   * Used only when two crosses are indistinguishable by state (same phase
+   * chain, same longevity); never used to detect a cross. Undefined = no hint.
+   */
+  preferredCrossIdx?: number;
 };
 
 type DetectionRun = {
   phases: PhaseSegment[];
   crossFace?: CubeFace;
+  /** The solver's cross color (canonical face letter), from color-neutral detection. */
+  crossColor?: CubeFace;
+  /** The winning AUF-corrected scheme (face → color) used to evaluate F2L slots. */
+  scheme?: Record<string, string>;
+  /**
+   * True when the written cross block ends far before ANY valid cross exists
+   * (a pseudo/partial cross — reconz-11663 "pseudo xcross", reconz-4319
+   * "pseudo cross", reconz-3467 "partial cross"): the solver built the
+   * cross edges into their slots but left them misordered (or a partial
+   * cross) and fixed the order inside the F2L pairs, so the state-based
+   * cross only completes much later. The Cross phase is then cut at the
+   * WRITTEN boundary and labeled 'pseudo xcross'.
+   */
+  pseudoCross?: boolean;
 };
+
+/**
+ * Pseudo-cross gap: when the winning (relaxed) cross completes this many
+ * entries AFTER the written cross block's end, the written block did not
+ * contain a real cross (misordered permutation / partial cross) and the
+ * Cross phase is cut at the written boundary. Measured on the 300-solve
+ * divergence sample: the maximum gap among the 285 well-detected solves is
+ * +2, so >=3 never fires on a solve whose cross already lands on its written
+ * block. Residual risk (validated absent across the 300-solve sample): a
+ * GENUINELY late-valid cross completing exactly 3+ entries after the written
+ * end would be mislabeled pseudo — the written end is the only signal, and
+ * for CFOP-standard solves it never lags the state cross by 3.
+ */
+const PSEUDO_CROSS_MIN_GAP = 3;
 
 /**
  * Splits a SolveTimeline into ordered phase segments.
@@ -100,17 +151,25 @@ export class PhaseSplitter {
     const report = PhaseSplitter.buildReport(timeline, method, options);
     if (report.phases.length === 0) return false;
 
-    const masks = PhaseSplitter.masksForReport(method, report);
-    for (let phaseIndex = 0; phaseIndex < report.phases.length; phaseIndex++) {
-      const phase = report.phases[phaseIndex];
-      if (phase.skipped || phase.completionIndex === undefined) continue;
+    // Color-based detection verifies each phase by sticker GEOMETRY (any
+    // cross color on any face). Re-checking those phases against the
+    // piece-anchored masks would reject every non-canonical style (e.g. the
+    // standard white cross on D), so the mask re-verification only applies to
+    // canonical mask detection.
+    const useColorNeutral = options?.colorNeutral === true && method.name === 'CFOP';
+    if (!useColorNeutral) {
+      const masks = PhaseSplitter.masksForReport(method, report);
+      for (let phaseIndex = 0; phaseIndex < report.phases.length; phaseIndex++) {
+        const phase = report.phases[phaseIndex];
+        if (phase.skipped || phase.completionIndex === undefined) continue;
 
-      const entry = timeline.entries[phase.completionIndex];
-      const mask = masks[phaseIndex];
-      if (!entry || !mask) return false;
+        const entry = timeline.entries[phase.completionIndex];
+        const mask = masks[phaseIndex];
+        if (!entry || !mask) return false;
 
-      const state = TimelineBuilder.fromSnapshot(entry.state);
-      if (!StateMatcher.matchesMask(state, mask)) return false;
+        const state = TimelineBuilder.fromSnapshot(entry.state);
+        if (!StateMatcher.matchesMask(state, mask)) return false;
+      }
     }
 
     if (options?.strict && (!report.complete || !report.finalStateSolved)) {
@@ -130,33 +189,82 @@ export class PhaseSplitter {
     }
 
     const useColorNeutral = options?.colorNeutral === true && method.name === 'CFOP';
-    if (!useColorNeutral) {
-      return { phases: PhaseSplitter.runDetection(timeline, method.phases) };
+    if (useColorNeutral) {
+      // Color-based detection: recognizes the cross by the sticker geometry,
+      // so any cross color on any face (including the standard white-on-D
+      // style, which piece-anchored masks cannot see) is detected.
+      const colorRun = PhaseSplitter.detectColorNeutral(
+        timeline,
+        options?.preferredCrossIdx,
+        options?.relaxedCross,
+      );
+      if (colorRun.phases.length > 0) return colorRun;
     }
 
-    // Do not lock onto the first cross that happens to match. Evaluate all six
-    // possible faces and choose the candidate with the strongest complete,
-    // earliest-progressing phase sequence.
-    const candidates = COLOR_NEUTRAL_CFOP_MASKS.map((faceMasks) => ({
-      faceMasks,
-      run: {
-        phases: PhaseSplitter.runDetection(timeline, faceMasks.masks),
-        crossFace: faceMasks.face as CubeFace,
-      },
-    }));
+    return { phases: PhaseSplitter.runDetection(timeline, method.phases) };
+  }
 
-    const best = candidates.reduce((current, candidate) => {
-      return PhaseSplitter.compareRuns(candidate.run, current.run)
-        ? candidate
-        : current;
+  /**
+   * Color-based CFOP detection: any cross color on any face, re-colored to the
+   * solver's scheme. Falls back to an empty run when no cross is ever complete.
+   */
+  private static detectColorNeutral(
+    timeline: SolveTimeline,
+    preferredCrossIdx?: number,
+    relaxedCross?: boolean,
+  ): DetectionRun {
+    const states = timeline.entries.map((entry) =>
+      TimelineBuilder.fromSnapshot(entry.state),
+    );
+    const result = ColorPhaseDetector.detect(states, preferredCrossIdx, {
+      relaxedCross,
     });
+    if (!result || result.completions[0] < 0) return { phases: [] };
 
-    // If no color-neutral candidate found anything, retain the historical
-    // canonical-mask fallback so generic/incomplete timelines remain useful.
-    if (best.run.phases.length === 0) {
-      return { phases: PhaseSplitter.runDetection(timeline, method.phases) };
+    // ── Pseudo-cross: cut the Cross phase at the WRITTEN boundary ─────────
+    // A pseudo/partial cross (the solver leaves the cross edges misordered or
+    // incomplete and fixes the order inside the F2L pairs) never produces a
+    // valid cross near the reconstructionist's written cross block, so the
+    // state-based cross completes much later — the panel then claims an
+    // xx/xxxcross spanning the whole F2L (reconz-11663). The state alone
+    // cannot tell this from a genuinely late cross (identical states), so the
+    // written boundary is the ONLY signal: end the Cross phase there and
+    // label it 'pseudo xcross'.
+    //
+    // Relaxed mode only: a late STRICT cross is also the signature of plain
+    // flipped-edge crosses that the relaxed criterion already resolves AT the
+    // written end (reconz-5848 s@24/r@9) — the rule must only fire when even
+    // the PERMUTATION completes late. Needs the written segment (undefined for
+    // flat/unlabelled solves and the smart-cube route) and a gap >= 3 (the
+    // max measured gap among well-detected solves is +2).
+    const pseudoCross =
+      relaxedCross === true &&
+      preferredCrossIdx !== undefined &&
+      result.completions[0] - preferredCrossIdx >= PSEUDO_CROSS_MIN_GAP;
+    const completions: number[] = pseudoCross
+      ? [preferredCrossIdx, ...result.completions.slice(1)]
+      : result.completions;
+
+    // Only found completions become segments (mirroring runDetection, which
+    // stops at the first missing mask). Trailing -1 means the phase never
+    // completed and must not be indexed.
+    const found: number[] = [];
+    for (const completion of completions) {
+      if (completion < 0) break;
+      found.push(completion);
     }
-    return best.run;
+    const phases = PhaseSplitter.buildSegments(
+      timeline,
+      ['Cross', 'F2L', 'OLL', 'PLL'],
+      found,
+    );
+    return {
+      phases,
+      crossFace: result.crossFace as CubeFace,
+      crossColor: result.crossColor as CubeFace,
+      scheme: result.scheme as Record<string, string>,
+      pseudoCross,
+    };
   }
 
   private static runDetection(
@@ -164,15 +272,11 @@ export class PhaseSplitter {
     masks: readonly PhaseMask[],
   ): PhaseSegment[] {
     const { entries } = timeline;
-    const phases: PhaseSegment[] = [];
-    let phaseIndex = 0;
-    let previousCompletion = -1;
+    const completions: number[] = [];
     let searchFrom = 0;
 
-    while (phaseIndex < masks.length) {
-      const mask = masks[phaseIndex];
+    for (const mask of masks) {
       let completionIndex = -1;
-
       for (let i = searchFrom; i < entries.length; i++) {
         const state = TimelineBuilder.fromSnapshot(entries[i].state);
         if (StateMatcher.matchesMask(state, mask)) {
@@ -180,14 +284,42 @@ export class PhaseSplitter {
           break;
         }
       }
-
       if (completionIndex < 0) break;
+      completions.push(completionIndex);
+      // Start at the same state to allow OLL/PLL (or other nested masks) to
+      // complete simultaneously. A later phase naturally searches forward.
+      searchFrom = completionIndex;
+    }
 
+    return PhaseSplitter.buildSegments(
+      timeline,
+      masks.map((mask) => mask.name),
+      completions,
+    );
+  }
+
+  /**
+   * Build ordered phase segments from precomputed completion indices.
+   *
+   * A non-skipped phase owns the moves after the previous completion up to and
+   * including its completion move. A skipped phase (same completion index as
+   * the previous one) owns no move; its indices remain addressable for
+   * compatibility consumers, while `skipped` is the source of truth for
+   * annotation and metrics.
+   */
+  private static buildSegments(
+    timeline: SolveTimeline,
+    names: readonly string[],
+    completions: readonly number[],
+  ): PhaseSegment[] {
+    const { entries } = timeline;
+    const phases: PhaseSegment[] = [];
+    let previousCompletion = -1;
+
+    for (let k = 0; k < completions.length; k++) {
+      const phaseName = names[k];
+      const completionIndex = completions[k];
       const skipped = completionIndex === previousCompletion;
-      // A non-skipped phase owns the moves after the previous completion up to
-      // and including its completion move. A skipped phase owns no move; its
-      // indices remain addressable for compatibility consumers, while `skipped` is
-      // the source of truth for annotation and metrics.
       const startIndex = skipped ? completionIndex : previousCompletion + 1;
       const endIndex = completionIndex;
       const startTimestamp = skipped
@@ -205,7 +337,7 @@ export class PhaseSplitter {
         : 0;
 
       phases.push({
-        phaseName: mask.name,
+        phaseName,
         startIndex,
         endIndex,
         completionIndex,
@@ -220,16 +352,12 @@ export class PhaseSplitter {
       });
 
       previousCompletion = completionIndex;
-      phaseIndex++;
-      // Start at the same state to allow OLL/PLL (or other nested masks) to
-      // complete simultaneously. A later phase naturally searches forward.
-      searchFrom = completionIndex;
     }
 
-    // Preserve the invariant that a fully detected solve covers any
-    // trailing events after the last mask match. Those events belong to the
-    // final non-skipped phase; a skipped terminal phase remains zero-move.
-    if (phaseIndex === masks.length && phases.length > 0) {
+    // Preserve the invariant that a fully detected solve covers any trailing
+    // events after the last completion. Those events belong to the final
+    // non-skipped phase; a skipped terminal phase remains zero-move.
+    if (completions.length === names.length && phases.length > 0) {
       const lastPhase = [...phases].reverse().find((phase) => !phase.skipped);
       if (lastPhase && lastPhase.endIndex < entries.length - 1) {
         lastPhase.endIndex = entries.length - 1;
@@ -246,35 +374,6 @@ export class PhaseSplitter {
     return phases;
   }
 
-  private static compareRuns(
-    candidate: DetectionRun,
-    current: DetectionRun,
-  ): boolean {
-    const expected = 4;
-    const candidateComplete = candidate.phases.length >= expected;
-    const currentComplete = current.phases.length >= expected;
-    if (candidateComplete !== currentComplete) return candidateComplete;
-    if (candidate.phases.length !== current.phases.length) {
-      return candidate.phases.length > current.phases.length;
-    }
-
-    // Earlier cross completion is preferable when multiple candidates can
-    // match the final solved state. This avoids the old greedy late-face lock.
-    const candidateCross = candidate.phases[0]?.completionIndex ?? Number.MAX_SAFE_INTEGER;
-    const currentCross = current.phases[0]?.completionIndex ?? Number.MAX_SAFE_INTEGER;
-    if (candidateCross !== currentCross) return candidateCross < currentCross;
-
-    const candidateProgress = candidate.phases.reduce(
-      (sum, phase) => sum + (phase.completionIndex ?? 0),
-      0,
-    );
-    const currentProgress = current.phases.reduce(
-      (sum, phase) => sum + (phase.completionIndex ?? 0),
-      0,
-    );
-    return candidateProgress < currentProgress;
-  }
-
   private static buildReport(
     timeline: SolveTimeline,
     method: MethodDefinition,
@@ -288,14 +387,11 @@ export class PhaseSplitter {
       timeline.initialStateSource ?? 'unknown';
     const warnings: PhaseDetectionWarning[] = [];
 
-    if (detection.phases.length < expectedPhases.length) {
-      warnings.push('missing-phase', 'incomplete-solve');
-    }
+    if (!complete) warnings.push('incomplete-solve');
     if (timeline.entries.length > 0 && !finalStateSolved) {
       warnings.push('final-state-not-solved');
     }
     if (initialStateSource === 'unknown') warnings.push('initial-state-unknown');
-    if (initialStateSource === 'scramble') warnings.push('scramble-only-seed');
     if (PhaseSplitter.hasNonMonotonicTimestamps(timeline)) {
       warnings.push('non-monotonic-timestamps');
     }
@@ -307,11 +403,142 @@ export class PhaseSplitter {
     if (method.name === 'CFOP' && crossFace && !['D', 'U'].includes(crossFace)) {
       warnings.push('side-cross-approximation');
     }
-    if (detection.phases.some((phase) => phase.skipped)) {
-      warnings.push('phase-skip', 'advanced-technique-possible');
+
+    // ─── CFOP advanced techniques: XCross / XXCross + explicit skips ────
+    // XCross: an F2L pair is already solved (edge+corner home, oriented) at
+    // the moment the cross completes. Evaluated in the SOLVER's frame via the
+    // ColorPhaseDetector scheme (any cross color); the canonical mask path
+    // falls back to the identity scheme (canonical D-cross).
+    const crossColor = detection.crossColor;
+    const scheme = detection.scheme;
+    let crossType: PhaseDetectionReport['crossType'];
+    let xcrossPairs: PhaseDetectionReport['xcrossPairs'];
+    const skips: NonNullable<PhaseDetectionReport['skips']> = [];
+
+    if (method.name === 'CFOP') {
+      if (detection.phases.some((p) => p.phaseName === 'OLL' && p.skipped)) {
+        skips.push('oll');
+      }
+      if (detection.phases.some((p) => p.phaseName === 'PLL' && p.skipped)) {
+        skips.push('pll');
+      }
+
+      const crossPhase = detection.phases.find((p) => p.phaseName === 'Cross');
+      if (detection.pseudoCross) {
+        // The written block never contained a real cross: no pairs are home
+        // at its end by construction, so the slot-based xcross check would
+        // only ever read 'plain'. Label it 'pseudo xcross' directly.
+        crossType = 'pseudo xcross';
+        xcrossPairs = [];
+      } else if (crossPhase && crossPhase.completionIndex !== undefined) {
+        // The cross may complete DISALIGNED (its edges on the cross face but
+        // not yet aligned with the side centers); the solver aligns it within
+        // 1-2 moves. A single move can never complete a slot from scratch, so
+        // scanning the next two entries for the max slot count only ever
+        // catches the alignment (no false positives from a fast first pair).
+        //
+        // SLOT ANALYSIS RUNS IN THE SOLVER'S FRAME: after P2 frame recovery
+        // rotates the snapshots, piece-anchored slot checks no longer see the
+        // pieces the solver solved (the whole frame shifted), so a genuine
+        // xcross degrades to 'plain' (the Yiheng-12340 regression). The
+        // pre-recovery solver-frame states (already rotated by the inspection
+        // grip when one is known) are preserved on the timeline; the check
+        // reads THOSE (undoing the accumulated D+E d-regrip offsets) instead
+        // of the rotated timeline states. The crossFace/scheme come from
+        // pickSlotFrame (the labeling under which the solver's pairs are
+        // home), shared with the F2L pair scan so the two never diverge.
+        //
+        // Defensive: on incoherent solves the color detector can produce a
+        // scheme whose re-coloring is not a valid cube (repeated colors) and
+        // countCompletedF2LSlotsInFrame would throw. XCross info is a bonus —
+        // degrade to 'plain' instead of failing the whole report.
+        try {
+          const f2lPhase = detection.phases.find((p) => p.phaseName === 'F2L');
+          const picked = f2lPhase
+            ? pickSlotFrame(
+                timeline,
+                crossFace,
+                scheme ?? null,
+                options?.preferredCrossIdx,
+                f2lPhase.startIndex,
+                f2lPhase.endIndex ?? f2lPhase.startIndex,
+                options?.relaxedCross,
+              )
+            : { crossFace: crossFace ?? 'D', scheme: scheme ?? IDENTITY_SCHEME };
+          const frameFace: CubeFace = picked.crossFace as CubeFace;
+          const frameScheme = picked.scheme;
+          const solverStates = timeline.solverFrameStates;
+          // The same DP the F2L pair scan uses (bestFrameRotationSequence),
+          // over the SAME span ([cross completion, F2L end]) so the xcross
+          // verdict and the pair scan share identical per-index frames.
+          const xstart = Math.max(0, crossPhase.completionIndex);
+          const xend = Math.min(
+            timeline.entries.length - 1,
+            f2lPhase?.endIndex ?? crossPhase.completionIndex + 2,
+          );
+          let xframes: ReturnType<typeof bestFrameRotationSequence> = [];
+          {
+            const xstates: CubeState[] = [];
+            let xok = true;
+            for (let i = xstart; i <= xend; i++) {
+              const snapshot = solverStates?.[i] ?? timeline.entries[i]?.state;
+              if (!snapshot) {
+                xok = false;
+                break;
+              }
+              xstates.push(TimelineBuilder.fromSnapshot(snapshot));
+            }
+            if (xok && xstates.length > 0) {
+              xframes = bestFrameRotationSequence(
+                xstates,
+                0,
+                xstates.length - 1,
+                frameFace,
+                frameScheme,
+              );
+            }
+          }
+          const stateAt = (idx: number): CubeState => {
+            const snapshot = solverStates?.[idx] ?? timeline.entries[idx]?.state;
+            const cube = TimelineBuilder.fromSnapshot(snapshot);
+            const j = idx - xstart;
+            if (j < 0 || j >= xframes.length) return cube;
+            return applyFrameRotation(cube, xframes[j]);
+          };
+          let best = countCompletedF2LSlotsInFrame(
+            stateAt(crossPhase.completionIndex),
+            frameFace,
+            frameScheme,
+          );
+          for (let offset = 1; offset <= 2; offset++) {
+            if (crossPhase.completionIndex + offset >= timeline.entries.length) break;
+            const candidate = countCompletedF2LSlotsInFrame(
+              stateAt(crossPhase.completionIndex + offset),
+              frameFace,
+              frameScheme,
+            );
+            if (candidate.completedCount > best.completedCount) best = candidate;
+          }
+          crossType =
+            best.completedCount === 0
+              ? 'plain'
+              : best.completedCount === 1
+                ? 'xcross'
+                : best.completedCount === 2
+                  ? 'xxcross'
+                  : 'xxxcross';
+          if (best.slots.length > 0) {
+            xcrossPairs = best.slots.map((s) => ({
+              slot: s.name,
+              colors: s.colors,
+            }));
+          }
+        } catch {
+          crossType = 'plain';
+        }
+      }
     }
 
-    const durationMs = PhaseSplitter.solveDuration(timeline);
     const phaseTimeMs = detection.phases.reduce(
       (sum, phase) => sum + Math.max(0, phase.durationMs),
       0,
@@ -320,9 +547,24 @@ export class PhaseSplitter {
       (sum, phase) => sum + Math.max(0, phase.transitionMs ?? 0),
       0,
     );
+    // Unattributed time measures TIMELINE time that no detected phase owns —
+    // deliberately NOT the timer duration. The timer measures wall time from
+    // start to stop and inherently includes the lag between the last move and
+    // the stop (BLE facelet polling / manual stop reaction); a timer-based
+    // residual is therefore positive on nearly every smart solve and would
+    // fire the warning constantly, while the panel already surfaces that dead
+    // time as "idle/transition" info. Measured against the timeline's own
+    // span (first→last move), the residual is ~0 for complete solves and only
+    // becomes meaningful when detection is incomplete (trailing moves unowned
+    // by any phase) or timestamps are inconsistent — the cases this warning
+    // exists for.
+    const spanMs = PhaseSplitter.safeElapsed(
+      timeline.startTimestamp,
+      timeline.endTimestamp,
+    );
     const unattributedTimeMs = Math.max(
       0,
-      durationMs - phaseTimeMs - transitionTimeMs,
+      spanMs - phaseTimeMs - transitionTimeMs,
     );
     if (unattributedTimeMs > 0.5) warnings.push('unattributed-time');
 
@@ -351,6 +593,10 @@ export class PhaseSplitter {
       complete,
       finalStateSolved,
       crossFace,
+      crossColor,
+      crossType,
+      xcrossPairs,
+      skips,
       confidence,
       warnings: uniqueWarnings,
       initialStateSource,
@@ -378,17 +624,13 @@ export class PhaseSplitter {
     const last = timeline.entries[timeline.entries.length - 1];
     if (!last) return false;
     try {
-      return TimelineBuilder.fromSnapshot(last.state).isSolved();
+      // A cube solved up to rotation (all faces uniform) IS a solved cube:
+      // reconstructions routinely finish in a rotated frame (recon.nz frame
+      // quirk), so the verdict must not depend on the canonical orientation.
+      return TimelineBuilder.fromSnapshot(last.state).isSolvedUpToRotation();
     } catch {
       return false;
     }
-  }
-
-  private static solveDuration(timeline: SolveTimeline): number {
-    if (timeline.solveTimeMs !== undefined && Number.isFinite(timeline.solveTimeMs)) {
-      return Math.max(0, timeline.solveTimeMs);
-    }
-    return PhaseSplitter.safeElapsed(timeline.startTimestamp, timeline.endTimestamp);
   }
 
   private static safeElapsed(start: number, end: number): number {

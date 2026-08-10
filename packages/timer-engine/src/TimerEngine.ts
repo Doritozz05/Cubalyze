@@ -6,12 +6,24 @@ export interface TimerConfig {
   useInspection: boolean;
   holdToStartDelay: number;
   cooldownDelay: number;
+  /**
+   * Safety net: if the engine stays in READY (green) this long without a
+   * `handleUp()` (e.g. the browser fired `pointercancel` on mobile and the
+   * release event was lost), it reverts to the pre-hold state so the timer
+   * can never get stuck on the green screen.
+   *
+   * Defaults to the WCA inspection window (15s) so a legitimate long hold
+   * during inspection is never interrupted; a stuck non-inspection timer is
+   * still rescued, and a stuck inspection READY is DNF'd by the 17s rule.
+   */
+  readySafetyDelay: number;
 }
 
 const DEFAULT_CONFIG: TimerConfig = {
   useInspection: true,
   holdToStartDelay: 300,
-  cooldownDelay: 500
+  cooldownDelay: 500,
+  readySafetyDelay: 15000
 };
 
 export interface TimerStopEventDetail {
@@ -39,6 +51,7 @@ export class TimerEngine {
   private touchTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private cooldownTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private inspectionTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private readySafetyTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private warned8s: boolean = false;
   private warned12s: boolean = false;
@@ -50,6 +63,12 @@ export class TimerEngine {
    * Set to null whenever TOUCHING is not the active state.
    */
   private touchingEntry: _PreviousEntryState | null = null;
+  /**
+   * Pre-hold state captured when TOUCHING→READY completes, kept separately
+   * from `touchingEntry` so the READY safety net can route back to the
+   * correct state (inspection/idle/ready_for_move) if `handleUp()` is lost.
+   */
+  private readyEntry: _PreviousEntryState | null = null;
 
   constructor(config?: Partial<TimerConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -75,7 +94,11 @@ export class TimerEngine {
     this.startTickLoop();
 
     this.inspectionTimeoutId = setTimeout(() => {
-      if (this.currentState === TimerState.INSPECTION || this.currentState === TimerState.TOUCHING) {
+      if (
+        this.currentState === TimerState.INSPECTION ||
+        this.currentState === TimerState.TOUCHING ||
+        this.currentState === TimerState.READY
+      ) {
         this.currentPenalty = Penalty.DNF;
         this.penalty$.next(this.currentPenalty);
 
@@ -83,10 +106,15 @@ export class TimerEngine {
         this.stopTickLoop();
         this.solveTimeMs = 0;
         this.touchingEntry = null;
+        this.readyEntry = null;
 
         if (this.touchTimeoutId) {
           clearTimeout(this.touchTimeoutId);
           this.touchTimeoutId = null;
+        }
+        if (this.readySafetyTimeoutId) {
+          clearTimeout(this.readySafetyTimeoutId);
+          this.readySafetyTimeoutId = null;
         }
 
         const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
@@ -141,6 +169,9 @@ export class TimerEngine {
       this.touchingEntry = entryState;
 
       this.touchTimeoutId = setTimeout(() => {
+        // Capture the pre-hold entry state BEFORE clearing touchingEntry so
+        // the READY safety net below can route back to it.
+        this.readyEntry = entryState;
         this.touchingEntry = null;
         this.setState(TimerState.READY);
         if (previousWasInspection) {
@@ -152,6 +183,25 @@ export class TimerEngine {
         } else {
           this.currentPenalty = Penalty.NONE;
         }
+
+        // SAFETY NET: if handleUp() never arrives (e.g. the browser fired
+        // `pointercancel` on mobile and the release event was lost), don't
+        // leave the timer stuck on the green READY screen forever — revert
+        // to the pre-hold state after readySafetyDelay.
+        if (this.readySafetyTimeoutId) clearTimeout(this.readySafetyTimeoutId);
+        this.readySafetyTimeoutId = setTimeout(() => {
+          this.readySafetyTimeoutId = null;
+          if (this.currentState !== TimerState.READY) return;
+          const entry = this.readyEntry;
+          this.readyEntry = null;
+          if (entry === 'inspection' && this.config.useInspection) {
+            this.setState(TimerState.INSPECTION);
+          } else if (entry === 'ready_for_move') {
+            this.setState(TimerState.READY_FOR_MOVE);
+          } else {
+            this.setState(TimerState.IDLE);
+          }
+        }, this.config.readySafetyDelay);
       }, this.config.holdToStartDelay);
 
     } else if (this.currentState === TimerState.RUNNING) {
@@ -184,22 +234,30 @@ export class TimerEngine {
       // ready_for_move, then idle.
       if (this.touchingEntry === 'inspection' && this.config.useInspection) {
         this.touchingEntry = null;
+        this.readyEntry = null;
         this.setState(TimerState.INSPECTION);
       } else if (this.touchingEntry === 'ready_for_move') {
         // User started manual hold-and-release from READY_FOR_MOVE; keep
         // READY_FOR_MOVE so releasing early does not silently drop the
         // gate they raised.
         this.touchingEntry = null;
+        this.readyEntry = null;
         this.setState(TimerState.READY_FOR_MOVE);
       } else {
         this.touchingEntry = null;
+        this.readyEntry = null;
         this.setState(TimerState.IDLE);
       }
     } else if (this.currentState === TimerState.READY) {
+      if (this.readySafetyTimeoutId) {
+        clearTimeout(this.readySafetyTimeoutId);
+        this.readySafetyTimeoutId = null;
+      }
       this.setState(TimerState.RUNNING);
       this.startTimestamp = performance.now();
       this.inspectionStartTimestamp = 0;
       this.touchingEntry = null;
+      this.readyEntry = null;
       this.startTickLoop();
     }
   }
@@ -224,6 +282,10 @@ export class TimerEngine {
       clearTimeout(this.touchTimeoutId);
       this.touchTimeoutId = null;
     }
+    if (this.readySafetyTimeoutId) {
+      clearTimeout(this.readySafetyTimeoutId);
+      this.readySafetyTimeoutId = null;
+    }
     if (this.currentState === TimerState.INSPECTION) {
       const elapsed = performance.now() - this.inspectionStartTimestamp;
       this.currentPenalty = getInspectionPenalty(elapsed);
@@ -237,6 +299,7 @@ export class TimerEngine {
     this.startTimestamp = performance.now();
     this.inspectionStartTimestamp = 0;
     this.touchingEntry = null;
+    this.readyEntry = null;
     this.startTickLoop();
   }
 
@@ -308,6 +371,11 @@ export class TimerEngine {
     this.inspectionStartTimestamp = 0;
     this.solveTimeMs = 0;
     this.touchingEntry = null;
+    this.readyEntry = null;
+    if (this.readySafetyTimeoutId) {
+      clearTimeout(this.readySafetyTimeoutId);
+      this.readySafetyTimeoutId = null;
+    }
     this.warned8s = false;
     this.warned12s = false;
     this.setState(TimerState.IDLE);

@@ -104,16 +104,18 @@ export function StageOverlays(props: StageOverlaysProps) {
           activeView={activeView}
           onNavigate={onNavigate}
           onOpenMore={onOpenMore}
+          mobileMoreOpen={mobileMoreOpen}
         />
       )}
 
-      {/* Mobile grid options bottom sheet (Settings, Smart Cube, Theme) */}
+      {/* Mobile grid options bottom sheet (Settings, Profile, Reconstructions, Smart Cube, Theme) */}
       <MobileMoreSheet
         open={mobileMoreOpen}
         onOpenChange={onMobileMoreOpenChange}
         onOpenSettings={onOpenSettings}
         onOpenCubeConnector={onOpenCubeConnector}
         onOpenProfile={onOpenProfile}
+        onNavigate={onNavigate}
       />
 
       {/* Manual solve sheet — mounted at App level (opened from the Header

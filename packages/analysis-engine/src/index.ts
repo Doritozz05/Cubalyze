@@ -20,6 +20,27 @@ export { ANALYSIS_PIPELINE_VERSION } from './version';
 // ─── Phase Recognition ───────────────────────────────────────────────────────
 export { PhaseSplitter } from './phases/PhaseSplitter';
 
+// ─── Reconstruction (Fase 2) ────────────────────────────────────────────────
+// Headless string → phases/pairs API, rebuilt on the stats pipeline
+// (TimelineBuilder + PhaseSplitter). See docs/plan_reconstruction.
+export { analyzeSolveText } from './reconstruction/analyzeSolveText';
+export type {
+  SolveTextInput,
+  SolveReconstruction,
+  F2LPairResult,
+  AnalyzeSolveTextResult,
+} from './reconstruction/analyzeSolveText';
+
+// ─── Unified Pipeline (Fase 1+3) — the ONLY place detection runs ───────────
+export {
+  analyzeSolve,
+  buildAnnotatedTimeline,
+  type AnalyzeSolveInput,
+  type AnalyzeSolveResult,
+} from './pipeline/analyzeSolve';
+export { recoverRotatedFrame, type FrameRecoveryOptions } from './pipeline/frameRecovery';
+export { segmentF2LPairs, type SegmentF2LPairsOptions, type UnifiedF2LPair } from './pipeline/segmentF2LPairs';
+
 // ─── Metrics ────────────────────────────────────────────────────────────────
 export { TPSCalculator } from './metrics/TPSCalculator';
 export { PauseDetector } from './metrics/PauseDetector';

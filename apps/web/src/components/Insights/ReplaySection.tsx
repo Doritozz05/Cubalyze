@@ -2,11 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatTime } from "@/utils/formatTime";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
 import { ReplayEngine, type ReplayState, getSkinStyle } from "@cubeforge/cube-3d-engine";
+import {
+  MoveTransformer,
+  OrientationTable,
+  getOrientationAtIndex,
+} from "@cubeforge/math-core";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import {
@@ -22,6 +26,14 @@ import {
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SPEEDS = [0.25, 0.5, 1, 2] as const;
+
+/**
+ * Playback pace: each move gets a fixed slot on the replay timeline, so the
+ * replay is MOVE-DRIVEN — it always plays EVERY move regardless of the
+ * solve's real time. A 3s / 50-move record replays all 50 moves instead of
+ * cutting off after a few. Must match ReplayEngine.moveSpacingMs.
+ */
+const REPLAY_MOVE_SPACING_MS = 500;
 
 // ─── Props ─────────────────────────────────────────────────────────────────
 
@@ -129,14 +141,14 @@ export function ReplaySection({
   // Depend on primitive/value properties only (not the whole `solve` object)
   // to avoid recomputing on every prop-reference change.
   const moves = useMemo(() => solve.moves ?? [], [solve.moves]);
-  const firstMoveTimestamp = moves[0]?.hostTimestamp;
-  const lastMoveTimestamp = moves[moves.length - 1]?.hostTimestamp;
 
-  const totalMs = useMemo(() => {
-    if (solve.time > 0) return solve.time;
-    if (moves.length < 2) return solve.time;
-    return (lastMoveTimestamp ?? 0) - (firstMoveTimestamp ?? 0);
-  }, [solve.time, moves.length, firstMoveTimestamp, lastMoveTimestamp]);
+  // MOVE-DRIVEN timeline: duration comes from the move count (each move
+  // gets a fixed slot), NOT from solve.time. This guarantees every move
+  // plays back no matter how fast the solve was.
+  const totalMs = useMemo(
+    () => Math.max(1, moves.length) * REPLAY_MOVE_SPACING_MS,
+    [moves.length],
+  );
 
   const hasMoves = moves.length >= 2;
   const totalMoves = moves.length;
@@ -145,8 +157,29 @@ export function ReplaySection({
   const liveStats = useMemo(() => {
     if (currentMoveIdx < 0 || currentMoveIdx >= moves.length) return null;
     const move = moves[currentMoveIdx];
-    const suffix = move.direction === 2 ? "2" : move.direction === -1 ? "'" : "";
-    const notation = `${move.face}${suffix}`;
+    // The written token for this event (wides carry it via displayNotation).
+    const rawNotation =
+      move.displayNotation ??
+      move.face + (move.direction === 2 ? "2" : move.direction === -1 ? "'" : "");
+    // Reconstruction records replay RAW solver-frame letters — the notation
+    // IS already the solver's own (no remapping). Smart-cube solves store
+    // PHYSICAL (cube-frame) moves and need the dynamic remap to the solver's
+    // perspective via the orientation active at this move (right is always
+    // right).
+    let notation: string;
+    if (solve.replayMovesConjugated === false) {
+      notation = rawNotation;
+    } else if (move.displayNotation) {
+      notation = move.displayNotation;
+    } else {
+      const orientationIndex = getOrientationAtIndex(
+        solve.orientationTimeline,
+        currentMoveIdx,
+      );
+      const orientationEntry =
+        OrientationTable.ENTRIES[orientationIndex] ?? OrientationTable.IDENTITY;
+      notation = MoveTransformer.toDisplayNotation(move, orientationEntry);
+    }
 
     // Find current phase from analysis phases (cumulative move counts)
     const phases = solve.analysis?.phases ?? [];
@@ -165,7 +198,13 @@ export function ReplaySection({
     }
 
     return { notation, phaseName, phaseProgress };
-  }, [currentMoveIdx, moves, solve.analysis?.phases]);
+  }, [
+    currentMoveIdx,
+    moves,
+    solve.analysis?.phases,
+    solve.orientationTimeline,
+    solve.replayMovesConjugated,
+  ]);
 
   /**
    * Clean up worker + engine resources.
@@ -242,11 +281,20 @@ export function ReplaySection({
         if (!canvas || cancelled) return;
 
         const offscreen = canvas.transferControlToOffscreen();
+        // 2×2 solves render a 2×2 mini cube (order=2); everything else is 3×3.
+        // Cube3DEngine/CubeModel already support order 2 — same FACE_ROTATION_MAP
+        // layerValues (±1) apply unchanged, so the replay moves work as-is.
+        const puzzleOrder =
+          solveRef.current.puzzleType === "2x2x2" ||
+          solveRef.current.puzzleType === "2x2"
+            ? 2
+            : 3;
         await proxy.init(
           Comlink.transfer(offscreen, [offscreen]),
           canvas.clientWidth || 160,
           canvas.clientHeight || 160,
           window.devicePixelRatio,
+          puzzleOrder,
         );
 
         cubeReadyRef.current = true;
@@ -265,6 +313,12 @@ export function ReplaySection({
         const moves = latest.moves ?? [];
         if (moves.length >= 2) {
           const orientationTimeline = latest.orientationTimeline;
+          // The orientation timeline rotates the cube ROOT to the solver's
+          // grip (inspection pre-roll before move 1 + mid-solve keyframes)
+          // while the CONJUGATED moves play in the cube's own frame — the
+          // cube both SOLVES (conjugated = base-frame) and follows the
+          // solver's perspective (root grip), ending solved in the solver's
+          // frame. Slices/wides/smartcube all share this path.
           const engine = new ReplayEngine(moves, {
             resetCube: () => proxy.resetCube(),
             rotateLayers: (
@@ -277,8 +331,25 @@ export function ReplaySection({
             setOrientation: orientationTimeline
               ? (orientationIndex: number, animationDurationMs?: number) => proxy.setCubeOrientation(orientationIndex, animationDurationMs ?? 0)
               : undefined,
-          }, latest.time, orientationTimeline);
-          engine.moveAnimationDurationMs = 70;
+            // Force-complete any move still turning in the replay worker BEFORE
+            // a reset/seek — otherwise the stale animation snaps after the
+            // reset and re-applies its rotation on top of the fresh state
+            // ("cube colors lost/buggy" after Restart / step / fast seeks).
+            flushAnimations: () => proxy.flushAnimations(),
+            // Move-driven timeline: length = moves × spacing (not solve.time),
+            // so all moves always play back.
+          }, moves.length * REPLAY_MOVE_SPACING_MS, orientationTimeline);
+          engine.moveAnimationDurationMs = 350;
+          engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
+          // Whole-cube grips (inspection pre-roll + mid-solve rotations) turn
+          // slowly — they are the solver turning the cube in hand, not moves.
+          // The pre-roll re-enacts the solver's inspection grip; only
+          // reconstruction solves (conjugated moves) get it — smart-cube IMU
+          // timelines can carry a merely-held first orientation that never
+          // rotated during the solve window.
+          engine.preRollDurationMs = 600;
+          engine.orientationAnimationDurationMs = 280;
+          engine.preRollEnabled = latest.replayMovesConjugated === true;
           engineRef.current = engine;
 
           // Apply the scramble so the cube starts in the scrambled
@@ -365,10 +436,8 @@ export function ReplaySection({
   const handleRestart = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine) return;
+    engine.pause();
     await engine.seek(0);
-    // seek(0) already fires onPosition(0,-1) which sets positionMs/idx —
-    // no need to set them again here. Just start playback.
-    await engine.play();
   }, []);
 
   const canPlay = hasMoves && replayState !== "seeking";
@@ -457,17 +526,9 @@ export function ReplaySection({
 
               {/* Controls bar — centered, max-w-sm */}
               <div className="flex flex-col gap-2 w-full max-w-xs">
-                {/* Top row: time + stats */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="nums text-xl font-semibold text-ink tabular-nums">
-                      {formatTime(positionMs)}
-                    </span>
-                    <span className="nums text-xs text-ink-3">
-                      / {formatTime(totalMs)}
-                    </span>
-                  </div>
-
+                {/* Top row: move stats — the replay is move-driven, so there is
+                    no seconds counter (a virtual clock would be misleading). */}
+                <div className="flex items-center justify-end">
                   <div className="flex items-center gap-3 text-[0.62rem] text-ink-3">
                     {/* Move counter */}
                     <span className="nums">

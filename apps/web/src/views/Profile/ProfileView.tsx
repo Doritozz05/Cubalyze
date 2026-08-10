@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Timer,
   BarChart3,
-  Dumbbell,
+  Target,
   BookOpen,
   Network,
   CheckCircle2,
@@ -39,7 +39,7 @@ const QUICK_ACTIONS: Array<{
 }> = [
   { id: "timer", label: "Timer", description: "Start a new solve", icon: Timer },
   { id: "insights", label: "Stats", description: "Full statistics & analysis", icon: BarChart3 },
-  { id: "training", label: "Training", description: "Drills, SRS review, challenges", icon: Dumbbell },
+  { id: "training", label: "Training", description: "Drills, SRS review, challenges", icon: Target },
   { id: "algorithms", label: "Algorithms", description: "Browse and practice algorithms", icon: BookOpen },
   { id: "skill-tree", label: "Skills", description: "Skill tree progression", icon: Network },
 ];

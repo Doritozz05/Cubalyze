@@ -12,6 +12,7 @@ import {
 import type { Subscription } from "rxjs";
 
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
+import { calibrateOrientationTracking } from "@/services/orientationTracking";
 import { orientationStore, preferencesStore } from "@cubeforge/state";
 import {
   MoveTransformer,
@@ -21,11 +22,7 @@ import {
   Cube2x2State,
   Cube2x2FaceletConverter,
 } from "@cubeforge/math-core";
-import type {
-  CubeMoveEvent,
-  CubeOrientation,
-  RotationEvent,
-} from "@cubeforge/types";
+import type { CubeMoveEvent, RotationEvent } from "@cubeforge/types";
 
 export interface UseCube3DOptions {
   /** Max number of recent moves to keep. Default 15. */
@@ -34,6 +31,15 @@ export interface UseCube3DOptions {
   order?: number;
   /** Optional active scramble sequence. */
   scramble?: string;
+  /**
+   * Whether to connect this 3D engine instance to live physical Smart Cube hardware
+   * events (Bluetooth move animations, gyro orientation tracking, facelet sync).
+   *
+   * ONLY designated live 3D cube panels (e.g. Cube3DPanel, MiniCube3DPanel) should set this
+   * to true. Replay views, algorithm DB case diagrams, drill previews, etc. must remain false.
+   * Default: false.
+   */
+  connectSmartCube?: boolean;
 }
 
 export interface UseCube3DResult {
@@ -81,7 +87,7 @@ export interface UseCube3DResult {
  * and dynamic mount/unmount cycles without WebGL context loss or blank screen bugs.
  */
 export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
-  const { maxRecentMoves = 15, order = 3 } = options;
+  const { maxRecentMoves = 15, order = 3, connectSmartCube = false } = options;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,7 +152,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
           width: w,
           height: h,
           pixelRatio: window.devicePixelRatio || 1,
-          gyroSupported: globalCubeAdapter.gyroSupported,
+          gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
           order,
           // Surface context eviction (iOS Safari context limit) so the panel
           // can show a graceful fallback instead of a frozen canvas.
@@ -173,90 +179,69 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
         const skin = getSkinStyle(preferencesStore.getState().appearance3d);
         engine.updateStyle(skin);
 
-        // Register callbacks to feed orientationStore
-        engine.onOrientationChange((o: CubeOrientation) => {
-          orientationStore.getState().setOrientation(o);
-          const caps = orientationStore.getState().capabilities;
-          if (!caps.gyroSupported) {
-            orientationStore.getState().setCapabilities({
-              hasIMU: true,
-              gyroSupported: true,
-            });
-          }
-          if (!globalCubeAdapter.gyroSupported) {
-            globalCubeAdapter.gyroSupported = true;
-          }
-        });
-
         engine.onRotationEvent((e: RotationEvent) => {
           const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
           appendRecentMove(notation);
         });
 
-        // Update orientation store capabilities
-        orientationStore.getState().setCapabilities({
-          hasIMU: globalCubeAdapter.gyroSupported,
-          gyroSupported: globalCubeAdapter.gyroSupported,
-        });
+        // Bind Bluetooth / Hardware streams ONLY when explicitly connected to Smart Cube
+        if (connectSmartCube) {
+          // NOTE: the cube's PHYSICAL orientation is tracked headlessly by
+          // services/orientationTracking (started in CubeConnector) — it is
+          // the single writer of orientationStore, so it works even with no
+          // panel mounted. This panel only drives the visual (GyroFusion)
+          // and records rotation events for the moves strip.
 
-        // Bind Bluetooth / Hardware streams
-        if (globalCubeAdapter.moves$) {
-          movesSub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
-            const orientation = orientationStore.getState().orientation;
-            const notation = MoveTransformer.toDisplayNotation(ev, orientation);
-            appendRecentMove(notation);
+          if (globalCubeAdapter.moves$) {
+            movesSub = globalCubeAdapter.moves$.subscribe((ev: CubeMoveEvent) => {
+              const orientation = orientationStore.getState().orientation;
+              const notation = MoveTransformer.toDisplayNotation(ev, orientation);
+              appendRecentMove(notation);
 
-            // Animate the physical move on the 3D cube so the model follows
-            // the real cube in near-real-time. Fire-and-forget on purpose:
-            // awaiting here would queue behind the animation and lag the
-            // physical cube; the RotationEngine pool snaps overlapping tasks
-            // automatically. The raw face maps 1:1 to the model's local axes
-            // regardless of the root orientation quaternion (gyro).
-            const mapping = FACE_ROTATION_MAP[ev.face];
-            if (mapping) {
-              const angle = ev.direction * mapping.angleSign * 90;
-              void engine.rotateLayers(
-                mapping.axis,
-                [mapping.layerValue],
-                angle,
-                scrambleMoveDurationMs(angle, 130),
-                undefined,
-                "smooth",
-              );
+              // Animate the physical move on the 3D cube so the model follows
+              // the real cube in near-real-time. Fire-and-forget on purpose.
+              const mapping = FACE_ROTATION_MAP[ev.face];
+              if (mapping) {
+                const angle = ev.direction * mapping.angleSign * 90;
+                void engine.rotateLayers(
+                  mapping.axis,
+                  [mapping.layerValue],
+                  angle,
+                  scrambleMoveDurationMs(angle, 130),
+                  undefined,
+                  "smooth",
+                );
+              }
+            });
+          }
+
+          if (globalCubeAdapter.gyro$) {
+            gyroSub = globalCubeAdapter.gyro$.subscribe((q) => {
+              engine.updateGyro(q.x, q.y, q.z, q.w);
+            });
+          }
+
+          if (globalCubeAdapter.facelets$) {
+            faceletsSub = globalCubeAdapter.facelets$.subscribe((facelets: string) => {
+              engine.syncFacelets(facelets);
+            });
+          }
+
+          connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
+            if (status === "connected") {
+              globalCubeAdapter.requestFacelets().catch(console.error);
+              engine.calibrateGyro();
             }
           });
-        }
 
-        if (globalCubeAdapter.gyro$) {
-          gyroSub = globalCubeAdapter.gyro$.subscribe((q) => {
-            engine.updateGyro(q.x, q.y, q.z, q.w);
-          });
-        }
-
-        if (globalCubeAdapter.facelets$) {
-          faceletsSub = globalCubeAdapter.facelets$.subscribe((facelets: string) => {
-            engine.syncFacelets(facelets);
-          });
-        }
-
-        connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
-          if (status === "connected") {
+          if (globalCubeAdapter.isConnected) {
             globalCubeAdapter.requestFacelets().catch(console.error);
             engine.calibrateGyro();
           }
-        });
-
-        if (globalCubeAdapter.isConnected) {
-          globalCubeAdapter.requestFacelets().catch(console.error);
-          engine.calibrateGyro();
         }
 
         setIsReady(true);
       } catch (err) {
-        // WebGL context creation failed (e.g. browser context limit reached).
-        // Set initFailedRef so the ResizeObserver stops retrying — the panel
-        // shows a graceful "3D unavailable" fallback instead of an infinite
-        // 'Initializing 3D Cube...' error loop.
         initFailedRef.current = true;
         setInitFailed(true);
         console.warn("[useCube3D] Failed to initialize WebGL engine:", err);
@@ -305,11 +290,15 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       setInitFailed(false);
       setContextEvicted(false);
     };
-  }, [appendRecentMove, order, debouncedResize]);
+  }, [appendRecentMove, order, debouncedResize, connectSmartCube]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {
+    // Re-reference the visual (GyroFusion) AND the headless tracker that
+    // feeds the store, so the replay / dynamic notation share the same
+    // calibration reference as the on-screen cube.
     engineRef.current?.calibrateGyro();
+    calibrateOrientationTracking();
   }, []);
 
   const reset = useCallback(() => {

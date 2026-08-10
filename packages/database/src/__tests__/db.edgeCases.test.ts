@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SolvesRepository } from '../repositories/solves.repository';
+import type { OrientationTimeline } from '@cubeforge/types';
 
 // ────────────────────────────────────────────────────────────────────────
 //  Helper: mock DB executor
@@ -100,15 +101,38 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       expect(solves[0].orientationTimeline).toBeUndefined();
     });
 
-    it('orientation_timeline = valid JSON parses correctly', async () => {
+    it('orientation_timeline = valid compact keyframe array parses correctly', async () => {
+      // The REAL producer format (compactOrientationTimeline):
+      // an array of [moveIndex, orientationIndex] pairs. The old parser
+      // rejected arrays, so stored timelines came back undefined after a
+      // reload and replays lost grip + rotations ("only works the first
+      // time" bug).
+      const db = mockDb([makeRow({
+        orientation_timeline: '[[0,2],[3,5],[7,0]]'
+      })]);
+      repo = new SolvesRepository(db);
+      const solves = await repo.findAll();
+      expect(solves[0].orientationTimeline).toEqual([[0,2],[3,5],[7,0]]);
+    });
+
+    it('orientation_timeline = prototype object shape (no producer) falls back to undefined', async () => {
+      // A stale prototype shape that no code produces. Must NOT be accepted
+      // as a timeline (the replay engine iterates it as [moveIndex, oi] pairs).
       const db = mockDb([makeRow({
         orientation_timeline: '{"events":[{"ts":100,"q":{"x":0,"y":0,"z":0,"w":1}}]}'
       })]);
       repo = new SolvesRepository(db);
       const solves = await repo.findAll();
-      expect(solves[0].orientationTimeline).toEqual({
-        events: [{ ts: 100, q: { x: 0, y: 0, z: 0, w: 1 } }]
-      });
+      expect(solves[0].orientationTimeline).toBeUndefined();
+    });
+
+    it('orientation_timeline = malformed array (non-tuple entries) falls back to undefined', async () => {
+      const db = mockDb([makeRow({
+        orientation_timeline: '[[0,2],[3]]'
+      })]);
+      repo = new SolvesRepository(db);
+      const solves = await repo.findAll();
+      expect(solves[0].orientationTimeline).toBeUndefined();
     });
 
     it('analysis = null stays undefined', async () => {
@@ -299,6 +323,35 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       const movesJson = bind[9] as string; // moves is at index 9
       const parsed = JSON.parse(movesJson);
       expect(parsed).toEqual([{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }]);
+    });
+
+    it('insert + findAll round-trips the orientation timeline (the reload bug)', async () => {
+      // Regression test for the "only works the first time" bug: a solve
+      // inserted WITH an orientation timeline must return it after a reload
+      // (findAll re-parses the JSON column). The old parser returned
+      // undefined for arrays, so replays lost grip + rotations after reload.
+      const db = mockDb();
+      repo = new SolvesRepository(db);
+
+      const timeline: OrientationTimeline = [[0, 2], [3, 5], [7, 0]];
+      await repo.insert({
+        id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
+        scramble: '', penalty: 'none', source: 'smart',
+        moves: [{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }],
+        orientationTimeline: timeline,
+        puzzleType: '3x3x3',
+      });
+
+      // Verify it was stored as a JSON array of tuples
+      const bind = db.mock.calls[0][1] as unknown[];
+      const timelineJson = bind[10] as string; // orientation_timeline is at index 10
+      expect(JSON.parse(timelineJson)).toEqual([[0, 2], [3, 5], [7, 0]]);
+
+      // Simulate a reload: the stored JSON comes back through findAll
+      const reloadDb = mockDb([makeRow({ orientation_timeline: timelineJson })]);
+      repo = new SolvesRepository(reloadDb);
+      const solves = await repo.findAll();
+      expect(solves[0].orientationTimeline).toEqual([[0, 2], [3, 5], [7, 0]]);
     });
   });
 });

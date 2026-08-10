@@ -13,7 +13,7 @@
  * Emitted by hardware adapters after protocol decryption and clock reconciliation.
  */
 export interface CubeMoveEvent {
-  /** Standard notation face: 'U', 'D', 'R', 'L', 'F', 'B' */
+  /** Standard notation face: 'U', 'D', 'R', 'L', 'F', 'B' (or slice M/E/S for replays). */
   face: CubeFace;
   /** Direction: 1 = clockwise, -1 = counter-clockwise, 2 = half-turn (180°) */
   direction: CubeMoveDirection;
@@ -21,10 +21,30 @@ export interface CubeMoveEvent {
   cubeTimestamp: number;
   /** Browser's performance.now() at the moment the event was received */
   hostTimestamp: number;
+  /**
+   * True for a WIDE move (r/l/u/d/f/b) synthesized by the reconstruction
+   * replay path. The outer face AND the middle layer rotate TOGETHER as one
+   * animation. Hardware events never set this.
+   */
+  wide?: boolean;
+  /**
+   * Display notation override (e.g. "r'") — the token the solver actually
+   * wrote, shown verbatim by the replay UI instead of the decomposed
+   * face+slice letters. Only present on synthetic reconstruction events.
+   */
+  displayNotation?: string;
 }
 
-/** The six faces of a standard cube in Singmaster notation */
-export type CubeFace = 'U' | 'D' | 'R' | 'L' | 'F' | 'B';
+/** The six outer faces of a standard cube in Singmaster notation. */
+export type OuterFace = 'U' | 'D' | 'R' | 'L' | 'F' | 'B';
+
+/**
+ * A face label: the six outer faces PLUS the slice moves M/E/S.
+ * Slice faces only ever appear in replay/state move streams (wide moves are
+ * decomposed into outer face + slice before reaching the engine), never in
+ * hardware events or orientation tables.
+ */
+export type CubeFace = OuterFace | 'M' | 'E' | 'S';
 
 /** Direction of a cube face rotation */
 export type CubeMoveDirection = 1 | -1 | 2;

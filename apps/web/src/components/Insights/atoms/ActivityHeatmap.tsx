@@ -43,7 +43,8 @@ function intensity(count: number, max: number): number {
  *
  * Data shape: `counts` is a flat array of daily solve counts (oldest first).
  * The component slices the last `weeks * 7` entries and arranges them into
- * a week-column / day-row grid.
+ * a week-column / day-row grid. Columns stretch (flex-1) with aspect-square
+ * cells so the grid always fills the full width of its container.
  */
 export const ActivityHeatmap = memo(function ActivityHeatmap({
   counts,
@@ -65,9 +66,9 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex gap-[3px]">
+      <div className="flex w-full gap-[3px]">
         {grid.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-[3px]">
+          <div key={wi} className="flex flex-1 flex-col gap-[3px]">
             {week.map((count, di) => {
               const lvl = intensity(count, max);
               return (
@@ -75,7 +76,7 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
                   <TooltipTrigger asChild>
                     <div
                       className={cn(
-                        "size-[10px] rounded-[2px]",
+                        "aspect-square w-full rounded-[2px]",
                         INTENSITY_BG[lvl],
                       )}
                     />

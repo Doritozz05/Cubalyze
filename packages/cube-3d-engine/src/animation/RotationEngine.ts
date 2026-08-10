@@ -51,6 +51,24 @@ export class RotationEngine {
     return cubies;
   }
 
+  /**
+   * Force-complete every in-flight pivot task immediately (snap to its exact
+   * end state + logical update). After this, NO task is left animating, so a
+   * following absolute-state operation (resetCube / applyFacelets / seek)
+   * can never be overwritten by a stale animation's completion.
+   *
+   * Called by Cube3DEngine.resetCube / syncFacelets / flushAnimations and by
+   * the replay transport before every reset. Without it, a rotation that was
+   * still turning when the cube was reset snaps LATER and applies its rotation
+   * — plus its logical-grid update — on top of the freshly reset state,
+   * desyncing the model from the renderer (colors/positions corrupted).
+   */
+  public flushAll(): void {
+    for (const task of this.pool) {
+      if (task.inUse) this.snapTask(task);
+    }
+  }
+
   public rotateLayers(
     axis: RotationAxis,
     layerValues: number[],
@@ -60,6 +78,28 @@ export class RotationEngine {
     easingStrategy?: EasingStrategy
   ): Promise<void> {
     return new Promise((resolve) => {
+      // NaN guard: a malformed move (e.g. a stored event with a bad/undefined
+      // direction) would otherwise produce a NaN quaternion via
+      // setFromAxisAngle → the cubie matrix becomes NaN and the mesh is culled
+      // or rendered black (stickers disappearing / turning black). Reject the
+      // move outright — a no-op is always safer than corrupting the model.
+      if (!Number.isFinite(angleInDegrees)) {
+        resolve();
+        return;
+      }
+      const safeElapsed =
+        typeof elapsedMs === 'number' && Number.isFinite(elapsedMs) && elapsedMs >= 0
+          ? elapsedMs
+          : 0;
+      // A NaN/negative duration would yield t = elapsed/NaN = NaN (or a
+      // negative t) in update() → NaN feeds slerpQuaternions → corrupted
+      // cubie matrices. Clamp to 0 (instant snap) — the same NaN family as
+      // the angle guard above.
+      const safeDuration =
+        typeof durationMs === 'number' && Number.isFinite(durationMs) && durationMs >= 0
+          ? durationMs
+          : 0;
+
       // 1. Collision detection: if any target piece is already rotating, force it to finish
       // We must loop until NO intersection is found because snapping a task changes the logical state,
       // which might change what the currentTargetCubies are.
@@ -96,7 +136,7 @@ export class RotationEngine {
 
       // 3. Configure the task
       task.inUse = true;
-      task.config = { axis, layerValues, angleInDegrees, durationMs, elapsedMs, easingStrategy, resolve };
+      task.config = { axis, layerValues, angleInDegrees, durationMs: safeDuration, elapsedMs: safeElapsed, easingStrategy, resolve };
       task.startTime = 0; // will be calculated in next update()
 
       this.preparePivot(task, targetCubies);
@@ -137,10 +177,22 @@ export class RotationEngine {
         // Time-Warp (Dead Reckoning): 
         // If the event happened in the past (elapsedMs > 0), we offset the startTime
         // so the interpolation skips the frames "lost" to network latency.
+        // (elapsedMs is sanitized in rotateLayers — a NaN offset would poison
+        // startTime and produce a NaN interpolation.)
         const offset = task.config.elapsedMs ?? 0;
         // Limit offset to durationMs so we don't overshoot 100% instantly on heavy lag
-        const safeOffset = Math.min(offset, task.config.durationMs);
+        const safeOffset = Number.isFinite(offset) && offset > 0
+          ? Math.min(offset, task.config.durationMs)
+          : 0;
         task.startTime = timeNowMs - safeOffset;
+      }
+
+      // Defense-in-depth for any caller path that bypasses rotateLayers'
+      // clamp: a NaN/≤0 duration must snap THIS frame (t = elapsed/NaN is
+      // always NaN and would poison the slerp).
+      if (!Number.isFinite(task.config.durationMs) || task.config.durationMs <= 0) {
+        this.snapTask(task);
+        continue;
       }
 
       const elapsed = timeNowMs - task.startTime;

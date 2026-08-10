@@ -114,9 +114,13 @@ describe('hintFor', () => {
       expect(hintFor('idle', false, ctx)).toBe('press space to start inspection');
     });
 
-    it('smart cube + scrambleVerif OFF + inspection ON shows "press space to start inspection"', () => {
+    it('smart cube + scrambleVerif OFF + inspection ON (Mode 3) shows "tap or press space to start"', () => {
+      // Scramble Verification OFF: pressing space arms the cube gate
+      // (READY_FOR_MOVE) — the first physical move starts the solve.
+      // Inspection is intentionally NOT offered in this mode.
       const ctx: HintContext = { smartCube: true, scrambleVerif: false, inspection: true, isScrambled: false };
-      expect(hintFor('idle', false, ctx)).toBe('press space to start inspection');
+      expect(hintFor('idle', false, ctx)).toBe('tap or press space to start');
+      expect(hintFor('idle', true, ctx)).toBe('tap or press space to start');
     });
 
     it('smart cube + scrambleVerif OFF + inspection OFF (Mode 4) shows "tap or press space to start"', () => {

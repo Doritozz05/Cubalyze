@@ -133,7 +133,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
                 </span>
               </div>
               <span className="nums">
-                σ {formatStdDeviation(solves, stats.mean)}
+                σ {formatStdDeviation(filteredSolves, stats.mean)}
               </span>
             </div>
           </>

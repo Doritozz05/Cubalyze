@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Quaternion, Vector3 } from 'three';
 import { OrientationTable } from '../OrientationTable';
-import type { FacePermutation } from '@cubeforge/types';
+import type { CubeFace, FacePermutation } from '@cubeforge/types';
 
 // Helper: create a quaternion for a rotation about an axis
 function rotQuat(axis: 'x' | 'y' | 'z', angleDeg: number): Quaternion {
@@ -273,6 +273,32 @@ describe('OrientationTable', () => {
       });
       const result = OrientationTable.findRotationBetween(OrientationTable.IDENTITY, z2Entry);
       expect(result).toEqual({ axis: 'z', direction: 2 });
+    });
+
+    it('returns the entry for every base rotation token', () => {
+      const cases: Array<[string, Partial<Record<CubeFace, CubeFace>>]> = [
+        ['x', { U: 'F', D: 'B', F: 'D', B: 'U' }],
+        ["x'", { U: 'B', D: 'F', F: 'U', B: 'D' }],
+        ['x2', { U: 'D', D: 'U', F: 'B', B: 'F' }],
+        ['y', { U: 'U', D: 'D', F: 'R', B: 'L' }],
+        ["y'", { U: 'U', D: 'D', F: 'L', B: 'R' }],
+        ['y2', { U: 'U', D: 'D', F: 'B', B: 'F' }],
+        ['z', { U: 'L', D: 'R', F: 'F', B: 'B' }],
+        ["z'", { U: 'R', D: 'L', F: 'F', B: 'B' }],
+        ['z2', { U: 'D', D: 'U', F: 'F', B: 'B' }],
+      ];
+      for (const [token, expected] of cases) {
+        const entry = OrientationTable.rotationEntryFor(token);
+        expect(entry).not.toBeNull();
+        expect(entry!.faceMap).toMatchObject(expected);
+      }
+    });
+
+    it('returns null for non-rotation tokens', () => {
+      expect(OrientationTable.rotationEntryFor('R')).toBeNull();
+      expect(OrientationTable.rotationEntryFor('M')).toBeNull();
+      expect(OrientationTable.rotationEntryFor('x3')).toBeNull();
+      expect(OrientationTable.rotationEntryFor('')).toBeNull();
     });
 
     it('returns null when orientations differ by more than one base rotation', () => {

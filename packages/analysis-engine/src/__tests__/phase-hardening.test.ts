@@ -4,7 +4,7 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { MetricsAggregator } from '../metrics/MetricsAggregator';
 import { PauseDetector } from '../metrics/PauseDetector';
-import { makeMoves } from './test-helpers';
+import { makeMoves, makeSolveFromScramble, TEST_SCRAMBLES } from './test-helpers';
 
 describe('Phase A hardening contracts', () => {
   it('does not let skipped phases overwrite the phase that owns a move', () => {
@@ -62,5 +62,58 @@ describe('Phase A hardening contracts', () => {
 
     expect(pauses.totalPauseTimeMs).toBe(1900);
     expect(pauses.pauseRatio).toBe(1);
+  });
+
+  it('does not emit scramble-only-seed for a scramble-seeded timeline', () => {
+    const { scramble, solveMoves } = makeSolveFromScramble('R U R\' U\'');
+    const timeline = TimelineBuilder.build(solveMoves, 'CFOP', undefined, scramble);
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.initialStateSource).toBe('scramble');
+    expect(report.warnings).not.toContain('scramble-only-seed');
+  });
+
+  it('does not emit unattributed-time when the timer duration exceeds the move span', () => {
+    const { scramble, solveMoves } = makeSolveFromScramble(TEST_SCRAMBLES.tPerm);
+    const timeline = TimelineBuilder.build(solveMoves, 'CFOP', undefined, scramble);
+    const spanMs = timeline.endTimestamp - timeline.startTimestamp;
+    // Timer lag: the stop fires after the last move (BLE facelet polling /
+    // manual stop reaction), so the authoritative duration > move span.
+    timeline.solveTimeMs = spanMs + 2000;
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.complete).toBe(true);
+    expect(report.solveTimeMs).toBe(spanMs + 2000);
+    // Unattributed time is measured against the timeline span, NOT the timer:
+    // the timer lag must not surface as a warning.
+    expect(report.unattributedTimeMs ?? 0).toBeLessThan(1);
+    expect(report.warnings).not.toContain('unattributed-time');
+  });
+
+  it('does not emit unattributed-time on an empty timeline', () => {
+    const timeline = TimelineBuilder.build([], 'CFOP');
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.unattributedTimeMs).toBe(0);
+    expect(report.warnings).not.toContain('unattributed-time');
+  });
+
+  it('emits only incomplete-solve when phases are missing (no missing-phase)', () => {
+    // From solved, a U move leaves PLL unsolved: the report is incomplete but
+    // the warning is a single descriptive signal, not a redundant pair.
+    const timeline = TimelineBuilder.build(makeMoves('U'), 'CFOP');
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.complete).toBe(false);
+    expect(report.warnings).toContain('incomplete-solve');
+    expect(report.warnings).not.toContain('missing-phase');
+  });
+
+  it('does not emit skip warnings on a skipped-phase timeline', () => {
+    // From solved, a U move leaves F2L/OLL complete at the same index (skips)
+    // while PLL never completes. Skips are structured data (report.skips /
+    // phase.skipped), not warnings: a skip is a positive signal, so it must
+    // not degrade confidence on its own.
+    const timeline = TimelineBuilder.build(makeMoves('U'), 'CFOP');
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.phases.some((p) => p.skipped)).toBe(true);
+    expect(report.warnings).not.toContain('phase-skip');
+    expect(report.warnings).not.toContain('advanced-technique-possible');
   });
 });

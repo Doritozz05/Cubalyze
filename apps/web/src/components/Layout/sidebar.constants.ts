@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Dumbbell, Network } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -31,7 +31,8 @@ export type ViewId =
   | "algorithms"
   | "training"
   | "skill-tree"
-  | "profile";
+  | "profile"
+  | "reconstructions";
 
 /**
  * A nav item that maps to a stage view (ViewId) or triggers a dialog
@@ -68,7 +69,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Training",
     items: [
-      { id: "training", label: "Training", icon: Dumbbell },
+      { id: "training", label: "Training", icon: Target },
       { id: "algorithms", label: "Algorithms", icon: BookOpen },
       { id: "skill-tree", label: "Skills", icon: Network },
     ],
@@ -82,6 +83,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Explore",
     items: [
+      { id: "reconstructions", label: "Reconstructions", icon: FileSearch },
       { id: "widgets", label: "Widgets", icon: Puzzle },
     ],
   },

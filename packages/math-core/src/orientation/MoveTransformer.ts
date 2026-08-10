@@ -4,8 +4,14 @@ import type {
   CubeMoveDirection,
   DisplayMove,
   FacePermutation,
+  OuterFace,
 } from '@cubeforge/types';
 import { OrientationTable, type OrientationEntry } from './OrientationTable';
+
+/** True for the six outer faces (slice moves M/E/S never enter orientation maps). */
+function isOuterFace(face: CubeFace): face is OuterFace {
+  return face !== 'M' && face !== 'E' && face !== 'S';
+}
 
 /**
  * Pure functions for transforming between Raw Moves and Display Moves.
@@ -25,13 +31,13 @@ export class MoveTransformer {
    * If σ(position) = original (the orientation's faceMap), then
    * σ⁻¹(original) = position (the display face for a raw move on that face).
    */
-  private static buildInverseMap(faceMap: FacePermutation): Record<CubeFace, CubeFace> {
-    const inv: Partial<Record<CubeFace, CubeFace>> = {};
-    const faces: CubeFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
+  private static buildInverseMap(faceMap: FacePermutation): Record<OuterFace, OuterFace> {
+    const inv: Partial<Record<OuterFace, OuterFace>> = {};
+    const faces: OuterFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
     for (const pos of faces) {
       inv[faceMap[pos]] = pos;
     }
-    return inv as Record<CubeFace, CubeFace>;
+    return inv as Record<OuterFace, OuterFace>;
   }
 
   /**
@@ -47,7 +53,8 @@ export class MoveTransformer {
   ): DisplayMove {
     const invMap = MoveTransformer.buildInverseMap(orientation.faceMap);
     return {
-      face: invMap[raw.face],
+      // Slice moves (M/E/S) have no face in the orientation map — pass through.
+      face: isOuterFace(raw.face) ? invMap[raw.face] : raw.face,
       direction: raw.direction, // ALWAYS preserved
       cubeTimestamp: raw.cubeTimestamp,
       hostTimestamp: raw.hostTimestamp,
@@ -68,7 +75,9 @@ export class MoveTransformer {
     // For display→raw: the display face is the position, and the raw face is
     // the original face currently at that position: faceMap[position] = original.
     return {
-      face: orientation.faceMap[display.face],
+      face: isOuterFace(display.face)
+        ? orientation.faceMap[display.face]
+        : display.face,
       direction: display.direction, // ALWAYS preserved
       cubeTimestamp: display.cubeTimestamp,
       hostTimestamp: display.hostTimestamp,
@@ -85,7 +94,7 @@ export class MoveTransformer {
   ): DisplayMove[] {
     const invMap = MoveTransformer.buildInverseMap(orientation.faceMap);
     return rawMoves.map((raw) => ({
-      face: invMap[raw.face],
+      face: isOuterFace(raw.face) ? invMap[raw.face] : raw.face,
       direction: raw.direction,
       cubeTimestamp: raw.cubeTimestamp,
       hostTimestamp: raw.hostTimestamp,
@@ -144,7 +153,8 @@ export class MoveTransformer {
         if (!'URFDLB'.includes(face)) return token; // pass through unknown tokens
 
         const suffix = token.slice(1); // "'", "2", or ""
-        const displayFace = invMap[face];
+        // The guard above guarantees an outer face — narrow for the map.
+        const displayFace = invMap[face as OuterFace];
 
         return displayFace + suffix; // direction suffix is preserved
       })

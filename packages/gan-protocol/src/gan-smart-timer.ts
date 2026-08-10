@@ -11,7 +11,7 @@ const GAN_TIMER_STATE_CHARACTERISTIC: string = '0000fff5-0000-1000-8000-00805f9b
 /**
  * GAN Smart Timer events/states
  */
-enum GanTimerState {
+export enum GanTimerState {
     /** Fired when timer is disconnected from bluetooth */
     DISCONNECT = 0,
     /** Grace delay is expired and timer is ready to start */
@@ -33,7 +33,7 @@ enum GanTimerState {
 /**
  * Representation of time value
  */
-interface GanTimerTime {
+export interface GanTimerTime {
     readonly minutes: number;
     readonly seconds: number;
     readonly milliseconds: number;
@@ -44,7 +44,7 @@ interface GanTimerTime {
 /**
  * Timer state event
  */
-interface GanTimerEvent {
+export interface GanTimerEvent {
     /** Current timer state */
     state: GanTimerState;
     /** Recorder time value in case of STOPPED event */
@@ -54,7 +54,7 @@ interface GanTimerEvent {
 /**
  * Representation of recorded in timer memory time values
  */
-interface GanTimerRecordedTimes {
+export interface GanTimerRecordedTimes {
     displayTime: GanTimerTime;
     previousTimes: [GanTimerTime, GanTimerTime, GanTimerTime];
 }
@@ -62,7 +62,7 @@ interface GanTimerRecordedTimes {
 /**
  * GAN Timer connection object representing connection API and state
  */
-interface GanTimerConnection {
+export interface GanTimerConnection {
     /** RxJS Subject to subscribe for cube event messages */
     events$: Observable<GanTimerEvent>;
     /** Retrieve last time values recored by timer */
@@ -219,17 +219,9 @@ async function connectGanTimer(): Promise<GanTimerConnection> {
 
 }
 
-export type {
-    GanTimerConnection,
-    GanTimerEvent,
-    GanTimerTime,
-    GanTimerRecordedTimes
-};
-
 export {
     connectGanTimer,
     makeTime,
-    makeTimeFromTimestamp,
-    GanTimerState
+    makeTimeFromTimestamp
 };
 

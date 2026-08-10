@@ -1,18 +1,19 @@
 "use client";
 
-import { motion, LayoutGroup } from "framer-motion";
-import { Timer, Dumbbell, BookOpen, BarChart3, Network, Menu } from "lucide-react";
+import { useMemo } from "react";
+import { Timer, Target, BookOpen, BarChart3, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
-import { ACTIVE_PILL_SPRING } from "./sidebar.constants";
 import type { ViewId } from "./sidebar.constants";
 
 /**
- * Bottom tab bar for the touch regime (mobile + tablet, <1024px).
+ * Standard native bottom tab bar for the touch regime (mobile + tablet, <1024px).
  *
- * Desktop (>=1024px) is untouched (`lg:hidden`).
- * Provides 5 primary navigation tabs plus a "More" button that opens
- * a swipeable bottom grid sheet with secondary options.
+ * Features:
+ * - 4 primary tabs (Training, Algorithms, Timer, Stats) + 1 "More" tab (opens grid sheet).
+ * - Ultra-clean native aesthetic (iOS / Instagram style).
+ * - High-contrast active tab accent color & crisp typography.
+ * - Zero decorative noise or weird shape overlays.
  */
 
 interface MobileTabBarProps {
@@ -20,6 +21,7 @@ interface MobileTabBarProps {
   onNavigate: (view: ViewId) => void;
   /** Open the "More" bottom grid sheet. */
   onOpenMore?: () => void;
+  mobileMoreOpen?: boolean;
   className?: string;
 }
 
@@ -30,82 +32,79 @@ type TabItem = {
 };
 
 const MAIN_TABS: TabItem[] = [
-  { id: "training", label: "Training", icon: Dumbbell },
+  { id: "training", label: "Training", icon: Target },
   { id: "algorithms", label: "Algorithms", icon: BookOpen },
   { id: "timer", label: "Timer", icon: Timer },
   { id: "insights", label: "Stats", icon: BarChart3 },
-  { id: "skill-tree", label: "Skills", icon: Network },
 ];
 
 export function MobileTabBar({
   activeView,
   onNavigate,
   onOpenMore,
+  mobileMoreOpen = false,
   className,
 }: MobileTabBarProps) {
+  // Determine which of the 5 slots (0..4) is active
+  const activeIndex = useMemo(() => {
+    if (mobileMoreOpen) return 4;
+    const idx = MAIN_TABS.findIndex((t) => t.id === activeView);
+    return idx !== -1 ? idx : 4; // Default to 'More' slot for secondary views like skill-tree or profile
+  }, [activeView, mobileMoreOpen]);
+
   return (
     <nav
       aria-label="Primary"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-safe shadow-[0_-2px_16px_rgba(0,0,0,0.06)] lg:hidden",
+        "fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-xl pb-safe shadow-[0_-2px_12px_rgba(0,0,0,0.04)] select-none lg:hidden",
         className,
       )}
     >
-      <div className="mx-auto flex h-14 max-w-lg items-stretch px-1">
-        <LayoutGroup>
-          {MAIN_TABS.map((tab) => {
-            const isActive = activeView === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  hapticTap();
-                  onNavigate(tab.id);
-                }}
-                aria-current={isActive ? "page" : undefined}
-                aria-label={tab.label}
-                className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[0.58rem] font-medium transition-colors select-none",
-                  "min-h-11 touch-manipulation outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
-                  isActive ? "text-ink" : "text-ink-3 hover:text-ink-2",
-                )}
-              >
-                {isActive && (
-                  <motion.span
-                    layoutId="mobile-tab-active"
-                    className="absolute inset-x-1.5 inset-y-1 rounded-lg bg-surface-2"
-                    transition={ACTIVE_PILL_SPRING}
-                  />
-                )}
+      <div className="flex h-14 w-full items-stretch px-2 sm:px-4 md:px-6">
+        {/* Slots 0..3: Primary Navigation Tabs */}
+        {MAIN_TABS.map((tab, idx) => {
+          const isActive = activeIndex === idx;
+          const Icon = tab.icon;
 
-                <Icon className="relative z-10 size-5" />
-                <span className="relative z-10 leading-none">{tab.label}</span>
-              </button>
-            );
-          })}
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                hapticTap();
+                onNavigate(tab.id);
+              }}
+              aria-current={isActive ? "page" : undefined}
+              aria-label={tab.label}
+              className={cn(
+                "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[0.6rem] font-medium transition-all select-none min-h-11 touch-manipulation outline-none cursor-pointer active:scale-95",
+                isActive ? "text-primary font-semibold" : "text-ink-3 hover:text-ink-2",
+              )}
+            >
+              <Icon className={cn("size-5 transition-transform", isActive && "scale-105")} />
+              <span className="leading-none">{tab.label}</span>
+            </button>
+          );
+        })}
 
-          {/* More — opens the touch grid sheet (Settings, Smart Cube, Theme) */}
-          <button
-            type="button"
-            onClick={(e) => {
-              hapticTap();
-              // Drop focus before the modal drawer marks this nav `aria-hidden`
-              // (background sibling of the portal). Keeping focus here would
-              // trigger Chrome's "Blocked aria-hidden ... descendant retained
-              // focus" warning. The drawer's own focus trap re-focuses its
-              // content for keyboard users.
-              e.currentTarget.blur();
-              onOpenMore?.();
-            }}
-            aria-label="More options"
-            className="relative flex min-h-11 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md text-[0.58rem] font-medium text-ink-3 transition-colors select-none outline-none hover:text-ink-2 focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
-          >
-            <Menu className="size-5" />
-            <span className="leading-none">More</span>
-          </button>
-        </LayoutGroup>
+        {/* Slot 4: More options button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            hapticTap();
+            e.currentTarget.blur();
+            onOpenMore?.();
+          }}
+          aria-label="More options"
+          aria-current={activeIndex === 4 ? "page" : undefined}
+          className={cn(
+            "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[0.6rem] font-medium transition-all select-none min-h-11 touch-manipulation outline-none cursor-pointer active:scale-95",
+            activeIndex === 4 ? "text-primary font-semibold" : "text-ink-3 hover:text-ink-2",
+          )}
+        >
+          <Menu className={cn("size-5 transition-transform", activeIndex === 4 && "scale-105")} />
+          <span className="leading-none">More</span>
+        </button>
       </div>
     </nav>
   );

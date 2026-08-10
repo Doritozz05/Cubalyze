@@ -4,6 +4,10 @@ export * from './CubeState';
 export * from './FaceletStringConverter';
 export * from './MoveExpander';
 
+// Move parsing / reconstruction notation (CubeRoot, …)
+export * from './notation/moveNotation';
+export * from './notation/conjugateToBaseFrame';
+
 // 2×2 (Pocket Cube) state representation
 export * from './Cube2x2State';
 export * from './Cube2x2FaceletConverter';
@@ -19,6 +23,8 @@ export * from './orientation/OrientationTimeline';
 export * from './methods/IMethodDefinition';
 export * from './methods/StateMatcher';
 export * from './methods/cfop/cfopMasks';
+export * from './methods/cfop/ColorPhaseDetector';
+export * from './methods/cfop/slotDetection';
 export * from './methods/roux/rouxMasks';
 export * from './methods/roux/rouxComplete';
 export * from './methods/zz/zzMasks';

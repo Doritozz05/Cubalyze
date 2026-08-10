@@ -16,9 +16,16 @@ import {
   SectionHeader,
   EmptyState,
   MetricRing,
-  AlgorithmNotation,
+  SkippedBadge,
+  FACE_HEX,
+  FACE_NAME,
+  colorName,
 } from "./atoms";
 import { ReplaySection } from "./ReplaySection";
+
+// Backward-compatible re-exports — the face-color constants live in ./atoms
+// now; consumers that imported them from this panel keep working.
+export { FACE_HEX, FACE_NAME, colorName };
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -87,6 +94,7 @@ export function SolveAnalysisPanel({
 
   // ── Replay state ──────────────────────────────────────────────────────────
   const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
+  const [replayMoveIdx, setReplayMoveIdx] = useState<number | null>(null);
   const [, setReplaying] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(solve.note ?? "");
@@ -179,14 +187,19 @@ export function SolveAnalysisPanel({
           {solve.penalty === "DNF" ? "DNF" : formatTime(solve.time)}
         </p>
         {m ? (
-          <p className="text-[0.7rem] text-ink-3">
-            {m.totalMoves} moves · {m.phases.length} phases ·{" "}
-            TPS {m.tps.global.toFixed(2)} · {m.pauses.totalCount} pauses
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <p className="text-[0.7rem] text-ink-3">
+              {m.totalMoves} moves · {m.phases.length} phases ·{" "}
+              TPS {m.tps.global.toFixed(2)} · {m.pauses.totalCount} pauses
+            </p>
+          </div>
         ) : (
           <p className="text-[0.7rem] text-ink-3">No analysis yet</p>
         )}
       </div>
+
+      {/* ── Scramble block (up top, right under the solve time) ── */}
+      <ScrambleBlock solve={solve} />
 
       {/* ── Note section ── */}
       <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-3.5">
@@ -255,12 +268,14 @@ export function SolveAnalysisPanel({
       {/* ── Replay (always visible, even without analysis, as long as there are moves) ── */}
       <ReplaySection
         solve={replaySolve}
-        onReplayPosition={(ms) => {
+        onReplayPosition={(ms, moveIndex) => {
           setReplayPosMs(ms);
+          setReplayMoveIdx(moveIndex);
           setReplaying(true);
         }}
         onReplayComplete={() => {
           setReplayPosMs(null);
+          setReplayMoveIdx(null);
           setReplaying(false);
         }}
       />
@@ -285,6 +300,7 @@ export function SolveAnalysisPanel({
             hoveredPhase={hoveredPhase}
             onHoverPhase={setHoveredPhase}
             replayPositionMs={replayPosMs}
+            replayMoveIdx={replayMoveIdx}
           />
 
           {/* ── Key metric rings ────────────────────────────────────────── */}
@@ -309,9 +325,6 @@ export function SolveAnalysisPanel({
           <RotEfficiencySection metrics={m} />
         </>
       )}
-
-      {/* Scramble block */}
-      <ScrambleBlock solve={solve} />
     </div>
   );
 }
@@ -324,6 +337,7 @@ function TimelineSection({
   hoveredPhase,
   onHoverPhase,
   replayPositionMs,
+  replayMoveIdx,
 }: {
   timeline: TimelineData;
   meanTps: number;
@@ -331,6 +345,8 @@ function TimelineSection({
   onHoverPhase: (phase: string | null) => void;
   /** Animated replay playhead position (ms), null when not replaying. */
   replayPositionMs?: number | null;
+  /** Replay move index (aligned with moveTicks) for the playhead. */
+  replayMoveIdx?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
@@ -366,6 +382,26 @@ function TimelineSection({
   const handleLeave = useCallback(() => {
     setHoverMs(null);
   }, []);
+
+  // Replay playhead x-position. The replay clock is MOVE-DRIVEN (its ms are
+  // virtual, independent of solve.time), so anchor the playhead to the
+  // CURRENT MOVE's visual tick instead — that keeps it perfectly aligned
+  // with the phase/pause segments while every move plays back.
+  const replayX = useMemo(() => {
+    if (replayPositionMs == null) return null;
+    // Only anchor to move ticks when the timeline actually has segments
+    // (phaseRuns existed) — otherwise moveVisualMs is all zeros and the
+    // playhead would be pinned to x=0.
+    if (
+      segments.length > 0 &&
+      replayMoveIdx != null &&
+      replayMoveIdx >= 0 &&
+      replayMoveIdx < moveVisualMs.length
+    ) {
+      return xForMs(moveVisualMs[replayMoveIdx]);
+    }
+    return xForMs(replayPositionMs);
+  }, [replayPositionMs, replayMoveIdx, moveVisualMs, segments, xForMs]);
 
   // TPS area path — always closes at the right edge (totalMs).
   const tpsPath = useMemo(() => {
@@ -403,8 +439,10 @@ function TimelineSection({
   // P1.c — Mean TPS reference line y-position (clamped to the TPS band)
   const meanTpsY =
     TPS_AREA_BOTTOM - (Math.min(meanTps, maxTps) / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
-  // Y-axis label column width (px)
-  const Y_LABEL_W = 26;
+  // Y-axis label column width (px). Just needs to fit "tps" and the tick
+  // numbers (avg is only shown in the legend below). The X-axis label row uses
+  // the same constant for its left margin, so changing it keeps axes aligned.
+  const Y_LABEL_W = 36;
 
   // P1.d — Segment highlight state for cross-highlight
   const segHighlight = (seg: TimelineSegment): "active" | "dim" | "normal" => {
@@ -416,9 +454,8 @@ function TimelineSection({
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader
         title="Timeline"
-        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)} total${
-          totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
-        }`}
+        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)} total${totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
+          }`}
       />
 
       <div className="mt-3">
@@ -438,19 +475,11 @@ function TimelineSection({
                 </span>
               );
             })}
-            <span className="absolute left-0 text-[0.6rem] uppercase tracking-wider text-ink-3/50 leading-none"
+            <span className="absolute left-0 whitespace-nowrap text-[0.6rem] uppercase tracking-wider text-ink-3/50 leading-none"
               style={{ top: 0, lineHeight: 1 }}
             >
               tps
             </span>
-            {meanTps > 0 && (
-              <span
-                className="absolute left-0 nums text-[0.6rem] leading-none text-ready/70"
-                style={{ top: meanTpsY, transform: "translateY(-50%)" }}
-              >
-                avg&nbsp;{meanTps.toFixed(1)}
-              </span>
-            )}
           </div>
 
           {/* SVG + pause popover overlays */}
@@ -590,21 +619,21 @@ function TimelineSection({
               )}
 
               {/* Replay playhead — centered on segment blocks (does not extend into TPS area) */}
-              {replayPositionMs !== null && replayPositionMs !== undefined && (
+              {replayX !== null && (
                 <>
                   {/* Tail: subtle fill behind the playhead */}
                   <rect
                     x={0}
                     y={SEG_TOP}
-                    width={xForMs(replayPositionMs)}
+                    width={replayX}
                     height={SEG_BOTTOM - SEG_TOP}
                     fill="#4F8CF7"
                     fillOpacity={0.08}
                   />
                   <line
-                    x1={xForMs(replayPositionMs)}
+                    x1={replayX}
                     y1={SEG_TOP}
-                    x2={xForMs(replayPositionMs)}
+                    x2={replayX}
                     y2={SEG_BOTTOM}
                     stroke="#4F8CF7"
                     strokeWidth={1.5}
@@ -1068,6 +1097,53 @@ function PhaseBreakdownSection({
                 <span className="text-xs font-medium uppercase tracking-wide text-ink-2">
                   {p.phaseName}
                 </span>
+                {/* OLL/PLL skips — same badge the reconstruction panel uses;
+                    a skipped phase owns 0 moves and 0 tps, so make it explicit. */}
+                {p.skipped && <SkippedBadge className="ml-1" />}
+                {p.phaseName === "Cross" &&
+                  metrics.detectionReport?.crossColor && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30 cursor-help"
+                          style={{ background: FACE_HEX[metrics.detectionReport.crossColor] }}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {colorName(metrics.detectionReport.crossColor)} cross
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                {p.phaseName === "Cross" &&
+                  metrics.detectionReport?.crossType &&
+                  metrics.detectionReport.crossType !== "plain" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
+                            metrics.detectionReport.crossType !== "xcross"
+                              ? "border border-caution/40 bg-caution/10 text-caution"
+                              : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+                          )}
+                        >
+                          {metrics.detectionReport.crossType === "xxxcross"
+                            ? "XXXCross"
+                            : metrics.detectionReport.crossType === "xxcross"
+                              ? "XXCross"
+                              : metrics.detectionReport.crossType === "pseudo xcross"
+                                ? "Pseudo XCross"
+                                : "XCross"}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {metrics.detectionReport.xcrossPairs
+                          ?.map((pair) => pair.slot)
+                          .join(", ") || "An F2L pair was already solved"}{" "}
+                        at cross completion
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
               </div>
               <div className="flex items-center gap-3 nums text-xs text-ink-3">
                 <span>{p.moveCount}m</span>
@@ -1105,10 +1181,34 @@ function PhaseBreakdownSection({
 
 function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
   const cfop = metrics.cfop!;
+  const crossType = metrics.detectionReport?.crossType;
+  const crossValue =
+    crossType === "xcross"
+      ? "XCross"
+      : crossType === "xxcross"
+        ? "XXCross"
+        : crossType === "xxxcross"
+          ? "XXXCross"
+          : crossType === "pseudo xcross"
+            ? "Pseudo XCross"
+            : crossType === "plain"
+              ? "Plain"
+              : "—";
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="CFOP details" />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
+        <DetailTile
+          label="Cross"
+          value={crossValue}
+          accent={
+            crossType === "xxcross" || crossType === "xxxcross"
+              ? "amber"
+              : crossType === "xcross"
+                ? "ready"
+                : undefined
+          }
+        />
         <DetailTile label="Cross eff" value={cfop.crossEfficiency.toFixed(2)} />
         <DetailTile label="Cross→F2L" value={formatTime(cfop.crossToF2LTransitionMs)} />
         <DetailTile label="OLL recog" value={formatTime(cfop.ollRecognitionMs)} />
@@ -1131,14 +1231,9 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
 
 // ─── F2L slot color mapping (derived from face letters) ────────────────────
 
-/** Maps face letters (U,R,F,D,L,B) to hex colors (standard Rubik's cube). */
-const FACE_HEX: Record<string, string> = {
-  U: "#FFFFFF", R: "#EF4444", F: "#22C55E",
-  D: "#FACC15", L: "#F97316", B: "#3B82F6",
-};
-
 /**
  * Derive two face colors from an edge slotId (e.g. "FR" → ["#22C55E", "#EF4444"]).
+ * Fallback only — the unified pipeline now provides `pair.colors` directly.
  */
 function slotFaceColors(slotId: string): [string, string] | null {
   if (slotId.length < 2) return null;
@@ -1158,13 +1253,25 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
       <div className="mt-1.5 space-y-0">
         {pairs.map((pair) => {
           const isSlowest = pair.timeMs === slowest;
-          const colors = pair.slotId ? slotFaceColors(pair.slotId) : null;
+          // Unified pipeline colors are canonical FACE LETTERS (e.g. ["F","R"]),
+          // not CSS colors — map them to hex before painting. Unknown letters
+          // (or missing colors in older persisted data) fall back to the
+          // slot-derived colors.
+          const rawColors =
+            pair.colors && pair.colors.length === 2 ? pair.colors : null;
+          const colors: [string, string] | null =
+            rawColors && FACE_HEX[rawColors[0]] && FACE_HEX[rawColors[1]]
+              ? [FACE_HEX[rawColors[0]], FACE_HEX[rawColors[1]]]
+              : pair.slotId
+                ? slotFaceColors(pair.slotId)
+                : null;
+          const auf = pair.auf ?? [];
 
           return (
             <div
               key={pair.pairNumber}
               className={cn(
-                "flex items-center justify-between px-2 py-1.5 text-xs border-t border-line/30 first:border-0",
+                "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1.5 text-xs border-t border-line/30 first:border-0",
                 isSlowest && "bg-caution/5",
               )}
             >
@@ -1180,19 +1287,27 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
                 {colors && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="flex items-center gap-0.5">
+                      <span className="flex items-center gap-1">
                         <span
-                          className="inline-block size-2.5 rounded-sm border border-white/20"
+                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
                           style={{ background: colors[0] }}
                         />
                         <span
-                          className="inline-block size-2.5 rounded-sm border border-white/20"
+                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
                           style={{ background: colors[1] }}
                         />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top">{pair.slotId}</TooltipContent>
+                    <TooltipContent side="top">
+                      {pair.slotId ?? rawColors?.join(" ") ?? "—"}
+                    </TooltipContent>
                   </Tooltip>
+                )}
+                {/* Leading U moves (AUF-style) before the insertion. */}
+                {auf.length > 0 && (
+                  <span className="rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
+                    auf {auf.join(" ")}
+                  </span>
                 )}
                 <span>{pair.moves}m</span>
                 <span>{formatTime(pair.timeMs)}</span>
@@ -1354,20 +1469,20 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
     setTimeout(() => setCopied(false), 1500);
     toast.success("Scramble copied");
   };
-  const hasMoves = solve.scramble.trim().length > 0;
   return (
     <div className="flex items-start gap-2 rounded-lg border border-line bg-surface px-5 py-3">
       <div className="flex flex-1 flex-col gap-1.5">
         <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-ink-3">
           Scramble
         </span>
-        {hasMoves ? (
-          <AlgorithmNotation notation={solve.scramble} size="sm" />
-        ) : (
-          <p className="font-mono text-[0.78rem] text-ink wrap-break-word">
-            {solve.scramble}
-          </p>
-        )}
+        {/* Plain mono text, same style as the algorithm text in Our
+            detection — no boxes around each move. */}
+        <p
+          className="min-w-0 font-mono text-[0.78rem] font-medium text-ink leading-relaxed break-words"
+          translate="no"
+        >
+          {solve.scramble}
+        </p>
       </div>
       <Tooltip>
         <TooltipTrigger asChild>

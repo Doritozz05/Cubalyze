@@ -120,9 +120,17 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
               <span className="flex items-center gap-0.5 text-ink-2 font-medium">
                 <PanelTop className="size-2.5" />
                 {/* Desktop: widgets pin to the header dock. Touch: they open
-                    as a floating bottom sheet instead. */}
-                <span className="max-lg:hidden">Pinned to header</span>
-                <span className="lg:hidden">Opens as panel</span>
+                    as a floating bottom sheet instead. No-dock widgets (e.g.
+                    cube-button) are standalone floating buttons and never
+                    appear in the header dock. */}
+                {NO_DOCK_WIDGETS.has(widget.id) ? (
+                  <span>Floating button</span>
+                ) : (
+                  <>
+                    <span className="max-lg:hidden">Pinned to header</span>
+                    <span className="lg:hidden">Opens as panel</span>
+                  </>
+                )}
               </span>
             </>
           )}

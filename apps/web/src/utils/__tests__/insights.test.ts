@@ -173,18 +173,17 @@ describe("deriveActivityHeatmap", () => {
 // ─── deriveTpsSeries ────────────────────────────────────────────────────────
 
 describe("deriveTpsSeries", () => {
-  it("returns one point per solve, oldest first, NaN for no analysis", () => {
+  it("returns points for solves with valid TPS data, oldest first, ignoring solves without turn metrics", () => {
     const solves = [
       makeSolve({ id: "old", time: 15_000, analysis: makeMetrics({ tps: { global: 3, effective: 3, byPhase: {}, peakInstantaneous: 5 } }) }),
-      makeSolve({ id: "new", time: 10_000 }), // no analysis → NaN
+      makeSolve({ id: "new", time: 10_000 }), // no moves/analysis → excluded
     ];
-    // Input is newest-first; output is oldest-first.
+    // Input is newest-first [old, new]; reversed → [new, old].
+    // "new" has no TPS data, so only "old" (with TPS = 3) is included.
     const series = deriveTpsSeries(solves);
-    expect(series).toHaveLength(2);
-    expect(series[0].tps).toBeNaN(); // "new" is oldest here? No — "old" is index 0 in input.
-    // Actually: input [old, new], reversed → [new, old]. So series[0] = new (NaN), series[1] = old (3).
-    expect(series[0].solveIdx).toBe(0);
-    expect(series[1].tps).toBe(3);
+    expect(series).toHaveLength(1);
+    expect(series[0].tps).toBe(3);
+    expect(series[0].solveNumber).toBe(2);
   });
 });
 

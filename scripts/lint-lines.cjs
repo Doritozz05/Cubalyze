@@ -25,6 +25,18 @@ const ALLOWLIST = [
   "apps/web/src/components/Insights/SolveAnalysisPanel.tsx",
   "apps/web/src/utils/importSolves.ts",
   "packages/gan-protocol/src/gan-cube-protocol.ts",
+  // Generated algorithm-catalog DATA (pruebas/scripts/generate_seed_catalog.py,
+  // "DO NOT edit by hand"): flat tables of thousands of algorithm rows. Not
+  // hand-written source — splitting them would break the generator contract.
+  "packages/algorithm-db/src/seed/cfop-antipll.ts",
+  "packages/algorithm-db/src/seed/cfop-cls.ts",
+  "packages/algorithm-db/src/seed/cfop-ell.ts",
+  "packages/algorithm-db/src/seed/cfop-f2l.ts",
+  "packages/algorithm-db/src/seed/cfop-oll.ts",
+  "packages/algorithm-db/src/seed/cfop-pll.ts",
+  "packages/algorithm-db/src/seed/cfop-sv.ts",
+  "packages/algorithm-db/src/seed/coll.ts",
+  "packages/algorithm-db/src/seed/wv.ts",
 ];
 
 function walk(dir, out = []) {

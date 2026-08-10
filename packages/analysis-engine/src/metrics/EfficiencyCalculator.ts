@@ -117,51 +117,39 @@ export class EfficiencyCalculator {
    *
    * @returns A value between 0 and 1. 1.0 = every move reduced unsolved count.
    */
+  /** Count unsolved pieces (wrong position OR wrong orientation). */
+  private static unsolvedCount(state: {
+    cp: number[];
+    co: number[];
+    ep: number[];
+    eo: number[];
+  }): number {
+    let unsolved = 0;
+    for (let i = 0; i < 8; i++) {
+      if (state.cp[i] !== i || state.co[i] !== 0) unsolved++;
+    }
+    for (let i = 0; i < 12; i++) {
+      if (state.ep[i] !== i || state.eo[i] !== 0) unsolved++;
+    }
+    return unsolved;
+  }
+
   static computeForwardDriftFast(timeline: SolveTimeline): number {
     const { entries } = timeline;
     if (entries.length === 0) return 1;
 
+    // Count how many states have strictly fewer unsolved pieces than the
+    // previous state — a proxy for "is the solve progressing toward solved?".
     let progressSteps = 0;
-
-    for (const entry of entries) {
-      const state = entry.state;
-      let unsolved = 0;
-
-      // Count unsolved pieces (piece not in correct position OR wrong orientation)
-      for (let i = 0; i < 8; i++) {
-        if (state.cp[i] !== i || state.co[i] !== 0) unsolved++;
-      }
-      for (let i = 0; i < 12; i++) {
-        if (state.ep[i] !== i || state.eo[i] !== 0) unsolved++;
-      }
-
-      // Each step progresses if total unsolved <= previous step.
-      // Since we're moving toward solved, unsolved should monotonically
-      // decrease throughout the solve.
-      // This is a simplification — use unsolved count as a proxy.
-    }
-
-    // For a proper forward drift: count how many states have strictly fewer
-    // unsolved pieces than the previous state.
     let previousUnsolved = 20; // max: 8 corners + 12 edges
-    for (let i = 0; i < entries.length; i++) {
-      const state = entries[i].state;
-      let unsolved = 0;
-      for (let j = 0; j < 8; j++) {
-        if (state.cp[j] !== j || state.co[j] !== 0) unsolved++;
-      }
-      for (let j = 0; j < 12; j++) {
-        if (state.ep[j] !== j || state.eo[j] !== 0) unsolved++;
-      }
-
+    for (const entry of entries) {
+      const unsolved = EfficiencyCalculator.unsolvedCount(entry.state);
       if (unsolved < previousUnsolved) {
         progressSteps++;
       }
       previousUnsolved = unsolved;
     }
 
-    return entries.length > 0
-      ? Math.round((progressSteps / entries.length) * 1000) / 1000
-      : 1;
+    return Math.round((progressSteps / entries.length) * 1000) / 1000;
   }
 }

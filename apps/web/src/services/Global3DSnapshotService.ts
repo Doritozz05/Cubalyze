@@ -126,7 +126,7 @@ export class Global3DSnapshotService {
 
       // The plan supplies the camera for each render; this is only a safe
       // initialization before the first task is applied.
-      engine.sceneManager.setOrbitAngles(Math.PI / 4, Math.PI / 6, 7);
+      engine.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6, 7);
 
       if (is2x2) {
         this.canvas2x2 = canvas;

@@ -14,6 +14,10 @@ import type {
   TimelineEntry,
 } from '@cubeforge/types';
 
+/** Slice tokens (M/E/S) — the "other half" of a wide move in the expanded
+ *  state stream (r → "R M'"), or a standalone slice. */
+const SLICE_TOKEN_RE = /^[MES][2']?$/;
+
 /**
  * Builds a SolveTimeline from a sequence of raw CubeMoveEvents.
  *
@@ -42,6 +46,20 @@ export class TimelineBuilder {
    *                          Smart Cube state at solve start. When provided
    *                          (and not a stale "solved" state), this is used
    *                          as ground truth INSTEAD of the scramble.
+   * @param stateTokens - Optional FULL token stream (face + slice moves) to
+   *                      drive the cube state. `moves` must be exactly the
+   *                      face tokens of `stateTokens` in order. When provided,
+   *                      slice tokens (M/E/S — which a smart cube never emits
+   *                      but text reconstructions do) are applied to the
+   *                      state WITHOUT creating their own timeline entry, so
+   *                      the reconstructed states are exact while the entry
+   *                      indices stay in face-move space. Each entry's state
+   *                      also consumes the slice tokens immediately following
+   *                      its face token — the slice half of a wide move (r →
+   *                      "R M'") — so the snapshot reflects the FULL move and a
+   *                      phase completed by a wide's slice lands ON its entry
+   *                      (not invisibly between entries). Defaults to applying
+   *                      `moves` alone.
    * @returns A fully reconstructed SolveTimeline ready for phase recognition.
    */
   static build(
@@ -50,6 +68,7 @@ export class TimelineBuilder {
     orientations?: (CubeOrientation | undefined)[],
     scramble?: string,
     initialFacelets?: string,
+    stateTokens?: readonly string[],
   ): SolveTimeline {
     if (moves.length === 0) {
       return {
@@ -124,13 +143,48 @@ export class TimelineBuilder {
       ? moves[moves.length - 1].hostTimestamp
       : startTimestamp;
 
+    let tokenCursor = 0;
     for (let i = 0; i < moves.length; i++) {
       const move = moves[i];
       const hostTs = move.hostTimestamp;
 
-      // Apply the move to the cube state using move notation
-      const moveNotation = MoveTransformer.moveToNotation(move.face, move.direction);
-      state.applySequence(moveNotation);
+      // Apply the move to the cube state using move notation. When a full
+      // `stateTokens` stream is provided, walk it applying every token (face
+      // AND slice) until the face token for this entry is consumed — slice
+      // moves update the state without becoming timeline entries, so the
+      // state at each face-move index is EXACT even for M/E/S/wide solves.
+      if (stateTokens && tokenCursor < stateTokens.length) {
+        const target = MoveTransformer.moveToNotation(move.face, move.direction);
+        let matched = false;
+        while (tokenCursor < stateTokens.length) {
+          const token = stateTokens[tokenCursor++];
+          state.applySequence(token);
+          if (token === target) {
+            matched = true;
+            break;
+          }
+        }
+        // Wide moves expand to face+slice in the state stream (r → "R M'").
+        // The entry snapshot must include the slice half, or the state at
+        // this entry silently MISSES the full move — e.g. a cross completed
+        // by a wide's slice would only materialize BETWEEN entries, invisible
+        // to phase detection, and the detected cross drifts to a coincidental
+        // late completion (the "cross detected at 16 vs written 11" bug).
+        while (
+          tokenCursor < stateTokens.length &&
+          SLICE_TOKEN_RE.test(stateTokens[tokenCursor])
+        ) {
+          state.applySequence(stateTokens[tokenCursor++]);
+        }
+        if (!matched) {
+          // Defensive (cannot happen by construction — `moves` is derived from
+          // `stateTokens`): the face token was missing, so apply it alone.
+          state.applySequence(target);
+        }
+      } else {
+        const moveNotation = MoveTransformer.moveToNotation(move.face, move.direction);
+        state.applySequence(moveNotation);
+      }
 
       // Build the display move (face remapped by orientation if available)
       const orientation = orientations?.[i];

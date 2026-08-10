@@ -13,6 +13,5 @@ export const phaseBalanceDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 420, y: 300 },
-  defaultMinimized: true,
   tags: ["phase", "balance", "cfop", "cross", "f2l", "oll", "pll", "analysis"],
 };

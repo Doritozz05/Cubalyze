@@ -284,14 +284,17 @@ describe('CubeState — Extended Moves (M, E, S, x, y, z)', () => {
     }
   });
 
-  it('z rotation = F B\' S\' (same cubie state)', () => {
+  it('z rotation = F B\' S (same cubie state)', () => {
+    // The middle ring of a CW-from-+Z rotation cycles UR→DR→DL→UL→UR,
+    // which is the S direction (NOT S'). The old S' composite reversed the
+    // ring and was not a pure rotation (no consistent face map existed).
     const viaRotation = new CubeState();
     viaRotation.applyMove(Move.Z1);
 
     const viaComposite = new CubeState();
     viaComposite.applyMove(Move.F1);
     viaComposite.applyMove(Move.B3); // B'
-    viaComposite.applyMove(Move.S3); // S'
+    viaComposite.applyMove(Move.S1); // S
 
     for (let i = 0; i < 8; i++) {
       expect(viaRotation.cp[i]).toBe(viaComposite.cp[i]);

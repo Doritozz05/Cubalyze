@@ -26,7 +26,7 @@ import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
 
 export interface Case3DPanelProps {
   caseData: AlgorithmCase;
-  /** @deprecated — ahora se usa useCaseAlgorithms internamente */
+  /** @deprecated — useCaseAlgorithms is used internally now */
   algorithms?: Algorithm[];
   onClose: () => void;
   onPracticeCase?: (subsetId: string, caseId: string) => void;
@@ -45,6 +45,12 @@ const SLOT_LABELS = [
   { id: 3, key: "BR", name: "Back Right" },
 ];
 
+/** F2L slot of an alg from its `notes` (e.g. "Slot: FR"). Null if it has none. */
+function slotOfAlgorithm(alg: Algorithm): string | null {
+  const match = alg.notes?.match(/Slot:\s*(FR|FL|BL|BR|ALL)/);
+  return match ? match[1] : null;
+}
+
 export function Case3DPanel({
   caseData,
   algorithms: _algorithmsProp,
@@ -54,7 +60,7 @@ export function Case3DPanel({
   variant = "panel",
 }: Case3DPanelProps) {
   // ── Algorithms from hook (seed + custom, ordered) ──────────────────
-  const { algorithms, primaryAlgorithm } = useCaseAlgorithms(caseData.id);
+  const { algorithms } = useCaseAlgorithms(caseData.id);
 
   // ── Editor state ────────────────────────────────────────────────────
   const [editorOpen, setEditorOpen] = useState(false);
@@ -76,7 +82,32 @@ export function Case3DPanel({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
-  const sortedAlgIds = useMemo(() => algorithms.map((a) => a.id), [algorithms]);
+  const isF2L = isF2LCase(caseData);
+
+  // ── Slot-filtered algorithm list (F2L only) ──────────────────────────
+  // Every F2L alg declares its slot in `notes` ("Slot: FR/FL/BL/BR"). The slot
+  // selector rotates the camera AND filters the list.
+  // Algs without a slot (customs) are always shown.
+  //
+  // "Slot: ALL" = canonic algs (BirdF2L) written for the FR slot: the
+  // case is solved in every slot by rotating the cube (slots-model verified
+  // 672/672), so they are universal and shown in any slot.
+  const slotKey = SLOT_LABELS[selectedSlot]?.key ?? "FR";
+  const filteredAlgorithms = useMemo(() => {
+    if (!isF2L) return algorithms;
+    return algorithms.filter((a) => {
+      const slot = slotOfAlgorithm(a);
+      return slot === null || slot === "ALL" || slot === slotKey;
+    });
+  }, [algorithms, isF2L, slotKey]);
+
+  const filteredPrimary = filteredAlgorithms[0] ?? null;
+  const activeAlg =
+    filteredAlgorithms.find((a) => a.id === selectedAlgId) ?? filteredPrimary;
+  const sortedAlgIds = useMemo(
+    () => filteredAlgorithms.map((a) => a.id),
+    [filteredAlgorithms],
+  );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -87,19 +118,32 @@ export function Case3DPanel({
       const newIndex = sortedAlgIds.indexOf(String(over.id));
       if (oldIndex === -1 || newIndex === -1) return;
 
-      const newOrder = [...sortedAlgIds];
-      newOrder.splice(oldIndex, 1);
-      newOrder.splice(newIndex, 0, String(active.id));
-      algorithmStore.getState().setCaseOrder(caseData.id, newOrder);
+      // New order of ONLY the visible algs (filtered slot).
+      const newVisibleOrder = [...sortedAlgIds];
+      newVisibleOrder.splice(oldIndex, 1);
+      newVisibleOrder.splice(newIndex, 0, String(active.id));
+
+      // The store's caseOrder holds the FULL case order. Saving only the
+      // visible sublist would drop the custom order of the other slots, so we
+      // merge: replace the visible id sequence inside the full order and leave
+      // the rest in place.
+      const fullOrder = algorithms.map((a) => a.id);
+      const visibleSet = new Set(sortedAlgIds);
+      const merged: string[] = [];
+      let vi = 0;
+      for (const id of fullOrder) {
+        if (visibleSet.has(id)) {
+          merged.push(newVisibleOrder[vi++] ?? id);
+        } else {
+          merged.push(id);
+        }
+      }
+      algorithmStore.getState().setCaseOrder(caseData.id, merged);
     },
-    [sortedAlgIds, caseData.id],
+    [sortedAlgIds, algorithms, caseData.id],
   );
 
   // ── Derived ─────────────────────────────────────────────────────────
-  const activeAlg =
-    algorithms.find((a) => a.id === selectedAlgId) ?? primaryAlgorithm;
-
-  const isF2L = isF2LCase(caseData);
 
   useEffect(() => {
     const preferredSlot = activeAlg?.viewPreferences?.preferredF2LSlot;
@@ -108,6 +152,7 @@ export function Case3DPanel({
 
   const handleSlotSelect = useCallback((slotId: number) => {
     setSelectedSlot(slotId);
+    setSelectedAlgId(null); // the selected alg may not belong to the new slot
     setResetCameraTrigger((previous) => previous + 1);
 
     // Slot orientation is a view preference of a custom algorithm, not part
@@ -232,7 +277,10 @@ export function Case3DPanel({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">
-                Algorithms ({algorithms.length})
+                Algorithms ({filteredAlgorithms.length}
+                {isF2L && filteredAlgorithms.length !== algorithms.length
+                  ? ` / ${algorithms.length} · ${slotKey}`
+                  : ""})
               </h4>
               <button
                 onClick={handleOpenAddDialog}
@@ -254,12 +302,12 @@ export function Case3DPanel({
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2">
-                  {algorithms.map((alg) => (
+                  {filteredAlgorithms.map((alg) => (
                     <SortableAlgorithmItem
                       key={alg.id}
                       alg={alg}
                       isSelected={alg.id === activeAlg?.id}
-                      isPrimary={alg.id === primaryAlgorithm?.id}
+                      isPrimary={alg.id === filteredPrimary?.id}
                       is2x2={caseData.puzzleType === "2x2x2"}
                       subsetId={caseData.subsetId}
                       onSelect={() => setSelectedAlgId(alg.id)}

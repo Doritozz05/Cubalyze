@@ -122,10 +122,9 @@ export function logSolveDiagnostic(args: {
   method: SolveMethod;
   timeline: SolveTimeline;
   metrics: SolveMetrics | null;
-  initialStateProvided: boolean;
 }): void {
   if (!isCFOPDebugEnabled()) return;
-  const { moves, scramble, method, timeline, metrics, initialStateProvided: _initialStateProvided } = args;
+  const { moves, scramble, method, timeline, metrics } = args;
   const first = moves[0];
   const last = moves[moves.length - 1];
   const durationMs =
@@ -344,13 +343,11 @@ export function logSolveDiagnostic(args: {
           recognitionMs: cfop.ollRecognitionMs,
           executionMs: cfop.ollExecutionMs,
           tps: cfop.ollTPS,
-          algorithmId: cfop.ollAlgorithmId,
         },
         pll: {
           recognitionMs: cfop.pllRecognitionMs,
           executionMs: cfop.pllExecutionMs,
           tps: cfop.pllTPS,
-          algorithmId: cfop.pllAlgorithmId,
         },
       });
     } else {

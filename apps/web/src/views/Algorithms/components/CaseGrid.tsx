@@ -94,10 +94,10 @@ function CaseCard({
       <div className="flex items-center justify-center w-full min-h-35 max-lg:min-h-30 pt-1">
         {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
           <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44 max-lg:max-w-36" />
-        ) : caseData.diagramType === "2d-top" && caseData.diagram2D ? (
+        ) : caseData.diagramType === "2d-top" || caseData.diagram2D ? (
           caseData.puzzleType === '2x2x2' ? (
             <Case2x2Diagram
-              faceletColors={caseData.diagram2D.faceletColors}
+              faceletColors={caseData.diagram2D?.faceletColors}
               setupScramble={caseData.setupScramble}
               moves={undefined}
               style={visualizationStyle ?? "full-color"}
@@ -106,7 +106,7 @@ function CaseCard({
             />
           ) : (
             <CaseDiagram
-              arrows={caseData.diagram2D.arrows}
+              arrows={caseData.diagram2D?.arrows}
               setupScramble={caseData.setupScramble}
               moves={undefined}
               style={visualizationStyle ?? "full-color"}
@@ -126,7 +126,7 @@ function CaseCard({
       {/* Case info — algorithm moves primary, case number & name secondary */}
       <div className="flex flex-col items-center gap-0.5 w-full mt-1">
         {algorithm && (
-          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1 break-words max-w-full">
+          <span className="nums text-[0.75rem] font-semibold text-ink leading-tight text-center px-1 wrap-break-word max-w-full">
             {algorithm.moves.join(" ")}
           </span>
         )}

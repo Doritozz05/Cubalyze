@@ -1,22 +1,15 @@
 "use client";
 
 /**
- * 2D Case Diagram — SVG visualization of any algorithm case (PLL, OLL, etc.).
+ * 2D Case Diagram — SVG visualization of any algorithm case (PLL, OLL, COLL, WV, etc.).
  *
- * Replacement for PLLDiagram with added support for:
- *   - Dynamic facelet generation from algorithm moves (via CaseStateGenerator)
- *   - Visualization styles: 'full-color' (PLL) and 'yellow-gray' (OLL)
- *   - Backward-compatible with hardcoded faceletColors
- *
- * Layout (cross pattern):
- *   ┌─────────────────────────┐
- *   │       B B B (top)       │
- *   ├─────┬───────────┬───────┤
- *   │ L   │           │   R   │
- *   │ L L │  U U U    │ R R R │
- *   ├─────┴───────────┴───────┤
- *   │       F F F (bot)       │
- *   └─────────────────────────┘
+ * Support for:
+ *   - Dynamic facelet generation from algorithm moves / setup scrambles
+ *   - Visualization styles:
+ *       - 'full-color' (PLL, F2L)
+ *       - 'yellow-gray' (OLL)
+ *       - 'coll' (COLL: top yellow edges, gray side edges, full-color corners)
+ *       - 'wv' (Winter Variation: top yellow edges, gray side edges, full-color corners including White F2L stickers)
  */
 
 import { useMemo } from "react";
@@ -83,10 +76,6 @@ const faceIndices: Record<string, number[]> = {
 
 /**
  * Render a 2D algorithm case diagram.
- *
- * Two ways to provide facelets:
- *   1. `faceletColors` (backward compat) — pre-computed 54-element array
- *   2. `moves` + `style` — dynamic generation via CaseStateGenerator
  */
 export function CaseDiagram({
   faceletColors: faceletColorsProp,
@@ -98,8 +87,6 @@ export function CaseDiagram({
   className,
   rotation = 0,
 }: CaseDiagramProps) {
-  // Canonical priority: setupScramble + subset policy always wins. Explicit
-  // facelets and algorithm moves are compatibility fallbacks only.
   const faceletColors = useMemo(() => {
     if (setupScramble) {
       try {
@@ -113,7 +100,7 @@ export function CaseDiagram({
     }
     if (faceletColorsProp) {
       return style === "yellow-gray"
-        ? faceletColorsProp.map((color) => color === "Y" ? "Y" : "#")
+        ? faceletColorsProp.map((color) => (color === "Y" ? "Y" : "#"))
         : faceletColorsProp;
     }
     if (moves && moves.length > 0) {
@@ -279,3 +266,4 @@ export function CaseDiagram({
     </svg>
   );
 }
+

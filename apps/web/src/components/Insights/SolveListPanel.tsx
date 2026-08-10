@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import { deriveSparkline } from "@/utils/insights";
-import type { Solve, Penalty } from "@/types";
+import type { Solve } from "@/types";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
-import type { StatsFilters, SortOrder } from "@/hooks/useStatsFilters";
+import type { StatsFilters, SortOrder, SolveFilterCategory } from "@/hooks/useStatsFilters";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -139,16 +139,17 @@ export const SolveListPanel = memo(function SolveListPanel({
   }, [allSolves]);
 
   const isFiltered =
-    filteredCount !== totalCount || filters.search.trim().length > 0;
+    filteredCount !== totalCount ||
+    filters.search.trim().length > 0 ||
+    filters.activeFilter !== null;
   const currentSort =
     SORT_OPTIONS.find((o) => o.value === filters.sort) ?? SORT_OPTIONS[0];
 
   // ── Handlers ──────────────────────────────────────────────────────────
-  const togglePenalty = (p: Penalty) => {
-    const next = new Set(filters.penalties);
-    if (next.has(p)) next.delete(p);
-    else next.add(p);
-    setFilters({ penalties: next });
+  const toggleFilterCategory = (cat: SolveFilterCategory) => {
+    setFilters({
+      activeFilter: filters.activeFilter === cat ? null : cat,
+    });
   };
 
   // ── Empty states ──────────────────────────────────────────────────────
@@ -226,41 +227,37 @@ export const SolveListPanel = memo(function SolveListPanel({
         {totalCount > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">
             <FilterChip
-              active={filters.penalties.has("none")}
+              active={filters.activeFilter === "clean"}
               count={chipCounts.clean}
               dot="bg-ready"
-              onClick={() => togglePenalty("none")}
+              onClick={() => toggleFilterCategory("clean")}
             >
               Clean
             </FilterChip>
             <FilterChip
-              active={filters.penalties.has("+2")}
+              active={filters.activeFilter === "+2"}
               count={chipCounts.plus2}
               dot="bg-plus2"
-              onClick={() => togglePenalty("+2")}
+              onClick={() => toggleFilterCategory("+2")}
             >
               +2
             </FilterChip>
             <FilterChip
-              active={filters.penalties.has("DNF")}
+              active={filters.activeFilter === "DNF"}
               count={chipCounts.dnf}
               dot="bg-dnf"
-              onClick={() => togglePenalty("DNF")}
+              onClick={() => toggleFilterCategory("DNF")}
             >
               DNF
             </FilterChip>
             <FilterChip
-              active={filters.smartCubeOnly}
+              active={filters.activeFilter === "smart"}
               count={chipCounts.smart}
               dot="bg-ink"
-              onClick={() =>
-                setFilters({ smartCubeOnly: !filters.smartCubeOnly })
-              }
+              onClick={() => toggleFilterCategory("smart")}
             >
               Smart
             </FilterChip>
-
-
           </div>
         )}
 
@@ -351,7 +348,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                     vi.index === solves.length - 1 && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
-               >
+                >
                   {/* Selection accent bar (no layout shift) */}
                   <span
                     className={cn(

@@ -20,7 +20,7 @@ import { getSeedData } from "../seed/index";
 
 // ─── Parse SpeedCubeDB jcube data from the HTML ────────────────────────────
 
-const HTML_PATH = resolve(__dirname, "../../../../pruebas/speedcubedbpll.html");
+const HTML_PATH = resolve(__dirname, "../../../../pruebas/raw/scdb/speedcubedbpll.html");
 const HAS_HTML = existsSync(HTML_PATH);
 
 /** Color mapping: SpeedCubeDB jcube lowercase → Kociemba face labels.

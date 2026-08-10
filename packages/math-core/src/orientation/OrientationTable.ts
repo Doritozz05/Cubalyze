@@ -1,5 +1,5 @@
 import { Quaternion } from '../math3d';
-import type { CubeFace, FacePermutation } from '@cubeforge/types';
+import type { CubeFace, FacePermutation, OuterFace } from '@cubeforge/types';
 
 /**
  * A single entry in the 24-orientation table.
@@ -23,10 +23,10 @@ export interface OrientationEntry {
 
 // ─── Face utilities ──────────────────────────────────────────────────────────
 
-const ALL_FACES: CubeFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
+const ALL_FACES: OuterFace[] = ['U', 'D', 'F', 'B', 'L', 'R'];
 
 function invertFaceMap(map: FacePermutation): FacePermutation {
-  const inv: Partial<Record<CubeFace, CubeFace>> = {};
+  const inv: Partial<Record<OuterFace, OuterFace>> = {};
   for (const pos of ALL_FACES) {
     inv[pos] = 'U'; // placeholder
   }
@@ -39,7 +39,7 @@ function invertFaceMap(map: FacePermutation): FacePermutation {
 
 function composeFaceMap(a: FacePermutation, b: FacePermutation): FacePermutation {
   // Apply a first, then b: result(pos) = b(a(pos))
-  const result: Partial<Record<CubeFace, CubeFace>> = {};
+  const result: Partial<Record<OuterFace, OuterFace>> = {};
   for (const pos of ALL_FACES) {
     result[pos] = b[a[pos]];
   }
@@ -103,7 +103,7 @@ function faceMapKey(map: FacePermutation): string {
 // the rotation matrix method. This guarantees a 1:1 mapping from face map to
 // quaternion, independent of BFS path.
 
-const FACE_NORMALS: Record<CubeFace, [number, number, number]> = {
+const FACE_NORMALS: Record<OuterFace, [number, number, number]> = {
   U: [0, 1, 0],
   D: [0, -1, 0],
   F: [0, 0, 1],
@@ -289,6 +289,20 @@ export class OrientationTable {
   }
 
   /**
+   * Look up a base whole-cube rotation (x, x', x2, y, y', y2, z, z', z2) by
+   * its notation token. Returns null for anything else (face moves, wide
+   * moves, slices, malformed tokens).
+   *
+   * Used to fold solver-frame rotations into a running grip (conjugation)
+   * when replaying text reconstructions on a fixed cube.
+   */
+  static rotationEntryFor(token: string): OrientationEntry | null {
+    const rot = BASE_ROTATIONS.find((r) => r.name === token);
+    if (!rot) return null;
+    return OrientationTable.fromFaceMap(rot.faceMap);
+  }
+
+  /**
    * Compose two orientations: apply `a` first, then `b`.
    * The resulting face map is `b(a(pos))` and the quaternion is `q_b * q_a`.
    */
@@ -303,6 +317,72 @@ export class OrientationTable {
    */
   static inverse(entry: OrientationEntry): OrientationEntry {
     return OrientationTable.fromFaceMap(invertFaceMap(entry.faceMap));
+  }
+
+  /**
+   * Decompose a RELATIVE cube rotation into the shortest sequence of base
+   * rotations (x/y/z ±90°/180°) whose composition equals it. Identity → [].
+   *
+   * Every element of the 24-orientation group is a product of at most two
+   * base rotations, so the returned sequence has length 0–2.
+   *
+   * Used by the replay engine to turn a "diagonal" multi-step grip change
+   * (e.g. compact smart-cube timelines, where several rotations between two
+   * moves collapse into a single keyframe jump) into sequential single-axis
+   * turns — the same visual language as reconstruction replays.
+   */
+  static decompose(relative: OrientationEntry): OrientationEntry[] {
+    OrientationTable.ensureDecompositionPaths();
+    return OrientationTable.decompositionPaths![relative.id] ?? [];
+  }
+
+  /** Shortest base-rotation path from identity, per entry id (BFS). */
+  private static decompositionPaths: OrientationEntry[][] | null = null;
+
+  /**
+   * Precompute the shortest base-rotation path from identity for every one
+   * of the 24 orientations via BFS over the Cayley graph (generators: the 9
+   * base rotations). Cheap (24 nodes) and done once.
+   */
+  private static ensureDecompositionPaths(): void {
+    if (OrientationTable.decompositionPaths) return;
+
+    const base: OrientationEntry[] = [];
+    for (const name of ['x', "x'", 'x2', 'y', "y'", 'y2', 'z', "z'", 'z2']) {
+      const entry = OrientationTable.rotationEntryFor(name);
+      if (entry) base.push(entry);
+    }
+
+    const n = OrientationTable.ENTRIES.length;
+    const parent = new Array<[number, number] | null>(n).fill(null); // [parentId, rotationId]
+    const dist = new Array<number>(n).fill(Infinity);
+    dist[0] = 0;
+    const queue: number[] = [0];
+
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      for (const r of base) {
+        const next = OrientationTable.compose(OrientationTable.ENTRIES[cur], r);
+        if (dist[next.id] > dist[cur] + 1) {
+          dist[next.id] = dist[cur] + 1;
+          parent[next.id] = [cur, r.id];
+          queue.push(next.id);
+        }
+      }
+    }
+
+    const paths: OrientationEntry[][] = new Array(n).fill([]);
+    paths[0] = [];
+    for (let id = 1; id < n; id++) {
+      const path: OrientationEntry[] = [];
+      let cur = parent[id];
+      while (cur) {
+        path.push(OrientationTable.ENTRIES[cur[1]]);
+        cur = parent[cur[0]];
+      }
+      paths[id] = path.reverse();
+    }
+    OrientationTable.decompositionPaths = paths;
   }
 
   /**

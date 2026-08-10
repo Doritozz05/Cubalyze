@@ -13,6 +13,5 @@ export const algorithmDbDefinition: WidgetDefinition = {
   source: "built-in",
   defaultActive: false,
   defaultPosition: { x: 380, y: 72 },
-  defaultMinimized: true,
   tags: ["algorithms", "cfop", "roux", "pll", "oll", "f2l", "visualization", "library"],
 };

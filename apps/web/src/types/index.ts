@@ -37,6 +37,19 @@ export interface Solve {
   analysis?: import('@cubeforge/types').SolveMetrics;
   /** Compact orientation timeline for smart cube solves with IMU. */
   orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
+  /**
+   * Whether `moves` are pre-conjugated to the cube-fixed frame.
+   *
+   * - `true` (reconstruction records): the moves are CONJUGATED base-frame
+   *   letters (rotations folded in) that solve the cube in the cube's own
+   *   frame. The 3D replay rotates the cube ROOT by `orientationTimeline`
+   *   (the solver's grip: inspection pre-roll + mid-solve keyframes) so the
+   *   cube follows the solver's perspective and ends solved in it; per-event
+   *   `displayNotation` overrides show the writer's raw notation.
+   * - `undefined` (smart-cube solves): physical moves + an IMU timeline;
+   *   the cube root follows the timeline.
+   */
+  replayMovesConjugated?: boolean;
   /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
   puzzleType?: string;
 }

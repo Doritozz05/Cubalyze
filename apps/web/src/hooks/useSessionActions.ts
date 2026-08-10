@@ -30,6 +30,10 @@ export interface SessionActionsDeps {
   puzzle: PuzzleCategory;
   /** Replace the scramble (called after session ops that regenerate it). */
   resetScramble: () => void;
+  /** Reset timer state (clear lastTime and live time). */
+  resetTimer?: () => void;
+  /** ID of the most recent solve in the session (if any). */
+  lastSolveId?: string;
 }
 
 /**
@@ -49,6 +53,8 @@ export function useSessionActions(deps: SessionActionsDeps) {
     fetchSessionSolves,
     puzzle,
     resetScramble,
+    resetTimer,
+    lastSolveId,
   } = deps;
 
   const handleUpdate = useCallback(
@@ -60,29 +66,35 @@ export function useSessionActions(deps: SessionActionsDeps) {
 
   const handleDelete = useCallback(
     (id: string) => {
+      if (lastSolveId && id === lastSolveId) {
+        resetTimer?.();
+      }
       deleteSolve(id).catch(() => toast.error("Delete failed"));
     },
-    [deleteSolve],
+    [deleteSolve, lastSolveId, resetTimer],
   );
 
   const handleClear = useCallback(() => {
+    resetTimer?.();
     clearSession().catch(() => toast.error("Couldn't clear session"));
-  }, [clearSession]);
+  }, [clearSession, resetTimer]);
 
   const handleNewSession = useCallback(() => {
     newSession(undefined, puzzleCategoryToType(puzzle))
       .then(() => {
         resetScramble();
+        resetTimer?.();
         toast.success("New session started");
       })
       .catch(() => toast.error("Couldn't create session"));
-  }, [newSession, puzzle, resetScramble]);
+  }, [newSession, puzzle, resetScramble, resetTimer]);
 
   const handleSwitchSession = useCallback(
     (id: string) => {
+      resetTimer?.();
       switchSession(id).catch(() => toast.error("Couldn't switch session"));
     },
-    [switchSession],
+    [switchSession, resetTimer],
   );
 
   const handleImportSolves = useCallback(

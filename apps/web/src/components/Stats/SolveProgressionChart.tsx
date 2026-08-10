@@ -12,15 +12,14 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
-import { formatTime } from "@/utils/formatTime";
+import { formatTime, averageOf } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 
 // ─── Data point ─────────────────────────────────────────────────────────────
 
 interface SolveProgressionPoint {
   solveIndex: number;
-  time: number | null; // effective time in ms (becomes ceiling for DNFs after second pass)
-  timeClean: number | null; // always null for DNFs (used for the connecting line)
+  time: number; // effective time in ms
   timeFormatted: string;
   isPb: boolean;
   pbTime: number | null; // solve time (only for PB solves, null otherwise) — for scatter
@@ -29,14 +28,15 @@ interface SolveProgressionPoint {
   pbHistory: number | null; // running PB up to this solve
   ao5: number | null;
   ao12: number | null;
-  isDnf: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * WCA rolling average: solves are in CHRONOLOGICAL order (oldest first).
- * Returns null if not enough solves in the window or >1 DNF.
+ * Rolling average: solves are in CHRONOLOGICAL order (oldest first) and are
+ * guaranteed DNF-free (DNFs are filtered out upstream). Delegates to the
+ * shared `averageOf` engine (5% percentile trim, csTimer convention).
+ * Returns null if not enough solves in the window.
  */
 function rollingAverage(
   chronoSolves: readonly Solve[],
@@ -44,13 +44,9 @@ function rollingAverage(
   windowSize: number,
 ): number | null {
   if (index + 1 < windowSize) return null;
-  const slice = chronoSolves.slice(index - windowSize + 1, index + 1);
-  const times = slice.map(effectiveTime);
-  const dnfs = times.filter((t) => !Number.isFinite(t)).length;
-  if (dnfs > 1) return null;
-  const sorted = [...times].sort((a, b) => a - b);
-  const trimmed = sorted.slice(1, -1);
-  return trimmed.reduce((a, b) => a + b, 0) / (windowSize - 2);
+  const win = chronoSolves.slice(index - windowSize + 1, index + 1).reverse();
+  const ao = averageOf(win, windowSize);
+  return ao != null && Number.isFinite(ao) ? ao : null;
 }
 
 /** Round ms up to the next `step` ms boundary. */
@@ -108,63 +104,60 @@ export interface SolveProgressionChartProps {
 /**
  * Professional solve progression scatter chart inspired by Twisty Timer.
  *
+ * DNF solves are excluded entirely: they don't count as points, don't create
+ * gaps, and don't affect the PB or rolling-average lines.
+ *
  * ── Visual layers (back → front) ──
- *  1. CartesianGrid (horizontal only)
- *  2. PB history step line (yellow/gold)
+ *  1. Solve time connector line (grey)
+ *  2. PB history connecting line (yellow/gold, dashed)
  *  3. Ao5 rolling average line (red)
  *  4. Ao12 rolling average line (green)
- *  5. DNF scatters (red ✕ marks at the top)
- *  6. Best Ao5 / Ao12 reference lines (dashed)
- *  7. All solves scatter (white dots, PB solves are yellow dots)
+ *  5. PB dots, plus best Ao5 / Ao12 marker dots
  */
 export function SolveProgressionChart({ solves, className }: SolveProgressionChartProps) {
-  const { data, hasEnoughForAo5, hasEnoughForAo12, hasPbHistory, maxY, yTicks, hasDnfs } =
+  const { data, hasEnoughForAo5, hasEnoughForAo12, hasPbHistory, maxY, yTicks } =
     useMemo(() => {
-      const chrono = [...solves].reverse(); // oldest → newest
+      // DNF solves are excluded entirely: they don't count as points for the
+      // time progression, don't create gaps, and don't affect PB/rolling lines.
+      const chrono = [...solves]
+        .reverse() // oldest → newest
+        .filter((s) => Number.isFinite(effectiveTime(s)));
       let runningPb = Infinity;
       const pts: SolveProgressionPoint[] = [];
 
       // First pass: compute all points with tentative time values.
       // We need valid times first to compute the Y ceiling.
       for (let i = 0; i < chrono.length; i++) {
-        const solve = chrono[i];
-        const t = effectiveTime(solve);
-        const isDnf = !Number.isFinite(t);
+        const t = effectiveTime(chrono[i]);
 
         // Track running PB
-        if (!isDnf && t < runningPb) runningPb = t;
+        if (t < runningPb) runningPb = t;
 
         pts.push({
           solveIndex: i + 1,
-          time: isDnf ? null : t,
-          timeClean: isDnf ? null : t,
-          timeFormatted: isDnf ? "DNF" : formatTime(t),
+          time: t,
+          timeFormatted: formatTime(t),
           isPb: false, // will set after ceiling computed
           pbTime: null, // will set in second pass
           bestAo5Time: null, // will set in second pass
           bestAo12Time: null, // will set in second pass
-          pbHistory: Number.isFinite(runningPb) ? runningPb : null,
+          pbHistory: runningPb,
           ao5: rollingAverage(chrono, i, 5),
           ao12: rollingAverage(chrono, i, 12),
-          isDnf,
         });
       }
 
-      // Y-axis domain: from valid (non-DNF) times only
-      const validTimes = pts
-        .map((p) => p.time)
-        .filter((t): t is number => t != null);
-      const maxMs = validTimes.length > 0 ? Math.max(...validTimes) : 10000;
+      // Y-axis domain from the plotted (valid) times
+      const maxMs = pts.length > 0 ? Math.max(...pts.map((p) => p.time)) : 10000;
       const ceiling = ceilMs(maxMs, 1000) + 2000; // 2s headroom
 
-      // Second pass: assign DNFs to ceiling, set isPb correctly
+      // Second pass: set isPb / pbTime
       let pbCheck = Infinity;
       for (const p of pts) {
-        if (!p.isDnf && p.time != null && p.time < pbCheck) pbCheck = p.time;
-        p.isPb = !p.isDnf && p.time != null && p.time <= pbCheck && p.time > 0;
-        if (p.isDnf) p.time = ceiling;
-        // Set pbTime for scatter dots (only PB solves, actual time not ceiling)
-        p.pbTime = p.isPb && !p.isDnf && p.time != null && p.time > 0 ? p.time : null;
+        if (p.time < pbCheck) pbCheck = p.time;
+        p.isPb = p.time <= pbCheck && p.time > 0;
+        // Set pbTime for scatter dots (only PB solves)
+        p.pbTime = p.isPb && p.time > 0 ? p.time : null;
       }
 
       // Collect all Ao5/Ao12 values for reference lines
@@ -193,7 +186,6 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
         hasPbHistory: pbValues.length > 0,
         maxY: ceiling,
         yTicks: generateYTicks(ceiling),
-        hasDnfs: pts.some((p) => p.isDnf),
       };
     }, [solves]);
 
@@ -221,12 +213,6 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
             <span className="inline-block h-0.5 w-3 rounded bg-chart-ao12" />
             Ao12
           </span>
-          {hasDnfs && (
-            <span className="flex items-center gap-1">
-              <span className="text-[0.6rem] text-dnf">✕</span>
-              DNF
-            </span>
-          )}
         </div>
       </div>
 
@@ -267,10 +253,10 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
             />
 
 
-            {/* ── Connecting line between solves (gaps at DNFs) ── */}
+            {/* ── Connecting line between solves (DNFs excluded from data) ── */}
             <Line
               type="linear"
-              dataKey="timeClean"
+              dataKey="time"
               stroke="var(--ink-3)"
               strokeWidth={1.5}
               strokeOpacity={0.3}
@@ -378,23 +364,16 @@ function ScatterTooltip({ active, payload }: any) {
     <div className="rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg">
       <div className="flex items-baseline gap-2 text-[0.6rem] text-ink-3">
         Solve #{point.solveIndex}
-        {point.isDnf && (
-          <span className="rounded bg-dnf-soft px-1 py-0.5 text-[0.6rem] font-medium uppercase text-dnf">
-            DNF
-          </span>
-        )}
-        {point.isPb && !point.isDnf && (
+        {point.isPb && (
           <span className="rounded bg-chart-pb/15 px-1 py-0.5 text-[0.6rem] font-medium uppercase text-chart-pb">
             PB
           </span>
         )}
       </div>
 
-      {!point.isDnf && point.time != null && (
-        <div className="mt-1 text-sm font-medium text-ink">
-          {point.timeFormatted}
-        </div>
-      )}
+      <div className="mt-1 text-sm font-medium text-ink">
+        {point.timeFormatted}
+      </div>
 
       <div className="mt-1.5 flex flex-col gap-0.5 text-[0.6rem] text-ink-3">
         {point.pbHistory != null && (

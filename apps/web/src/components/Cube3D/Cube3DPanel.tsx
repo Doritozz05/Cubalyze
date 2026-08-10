@@ -30,7 +30,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     rotateCamera,
     zoomCamera,
     engineRef,
-  } = useCube3D({ maxRecentMoves: 15, order, scramble });
+  } = useCube3D({ maxRecentMoves: 15, order, scramble, connectSmartCube: true });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });

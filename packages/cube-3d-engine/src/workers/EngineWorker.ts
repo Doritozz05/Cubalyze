@@ -9,11 +9,21 @@ export class EngineWorkerAPI {
   private savedOnOrientationChangeCb?: (o: CubeOrientation) => void;
   private savedOnRotationEventCb?: (e: RotationEvent) => void;
 
-  public init(canvas: OffscreenCanvas, width: number, height: number, pixelRatio: number) {
+  /**
+   * Initialize the renderer. `order` selects the puzzle: 2 (2×2×2) or
+   * 3 (3×3×3, default).
+   */
+  public init(
+    canvas: OffscreenCanvas,
+    width: number,
+    height: number,
+    pixelRatio: number,
+    order = 3,
+  ) {
     if (this.engine) {
       this.engine.dispose();
     }
-    this.engine = new Cube3DEngine({ canvas, width, height, pixelRatio });
+    this.engine = new Cube3DEngine({ canvas, width, height, pixelRatio, order });
     if (this.savedOnOrientationChangeCb) {
       this.engine.onOrientationChange(this.savedOnOrientationChangeCb);
     }
@@ -22,8 +32,14 @@ export class EngineWorkerAPI {
     }
   }
 
-  public reconnect(canvas: OffscreenCanvas, width: number, height: number, pixelRatio: number) {
-    this.init(canvas, width, height, pixelRatio);
+  public reconnect(
+    canvas: OffscreenCanvas,
+    width: number,
+    height: number,
+    pixelRatio: number,
+    order = 3,
+  ) {
+    this.init(canvas, width, height, pixelRatio, order);
   }
 
   public resize(width: number, height: number) {
@@ -45,6 +61,15 @@ export class EngineWorkerAPI {
 
   public resetCube() {
     this.engine?.resetCube();
+  }
+
+  /**
+   * Force-complete every in-flight animation (layer rotations + root SLERP).
+   * The ReplayEngine calls this before every reset/seek so a stale animation
+   * can never be applied on top of the freshly reset cube.
+   */
+  public flushAnimations() {
+    this.engine?.flushAnimations();
   }
 
   public syncFacelets(facelets: string) {
@@ -97,8 +122,11 @@ export class EngineWorkerAPI {
     this.engine?.setIsometricView();
   }
 
-  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number) {
-    this.engine?.setCubeOrientation(orientationIndex, animationDurationMs);
+  public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): Promise<void> | undefined {
+    // Return the engine's promise so Comlink proxies it — the replay engine
+    // awaits the orientation animation (inspection pre-roll) before the next
+    // move is applied.
+    return this.engine?.setCubeOrientation(orientationIndex, animationDurationMs);
   }
 
   public setFaceColor(face: string, color: string) {

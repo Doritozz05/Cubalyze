@@ -10,8 +10,7 @@ import {
   Tooltip,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import { effectiveTime } from "@/types";
-import { formatTime } from "@/utils/formatTime";
+import { formatTime, averageOf } from "@/utils/formatTime";
 import type { Solve } from "@/types";
 
 export interface TrendChartProps {
@@ -48,15 +47,15 @@ export function TrendChart({
       if (idx + 1 < window) {
         return { i: idx, label: String(idx + 1), ao: null };
       }
-      const slice = chrono.slice(idx - window + 1, idx + 1).map(effectiveTime);
-      const dnfs = slice.filter((t) => !Number.isFinite(t)).length;
-      if (dnfs > 1) {
-        return { i: idx, label: String(idx + 1), ao: null };
-      }
-      const sorted = [...slice].sort((a, b) => a - b);
-      const trimmed = sorted.slice(1, -1);
-      const ao = trimmed.reduce((a, b) => a + b, 0) / (window - 2);
-      return { i: idx, label: String(idx + 1), ao };
+      // Shared engine: 5% percentile trim (csTimer convention) — an Ao100
+      // tolerates up to 5 DNFs, matching the stat tiles from computeStats.
+      const win = chrono.slice(idx - window + 1, idx + 1).reverse();
+      const ao = averageOf(win, window);
+      return {
+        i: idx,
+        label: String(idx + 1),
+        ao: ao != null && Number.isFinite(ao) ? ao : null,
+      };
     });
 
     const finite = pts
@@ -129,6 +128,7 @@ export function TrendChart({
                   padding: "4px 8px",
                   boxShadow: "none",
                 }}
+                itemStyle={{ color: "var(--ink)" }}
                 labelFormatter={(l) => `Solve ${l}`}
                 formatter={(v) => [formatTime(Number(v)), `Ao${window}`]}
               />

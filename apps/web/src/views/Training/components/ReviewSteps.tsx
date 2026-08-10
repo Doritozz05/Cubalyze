@@ -101,12 +101,12 @@ export function RecognitionStep({
     <div className="mt-5 flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <div className="shrink-0 flex items-center justify-center">
-          {caseData && (caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" || (!caseData.diagram2D && caseData.setupScramble)) ? (
+          {caseData && (caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d") ? (
             <Case3DDiagram caseData={caseData} algorithm={algorithm ?? undefined} className="w-28 sm:w-36" />
-          ) : caseData && caseData.diagramType === "2d-top" && caseData.diagram2D ? (
+          ) : caseData && (caseData.diagramType === "2d-top" || caseData.diagram2D) ? (
             caseData.puzzleType === "2x2x2" ? (
               <Case2x2Diagram
-                faceletColors={caseData.diagram2D.faceletColors}
+                faceletColors={caseData.diagram2D?.faceletColors}
                 setupScramble={caseData.setupScramble}
                 moves={undefined}
                 style={style}
@@ -115,7 +115,7 @@ export function RecognitionStep({
               />
             ) : (
               <CaseDiagram
-                arrows={caseData.diagram2D.arrows}
+                arrows={caseData.diagram2D?.arrows}
                 setupScramble={caseData.setupScramble}
                 moves={undefined}
                 style={style}

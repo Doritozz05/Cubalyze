@@ -429,12 +429,12 @@ function QuizPanel({
             className="flex flex-col items-center gap-4"
           >
             <div className="relative" style={{ transform: `rotate(${diagramRotation}deg)`, transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-              {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" || (!currentCase.diagram2D && currentCase.setupScramble) ? (
+              {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" ? (
                 <Case3DDiagram caseData={currentCase} algorithm={algorithm} className="w-44 sm:w-52 lg:w-60" />
-              ) : currentCase.diagramType === "2d-top" && currentCase.diagram2D ? (
+              ) : currentCase.diagramType === "2d-top" || currentCase.diagram2D ? (
                 currentCase.puzzleType === '2x2x2' ? (
                   <Case2x2Diagram
-                    faceletColors={currentCase.diagram2D.faceletColors}
+                    faceletColors={currentCase.diagram2D?.faceletColors}
                     setupScramble={currentCase.setupScramble}
                     style={visualizationStyle}
                     rotation={resolveAlgorithmDiagramRotation(algorithm)}
@@ -442,7 +442,7 @@ function QuizPanel({
                   />
                 ) : (
                   <CaseDiagram
-                    arrows={currentCase.diagram2D.arrows}
+                    arrows={currentCase.diagram2D?.arrows}
                     setupScramble={currentCase.setupScramble}
                     style={visualizationStyle}
                     rotation={resolveAlgorithmDiagramRotation(algorithm)}

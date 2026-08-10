@@ -21,6 +21,7 @@ import {
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
 import { shouldAutoArm } from "@/hooks/shouldAutoArm";
+import { resolveIdlePress } from "@/hooks/pressDispatch";
 import {
   moveNotation,
   logSolveDiagnostic,
@@ -34,31 +35,15 @@ import type {
   OrientationTimeline,
   SolveMetrics,
 } from "@cubeforge/types";
+import { analyzeSolve } from "@cubeforge/analysis-engine";
 import {
-  TimelineBuilder,
-  PhaseSplitter,
-  MetricsAggregator,
-} from "@cubeforge/analysis-engine";
-import {
-  CFOPDefinition,
   compactCubeMoves,
   compactOrientationTimeline,
   CubeState,
   FaceletStringConverter,
   MoveTransformer,
-  RouxFullDefinition,
   SOLVED_FACELETS,
-  ZZDefinition,
-  PetrusDefinition,
-  type MethodDefinition,
 } from "@cubeforge/math-core";
-
-const METHOD_DEFS: Record<SolveMethod, MethodDefinition> = {
-  CFOP: CFOPDefinition,
-  Roux: RouxFullDefinition,
-  ZZ: ZZDefinition,
-  Petrus: PetrusDefinition,
-};
 
 export interface UseSolveSessionOptions {
   /**
@@ -114,8 +99,8 @@ export interface UseSolveSessionResult {
 /**
  * Runs the analysis pipeline on collected moves after a solve.
  *
- * This is intentionally async (via setTimeout 0) to avoid blocking
- * the main thread during the solve completion flow.
+ * Intentionally async so it never blocks the main thread during the
+ * solve completion flow.
  */
 async function runAnalysis(
   moves: CubeMoveEvent[],
@@ -127,8 +112,6 @@ async function runAnalysis(
   if (moves.length === 0) return null;
 
   try {
-    const methodDef = METHOD_DEFS[method];
-
     // Compact consecutive same-face same-direction moves (D + D → D2)
     // before feeding the analysis pipeline. The GAN Gen2 protocol has no
     // native 180° encoding, so physical half-turns are reported as two
@@ -140,25 +123,22 @@ async function runAnalysis(
     // solve.moves.length === analysis.totalMoves at all times.
     const compacted = compactCubeMoves(moves, orientations);
 
-    // Pass the move-tracked CubeState as the ground truth for the
-    // initial state. This is more reliable than facelets (works on Gen2
-    // cubes and in all modes). TimelineBuilder uses initialState first,
-    // then falls back to initialFacelets, then scramble.
-    // Enable color-neutral detection so any cross face is recognized.
-    // Initial state is now always derived from the scramble notation.
-    // This is the SAME scramble the ReplayEngine uses, guaranteeing
-    // analysis and replay start from identical initial states.
-    const timeline = TimelineBuilder.build(
-      compacted.moves,
+    // UNIFIED PIPELINE (Fase 5): delegate the WHOLE detection + metrics
+    // to `analyzeSolve` — the same shared core the reconstruction text
+    // route uses (build → solveTimeMs → color-neutral split → P2 frame
+    // recovery → MetricsAggregator). Nothing here re-implements detection.
+    // The initial state is seeded from the scramble — the SAME scramble the
+    // ReplayEngine uses, guaranteeing analysis and replay start from
+    // identical states. Color-neutral detection is always on (any cross
+    // face is recognized); P2 frame recovery is a no-op for physical
+    // solves (a solved cube ends canonically solved).
+    const { timeline, metrics } = await analyzeSolve({
+      moves: compacted.moves,
       method,
-      compacted.orientations,
       scramble,
-    );
-    if (solveTimeMs !== undefined && Number.isFinite(solveTimeMs)) {
-      timeline.solveTimeMs = Math.max(0, solveTimeMs);
-    }
-    PhaseSplitter.splitAndAnnotate(timeline, methodDef, { colorNeutral: true });
-    const metrics = await MetricsAggregator.computeAll(timeline, scramble);
+      orientations: compacted.orientations,
+      solveTimeMs,
+    });
 
     // End-of-solve diagnostic. Gated behind URL/localStorage flag
     // (?cfop_debug=1 or localStorage.cubeforge:cfop-debug="1") so
@@ -169,7 +149,6 @@ async function runAnalysis(
       method,
       timeline,
       metrics,
-      initialStateProvided: false,
     });
 
     // Build orientation timeline from COMPACTED orientations so indices
@@ -766,14 +745,25 @@ export function useSolveSession(
       return;
     }
 
-    if (inspectionPref) {
-      engine.startInspection();
-    } else if (smartCubeConnected) {
+    // Pure decision helper — exhaustive truth-table tests in
+    // pressDispatch.test.ts lock the Mode 3 regression: with a Smart Cube
+    // connected and Scramble Verification OFF, Space/tap must arm the cube
+    // gate (READY_FOR_MOVE) even when Inspection (default ON) is enabled.
+    // Otherwise the space key would launch the inspection ceremony and a
+    // second press would start the timer without any cube move.
+    const action = resolveIdlePress({
+      smartCube: smartCubeConnected,
+      scrambleVerif: scrambleVerificationPref,
+      inspection: inspectionPref,
+    });
+    if (action === "arm") {
       engine.arm();
+    } else if (action === "inspection") {
+      engine.startInspection();
     } else {
       engine.handleDown();
     }
-  }, [engine, inspectionPref, smartCubeConnected]);
+  }, [engine, inspectionPref, smartCubeConnected, scrambleVerificationPref]);
 
   const release = useCallback(() => {
     engine.handleUp();

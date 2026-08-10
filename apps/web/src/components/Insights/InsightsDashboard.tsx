@@ -145,7 +145,7 @@ export function InsightsDashboard({
     return specificSessionSolves ?? [];
   }, [selectedSession, allSessionSolves, specificSessionSolves, solves, activeSessionId]);
 
-  const { filters, setFilters, filtered, totalCount, filteredCount, reset } =
+  const { filters, setFilters, filtered, puzzleSolves, totalCount, filteredCount, reset } =
     useStatsFilters(dataPool);
 
   // Current cube type from filters (always non-null, default "3x3x3")
@@ -343,7 +343,7 @@ export function InsightsDashboard({
         {/* Column A: solve list */}
         <SolveListPanel
           solves={filtered}
-          allSolves={dataPool}
+          allSolves={puzzleSolves}
           selectedId={selectedId}
           onSelect={setSelectedId}
           filters={filters}

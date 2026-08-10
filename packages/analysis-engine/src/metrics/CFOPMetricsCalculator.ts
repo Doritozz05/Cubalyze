@@ -1,18 +1,15 @@
-import type { SolveTimeline, CFOPMetrics, F2LPairMetrics, CubeStateSnapshot } from '@cubeforge/types';
-import {
-  CubeState,
-  StateMatcher,
-  COLOR_NEUTRAL_CFOP_MASKS,
-  FACE_LAYERS,
-  Edge,
-  Corner,
-} from '@cubeforge/math-core';
+import type { SolveTimeline, CFOPMetrics, F2LPairMetrics } from '@cubeforge/types';
+import { segmentF2LPairs } from '../pipeline/segmentF2LPairs';
 
 /**
  * Computes CFOP-specific metrics from a solve timeline.
  *
  * Requires the timeline to already be annotated with CFOP phases
  * (Cross, F2L, OLL, PLL) via PhaseSplitter.
+ *
+ * F2L pair analysis is delegated to the UNIFIED `segmentF2LPairs` (the same
+ * function the reconstruction text route uses) — the smart route and the
+ * text route can never diverge on pair boundaries.
  */
 export class CFOPMetricsCalculator {
   /**
@@ -62,18 +59,21 @@ export class CFOPMetricsCalculator {
       }
     }
 
-    // ─── F2L pair analysis (state-based detection) ──────────────────────
+    // ─── F2L pair analysis (UNIFIED segmentF2LPairs) ─────────────────────
     const f2lPhase = phases.find((p) => p.phaseName === 'F2L');
     if (f2lPhase) {
-      // Detect which cross face was used
-      const crossFace = CFOPMetricsCalculator.detectCrossFace(entries, crossPhase);
-
-      defaultResult.f2lPairs = CFOPMetricsCalculator.analyzeF2LPairs(
-        entries,
-        f2lPhase.startIndex,
-        f2lPhase.endIndex,
-        crossFace,
-      );
+      defaultResult.f2lPairs = segmentF2LPairs(timeline).map((p) => ({
+        pairNumber: p.pairNumber,
+        slotId: p.slot,
+        timeMs: p.timeMs,
+        moves: p.movesCount,
+        tps: p.tps,
+        pauseBeforeMs: p.pauseBeforeMs,
+        colors: p.colors,
+        auf: p.auf,
+        movesNotation: p.moves,
+        completionIndex: p.completionIndex,
+      }));
       defaultResult.f2lLookaheadScore = CFOPMetricsCalculator.computeLookaheadScore(defaultResult.f2lPairs);
     }
 
@@ -137,251 +137,6 @@ export class CFOPMetricsCalculator {
   }
 
   /**
-   * Detect which cross face was used by checking the state at the end
-   * of the Cross phase against all 6 color-neutral cross masks.
-   *
-   * @returns The cross face letter ('D', 'U', 'F', 'B', 'R', 'L') or null.
-   */
-  private static detectCrossFace(
-    entries: SolveTimeline['entries'],
-    crossPhase: SolveTimeline['phases'][0] | undefined,
-  ): string | null {
-    if (!crossPhase) return null;
-
-    const state = CFOPMetricsCalculator.stateFromSnapshot(entries[crossPhase.endIndex].state);
-
-    for (const faceMasks of COLOR_NEUTRAL_CFOP_MASKS) {
-      if (StateMatcher.matchesMask(state, faceMasks.masks[0])) {
-        return faceMasks.face;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Count how many of the 4 F2L slots are completed in the given cube state.
-   *
-   * A slot is "complete" when:
-   *   - The correct edge piece is in its home position with eo=0
-   *   - The correct corner piece is in its home position with co=0
-   *
-   * @param state - The cube state to check.
-   * @param crossFace - The cross face ('D', 'U', 'F', 'B', 'R', 'L').
-   * @returns Number of completed F2L slots (0–4).
-   */
-  private static countCompletedF2LSlots(state: CubeState, crossFace: string): number {
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) return 0;
-
-    let count = 0;
-    for (let i = 0; i < 4; i++) {
-      const edgePos = faceData.f2lEdges[i];
-      const cornerPos = faceData.f2lCorners[i];
-
-      const edgeOk =
-        state.ep[edgePos] === edgePos && state.eo[edgePos] === 0;
-      const cornerOk =
-        state.cp[cornerPos] === cornerPos && state.co[cornerPos] === 0;
-
-      if (edgeOk && cornerOk) {
-        count++;
-      }
-    }
-    return count;
-  }
-
-  /**
-   * Analyze individual F2L pairs using STATE-BASED detection.
-   *
-   * Instead of splitting F2L into 4 equal segments (heuristic), this method
-   * scans every entry in the F2L phase and counts how many slots are completed.
-   * When the count increases (e.g. 0→1, 1→2, 2→3, 3→4), a pair boundary is
-   * detected and per-pair metrics are computed.
-   *
-   * Fallback: if cross face cannot be detected, falls back to equal segments.
-   */
-  private static analyzeF2LPairs(
-    entries: SolveTimeline['entries'],
-    startIdx: number,
-    endIdx: number,
-    crossFace: string | null,
-  ): F2LPairMetrics[] {
-    const f2lEntries = entries.slice(startIdx, endIdx + 1);
-    if (f2lEntries.length === 0) return [];
-
-    // Fallback to heuristic if cross face unknown
-    if (!crossFace) {
-      return CFOPMetricsCalculator.analyzeF2LPairsHeuristic(f2lEntries);
-    }
-
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) {
-      return CFOPMetricsCalculator.analyzeF2LPairsHeuristic(f2lEntries);
-    }
-
-    // ── State-based pair boundary detection ──────────────────────────
-    // KEY INSIGHT: During F2L, inserting pair N may temporarily un-do slots
-    // from pairs 0..N-1 (pieces get moved around). So slotCount FLUCTUATES.
-    // We track the MAXIMUM slot count ever seen (maxSlotCountSeen). A new
-    // pair boundary is only recorded when we exceed that maximum.
-    // This guarantees exactly 4 pairs for a full F2L solve.
-    //
-    // We also track WHICH slots are completed at each step so we can assign
-    // slotId ("FR", "FL", "BR", "BL" relative to cross face) to each pair.
-    const boundaries: Array<{ start: number; end: number; slotIdx: number }> = [];
-    let maxSlotCountSeen = 0;
-    let pairStartIdx = 0;
-    // Track which slots were previously completed (bitmask: 0-3 mapped to faceData indices)
-    let prevCompletedMask = 0;
-
-    for (let i = 0; i < f2lEntries.length; i++) {
-      const entry = f2lEntries[i];
-      const state = CFOPMetricsCalculator.stateFromSnapshot(entry.state);
-      const slotCount = CFOPMetricsCalculator.countCompletedF2LSlots(state, crossFace);
-
-      // New pair completed only when we exceed the historical max
-      if (slotCount > maxSlotCountSeen && boundaries.length < 4) {
-        // Find which new slot was completed (compare current vs previous mask)
-        const currentMask = CFOPMetricsCalculator.getCompletedSlotMask(state, crossFace);
-        const newMask = currentMask & ~prevCompletedMask;
-        // Find the first newly completed slot index
-        let newSlotIdx = 0;
-        for (let s = 0; s < 4; s++) {
-          if (newMask & (1 << s)) {
-            newSlotIdx = s;
-            break;
-          }
-        }
-
-        boundaries.push({ start: pairStartIdx, end: i, slotIdx: newSlotIdx });
-        pairStartIdx = i + 1;
-        maxSlotCountSeen = slotCount;
-        prevCompletedMask = currentMask;
-      }
-    }
-
-    // Handle remaining entries (if last pair wasn't detected by state transition)
-    if (pairStartIdx < f2lEntries.length && boundaries.length < 4) {
-      boundaries.push({ start: pairStartIdx, end: f2lEntries.length - 1, slotIdx: boundaries.length });
-    }
-
-    // Safety: never return more than 4 pairs
-    if (boundaries.length > 4) {
-      boundaries.length = 4;
-    }
-
-    // ── Build F2LPairMetrics from boundaries ─────────────────────────
-    const pairs: F2LPairMetrics[] = [];
-    let prevPairEndTs = f2lEntries[0]?.hostTimestamp ?? 0;
-
-    // Slot name mapping for the 4 F2L slots (order from FACE_LAYERS)
-    const slotNames = CFOPMetricsCalculator.getF2LSlotNames(crossFace);
-
-    for (let p = 0; p < boundaries.length; p++) {
-      const { start, end, slotIdx } = boundaries[p];
-      const pairEntries = f2lEntries.slice(start, end + 1);
-      const startTs = pairEntries[0].hostTimestamp;
-      const endTs = pairEntries[pairEntries.length - 1].hostTimestamp;
-      const durationMs = Math.max(0, endTs - startTs);
-
-      pairs.push({
-        pairNumber: p + 1,
-        slotId: slotNames[slotIdx] ?? null,
-        timeMs: durationMs,
-        moves: pairEntries.length,
-        tps: durationMs > 0
-          ? Math.round((pairEntries.length / (durationMs / 1000)) * 100) / 100
-          : 0,
-        pauseBeforeMs: p === 0 ? 0 : Math.max(0, startTs - prevPairEndTs),
-      });
-
-      prevPairEndTs = endTs;
-    }
-
-    return pairs;
-  }
-
-  /**
-   * Get a bitmask of which F2L slots (0-3) are completed in the given state.
-   */
-  private static getCompletedSlotMask(state: CubeState, crossFace: string): number {
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) return 0;
-
-    let mask = 0;
-    for (let i = 0; i < 4; i++) {
-      const edgePos = faceData.f2lEdges[i];
-      const cornerPos = faceData.f2lCorners[i];
-
-      const edgeOk =
-        state.ep[edgePos] === edgePos && state.eo[edgePos] === 0;
-      const cornerOk =
-        state.cp[cornerPos] === cornerPos && state.co[cornerPos] === 0;
-
-      if (edgeOk && cornerOk) {
-        mask |= (1 << i);
-      }
-    }
-    return mask;
-  }
-
-  /**
-   * Returns human-readable slot names for the 4 F2L slots.
-   * These are relative to the cross face (e.g. for D-cross: "FR", "BR", "BL", "FL").
-   */
-  private static getF2LSlotNames(crossFace: string): string[] {
-    const faceData = FACE_LAYERS[crossFace];
-    if (!faceData) return ['SLOT-0', 'SLOT-1', 'SLOT-2', 'SLOT-3'];
-
-    // Derive slot names from the edge position names
-    return faceData.f2lEdges.map((e) => {
-      const name = Edge[e] ?? '??';
-      return name;
-    });
-  }
-
-  /**
-   * Heuristic fallback: split F2L into 4 equal segments.
-   * Used when cross face cannot be detected.
-   */
-  private static analyzeF2LPairsHeuristic(
-    f2lEntries: SolveTimeline['entries'],
-  ): F2LPairMetrics[] {
-    if (f2lEntries.length === 0) return [];
-
-    const pairSize = Math.ceil(f2lEntries.length / 4);
-    const pairs: F2LPairMetrics[] = [];
-    let prevEndTs = f2lEntries[0]?.hostTimestamp || 0;
-
-    for (let p = 0; p < 4; p++) {
-      const segStart = p * pairSize;
-      const segEnd = Math.min((p + 1) * pairSize - 1, f2lEntries.length - 1);
-
-      if (segStart >= f2lEntries.length) break;
-
-      const segEntries = f2lEntries.slice(segStart, segEnd + 1);
-      const startTs = segEntries[0]?.hostTimestamp || prevEndTs;
-      const endTs = segEntries[segEntries.length - 1]?.hostTimestamp || startTs;
-      const durationMs = endTs - startTs;
-
-      pairs.push({
-        pairNumber: p + 1,
-        slotId: null,
-        timeMs: durationMs,
-        moves: segEntries.length,
-        tps: durationMs > 0
-          ? Math.round((segEntries.length / (durationMs / 1000)) * 100) / 100
-          : 0,
-        pauseBeforeMs: p === 0 ? 0 : Math.max(0, startTs - prevEndTs),
-      });
-
-      prevEndTs = endTs;
-    }
-
-    return pairs;
-  }
-
-  /**
    * Compute a lookahead score for F2L.
    *
    * Lookahead score is based on the consistency of pair times.
@@ -403,12 +158,5 @@ export class CFOPMetricsCalculator {
 
     // Score: 1 - CV, clamped to [0, 1]
     return Math.max(0, Math.min(1, Math.round((1 - cv) * 100) / 100));
-  }
-
-  /**
-   * Create a CubeState from a serialized snapshot.
-   */
-  private static stateFromSnapshot(snapshot: CubeStateSnapshot): CubeState {
-    return new CubeState(snapshot.cp, snapshot.co, snapshot.ep, snapshot.eo);
   }
 }

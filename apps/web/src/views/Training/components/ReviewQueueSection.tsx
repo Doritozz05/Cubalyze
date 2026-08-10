@@ -98,7 +98,7 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
           <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
         </div>
         <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
-          <Spinner size="xs" /> Loading today&apos;s queue…
+          <Spinner size="xs" />
         </div>
       </section>
     );
