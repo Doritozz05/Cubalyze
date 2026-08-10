@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Plus, RefreshCw, X, Clock, Shuffle, Tag, FileText, CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ export function ManualSolveSheet({
   defaultMethod,
   onSubmit,
 }: ManualSolveSheetProps) {
+  const { t } = useTranslation("stats");
   const [time, setTime] = useState("");
   const [scramble, setScramble] = useState(initialScramble ?? "");
   const [method, setMethod] = useState<SolveMethod>(defaultMethod);
@@ -131,7 +133,7 @@ export function ManualSolveSheet({
             exit={reduceMotion ? { opacity: 0 } : { x: 360, opacity: 0 }}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 32 }}
             className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-95 flex-col border-l border-line bg-canvas shadow-2xl"
-            aria-label="Manual solve"
+            aria-label={t("manualSolveAria")}
           >
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
@@ -140,13 +142,13 @@ export function ManualSolveSheet({
                   <Plus className="size-3.5" />
                 </div>
                 <span className="text-sm font-medium text-ink">
-                  Add manual solve
+                  {t("addManualSolve")}
                 </span>
               </div>
               <button
                 onClick={onClose}
                 className="grid size-7 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                aria-label="Close"
+                aria-label={t("close")}
               >
                 <X className="size-4" />
               </button>
@@ -159,7 +161,7 @@ export function ManualSolveSheet({
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Time
+                    {t("time")}
                   </span>
                   <span
                     className={cn(
@@ -173,7 +175,7 @@ export function ManualSolveSheet({
                   </span>
                 </div>
                 <Input
-                  placeholder="e.g. 12.34, 1450, 1:23.45"
+                  placeholder={t("timePlaceholder")}
                   inputMode="decimal"
                   maxLength={80}
                   value={time}
@@ -182,11 +184,7 @@ export function ManualSolveSheet({
                   autoFocus
                 />
                 <p className="mt-2 text-[0.6rem] text-ink-3">
-                  Integers are centiseconds ({" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">10</code> → 0.10s,{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">1450</code> → 14.50s). Add{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">DNF</code> or{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.58rem]">15.50+</code>; separate several with commas.
+                  {t("timeHint")}
                 </p>
               </section>
 
@@ -202,7 +200,7 @@ export function ManualSolveSheet({
                     className="ml-auto flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
                   >
                     <RefreshCw className="size-3" />
-                    Generate
+                    {t("generate")}
                   </button>
                 </div>
                 <textarea
@@ -218,7 +216,7 @@ export function ManualSolveSheet({
                 <div className="flex items-center gap-2 mb-3">
                   <Tag className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Method
+                    {t("method")}
                   </span>
                 </div>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -244,7 +242,7 @@ export function ManualSolveSheet({
                 <div className="flex items-center gap-2 mb-3">
                   <CircleAlert className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Penalty
+                    {t("penalty")}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -266,7 +264,7 @@ export function ManualSolveSheet({
                             : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
                         )}
                       >
-                        {p === "none" ? "Clean" : p}
+                        {p === "none" ? t("clean") : p}
                       </button>
                     );
                   })}
@@ -278,14 +276,14 @@ export function ManualSolveSheet({
                 <div className="flex items-center gap-2 mb-3">
                   <FileText className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Notes
+                    {t("notes")}
                   </span>
-                  <span className="ml-auto text-[0.55rem] text-ink-3/50">optional</span>
+                  <span className="ml-auto text-[0.55rem] text-ink-3/50">{t("optional")}</span>
                 </div>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. focus on lookahead"
+                  placeholder={t("notesPlaceholder")}
                   className="min-h-15 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                 />
               </section>
@@ -295,8 +293,8 @@ export function ManualSolveSheet({
             <div className="flex shrink-0 items-center justify-between border-t border-line bg-canvas px-5 py-3.5">
               <p className="text-[0.6rem] text-ink-3">
                 {timeValid && scrambleValid
-                  ? "Ready to log"
-                  : "Fill in time and scramble"}
+                  ? t("readyToLog")
+                  : t("fillInRequired")}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -305,7 +303,7 @@ export function ManualSolveSheet({
                   onClick={onClose}
                   className="h-8 text-xs"
                 >
-                  Cancel
+                  {t("cancel")}
                 </Button>
                 <Button
                   size="sm"
@@ -313,7 +311,7 @@ export function ManualSolveSheet({
                   disabled={!canSubmit}
                   className="h-8 text-xs bg-ink text-surface hover:bg-ink/85"
                 >
-                  {submitting ? "Adding…" : "Add solve"}
+                  {submitting ? t("adding") : t("addSolve")}
                 </Button>
               </div>
             </div>

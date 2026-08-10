@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ interface Cell {
  * Includes a subtle toggle button to minimize/collapse stats downwards.
  */
 export function SessionStats({ solves, className, onExpand, puzzleFilter }: SessionStatsProps) {
+  const { t } = useTranslation("stats");
   const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -54,8 +56,8 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
   const cells: Cell[] = [
     { label: "Ao5", value: statLabel(stats.ao5) },
     { label: "Ao12", value: statLabel(stats.ao12) },
-    { label: "Best", value: statLabel(stats.best), accent: Number.isFinite(stats.best) },
-    { label: "Mean", value: statLabel(stats.mean) },
+    { label: t("best"), value: statLabel(stats.best), accent: Number.isFinite(stats.best) },
+    { label: t("mean"), value: statLabel(stats.mean) },
   ];
 
   const interactive = !!onExpand;
@@ -79,12 +81,12 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                   onClick={() => setIsMinimized(false)}
                   // Touch: bigger restore pill for thumb use.
                   className="flex size-7 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-9"
-                  aria-label="Restore Session Stats"
+                  aria-label={t("restoreSessionStats")}
                 >
                   <ChevronUp className="size-4 max-lg:size-5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top">Show stats</TooltipContent>
+              <TooltipContent side="top">{t("showStats")}</TooltipContent>
             </Tooltip>
           </motion.div>
         ) : (
@@ -171,12 +173,12 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                         }}
                       // Touch: bigger hit area for thumb use.
                       className="flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-7"
-                        aria-label="Minimize Stats"
+                        aria-label={t("minimizeStats")}
                       >
                         <ChevronDown className="size-3 max-lg:size-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top">Minimize stats</TooltipContent>
+                    <TooltipContent side="top">{t("minimizeStatsTooltip")}</TooltipContent>
                   </Tooltip>
                 </div>
               </div>

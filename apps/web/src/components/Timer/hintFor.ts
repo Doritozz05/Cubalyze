@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import type { TimerState } from "@/types";
 
 /**
@@ -47,31 +48,37 @@ export function hintFor(
 ): string {
   switch (phase) {
     case "inspection":
-      return "inspecting";
+      return i18n.t("timer:hint.inspecting");
     case "ready_for_move":
-      return "make a move to start";
+      return i18n.t("timer:hint.makeMoveToStart");
     case "holding":
-      return "keep holding";
+      return i18n.t("timer:hint.keepHolding");
     case "ready":
-      return "release to start";
+      return i18n.t("timer:hint.releaseToStart");
     case "running":
-      return ctx.smartCube ? "make a move to stop" : "press to stop";
+      return ctx.smartCube
+        ? i18n.t("timer:hint.makeMoveToStop")
+        : i18n.t("timer:hint.pressToStop");
     case "stopped":
     case "idle":
     default:
       if (ctx.smartCube) {
-        if (ctx.scrambleVerif && !ctx.isScrambled) return "complete the scramble";
+        if (ctx.scrambleVerif && !ctx.isScrambled) return i18n.t("timer:hint.completeScramble");
         if (ctx.scrambleVerif && ctx.isScrambled) {
-          return ctx.inspection ? "press space to start inspection" : "make a move to start";
+          return ctx.inspection
+            ? i18n.t("timer:hint.pressSpaceInspection")
+            : i18n.t("timer:hint.makeMoveToStart");
         }
         // Scramble Verification OFF (Modes 3 & 4): space/tap arms the cube
         // gate and the first physical move starts the solve — inspection is
         // never shown here because pressing space arms instead of starting it.
-        return "tap or press space to start";
+        return i18n.t("timer:hint.tapOrSpaceStart");
       }
       if (ctx.inspection) {
-        return "press space to start inspection";
+        return i18n.t("timer:hint.pressSpaceInspection");
       }
-      return hasLast ? "hold to start next" : "press & hold to start";
+      return hasLast
+        ? i18n.t("timer:hint.holdStartNext")
+        : i18n.t("timer:hint.pressHoldStart");
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
@@ -17,6 +18,7 @@ export interface Cube3DPanelProps {
 }
 
 export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DPanelProps) {
+  const { t } = useTranslation("timer");
   const {
     canvasRef,
     containerRef,
@@ -124,7 +126,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 <span className="hidden @sm:inline">Scramble</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Apply scramble to 3D cube</TooltipContent>
+            <TooltipContent side="bottom">{t("applyScramble3d")}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -139,7 +141,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 <span className="hidden @sm:inline">Reset</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Reset cube pieces to solved state</TooltipContent>
+            <TooltipContent side="bottom">{t("reset3d")}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -154,7 +156,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 <span className="hidden @sm:inline">Calibrate</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Calibrate gyroscope orientation</TooltipContent>
+            <TooltipContent side="bottom">{t("calibrateGyro")}</TooltipContent>
           </Tooltip>
           {onClose && (
             <Tooltip>
@@ -164,12 +166,12 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                   size="sm"
                   onClick={onClose}
                   className="h-7 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
-                  aria-label="Close 3D view"
+                  aria-label={t("close3d")}
                 >
                   <X className="size-3 shrink-0 max-lg:size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Close 3D view</TooltipContent>
+              <TooltipContent side="bottom">{t("close3d")}</TooltipContent>
             </Tooltip>
           )}
         </div>

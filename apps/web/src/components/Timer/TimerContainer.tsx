@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
@@ -87,6 +88,7 @@ export function TimerContainer({
   onDeleteSolve,
   className,
 }: TimerContainerProps) {
+  const { t } = useTranslation("timer");
   const isTouch = useIsTouch();
   // Touch devices always enable click/tap to start & stop because there is no keyboard.
   const activeClickToStart = clickToStart || isTouch;
@@ -175,7 +177,7 @@ export function TimerContainer({
     <div
       role="button"
       tabIndex={activeClickToStart ? 0 : -1}
-      aria-label={activeClickToStart ? "Timer. Click to start/stop." : "Timer. Use spacebar to start/stop."}
+      aria-label={activeClickToStart ? t("timerAriaClick") : t("timerAriaSpace")}
       onPointerDown={activeClickToStart ? onPointerDown : undefined}
       onPointerUp={activeClickToStart ? onPointerUp : undefined}
       onPointerCancel={activeClickToStart ? onPointerCancel : undefined}
@@ -267,7 +269,7 @@ export function TimerContainer({
                 ? "bg-plus2-soft text-plus2 font-bold ring-1 ring-plus2/30"
                 : "text-ink-3 hover:bg-surface-3 hover:text-ink",
             )}
-            title="Toggle +2 penalty"
+            title={t("togglePlus2")}
           >
             +2
           </button>
@@ -286,7 +288,7 @@ export function TimerContainer({
                 ? "bg-dnf-soft text-dnf font-bold ring-1 ring-dnf/30"
                 : "text-ink-3 hover:bg-surface-3 hover:text-ink",
             )}
-            title="Toggle DNF penalty"
+            title={t("toggleDnf")}
           >
             DNF
           </button>
@@ -302,7 +304,7 @@ export function TimerContainer({
                 className={cn(
                   "h-6 px-2 rounded-full text-ink-3 hover:bg-dnf-soft hover:text-dnf transition-all duration-150 cursor-pointer outline-none select-none grid place-items-center max-lg:h-10 max-lg:px-3",
                 )}
-                title="Delete solve"
+                title={t("deleteSolve")}
               >
                 <Trash2 className="size-3.5 max-lg:size-4" />
               </button>
@@ -336,14 +338,14 @@ export function TimerContainer({
                         setIsEditingNote(false);
                       }
                     }}
-                    placeholder="Add note..."
+                    placeholder={t("notePlaceholder")}
                     autoFocus
                     className="h-6 w-28 max-lg:w-36 max-lg:h-9 rounded-full bg-surface-2 border border-line px-2.5 text-xs text-ink placeholder:text-ink-3 outline-none focus:border-ink/40"
                   />
                   <button
                     type="submit"
                     className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ready hover:bg-ready-soft transition-colors cursor-pointer"
-                    title="Save note"
+                    title={t("saveNote")}
                   >
                     <Check className="size-3.5 max-lg:size-4" />
                   </button>
@@ -351,7 +353,7 @@ export function TimerContainer({
                     type="button"
                     onClick={() => setIsEditingNote(false)}
                     className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
-                    title="Cancel"
+                    title={t("cancel")}
                   >
                     <X className="size-3.5 max-lg:size-4" />
                   </button>
@@ -370,7 +372,11 @@ export function TimerContainer({
                       ? "text-phase-indigo bg-phase-indigo/10 hover:bg-phase-indigo/20 font-semibold ring-1 ring-phase-indigo/30"
                       : "text-ink-3 hover:bg-surface-2 hover:text-ink"
                   )}
-                  title={lastSolve.note ? `Note: ${lastSolve.note}` : "Add note"}
+                  title={
+                    lastSolve.note
+                      ? t("noteWithValue", { note: lastSolve.note })
+                      : t("addNote")
+                  }
                 >
                   <MessageSquare className="size-3.5 max-lg:size-4" />
                   {lastSolve.note ? (

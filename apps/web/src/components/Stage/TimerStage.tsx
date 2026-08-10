@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,8 @@ export function TimerStage(props: TimerStageProps) {
     puzzleFilter,
     isFocused,
   } = props;
+
+  const { t } = useTranslation("timer");
 
   const {
     phase: timerPhase,
@@ -145,10 +148,10 @@ export function TimerStage(props: TimerStageProps) {
                         ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
                         : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
                     )}
-                    title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
+                    title={manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
                   >
                     <Eye className="size-3.5" />
-                    Focus
+                    {t("focus")}
                   </button>
                 ) : undefined
               }
@@ -172,10 +175,10 @@ export function TimerStage(props: TimerStageProps) {
                   ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
                   : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
               )}
-              title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
+              title={manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
             >
               <Eye className="size-3.5" />
-              Focus
+              {t("focus")}
             </button>
           </motion.div>
         ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { Penalty } from "@/types";
 import {
@@ -30,6 +31,7 @@ export function ManualTimeInput({
   onSubmit,
   className,
 }: ManualTimeInputProps) {
+  const { t } = useTranslation("timer");
   const [input, setInput] = useState("");
   const [penalty, setPenalty] = useState<Penalty>("none");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +132,7 @@ export function ManualTimeInput({
                 : "bg-surface-2 text-ink-3 hover:text-ink",
             )}
           >
-            {p === "none" ? "OK" : p}
+            {p === "none" ? t("penaltyNone") : p}
           </button>
         ))}
       </div>

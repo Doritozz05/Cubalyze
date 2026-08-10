@@ -6,8 +6,9 @@ TTS, datos). No lista strings individuales: cada tanda se define por las zonas
 de UI que cubre, su namespace, dificultad y consideraciones especiales.
 
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
-2 (shell completo) ✅ · Tanda 4 (feedback global: toasts + notificaciones +
-TTS) ✅ · Tanda 5 (Insights) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
+(feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅
+— todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -106,14 +107,27 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   ("Cube connected!", "Cube disconnected", "Failed to disconnect",
   "Copied!").
 
-### Tanda 3 — Timer + stats de sesión (zona principal)
+### ✅ Tanda 3 — Timer + stats de sesión (zona principal) *(hecha)*
 - **Zonas**:
   - `TimerStage` + `TimerContainer` + `TimerDisplay` (estados: ready/running/stopped, hint de tecla espacial).
   - `ManualTimeInput` (entrada manual de tiempos) + `PbCelebrationBanner` (¡PB!).
   - `SessionStats` + `TimesList` + `ManualSolveSheet` + `SolveProgressionChart` + `TrendChart` (etiquetas Ao5/Ao12/Best/Mean — ¡cuidado: algunas son siglas WCA estándar, evaluar si se traducen!).
   - `ScrambleDisplay` + `Cube3DPanel`/`MiniCube3DPanel` (tooltips de control 3D).
-- **Namespace**: `timer`, `stats`.
+- **Namespace**: `timer` (expandido: `hint.*` + controles + foco + PB + 3D), `stats` (nuevo).
 - **Dificultad**: media. Toasts propios: "Scramble copied", "Couldn't add solve", "Logged: {label}".
+- Hecho: hints del timer localizados vía `i18n.t` global (test de `hintFor`
+  fija `changeLanguage('en')` en beforeAll; vitest aísla archivos, sin
+  fuga de estado); `TimerContainer` (aria del timer, pill +2/DNF, nota),
+  `ManualTimeInput` (toggle de penalización), `PbCelebrationBanner` (anuncio
+  a11y por partes + cabecera + cierre), `TimerStage` (modo foco),
+  `SessionStats` (celdas Best/Mean; Ao5/Ao12 siglas WCA se mantienen),
+  `TimesList`/`SolveRow` (nota, análisis, menú de acciones del solve),
+  `ScrambleDisplay` (copiar/nueva scramble, estados de validación),
+  `Cube3DPanel` (tooltips 3D), `ManualSolveSheet` (secciones Time/Method/
+  Penalty/Notes + footer). Jerga mantenida: siglas WCA (Ao5/Ao12/DNF/+2),
+  "Scramble", notación, BPA/WPA. `timeHint` en texto plano (antes con
+  `<code>`) como trade-off de i18n. Validado: tsc web+desktop 0, eslint 0,
+  paridad 6/6, hintFor 17/17, build OK.
 
 ### ✅ Tanda 4 — Feedback global (transversal: toasts + notificaciones + TTS) *(hecha)*
 - **Zonas**:
