@@ -114,10 +114,12 @@ delega en el núcleo síncrono compartido:
 - Se eliminó del adaptador: `TimelineBuilder.build` + `splitAndAnnotate` + `recoverRotatedFrame`
   inline y el bloque P2 duplicado.
 - **Decisión de `solveTimeMs`:** el adaptador NO pasa `solveTimeMs` al núcleo y lo aplica
-  DESPUÉS de la detección (como antes). La línea de tiempo texto usa timestamps sintéticos;
-  construir el report con el override fabricaría el warning `unattributed-time`. La ruta
-  smart lo pasa a través del núcleo (timestamps reales). La duración es semántica de
-  entrada por ruta; fases/report/pares son un único pipeline.
+  DESPUÉS de la detección (como antes). La línea de tiempo texto usa timestamps sintéticos,
+  por lo que el report conserva el span sintético como baseline de duración (el warning
+  `unattributed-time` se mide contra el span del timeline, nunca contra el tiempo del
+  timer — ver `PhaseSplitter`). La ruta smart lo pasa a través del núcleo (timestamps
+  reales). La duración es semántica de entrada por ruta; fases/report/pares son un único
+  pipeline.
 
 ### ✅ FASE 4 — UI unificada
 

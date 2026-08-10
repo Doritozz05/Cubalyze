@@ -328,7 +328,6 @@ export class PhaseSplitter {
       warnings.push('final-state-not-solved');
     }
     if (initialStateSource === 'unknown') warnings.push('initial-state-unknown');
-    if (initialStateSource === 'scramble') warnings.push('scramble-only-seed');
     if (PhaseSplitter.hasNonMonotonicTimestamps(timeline)) {
       warnings.push('non-monotonic-timestamps');
     }
@@ -442,7 +441,6 @@ export class PhaseSplitter {
       }
     }
 
-    const durationMs = PhaseSplitter.solveDuration(timeline);
     const phaseTimeMs = detection.phases.reduce(
       (sum, phase) => sum + Math.max(0, phase.durationMs),
       0,
@@ -451,9 +449,24 @@ export class PhaseSplitter {
       (sum, phase) => sum + Math.max(0, phase.transitionMs ?? 0),
       0,
     );
+    // Unattributed time measures TIMELINE time that no detected phase owns —
+    // deliberately NOT the timer duration. The timer measures wall time from
+    // start to stop and inherently includes the lag between the last move and
+    // the stop (BLE facelet polling / manual stop reaction); a timer-based
+    // residual is therefore positive on nearly every smart solve and would
+    // fire the warning constantly, while the panel already surfaces that dead
+    // time as "idle/transition" info. Measured against the timeline's own
+    // span (first→last move), the residual is ~0 for complete solves and only
+    // becomes meaningful when detection is incomplete (trailing moves unowned
+    // by any phase) or timestamps are inconsistent — the cases this warning
+    // exists for.
+    const spanMs = PhaseSplitter.safeElapsed(
+      timeline.startTimestamp,
+      timeline.endTimestamp,
+    );
     const unattributedTimeMs = Math.max(
       0,
-      durationMs - phaseTimeMs - transitionTimeMs,
+      spanMs - phaseTimeMs - transitionTimeMs,
     );
     if (unattributedTimeMs > 0.5) warnings.push('unattributed-time');
 
@@ -520,13 +533,6 @@ export class PhaseSplitter {
     } catch {
       return false;
     }
-  }
-
-  private static solveDuration(timeline: SolveTimeline): number {
-    if (timeline.solveTimeMs !== undefined && Number.isFinite(timeline.solveTimeMs)) {
-      return Math.max(0, timeline.solveTimeMs);
-    }
-    return PhaseSplitter.safeElapsed(timeline.startTimestamp, timeline.endTimestamp);
   }
 
   private static safeElapsed(start: number, end: number): number {

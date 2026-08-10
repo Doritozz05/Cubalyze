@@ -403,10 +403,12 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // re-implements detection.
   //
   // solveTimeMs is applied AFTER detection on purpose: the text timeline
-  // carries synthetic timestamps, so building the report with the override
-  // would fabricate an 'unattributed-time' warning. The smart route passes
-  // it through the core (real timestamps) — duration semantics stay per
-  // route while phases/report/pairs come from one shared pipeline.
+  // carries synthetic timestamps, so the report keeps the synthetic span as
+  // its duration baseline (the 'unattributed-time' warning is measured from
+  // the timeline span, never the timer duration — see PhaseSplitter). The
+  // smart route passes it through the core (real timestamps) — duration
+  // semantics stay per route while phases/report/pairs come from one shared
+  // pipeline.
   const timeline = buildAnnotatedTimeline({
     moves: solveMoves,
     method: 'CFOP',

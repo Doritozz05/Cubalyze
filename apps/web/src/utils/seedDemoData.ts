@@ -365,7 +365,7 @@ function generateMetrics(
       complete: true,
       finalStateSolved: true,
       confidence: "medium",
-      warnings: ["scramble-only-seed"],
+      warnings: [],
       initialStateSource: "scramble",
       phaseSchema: "cfop-canonical",
       solveTimeMs: totalTimeMs,

@@ -172,7 +172,8 @@ const METHOD_DEFS: Record<string, MethodDefinition> = {
  *     built with the authoritative duration (real timestamps);
  *   - `analyzeSolveText` (text route) — omits `solveTimeMs` and applies the
  *     record's total time AFTER detection, so the report keeps the synthetic
- *     timestamp duration and never fabricates an 'unattributed-time' warning.
+ *     timestamp duration (the 'unattributed-time' warning is measured from
+ *     the timeline span, never the timer duration — see PhaseSplitter).
  *
  * splitAndAnnotate ALWAYS attaches `timeline.detectionReport`, so callers
  * can read it directly.

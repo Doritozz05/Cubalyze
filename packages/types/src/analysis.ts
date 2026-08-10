@@ -141,7 +141,6 @@ export type PhaseDetectionWarning =
   | 'incomplete-solve'
   | 'final-state-not-solved'
   | 'initial-state-unknown'
-  | 'scramble-only-seed'
   | 'side-cross-approximation'
   | 'simultaneous-phase'
   | 'phase-skip'
@@ -202,7 +201,12 @@ export interface PhaseDetectionReport {
   /** Time between adjacent detected phases, not owned by either phase. */
   transitionTimeMs?: number;
 
-  /** Duration that could not be assigned to a phase or transition. */
+  /**
+   * Timeline time that could not be assigned to a phase or transition.
+   * Measured against the timeline's own span (first→last move), never the
+   * timer duration — the timer inherently includes the stop lag, so using it
+   * as the baseline would flag nearly every smart solve.
+   */
   unattributedTimeMs?: number;
 } 
 
