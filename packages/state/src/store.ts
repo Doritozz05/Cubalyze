@@ -1,6 +1,9 @@
 import { createStore } from 'zustand/vanilla';
 import { persist } from 'zustand/middleware';
 
+/** UI languages offered by the app. `'auto'` follows the browser language. */
+export type AppLanguage = 'auto' | 'en' | 'es';
+
 /**
  * User-controlled preferences for the timer flow.
  *
@@ -158,6 +161,10 @@ export interface PreferencesState {
   betaFeatures: boolean;
   setBetaFeatures: (value: boolean) => void;
 
+  /** UI language. `'auto'` follows the browser language (default). */
+  language: AppLanguage;
+  setLanguage: (language: AppLanguage) => void;
+
   /** Restore every preference to its default value (Settings → Advanced → Reset options). */
   resetPreferences: () => void;
 }
@@ -210,6 +217,7 @@ const DEFAULT_VALUES = {
   reviewReminders: false,
   reviewReminderTime: '19:30',
   betaFeatures: false,
+  language: 'auto' as const,
 };
 
 export const createPreferencesStore = () => {
@@ -256,6 +264,7 @@ export const createPreferencesStore = () => {
         setReviewReminders: (reviewReminders) => set({ reviewReminders }),
         setReviewReminderTime: (reviewReminderTime) => set({ reviewReminderTime }),
         setBetaFeatures: (betaFeatures) => set({ betaFeatures }),
+        setLanguage: (language) => set({ language }),
 
         resetPreferences: () => set({ ...DEFAULT_VALUES }),
       }),
@@ -293,6 +302,7 @@ export const createPreferencesStore = () => {
           reviewReminders: state.reviewReminders,
           reviewReminderTime: state.reviewReminderTime,
           betaFeatures: state.betaFeatures,
+          language: state.language,
         }),
         version: 1,
       },

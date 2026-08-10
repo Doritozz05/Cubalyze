@@ -1,0 +1,45 @@
+{
+  "common": {
+    "appName": "cubeforge",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "continue": "Continue",
+    "skip": "Skip",
+    "loading": "Loading…",
+    "settings": "Settings",
+    "profile": "Profile",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "widgets": "Widgets"
+  },
+  "nav": {
+    "title": "Navigation",
+    "timer": "Timer",
+    "insights": "Insights",
+    "algorithms": "Algorithms",
+    "training": "Training",
+    "skillTree": "Skill Tree",
+    "reconstructions": "Reconstructions",
+    "profile": "Profile",
+    "widgets": "Widgets",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageAuto": "System default",
+    "languageHint": "Choose the interface language, or follow your browser's"
+  },
+  "timer": {
+    "scrambleCopied": "Scramble copied",
+    "couldNotCopyScramble": "Couldn't copy scramble",
+    "updateFailed": "Update failed"
+  },
+  "views": {
+    "placeholder": "View content"
+  }
+}

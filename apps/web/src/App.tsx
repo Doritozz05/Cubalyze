@@ -27,6 +27,11 @@ import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Solve } from "@/types";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
 import "@/index.css";
+// Initialize i18n (react-i18next singleton). Imported here — not in the
+// entry points — so both the PWA (apps/web/src/main.tsx) and the Tauri
+// desktop app (apps/desktop/src/main.tsx, which reuses this App) initialize
+// the same instance before the first render.
+import "./i18n";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.

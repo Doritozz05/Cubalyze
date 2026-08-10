@@ -20,6 +20,17 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().theme).toBe('dark');
   });
 
+  it('initializes language preference with auto default', () => {
+    expect(preferencesStore.getState().language).toBe('auto');
+  });
+
+  it('updates language preference', () => {
+    preferencesStore.getState().setLanguage('es');
+    expect(preferencesStore.getState().language).toBe('es');
+    preferencesStore.getState().setLanguage('auto');
+    expect(preferencesStore.getState().language).toBe('auto');
+  });
+
   it('toggles showSessionStats (default ON)', () => {
     expect(preferencesStore.getState().showSessionStats).toBe(true);
     preferencesStore.getState().setShowSessionStats(false);
@@ -86,6 +97,7 @@ describe('PreferencesStore', () => {
     store.setReviewReminders(true);
     store.setBetaFeatures(true);
     store.setMethod('Roux');
+    store.setLanguage('es');
 
     store.resetPreferences();
 
@@ -96,6 +108,7 @@ describe('PreferencesStore', () => {
     expect(reset.reviewReminders).toBe(false);
     expect(reset.betaFeatures).toBe(false);
     expect(reset.method).toBe('CFOP');
+    expect(reset.language).toBe('auto');
     expect(reset.notificationsEnabled).toBe(true);
     expect(reset.soundsEnabled).toBe(true);
   });

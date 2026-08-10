@@ -1,11 +1,14 @@
 'use client';
 
-import { Settings } from 'lucide-react';
+import { Settings, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore, type AppLanguage } from '@cubeforge/state';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { SettingToggle } from '../components/SettingToggle';
+import { CountryFlag } from '@/components/Identity/CountryFlag';
+import { SUPPORTED_LANGUAGES } from '@/i18n';
 import {
   Select,
   SelectContent,
@@ -18,6 +21,9 @@ export function GeneralSection() {
   // Replay is a module-level singleton action: starting it here immediately
   // remounts the tour (App closes this dialog via its tour-active effect).
   const { replay } = useOnboarding();
+  const { t } = useTranslation('settings');
+  const language = useStore(preferencesStore, (s) => s.language);
+  const setLanguage = useStore(preferencesStore, (s) => s.setLanguage);
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const setTimePrecision = useStore(preferencesStore, (s) => s.setTimePrecision);
   const haptics = useStore(preferencesStore, (s) => s.haptics);
@@ -32,6 +38,40 @@ export function GeneralSection() {
         <p className="text-[0.82rem] leading-5 text-ink-2">
           Global application settings and interface options.
         </p>
+      </div>
+
+      {/* Language selector — drives preferencesStore.language; the i18n
+          module (src/i18n) follows the store and updates the active locale
+          + <html lang>. UI copy is not migrated yet, so only this row's
+          labels react to the change for now. */}
+      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{t('language')}</h4>
+          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">{t('languageHint')}</p>
+        </div>
+        <div className="mt-0.5 shrink-0">
+          <Select value={language} onValueChange={(v) => setLanguage(v as AppLanguage)}>
+            <SelectTrigger className="w-48" aria-label={t('language')}>
+              <SelectValue placeholder={t('language')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">
+                <div className="flex items-center gap-2">
+                  <Languages className="size-3.5" />
+                  <span>{t('languageAuto')}</span>
+                </div>
+              </SelectItem>
+              {SUPPORTED_LANGUAGES.map((l) => (
+                <SelectItem key={l.code} value={l.code}>
+                  <div className="flex items-center gap-2">
+                    <CountryFlag country={l.flagCountry} withTooltip={false} />
+                    <span>{l.label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
