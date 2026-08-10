@@ -321,9 +321,7 @@ export class PhaseSplitter {
       timeline.initialStateSource ?? 'unknown';
     const warnings: PhaseDetectionWarning[] = [];
 
-    if (detection.phases.length < expectedPhases.length) {
-      warnings.push('incomplete-solve');
-    }
+    if (!complete) warnings.push('incomplete-solve');
     if (timeline.entries.length > 0 && !finalStateSolved) {
       warnings.push('final-state-not-solved');
     }
