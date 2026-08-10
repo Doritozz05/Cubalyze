@@ -21,9 +21,11 @@ import { OLL_CASES } from "../seed/cfop-oll";
 import { BASIC_F2L_CASES, ADVANCED_F2L_CASES } from "../seed/cfop-f2l";
 import type { AlgorithmCase } from "../schema";
 
+const GENERATED_DIR = resolve(__dirname, "../../../../pruebas/generated");
+
 // Regeneration helper: only meaningful when the local pruebas/ workflow is
 // set up (pruebas/ is gitignored) — skip in CI / fresh checkouts.
-it.runIf(existsSync(resolve(__dirname, "../../../../pruebas/generated")))("dumps seed caseDefs for SCDB catalog regeneration", () => {
+it.runIf(existsSync(GENERATED_DIR))("dumps seed caseDefs for SCDB catalog regeneration", () => {
   const groups = [PLL_CASES, OLL_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES];
   const out: Record<string, AlgorithmCase> = {};
   for (const group of groups) {
@@ -35,7 +37,7 @@ it.runIf(existsSync(resolve(__dirname, "../../../../pruebas/generated")))("dumps
       out[key] = c.caseDef;
     }
   }
-  const path = resolve(__dirname, "../../../../pruebas/generated/seed-casedefs.json");
+  const path = resolve(GENERATED_DIR, "seed-casedefs.json");
   writeFileSync(path, JSON.stringify(out, null, 1));
   console.log(`dump escrito: ${Object.keys(out).length} caseDefs`);
 });

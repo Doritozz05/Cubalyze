@@ -101,7 +101,10 @@ describe.runIf(hasAll)("SCDB seed catalog (full regeneration)", () => {
   }
 
   for (const [key, { file, set }] of Object.entries(GENERATED)) {
-    const gen = loadJson<GeneratedFile>(resolve(GEN_ROOT, file))!;
+    const gen = loadJson<GeneratedFile>(resolve(GEN_ROOT, file));
+    // Same collection-time guard as above (e.g. REPORT_PATH present but a
+    // dump missing) — skip this set instead of crashing on a null deref.
+    if (!gen) continue;
 
     it(`${set}: every verified JSON alg exists in the seed (${key})`, () => {
       let checked = 0;
