@@ -322,7 +322,7 @@ export class PhaseSplitter {
     const warnings: PhaseDetectionWarning[] = [];
 
     if (detection.phases.length < expectedPhases.length) {
-      warnings.push('missing-phase', 'incomplete-solve');
+      warnings.push('incomplete-solve');
     }
     if (timeline.entries.length > 0 && !finalStateSolved) {
       warnings.push('final-state-not-solved');
@@ -338,9 +338,6 @@ export class PhaseSplitter {
     const crossFace = detection.crossFace;
     if (method.name === 'CFOP' && crossFace && !['D', 'U'].includes(crossFace)) {
       warnings.push('side-cross-approximation');
-    }
-    if (detection.phases.some((phase) => phase.skipped)) {
-      warnings.push('phase-skip', 'advanced-technique-possible');
     }
 
     // ─── CFOP advanced techniques: XCross / XXCross + explicit skips ────

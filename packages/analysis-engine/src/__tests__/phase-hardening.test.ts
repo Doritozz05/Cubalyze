@@ -94,4 +94,26 @@ describe('Phase A hardening contracts', () => {
     expect(report.unattributedTimeMs).toBe(0);
     expect(report.warnings).not.toContain('unattributed-time');
   });
+
+  it('emits only incomplete-solve when phases are missing (no missing-phase)', () => {
+    // From solved, a U move leaves PLL unsolved: the report is incomplete but
+    // the warning is a single descriptive signal, not a redundant pair.
+    const timeline = TimelineBuilder.build(makeMoves('U'), 'CFOP');
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.complete).toBe(false);
+    expect(report.warnings).toContain('incomplete-solve');
+    expect(report.warnings).not.toContain('missing-phase');
+  });
+
+  it('does not emit skip warnings on a skipped-phase timeline', () => {
+    // From solved, a U move leaves F2L/OLL complete at the same index (skips)
+    // while PLL never completes. Skips are structured data (report.skips /
+    // phase.skipped), not warnings: a skip is a positive signal, so it must
+    // not degrade confidence on its own.
+    const timeline = TimelineBuilder.build(makeMoves('U'), 'CFOP');
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition);
+    expect(report.phases.some((p) => p.skipped)).toBe(true);
+    expect(report.warnings).not.toContain('phase-skip');
+    expect(report.warnings).not.toContain('advanced-technique-possible');
+  });
 });

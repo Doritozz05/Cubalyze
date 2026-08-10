@@ -133,6 +133,33 @@ describe('PhaseSplitter — XCross detection (real records)', () => {
 });
 
 describe('PhaseSplitter — report invariants with the new fields', () => {
+  it('keeps an OLL-skip solve warning-free and high-confidence (cuberoot-1851)', () => {
+    const timeline = buildTimeline(
+      "L' U B2 L2 U2 B2 L2 U B F U F' L2 R D2 U F2 R2",
+      'y z2',
+      [
+        { label: 'W xcross', moves: "F' U F' R' U' F R B' R'" },
+        { label: 'RG', moves: "y L'...U L U' L' U L" },
+        { label: 'BR', moves: "U R U' R' L U' L'" },
+        { label: 'GO /OLL Skip', moves: "U2 R U' R' F R' F' R" },
+        { label: 'PLL-Ra', moves: "U R U' R' U'↓R U R D...R' U' R D' R' U2 R'" },
+      ],
+    );
+
+    const report = PhaseSplitter.getDetectionReport(timeline, CFOPDefinition, {
+      colorNeutral: true,
+    });
+
+    // The skip is structured data (skips array), not a warning: a skipped OLL
+    // is a merit, so it must not demote confidence to medium.
+    expect(report.skips).toContain('oll');
+    expect(report.warnings).not.toContain('phase-skip');
+    expect(report.warnings).not.toContain('advanced-technique-possible');
+    expect(report.complete).toBe(true);
+    expect(report.finalStateSolved).toBe(true);
+    expect(report.confidence).toBe('high');
+  });
+
   it('keeps complete/finalStateSolved/confidence working on an xcross solve', () => {
     const timeline = buildTimeline(
       "U2 B' L2 R2 B D2 R2 B' U2 L U' F' D' R B2 D U R' F' U'",

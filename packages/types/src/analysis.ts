@@ -137,17 +137,13 @@ export type InitialStateSource =
   | 'unknown';
 
 export type PhaseDetectionWarning =
-  | 'missing-phase'
   | 'incomplete-solve'
   | 'final-state-not-solved'
   | 'initial-state-unknown'
   | 'side-cross-approximation'
-  | 'simultaneous-phase'
-  | 'phase-skip'
   | 'non-monotonic-timestamps'
   | 'non-finite-timestamps'
-  | 'unattributed-time'
-  | 'advanced-technique-possible';
+  | 'unattributed-time';
 
 export type PhaseDetectionConfidence = 'high' | 'medium' | 'low' | 'invalid';
 
