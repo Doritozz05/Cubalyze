@@ -1,7 +1,8 @@
 import {
+  applyFrameRotation,
+  bestFrameRotationSequence,
   ColorPhaseDetector,
   countCompletedF2LSlotsInFrame,
-  rotateDPlusEBlock,
   IDENTITY_SCHEME,
 } from '@cubeforge/math-core';
 import type { SolveTimeline } from '@cubeforge/types';
@@ -76,11 +77,21 @@ export function pickSlotFrame(
   }
 
   const score = (frame: SlotFrame): number => {
+    // The same DP the F2L pair scan uses (bestFrameRotationSequence): the
+    // frame sequence that maximizes the completed-slot sum over the span, so
+    // the scheme that scores best here is the scheme the pair scan will
+    // actually see (their frames agree by construction).
+    const frames = bestFrameRotationSequence(
+      states,
+      start,
+      end,
+      frame.crossFace,
+      frame.scheme,
+    );
+    if (frames.length === 0) return 0;
     let total = 0;
     for (let i = start; i <= end; i++) {
-      let cube = states[i];
-      const offset = timeline.solverFrameOffsets?.[i] ?? 0;
-      if (offset !== 0) cube = rotateDPlusEBlock(cube, -offset);
+      const cube = applyFrameRotation(states[i], frames[i - start]);
       total += countCompletedF2LSlotsInFrame(
         cube,
         frame.crossFace,

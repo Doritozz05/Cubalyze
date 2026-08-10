@@ -2,8 +2,8 @@
 
 > **Estado:** COMPLETADO (2026-08-10) · Branch `algortihms`
 > **Autor del estudio:** Buffy (asistente de código)
-> **Harness reproducible:** `packages/analysis-engine/src/__tests__/cross-study.test.ts`
-> **Veredicto corto:** el criterio relajado es una **mejora neta** (23→27/30 cruces correctas, 6→2 catástrofes, **0 regresiones**) y se agrega como opción **OFF por defecto**. El F2L es decente con 4 bugs preexistentes documentados, ninguno causado por este cambio.
+> **Harness reproducible:** `packages/analysis-engine/src/__tests__/cross-study.test.ts` + `divergence-study.test.ts`
+> **Veredicto corto:** el criterio relajado es una **mejora neta** — con la métrica correcta, **74 fixes y 0 regresiones** sobre 300 solves (antes de los fixes: 58 fixes / 1 regresión) — y se agrega como opción **OFF por defecto**. Además se **arregló el bug de capa E en F2L** (reconz-9068: `u'` en la cruz + `d'` compensador) con un DP de frame medido desde el estado, sin cambiar el comportamiento por defecto.
 
 ---
 
@@ -151,16 +151,32 @@ Lectura correcta de estos números:
 
 | Solve | Síntoma | Causa raíz |
 |---|---|---|
-| `reconz-9068` (Tymon, 4.08s) | **pairs=0** aunque las fases están bien (Cross@0-7, F2L@8-22) | El `u'` de la cruz gira la capa E; `countCompletedF2LSlotsInFrame` devuelve 0 slots porque los offsets de frame solo rastrean `d` (wide D), no `u`. Verificado: el estado del solver frame en @22 tiene la capa E girada (F=LLLL, B=RRRR). Falla igual en strict — **pre-existente**. |
+| `reconz-9068` (Tymon, 4.08s) | **pairs=0** aunque las fases están bien (Cross@0-7, F2L@8-22) | ~~El `u'` de la cruz gira la capa E; los offsets de frame solo rastrean `d` (wide D), no `u`~~ → **ARREGLADO** (ver §5.3). |
 | `reconz-1216` (Mike Kotch, 10.17s) | Cruz detectada end@41 (absorbe todo el F2L, type=xxxcross, pairs=0) | Reconstrucción con grip `x2 y` + rotaciones internas (`x'`, `y`) que el detector no cuadra; la cruz "completa" tarde. |
 | `reconz-10784` (Dhruva, 15.98s) | Cruz end@40, pairs=0 | **Pseudo-cross** (técnica avanzada): la cruz no es una cruz real hasta el 2º par ("2nd pair/finish cross"). El detector no modela pseudo-cross. |
 | `cuberoot-2054` (Yiheng, 3.65s) | FR[31] basura | **Método 223** (bloque 2×2×3): no es CFOP puro, el F2L del detector no sabe segmentarlo. |
 | `reconz-3084` (Ainesh, 8.89s) | pairs=0, solved=false | **La reconstrucción no resuelve el cubo** (texto con `y y` duplicado = dato roto del dataset). |
 
-**Conclusión F2L:** la detección es "decente" como dice el usuario para solves CFOP estándar, pero tiene margen en 3 frentes, todos independientes del cambio de cruz:
-1. **`u'`/capa E en F2L** (9068) — el rastreo de offsets debería incluir rotaciones de la capa E (E/E'/E2 y los wide u que las provocan), no solo d.
-2. **Pseudo-cross** (10784) — requeriría detectar "cruz casi completa + ajuste posterior".
-3. **Métodos avanzados** (223, ZBLL) — fuera de CFOP puro.
+**Conclusión F2L:** la detección es "decente" como dice el usuario para solves CFOP estándar. Queda margen en 2 frentes, ambos independientes del cambio de cruz:
+1. **Pseudo-cross** (10784) — requeriría detectar "cruz casi completa + ajuste posterior".
+2. **Métodos avanzados** (223, ZBLL) — fuera de CFOP puro.
+
+### 5.3 FIX — bug de capa E en F2L (reconz-9068)
+
+**Síntoma:** la reconstrucción de Tymon pone un **`u'` dentro de la cruz** (xcross `L D L' U' R u' U R`) y un **`d'` dentro del 3er par**. Un `u'` rota la capa E junto con U — el bloque D+E NO acaba donde un acumulador de tokens predeciría, y el `d'` del F2L **compensa** esa rotación. El rastreo por tokens (`solverFrameOffsets`, solo `d`) sumaba ambas rotaciones y corrompía el análisis de slots → pairs=0.
+
+**Causa raíz:** el frame de F2L (bloque D+E) no se puede acumular desde los tokens; hay que **medirlo desde el estado**. La rotación real del bloque queda reflejada en las piezas: se elige, por índice, la rotación D/E que maximiza los slots en casa.
+
+**Fix (state-based, DP Viterbi):**
+- `bestFrameRotationSequence` en `slotDetection.ts`: secuencia de rotaciones D/E sobre el tramo F2L que **maximiza la suma de slots** con penalización por cambio de frame (`changePenalty=2` por unidad de rotación). Un DP de 16 estados resuelve la ambigüedad índice-a-índice (9068 @7: 1/1 y 3/3 empatan a 1 slot; solo el tramo completo decide) y captura automáticamente:
+  - **regrips reales persistentes** (reconz-12340: el `d` del par 4 mantiene el bloque rotado hasta el final → el marco rotado muestra el 4º par),
+  - **compensaciones** (9068: el `d'` devuelve el bloque a identidad → el DP lee el frame compensado del estado).
+- Los 3 consumidores (`segmentF2LPairs`, `pickSlotFrame`, el check xcross de `PhaseSplitter`) comparten el mismo DP sobre el mismo tramo → nunca divergen.
+- **Rendimiento:** `countCompletedF2LSlotsInFrame` se reescribió sin conversión de facelets (check directo sobre arrays de permutación, equivalente exacto verificado contra un oráculo de facelets en 3840 combinaciones — y **más correcto** que el camino viejo en esquemas ambiguos U↔D, que identificaba piezas por set de colores y perdía la orientación). El DP usa además un camino por preimagen que no materializa los estados rotados. Coste por solve: ~30ms (antes ~160ms con el primer DP naive).
+
+**Resultado:** 9068 → **xcross (FR) + 3 pares (BL, BR, FL) coincidiendo token a token con el raw** (`L' U' L` · `d' R' U2' R U R' U' R` · `U' L' U L`). 12340 sigue perfecto (xcross BL + 3 pares con el `d` del 4º par). 1296 indiferente.
+
+**Tests:** `packages/math-core/src/__tests__/frameRotation.test.ts` (8 tests: equivalencia contra oráculo, fast path ≡ materializado, DP sintético persistente/compensado/identidad) + `packages/analysis-engine/src/__tests__/reconz-9068-e-layer.test.ts` (regresión end-to-end con fixture autocontenido).
 
 ---
 
@@ -168,16 +184,17 @@ Lectura correcta de estos números:
 
 ### ¿Agregamos el criterio de cruz relajado? → **SÍ**, como opción OFF por defecto.
 
-- **Es una mejora neta, medible y robusta:** en la muestra de 30 solves: +4 cruces correctas, −4 catástrofes, 0 regresiones, +2 skipMatch. En un barrido de 200 solves aleatorios: **+23 cruces correctas, −23 catástrofes, 29 fixes, 6 regresiones** (5 marginales de ±1 movimiento que siguen el raw mejor, 1 solve degenerado COLL/EO donde strict también falla).
-- **No rompe nada:** OFF por defecto; los 806 tests de los paquetes afectados pasan; el modo strict es idéntico al de antes.
+- **Es una mejora neta, medible y robusta:** con la **métrica correcta** (la misma `conjugatePhaseStream` que usa el pipeline, ±2): sobre 300 solves aleatorios deterministas (semilla 314159), **74 fixes (strict✗→relax✓) y 0 regresiones (strict✓→relax✗)**, bothGood=211, bothBad=15. Las "6 regresiones" del barrido aproximado eran artefactos del conteo: con la métrica correcta los 6 keys resultan **fixes** (relaxed acierta el raw donde strict se desvía ±1).
+- El **fix del tiebreak** (en relaxed, preferir la cercanía al fin de cruz escrito por encima de la completitud de la cadena) eliminó la única regresión real (reconz-727, solve COLL): de 58 fixes / 1 regresión a **72 fixes / 0 regresiones**, y el fix de capa E lo dejó en **74 fixes / 0 regresiones**.
+- **No rompe nada:** OFF por defecto; los 810 tests de los paquetes afectados pasan; el modo strict es idéntico al de antes.
 - **Es exactamente lo que el usuario pidió:** la cruz se marca en el punto donde los 4 edges están en sus posiciones correctas, ignorando el flip.
-- **Recomendación de activación:** para reconstrucciones de texto (ruta `analyzeSolveText`) con `preferredCrossIdx` disponible, se puede activar de forma segura. Para smart cube (sin segmento escrito), el tiebreak de cercanía no aplica y conviene dejarlo OFF hasta validar con solves de smart cube reales.
+- **Recomendación de activación:** para reconstrucciones de texto (ruta `analyzeSolveText`) con `preferredCrossIdx` disponible, se puede activar de forma segura (0 regresiones medido). Para smart cube (sin segmento escrito), el tiebreak de cercanía no aplica y conviene dejarlo OFF hasta validar con solves de smart cube reales.
 
 ### ¿Hay margen todavía? → SÍ, documentado y cuantificado.
 
 1. **Marcos rotados / esquemas no-identidad** (3828, 5916): el detector solo completa cadenas con esquema identidad; los color-neutral crosses en caras "extrañas" con reconstrucciones imperfectas no cuadran. Cambio grande (permitir esquemas no-identidad con validación de final).
-2. **F2L `u'`/capa E** (9068): extender el rastreo de offsets de frame a la capa E.
-3. **Pseudo-cross** (10784) y **métodos 223/ZBLL** (2054, 8337): técnicas avanzadas fuera del CFOP puro que el pipeline actual no modela.
+2. **Pseudo-cross** (10784): el detector no modela "cruz casi completa + ajuste dentro del 1er/2º par".
+3. **Métodos 223/ZBLL** (2054, 8337): técnicas avanzadas fuera del CFOP puro que el pipeline actual no modela.
 4. **Reconstrucciones incoherentes** (3084, 1660): no son bugs del detector sino datos; convendría filtrarlas en el dataset.
 
 ---
@@ -186,14 +203,18 @@ Lectura correcta de estos números:
 
 ```
 packages/math-core/src/methods/cfop/ColorPhaseDetector.ts        (criterio relaxed + tiebreak)
+packages/math-core/src/methods/cfop/slotDetection.ts             (contador directo sin facelets, DP de frame, fast path por preimagen)
 packages/math-core/src/__tests__/relaxedCross.test.ts            (4 tests unitarios: criterio + paridad, nuevo)
-packages/analysis-engine/src/phases/PhaseSplitter.ts             (opción)
-packages/analysis-engine/src/pipeline/slotFrame.ts               (opción)
-packages/analysis-engine/src/pipeline/segmentF2LPairs.ts         (opción)
+packages/math-core/src/__tests__/frameRotation.test.ts           (8 tests: equivalencia oráculo + fast path + DP, nuevo)
+packages/analysis-engine/src/phases/PhaseSplitter.ts             (opción + DP de frame en xcross)
+packages/analysis-engine/src/pipeline/slotFrame.ts               (opción + DP de frame en picker)
+packages/analysis-engine/src/pipeline/segmentF2LPairs.ts         (opción + DP de frame en el scan de pares)
 packages/analysis-engine/src/pipeline/frameRecovery.ts           (opción)
 packages/analysis-engine/src/pipeline/analyzeSolve.ts            (opción)
 packages/analysis-engine/src/reconstruction/analyzeSolveText.ts  (opción)
 packages/analysis-engine/src/__tests__/cross-study.test.ts       (harness A/B + F2L, nuevo, gated)
+packages/analysis-engine/src/__tests__/divergence-study.test.ts  (harness A/B con métrica correcta, nuevo, gated)
+packages/analysis-engine/src/__tests__/reconz-9068-e-layer.test.ts (regresión capa E, nuevo)
 docs/09-testing/CFOP-CROSS-RELAXED-STUDY.md                      (este documento)
 ```
 
@@ -205,8 +226,17 @@ docs/09-testing/CFOP-CROSS-RELAXED-STUDY.md                      (este documento
 RUN_CROSS_STUDY=1 pnpm --dir packages/analysis-engine exec vitest run \
   src/__tests__/cross-study.test.ts
 
-# Tests unitarios del criterio relaxed (math-core)
+# Divergencia strict vs relaxed con la métrica correcta (300 solves). Gated
+# detrás de RUN_DIVERGENCE_STUDY=1.
+RUN_DIVERGENCE_STUDY=1 pnpm --dir packages/analysis-engine exec vitest run \
+  src/__tests__/divergence-study.test.ts
+
+# Tests unitarios del criterio relaxed + frame D/E (math-core)
 pnpm --dir packages/math-core exec vitest run src/__tests__/relaxedCross.test.ts
+pnpm --dir packages/math-core exec vitest run src/__tests__/frameRotation.test.ts
+
+# Regresión end-to-end del fix de capa E
+pnpm --dir packages/analysis-engine exec vitest run src/__tests__/reconz-9068-e-layer.test.ts
 
 # Suite completa de los paquetes afectados
 pnpm --dir packages/math-core exec vitest run

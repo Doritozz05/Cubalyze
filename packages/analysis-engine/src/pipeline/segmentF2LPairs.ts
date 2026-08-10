@@ -1,21 +1,21 @@
 import type { CubeState, FaceLetter } from '@cubeforge/math-core';
 import {
+  applyFrameRotation,
+  bestFrameRotationSequence,
   countCompletedF2LSlotsInFrame,
-  rotateDPlusEBlock,
 } from '@cubeforge/math-core';
 import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { pickSlotFrame } from './slotFrame';
 
 /**
- * Entry state in the SOLVER's frame: when P2 frame recovery rotated the
- * timeline, the pre-recovery snapshots were preserved on the timeline and
- * must drive the slot analysis (piece-anchored checks are only meaningful in
- * the frame the reconstruction was written in). The accumulated D+E d-regrip
- * offset is undone so slot identities stay stable across a mid-F2L d move
- * (the solver's frame follows the bottom two layers, not the whole cube).
+ * Raw entry state in the SOLVER's frame (no frame rotation applied): when P2
+ * frame recovery rotated the timeline, the pre-recovery snapshots were
+ * preserved on the timeline and must drive the slot analysis (piece-anchored
+ * checks are only meaningful in the frame the reconstruction was written
+ * in).
  */
-function solverFrameStateAt(
+function solverFrameCubeAt(
   timeline: SolveTimeline,
   idx: number,
 ): CubeState | null {
@@ -23,9 +23,7 @@ function solverFrameStateAt(
   if (!entry) return null;
   const solverStates = timeline.solverFrameStates;
   const snapshot = solverStates?.[idx] ?? entry.state;
-  const cube = TimelineBuilder.fromSnapshot(snapshot);
-  const offset = timeline.solverFrameOffsets?.[idx] ?? 0;
-  return offset === 0 ? cube : rotateDPlusEBlock(cube, -offset);
+  return TimelineBuilder.fromSnapshot(snapshot);
 }
 
 /**
@@ -182,11 +180,53 @@ export function segmentF2LPairs(
 
   type PairAcc = UnifiedF2LPair & { segStart: number };
   const pairs: PairAcc[] = [];
+
+  // ── Frame measurement (one DP over the whole F2L span, state-based) ─────
+  // The D/E frame rotation is MEASURED from the preserved solver-frame
+  // states instead of accumulated from raw tokens: a wide `u` regrip rotates
+  // U+E together, so D and E do not always rotate as a unit and a token
+  // accumulator is wrong whenever a `u` precedes a `d` (reconz-9068 — the
+  // cross's `u'` leaves D/E rotated, and the F2L `d'` COMPENSATES it). The
+  // DP (bestFrameRotationSequence) maximizes the completed-slot SUM over the
+  // whole span, which disambiguates per-index ties (9068 @7) and reads both
+  // real persistent regrips (reconz-12340) and compensated ones (9068). The
+  // span starts one index BEFORE F2L (the cross-end state): the xcross
+  // exclusion mask below reads its frame here too, so the two agree.
+  const spanStart = Math.max(0, start - 1);
+  const spanStates: CubeState[] = [];
+  let spanOk = true;
+  for (let i = spanStart; i <= end; i++) {
+    const cube = solverFrameCubeAt(timeline, i);
+    if (!cube) {
+      spanOk = false;
+      break;
+    }
+    spanStates.push(cube);
+  }
+  const frames = spanOk
+    ? bestFrameRotationSequence(
+        spanStates,
+        0,
+        spanStates.length - 1,
+        crossFace,
+        schemeToUse,
+      )
+    : [];
+  /** Entry state in the solver's frame, aligned to the DP's optimal frame. */
+  const frameStateAt = (idx: number): CubeState | null => {
+    const j = idx - spanStart;
+    // Guard on `frames`, not `spanStates`: when the span build bailed early
+    // (spanOk false) the state list is partial but `frames` is empty, and
+    // applying an undefined rotation would throw.
+    if (j < 0 || j >= frames.length) return null;
+    return applyFrameRotation(spanStates[j], frames[j]);
+  };
+
   // Seed prevMask with the state just before F2L starts (the cross end).
   // Slots already solved then are the XCross pairs — excluded from the F2L
   // scan (via unsolvedMask below) and reported through xcrossPairs instead.
   let prevMask = 0;
-  const preF2L = solverFrameStateAt(timeline, start - 1);
+  const preF2L = frameStateAt(start - 1);
   if (preF2L) {
     prevMask = countCompletedF2LSlotsInFrame(
       preF2L,
@@ -205,7 +245,7 @@ export function segmentF2LPairs(
   let segmentStart = start;
 
   for (let i = start; i <= end; i++) {
-    const state = solverFrameStateAt(timeline, i);
+    const state = frameStateAt(i);
     if (!state) break;
     const comp = countCompletedF2LSlotsInFrame(state, crossFace, schemeToUse);
 
@@ -218,9 +258,13 @@ export function segmentF2LPairs(
     // lookahead and fires directly.
     let newBits = (comp.slotMask & unsolvedMask & ~declaredMask) & ~prevMask;
     if (newBits && i < end) {
-      const next = solverFrameStateAt(timeline, i + 1);
+      const next = frameStateAt(i + 1);
       if (next) {
-        const nextComp = countCompletedF2LSlotsInFrame(next, crossFace, schemeToUse);
+        const nextComp = countCompletedF2LSlotsInFrame(
+          next,
+          crossFace,
+          schemeToUse,
+        );
         newBits &= nextComp.slotMask;
       }
     }

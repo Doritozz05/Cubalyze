@@ -4,8 +4,9 @@ import {
   type MethodDefinition,
   type PhaseMask,
   COLOR_NEUTRAL_CFOP_MASKS,
+  applyFrameRotation,
+  bestFrameRotationSequence,
   countCompletedF2LSlotsInFrame,
-  rotateDPlusEBlock,
   IDENTITY_SCHEME,
 } from '@cubeforge/math-core';
 import type {
@@ -412,12 +413,42 @@ export class PhaseSplitter {
           const frameFace: CubeFace = picked.crossFace as CubeFace;
           const frameScheme = picked.scheme;
           const solverStates = timeline.solverFrameStates;
-          const solverOffsets = timeline.solverFrameOffsets;
+          // The same DP the F2L pair scan uses (bestFrameRotationSequence),
+          // over the SAME span ([cross completion, F2L end]) so the xcross
+          // verdict and the pair scan share identical per-index frames.
+          const xstart = Math.max(0, crossPhase.completionIndex);
+          const xend = Math.min(
+            timeline.entries.length - 1,
+            f2lPhase?.endIndex ?? crossPhase.completionIndex + 2,
+          );
+          let xframes: ReturnType<typeof bestFrameRotationSequence> = [];
+          {
+            const xstates: CubeState[] = [];
+            let xok = true;
+            for (let i = xstart; i <= xend; i++) {
+              const snapshot = solverStates?.[i] ?? timeline.entries[i]?.state;
+              if (!snapshot) {
+                xok = false;
+                break;
+              }
+              xstates.push(TimelineBuilder.fromSnapshot(snapshot));
+            }
+            if (xok && xstates.length > 0) {
+              xframes = bestFrameRotationSequence(
+                xstates,
+                0,
+                xstates.length - 1,
+                frameFace,
+                frameScheme,
+              );
+            }
+          }
           const stateAt = (idx: number): CubeState => {
             const snapshot = solverStates?.[idx] ?? timeline.entries[idx]?.state;
             const cube = TimelineBuilder.fromSnapshot(snapshot);
-            const offset = solverOffsets?.[idx] ?? 0;
-            return offset === 0 ? cube : rotateDPlusEBlock(cube, -offset);
+            const j = idx - xstart;
+            if (j < 0 || j >= xframes.length) return cube;
+            return applyFrameRotation(cube, xframes[j]);
           };
           let best = countCompletedF2LSlotsInFrame(
             stateAt(crossPhase.completionIndex),

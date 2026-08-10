@@ -333,17 +333,36 @@ function betterSameCross(
 }
 
 /**
- * Prefer: complete 4 phases > more phases > closest to the solver's written
- * cross segment > non-spurious F2L/OLL (completing only at the final solved
- * state is a sign of a wrong scheme) > longest-lived cross > earlier cross
- * > earlier progress.
+ * Prefer (strict): complete 4 phases > more phases > closest to the solver's
+ * written cross segment > non-spurious F2L/OLL > longest-lived cross >
+ * earlier cross > earlier progress.
+ *
+ * Prefer (relaxed): the written cross segment FIRST (when available), then
+ * complete 4 phases > more phases > non-spurious > duration > earlier. The
+ * relaxed criterion admits far more candidate families, and a spurious
+ * scheme can "complete" all 4 phases only at the final solved state (f2l@
+ * last, oll@last — e.g. a COLL/EO solve whose real cross never completes the
+ * canonical OLL chain). The reconstructor's written cross boundary is the
+ * strongest signal available and reliably separates the real cross from such
+ * end-of-solve artifacts, so it outranks the phase count in relaxed mode.
+ * Strict mode keeps the original order — a strict 4/4 chain is already the
+ * real cross (far fewer candidates), so phase count first is safe there.
+ * Without `preferredCrossIdx` (smart-cube route) both modes fall back to the
+ * phase-count-first order.
  */
 function better(
   a: ColorDetectionResult,
   b: ColorDetectionResult,
   lastIndex: number,
   preferredCrossIdx?: number,
+  relaxed?: boolean,
 ): boolean {
+  // Relaxed: written segment first (see doc comment).
+  if (relaxed && preferredCrossIdx !== undefined) {
+    const aDist = Math.abs(a.completions[0] - preferredCrossIdx);
+    const bDist = Math.abs(b.completions[0] - preferredCrossIdx);
+    if (aDist !== bDist) return aDist < bDist;
+  }
   const aComplete = a.completions.every((c) => c >= 0);
   const bComplete = b.completions.every((c) => c >= 0);
   if (aComplete !== bComplete) return aComplete;
@@ -356,7 +375,7 @@ function better(
   // an equally complete chain. Placed BEFORE the spurious heuristic because
   // one-look LL (ZBLL) legitimately completes OLL on the final move, which
   // the spurious test would penalize. NEVER used to detect — tiebreak only.
-  if (preferredCrossIdx !== undefined) {
+  if (!relaxed && preferredCrossIdx !== undefined) {
     const aDist = Math.abs(a.completions[0] - preferredCrossIdx);
     const bDist = Math.abs(b.completions[0] - preferredCrossIdx);
     if (aDist !== bDist) return aDist < bDist;
@@ -519,13 +538,13 @@ export class ColorPhaseDetector {
           );
           if (
             faceBest === null ||
-            better(candidate, faceBest, lastIndex, preferredCrossIdx)
+            better(candidate, faceBest, lastIndex, preferredCrossIdx, false)
           ) {
             faceBest = candidate;
           }
           if (
             best === null ||
-            better(candidate, best, lastIndex, preferredCrossIdx)
+            better(candidate, best, lastIndex, preferredCrossIdx, false)
           ) {
             best = candidate;
           }
@@ -572,7 +591,8 @@ export class ColorPhaseDetector {
         }
         if (
           colorBest !== null &&
-          (best === null || better(colorBest, best, lastIndex, preferredCrossIdx))
+          (best === null ||
+            better(colorBest, best, lastIndex, preferredCrossIdx, true))
         ) {
           best = colorBest;
         }
