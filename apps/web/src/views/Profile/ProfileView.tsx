@@ -502,7 +502,7 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
       <Tabs defaultValue="overview" className="mt-5">
         <TabsList
           aria-label="Profile sections"
-          className="w-full justify-start overflow-x-auto bg-transparent p-0"
+          className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5"
         >
           {(
             [
@@ -516,7 +516,7 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
             <TabsTrigger
               key={value}
               value={value}
-              className="data-[state=active]:bg-surface data-[state=active]:shadow-sm rounded-lg border border-transparent px-3 text-xs data-[state=active]:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+              className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
             >
               {label}
             </TabsTrigger>
