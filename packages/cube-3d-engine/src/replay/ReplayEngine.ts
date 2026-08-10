@@ -30,47 +30,9 @@
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
 import { OrientationTable } from '@cubeforge/math-core';
 import type { CubeFace, CubeMoveEvent, RotationAxis, OrientationTimeline } from '@cubeforge/types';
+import type { RotationParams, ReplayCallbacks, ReplayState } from './types';
 
-// ─── Types ─────────────────────────────────────────────────────────────────
-
-/** How to rotate a single layer for one move. */
-export interface RotationParams {
-  axis: RotationAxis;
-  layerValues: number[];
-  angle: number;
-  /** When this move plays relative to replay start (ms, move-driven). */
-  offsetMs: number;
-  /** The original move's hostTimestamp (kept for reference/back-compat; the
-   *  replay timeline no longer depends on it). */
-  hostTimestamp: number;
-}
-
-/** Callbacks the renderer must provide. */
-export interface ReplayCallbacks {
-  resetCube: () => void | Promise<void>;
-  rotateLayers: (
-    axis: RotationAxis,
-    layerValues: number[],
-    angle: number,
-    durationMs: number,
-    elapsedMs?: number,
-  ) => void | Promise<void>;
-  /** Called when orientation changes. orientationIndex is 0-23 (OrientationTable.ENTRIES).
-   *  Pass animationDurationMs > 0 for smooth SLERP, 0 for instant snap (seeking). */
-  setOrientation?: (orientationIndex: number, animationDurationMs: number) => void | Promise<void>;
-  /**
-   * Force-complete every in-flight animation in the renderer (layer rotations
-   * + root orientation SLERP). Called before every absolute reset (seek) so a
-   * rotation that is still turning when the reset happens can never snap
-   * afterwards and re-apply itself on top of the freshly reset cube (the
-   * "cube colors lost/buggy after restart/step" bug family). Optional: the
-   * renderer may also flush internally inside resetCube().
-   */
-  flushAnimations?: () => void | Promise<void>;
-}
-
-/** Playback states. */
-export type ReplayState = 'idle' | 'playing' | 'paused' | 'seeking' | 'complete';
+export type { RotationParams, ReplayCallbacks, ReplayState } from './types';
 
 // ─── ReplayEngine ──────────────────────────────────────────────────────────
 
