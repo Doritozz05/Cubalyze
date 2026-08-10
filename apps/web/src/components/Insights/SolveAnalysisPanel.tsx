@@ -17,8 +17,6 @@ import {
   EmptyState,
   MetricRing,
   AlgorithmNotation,
-  CoherenceBadge,
-  WarningsBadge,
   SkippedBadge,
   FACE_HEX,
   FACE_NAME,
@@ -195,14 +193,6 @@ export function SolveAnalysisPanel({
               {m.totalMoves} moves · {m.phases.length} phases ·{" "}
               TPS {m.tps.global.toFixed(2)} · {m.pauses.totalCount} pauses
             </p>
-            {/* Detection verdict — same badges the reconstruction panel shows,
-                so a smart-cube solve reads identically in both places. */}
-            {m.detectionReport ? (
-              <>
-                <CoherenceBadge coherent={m.detectionReport.finalStateSolved} />
-                <WarningsBadge warnings={m.detectionReport.warnings} />
-              </>
-            ) : null}
           </div>
         ) : (
           <p className="text-[0.7rem] text-ink-3">No analysis yet</p>
