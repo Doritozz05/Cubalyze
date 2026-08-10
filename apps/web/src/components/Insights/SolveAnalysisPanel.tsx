@@ -12,6 +12,7 @@ import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics }
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import {
   SectionHeader,
   EmptyState,
@@ -1467,7 +1468,7 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
     navigator.clipboard?.writeText(solve.scramble);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    toast.success("Scramble copied");
+    toast.success(i18n.t("timer:scrambleCopied"));
   };
   return (
     <div className="flex items-start gap-2 rounded-lg border border-line bg-surface px-5 py-3">

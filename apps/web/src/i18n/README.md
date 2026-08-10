@@ -67,8 +67,13 @@ Fuera de React (toasts, helpers, utilidades):
 
 ```ts
 import i18n from "@/i18n";
-i18n.t("timer.scrambleCopied");
+i18n.t("timer:scrambleCopied");
 ```
+
+⚠️ El `t()` global (`i18n.t`) solo tipa claves con **prefijo de namespace**
+(`"ns:clave"`) para namespaces que no sean `common`; la forma con punto
+(`"timer.scrambleCopied"`) solo es válida en el `t` ligado que devuelve
+`useTranslation("timer")`. Usa `i18n.t("ns:key")` en código no-React.
 
 ## Cómo se añade una clave
 

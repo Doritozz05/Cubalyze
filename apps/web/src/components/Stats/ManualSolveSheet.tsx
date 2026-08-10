@@ -14,6 +14,7 @@ import {
   parseTimeInput,
 } from "@/utils/parseTimeInput";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 export interface ManualSolveSheetProps {
   open: boolean;
@@ -95,11 +96,11 @@ export function ManualSolveSheet({
         });
       }
       toast.success(
-        parsed.length > 1 ? `${parsed.length} solves logged` : "Solve logged",
+        i18n.t("toast:solveLoggedCount", { count: parsed.length }),
       );
       onClose();
     } catch (e) {
-      toast.error("Couldn't add solve");
+      toast.error(i18n.t("toast:solveAddFailed"));
       console.error(e);
     } finally {
       setSubmitting(false);

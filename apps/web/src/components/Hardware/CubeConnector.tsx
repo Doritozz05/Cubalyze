@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Bluetooth, BluetoothConnected, Info } from "lucide-react";
 import { GanCubeAdapter } from "@cubeforge/hardware-hal";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -142,7 +143,7 @@ export function CubeConnector({
 
       setStatus("connected");
       setShowMacInput(false);
-      toast.success("Cube connected!");
+      toast.success(i18n.t("toast:cubeConnected"));
 
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
@@ -180,11 +181,11 @@ export function CubeConnector({
     try {
       await globalCubeAdapter.disconnect();
       setStatus("disconnected");
-      toast.success("Cube disconnected");
+      toast.success(i18n.t("toast:cubeDisconnected"));
       handleOpenChange(false);
     } catch (e) {
       console.error(e);
-      toast.error("Failed to disconnect");
+      toast.error(i18n.t("toast:disconnectFailed"));
     }
   };
 
@@ -292,7 +293,7 @@ export function CubeConnector({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
+                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success(i18n.t("toast:copied")); }}
                   className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>

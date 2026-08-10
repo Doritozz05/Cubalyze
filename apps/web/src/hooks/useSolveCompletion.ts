@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { preferencesStore } from "@cubeforge/state";
 import type { Penalty, PuzzleCategory, Solve, SolveSource } from "@/types";
 import type {
@@ -135,7 +136,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         .then((returnedId) => {
           if (!returnedId) {
             console.warn('[handleComplete] addSolve returned null — solve NOT saved to DB!');
-            toast.error('Solve not saved — database not ready. Try again.');
+            toast.error(i18n.t("toast:solveNotSavedDb"));
             return;
           }
           latestSavedTokenRef.current = Math.max(latestSavedTokenRef.current, completionToken);
@@ -185,7 +186,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         })
         .catch((err) => {
           console.error('[handleComplete] addSolve threw:', err);
-          toast.error("Couldn't save solve — check console for details");
+          toast.error(i18n.t("toast:solveSaveFailed"));
         });
     },
     [

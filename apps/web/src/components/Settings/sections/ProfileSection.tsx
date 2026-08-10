@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { Spinner } from "@/components/ui/spinner";
 import {
   UserRound,
@@ -88,11 +89,10 @@ export function ProfileSection() {
     const next: { handle?: string; bio?: string } = {};
     const h = handle.trim();
     if (h && !HANDLE_RE.test(h)) {
-      next.handle =
-        "3–20 characters: lowercase letters, numbers, underscore or dash.";
+      next.handle = i18n.t("toast:handleValidation");
     }
     if (bio.length > MAX_BIO) {
-      next.bio = `Keep it under ${MAX_BIO} characters (${bio.length}).`;
+      next.bio = i18n.t("toast:bioTooLong", { max: MAX_BIO, current: bio.length });
     }
     setErrors(next);
     const first = next.handle ?? next.bio;
@@ -104,7 +104,7 @@ export function ProfileSection() {
     const check = validate();
     if (!check.ok) {
       // Never fail silently: tell the user exactly what to fix.
-      toast.error(check.message ?? "Check the highlighted fields before saving");
+      toast.error(check.message ?? i18n.t("toast:checkFields"));
       return;
     }
     setSaving(true);
@@ -117,10 +117,10 @@ export function ProfileSection() {
         country,
         declaredMethods: methods,
       });
-      toast.success("Profile saved");
+      toast.success(i18n.t("toast:profileSaved"));
     } catch (err) {
       console.error("[ProfileSection] Save failed:", err);
-      toast.error("Couldn't save the profile");
+      toast.error(i18n.t("toast:profileSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -136,12 +136,12 @@ export function ProfileSection() {
     async (file: File | undefined) => {
       if (!file || !profile) return;
       if (!file.type.startsWith("image/")) {
-        toast.error("Please choose an image file (JPG, PNG, WebP, GIF or SVG)");
+        toast.error(i18n.t("toast:chooseImageFile"));
         return;
       }
       if (file.size > MAX_AVATAR_SOURCE_BYTES) {
         const mb = Math.round(MAX_AVATAR_SOURCE_BYTES / 1024 / 1024);
-        toast.error(`Image too large — keep it under ${mb} MB`);
+        toast.error(i18n.t("toast:imageTooLarge", { mb }));
         return;
       }
       setUploadingAvatar(true);
@@ -150,10 +150,10 @@ export function ProfileSection() {
         // (phones produce multi-MB photos; the row stays light).
         const dataUrl = await processAvatarImage(file);
         await updateProfile({ avatarKind: "photo", avatarData: dataUrl });
-        toast.success("Avatar updated");
+        toast.success(i18n.t("toast:avatarUpdated"));
       } catch (err) {
         console.error("[ProfileSection] Photo upload failed:", err);
-        toast.error("Couldn't process that image — try a JPG, PNG or WebP");
+        toast.error(i18n.t("toast:avatarProcessFailed"));
       } finally {
         setUploadingAvatar(false);
       }
@@ -165,10 +165,10 @@ export function ProfileSection() {
     if (!profile) return;
     try {
       await updateProfile({ avatarKind: "identicon", avatarData: undefined });
-      toast.success("Back to your CubeMark");
+      toast.success(i18n.t("toast:avatarReset"));
     } catch (err) {
       console.error("[ProfileSection] Reset identicon failed:", err);
-      toast.error("Couldn't reset the avatar");
+      toast.error(i18n.t("toast:avatarResetFailed"));
     }
   }, [profile, updateProfile]);
 
@@ -180,7 +180,7 @@ export function ProfileSection() {
       `cubeforge-profile-${new Date().toISOString().slice(0, 10)}.json`,
       "application/json",
     );
-    toast.success("Profile exported");
+    toast.success(i18n.t("toast:profileExported"));
   }, [profile]);
 
   if (loading || !profile) {

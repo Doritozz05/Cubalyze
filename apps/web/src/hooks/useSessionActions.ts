@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import type { Penalty, PuzzleCategory, Solve, SolveSource } from "@/types";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
@@ -59,7 +60,7 @@ export function useSessionActions(deps: SessionActionsDeps) {
 
   const handleUpdate = useCallback(
     (id: string, updates: { penalty?: Penalty; note?: string | null }) => {
-      updateSolve(id, updates).catch(() => toast.error("Update failed"));
+      updateSolve(id, updates).catch(() => toast.error(i18n.t("timer:updateFailed")));
     },
     [updateSolve],
   );
@@ -69,14 +70,14 @@ export function useSessionActions(deps: SessionActionsDeps) {
       if (lastSolveId && id === lastSolveId) {
         resetTimer?.();
       }
-      deleteSolve(id).catch(() => toast.error("Delete failed"));
+      deleteSolve(id).catch(() => toast.error(i18n.t("toast:deleteFailed")));
     },
     [deleteSolve, lastSolveId, resetTimer],
   );
 
   const handleClear = useCallback(() => {
     resetTimer?.();
-    clearSession().catch(() => toast.error("Couldn't clear session"));
+    clearSession().catch(() => toast.error(i18n.t("toast:clearSessionFailed")));
   }, [clearSession, resetTimer]);
 
   const handleNewSession = useCallback(() => {
@@ -84,15 +85,15 @@ export function useSessionActions(deps: SessionActionsDeps) {
       .then(() => {
         resetScramble();
         resetTimer?.();
-        toast.success("New session started");
+        toast.success(i18n.t("toast:sessionStarted"));
       })
-      .catch(() => toast.error("Couldn't create session"));
+      .catch(() => toast.error(i18n.t("toast:createSessionFailed")));
   }, [newSession, puzzle, resetScramble, resetTimer]);
 
   const handleSwitchSession = useCallback(
     (id: string) => {
       resetTimer?.();
-      switchSession(id).catch(() => toast.error("Couldn't switch session"));
+      switchSession(id).catch(() => toast.error(i18n.t("toast:switchSessionFailed")));
     },
     [switchSession, resetTimer],
   );

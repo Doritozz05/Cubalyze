@@ -6,7 +6,8 @@ TTS, datos). No lista strings individuales: cada tanda se define por las zonas
 de UI que cubre, su namespace, dificultad y consideraciones especiales.
 
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
-2 (shell completo) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+2 (shell completo) ✅ · Tanda 4 (feedback global: toasts + notificaciones +
+TTS) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -114,13 +115,20 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
 - **Namespace**: `timer`, `stats`.
 - **Dificultad**: media. Toasts propios: "Scramble copied", "Couldn't add solve", "Logged: {label}".
 
-### Tanda 4 — Feedback global (transversal: toasts + notificaciones + TTS)
+### ✅ Tanda 4 — Feedback global (transversal: toasts + notificaciones + TTS) *(hecha)*
 - **Zonas**:
   - **Toasts** (43+ llamadas): App.tsx (scramble copiado/fallo, update failed) · `useSessionActions` (nueva/borrar/cambiar sesión, clear) · `useSolveCompletion` (solve no guardado) · `useScrambleState` (puzzle cambiado, nuevo scramble) · `useManualSolves` · `ManualSolveSheet` · `CubeConnector` (conectado/desconectado) · `SmartCubeSection` · `ProfileSection` (perfil/avatar guardado) · `DataSection` (exportar) · `AdvancedSection` (reset, debug) · `SolveAnalysisPanel` · `AlgorithmEditorDialog` · `Case3DPanel`/`CaseDetailPanel` (algoritmo eliminado) · `AppShell`.
   - **Notificaciones del sistema** (Web Notification): `useReminderScheduler` — recordatorio diario de práctica + cola de review (título/cuerpo localizados; re-programar si cambia el idioma).
   - **TTS del timer**: `audioSystem.ts` — frases de inspección (8s/12s) + lectura de cifras; hoy fuerza `en-US`.
 - **Namespace**: `toast.*` (o por zona), `notifications`, `audio`.
 - **Dificultad**: media. Patrón: clave + interpolación; la TTS necesita voces por idioma.
+- Archivos: `App.tsx`, `useSessionActions`, `useSolveCompletion`, `useScrambleState`,
+  `useManualSolves`, `useReminderScheduler`, `audioSystem.ts` (TTS: frases 8s/12s
+  localizadas + `utterance.lang` + voces por idioma), `ManualSolveSheet`,
+  `CubeConnector`, `SolveAnalysisPanel`, `SmartCubeSection`, `ProfileSection`,
+  `AdvancedSection`, `DataSection`, `AlgorithmEditorDialog`, `CaseDetailPanel`,
+  `Case3DPanel`, `en/es.json` (namespaces `toast`, `notifications`, `audio`
+  nuevos). Nota: el `t()` global (`i18n.t`) usa claves con prefijo `"ns:key"`.
 
 ### Tanda 5 — Insights (tab Stats/Analytics)
 - **Zonas**:

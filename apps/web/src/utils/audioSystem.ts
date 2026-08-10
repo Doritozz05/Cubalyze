@@ -12,7 +12,13 @@
  *   - Windows 10/11 : Microsoft David (male), Microsoft Zira (female)
  *   - macOS         : Alex (male), Samantha (female), and many more
  *   - Android       : varies by device and installed TTS engine
+ *
+ * Localization: the inspection phrases (8s/12s) come from the i18n `audio`
+ * namespace and the utterance language follows the active app language, so
+ * the voice selection prefers voices of that language (see `getPreferredVoice`).
  */
+
+import i18n from "@/i18n";
 
 export type VoiceType = "male" | "female";
 
@@ -33,6 +39,12 @@ const MALE_KEYWORDS = [
   "male",
   "google uk english male",
   "google us english male",
+  // Spanish voices (Windows: Microsoft Jorge (es-ES); Google: Google español).
+  "jorge",
+  "pablo",
+  "raul",
+  "diego",
+  "miguel",
 ];
 
 const FEMALE_KEYWORDS = [
@@ -47,6 +59,14 @@ const FEMALE_KEYWORDS = [
   "female",
   "google uk english female",
   "google us english female",
+  // Spanish voices (Windows: Microsoft Helena (es-ES), Sabina (es-MX),
+  // Paulina (es-MX); Google: Google español).
+  "helena",
+  "sabina",
+  "monica",
+  "paulina",
+  "laura",
+  "camila",
 ];
 
 // ── AudioSystem Class (singleton) ─────────────────────────────────────
@@ -128,10 +148,10 @@ export class AudioSystem {
   /**
    * Searches for the best available voice for the selected type (male/female).
    *
-   * Search strategy:
-   *   1. English voice + keyword match for target gender (and NOT opposing gender)
-   *   2. English voice + non-opposing gender
-   *   3. Any English voice
+   * Search strategy (language = the active app language, en/es):
+   *   1. Preferred-language voice + keyword match for target gender (and NOT opposing gender)
+   *   2. Preferred-language voice + non-opposing gender
+   *   3. Any preferred-language voice
    *   4. First available voice
    */
   private getPreferredVoice(): SpeechSynthesisVoice | null {
@@ -140,7 +160,12 @@ export class AudioSystem {
     const isMale = this.voice === "male";
     const targetKeywords = isMale ? MALE_KEYWORDS : FEMALE_KEYWORDS;
     const opposingKeywords = isMale ? FEMALE_KEYWORDS : MALE_KEYWORDS;
-    const langPrefs = ["en-US", "en-GB", "en-AU", "en-CA", "en"];
+    // Voice preference follows the active app language so the inspection
+    // phrases are read by a voice of the same language when available.
+    const isSpanish = (i18n.language ?? "en").toLowerCase().startsWith("es");
+    const langPrefs = isSpanish
+      ? ["es-ES", "es-MX", "es-AR", "es-CO", "es"]
+      : ["en-US", "en-GB", "en-AU", "en-CA", "en"];
 
     const matchesTargetGender = (name: string): boolean => {
       const lower = name.toLowerCase();
@@ -191,7 +216,10 @@ export class AudioSystem {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
+    // Match the utterance language to the active app language (en-US / es-ES).
+    utterance.lang = (i18n.language ?? "en").toLowerCase().startsWith("es")
+      ? "es-ES"
+      : "en-US";
     utterance.rate = 0.88; // Slightly slower for clarity in competition
     utterance.volume = this.volume / 100;
 
@@ -210,16 +238,17 @@ export class AudioSystem {
    */
   public play8s(): void {
     if (!this.loadingStarted) this.init();
-    this.speak("eight seconds");
+    this.speak(i18n.t("audio:eightSeconds"));
   }
 
   /**
    * Plays the "12 seconds" alert.
-   * Spelled out as "twelve seconds" for uniform English TTS synthesis.
+   * Localized phrase (e.g. "twelve seconds" / "doce segundos") so the TTS
+   * engine never reads a raw digit in the wrong language.
    */
   public play12s(): void {
     if (!this.loadingStarted) this.init();
-    this.speak("twelve seconds");
+    this.speak(i18n.t("audio:twelveSeconds"));
   }
 
   /**

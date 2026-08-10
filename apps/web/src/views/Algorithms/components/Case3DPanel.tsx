@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { X, ChevronLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Case3DDiagram } from "./Case3DDiagram";
@@ -186,7 +187,7 @@ export function Case3DPanel({
   const handleDeleteAlgorithm = useCallback((alg: Algorithm) => {
     algorithmStore.getState().removeCustomAlgorithm(alg.id);
     setSelectedAlgId((prev) => (prev === alg.id ? null : prev));
-    toast.success("Algorithm removed", {
+    toast.success(i18n.t("toast:algorithmRemoved"), {
       description: `${alg.moves.slice(0, 4).join(" ")}${alg.moves.length > 4 ? " …" : ""}`,
     });
   }, []);

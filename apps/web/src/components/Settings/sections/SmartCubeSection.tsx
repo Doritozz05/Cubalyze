@@ -24,6 +24,7 @@ type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
  */
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 export function SmartCubeSection() {
   const [status, setStatus] = useState<ConnStatus>(
@@ -59,10 +60,10 @@ export function SmartCubeSection() {
     try {
       setIsConnecting(true);
       await globalCubeAdapter.connect();
-      toast.success("Cube connected!");
+      toast.success(i18n.t("toast:cubeConnected"));
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Failed to connect cube");
+      toast.error(i18n.t("toast:cubeConnectFailed"));
     } finally {
       setIsConnecting(false);
     }
@@ -71,10 +72,10 @@ export function SmartCubeSection() {
   const handleDisconnect = async () => {
     try {
       await globalCubeAdapter.disconnect();
-      toast.success("Cube disconnected");
+      toast.success(i18n.t("toast:cubeDisconnected"));
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Failed to disconnect cube");
+      toast.error(i18n.t("toast:disconnectCubeFailed"));
     }
   };
 

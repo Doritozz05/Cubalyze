@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import {
   X,
   Plus,
@@ -286,7 +287,7 @@ export function AlgorithmEditorDialog({
       onClose();
     } catch (err) {
       console.error("[AlgorithmEditorDialog] Failed to save:", err);
-      toast.error("Failed to save algorithm");
+      toast.error(i18n.t("toast:algorithmSaveFailed"));
     } finally {
       setSaving(false);
     }

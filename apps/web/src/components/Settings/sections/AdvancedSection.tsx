@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import {
   Wrench,
   RotateCcw,
@@ -132,10 +133,10 @@ export function AdvancedSection() {
     setDebugLogs(v);
     if (v) {
       window.localStorage.setItem("cubeforge:cfop-debug", "1");
-      toast.success("Debug logs enabled — open the console");
+      toast.success(i18n.t("toast:debugLogsEnabled"));
     } else {
       window.localStorage.removeItem("cubeforge:cfop-debug");
-      toast.success("Debug logs disabled");
+      toast.success(i18n.t("toast:debugLogsDisabled"));
     }
   };
 
@@ -150,7 +151,7 @@ export function AdvancedSection() {
 
   const handleReset = () => {
     resetPreferences();
-    toast.success("All options reset to defaults");
+    toast.success(i18n.t("toast:optionsReset"));
   };
 
   const handleClearAppStorage = () => {
@@ -158,7 +159,7 @@ export function AdvancedSection() {
     for (const key of APP_STORAGE_KEYS) {
       window.localStorage.removeItem(key);
     }
-    toast.success("App storage cleared (reload to apply)");
+    toast.success(i18n.t("toast:storageCleared"));
     refresh();
   };
 

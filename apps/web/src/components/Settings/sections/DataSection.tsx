@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 import { useStorageStatusStore } from '@/stores/storageStatus';
 import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
@@ -190,7 +191,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     if (!onExportAllJSON || exportingAll) return;
     setExportingAll(true);
     onExportAllJSON()
-      .catch(() => toast.error("Couldn't export all sessions. Try again."))
+      .catch(() => toast.error(i18n.t('toast:exportSessionsFailed')))
       .finally(() => setExportingAll(false));
   }, [onExportAllJSON, exportingAll]);
 
@@ -200,7 +201,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     setExportingExcel(true);
     exportSolvesToXLSX(solves, sessionName ?? 'session')
       .catch(() => {
-        toast.error("Couldn't create the Excel file. Try again.");
+        toast.error(i18n.t('toast:excelExportFailed'));
       })
       .finally(() => setExportingExcel(false));
   };
