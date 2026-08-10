@@ -101,6 +101,27 @@ async function getSharedTracker(): Promise<ProgressTracker> {
   return promise;
 }
 
+// ─── Boot pre-warm ────────────────────────────────────────────────────────
+// The shared tracker initializes lazily on first use (worker boot + migrations
+// + full catalog seed). Without a warm-up, the very first visit to any training
+// surface (Profile → Training/Algorithms tabs, or the Training view itself)
+// pays that whole cost up front — the Profile tabs have no ready/error feedback
+// during it, so they sit on a perpetual-looking skeleton until the main
+// Training view happens to initialize the same singleton. Pre-warming at app
+// boot moves that cost off the first click so the tabs find the tracker ready.
+
+/**
+ * Warm the shared training tracker at app boot (fire-and-forget).
+ *
+ * Safe to call from anywhere: idempotent, cached per DB client, and errors are
+ * swallowed (a failed pre-warm just falls back to lazy init on first use).
+ */
+export function preloadTrainingProgress(): void {
+  void getSharedTracker().catch((err) => {
+    console.error("[preloadTrainingProgress] Failed to pre-warm training DB:", err);
+  });
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────
 
 export interface UseTrainingProgressResult {

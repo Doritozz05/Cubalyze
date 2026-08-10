@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/Insights/atoms/EmptyState";
 import { SectionHeader } from "@/components/Insights/atoms/SectionHeader";
 import { MetricRing } from "@/components/Insights/atoms/MetricRing";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { formatTime, statLabel } from "@/utils/formatTime";
@@ -165,7 +166,7 @@ function StatsTab({ stats }: { stats: ProfileStats | null }) {
 }
 
 function TrainingTab() {
-  const { queue, ready, loading } = useSRSQueue();
+  const { queue, ready, loading, error, refresh } = useSRSQueue();
   const due = useMemo(() => queue.filter((q) => q.reason === "overdue").length, [queue]);
   const review = useMemo(() => queue.filter((q) => q.reason === "review").length, [queue]);
   const weak = useMemo(
@@ -174,7 +175,42 @@ function TrainingTab() {
   );
   const newCount = useMemo(() => queue.filter((q) => q.reason === "new").length, [queue]);
 
-  if (loading || !ready) {
+  // A failed load must never leave the tab frozen on a skeleton — surface the
+  // error with a retry instead.
+  if (error) {
+    return (
+      <div className="rounded-xl border border-line bg-surface p-4">
+        <EmptyState
+          icon={<Target className="size-5" />}
+          title="Training data unavailable"
+          description={error}
+          action={
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="cursor-pointer rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-surface transition-colors hover:bg-ink/90"
+            >
+              Retry
+            </button>
+          }
+        />
+      </div>
+    );
+  }
+
+  // The shared tracker (DB worker + migrations + catalog seed) initializes
+  // lazily on first use — on a brand-new profile that can take a few seconds.
+  // Show an explicit "preparing" state instead of an indefinite skeleton so
+  // the tab never looks frozen.
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center rounded-xl border border-line bg-surface p-8">
+        <Spinner size="sm" label="Preparing training data…" />
+      </div>
+    );
+  }
+
+  if (loading) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-28 w-full rounded-xl" />
@@ -230,18 +266,31 @@ function AlgorithmsTab() {
     stateCounts: { new: number; learning: number; review: number; relearning: number };
     avgMastery: number;
   } | null>(null);
+  // A rejected insights query (transient DB hiccup, etc.) must never leave the
+  // tab frozen on the skeleton — report it as a recoverable error instead.
+  const [insightsError, setInsightsError] = useState<string | null>(null);
+  // Bump to re-run the insights load after a failure (Retry button).
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     if (ready) {
-      void getSRSInsights().then((data) => {
-        if (!cancelled) setInsights(data);
-      });
+      setInsightsError(null);
+      void getSRSInsights()
+        .then((data) => {
+          if (!cancelled) setInsights(data);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setInsightsError(
+            err instanceof Error ? err.message : "Failed to load algorithm mastery",
+          );
+        });
     }
     return () => {
       cancelled = true;
     };
-  }, [ready, getSRSInsights]);
+  }, [ready, getSRSInsights, reloadKey]);
 
   const mastered = insights ? insights.stateCounts.review : 0;
   const learning = insights
@@ -253,7 +302,28 @@ function AlgorithmsTab() {
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-surface p-4">
         <SectionHeader title="Algorithm mastery" eyebrow="SRS states" />
-        {!insights ? (
+        {insightsError ? (
+          <div className="mt-3">
+            <EmptyState
+              icon={<BookOpen className="size-5" />}
+              title="Algorithm data unavailable"
+              description={insightsError}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setReloadKey((k) => k + 1)}
+                  className="cursor-pointer rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-surface transition-colors hover:bg-ink/90"
+                >
+                  Retry
+                </button>
+              }
+            />
+          </div>
+        ) : !ready ? (
+          <div className="mt-3 flex justify-center rounded-lg border border-dashed border-line py-6">
+            <Spinner size="sm" label="Preparing algorithm data…" />
+          </div>
+        ) : !insights ? (
           <Skeleton className="mt-3 h-24 w-full rounded-lg" />
         ) : insights.totalCases === 0 ? (
           <p className="mt-3 text-xs text-ink-3">

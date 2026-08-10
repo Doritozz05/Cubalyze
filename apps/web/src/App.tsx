@@ -9,6 +9,7 @@ import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 import { useProfile } from "@/hooks/useProfile";
+import { preloadTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useScrambleState } from "@/hooks/useScrambleState";
 import { useSessionActions } from "@/hooks/useSessionActions";
@@ -99,8 +100,14 @@ export default function App() {
   solvesRef.current = solves;
 
   // Deferred solver preload (WASM/table warmup) so first paint is never blocked.
+  // Also warm the shared training tracker (DB worker + migrations + catalog
+  // seed) so the Profile Training/Algorithms tabs and the Training view find
+  // the SRS data ready on their very first visit instead of paying the whole
+  // init cost on click (which previously left those tabs on a skeleton until
+  // the main Training view had been opened once).
   useEffect(() => {
     preloadSolvers();
+    preloadTrainingProgress();
   }, []);
 
   // ── Daily practice/review reminders (Settings → Notifications) ────────
