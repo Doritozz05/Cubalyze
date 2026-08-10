@@ -16,7 +16,6 @@ import {
   SectionHeader,
   EmptyState,
   MetricRing,
-  AlgorithmNotation,
   SkippedBadge,
   FACE_HEX,
   FACE_NAME,
@@ -199,6 +198,9 @@ export function SolveAnalysisPanel({
         )}
       </div>
 
+      {/* ── Scramble block (up top, right under the solve time) ── */}
+      <ScrambleBlock solve={solve} />
+
       {/* ── Note section ── */}
       <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-3.5">
         <div className="flex items-center justify-between">
@@ -323,9 +325,6 @@ export function SolveAnalysisPanel({
           <RotEfficiencySection metrics={m} />
         </>
       )}
-
-      {/* Scramble block */}
-      <ScrambleBlock solve={solve} />
     </div>
   );
 }
@@ -1474,7 +1473,14 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
           Scramble
         </span>
         {hasMoves ? (
-          <AlgorithmNotation notation={solve.scramble} size="sm" />
+          /* Plain mono text, same style as the algorithm text in Our
+             detection — no boxes around each move. */
+          <p
+            className="min-w-0 font-mono text-[0.78rem] font-medium text-ink leading-relaxed break-words"
+            translate="no"
+          >
+            {solve.scramble}
+          </p>
         ) : (
           <p className="font-mono text-[0.78rem] text-ink wrap-break-word">
             {solve.scramble}
