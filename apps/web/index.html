@@ -22,8 +22,7 @@
        Kept in a separate file because the production Content-Security-Policy
        uses `script-src 'self'` without 'unsafe-inline' (see theme-color.js). -->
   <script src="/theme-bootstrap.js"></script>
-  <div id="root">
-    <style>
+  <style>
       #root-loader-wrapper {
         position: fixed;
         inset: 0;
@@ -111,7 +110,24 @@
         .cf-sq4-r { left: 54px; top: 18px; }
         .cf-sq5-r { left: 36px; top: 18px; }
       }
+
+      /* Smooth hand-off to the app: the overlay shares the app's background, so
+         main.tsx fades it out (opacity) once React has mounted underneath —
+         no hard cut and no white flash on reload. */
+      #root-loader-wrapper {
+        transition: opacity 0.45s ease-out;
+      }
+      #root-loader-wrapper.cf-loader-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #root-loader-wrapper {
+          transition: none;
+        }
+      }
     </style>
+    <div id="root"></div>
     <div id="root-loader-wrapper">
       <div class="cf-rubik-lateral-root" role="img" aria-label="Loading">
         <div class="cf-rubik-sq-root cf-sq1-r"></div>
@@ -121,7 +137,6 @@
         <div class="cf-rubik-sq-root cf-sq5-r"></div>
       </div>
     </div>
-  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

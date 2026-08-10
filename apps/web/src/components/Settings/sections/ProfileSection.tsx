@@ -184,7 +184,7 @@ export function ProfileSection() {
   }, [profile]);
 
   if (loading || !profile) {
-    return <Spinner variant="centered" size="md" label="Loading profile…" />;
+    return <Spinner variant="centered" size="md" />;
   }
 
   const isPhoto = profile.avatarKind === "photo";

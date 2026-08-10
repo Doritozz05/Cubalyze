@@ -1,7 +1,8 @@
 "use client";
 
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
+import { markAppReady } from "@/boot/appReady";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
@@ -12,28 +13,45 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
 // Heavy views are code-split: each loads its own chunk only when the user
 // visits it, keeping the initial bundle (timer + shell) small. The timer
 // stage stays eager — it is the landing screen users see first.
+
+/**
+ * Signals the pre-React boot loader (see @/boot/appReady) when a view's chunk
+ * finishes loading and hands back the component. The overlay stays up until
+ * the initial view is ready — covering the Suspense fallback — so a reload
+ * never shows a second loading state; the loader fades straight into the view.
+ */
+function withReady<T extends React.ComponentType>(component: T): T {
+  markAppReady();
+  return component;
+}
+
 const InsightsDashboard = lazy(() =>
-  import("@/components/Insights/InsightsDashboard").then((m) => ({ default: m.InsightsDashboard })),
+  import("@/components/Insights/InsightsDashboard").then((m) => ({ default: withReady(m.InsightsDashboard) })),
 );
 const AlgorithmDashboard = lazy(() =>
-  import("@/views/Algorithms/AlgorithmDashboard").then((m) => ({ default: m.AlgorithmDashboard })),
+  import("@/views/Algorithms/AlgorithmDashboard").then((m) => ({ default: withReady(m.AlgorithmDashboard) })),
 );
 const TrainingDashboard = lazy(() =>
-  import("@/views/Training/TrainingDashboard").then((m) => ({ default: m.TrainingDashboard })),
+  import("@/views/Training/TrainingDashboard").then((m) => ({ default: withReady(m.TrainingDashboard) })),
 );
 const UltraSkillTreeView = lazy(() =>
-  import("@/views/SkillTree/UltraSkillTreeView").then((m) => ({ default: m.UltraSkillTreeView })),
+  import("@/views/SkillTree/UltraSkillTreeView").then((m) => ({ default: withReady(m.UltraSkillTreeView) })),
 );
 const ProfileView = lazy(() =>
-  import("@/views/Profile/ProfileView").then((m) => ({ default: m.ProfileView })),
+  import("@/views/Profile/ProfileView").then((m) => ({ default: withReady(m.ProfileView) })),
 );
 const ReconstructionsView = lazy(() =>
-  import("@/views/Reconstructions/ReconstructionsView").then((m) => ({ default: m.ReconstructionsView })),
+  import("@/views/Reconstructions/ReconstructionsView").then((m) => ({ default: withReady(m.ReconstructionsView) })),
 );
 
-/** Tiny fallback shown while a lazy view chunk downloads. */
+/**
+ * Tiny fallback shown while a lazy view chunk downloads (in-app navigation).
+ * Matches the pre-React boot loader exactly (same squares, no text); on the
+ * initial load it stays hidden behind that overlay, so only ONE loading
+ * state is ever visible to the user.
+ */
 function ViewFallback() {
-  return <Spinner size="lg" variant="centered" label="Loading…" />;
+  return <Spinner size="md" variant="centered" />;
 }
 
 export interface MainStageProps {
@@ -91,6 +109,12 @@ export function MainStage(props: MainStageProps) {
   const validSolves = puzzleSolves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const currentPB =
     validSolves.length > 0 ? Math.min(...validSolves.map((s) => effectiveTime(s))) : null;
+
+  // The eager timer stage is ready the moment it mounts — signal the boot
+  // loader to fade out. (Lazy views signal from their chunk's `.then` instead.)
+  useEffect(() => {
+    if (activeView === "timer") markAppReady();
+  }, [activeView]);
 
   if (activeView === "insights") {
     return (

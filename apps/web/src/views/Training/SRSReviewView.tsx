@@ -288,7 +288,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
   if (!ready || loading || sessionPending) {
     return (
       <Shell onBack={onBack}>
-        <Spinner variant="centered" size="md" label="Loading review queue…" />
+        <Spinner variant="centered" size="md" />
       </Shell>
     );
   }

@@ -118,7 +118,7 @@ export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
         />
 
         {!ready || loading ? (
-          <Spinner variant="centered" size="md" label="Loading memory insights…" />
+          <Spinner variant="centered" size="md" />
         ) : error ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-3">
             <p className="text-[0.7rem] text-hold">{error}</p>
