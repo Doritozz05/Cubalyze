@@ -95,12 +95,17 @@ describe('divergence classification (A/B study, gated)', { skip: !ENABLED }, () 
     }
 
     let strictGood = 0, relaxedGood = 0, bothGood = 0, bothBad = 0;
+    let noRawCross = 0;
     const regressions: { key: string; time: number; s: number; r: number; raw: number; labels: string }[] = [];
     const fixes: { key: string; time: number; s: number; r: number; raw: number }[] = [];
+    const bothBadCases: { key: string; time: number; s: number; r: number; raw: number; labels: string; stype: string; rtype: string }[] = [];
 
     for (const rec of sample) {
       const raw = rawCrossEnd(rec);
-      if (raw < 0) continue;
+      if (raw < 0) {
+        noRawCross++;
+        continue;
+      }
       let s: { end: number; type: string; warnings: string[] };
       let r: { end: number; type: string; warnings: string[] };
       try {
@@ -124,6 +129,7 @@ describe('divergence classification (A/B study, gated)', { skip: !ENABLED }, () 
         fixes.push({ key: rec.key, time: rec.time, s: s.end, r: r.end, raw });
       } else {
         bothBad++;
+        bothBadCases.push({ key: rec.key, time: rec.time, s: s.end, r: r.end, raw, labels: rec.phases.map((p) => p.label).join(' · '), stype: s.type, rtype: r.type });
       }
     }
 
@@ -138,6 +144,10 @@ describe('divergence classification (A/B study, gated)', { skip: !ENABLED }, () 
       console.log(`   ✓ ${f.key} (${f.time}s) s@${f.s} r@${f.r} raw@${f.raw}`);
     }
     console.log(`bothBad         : ${bothBad}`);
+    console.log(`no written cross : ${noRawCross} (skipped — flat or unlabelled)`);
+    for (const b of bothBadCases) {
+      console.log(`   ✗✗ ${b.key} (${b.time}s) s@${b.s} [${b.stype}] r@${b.r} [${b.rtype}] raw@${b.raw} | ${b.labels}`);
+    }
     expect(sample.length).toBeGreaterThan(0);
   });
 

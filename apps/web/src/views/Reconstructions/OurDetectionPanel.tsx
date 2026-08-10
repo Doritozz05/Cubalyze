@@ -119,6 +119,9 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       inspection: record.recognition.inspection || undefined,
       solution: record.text,
       method: "CFOP",
+      // Same relaxed-cross mode as reconData's deriveReconStats — this is the
+      // defensive fallback path and must agree with the shared analysis.
+      relaxedCross: true,
       totalTimeMs: record.time > 0 ? record.time * 1000 : undefined,
     });
   }, [canDetect, record]);

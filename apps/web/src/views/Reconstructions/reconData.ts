@@ -444,6 +444,12 @@ function deriveReconStats(record: ReconFullRecord): void {
       inspection: record.recognition.inspection || undefined,
       solution: record.text,
       method: "CFOP",
+      // relaxed cross (permutation-only) matches how reconstructionists mark
+      // the cross on text solves — validated by divergence-study (74 fixes,
+      // 0 regressions on 300 labelled solves; the written-cross tiebreak
+      // `preferredCrossIdx` is what makes it safe). The smart-cube route
+      // (no written segments) stays on the strict default.
+      relaxedCross: true,
       totalTimeMs: record.time > 0 ? record.time * 1000 : undefined,
     });
   } catch {

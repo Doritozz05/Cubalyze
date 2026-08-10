@@ -1,9 +1,9 @@
 # Estudio exhaustivo: criterio de cruz relajado + detección F2L
 
-> **Estado:** COMPLETADO (2026-08-10) · Branch `algortihms`
+> **Estado:** COMPLETADO + ACTIVADO (2026-08-10) · Branch `algortihms`
 > **Autor del estudio:** Buffy (asistente de código)
 > **Harness reproducible:** `packages/analysis-engine/src/__tests__/cross-study.test.ts` + `divergence-study.test.ts`
-> **Veredicto corto:** el criterio relajado es una **mejora neta** — con la métrica correcta, **74 fixes y 0 regresiones** sobre 300 solves (antes de los fixes: 58 fixes / 1 regresión) — y se agrega como opción **OFF por defecto**. Además se **arregló el bug de capa E en F2L** (reconz-9068: `u'` en la cruz + `d'` compensador) con un DP de frame medido desde el estado, sin cambiar el comportamiento por defecto.
+> **Veredicto corto:** el criterio relajado es una **mejora neta** — con la métrica correcta, **74 fixes y 0 regresiones** sobre 300 solves (antes de los fixes: 58 fixes / 1 regresión) — y se agregó como opción **OFF por defecto** (smart cube) pero **ACTIVADO en la ruta de reconstrucciones de texto de la web** (`relaxedCross: true`). Además se **arregló el bug de capa E en F2L** (reconz-9068: `u'` en la cruz + `d'` compensador) con un DP de frame medido desde el estado, sin cambiar el comportamiento por defecto del smart cube.
 
 ---
 
@@ -188,14 +188,32 @@ Lectura correcta de estos números:
 - El **fix del tiebreak** (en relaxed, preferir la cercanía al fin de cruz escrito por encima de la completitud de la cadena) eliminó la única regresión real (reconz-727, solve COLL): de 58 fixes / 1 regresión a **72 fixes / 0 regresiones**, y el fix de capa E lo dejó en **74 fixes / 0 regresiones**.
 - **No rompe nada:** OFF por defecto; los 810 tests de los paquetes afectados pasan; el modo strict es idéntico al de antes.
 - **Es exactamente lo que el usuario pidió:** la cruz se marca en el punto donde los 4 edges están en sus posiciones correctas, ignorando el flip.
-- **Recomendación de activación:** para reconstrucciones de texto (ruta `analyzeSolveText`) con `preferredCrossIdx` disponible, se puede activar de forma segura (0 regresiones medido). Para smart cube (sin segmento escrito), el tiebreak de cercanía no aplica y conviene dejarlo OFF hasta validar con solves de smart cube reales.
+- **ACTIVADO en la ruta de texto (2026-08-10):** `apps/web/src/views/Reconstructions/reconData.ts` (`deriveReconStats`, la fuente de `ourDetection` compartida) y `OurDetectionPanel.tsx` (fallback defensivo) pasan ahora `relaxedCross: true`. Es seguro porque la ruta de texto siempre computa `preferredCrossIdx` desde el segmento de cruz escrito (0 regresiones medido en 300 solves). El smart cube (`useSolveSession` → `analyzeSolve`) **sigue OFF** (sin segmento escrito, el tiebreak de cercanía no aplica).
 
 ### ¿Hay margen todavía? → SÍ, documentado y cuantificado.
 
 1. **Marcos rotados / esquemas no-identidad** (3828, 5916): el detector solo completa cadenas con esquema identidad; los color-neutral crosses en caras "extrañas" con reconstrucciones imperfectas no cuadran. Cambio grande (permitir esquemas no-identidad con validación de final).
-2. **Pseudo-cross** (10784): el detector no modela "cruz casi completa + ajuste dentro del 1er/2º par".
-3. **Métodos 223/ZBLL** (2054, 8337): técnicas avanzadas fuera del CFOP puro que el pipeline actual no modela.
+2. **Pseudo-cross** (10784, 4319, 11663, 3467, …): el detector no modela "cruz casi completa + ajuste dentro del 1er/2º par". Ver §4.6.
+3. **Métodos 223/ZBLL** (2054, 8337, 11047, 2678, …): técnicas avanzadas fuera del CFOP puro que el pipeline actual no modela.
 4. **Reconstrucciones incoherentes** (3084, 1660): no son bugs del detector sino datos; convendría filtrarlas en el dataset.
+
+### 4.6 Los 15 bothBad restantes — taxonomía (300 solves, ambos modos fallan)
+
+El estudio ampliado imprime la lista completa de ambosBad (los solves donde NI strict NI relaxed igualan el fin de cruz escrito dentro de ±2):
+
+```
+bothGood 211 · relaxedGood(FIX) 74 · strictGood(REGR) 0 · bothBad 15 · sin cruz escrita 0
+```
+
+Los 15 se descomponen en 3 categorías — **ninguna es CFOP estándar puro**:
+
+| Categoría | Solves | Por qué no dan igual |
+|---|---|---|
+| **Pseudo-cross / partial cross** (la cruz NO está completa al final del bloque escrito) | reconz-4319 (`pseudo cross` + `3rd pair+fix cross`), reconz-11663 (`pseudo xcross`), reconz-3467 (`partial cross` + `3rd pair+finish cross`), reconz-2164, reconz-10412, reconz-7155, reconz-2546, reconz-6938 | El solver deja la cruz a propósito SIN terminar (3 edges + el 4º fuera de lugar); la cruz solo se completa DENTRO del 1er-3er par (`M2' U2' M2' …` en 4319). NINGÚN criterio de "cruz completa" puede igualar el fin del bloque escrito — la cruz no existe como fase completa antes del F2L. Fix requerido: un detector de pseudo-cross (nueva feature, no un ajuste del criterio). |
+| **Convención xxcross/xxxcross** | reconz-5828, reconz-6371, reconz-7155 | El reconstructor escribe la cruz como bloque corto (solo los 4 edges) y los pares por separado; nuestro detector reporta la cruz extendida hasta donde completan los pares pre-resueltos (xcross/xxcross/xxxcross). La etiqueta `crossType` del panel YA muestra el tipo correcto — es una diferencia de etiquetado, no de detección. |
+| **Última capa avanzada (ZBLL/ZBLS/1LLL/EOLS)** | reconz-11047 (`4th pair/ZBLS` + `ZBLL`), reconz-2678 (`4th pair/EOLS` + `ZBLL`), reconz-8236, cuberoot-574 (`1LLL-F`), reconz-5828 | El par 4 incluye EO/ZBLS y la LL es de una mirada; la cadena canónica OLL→PLL del detector no se alinea con las etiquetas raw. Métodos avanzados — fuera del alcance actual (CFOP puro). |
+
+**Conclusión:** el relaxed con tiebreak por segmento escrito ya está en su máximo para CFOP estándar (0 regresiones). Los 15 restantes son técnicas no-CFOP-puro; reducirlos requiere (en orden de valor/riesgo): (1) detector de pseudo-cross, (2) mapear el bloque de cruz del raw solo a los moves de cruz (dejar los pares en F2L) en solves xcross, (3) soporte ZBLL/223 — los tres son features nuevas, no mejoras del criterio actual.
 
 ---
 
@@ -215,6 +233,8 @@ packages/analysis-engine/src/reconstruction/analyzeSolveText.ts  (opción)
 packages/analysis-engine/src/__tests__/cross-study.test.ts       (harness A/B + F2L, nuevo, gated)
 packages/analysis-engine/src/__tests__/divergence-study.test.ts  (harness A/B con métrica correcta, nuevo, gated)
 packages/analysis-engine/src/__tests__/reconz-9068-e-layer.test.ts (regresión capa E, nuevo)
+apps/web/src/views/Reconstructions/reconData.ts                 (relaxedCross: true en la ruta de texto)
+apps/web/src/views/Reconstructions/OurDetectionPanel.tsx        (relaxedCross: true en el fallback)
 docs/09-testing/CFOP-CROSS-RELAXED-STUDY.md                      (este documento)
 ```
 
@@ -227,7 +247,9 @@ RUN_CROSS_STUDY=1 pnpm --dir packages/analysis-engine exec vitest run \
   src/__tests__/cross-study.test.ts
 
 # Divergencia strict vs relaxed con la métrica correcta (300 solves). Gated
-# detrás de RUN_DIVERGENCE_STUDY=1.
+# detrás de RUN_DIVERGENCE_STUDY=1. Imprime el resumen (74 fixes / 0
+# regresiones / 15 bothBad) Y la lista completa de bothBad (✗✗) con sus
+# etiquetas raw para auditar por qué no dan igual.
 RUN_DIVERGENCE_STUDY=1 pnpm --dir packages/analysis-engine exec vitest run \
   src/__tests__/divergence-study.test.ts
 

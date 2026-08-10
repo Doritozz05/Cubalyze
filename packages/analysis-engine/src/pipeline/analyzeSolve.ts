@@ -76,11 +76,15 @@ export interface AnalyzeSolveInput {
 const WIDE_D_RE = /^d[wW]?[2']?$|^Dw[2']?$/;
 
 /**
- * Invert a rotation token: x → x', x' → x, x2 → x2. Applying the WRITTEN
- * grip tokens (each inverted, same order) to a state composes the inverse of
- * the grip — the grip is built as `compose(latest, previous)` in
- * conjugateToBaseFrame, so its inverse applies the tokens in their written
- * order, each inverted.
+ * Invert a rotation token: x → x', x' → x, x2 → x2.
+ *
+ * FALLBACK ONLY: `rotateByGripInverse` (each token inverted, written order)
+ * is used solely when the final state is NOT solvable up to a rotation (an
+ * inconsistent reconstruction), where no recovery frame exists. For the
+ * consistent cases the solver-frame rotation comes from `findRecoveryRotation`
+ * instead — the written-order token inverse is a DIFFERENT rotation than the
+ * recovery for multi-token grips (x z' → x' z ≡ y, while the recovery is z),
+ * which is exactly the cuberoot-2010 slot-rotation bug this module fixes.
  */
 function invertRotationToken(token: string): string {
   if (token.endsWith("'")) return token.slice(0, -1);
@@ -200,22 +204,54 @@ export function buildAnnotatedTimeline(input: AnalyzeSolveInput): SolveTimeline 
   // F2L pairs) is only meaningful in the frame the reconstruction was
   // written in. After the rotation, piece-anchored checks no longer see the
   // solver's slots (the Yiheng-12340 "xcross → plain" regression). The text
-  // route rotates them by the inverse of the inspection grip (the conjugated
-  // timeline is in the scramble frame); the smart route keeps the physical
-  // frame, which IS the solver's frame. Offsets (from the raw d/Dw tokens)
-  // are only computable on the text route.
+  // route rotates them into the frame the reconstructionist's labels live
+  // in; the smart route keeps the physical frame, which IS the solver's
+  // frame. Offsets (from the raw d/Dw tokens) are only computable on the
+  // text route.
   if (input.displayTokens && input.displayTokens.length === timeline.entries.length) {
     // Text route only: the solver-frame states are the pre-recovery snapshots
-    // rotated by the inverse of the inspection grip (the conjugated timeline
-    // is in the scramble frame). The smart route keeps NO solver-frame states
-    // — its timeline already IS the physical solver frame (P2 never fires
-    // there in practice), so its slot analysis stays on the timeline states.
+    // rotated into the frame the reconstruction was WRITTEN in. The smart
+    // route keeps NO solver-frame states — its timeline already IS the
+    // physical solver frame (P2 never fires there in practice), so its slot
+    // analysis stays on the timeline states.
+    //
+    // Grip solves: rotate by the rotation that makes the FINAL state
+    // canonically solved (findRecoveryRotation — the exact rotation P2
+    // applies a moment later). The reconstructionist labels pairs by COLOR
+    // in that frame (OB → BL, RG → FR, …) and only there does the final
+    // state come out solved — the solver solved the cube, so their frame
+    // must end canonical. The written-order grip inverse is a DIFFERENT
+    // rotation for multi-token grips (x z' → x' z ≡ y) and shifts every slot
+    // name one step (the cuberoot-2010 OB→BR bug); single-token grips agree
+    // either way (reconz-12564).
+    //
+    // No-grip solves: keep the scramble frame. There the P2 recovery is a
+    // recon.nz DATA quirk (the stored scramble is rotated relative to the
+    // solver's), and applying it rotates the labels away from the solver's
+    // frame (the Yiheng-12340 xcross regression) — so the states stay as-is
+    // and the P2 rotation is never applied to them.
     const grip = input.solverGrip;
-    timeline.solverFrameStates = timeline.entries.map((entry) =>
-      grip && grip.length > 0
-        ? rotateByGripInverse(entry.state, grip)
-        : entry.state,
-    );
+    const last = timeline.entries[timeline.entries.length - 1];
+    const finalCube = last ? TimelineBuilder.fromSnapshot(last.state) : null;
+    const solverRot =
+      grip && grip.length > 0 && finalCube
+        ? finalCube.isSolved()
+          ? new CubeState() // canonical final → the labels are canonical already
+          : finalCube.findRecoveryRotation() // same rotation P2 applies
+        : null;
+    timeline.solverFrameStates = timeline.entries.map((entry) => {
+      if (!solverRot) {
+        // No grip (scramble frame) or an inconsistent solve (final not
+        // solvable up to a rotation) — fall back to the written-order grip
+        // inverse (single-token grips agree with the recovery anyway).
+        return grip && grip.length > 0
+          ? rotateByGripInverse(entry.state, grip)
+          : entry.state;
+      }
+      const c = TimelineBuilder.fromSnapshot(entry.state);
+      c.multiply(solverRot);
+      return TimelineBuilder.toSnapshot(c);
+    });
     // The d-regrip offsets are only computable from the raw tokens, and the
     // canonical D+E undo only cancels the regrip when the grip kept the D+E
     // block in place (identity / y-rotations).
