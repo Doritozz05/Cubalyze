@@ -1478,7 +1478,7 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
         {/* Plain mono text, same style as the algorithm text in Our
             detection — no boxes around each move. */}
         <p
-          className="min-w-0 font-mono text-[0.78rem] font-medium text-ink leading-relaxed break-words"
+          className="min-w-0 font-mono text-[0.78rem] font-medium text-ink leading-relaxed wrap-break-word"
           translate="no"
         >
           {solve.scramble}
