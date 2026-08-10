@@ -34,6 +34,20 @@ apps/web/src/i18n/
 - **Sin Suspense**: los recursos van embebidos (`initImmediate: false`,
   `useSuspense: false`) — las traducciones están listas en el primer render.
 
+## Requisito de toolchain: TypeScript 6 en el editor
+
+Los `ParseKeys` tipados de i18next v26 se resuelven de forma **opuesta** en TS
+5.x vs 6.x: con 5.x, `useTranslation('ns')` exige claves con prefijo
+(`t('settings:key')`), que `tsc` 6.0.3 rechaza (y al revés con claves simples).
+El CLI usa TS 6.0.3 (declarado en `apps/web/package.json`), así que el editor
+debe usar la misma versión o verás falsos positivos `TS2345` en `t("key")`.
+
+- Fix local (no versionable, `.vscode/*` está en `.gitignore`):
+  `apps/web/.vscode/settings.json` con `"typescript.tsdk": "node_modules/typescript/lib"`.
+- Tras crearlo: recargar la ventana y, si VS Code pregunta, elegir
+  **Use Workspace Version** (o `Ctrl/Cmd+Shift+P` → *TypeScript: Select
+  TypeScript Version* → *Use Workspace Version* → *Restart TS Server*).
+
 ## Cómo se usa
 
 En un componente React:
