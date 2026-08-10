@@ -21,6 +21,8 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
 export interface FrameRecoveryOptions {
   colorNeutral?: boolean;
   preferredCrossIdx?: number;
+  /** Relax the cross criterion to permutation-only (see PhaseSplitter). */
+  relaxedCross?: boolean;
 }
 
 export function recoverRotatedFrame(

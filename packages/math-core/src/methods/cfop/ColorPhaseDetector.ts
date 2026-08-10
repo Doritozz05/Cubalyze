@@ -103,6 +103,22 @@ export const CROSS_EDGE_FACELETS: Record<FaceLetter, number[]> = (() => {
 })();
 
 /**
+ * For each face F, the TWO facelet indices of each edge sitting at F's cross
+ * positions (one sticker on F, one on the adjacent side face). Used by the
+ * RELAXED cross check, which only needs each edge to CONTAIN the cross color
+ * somewhere (permutation), not to show it on the cross face (orientation).
+ */
+const CROSS_EDGE_POSITIONS: Record<FaceLetter, [number, number][]> = (() => {
+  const out = {} as Record<FaceLetter, [number, number][]>;
+  for (const face of FACE_LETTERS) {
+    out[face] = FACE_LAYERS[face].crossEdges.map(
+      (pos) => edgeFacelet[pos] as [number, number],
+    );
+  }
+  return out;
+})();
+
+/**
  * The side face adjacent to each cross-edge POSITION, in the same order as
  * FACE_LAYERS[face].crossEdges. Used both to derive the color scheme (which
  * color each side face shows) and to generate the 4 AUF-aligned variants.
@@ -242,6 +258,30 @@ function crossColorAt(facelets: string, face: FaceLetter): FaceLetter | null {
 }
 
 /**
+ * RELAXED cross check (permutation, orientation free): every edge sitting at
+ * face F's 4 cross positions contains `crossColor` on ONE of its two visible
+ * stickers. An edge flipped in its slot (cross color showing on the side
+ * face instead of on F) still counts — the cross is "built" even though the
+ * solver still has to fix the orientation (reconstructionists mark the cross
+ * done at that point; the flip fix lands in the first F2L pair).
+ *
+ * The permutation is validated separately by `crossSideColors` (the 4 edges
+ * must be the 4 DISTINCT cross edges) and by `buildScheme` (their side
+ * colors must form a rotation of the correct order, or the scheme is not a
+ * bijection and the candidate is discarded).
+ */
+function relaxedCrossColorAt(
+  facelets: string,
+  face: FaceLetter,
+  crossColor: FaceLetter,
+): boolean {
+  for (const [a, b] of CROSS_EDGE_POSITIONS[face]) {
+    if (facelets[a] !== crossColor && facelets[b] !== crossColor) return false;
+  }
+  return true;
+}
+
+/**
  * F2L complete: every sticker not on the last-layer layer (the face opposite
  * the cross face) matches the solved layout.
  */
@@ -261,6 +301,35 @@ function ollComplete(facelets: string, lastLayerFace: FaceLetter): boolean {
     if (facelets[base + j] !== lastLayerFace) return false;
   }
   return true;
+}
+
+/**
+ * Within ONE (face, color) candidate family: prefer the most complete chain,
+ * then (when the solver's written cross end is known) the completion CLOSEST
+ * to it — reconstructionists write the cross boundary where THEY consider it
+ * done, which is exactly the boundary relaxed mode is matching. A solver
+ * builds the cross once, and the written end separates the true completion
+ * from an earlier coincidental permutation (a scramble can leave the 4 cross
+ * edges permuted in their slots for a move or two). On full tie, EARLIEST
+ * wins (the first state where the 4 edges occupy their slots).
+ */
+function betterSameCross(
+  a: ColorDetectionResult,
+  b: ColorDetectionResult,
+  preferredCrossIdx?: number,
+): boolean {
+  const aComplete = a.completions.every((c) => c >= 0);
+  const bComplete = b.completions.every((c) => c >= 0);
+  if (aComplete !== bComplete) return aComplete;
+  const aCount = a.completions.filter((c) => c >= 0).length;
+  const bCount = b.completions.filter((c) => c >= 0).length;
+  if (aCount !== bCount) return aCount > bCount;
+  if (preferredCrossIdx !== undefined) {
+    const aDist = Math.abs(a.completions[0] - preferredCrossIdx);
+    const bDist = Math.abs(b.completions[0] - preferredCrossIdx);
+    if (aDist !== bDist) return aDist < bDist;
+  }
+  return a.completions[0] < b.completions[0];
 }
 
 /**
@@ -324,14 +393,20 @@ function evaluateCandidate(
   crossFace: FaceLetter,
   crossColor: FaceLetter,
   scheme: Record<FaceLetter, FaceLetter>,
+  relaxed: boolean,
 ): ColorDetectionResult {
   // How long the cross of `crossColor` stays complete on `crossFace` — the
   // solver's real cross is built once and never disturbed afterwards, so it
   // survives to (near) the end of the solve; a coincidental cross vanishes
-  // within a few moves.
+  // within a few moves. In relaxed mode the same relaxed check measures the
+  // persistence (a flipped-edge cross stays permuted for the whole solve).
+  const crossHeld = (j: number): boolean =>
+    relaxed
+      ? relaxedCrossColorAt(raw[j], crossFace, crossColor)
+      : crossColorAt(raw[j], crossFace) === crossColor;
   let crossDuration = 0;
   for (let j = crossIdx; j < raw.length; j++) {
-    if (crossColorAt(raw[j], crossFace) === crossColor) crossDuration++;
+    if (crossHeld(j)) crossDuration++;
   }
 
   const inverseScheme: Record<string, string> = {};
@@ -385,52 +460,122 @@ export class ColorPhaseDetector {
    *
    * Returns null when no face ever holds a completed cross (e.g. an
    * incoherent reconstruction) — callers fall back to canonical masks.
+   *
+   * `options.relaxedCross` switches the cross-completion criterion from
+   * "4 cross edges on the cross face, oriented" to "the 4 cross edges in
+   * their 4 slots (permutation), orientation free" — a cross the solver
+   * built but left with a flipped edge counts as done at that point, exactly
+   * where reconstructionists mark it. Flipped edges surface the cross EARLIER
+   * (and on the correct face), so solves whose strict cross never registers
+   * until late (or on a spurious side face) lock onto the real cross via the
+   * usual tiebreaks (written cross segment, chain completeness, duration).
    */
   static detect(
     states: CubeState[],
     preferredCrossIdx?: number,
+    options?: { relaxedCross?: boolean },
   ): ColorDetectionResult | null {
     if (states.length === 0) return null;
     const raw = states.map((s) => FaceletStringConverter.toFaceletString(s));
     const lastIndex = states.length - 1;
+    const relaxed = options?.relaxedCross === true;
 
     let best: ColorDetectionResult | null = null;
 
     for (const face of FACE_LETTERS) {
-      let crossIdx = -1;
-      let crossColor: FaceLetter | null = null;
-      for (let i = 0; i < raw.length; i++) {
-        const c = crossColorAt(raw[i], face);
-        if (c !== null) {
-          crossIdx = i;
-          crossColor = c;
-          break;
+      if (!relaxed) {
+        // ── Strict mode: first state where the cross face holds a completed
+        // (oriented) cross. One candidate per face, exactly as before.
+        let crossIdx = -1;
+        let crossColor: FaceLetter | null = null;
+        for (let i = 0; i < raw.length; i++) {
+          const c = crossColorAt(raw[i], face);
+          if (c !== null) {
+            crossIdx = i;
+            crossColor = c;
+            break;
+          }
         }
+        if (crossIdx < 0 || crossColor === null) continue;
+
+        const sideColors = crossSideColors(states[crossIdx], face, crossColor);
+        if (sideColors === null) continue;
+        const sideFaces = CROSS_SIDE_FACES[face];
+
+        // The cross may be complete but disaligned; try all 4 AUF rotations
+        // of the scheme and keep the best chain for this face.
+        let faceBest: ColorDetectionResult | null = null;
+        for (let rotation = 0; rotation < 4; rotation++) {
+          const scheme = buildScheme(face, crossColor, sideFaces, sideColors, rotation);
+          if (scheme === null) continue;
+          const candidate = evaluateCandidate(
+            raw,
+            states,
+            crossIdx,
+            face,
+            crossColor,
+            scheme,
+            false,
+          );
+          if (
+            faceBest === null ||
+            better(candidate, faceBest, lastIndex, preferredCrossIdx)
+          ) {
+            faceBest = candidate;
+          }
+          if (
+            best === null ||
+            better(candidate, best, lastIndex, preferredCrossIdx)
+          ) {
+            best = candidate;
+          }
+        }
+        continue;
       }
-      if (crossIdx < 0 || crossColor === null) continue;
 
-      const sideColors = crossSideColors(states[crossIdx], face, crossColor);
-      if (sideColors === null) continue;
+      // ── Relaxed mode: evaluate EVERY valid relaxed completion per color.
+      // The first hit can lock onto a spurious early state (a scramble
+      // occasionally leaves the 4 cross edges permuted in the slots); the
+      // real cross completes a state or two later. Per (face, color) keep the
+      // best chain, EARLIEST completion on tie (true completion), then the
+      // winning (face, color) competes globally with the usual tiebreaks
+      // (written cross segment, chain completeness, duration).
       const sideFaces = CROSS_SIDE_FACES[face];
-
-      // The cross may be complete but disaligned; try all 4 AUF rotations of
-      // the scheme and keep the best chain for this face.
-      let faceBest: ColorDetectionResult | null = null;
-      for (let rotation = 0; rotation < 4; rotation++) {
-        const scheme = buildScheme(face, crossColor, sideFaces, sideColors, rotation);
-        if (scheme === null) continue;
-        const candidate = evaluateCandidate(
-          raw,
-          states,
-          crossIdx,
-          face,
-          crossColor,
-          scheme,
-        );
-        if (faceBest === null || better(candidate, faceBest, lastIndex, preferredCrossIdx)) {
-          faceBest = candidate;
+      for (const color of FACE_LETTERS) {
+        let colorBest: ColorDetectionResult | null = null;
+        for (let i = 0; i < raw.length; i++) {
+          if (!relaxedCrossColorAt(raw[i], face, color)) continue;
+          // Distinctness of the 4 edges is the permutation gate: the 4 C
+          // edges must be the 4 DISTINCT cross edges, in an order that forms
+          // a rotation of the correct one (buildScheme's bijection check).
+          const sideColors = crossSideColors(states[i], face, color);
+          if (sideColors === null) continue;
+          for (let rotation = 0; rotation < 4; rotation++) {
+            const scheme = buildScheme(face, color, sideFaces, sideColors, rotation);
+            if (scheme === null) continue;
+            const candidate = evaluateCandidate(
+              raw,
+              states,
+              i,
+              face,
+              color,
+              scheme,
+              true,
+            );
+            if (
+              colorBest === null ||
+              betterSameCross(candidate, colorBest, preferredCrossIdx)
+            ) {
+              colorBest = candidate;
+            }
+          }
         }
-        if (best === null || better(candidate, best, lastIndex, preferredCrossIdx)) best = candidate;
+        if (
+          colorBest !== null &&
+          (best === null || better(colorBest, best, lastIndex, preferredCrossIdx))
+        ) {
+          best = colorBest;
+        }
       }
     }
 

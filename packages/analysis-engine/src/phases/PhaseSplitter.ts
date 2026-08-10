@@ -23,6 +23,15 @@ import { pickSlotFrame } from '../pipeline/slotFrame';
 
 type SplitOptions = {
   colorNeutral?: boolean;
+  /**
+   * Relax the cross-completion criterion to PERMUTATION only: the cross
+   * counts as done the moment its 4 edges occupy their 4 slots, even when
+   * one or more are still flipped (misoriented). Matches how
+   * reconstructionists mark the cross (the flip fix lands in the first F2L
+   * pair). Default false = current strict behavior (position + orientation).
+   * Only affects the CFOP color-neutral path.
+   */
+  relaxedCross?: boolean;
   /** Require every phase and a solved final state when validating. */
   strict?: boolean;
   /**
@@ -159,7 +168,11 @@ export class PhaseSplitter {
       // Color-based detection: recognizes the cross by the sticker geometry,
       // so any cross color on any face (including the standard white-on-D
       // style, which piece-anchored masks cannot see) is detected.
-      const colorRun = PhaseSplitter.detectColorNeutral(timeline, options?.preferredCrossIdx);
+      const colorRun = PhaseSplitter.detectColorNeutral(
+        timeline,
+        options?.preferredCrossIdx,
+        options?.relaxedCross,
+      );
       if (colorRun.phases.length > 0) return colorRun;
     }
 
@@ -173,11 +186,14 @@ export class PhaseSplitter {
   private static detectColorNeutral(
     timeline: SolveTimeline,
     preferredCrossIdx?: number,
+    relaxedCross?: boolean,
   ): DetectionRun {
     const states = timeline.entries.map((entry) =>
       TimelineBuilder.fromSnapshot(entry.state),
     );
-    const result = ColorPhaseDetector.detect(states, preferredCrossIdx);
+    const result = ColorPhaseDetector.detect(states, preferredCrossIdx, {
+      relaxedCross,
+    });
     if (!result || result.completions[0] < 0) return { phases: [] };
 
     // Only found completions become segments (mirroring runDetection, which
@@ -390,6 +406,7 @@ export class PhaseSplitter {
                 options?.preferredCrossIdx,
                 f2lPhase.startIndex,
                 f2lPhase.endIndex ?? f2lPhase.startIndex,
+                options?.relaxedCross,
               )
             : { crossFace: crossFace ?? 'D', scheme: scheme ?? IDENTITY_SCHEME };
           const frameFace: CubeFace = picked.crossFace as CubeFace;

@@ -49,6 +49,7 @@ export function pickSlotFrame(
   preferredCrossIdx: number | undefined,
   f2lStart: number,
   f2lEnd: number,
+  relaxedCross?: boolean,
 ): SlotFrame {
   const fallback: SlotFrame = {
     crossFace: reportCrossFace ?? 'D',
@@ -64,7 +65,9 @@ export function pickSlotFrame(
   const end = f2lEnd;
 
   const candidates: SlotFrame[] = [fallback];
-  const solverDetection = ColorPhaseDetector.detect(states, preferredCrossIdx);
+  const solverDetection = ColorPhaseDetector.detect(states, preferredCrossIdx, {
+    relaxedCross,
+  });
   if (solverDetection && solverDetection.completions[0] >= 0) {
     candidates.push({
       crossFace: solverDetection.crossFace as string,

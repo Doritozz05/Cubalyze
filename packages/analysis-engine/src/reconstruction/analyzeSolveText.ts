@@ -53,6 +53,12 @@ export interface SolveTextInput {
   /** Full solution with or without "//" phase comments. */
   solution: string;
   method?: 'CFOP';
+  /**
+   * Relax the cross-completion criterion to permutation-only (edges in
+   * their slots even if flipped) — matches how reconstructionists mark the
+   * cross. Default false = strict (position + orientation).
+   */
+  relaxedCross?: boolean;
   /** Optional total solve time → only used for TPS. */
   totalTimeMs?: number;
 }
@@ -415,6 +421,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     scramble: setup,
     stateTokens,
     preferredCrossIdx,
+    relaxedCross: input.relaxedCross,
     // Raw display tokens (one per timeline entry) so the shared core can
     // track wide d (Dw) regrips for the solver-frame F2L slot analysis, and
     // the inspection grip so the solver-frame states are rotated into the
@@ -438,7 +445,9 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // PhaseSplitter makes internally; no duplicated math. (Recomputed AFTER the
   // P2 frame recovery: the snapshots may have been rotated above.)
   const states = timeline.entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
-  const detection = ColorPhaseDetector.detect(states, preferredCrossIdx);
+  const detection = ColorPhaseDetector.detect(states, preferredCrossIdx, {
+    relaxedCross: input.relaxedCross,
+  });
   const scheme = detection?.scheme;
   const crossFace = (detection?.crossFace ?? report.crossFace ?? 'D') as string;
 
@@ -466,7 +475,14 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
       (detection?.crossColor as FaceLetter | undefined) ??
       (report.crossColor as FaceLetter | undefined),
     cross: buildCross(report, displayTokens, crossFace),
-    pairs: buildPairs(timeline, crossFace, scheme, displayTokens, preferredCrossIdx),
+    pairs: buildPairs(
+      timeline,
+      crossFace,
+      scheme,
+      displayTokens,
+      preferredCrossIdx,
+      input.relaxedCross,
+    ),
     rotations,
     slices: solveSlices,
     oll: buildLLPhase(report, 'OLL', displayTokens),
@@ -523,6 +539,7 @@ function buildPairs(
   scheme: Record<string, string> | undefined,
   displayTokens: readonly string[],
   preferredCrossIdx?: number,
+  relaxedCross?: boolean,
 ): F2LPairResult[] {
   // UNIFIED segmentation — the same function the smart route consumes via
   // CFOPMetricsCalculator. Pass the solver-frame crossFace/scheme (already
@@ -531,7 +548,13 @@ function buildPairs(
   // detection picks the SAME cross as the PhaseSplitter did (without it, a
   // spurious cross on an untouched layer can win the tie and the pair scan
   // sees the wrong frame — the reconz-12564 empty-pairs regression).
-  return segmentF2LPairs(timeline, { crossFace, scheme, displayTokens, preferredCrossIdx }).map(
+  return segmentF2LPairs(timeline, {
+    crossFace,
+    scheme,
+    displayTokens,
+    preferredCrossIdx,
+    relaxedCross,
+  }).map(
     (p) => ({
       slot: p.slot,
       colors: p.colors as [FaceLetter, FaceLetter],

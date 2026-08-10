@@ -46,6 +46,11 @@ export interface AnalyzeSolveInput {
   stateTokens?: readonly string[];
   /** Tiebreak-only hint: timeline index where the written cross ends. */
   preferredCrossIdx?: number;
+  /**
+   * Relax the cross-completion criterion to permutation-only (edges in
+   * their slots even if flipped). See PhaseSplitter.SplitOptions.
+   */
+  relaxedCross?: boolean;
   solveTimeMs?: number;
   /**
    * Raw display tokens, one per timeline entry (text route only). Used to
@@ -226,6 +231,7 @@ export function buildAnnotatedTimeline(input: AnalyzeSolveInput): SolveTimeline 
   const splitOptions: FrameRecoveryOptions = {
     colorNeutral: true,
     preferredCrossIdx: input.preferredCrossIdx,
+    relaxedCross: input.relaxedCross,
   };
 
   PhaseSplitter.splitAndAnnotate(timeline, methodDef, splitOptions);

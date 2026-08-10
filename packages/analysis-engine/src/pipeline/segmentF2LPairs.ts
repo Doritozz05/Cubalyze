@@ -55,6 +55,8 @@ export interface SegmentF2LPairsOptions {
   displayTokens?: readonly string[];
   /** Tiebreak hint when deriving crossFace/scheme internally. */
   preferredCrossIdx?: number;
+  /** Relax the cross criterion to permutation-only (see PhaseSplitter). */
+  relaxedCross?: boolean;
 }
 
 export interface UnifiedF2LPair {
@@ -169,6 +171,7 @@ export function segmentF2LPairs(
     options.preferredCrossIdx,
     f2l.startIndex,
     f2l.endIndex ?? timeline.entries.length - 1,
+    options.relaxedCross,
   );
   const crossFace = picked.crossFace;
   const schemeToUse = picked.scheme;
