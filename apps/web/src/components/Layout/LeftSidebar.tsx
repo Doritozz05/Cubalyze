@@ -90,6 +90,7 @@ export function LeftSidebar({
   // Desktop (>=1024px) keeps the hover-to-expand rail untouched.
   const isTouch = useIsTouch();
   const { t } = useTranslation("nav");
+  const { t: tCommon } = useTranslation();
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
@@ -289,13 +290,13 @@ export function LeftSidebar({
           />
           <SidebarFooterItem
             icon={Settings}
-            label="Settings"
+            label={tCommon("settings")}
             labelVisible={labelVisible}
             onClick={() => setSettingsOpen(true)}
           />
           <SidebarFooterItem
             icon={mounted && isDark ? Sun : Moon}
-            label={mounted && isDark ? "Light mode" : "Dark mode"}
+            label={mounted && isDark ? tCommon("lightMode") : tCommon("darkMode")}
             labelVisible={labelVisible}
             onClick={() => setStoreTheme(isDark ? "light" : "dark")}
           />
@@ -505,6 +506,7 @@ function SidebarProfileItem({
   isActive?: boolean;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation();
   const hasPhoto = profile?.avatarKind === "photo" && !!profile.avatarData;
   const avatar = hasPhoto ? (
     <img
@@ -523,7 +525,7 @@ function SidebarProfileItem({
     <UserRound className="size-4" />
   );
 
-  const label = profile?.displayName?.trim() || "Profile";
+  const label = profile?.displayName?.trim() || t("profile");
 
   return (
     <button

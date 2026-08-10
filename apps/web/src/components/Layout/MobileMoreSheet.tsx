@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
 import { Settings, Bluetooth, Sun, Moon, User, FileSearch, Network } from "lucide-react";
@@ -42,6 +43,9 @@ export function MobileMoreSheet({
 }: MobileMoreSheetProps) {
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
+  const { t } = useTranslation("shell");
+  const { t: tNav } = useTranslation("nav");
+  const { t: tCommon } = useTranslation();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -61,48 +65,49 @@ export function MobileMoreSheet({
     setStoreTheme(isDark ? "light" : "dark");
   };
 
-  // Actions are rendered as a 2×3 grid.
+  // Actions are rendered as a 2×3 grid. Titles/subtitles are resolved with
+  // t() inside the component (render time) so they follow language changes.
   const items: MoreItem[] = [
     {
       key: "settings",
       icon: Settings,
-      title: "Settings",
-      subtitle: "Preferences & inputs",
+      title: tCommon("settings"),
+      subtitle: t("more.settingsSubtitle"),
       onClick: () => handleAction(onOpenSettings),
     },
     {
       key: "profile",
       icon: User,
-      title: "Profile",
-      subtitle: "Your identity & progress",
+      title: tCommon("profile"),
+      subtitle: t("more.profileSubtitle"),
       onClick: () => handleAction(onOpenProfile),
     },
     {
       key: "skill-tree",
       icon: Network,
-      title: "Skill Tree",
-      subtitle: "Interactive skill tree graph",
+      title: tNav("skills"),
+      subtitle: t("more.skillsSubtitle"),
       onClick: () => handleAction(() => onNavigate?.("skill-tree")),
     },
     {
       key: "reconstructions",
       icon: FileSearch,
-      title: "Reconstructions",
-      subtitle: "Solve database & replays",
+      title: tNav("reconstructions"),
+      subtitle: t("more.reconstructionsSubtitle"),
       onClick: () => handleAction(() => onNavigate?.("reconstructions")),
     },
     {
       key: "smart-cube",
       icon: Bluetooth,
-      title: "Smart Cube",
-      subtitle: "Connect bluetooth cube",
+      title: t("smartCube"),
+      subtitle: t("more.smartCubeSubtitle"),
       onClick: () => handleAction(onOpenCubeConnector),
     },
     {
       key: "theme",
       icon: isDark ? Sun : Moon,
-      title: isDark ? "Light Mode" : "Dark Mode",
-      subtitle: "Switch color theme",
+      title: isDark ? tCommon("lightMode") : tCommon("darkMode"),
+      subtitle: t("more.themeSubtitle"),
       onClick: handleToggleTheme,
     },
   ];
@@ -114,7 +119,7 @@ export function MobileMoreSheet({
       <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] p-0 pb-safe focus:outline-none">
         <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
           <DrawerTitle className="text-sm font-semibold text-ink">
-            More options
+            {tNav("moreOptions")}
           </DrawerTitle>
         </DrawerHeader>
 

@@ -5,8 +5,8 @@ app que será traducida, incluidas las transversales (toasts, notificaciones,
 TTS, datos). No lista strings individuales: cada tanda se define por las zonas
 de UI que cubre, su namespace, dificultad y consideraciones especiales.
 
-**Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ en
-`feat/spanish-translation` · resto pendiente.
+**Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
+2 (shell completo) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -87,7 +87,7 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
 - **Namespaces**: `nav`, `settings.sections`.
 - Archivos: `sidebar.constants.ts`, `LeftSidebar.tsx`, `settings.constants.ts`, `SettingsSidebar.tsx`, `SettingsDialog.tsx`, `en/es.json`.
 
-### Tanda 2 — Shell completo (la app que se ve en todas las pantallas)
+### ✅ Tanda 2 — Shell completo (la app que se ve en todas las pantallas) *(hecha)*
 - **Zonas**:
   - `Header`: selector de sesión (nuevo/renombrar/eliminar diálogo "Delete “{name}”?"), selector de puzzle, chip de batería + tooltip, botón de widgets, chip de perfil, botón "add manual solve".
   - `MobileTabBar` (tabs inferiores: Timer/Stats/Training/Algorithms/More — hoy hardcodeados).
@@ -98,6 +98,12 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
 - **Namespace**: `nav`, `common`, `shell` (nuevo).
 - **Dificultad**: baja-media (hay interpolaciones y un AlertDialog).
 - **Nota**: aquí se nota el primer cambio de idioma "de golpe" en toda la app.
+- Archivos: `Header.tsx`, `MobileTabBar.tsx`, `MobileMoreSheet.tsx`,
+  `MobileSessionSheet.tsx`, `LeftSidebar.tsx` (footer), `CubeConnector.tsx`
+  (rail + diálogo), `AppShell.tsx`, `MainLayout.tsx`, `en/es.json`
+  (namespace `shell` nuevo). Pendiente de tanda 4: toasts de `CubeConnector`
+  ("Cube connected!", "Cube disconnected", "Failed to disconnect",
+  "Copied!").
 
 ### Tanda 3 — Timer + stats de sesión (zona principal)
 - **Zonas**:

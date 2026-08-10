@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
@@ -264,6 +265,7 @@ export function MainLayout({
   // Pin global DMZ grabbing hand cursor while resizing
   const isResizing = isResizingWidth || isResizingHeight;
   useGlobalDragCursor(isResizing);
+  const { t } = useTranslation("shell");
 
   return (
     <div
@@ -363,7 +365,7 @@ export function MainLayout({
                     "absolute left-0 top-0 bottom-0 z-20 w-3 -ml-1.5 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
                     isResizingWidth && "cursor-grabbing"
                   )}
-                  title="Drag to resize width (Double-click to reset)"
+                  title={t("resizeWidth")}
                 >
                   <div
                     className={cn(
@@ -386,7 +388,7 @@ export function MainLayout({
                     "absolute top-0 left-0 right-0 z-20 h-6 -mt-3 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
                     isResizingHeight && "cursor-grabbing"
                   )}
-                  title="Drag to resize or close (Double-click to reset)"
+                  title={t("resizeHeight")}
                 >
                   <div
                     className={cn(
