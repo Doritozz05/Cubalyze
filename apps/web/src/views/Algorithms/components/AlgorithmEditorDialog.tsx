@@ -542,13 +542,13 @@ export function AlgorithmEditorDialog({
 
               {/* ── Setup scramble (read-only) ── */}
               {caseData.setupScramble && (
-                <section className="rounded-lg border border-line bg-surface-2/40 px-4 py-3">
-                  <span className="block mb-1.5 text-[0.6rem] uppercase tracking-[0.14em] text-ink-3 font-medium">
-                    Case setup scramble
+                <section className="px-1 py-0.5">
+                  <span className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3">
+                    Setup scramble:{" "}
                   </span>
-                  <p className="nums text-[0.68rem] text-ink-2/80">
+                  <span className="font-mono text-[0.68rem] text-ink-2">
                     {caseData.setupScramble}
-                  </p>
+                  </span>
                 </section>
               )}
             </div>

@@ -202,7 +202,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
           {/* Diagram — uses primaryAlgorithm (first in order) */}
           {(caseData.diagramType === "2d-top" || caseData.diagram2D) && (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center justify-center">
               {caseData.puzzleType === "2x2x2" ? (
                 <Case2x2Diagram
                   faceletColors={caseData.diagram2D?.faceletColors}
@@ -221,6 +221,12 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                   rotation={resolveAlgorithmDiagramRotation(activeAlg)}
                   className="w-48"
                 />
+              )}
+              {caseData.setupScramble && (
+                <div className="mt-2 text-center text-[0.65rem] text-ink-3">
+                  <span className="font-semibold text-ink-2">Setup:</span>{" "}
+                  <span className="font-mono text-ink-2">{caseData.setupScramble}</span>
+                </div>
               )}
             </div>
           )}
@@ -314,17 +320,6 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             </button>
           )}
 
-          {/* Setup scramble */}
-          {caseData.setupScramble && (
-            <div>
-              <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">
-                Setup Scramble
-              </h4>
-              <p className="nums text-[0.68rem] text-ink-2/80 bg-surface-2 rounded px-2 py-1.5">
-                {caseData.setupScramble}
-              </p>
-            </div>
-          )}
 
           {/* Tags */}
           {caseData.tags.length > 0 && (

@@ -135,32 +135,30 @@ export function AlgorithmViewerCard({
 
       {/* ── Setup Scramble Section ── */}
       {caseData.setupScramble && (
-        <div className="flex flex-col gap-1 bg-surface-2/40 border border-line rounded-md p-2">
-          <div className="flex items-center justify-between text-[0.62rem] font-medium text-ink-3">
-            <span>Setup scramble</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleCopySetup}
-              className="h-5 px-1.5 text-[0.62rem] text-ink-3 hover:text-ink gap-1"
-            >
-              {copiedSetup ? (
-                <>
-                  <Check className="size-3 text-ready" />
-                  <span className="text-ready">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="size-3" />
-                  <span>Copy</span>
-                </>
-              )}
-            </Button>
+        <div className="flex items-center justify-between gap-2 text-[0.65rem] text-ink-3 px-1">
+          <div className="min-w-0 flex-1 truncate">
+            <span className="font-semibold text-ink-2">Setup:</span>{" "}
+            <span className="font-mono text-ink-2 select-all">{caseData.setupScramble}</span>
           </div>
-          <div className="font-mono text-[0.68rem] text-ink-2 bg-surface-1 border border-line/60 rounded px-2 py-1 break-all select-all">
-            {caseData.setupScramble}
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleCopySetup}
+            className="h-5 px-1.5 text-[0.62rem] text-ink-3 hover:text-ink gap-1 shrink-0"
+          >
+            {copiedSetup ? (
+              <>
+                <Check className="size-3 text-ready" />
+                <span className="text-ready">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="size-3" />
+                <span>Copy</span>
+              </>
+            )}
+          </Button>
         </div>
       )}
 
