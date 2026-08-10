@@ -73,24 +73,10 @@ function interleave(
   return out;
 }
 
-// ─── Phase dot colors (matches the raw Steps table) ────────────────────────
-
-const DOT: Record<string, string> = {
-  cross: "bg-phase-blue-500",
-  f2l: "bg-phase-emerald",
-  oll: "bg-phase-amber",
-  pll: "bg-phase-violet",
-  other: "bg-line-2",
-};
-
-function Dot({ kind }: { kind: keyof typeof DOT }) {
-  return <span className={cn("size-1.5 shrink-0 rounded-full", DOT[kind])} />;
-}
-
-// Grid: dot | Phase | Case | Moves | # — same template as the
-// raw Steps table, so both panels align visually. Every data row carries a
-// full-strength bottom border (like the one under the header).
-const ROW_GRID = "grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem]";
+// Grid: Phase | Case | Moves | # — same template as the raw Steps table,
+// so both panels align visually. Every data row carries a full-strength
+// bottom border (like the one under the header).
+const ROW_GRID = "grid grid-cols-[7.5rem_6.5rem_1fr_2.75rem]";
 const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
 const ROW_LINE = "border-b border-line";
 
@@ -263,7 +249,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           "items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
         )}
       >
-        <span />
         <span>Phase</span>
         <span>Case</span>
         <span>Moves</span>
@@ -272,7 +257,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
 
       {/* ── Orientation row: up/front after grip (case) + inspection rot. ── */}
       <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-        <Dot kind="other" />
         <span className="text-[0.74rem] font-medium text-ink">Orientation</span>
         <span className="flex min-w-0 items-center gap-1.5">
           {orient && (
@@ -295,7 +279,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
 
       {/* ── Cross ── */}
       <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-        <Dot kind="cross" />
         <span className="flex min-w-0 flex-col">
           <span className="text-[0.74rem] font-medium text-ink">Cross</span>
           <span className="mt-0.5 flex items-center gap-1.5">
@@ -331,7 +314,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       {/* ── F2L pairs ── */}
       {pairs.map((p, i) => (
         <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE)}>
-          <Dot kind="f2l" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">
               F2L {crossPairCount + i + 1}
@@ -361,7 +343,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       {/* ── OLL / PLL ── */}
       {recon.oll && (
         <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-          <Dot kind="oll" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">OLL</span>
             {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
@@ -373,7 +354,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       )}
       {recon.pll && (
         <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-          <Dot kind="pll" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">PLL</span>
             {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
