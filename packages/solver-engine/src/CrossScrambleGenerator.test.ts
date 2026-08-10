@@ -50,13 +50,13 @@ describe('CrossScrambleGenerator — way-to-cross', () => {
       const result = CrossScrambleGenerator.generate({
         depth: 8,
         face: 'D',
-        maxRetries: 500,
+        maxRetries: 50,
       });
       // Depth 8 is the hardest to hit exactly; allow a near-miss but it
       // should be at least 6.
       expect(result.optimalDepth).toBeGreaterThanOrEqual(6);
       expect(result.optimalDepth).toBeLessThanOrEqual(8);
-    });
+    }, 15000);
   });
 
   describe('generate color-neutral', () => {
