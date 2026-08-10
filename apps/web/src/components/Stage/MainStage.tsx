@@ -20,7 +20,7 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
  * the initial view is ready — covering the Suspense fallback — so a reload
  * never shows a second loading state; the loader fades straight into the view.
  */
-function withReady<T extends React.ComponentType>(component: T): T {
+function withReady<T>(component: T): T {
   markAppReady();
   return component;
 }
