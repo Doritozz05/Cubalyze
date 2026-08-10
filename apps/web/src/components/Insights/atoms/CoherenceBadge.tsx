@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ export function CoherenceBadge({
   coherent: boolean;
   className?: string;
 }) {
+  const { t } = useTranslation("insights");
   return (
     <span
       className={cn(
@@ -26,7 +28,7 @@ export function CoherenceBadge({
       )}
     >
       {coherent ? <CheckCircle2 className="size-3" /> : <XCircle className="size-3" />}
-      {coherent ? "Coherent" : "Inconsistent"}
+      {coherent ? t("analysis.coherent") : t("analysis.inconsistent")}
     </span>
   );
 }

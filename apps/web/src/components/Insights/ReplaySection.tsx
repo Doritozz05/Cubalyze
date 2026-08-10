@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionHeader } from "./atoms";
@@ -59,6 +60,7 @@ export function ReplaySection({
   onReplayComplete,
   className,
 }: ReplaySectionProps) {
+  const { t } = useTranslation("insights");
   const [expanded, setExpanded] = useState(true);
   const [replayState, setReplayState] = useState<ReplayState>("idle");
   const [positionMs, setPositionMs] = useState(0);
@@ -455,8 +457,8 @@ export function ReplaySection({
         className="flex w-full items-center justify-between text-left"
       >
         <SectionHeader
-          title="Replay"
-          eyebrow={expanded && hasMoves ? `${totalMoves} moves` : undefined}
+          title={t("replay.title")}
+          eyebrow={expanded && hasMoves ? t("replay.movesCount", { count: totalMoves }) : undefined}
         />
         <span className="text-ink-3 transition-transform duration-200">
           {expanded ? (
@@ -472,10 +474,10 @@ export function ReplaySection({
         <div className="mt-3">
           {!hasMoves ? (
             <p className="py-6 text-center text-[0.72rem] text-ink-3">
-              No move data available for this solve.{" "}
+              {t("replay.noMoveData")}{" "}
               {solve.source === "manual"
-                ? "Manual entries don't include per-move data."
-                : "Connect a Smart Cube to capture moves."}
+                ? t("replay.noMoveDataManual")
+                : t("replay.noMoveDataSmartCube")}
             </p>
           ) : (
             <div className="flex flex-col gap-3 items-center">
@@ -532,7 +534,7 @@ export function ReplaySection({
                   <div className="flex items-center gap-3 text-[0.62rem] text-ink-3">
                     {/* Move counter */}
                     <span className="nums">
-                      Move{" "}
+                      {t("replay.move")}{" "}
                       <span className="font-medium text-ink">
                         {Math.max(0, currentMoveIdx + 1)}
                       </span>
@@ -570,12 +572,12 @@ export function ReplaySection({
                         onClick={handleRestart}
                         disabled={!canPlay}
                         className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                        aria-label="Restart replay"
+                        aria-label={t("replay.restartAria")}
                       >
                         <RotateCcw className="size-3.5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom">Restart</TooltipContent>
+                    <TooltipContent side="bottom">{t("replay.restart")}</TooltipContent>
                   </Tooltip>
 
                   {/* Step backward */}
@@ -585,12 +587,12 @@ export function ReplaySection({
                         onClick={handleSeekBackward}
                         disabled={!canPlay}
                         className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                        aria-label="Step backward one move"
+                        aria-label={t("replay.stepBackwardAria")}
                       >
                         <SkipBack className="size-3.5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom">Step backward</TooltipContent>
+                    <TooltipContent side="bottom">{t("replay.stepBackward")}</TooltipContent>
                   </Tooltip>
 
                   {/* Play / Pause */}
@@ -606,7 +608,7 @@ export function ReplaySection({
                             : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
                         )}
                         aria-label={
-                          replayState === "playing" ? "Pause" : "Play"
+                          replayState === "playing" ? t("replay.pause") : t("replay.play")
                         }
                       >
                         {replayState === "playing" ? (
@@ -617,7 +619,7 @@ export function ReplaySection({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      {replayState === "playing" ? "Pause" : "Play"}
+                      {replayState === "playing" ? t("replay.pause") : t("replay.play")}
                     </TooltipContent>
                   </Tooltip>
 
@@ -628,12 +630,12 @@ export function ReplaySection({
                         onClick={handleSeekForward}
                         disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
                         className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                        aria-label="Step forward one move"
+                        aria-label={t("replay.stepForwardAria")}
                       >
                         <SkipForward className="size-3.5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom">Step forward</TooltipContent>
+                    <TooltipContent side="bottom">{t("replay.stepForward")}</TooltipContent>
                   </Tooltip>
 
                   {/* Spacer */}
@@ -656,7 +658,7 @@ export function ReplaySection({
                             {s}x
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom">{s}x speed</TooltipContent>
+                        <TooltipContent side="bottom">{t("replay.speed", { speed: s })}</TooltipContent>
                       </Tooltip>
                     ))}
                   </div>

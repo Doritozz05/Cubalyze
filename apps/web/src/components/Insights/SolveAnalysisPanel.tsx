@@ -12,6 +12,7 @@ import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics }
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import {
   SectionHeader,
@@ -77,6 +78,7 @@ export function SolveAnalysisPanel({
   onBackToOverview,
   className,
 }: SolveAnalysisPanelProps) {
+  const { t } = useTranslation("insights");
   const cyclePenalty = () => {
     const next: Penalty =
       solve.penalty === "none" ? "+2" : solve.penalty === "+2" ? "DNF" : "none";
@@ -115,7 +117,7 @@ export function SolveAnalysisPanel({
         className="flex items-center gap-1.5 self-start text-[0.72rem] text-ink-3 transition-colors hover:text-ink max-lg:hidden"
       >
         <ArrowLeft className="size-3.5" />
-        Overview
+        {t("analysis.overview")}
       </button>
 
       {/* Header */}
@@ -138,10 +140,10 @@ export function SolveAnalysisPanel({
                         : "border-ready/30 bg-ready-soft text-ready",
                   )}
                 >
-                  {solve.penalty === "none" ? "Clean" : solve.penalty}
+                  {solve.penalty === "none" ? t("common.clean") : solve.penalty}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Click to cycle penalty</TooltipContent>
+              <TooltipContent side="bottom">{t("analysis.cyclePenalty")}</TooltipContent>
             </Tooltip>
             {solve.method ? (
               <span className="rounded border border-phase-indigo/30 bg-phase-indigo/10 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-phase-indigo">
@@ -156,7 +158,7 @@ export function SolveAnalysisPanel({
                   : "border-line bg-surface-2 text-ink-2",
               )}
             >
-              {solve.source === "smart" ? "Smart cube" : "Manual"}
+              {solve.source === "smart" ? t("analysis.smartCube") : t("analysis.manual")}
             </span>
           </div>
         </div>
@@ -167,7 +169,7 @@ export function SolveAnalysisPanel({
           className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
         >
           <Trash2 className="size-3" />
-          Delete
+          {t("analysis.delete")}
         </Button>
       </div>
 
@@ -175,12 +177,12 @@ export function SolveAnalysisPanel({
       <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-4">
         <div className="flex items-center justify-between">
           <span className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-ink-3">
-            Solve
+            {t("analysis.solve")}
           </span>
           {isLive ? (
             <span className="flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-ink-2">
               <span className="size-1.5 animate-pulse rounded-full bg-ready/70" />
-              Live
+              {t("analysis.live")}
             </span>
           ) : null}
         </div>
@@ -190,12 +192,16 @@ export function SolveAnalysisPanel({
         {m ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <p className="text-[0.7rem] text-ink-3">
-              {m.totalMoves} moves · {m.phases.length} phases ·{" "}
-              TPS {m.tps.global.toFixed(2)} · {m.pauses.totalCount} pauses
+              {t("analysis.summary", {
+                moves: m.totalMoves,
+                phases: m.phases.length,
+                tps: m.tps.global.toFixed(2),
+                pauses: m.pauses.totalCount,
+              })}
             </p>
           </div>
         ) : (
-          <p className="text-[0.7rem] text-ink-3">No analysis yet</p>
+          <p className="text-[0.7rem] text-ink-3">{t("analysis.noAnalysisYet")}</p>
         )}
       </div>
 
@@ -208,7 +214,7 @@ export function SolveAnalysisPanel({
           <div className="flex items-center gap-1.5">
             <MessageSquare className="size-3.5 text-phase-indigo" />
             <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-ink-3">
-              Note
+              {t("analysis.note")}
             </span>
           </div>
           {!isEditingNote && (
@@ -220,7 +226,7 @@ export function SolveAnalysisPanel({
               className="flex items-center gap-1 text-[0.68rem] text-ink-3 transition-colors hover:text-ink cursor-pointer"
             >
               <Pencil className="size-3" />
-              {solve.note ? "Edit" : "Add note"}
+              {solve.note ? t("analysis.edit") : t("analysis.addNote")}
             </button>
           )}
         </div>
@@ -239,13 +245,13 @@ export function SolveAnalysisPanel({
               type="text"
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Add a note for this solve..."
+              placeholder={t("analysis.notePlaceholder")}
               autoFocus
               className="flex-1 rounded-md border border-line bg-surface-2/60 px-3 py-1.5 text-[0.78rem] text-ink placeholder:text-ink-3/60 outline-none focus:border-ink/40"
             />
             <Button type="submit" size="sm" className="h-8 px-3 text-xs bg-ink text-surface hover:bg-ink/90 cursor-pointer">
               <Check className="size-3.5 mr-1" />
-              Save
+              {t("analysis.save")}
             </Button>
             <Button
               type="button"
@@ -262,7 +268,7 @@ export function SolveAnalysisPanel({
             {solve.note}
           </p>
         ) : (
-          <p className="text-[0.7rem] text-ink-3/60 italic">No notes added to this solve.</p>
+          <p className="text-[0.7rem] text-ink-3/60 italic">{t("analysis.noNotes")}</p>
         )}
       </div>
 
@@ -284,11 +290,11 @@ export function SolveAnalysisPanel({
       {/* Analysis sections or empty banner */}
       {!m ? (
         <EmptyState
-          title="No analysis for this solve"
+          title={t("analysis.noAnalysisTitle")}
           description={
             solve.source === "smart"
-              ? "The analysis pipeline didn't run. Re-solve this scramble to generate analysis."
-              : "Manual entry. Connect a smart cube and solve this scramble to get per-move analysis."
+              ? t("analysis.noAnalysisSmart")
+              : t("analysis.noAnalysisManual")
           }
           className="py-12"
         />
@@ -349,6 +355,7 @@ function TimelineSection({
   /** Replay move index (aligned with moveTicks) for the playhead. */
   replayMoveIdx?: number | null;
 }) {
+  const { t } = useTranslation("insights");
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
 
@@ -451,12 +458,84 @@ function TimelineSection({
     return seg.phaseName === hoveredPhase ? "active" : "dim";
   };
 
+  // The pipeline emits English display strings for pause categories and
+  // probable causes — map them to the active language here.
+  const categoryLabel = (cat: string): string => {
+    switch (cat) {
+      case "transition":
+        return t("analysis.pauseCatTransition");
+      case "pre-algorithm":
+        return t("analysis.pauseCatPreAlgorithm");
+      case "mid-phase":
+        return t("analysis.pauseCatMidPhase");
+      default:
+        return cat;
+    }
+  };
+
+  const pauseCauseLabel = (seg: TimelineSegment): string => {
+    const cause = seg.probableCause ?? seg.label ?? "";
+    switch (cause) {
+      case "OLL recognition":
+        return t("analysis.pauseCauseOllRecog");
+      case "PLL recognition":
+        return t("analysis.pauseCausePllRecog");
+      case "CMLL recognition":
+        return t("analysis.pauseCauseCmllRecog");
+      case "LSE recognition":
+        return t("analysis.pauseCauseLseRecog");
+      case "F2L pair recognition":
+        return t("analysis.pauseCauseF2lPair");
+      case "Cross piece search":
+        return t("analysis.pauseCauseCrossSearch");
+      case "Block building search":
+        return t("analysis.pauseCauseBlockSearch");
+      case "Edge orientation":
+        return t("analysis.pauseCauseEdgeOrientation");
+      default: {
+        const transition = cause.match(/^(.*) → (.*) transition$/);
+        if (transition) {
+          return t("analysis.pauseCauseTransition", {
+            from: transition[1],
+            to: transition[2],
+          });
+        }
+        if (cause.endsWith(" transition")) {
+          return t("analysis.pauseCauseTransitionSingle", {
+            phase: cause.slice(0, -" transition".length),
+          });
+        }
+        if (cause.endsWith(" algorithm recognition")) {
+          return t("analysis.pauseCauseAlgRecog", {
+            phase: cause.slice(0, -" algorithm recognition".length),
+          });
+        }
+        if (cause.endsWith(" hesitation")) {
+          return t("analysis.pauseCauseHesitation", {
+            phase: cause.slice(0, -" hesitation".length),
+          });
+        }
+        return cause;
+      }
+    }
+  };
+
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader
-        title="Timeline"
-        eyebrow={`${moveTicks.length} moves · ${formatTime(totalMs)} total${totalPauseMs > 0 ? ` · ${formatTime(totalPauseMs)} paused` : ""
-          }`}
+        title={t("analysis.timeline")}
+        eyebrow={
+          totalPauseMs > 0
+            ? t("analysis.timelineEyebrowPaused", {
+                moves: moveTicks.length,
+                total: formatTime(totalMs),
+                paused: formatTime(totalPauseMs),
+              })
+            : t("analysis.timelineEyebrow", {
+                moves: moveTicks.length,
+                total: formatTime(totalMs),
+              })
+        }
       />
 
       <div className="mt-3">
@@ -669,7 +748,6 @@ function TimelineSection({
                     .filter((j) => j < moveTicks.length)
                     .map((j) => moveTicks[j])
                     .filter(Boolean);
-                  const cause = seg.probableCause ?? seg.label;
                   const category = seg.pauseCategory ?? "mid-phase";
                   const catColor = pauseColorHex(category);
                   const vsMean =
@@ -703,7 +781,7 @@ function TimelineSection({
                             className="inline-block size-2.5 shrink-0 rounded-sm"
                             style={{ background: catColor }}
                           />
-                          <span className="font-medium text-ink">{cause}</span>
+                          <span className="font-medium text-ink">{pauseCauseLabel(seg)}</span>
                         </div>
                         {/* Category badge + phase */}
                         <div className="mt-1.5 flex items-center gap-2 text-[0.6rem] text-ink-3">
@@ -711,7 +789,7 @@ function TimelineSection({
                             className="rounded px-1.5 py-0.5 font-medium uppercase tracking-wide"
                             style={{ background: `${catColor}22`, color: catColor }}
                           >
-                            {category}
+                            {categoryLabel(category)}
                           </span>
                           <span className="uppercase tracking-wide">{seg.phaseName}</span>
                         </div>
@@ -732,7 +810,7 @@ function TimelineSection({
                               )}
                             >
                               {vsMean > 0 ? "+" : ""}
-                              {Math.round(vsMean)}% vs avg
+                              {t("analysis.vsAvg", { pct: Math.round(vsMean) })}
                             </span>
                           )}
                         </div>
@@ -740,7 +818,7 @@ function TimelineSection({
                         {(before.length > 0 || after.length > 0) && (
                           <div className="mt-2 border-t border-line/40 pt-2">
                             <span className="text-[0.6rem] uppercase tracking-wide text-ink-3">
-                              Adjacent moves
+                              {t("analysis.adjacentMoves")}
                             </span>
                             <div className="mt-1 flex items-center gap-1 font-mono text-[0.65rem]">
                               {before.map((m, j) => (
@@ -815,7 +893,7 @@ function TimelineSection({
                         <div className="mt-2 flex items-baseline gap-3">
                           <div className="flex flex-col">
                             <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
-                              Time
+                              {t("analysis.phaseTime")}
                             </span>
                             <span className="nums text-base font-medium text-ink">
                               {formatTime(seg.durationMs)}
@@ -823,7 +901,7 @@ function TimelineSection({
                           </div>
                           <div className="flex flex-col">
                             <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
-                              Moves
+                              {t("analysis.phaseMoves")}
                             </span>
                             <span className="nums text-base font-medium text-ink">
                               {moveCount}
@@ -840,7 +918,9 @@ function TimelineSection({
                         </div>
                         {/* Duration fraction */}
                         <div className="mt-1.5 text-[0.6rem] text-ink-3">
-                          {Math.round((seg.durationMs / totalMs) * 100)}% of solve
+                          {t("analysis.pctOfSolve", {
+                            pct: Math.round((seg.durationMs / totalMs) * 100),
+                          })}
                         </div>
                       </HoverCardContent>
                     </HoverCard>
@@ -893,7 +973,10 @@ function TimelineSection({
                 opacity: 0.7,
               }}
             />
-            Pauses ({pauseMarks.length} · {formatTime(totalPauseMs)})
+            {t("analysis.pausesLegend", {
+              count: pauseMarks.length,
+              time: formatTime(totalPauseMs),
+            })}
           </span>
         )}
         <span className="flex items-center gap-1.5">
@@ -906,7 +989,7 @@ function TimelineSection({
               className="inline-block h-0 w-4 border-t border-dashed"
               style={{ borderColor: "var(--ready)", opacity: 0.6 }}
             />
-            Avg {meanTps.toFixed(1)}
+            {t("analysis.avgLegend", { tps: meanTps.toFixed(1) })}
           </span>
         )}
       </div>
@@ -993,6 +1076,7 @@ interface MetricDef {
 }
 
 function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
+  const { t } = useTranslation("insights");
   const rings: MetricDef[] = [
     {
       value: metrics.tps.global,
@@ -1005,7 +1089,7 @@ function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
       value: metrics.pauses.totalCount,
       max: 8,
       label: `${metrics.pauses.totalCount}`,
-      sub: "Pauses",
+      sub: t("analysis.pauses"),
       lowerIsBetter: true,
     },
   ];
@@ -1019,14 +1103,14 @@ function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
       value: effScore,
       max: 1,
       label: `${Math.round(effScore * 100)}%`,
-      sub: "Efficiency",
+      sub: t("analysis.efficiency"),
       lowerIsBetter: false,
     });
   }
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="Key metrics" />
+      <SectionHeader title={t("analysis.keyMetrics")} />
       <div className="mt-3 flex flex-wrap items-center justify-center gap-6">
         {rings.map((r) => {
           const q = quality(r.value, r.max, r.lowerIsBetter, r.optimal);
@@ -1061,17 +1145,48 @@ function PhaseBreakdownSection({
   hoveredPhase: string | null;
   onHoverPhase: (phase: string | null) => void;
 }) {
+  const { t } = useTranslation("insights");
   // Sum of all phase durations (should equal metrics.totalTimeMs minus transition gaps).
   const phaseSumMs = metrics.phases.reduce((s, p) => s + p.durationMs, 0);
   // Transition gaps: time between the last move of one phase and first move of the next.
   const totalGapMs = Math.max(0, solveTimeMs - phaseSumMs);
   const showGap = totalGapMs > 200;
 
+  const colorLabel = (face: string): string => {
+    switch (face) {
+      case "U":
+        return t("analysis.colorWhite");
+      case "R":
+        return t("analysis.colorRed");
+      case "F":
+        return t("analysis.colorGreen");
+      case "D":
+        return t("analysis.colorYellow");
+      case "L":
+        return t("analysis.colorOrange");
+      case "B":
+        return t("analysis.colorBlue");
+      default:
+        return face;
+    }
+  };
+
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader
-        title="Phase breakdown"
-        eyebrow={`${metrics.phases.length} phases · ${formatTime(phaseSumMs)} active${showGap ? ` (+${formatTime(totalGapMs)} idle/transition)` : ""}`}
+        title={t("analysis.phaseBreakdown")}
+        eyebrow={
+          showGap
+            ? t("analysis.phaseEyebrowGap", {
+                count: metrics.phases.length,
+                active: formatTime(phaseSumMs),
+                gap: formatTime(totalGapMs),
+              })
+            : t("analysis.phaseEyebrow", {
+                count: metrics.phases.length,
+                active: formatTime(phaseSumMs),
+              })
+        }
       />
       <div className="mt-3 overflow-hidden rounded-lg border border-line/60">
         {metrics.phases.map((p, i) => {
@@ -1111,7 +1226,9 @@ function PhaseBreakdownSection({
                         />
                       </TooltipTrigger>
                       <TooltipContent side="top">
-                        {colorName(metrics.detectionReport.crossColor)} cross
+                        {t("analysis.crossTooltip", {
+                          color: colorLabel(metrics.detectionReport.crossColor),
+                        })}
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -1140,8 +1257,8 @@ function PhaseBreakdownSection({
                       <TooltipContent side="top">
                         {metrics.detectionReport.xcrossPairs
                           ?.map((pair) => pair.slot)
-                          .join(", ") || "An F2L pair was already solved"}{" "}
-                        at cross completion
+                          .join(", ") || t("analysis.xcrossPairSolved")}{" "}
+                        {t("analysis.atCrossCompletion")}
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -1152,7 +1269,7 @@ function PhaseBreakdownSection({
                   <TooltipTrigger asChild>
                     <span>{formatTime(p.durationMs)}</span>
                   </TooltipTrigger>
-                  <TooltipContent side="top">{phasePct}% of phase total</TooltipContent>
+                  <TooltipContent side="top">{t("analysis.phasePctTooltip", { pct: phasePct })}</TooltipContent>
                 </Tooltip>
                 <span className="font-medium text-ink">{p.tps.toFixed(1)} tps</span>
                 {p.pauseCount > 0 && (
@@ -1160,7 +1277,7 @@ function PhaseBreakdownSection({
                     <TooltipTrigger asChild>
                       <span className="text-caution/70">{p.pauseCount}p</span>
                     </TooltipTrigger>
-                    <TooltipContent side="top">{p.pauseCount} pause{p.pauseCount !== 1 ? "s" : ""} in this phase</TooltipContent>
+                    <TooltipContent side="top">{t("analysis.pauseInPhase", { count: p.pauseCount })}</TooltipContent>
                   </Tooltip>
                 )}
               </div>
@@ -1171,7 +1288,11 @@ function PhaseBreakdownSection({
       {/* Gap explanation: phases only measure within-phase execution time. */}
       {showGap && (
         <p className="mt-2 text-[0.6rem] text-ink-3/60">
-          Solve time {formatTime(solveTimeMs)} = {formatTime(phaseSumMs)} active + {formatTime(totalGapMs)} idle/transition
+          {t("analysis.gapExplanation", {
+            total: formatTime(solveTimeMs),
+            active: formatTime(phaseSumMs),
+            idle: formatTime(totalGapMs),
+          })}
         </p>
       )}
     </div>
@@ -1181,6 +1302,7 @@ function PhaseBreakdownSection({
 // ─── CFOP details ──────────────────────────────────────────────────────────
 
 function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
+  const { t } = useTranslation("insights");
   const cfop = metrics.cfop!;
   const crossType = metrics.detectionReport?.crossType;
   const crossValue =
@@ -1193,11 +1315,11 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
           : crossType === "pseudo xcross"
             ? "Pseudo XCross"
             : crossType === "plain"
-              ? "Plain"
+              ? t("analysis.crossPlain")
               : "—";
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="CFOP details" />
+      <SectionHeader title={t("analysis.cfopDetails")} />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
         <DetailTile
           label="Cross"
@@ -1210,18 +1332,18 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
                 : undefined
           }
         />
-        <DetailTile label="Cross eff" value={cfop.crossEfficiency.toFixed(2)} />
-        <DetailTile label="Cross→F2L" value={formatTime(cfop.crossToF2LTransitionMs)} />
-        <DetailTile label="OLL recog" value={formatTime(cfop.ollRecognitionMs)} />
-        <DetailTile label="OLL TPS" value={cfop.ollTPS.toFixed(2)} />
-        <DetailTile label="PLL recog" value={formatTime(cfop.pllRecognitionMs)} />
-        <DetailTile label="PLL TPS" value={cfop.pllTPS.toFixed(2)} />
+        <DetailTile label={t("analysis.crossEff")} value={cfop.crossEfficiency.toFixed(2)} />
+        <DetailTile label={t("analysis.crossToF2L")} value={formatTime(cfop.crossToF2LTransitionMs)} />
+        <DetailTile label={t("analysis.ollRecog")} value={formatTime(cfop.ollRecognitionMs)} />
+        <DetailTile label={t("analysis.ollTps")} value={cfop.ollTPS.toFixed(2)} />
+        <DetailTile label={t("analysis.pllRecog")} value={formatTime(cfop.pllRecognitionMs)} />
+        <DetailTile label={t("analysis.pllTps")} value={cfop.pllTPS.toFixed(2)} />
         <DetailTile
-          label="Lookahead"
+          label={t("analysis.lookahead")}
           value={cfop.f2lLookaheadScore.toFixed(2)}
           accent={cfop.f2lLookaheadScore > 0.7 ? "ready" : undefined}
         />
-        <DetailTile label="F2L pairs" value={`${cfop.f2lPairs.length}`} />
+        <DetailTile label={t("analysis.f2lPairs")} value={`${cfop.f2lPairs.length}`} />
       </div>
 
       {/* F2L pair breakdown */}
@@ -1245,11 +1367,12 @@ function slotFaceColors(slotId: string): [string, string] | null {
 }
 
 function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
+  const { t } = useTranslation("insights");
   const slowest = Math.max(...pairs.map((p) => p.timeMs));
   return (
     <div className="mt-3">
       <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
-        F2L pair breakdown
+        {t("analysis.f2lPairBreakdown")}
       </span>
       <div className="mt-1.5 space-y-0">
         {pairs.map((pair) => {
@@ -1277,10 +1400,10 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
               )}
             >
               <div className="flex items-center gap-2">
-                <span className="text-ink-2 font-medium">Pair {pair.pairNumber}</span>
+                <span className="text-ink-2 font-medium">{t("analysis.pair", { number: pair.pairNumber })}</span>
                 {isSlowest && (
                   <span className="text-[0.6rem] uppercase tracking-wider text-caution font-medium">
-                    slowest
+                    {t("analysis.slowest")}
                   </span>
                 )}
               </div>
@@ -1330,15 +1453,16 @@ function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
 // ─── Roux details ──────────────────────────────────────────────────────────
 
 function RouxDetailsSection({ metrics }: { metrics: SolveMetrics }) {
+  const { t } = useTranslation("insights");
   const roux = metrics.roux!;
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="Roux details" />
+      <SectionHeader title={t("analysis.rouxDetails")} />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
-        <DetailTile label="FB eff" value={roux.firstBlockEfficiency.toFixed(2)} />
+        <DetailTile label={t("analysis.fbEff")} value={roux.firstBlockEfficiency.toFixed(2)} />
         <DetailTile label="FB TPS" value={roux.firstBlockTPS.toFixed(2)} />
         <DetailTile label="SB TPS" value={roux.secondBlockTPS.toFixed(2)} />
-        <DetailTile label="CMLL recog" value={formatTime(roux.cmllRecognitionMs)} />
+        <DetailTile label={t("analysis.cmllRecog")} value={formatTime(roux.cmllRecognitionMs)} />
         <DetailTile label="CMLL TPS" value={roux.cmllTPS.toFixed(2)} />
         <DetailTile label="LSE-EO" value={formatTime(roux.lseEOTimeMs)} />
         <DetailTile label="LSE-UL/UR" value={formatTime(roux.lseULURTimeMs)} />
@@ -1351,6 +1475,7 @@ function RouxDetailsSection({ metrics }: { metrics: SolveMetrics }) {
 // ─── Rotations & efficiency ────────────────────────────────────────────────
 
 function RotEfficiencySection({ metrics }: { metrics: SolveMetrics }) {
+  const { t } = useTranslation("insights");
   const rotation = metrics.rotation ?? EMPTY_ROTATION;
   const efficiency = metrics.efficiency ?? EMPTY_EFFICIENCY;
   const hasRot = rotation.totalCount > 0;
@@ -1360,39 +1485,41 @@ function RotEfficiencySection({ metrics }: { metrics: SolveMetrics }) {
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="Rotations & efficiency" />
+      <SectionHeader title={t("analysis.rotEfficiency")} />
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
         <DetailTile
-          label="Rotations"
+          label={t("analysis.rotations")}
           value={`${rotation.totalCount}`}
           sub={`x:${rotation.byAxis.x} y:${rotation.byAxis.y} z:${rotation.byAxis.z}`}
         />
         <DetailTile
-          label="Rot time"
+          label={t("analysis.rotTime")}
           value={formatTime(rotation.estimatedRotationTimeMs)}
         />
         <DetailTile
-          label="Efficiency"
+          label={t("analysis.efficiency")}
           value={efficiency.moveEfficiencyRatio.toFixed(2)}
           sub={`opt=${efficiency.optimalMoveCount}m`}
           accent={efficiency.moveEfficiencyRatio > 1.3 ? "amber" : "ready"}
         />
         <DetailTile
-          label="Drift"
+          label={t("analysis.drift")}
           value={`${Math.round(efficiency.forwardDrift * 100)}%`}
         />
         {metrics.redundancy && (
           <>
             <DetailTile
-              label="Redundancies"
+              label={t("analysis.redundancies")}
               value={`${metrics.redundancy.totalRedundancies}`}
-              sub={`${Math.round(metrics.redundancy.redundancyRate * 100)}% rate`}
+              sub={t("analysis.rate", {
+                pct: Math.round(metrics.redundancy.redundancyRate * 100),
+              })}
               accent={metrics.redundancy.totalRedundancies > 0 ? "amber" : undefined}
             />
             <DetailTile
-              label="Cancellations"
+              label={t("analysis.cancellations")}
               value={`${metrics.redundancy.cancellations}`}
-              sub={`${metrics.redundancy.repetitions} reps`}
+              sub={t("analysis.reps", { count: metrics.redundancy.repetitions })}
             />
           </>
         )}
@@ -1463,6 +1590,7 @@ function DetailTile({
 }
 
 function ScrambleBlock({ solve }: { solve: Solve }) {
+  const { t } = useTranslation("insights");
   const [copied, setCopied] = useState(false);
   const onCopy = () => {
     navigator.clipboard?.writeText(solve.scramble);
@@ -1490,12 +1618,12 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
           <button
             onClick={onCopy}
             className="grid size-7 shrink-0 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-            aria-label="Copy scramble"
+            aria-label={t("analysis.copyScramble")}
           >
             {copied ? <ClipboardCheck className="size-3.5" /> : <Clipboard className="size-3.5" />}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="left">Copy scramble</TooltipContent>
+        <TooltipContent side="left">{t("analysis.copyScramble")}</TooltipContent>
       </Tooltip>
     </div>
   );

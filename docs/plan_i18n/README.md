@@ -7,7 +7,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 4 (feedback global: toasts + notificaciones +
-TTS) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+TTS) ✅ · Tanda 5 (Insights) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -130,14 +130,25 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   `Case3DPanel`, `en/es.json` (namespaces `toast`, `notifications`, `audio`
   nuevos). Nota: el `t()` global (`i18n.t`) usa claves con prefijo `"ns:key"`.
 
-### Tanda 5 — Insights (tab Stats/Analytics)
+### ✅ Tanda 5 — Insights (tab Stats/Analytics) *(hecha)*
 - **Zonas**:
   - `InsightsDashboard` + `OverviewPanel` (métricas, encabezados).
   - `SolveListPanel` (filtros, orden, chips) + `SolveAnalysisPanel` (panel más grande: secciones de análisis de fase, detección, métricas — 1512 líneas, dividir el trabajo en sub-bloques por panel interno).
   - `ReplaySection` (controles de replay: play/pause/speed/rotación).
   - **atoms**: `EmptyState`, `SectionHeader`, badges (`Coherence`, `Skipped`, `Warnings`, `Penalty`), `MetricRing`, `ActivityHeatmap` (tooltips de fechas), `AnimatedNumber`.
-- **Namespace**: `insights`.
+- **Namespace**: `insights` (common/dashboard/overview/list/replay/analysis).
 - **Dificultad**: alta por volumen (mayor superficie de texto tras Training).
+- Hecho: namespace `insights` completo en en/es; traducción de los 5 paneles
+  (Dashboard, Overview, SolveList, SolveAnalysis con sus 9 sub-secciones,
+  Replay) y de los atoms con texto (`CoherenceBadge`, `SkippedBadge` con
+  default localizado, `ActivityHeatmap` con plurales). Jerga de cubing
+  mantenida intacta en ambos idiomas (Cross/F2L/OLL/PLL/XCross/TPS/DNF/+2/
+  Scramble/auf). Causas y categorías de pausa del pipeline (strings en
+  inglés de `analysis-engine`) mapeadas a clave localizada en el HoverCard de
+  la timeline (`pauseCause*`/`pauseCat*`). Plurales `_one/_other` donde el
+  español flexiona (solvesCount, tpsAnalysed, cleanSolves/plus2Solves/
+  dnfSolves, phaseEyebrow/Gap, pauseInPhase). Validado: tsc web+desktop 0,
+  eslint 0, paridad 6/6, build de producción OK.
 
 ### Tanda 6 — Algorithms (tab)
 - **Zonas**:

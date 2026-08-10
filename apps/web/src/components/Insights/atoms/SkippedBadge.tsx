@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 /**
@@ -8,12 +9,14 @@ import { cn } from "@/lib/utils";
  * by convention (the chip is uppercase-tracked).
  */
 export function SkippedBadge({
-  label = "skipped",
+  label,
   className,
 }: {
   label?: string;
   className?: string;
 }) {
+  const { t } = useTranslation("insights");
+  const resolvedLabel = label ?? t("analysis.skipped");
   return (
     <span
       className={cn(
@@ -21,7 +24,7 @@ export function SkippedBadge({
         className,
       )}
     >
-      {label}
+      {resolvedLabel}
     </span>
   );
 }
