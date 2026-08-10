@@ -1131,7 +1131,9 @@ function PhaseBreakdownSection({
                             ? "XXXCross"
                             : metrics.detectionReport.crossType === "xxcross"
                               ? "XXCross"
-                              : "XCross"}
+                              : metrics.detectionReport.crossType === "pseudo xcross"
+                                ? "Pseudo XCross"
+                                : "XCross"}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -1187,9 +1189,11 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
         ? "XXCross"
         : crossType === "xxxcross"
           ? "XXXCross"
-          : crossType === "plain"
-            ? "Plain"
-            : "—";
+          : crossType === "pseudo xcross"
+            ? "Pseudo XCross"
+            : crossType === "plain"
+              ? "Plain"
+              : "—";
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <SectionHeader title="CFOP details" />

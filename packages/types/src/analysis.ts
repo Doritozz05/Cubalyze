@@ -167,9 +167,17 @@ export interface PhaseDetectionReport {
    * How the cross completed: 'plain' (no F2L pair solved at cross
    * completion), 'xcross' (exactly one pair in its slot), 'xxcross'
    * (exactly two), 'xxxcross' (three — the whole F2L except one slot
-   * is already solved when the cross completes).
+   * is already solved when the cross completes), 'pseudo xcross' (the
+   * solver never built a real cross in the written block — the edges
+   * were left misordered or partial and fixed inside the F2L pairs;
+   * the Cross phase is cut at the written boundary).
    */
-  crossType?: 'plain' | 'xcross' | 'xxcross' | 'xxxcross';
+  crossType?:
+    | 'plain'
+    | 'xcross'
+    | 'xxcross'
+    | 'xxxcross'
+    | 'pseudo xcross';
 
   /**
    * The F2L slots that were already complete when the cross completed

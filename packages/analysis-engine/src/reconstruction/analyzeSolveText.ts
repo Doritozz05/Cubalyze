@@ -106,7 +106,7 @@ export interface SolveReconstruction {
     /** The cross moves in the SOLVER's raw notation (wides as written),
      *  one token per timeline entry. */
     moves: string[];
-    type: 'plain' | 'xcross' | 'xxcross' | 'xxxcross';
+    type: 'plain' | 'xcross' | 'xxcross' | 'xxxcross' | 'pseudo xcross';
     xcrossPair?: F2LSlotInfo;
   };
   pairs: F2LPairResult[];
@@ -371,20 +371,37 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // the ONLY signal that tells apart two crosses that are indistinguishable
   // by state — e.g. a persistent coincidental cross on a layer the solve
   // never touches vs the real cross. It is a TIEBREAK over equally-valid
-  // candidates, never a detector: no label is trusted, only the segment
-  // LENGTH. The index is measured in ENTRY space (conjugated FACE tokens,
-  // one per timeline entry) — with the wide-slice fix the cross completion
-  // materializes exactly where the written segment ends, so the face count
-  // of the segments up to and including the cross phase gives the index.
+  // candidates, never a detector. The index is measured in ENTRY space
+  // (conjugated FACE tokens, one per timeline entry) — with the wide-slice
+  // fix the cross completion materializes exactly where the written segment
+  // ends, so the face count of the segments up to and including the cross
+  // phase gives the index.
   // IMPORTANT: the index must be measured on the FILTERED rawPhases (the
   // embedded inspection was already consumed above) — `perPhase[k + 1]`
   // aligns 1:1 with rawPhases[k] after the filter, so counting a leftover
   // inspection phase here would shift the tiebreak by one phase and the
   // written cross segment would end past its real entries.
+  //
+  // REGION: recon.nz splits a pseudo cross into a setup block + the block
+  // that finishes it (cuberoot-1419 "W psT" then "xcross (BO)"; also
+  // "W P"/"Y P"/"W T"/"W 222" → "xcross"/"xxcross" runs). The written
+  // cross END is the end of the FIRST block whose label names a cross —
+  // mirroring the divergence harness's rawCrossEnd (findIndex(/cross/i)) so
+  // the two never disagree. Setup-shorthand blocks BEFORE that block
+  // ("W psT", "W P" — no "cross" in the label) are included in the region;
+  // a second cross-named block AFTER it ("Y pscross" → "xcross") is NOT: the
+  // reconstructionist ended the cross at the pscross block (cuberoot-1359,
+  // 1748 — measured cross end @6, not @10). Labels bound the region only,
+  // they never detect anything.
   let preferredCrossIdx: number | undefined;
   const firstFacePhaseIndex = rawPhases.findIndex((p) =>
     p.tokens.some((t) => FACE_MOVE_RE.test(t)),
   );
+  const crossNamedPhase = rawPhases.findIndex(
+    (p, i) => i >= firstFacePhaseIndex && /cross/i.test(p.label),
+  );
+  const regionEndPhase =
+    crossNamedPhase >= 0 ? crossNamedPhase : firstFacePhaseIndex;
   // Only meaningful when the written cross segment is a PROPER PREFIX of the
   // solve (there is at least one later phase). For a flat solution (no `//`
   // comments → a single phase holding every move) the "written cross end" is
@@ -392,9 +409,9 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   // last entry would let a coincidental end-of-solve cross ([last,last,last,
   // last] — every solved final state shows a cross on all 6 faces) win every
   // tie. Disable the tiebreak there and let the spurious/duration tests decide.
-  if (firstFacePhaseIndex >= 0 && firstFacePhaseIndex < rawPhases.length - 1) {
+  if (firstFacePhaseIndex >= 0 && regionEndPhase < rawPhases.length - 1) {
     let faceCount = 0;
-    for (let k = 0; k <= firstFacePhaseIndex; k++) {
+    for (let k = 0; k <= regionEndPhase; k++) {
       faceCount += perPhase[k + 1].filter((t) => FACE_MOVE_RE.test(t)).length;
     }
     preferredCrossIdx = faceCount - 1;

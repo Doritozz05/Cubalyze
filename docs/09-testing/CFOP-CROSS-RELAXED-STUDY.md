@@ -3,7 +3,7 @@
 > **Estado:** COMPLETADO + ACTIVADO (2026-08-10) · Branch `algortihms`
 > **Autor del estudio:** Buffy (asistente de código)
 > **Harness reproducible:** `packages/analysis-engine/src/__tests__/cross-study.test.ts` + `divergence-study.test.ts`
-> **Veredicto corto:** el criterio relajado es una **mejora neta** — con la métrica correcta, **74 fixes y 0 regresiones** sobre 300 solves (antes de los fixes: 58 fixes / 1 regresión) — y se agregó como opción **OFF por defecto** (smart cube) pero **ACTIVADO en la ruta de reconstrucciones de texto de la web** (`relaxedCross: true`). Además se **arregló el bug de capa E en F2L** (reconz-9068: `u'` en la cruz + `d'` compensador) con un DP de frame medido desde el estado, sin cambiar el comportamiento por defecto del smart cube.
+> **Veredicto corto:** el criterio relajado es una **mejora neta** — con la métrica correcta, **74 fixes y 0 regresiones** sobre 300 solves (antes de los fixes: 58 fixes / 1 regresión) — y se agregó como opción **OFF por defecto** (smart cube) pero **ACTIVADO en la ruta de reconstrucciones de texto de la web** (`relaxedCross: true`). Además se **arregló el bug de capa E en F2L** (reconz-9068: `u'` en la cruz + `d'` compensador) con un DP de frame medido desde el estado, sin cambiar el comportamiento por defecto del smart cube. Finalmente se **implementó el detector de pseudo-cross** (reconz-11663/4319/3467): la fase Cross se corta en el límite escrito con tipo `pseudo xcross` cuando el cross válido completa ≥3 entradas después del bloque escrito — los bothBad bajan de 15 a **1** (88 fixes / 0 regresiones).
 
 ---
 
@@ -193,7 +193,7 @@ Lectura correcta de estos números:
 ### ¿Hay margen todavía? → SÍ, documentado y cuantificado.
 
 1. **Marcos rotados / esquemas no-identidad** (3828, 5916): el detector solo completa cadenas con esquema identidad; los color-neutral crosses en caras "extrañas" con reconstrucciones imperfectas no cuadran. Cambio grande (permitir esquemas no-identidad con validación de final).
-2. **Pseudo-cross** (10784, 4319, 11663, 3467, …): el detector no modela "cruz casi completa + ajuste dentro del 1er/2º par". Ver §4.6.
+2. **Pseudo-cross → IMPLEMENTADO (2026-08-10)**: detector acotado que corta la fase Cross en el límite escrito con tipo `pseudo xcross` cuando el cross relajado completa ≥3 entradas después del bloque escrito (ver §4.7). De 15 bothBad quedan **1**.
 3. **Métodos 223/ZBLL** (2054, 8337, 11047, 2678, …): técnicas avanzadas fuera del CFOP puro que el pipeline actual no modela.
 4. **Reconstrucciones incoherentes** (3084, 1660): no son bugs del detector sino datos; convendría filtrarlas en el dataset.
 
@@ -213,7 +213,50 @@ Los 15 se descomponen en 3 categorías — **ninguna es CFOP estándar puro**:
 | **Convención xxcross/xxxcross** | reconz-5828, reconz-6371, reconz-7155 | El reconstructor escribe la cruz como bloque corto (solo los 4 edges) y los pares por separado; nuestro detector reporta la cruz extendida hasta donde completan los pares pre-resueltos (xcross/xxcross/xxxcross). La etiqueta `crossType` del panel YA muestra el tipo correcto — es una diferencia de etiquetado, no de detección. |
 | **Última capa avanzada (ZBLL/ZBLS/1LLL/EOLS)** | reconz-11047 (`4th pair/ZBLS` + `ZBLL`), reconz-2678 (`4th pair/EOLS` + `ZBLL`), reconz-8236, cuberoot-574 (`1LLL-F`), reconz-5828 | El par 4 incluye EO/ZBLS y la LL es de una mirada; la cadena canónica OLL→PLL del detector no se alinea con las etiquetas raw. Métodos avanzados — fuera del alcance actual (CFOP puro). |
 
-**Conclusión:** el relaxed con tiebreak por segmento escrito ya está en su máximo para CFOP estándar (0 regresiones). Los 15 restantes son técnicas no-CFOP-puro; reducirlos requiere (en orden de valor/riesgo): (1) detector de pseudo-cross, (2) mapear el bloque de cruz del raw solo a los moves de cruz (dejar los pares en F2L) en solves xcross, (3) soporte ZBLL/223 — los tres son features nuevas, no mejoras del criterio actual.
+**Conclusión:** el relaxed con tiebreak por segmento escrito ya está en su máximo para CFOP estándar (0 regresiones). Los 15 restantes son técnicas no-CFOP-puro; reducirlos requiere (en orden de valor/riesgo): (1) detector de pseudo-cross — **IMPLEMENTADO, ver §4.7** —, (2) mapear el bloque de cruz del raw solo a los moves de cruz (dejar los pares en F2L) en solves xcross, (3) soporte ZBLL/223 — los dos últimos siguen siendo features nuevas.
+
+### 4.7 IMPLEMENTADO — detector de pseudo-cross (2026-08-10)
+
+**Regla (state-only + límite escrito, modo relaxed únicamente):** cuando el cross relajado ganador completa **≥ 3 entradas después** del fin del bloque de cruz escrito (`PSEUDO_CROSS_MIN_GAP = 3`; el gap máximo medido entre los solves bien detectados es +2, así que ≥3 nunca dispara en un cross que ya cae en su bloque escrito), la fase Cross se corta en el **límite escrito** y se etiqueta `pseudo xcross`. Es exactamente la firma del pseudo-cross (reconz-11663 `pseudo xcross`, reconz-4319 `pseudo cross`, reconz-3467 `partial cross`): el solver deja los edges desordenados (o parciales) y arregla el orden DENTRO del F2L, así que ningún criterio de "cruz completa" puede igualar el fin del bloque escrito.
+
+**Región escrita (analyzeSolveText):** el límite se computa como el final del **primer bloque cuya etiqueta nombra una cruz** (`/cross/i`), igualando el `rawCrossEnd` del harness para que nunca diverjan. Los bloques de setup pseudo ANTES de ese bloque (`W psT`, `W P`, `W 222` — sin "cross" en la etiqueta) se incluyen en la región (cuberoot-1419: `W psT` + `xcross (BO)` → la cruz termina en 8, no en 2). Un segundo bloque con "cross" DESPUÉS del primero NO se incluye (cuberoot-1359/1748: `Y/W pscross` → el cross termina en 6, no en 10). Un bloque que menciona la cruz dentro de un par (`3rd pair+fix cross`, reconz-4319) nunca extiende la región.
+
+**F2L honesto:** como los pares de un pseudo-cross son inserciones no estándar (edge-control/ZBLS) que no completan slots clásicos, `segmentF2LPairs` emite **una sola fila F2L indiferenciada** sobre toda la fase (en vez de fabricar N pares falsos con slots sin sentido en el mismo índice).
+
+**Validación (divergence-study, 300 solves):** `bothGood 211 · relaxedGood(FIX) 88 · strictGood(REGR) 0 · bothBad 1` — de los 15 bothBad originales, **14 se resuelven** (11663 ✓ s@33→r@8=raw@8, 4319 ✓ s@54→r@5, 3467 ✓ s@29→r@3, 2546 ✓ s@33→r@5, …) y las 3 regresiones candidatas del desarrollo (cuberoot-1419, 1359, 1748) quedan en bothGood. El único bothBad restante (reconz-6938) es la convención xxcross/ZBLL, no pseudo-cross.
+
+**Tests:** `packages/analysis-engine/src/__tests__/pseudo-cross.test.ts` (7 tests: cortes en 11663/4319/3467, strict no dispara, región dividida 1419, regiones cortas 1359/1748).
+
+---
+
+### 4.8 AUDITORÍA MASIVA — 12.066 solves (2026-08-10)
+
+Harness: `packages/analysis-engine/src/__tests__/audit-large/` (6 partes paralelas + `shared.ts`, gated detrás de `RUN_AUDIT=1`). Clasifica **TODAS** las 12.066 reconstrucciones CFOP 3×3 del dataset con la configuración de producción (texto, `relaxedCross: true`):
+
+```
+N=12066
+perfect     9274  76.86%
+minor       2486  20.60%
+disaster     305   2.53%
+unlabelled     1   0.01%
+
+Calidad de CROSS (todas las solves):
+|diff|<=2 : 12007  99.51%
+|diff| 3-6:    46   0.38%
+|diff| >6 :    13   0.11%
+```
+
+**Lectura honesta de los 2.486 minor:** casi todos (2.447) tienen la cruz **perfecta** (diff≤2) y solo difieren en `skipMatch` — y de esos, **1.875 son solves con LL avanzada** (ZBLL/1LLL/ELL/COLL/VLS/OLL(CP) en las etiquetas raw: el reconstructor no escribe una fase OLL separada, nuestro detector absorbe el bloque en OLL — el cross y el F2L están correctos, es la convención de etiquetas, no un error). Solo 39 solves tienen el cross entre 3-6 tokens de distancia (ventana xcross/wide-move).
+
+**Los 305 desastres se dividen en:**
+- **292 dato-roto** (no-solved con cross correcto): la reconstrucción raw **no cierra el cubo** (299 solves en todo el dataset tienen `final-state-not-solved` — el texto es incoherente, dato del dataset, no del detector).
+- **~20 errores reales del detector** (cross diff >6): 13 solves en todo el dataset (0,11%) — la cruz se detecta fuera de la ventana.
+
+**Por fuente:** reconz (10.902) 8.482 perfect / 2.210 minor / 210 disaster · cuberoot (1.164) 792 perfect / 276 minor / 95 disaster (cuberoot concentra más dato-roto: 83 vs 202).
+
+**Por tiempo:** el acierto sube con el tiempo de solve — <4s: 64,6% perfect, 4-6s: 73,0%, 6-8s: 80,5%, 8-10s: 83,1%, 10-13s: 84,5% (los solves rápidos concentran xcross/advanced LL/pseudo, los lentos son CFOP puro).
+
+**Conclusión a escala:** para CFOP estándar el pipeline es **excelente** — el 99,5% de los crosses del dataset caen dentro de ±2 del bloque escrito. El 20,6% "minor" es casi todo convención de etiquetas de LL avanzada (la métrica `skipMatch` es imperfecta para solves ZBLL/1LLL, ya documentado en §4.4), no fallos de segmentación. Los errores reales del detector son ~0,2% del dataset (13 solves con cross fuera de ventana + los solves ZBLL/223 no-CFOP-puro ya catalogados). El resto de "desastres" son datos incoherentes del dataset.
 
 ---
 
@@ -233,8 +276,14 @@ packages/analysis-engine/src/reconstruction/analyzeSolveText.ts  (opción)
 packages/analysis-engine/src/__tests__/cross-study.test.ts       (harness A/B + F2L, nuevo, gated)
 packages/analysis-engine/src/__tests__/divergence-study.test.ts  (harness A/B con métrica correcta, nuevo, gated)
 packages/analysis-engine/src/__tests__/reconz-9068-e-layer.test.ts (regresión capa E, nuevo)
+packages/analysis-engine/src/__tests__/pseudo-cross.test.ts      (regresión pseudo-cross: 11663/4319/3467 + guards 1419/1359/1748, nuevo)
+packages/analysis-engine/src/__tests__/audit-large/              (auditoría masiva 12.066 solves: shared + 6 partes, nuevo, gated RUN_AUDIT=1)
+packages/types/src/analysis.ts                                    ('pseudo xcross' en crossType)
+packages/analysis-engine/src/phases/PhaseSplitter.ts             (regla pseudo-cross: corte en límite escrito + tipo)
+packages/analysis-engine/src/pipeline/segmentF2LPairs.ts         (fila F2L indiferenciada para pseudo-cross)
+packages/analysis-engine/src/reconstruction/analyzeSolveText.ts  (región escrita: primer bloque /cross/i + setups previos)
 apps/web/src/views/Reconstructions/reconData.ts                 (relaxedCross: true en la ruta de texto)
-apps/web/src/views/Reconstructions/OurDetectionPanel.tsx        (relaxedCross: true en el fallback)
+apps/web/src/views/Reconstructions/OurDetectionPanel.tsx        (relaxedCross: true en el fallback + chip pseudo xcross)
 docs/09-testing/CFOP-CROSS-RELAXED-STUDY.md                      (este documento)
 ```
 
@@ -247,11 +296,21 @@ RUN_CROSS_STUDY=1 pnpm --dir packages/analysis-engine exec vitest run \
   src/__tests__/cross-study.test.ts
 
 # Divergencia strict vs relaxed con la métrica correcta (300 solves). Gated
-# detrás de RUN_DIVERGENCE_STUDY=1. Imprime el resumen (74 fixes / 0
-# regresiones / 15 bothBad) Y la lista completa de bothBad (✗✗) con sus
-# etiquetas raw para auditar por qué no dan igual.
+# detrás de RUN_DIVERGENCE_STUDY=1. Imprime el resumen (88 fixes / 0
+# regresiones / 1 bothBad tras el detector de pseudo-cross) Y la lista
+# completa de bothBad (✗✗) con sus etiquetas raw para auditar por qué no
+# dan igual.
 RUN_DIVERGENCE_STUDY=1 pnpm --dir packages/analysis-engine exec vitest run \
   src/__tests__/divergence-study.test.ts
+
+# Regresión del detector de pseudo-cross (cortes + guards de región escrita)
+pnpm --dir packages/analysis-engine exec vitest run src/__tests__/pseudo-cross.test.ts
+
+# Auditoría masiva de TODO el dataset (12.066 solves, 6 workers paralelos).
+# Clasifica perfect/minor/disaster y escribe out-part-*.json por parte para
+# el agregado (node). Gated detrás de RUN_AUDIT=1 (la suite normal la salta).
+RUN_AUDIT=1 pnpm --dir packages/analysis-engine exec vitest run \
+  src/__tests__/audit-large/
 
 # Tests unitarios del criterio relaxed + frame D/E (math-core)
 pnpm --dir packages/math-core exec vitest run src/__tests__/relaxedCross.test.ts

@@ -300,9 +300,11 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {recon.cross.xcrossPair
-                    ? `${recon.cross.xcrossPair.name} pair solved at cross completion`
-                    : "An F2L pair was already solved at cross completion"}
+                  {recon.cross.type === "pseudo xcross"
+                    ? "The written cross block never contained a real cross (edges left misordered / partial — fixed inside the F2L pairs)"
+                    : recon.cross.xcrossPair
+                      ? `${recon.cross.xcrossPair.name} pair solved at cross completion`
+                      : "An F2L pair was already solved at cross completion"}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -319,12 +321,18 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">
-              F2L {crossPairCount + i + 1}
+              {p.slot ? `F2L ${crossPairCount + i + 1}` : "F2L"}
             </span>
             <span className="mt-0.5 flex items-center gap-1.5">
-              <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
-                {p.slot}
-              </span>
+              {p.slot ? (
+                <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
+                  {p.slot}
+                </span>
+              ) : (
+                <span className="text-[0.64rem] text-ink-3">
+                  (no pair segmentation)
+                </span>
+              )}
               {p.colors.map((c) => (
                 <FaceChip key={c} face={c} />
               ))}

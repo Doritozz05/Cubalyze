@@ -147,6 +147,44 @@ export function segmentF2LPairs(
   const cross = report?.phases.find((p) => p.phaseName === 'Cross');
   if (!f2l || f2l.startIndex === undefined) return [];
 
+  // PSEUDO/PARTIAL CROSS (reconz-11663 "pseudo xcross", reconz-4319 "pseudo
+  // cross", reconz-3467 "partial cross"): the solver never built a real cross
+  // in the written block — the edges were left misordered (or partial) and
+  // the order is fixed inside the F2L, so the pairs are non-standard
+  // (edge-control / ZBLS insertions) and never complete classic slots during
+  // F2L: all 4 slots land TOGETHER at the F2L end, which the slot scan would
+  // fabricate as N pairs at the same index with meaningless slot names.
+  // Report ONE undifferentiated F2L row over the whole phase instead — the
+  // panel keeps its move accounting and stays honest (the raw "Steps" table
+  // beside it already shows the reconstructor's pair blocks).
+  if (report?.crossType === 'pseudo xcross') {
+    const start = f2l.startIndex;
+    const end = f2l.endIndex ?? timeline.entries.length - 1;
+    const moves = options.displayTokens
+      ? options.displayTokens.slice(start, end + 1)
+      : entriesToTokens(timeline, start, end);
+    const startTs = timeline.entries[start]?.hostTimestamp ?? 0;
+    const endTs = timeline.entries[end]?.hostTimestamp ?? startTs;
+    const timeMs = Math.max(0, endTs - startTs);
+    return [{
+      pairNumber: 1,
+      slot: '',
+      colors: [] as unknown as [FaceLetter, FaceLetter],
+      moves,
+      movesCount: moves.length,
+      auf: [],
+      completionIndex: end,
+      startIndex: start,
+      endIndex: end,
+      timeMs,
+      tps:
+        timeMs > 0 && moves.length > 0
+          ? Math.round((moves.length / (timeMs / 1000)) * 100) / 100
+          : 0,
+      pauseBeforeMs: 0,
+    }];
+  }
+
   // Degenerate transcripts: when the cross never completes until the very
   // end of the solve, the F2L segment is noise (the PhaseSplitter pushed the
   // boundary forward). Report no pairs instead of fabricating them.

@@ -51,7 +51,31 @@ type DetectionRun = {
   crossColor?: CubeFace;
   /** The winning AUF-corrected scheme (face → color) used to evaluate F2L slots. */
   scheme?: Record<string, string>;
+  /**
+   * True when the written cross block ends far before ANY valid cross exists
+   * (a pseudo/partial cross — reconz-11663 "pseudo xcross", reconz-4319
+   * "pseudo cross", reconz-3467 "partial cross"): the solver built the
+   * cross edges into their slots but left them misordered (or a partial
+   * cross) and fixed the order inside the F2L pairs, so the state-based
+   * cross only completes much later. The Cross phase is then cut at the
+   * WRITTEN boundary and labeled 'pseudo xcross'.
+   */
+  pseudoCross?: boolean;
 };
+
+/**
+ * Pseudo-cross gap: when the winning (relaxed) cross completes this many
+ * entries AFTER the written cross block's end, the written block did not
+ * contain a real cross (misordered permutation / partial cross) and the
+ * Cross phase is cut at the written boundary. Measured on the 300-solve
+ * divergence sample: the maximum gap among the 285 well-detected solves is
+ * +2, so >=3 never fires on a solve whose cross already lands on its written
+ * block. Residual risk (validated absent across the 300-solve sample): a
+ * GENUINELY late-valid cross completing exactly 3+ entries after the written
+ * end would be mislabeled pseudo — the written end is the only signal, and
+ * for CFOP-standard solves it never lags the state cross by 3.
+ */
+const PSEUDO_CROSS_MIN_GAP = 3;
 
 /**
  * Splits a SolveTimeline into ordered phase segments.
@@ -197,11 +221,35 @@ export class PhaseSplitter {
     });
     if (!result || result.completions[0] < 0) return { phases: [] };
 
+    // ── Pseudo-cross: cut the Cross phase at the WRITTEN boundary ─────────
+    // A pseudo/partial cross (the solver leaves the cross edges misordered or
+    // incomplete and fixes the order inside the F2L pairs) never produces a
+    // valid cross near the reconstructionist's written cross block, so the
+    // state-based cross completes much later — the panel then claims an
+    // xx/xxxcross spanning the whole F2L (reconz-11663). The state alone
+    // cannot tell this from a genuinely late cross (identical states), so the
+    // written boundary is the ONLY signal: end the Cross phase there and
+    // label it 'pseudo xcross'.
+    //
+    // Relaxed mode only: a late STRICT cross is also the signature of plain
+    // flipped-edge crosses that the relaxed criterion already resolves AT the
+    // written end (reconz-5848 s@24/r@9) — the rule must only fire when even
+    // the PERMUTATION completes late. Needs the written segment (undefined for
+    // flat/unlabelled solves and the smart-cube route) and a gap >= 3 (the
+    // max measured gap among well-detected solves is +2).
+    const pseudoCross =
+      relaxedCross === true &&
+      preferredCrossIdx !== undefined &&
+      result.completions[0] - preferredCrossIdx >= PSEUDO_CROSS_MIN_GAP;
+    const completions: number[] = pseudoCross
+      ? [preferredCrossIdx, ...result.completions.slice(1)]
+      : result.completions;
+
     // Only found completions become segments (mirroring runDetection, which
     // stops at the first missing mask). Trailing -1 means the phase never
     // completed and must not be indexed.
     const found: number[] = [];
-    for (const completion of result.completions) {
+    for (const completion of completions) {
       if (completion < 0) break;
       found.push(completion);
     }
@@ -215,6 +263,7 @@ export class PhaseSplitter {
       crossFace: result.crossFace as CubeFace,
       crossColor: result.crossColor as CubeFace,
       scheme: result.scheme as Record<string, string>,
+      pseudoCross,
     };
   }
 
@@ -375,7 +424,13 @@ export class PhaseSplitter {
       }
 
       const crossPhase = detection.phases.find((p) => p.phaseName === 'Cross');
-      if (crossPhase && crossPhase.completionIndex !== undefined) {
+      if (detection.pseudoCross) {
+        // The written block never contained a real cross: no pairs are home
+        // at its end by construction, so the slot-based xcross check would
+        // only ever read 'plain'. Label it 'pseudo xcross' directly.
+        crossType = 'pseudo xcross';
+        xcrossPairs = [];
+      } else if (crossPhase && crossPhase.completionIndex !== undefined) {
         // The cross may complete DISALIGNED (its edges on the cross face but
         // not yet aligned with the side centers); the solver aligns it within
         // 1-2 moves. A single move can never complete a slot from scratch, so
