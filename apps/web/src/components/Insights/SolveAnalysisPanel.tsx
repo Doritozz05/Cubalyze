@@ -1465,27 +1465,20 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
     setTimeout(() => setCopied(false), 1500);
     toast.success("Scramble copied");
   };
-  const hasMoves = solve.scramble.trim().length > 0;
   return (
     <div className="flex items-start gap-2 rounded-lg border border-line bg-surface px-5 py-3">
       <div className="flex flex-1 flex-col gap-1.5">
         <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-ink-3">
           Scramble
         </span>
-        {hasMoves ? (
-          /* Plain mono text, same style as the algorithm text in Our
-             detection — no boxes around each move. */
-          <p
-            className="min-w-0 font-mono text-[0.78rem] font-medium text-ink leading-relaxed break-words"
-            translate="no"
-          >
-            {solve.scramble}
-          </p>
-        ) : (
-          <p className="font-mono text-[0.78rem] text-ink wrap-break-word">
-            {solve.scramble}
-          </p>
-        )}
+        {/* Plain mono text, same style as the algorithm text in Our
+            detection — no boxes around each move. */}
+        <p
+          className="min-w-0 font-mono text-[0.78rem] font-medium text-ink leading-relaxed break-words"
+          translate="no"
+        >
+          {solve.scramble}
+        </p>
       </div>
       <Tooltip>
         <TooltipTrigger asChild>
