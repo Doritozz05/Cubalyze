@@ -14,14 +14,16 @@
  *   2. cd ../../pruebas && python scripts/generate_seed_catalog.py
  */
 import { it } from "vitest";
-import { writeFileSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { PLL_CASES } from "../seed/cfop-pll";
 import { OLL_CASES } from "../seed/cfop-oll";
 import { BASIC_F2L_CASES, ADVANCED_F2L_CASES } from "../seed/cfop-f2l";
 import type { AlgorithmCase } from "../schema";
 
-it("dumps seed caseDefs for SCDB catalog regeneration", () => {
+// Regeneration helper: only meaningful when the local pruebas/ workflow is
+// set up (pruebas/ is gitignored) — skip in CI / fresh checkouts.
+it.runIf(existsSync(resolve(__dirname, "../../../../pruebas/generated")))("dumps seed caseDefs for SCDB catalog regeneration", () => {
   const groups = [PLL_CASES, OLL_CASES, BASIC_F2L_CASES, ADVANCED_F2L_CASES];
   const out: Record<string, AlgorithmCase> = {};
   for (const group of groups) {

@@ -1,5 +1,5 @@
 import { it } from "vitest";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import min2phase from "min2phase.js";
 import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
@@ -12,7 +12,9 @@ function oracleSolved(state: CubeState): boolean {
   return sol === "" || sol === "0";
 }
 
-it("oracle: failing classic OLL algs really solve?", () => {
+// Oracle data is generated locally (pruebas/scripts/...) and pruebas/ is
+// gitignored — skip in CI / fresh checkouts where the JSON is absent.
+it.runIf(existsSync(OLL))("oracle: failing classic OLL algs really solve?", () => {
   min2phase.initFull();
   console.log("Q0 solved =>", oracleSolved(new CubeState()));
 

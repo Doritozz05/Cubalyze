@@ -5,7 +5,7 @@
  * pieces (checked piece by piece, not via the solution).
  */
 import { it } from "vitest";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
 
@@ -17,6 +17,9 @@ function setupState(setup: string): CubeState {
 }
 
 const CMLL = resolve(__dirname, "../../../../pruebas/generated/scdb-cmll.json");
+
+// Oracle data is generated locally (pruebas/scripts/...) and pruebas/ is
+// gitignored — skip in CI / fresh checkouts where the JSON is absent.
 const flOf = (s: CubeState) => FaceletStringConverter.toFaceletString(s);
 
 const cornerFacelet = [[8, 9, 20], [6, 18, 38], [0, 36, 47], [2, 45, 11], [29, 26, 15], [27, 44, 24], [33, 53, 42], [35, 17, 51]];
@@ -32,7 +35,7 @@ function cubieHome(kind: "c" | "e", pos: number, fl: string): number {
   return table.findIndex((c) => c.slice().sort().join("") === cols);
 }
 
-it("oracle: are the 39 failures valid LSE states?", () => {
+it.runIf(existsSync(CMLL))("oracle: are the 39 failures valid LSE states?", () => {
   const gen = JSON.parse(readFileSync(CMLL, "utf-8"));
   let total = 0, lseOkCount = 0;
   const fails: string[] = [];

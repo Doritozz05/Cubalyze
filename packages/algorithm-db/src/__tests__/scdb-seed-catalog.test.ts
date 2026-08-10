@@ -81,7 +81,10 @@ const hasAll = Object.values(GENERATED).every(({ file }) =>
 ) && existsSync(REPORT_PATH);
 
 describe.runIf(hasAll)("SCDB seed catalog (full regeneration)", () => {
-  const report = loadJson<{ results: ReportResult[] }>(REPORT_PATH)!;
+  const report = loadJson<{ results: ReportResult[] }>(REPORT_PATH);
+  // describe.runIf(hasAll) still executes this body during collection, so the
+  // data can be absent (CI / fresh checkout) — bail out and register no tests.
+  if (!report) return;
   const failKeys = new Set(
     report.results.filter((r) => r.status === "fail").map((r) => `${r.set}|${r.caseNumber}|${r.moves}`),
   );

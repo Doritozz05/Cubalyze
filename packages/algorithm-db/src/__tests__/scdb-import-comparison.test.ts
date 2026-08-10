@@ -79,7 +79,10 @@ describe.runIf(hasAll)("SCDB Import (parser) vs seed catalog", () => {
     ["oll", "OLL", 57],
     ["af2l", "AdvancedF2L", 126],
   ] as const) {
-    const gen = loadGenerated(key)!;
+    const gen = loadGenerated(key);
+    // describe.runIf(hasAll) still executes this body during collection, so
+    // the data can be absent (CI / fresh checkout) — skip this set.
+    if (!gen) continue;
     const subsetId = SUBSET_IDS[key];
     const seedCases = seed.cases.filter((c) => c.subsetId === subsetId);
     const genByNumber = new Map(gen.cases.map((c) => [c.caseDef.caseNumber, c]));
