@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Dialog,
@@ -81,6 +82,7 @@ const sectionVariants = {
  */
 export function SettingsDialog({ open, onOpenChange, initialSection, solves, sessionName, onImportSolves, onExportAllJSON }: SettingsDialogProps) {
   const isTouch = useIsTouch();
+  const { t } = useTranslation('settings');
   const [activeSection, setActiveSection] = useState('appearance');
   const prevSection = useRef('appearance');
   // Keep a ref to avoid recreating callbacks on every section change
@@ -157,7 +159,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         <div className="shrink-0 border-b border-line px-4 py-3 lg:hidden">
           <Select value={activeSection} onValueChange={handleSelectSection}>
             <SelectTrigger className="h-10 w-full gap-2 rounded-xl border border-line bg-surface-2 px-3.5 text-sm font-semibold text-ink shadow-xs">
-              <SelectValue placeholder="Select section" />
+              <SelectValue placeholder={t('selectSection')} />
             </SelectTrigger>
             <SelectContent side="bottom" align="start" className="max-h-[60vh] overflow-y-auto z-100">
               {SETTINGS_SECTIONS.map((section) => {
@@ -166,7 +168,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
                   <SelectItem key={section.id} value={section.id} className="py-2.5 text-xs">
                     <div className="flex items-center gap-2.5">
                       <Icon className="size-4 shrink-0 text-ink-3" />
-                      <span className="font-medium text-ink">{section.label}</span>
+                      <span className="font-medium text-ink">{t(section.labelKey)}</span>
                     </div>
                   </SelectItem>
                 );
@@ -178,10 +180,10 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         {/* Desktop section header (>=1024px) */}
         <div className="shrink-0 border-b border-line px-8 py-6 max-lg:hidden">
           <h2 className="text-[0.95rem] font-semibold leading-5 text-ink">
-            {activeMeta?.label ?? 'Settings'}
+            {activeMeta ? t(activeMeta.labelKey) : t('title')}
           </h2>
           <p className="mt-1 text-[0.78rem] leading-5 text-ink-3">
-            {activeMeta?.description ?? ''}
+            {activeMeta ? t(activeMeta.descriptionKey) : ''}
           </p>
         </div>
 
@@ -210,7 +212,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] h-[85vh] p-0 pb-safe focus:outline-none">
           <DrawerHeader className="sr-only">
-            <DrawerTitle>Settings</DrawerTitle>
+            <DrawerTitle>{t('title')}</DrawerTitle>
           </DrawerHeader>
           {innerContent}
         </DrawerContent>
@@ -225,7 +227,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
         {innerContent}
       </DialogContent>

@@ -17,12 +17,6 @@ import type en from "./locales/en.json";
 declare module "i18next" {
   interface CustomTypeOptions {
     defaultNS: "common";
-    resources: {
-      common: typeof en.common;
-      nav: typeof en.nav;
-      settings: typeof en.settings;
-      timer: typeof en.timer;
-      views: typeof en.views;
-    };
+    resources: typeof en;
   }
 }

@@ -18,21 +18,78 @@
   },
   "nav": {
     "title": "Navigation",
-    "timer": "Timer",
-    "insights": "Insights",
-    "algorithms": "Algorithms",
+    "main": "Main",
     "training": "Training",
-    "skillTree": "Skill Tree",
+    "progress": "Progress",
+    "explore": "Explore",
+    "timer": "Timer",
+    "algorithms": "Algorithms",
+    "skills": "Skills",
+    "stats": "Stats",
     "reconstructions": "Reconstructions",
-    "profile": "Profile",
-    "widgets": "Widgets",
-    "settings": "Settings"
+    "widgets": "Widgets"
   },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "languageAuto": "System default",
-    "languageHint": "Choose the interface language, or follow your browser's"
+    "languageHint": "Choose the interface language, or follow your browser's",
+    "preferences": "Preferences",
+    "selectSection": "Select section",
+    "sections": {
+      "profile": {
+        "label": "Profile",
+        "description": "Your identity, avatar, and declared solving methods."
+      },
+      "general": {
+        "label": "General",
+        "description": "Application preferences and behavior."
+      },
+      "appearance": {
+        "label": "Appearance",
+        "description": "Visual display and notation preferences."
+      },
+      "smartCube": {
+        "label": "Smart cube",
+        "description": "Bluetooth, gyroscope, and hardware settings."
+      },
+      "timer": {
+        "label": "Timer",
+        "description": "Solve start rules and inspection."
+      },
+      "scramble": {
+        "label": "Scramble",
+        "description": "Scramble verification and display options."
+      },
+      "analysis": {
+        "label": "Analysis",
+        "description": "Solve breakdown, inspection, and metrics."
+      },
+      "training": {
+        "label": "Training",
+        "description": "Drills, targets, and practice routines."
+      },
+      "notifications": {
+        "label": "Notifications",
+        "description": "Alerts, sound, and timer feedback."
+      },
+      "shortcuts": {
+        "label": "Shortcuts",
+        "description": "Keyboard shortcuts for the timer and navigation."
+      },
+      "data": {
+        "label": "Data",
+        "description": "Export and manage your solve data."
+      },
+      "advanced": {
+        "label": "Advanced",
+        "description": "Developer tools, data, and debugging."
+      },
+      "credits": {
+        "label": "Credits",
+        "description": "Data sources, libraries, and community contributions."
+      }
+    }
   },
   "timer": {
     "scrambleCopied": "Scramble copied",

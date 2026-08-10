@@ -5,6 +5,19 @@ import i18n, {
   resolveLanguage,
 } from "./index";
 import { preferencesStore } from "@cubeforge/state";
+import en from "./locales/en.json";
+import es from "./locales/es.json";
+
+/** Deep key paths of a locale object, e.g. `sections.profile.label`. */
+function deepKeys(obj: Record<string, unknown>, prefix = ""): string[] {
+  return Object.entries(obj).flatMap(([k, v]) => {
+    const path = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      return deepKeys(v as Record<string, unknown>, path);
+    }
+    return [path];
+  });
+}
 
 describe("i18n infrastructure", () => {
   afterEach(() => {
@@ -31,6 +44,12 @@ describe("i18n infrastructure", () => {
 
   it("detectBrowserLanguage always returns a supported language", () => {
     expect(["en", "es"]).toContain(detectBrowserLanguage());
+  });
+
+  it("es.json mirrors the en.json key structure (no silent English fallback)", () => {
+    expect(deepKeys(es as Record<string, unknown>).sort()).toEqual(
+      deepKeys(en as Record<string, unknown>).sort(),
+    );
   });
 
   it("switches the active language when the preference store changes", async () => {

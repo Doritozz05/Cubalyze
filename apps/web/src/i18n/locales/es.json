@@ -18,21 +18,78 @@
   },
   "nav": {
     "title": "Navegación",
-    "timer": "Cronómetro",
-    "insights": "Análisis",
-    "algorithms": "Algoritmos",
+    "main": "Principal",
     "training": "Entrenamiento",
-    "skillTree": "Árbol de habilidades",
+    "progress": "Progreso",
+    "explore": "Explorar",
+    "timer": "Cronómetro",
+    "algorithms": "Algoritmos",
+    "skills": "Habilidades",
+    "stats": "Estadísticas",
     "reconstructions": "Reconstrucciones",
-    "profile": "Perfil",
-    "widgets": "Widgets",
-    "settings": "Ajustes"
+    "widgets": "Widgets"
   },
   "settings": {
     "title": "Ajustes",
     "language": "Idioma",
     "languageAuto": "Idioma del sistema",
-    "languageHint": "Elige el idioma de la interfaz o sigue el del navegador"
+    "languageHint": "Elige el idioma de la interfaz o sigue el del navegador",
+    "preferences": "Preferencias",
+    "selectSection": "Selecciona una sección",
+    "sections": {
+      "profile": {
+        "label": "Perfil",
+        "description": "Tu identidad, avatar y métodos declarados."
+      },
+      "general": {
+        "label": "General",
+        "description": "Preferencias y comportamiento de la aplicación."
+      },
+      "appearance": {
+        "label": "Apariencia",
+        "description": "Preferencias de visualización y notación."
+      },
+      "smartCube": {
+        "label": "Smart cube",
+        "description": "Ajustes de Bluetooth, giroscopio y hardware."
+      },
+      "timer": {
+        "label": "Cronómetro",
+        "description": "Reglas de inicio del solve e inspección."
+      },
+      "scramble": {
+        "label": "Scramble",
+        "description": "Opciones de verificación y visualización del scramble."
+      },
+      "analysis": {
+        "label": "Análisis",
+        "description": "Desglose del solve, inspección y métricas."
+      },
+      "training": {
+        "label": "Entrenamiento",
+        "description": "Ejercicios, objetivos y rutinas de práctica."
+      },
+      "notifications": {
+        "label": "Notificaciones",
+        "description": "Alertas, sonido y feedback del cronómetro."
+      },
+      "shortcuts": {
+        "label": "Atajos",
+        "description": "Atajos de teclado para el cronómetro y la navegación."
+      },
+      "data": {
+        "label": "Datos",
+        "description": "Exporta y gestiona tus datos de solves."
+      },
+      "advanced": {
+        "label": "Avanzado",
+        "description": "Herramientas de desarrollo, datos y depuración."
+      },
+      "credits": {
+        "label": "Créditos",
+        "description": "Fuentes de datos, librerías y contribuciones de la comunidad."
+      }
+    }
   },
   "timer": {
     "scrambleCopied": "Scramble copiado",
