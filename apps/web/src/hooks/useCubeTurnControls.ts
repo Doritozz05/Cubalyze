@@ -21,12 +21,17 @@ import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
  *     row/column; diagonal crossings → the slice at the shared coordinate
  *     (see `resolveDragTurn` in the engine package). Every boundary crossing
  *     fires the move immediately (animated at the current turn speed) and
- *     re-baselines, so one continuous drag can chain several turns.
+ *     re-baselines, so one continuous drag can chain several turns. A drag
+ *     that ENDS without crossing a boundary (e.g. a short pull on the big
+ *     center sticker) still resolves on release: the move is derived by
+ *     probing just past the sticker edge in the drag direction and applying
+ *     the same geometry model.
  *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
  *   • DRAG ON THE BACKGROUND → the CUBE rotates in discrete 90° steps (y for
  *     left/right swipes, x for up/down swipes) exactly like the x/y keys —
  *     the camera stays locked on the isometric view.
- *   • 2 fingers → pinch zoom
+ *   • 2 fingers → pinch zoom (lifting one finger re-arms the remaining one
+ *     as a normal drag).
  *   • Keyboard (csTimer layout) → animated face turns via `performAction`
  *
  * Pointer-cancel (scroll / OS gesture) never commits — nothing is turned and
@@ -64,6 +69,30 @@ export interface UseCubeTurnControlsResult {
 
 type DragMode = "idle" | "sticker" | "background";
 
+/** Mutable state of the single active pointer gesture. */
+interface DragState {
+  mode: DragMode;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastY: number;
+  /** Cumulative pointer travel (px) since the drag started. */
+  totalDist: number;
+  /** Sticker pressed at pointer-down (the drag's geometric origin). */
+  startPick: CubeLayerPick | null;
+  /** True once a move has fired — later crossings don't need the dead zone. */
+  firedOnce: boolean;
+  /**
+   * True when this gesture was RE-ARMED from a pinch's remaining finger
+   * (see finishPointer). Re-armed gestures are drag-only: lifting without
+   * moving must NOT fire a tap-turn.
+   */
+  rearmed: boolean;
+  /** Accumulated background swipe (px) since the last 90° step. */
+  swipeX: number;
+  swipeY: number;
+}
+
 export function useCubeTurnControls({
   engineRef,
   minSwipeDistance = 6,
@@ -75,22 +104,7 @@ export function useCubeTurnControls({
 
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchDistRef = useRef(0);
-  const dragRef = useRef<{
-    mode: DragMode;
-    startX: number;
-    startY: number;
-    lastX: number;
-    lastY: number;
-    /** Cumulative pointer travel (px) since the drag started. */
-    totalDist: number;
-    /** Sticker pressed at pointer-down (the drag's geometric origin). */
-    startPick: CubeLayerPick | null;
-    /** True once a move has fired — later crossings don't need the dead zone. */
-    firedOnce: boolean;
-    /** Accumulated background swipe (px) since the last 90° step. */
-    swipeX: number;
-    swipeY: number;
-  }>({
+  const dragRef = useRef<DragState>({
     mode: "idle",
     startX: 0,
     startY: 0,
@@ -99,6 +113,7 @@ export function useCubeTurnControls({
     totalDist: 0,
     startPick: null,
     firedOnce: false,
+    rearmed: false,
     swipeX: 0,
     swipeY: 0,
   });
@@ -144,6 +159,7 @@ export function useCubeTurnControls({
           totalDist: 0,
           startPick: pick,
           firedOnce: false,
+          rearmed: false,
           swipeX: 0,
           swipeY: 0,
         };
@@ -158,6 +174,7 @@ export function useCubeTurnControls({
           totalDist: 0,
           startPick: null,
           firedOnce: false,
+          rearmed: false,
           swipeX: 0,
           swipeY: 0,
         };
@@ -165,6 +182,47 @@ export function useCubeTurnControls({
       }
     },
     [engineRef],
+  );
+
+  /**
+   * Resolve a "dead" sticker drag (one that never crossed a sticker
+   * boundary) on release: probe just past the sticker edge along the drag
+   * direction and resolve the move against that neighbor with the SAME
+   * geometry model as a live crossing. This keeps the model consistent — a
+   * short vertical pull on the center sticker still turns its slice (E/M/S),
+   * and a corner pull turns the layer its corner belongs to — while a
+   * pointer-cancel never fires anything.
+   */
+  const resolveReleaseMove = useCallback(
+    (canvas: HTMLCanvasElement, drag: DragState): CubeKeyAction | null => {
+      const engine = engineRef.current;
+      if (!engine || !drag.startPick || drag.totalDist < minSwipeDistance) return null;
+      const dirX = drag.lastX - drag.startX;
+      const dirY = drag.lastY - drag.startY;
+      const len = Math.hypot(dirX, dirY);
+      if (len < 1e-3) return null;
+      const ux = dirX / len;
+      const uy = dirY / len;
+      // Grow the probe until it leaves the pressed sticker (its on-screen
+      // size varies with zoom — up to ~170px covers a heavily zoomed-in
+      // center sticker), then resolve start → that neighbor.
+      for (const extra of [8, 18, 32, 52, 80, 120, 170]) {
+        const ndc = ndcFromPointer(canvas, drag.lastX + ux * extra, drag.lastY + uy * extra);
+        const cur: CubeLayerPick | null = ndc ? engine.pickLayer(ndc.x, ndc.y) : null;
+        if (!cur) continue;
+        if (cur.cubiePosition && drag.startPick.cubiePosition) {
+          const move = resolveDragTurn(
+            { position: drag.startPick.cubiePosition, face: drag.startPick.face },
+            { position: cur.cubiePosition, face: cur.face },
+          );
+          if (move) {
+            return { kind: 'turn', face: move.face, direction: move.direction };
+          }
+        }
+      }
+      return null;
+    },
+    [engineRef, minSwipeDistance],
   );
 
   const handlePointerMove = useCallback(
@@ -258,19 +316,27 @@ export function useCubeTurnControls({
         // pointer capture may already be lost
       }
 
-      // Tap on a sticker (no real drag, no move fired) → deterministic
-      // clockwise turn of the tapped face. Pointer-cancel never commits.
-      if (wasSticker && allowCommit && !drag.firedOnce && drag.totalDist < minSwipeDistance) {
-        const face = drag.startPick!.face;
-        onActionRef.current?.({ kind: "turn", face, direction: 1 });
+      // A sticker gesture that never fired a move, on a real commit:
+      //   • tap (no real drag, not re-armed from a pinch) → deterministic
+      //     clockwise turn of the face.
+      //   • drag that stayed inside one sticker → resolve against the
+      //     neighbor past the sticker edge (pointer-cancel never commits).
+      if (wasSticker && allowCommit && !drag.firedOnce && !drag.rearmed) {
+        if (drag.totalDist < minSwipeDistance) {
+          const face = drag.startPick!.face;
+          onActionRef.current?.({ kind: "turn", face, direction: 1 });
+        } else {
+          const action = resolveReleaseMove(canvas, drag);
+          if (action) onActionRef.current?.(action);
+        }
       }
 
       // Only finalize the gesture state if it is STILL the active one — a new
       // pointerdown during an animation replaces dragRef.current, and we must
       // never clobber the fresh gesture.
       const isCurrent = dragRef.current === drag;
-      const fresh = {
-        mode: "idle" as DragMode,
+      const fresh: DragState = {
+        mode: "idle",
         startX: 0,
         startY: 0,
         lastX: 0,
@@ -278,20 +344,37 @@ export function useCubeTurnControls({
         totalDist: 0,
         startPick: null,
         firedOnce: false,
+        rearmed: false,
         swipeX: 0,
         swipeY: 0,
       };
       if (pointers.current.size === 0) {
         if (isCurrent) dragRef.current = fresh;
       } else if (pointers.current.size === 1 && isCurrent) {
-        // 2 → 1 fingers: the remaining finger starts a FRESH gesture.
-        dragRef.current = fresh;
+        // 2 → 1 fingers: RE-ARM the remaining finger as a real gesture
+        // (sticker or background, depending on what's under it) so a pinch
+        // can continue as a drag without lifting. Its pointer-moves now
+        // drive the normal gesture state machine.
         const remaining = [...pointers.current.values()][0];
-        dragRef.current.lastX = remaining.x;
-        dragRef.current.lastY = remaining.y;
+        const ndc = ndcFromPointer(canvas, remaining.x, remaining.y);
+        const pick: CubeLayerPick | null =
+          ndc && engineRef.current ? engineRef.current.pickLayer(ndc.x, ndc.y) : null;
+        dragRef.current = {
+          mode: pick ? "sticker" : "background",
+          startX: remaining.x,
+          startY: remaining.y,
+          lastX: remaining.x,
+          lastY: remaining.y,
+          totalDist: 0,
+          startPick: pick,
+          firedOnce: false,
+          rearmed: true,
+          swipeX: 0,
+          swipeY: 0,
+        };
       }
     },
-    [minSwipeDistance],
+    [engineRef, minSwipeDistance, resolveReleaseMove],
   );
 
   return {
