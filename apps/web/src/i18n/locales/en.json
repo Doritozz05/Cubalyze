@@ -932,6 +932,17 @@
     "selectPuzzle": "Select puzzle",
     "dueForReview_one": "{{count}} due for review",
     "dueForReview_other": "{{count}} due for review",
+    "tabs": {
+      "practice": "Practice",
+      "calendar": "Calendar",
+      "review": "Review"
+    },
+    "startReviewShort": "Start review",
+    "todayDue_one": "Today · {{count}} due for review",
+    "todayDue_other": "Today · {{count}} due for review",
+    "goPractice": "Go practice",
+    "calendarPlanHint": "Click a day to add a training task.",
+    "selectMethodHint": "Select a method to see its exercises and algorithm sets.",
     "selectMethodEmpty": "Select a method above to see exercises",
     "fullSolve": {
       "title": "Full Solve",
@@ -1346,10 +1357,11 @@
         "Use M' U M' patterns to flip edges efficiently",
         "Aim for EO in < 1.5s with ≤ 7 moves"
       ]
-    },
-    "review": {
-      "title": "Review",
-      "reason": {
+    }, "review": {
+  "title": "Review",
+  "emptyTitle": "Nothing to review",
+  "emptyBody": "Cases you train or miss appear here for spaced review.",
+  "reason": {
         "overdue": "Overdue",
         "due": "Due",
         "weak": "Weak",
@@ -1433,6 +1445,17 @@
     "calendar": {
       "schedule": "Schedule",
       "today": "Today",
+      "upcoming": "Upcoming",
+      "weekEmpty": "Nothing planned for the next 7 days.",
+      "suggestions": "Plan suggestions",
+      "suggestionsHint": "One click seeds a routine — edit it anytime from the calendar.",
+      "added": "Added to your plan",
+      "template": {
+        "f2lDrill": "Daily F2L drill",
+        "pllRecognition": "PLL recognition",
+        "crossBlind": "Blind cross",
+        "fullSolve": "Weekly full solve"
+      },
       "weekday": {
         "sun": "Sunday",
         "mon": "Monday",

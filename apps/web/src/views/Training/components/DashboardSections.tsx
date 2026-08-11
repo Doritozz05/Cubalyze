@@ -1,18 +1,41 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
-import { ReviewQueueSection } from "./";
-import { TrainingCalendar } from "../TrainingCalendar";
-import type { PuzzleCategory } from "@/types";
 import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubeforge/training";
 import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel } from "@cubeforge/training";
-import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+import { SectionHeader } from "@/components/Insights/atoms/SectionHeader";
+import {
+  Box,
+  Layers,
+  Pyramid,
+  Zap,
+  Target,
+  Sparkles,
+  Crosshair,
+  Grid3x3,
+  Palette,
+  Shuffle,
+  Blocks,
+  ArrowRightLeft,
+  Gauge,
+  MoveHorizontal,
+  Grid2x2,
+  Clock,
+  EyeOff,
+  Eye,
+  ArrowUp,
+  MoveVertical,
+  BarChart3,
+  Play,
+  RotateCcw,
+  Timer,
+} from "lucide-react";
 
 /**
  * Localized descriptions for the training catalog (tanda 13 sweep).
@@ -89,35 +112,6 @@ const SUBSET_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
   "2x2x2:EG-1": "catalog.subset.2x2x2.EG-1",
   "2x2x2:EG-2": "catalog.subset.2x2x2.EG-2",
 };
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Box,
-  Layers,
-  Pyramid,
-  Zap,
-  Target,
-  Sparkles,
-  Crosshair,
-  Grid3x3,
-  Palette,
-  Shuffle,
-  Blocks,
-  ArrowRightLeft,
-  Gauge,
-  MoveHorizontal,
-  Grid2x2,
-  Clock,
-  EyeOff,
-  Eye,
-  ArrowUp,
-  MoveVertical,
-} from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Phase presentation
@@ -163,11 +157,6 @@ export function getPhaseModesWithIcons(phaseType: PhasePracticeType): PhaseModeD
   }));
 }
 
-const METHOD_ACCENTS: Record<string, string> = {
-  CFOP: "bg-ink/70", Roux: "bg-ink/60", ZZ: "bg-ink/50", Petrus: "bg-ink/40",
-  "Advanced 3x3": "bg-ink/30",
-  Ortega: "bg-ink/70", CLL: "bg-ink/60", EG: "bg-ink/50",
-};
 const METHOD_ICONS: Record<string, React.ElementType> = {
   CFOP: Layers, Roux: Box, ZZ: Zap, Petrus: Pyramid,
   "Advanced 3x3": Sparkles,
@@ -184,46 +173,41 @@ const PHASE_DOT: Record<string, string> = {
 };
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Flat Dashboard (Fase 6)
+   Practice workspace (the Training landing screen)
+   Method rail (selection) + method banner with a mastery ring + exercises
+   and algorithm sets as full-width rows with VISIBLE action chips. The
+   primary action per row is ink-filled, the rest are quiet outlines —
+   every option stays in view (no hidden menus).
    ─────────────────────────────────────────────────────────────────────── */
 
-export function FlatDashboard({
-  selectedPuzzle,
-  onSelectPuzzle,
+export function TrainingPractice({
   puzzleMethods,
   activeMethodId,
   onSelectMethod,
   methodMasteries,
   phaseStatsMap,
+  dueCount,
+  onStartReview,
   onDrill,
   onRecognize,
   onPracticeMode,
   onStats,
   onFullSolve,
-  onStartReview,
-  onOpenInsights,
-  onDueCountChange,
-  dueCount,
-  dbReady,
 }: {
-  selectedPuzzle: PuzzleCategory;
-  onSelectPuzzle: (puzzle: PuzzleCategory) => void;
   puzzleMethods: AlgorithmMethod[];
   activeMethodId: string;
   onSelectMethod: (methodId: string) => void;
   methodMasteries: Record<string, number>;
-  /** Real per-phase accuracy (0-100) keyed by phaseId — shown in Quick Summary. */
+  /** Real per-phase accuracy (0-100) keyed by phaseId — shown inline on rows. */
   phaseStatsMap: Record<string, PhaseStatsRecord | null>;
+  /** Live count of cases due for SRS review (drives the today strip). */
+  dueCount: number;
+  onStartReview: (methodId?: string) => void;
   onDrill: (methodId: string, phaseId: string, subsetId: string) => void;
   onRecognize: (methodId: string, phaseId: string, subsetId: string) => void;
   onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
   onStats: (methodId: string, phaseId: string, phaseName: string) => void;
   onFullSolve: (methodId: string) => void;
-  onStartReview: (methodId?: string) => void;
-  onOpenInsights: (methodId?: string) => void;
-  onDueCountChange: (due: number) => void;
-  dueCount: number;
-  dbReady: boolean;
 }) {
   const { t } = useTranslation("training");
   const method = METHODS.find((m) => m.id === activeMethodId);
@@ -231,12 +215,65 @@ export function FlatDashboard({
   const phases = method ? getPhasesForMethod(method.name) : [];
   const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
 
-  // ── Subset drill/recognize cards ("Algorithm Sets") ───────────────
+  // ── Mobile method chips: edge fades when the row overflows ────────────
+  // Mirrors WidgetDock's horizontal-scroll affordance: the scrollbar is
+  // hidden, so a gradient fade at the visible edge hints there is more
+  // content in that direction instead of looking like chips are cut off.
+  const methodChipsRef = useRef<HTMLDivElement>(null);
+  const [methodChipsEdges, setMethodChipsEdges] = useState({ left: false, right: false });
+
+  const updateMethodChipsEdges = useCallback(() => {
+    const el = methodChipsRef.current;
+    if (!el) return;
+    const atLeft = el.scrollLeft <= 2;
+    const atRight = el.scrollLeft >= el.scrollWidth - el.clientWidth - 2;
+    setMethodChipsEdges((prev) =>
+      prev.left === !atLeft && prev.right === !atRight
+        ? prev
+        : { left: !atLeft, right: !atRight },
+    );
+  }, []);
+
+  const methodChipsMask =
+    methodChipsEdges.left || methodChipsEdges.right
+      ? `linear-gradient(to right, ${methodChipsEdges.left ? "transparent" : "black"} 0, black 12px, black calc(100% - 12px), ${methodChipsEdges.right ? "transparent" : "black"} 100%)`
+      : undefined;
+
+  // Keep fades in sync with chip changes and window resizes.
+  useLayoutEffect(() => {
+    updateMethodChipsEdges();
+    const el = methodChipsRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(updateMethodChipsEdges);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateMethodChipsEdges, puzzleMethods.length, activeMethodId]);
+
+  // Mouse-wheel horizontal scroll when the row overflows (desktop trackpads
+  // at <lg widths, where the rail is hidden but the scrollbar is too).
+  useEffect(() => {
+    const el = methodChipsRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const overflow = el.scrollWidth > el.clientWidth + 1;
+      if (!overflow) return;
+      e.preventDefault();
+      // Normalize line-mode deltas to pixels so it scrolls comfortably.
+      const factor = e.deltaMode === 1 ? 16 : 1;
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY)
+        ? e.deltaX * factor
+        : e.deltaY * factor;
+      el.scrollLeft += dx;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [puzzleMethods.length, activeMethodId]);
+
+  // ── Subset drill/recognize rows ("Algorithm Sets") ─────────────
   // Subsets of the active method that are NOT already surfaced by a phase
-  // card (e.g. COLL, Winter Variation, or every subset of "Advanced 3x3",
-  // a method that has no phases). Subsets with zero seed cases (VLS, ZBLL,
-  // CMLL…) are omitted — they cannot be drilled yet. Case counts include
-  // child subsets (drilling a parent drills its children).
+  // row (e.g. COLL, Winter Variation, or every subset of "Advanced 3x3", a
+  // method that has no phases). Zero-case subsets (VLS, ZBLL, CMLL…) are
+  // disabled as "coming soon". Case counts include child subsets.
   const phaseSubsetIds = useMemo(() => {
     const ids = new Set<string>();
     if (!method) return ids;
@@ -245,27 +282,23 @@ export function FlatDashboard({
       if (sid) ids.add(sid);
     }
     return ids;
-    // phases is recreated on every render (getPhasesForMethod maps a new
-    // array); depend on a stable key (method id + phase ids) so the memo
-    // actually caches instead of recomputing every render.
+    // phases is recreated on every render; depend on a stable key so the
+    // memo actually caches instead of recomputing every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [method?.id, phases.map((p) => p.id).join(",")]);
 
-  const subsetCards = useMemo(() => {
+  const subsetRows = useMemo(() => {
     if (!method) return [];
     const { cases } = getSeedData();
     const countBySubset = new Map<string, number>();
     for (const c of cases) {
       countBySubset.set(c.subsetId, (countBySubset.get(c.subsetId) ?? 0) + 1);
     }
-    // A subset is already covered when it (or any descendant) matches the
-    // subset resolved by one of the method's phase cards. (Parent/child
-    // relationships in the registry are 1 level deep today.)
     const coversPhaseSubset = (subset: AlgorithmSubset): boolean => {
       if (phaseSubsetIds.has(subset.id)) return true;
       return getChildSubsets(subset.id).some((c) => phaseSubsetIds.has(c.id));
     };
-    const cards: { subset: AlgorithmSubset; caseCount: number }[] = [];
+    const rows: { subset: AlgorithmSubset; caseCount: number }[] = [];
     for (const subset of getSubsetsForMethod(method.id)) {
       if (coversPhaseSubset(subset)) continue;
       const direct = countBySubset.get(subset.id) ?? 0;
@@ -273,247 +306,352 @@ export function FlatDashboard({
         (s, c) => s + (countBySubset.get(c.id) ?? 0),
         0,
       );
-      // Every subset the user asked for gets a card; zero-case sets (VLS,
-      // ZBLL…) render disabled as "coming soon" instead of being hidden.
-      cards.push({ subset, caseCount: direct + childCount });
+      rows.push({ subset, caseCount: direct + childCount });
     }
-    return cards.sort((a, b) => a.subset.sortOrder - b.subset.sortOrder);
+    return rows.sort((a, b) => a.subset.sortOrder - b.subset.sortOrder);
   }, [method, phaseSubsetIds]);
 
   return (
-    <>
-      <header className="flex flex-col gap-3 shrink-0">
-        {/* Header row: Dropdown puzzle selector + SRS badge */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-3">{t("puzzle")}</span>
-            <Select value={selectedPuzzle} onValueChange={(val) => onSelectPuzzle(val as PuzzleCategory)}>
-              <SelectTrigger className="h-8 w-36 gap-2 rounded-lg border-line bg-surface px-2.5 text-[0.7rem] font-semibold text-ink shadow-xs">
-                <SelectValue placeholder={t("selectPuzzle")} />
-              </SelectTrigger>
-              <SelectContent>
-                {PUZZLE_CATEGORIES.map((p) => {
-                  const is2x2 = p === "2x2";
-                  const is3x3 = p === "3x3";
-                  return (
-                    <SelectItem key={p} value={p} className="text-[0.7rem]">
-                      <div className="flex items-center gap-2 font-medium">
-                        {is2x2 ? (
-                          <Grid2x2 className="size-3.5 text-ink-2" />
-                        ) : is3x3 ? (
-                          <Grid3x3 className="size-3.5 text-ink-2" />
-                        ) : (
-                          <Box className="size-3.5 text-ink-2" />
-                        )}
-                        <span>{p}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+    <div className="flex min-h-0 flex-1">
+      {/* Method rail (desktop) */}
+      <aside className="hidden w-52 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line p-2.5 lg:flex">
+        <p className="px-2 pb-1.5 pt-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+          {t("method")}
+        </p>
+        {puzzleMethods.map((m) => (
+          <MethodRailItem
+            key={m.id}
+            method={m}
+            mastery={methodMasteries[m.name] ?? 0}
+            active={m.id === activeMethodId}
+            onClick={() => onSelectMethod(m.id)}
+          />
+        ))}
+      </aside>
+
+      {/* Main workspace */}
+      <div className="min-w-0 flex-1 overflow-y-auto pb-safe">
+        <div className="mx-auto flex max-w-4xl flex-col gap-6 p-4 sm:p-6">
+          {/* Today strip — due review, only when there is something to do */}
+          {dueCount > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution/25 bg-caution/5 px-3.5 py-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <RotateCcw className="size-3.5 shrink-0 text-caution" />
+                <p className="truncate text-[0.68rem] text-ink-2">{t("dueForReview", { count: dueCount })}</p>
+              </div>
+              <button
+                onClick={() => onStartReview()}
+                className="inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-ink px-2.5 text-[0.62rem] font-semibold text-surface transition-colors hover:bg-ink/90"
+              >
+                <Play className="size-3" />
+                {t("startReviewShort")}
+              </button>
+            </div>
+          )}
+
+          {/* Mobile method chips */}
+          <div
+            ref={methodChipsRef}
+            onScroll={updateMethodChipsEdges}
+            className="-mx-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 pb-0.5 scrollbar-none lg:hidden"
+            style={{ maskImage: methodChipsMask, WebkitMaskImage: methodChipsMask }}
+          >
+            {puzzleMethods.map((m) => {
+              const isActive = m.id === activeMethodId;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => onSelectMethod(m.id)}
+                  className={cn(
+                    "inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3 text-[0.68rem] font-medium transition-colors",
+                    isActive ? "bg-ink text-surface" : "bg-surface-2 text-ink-3 hover:text-ink",
+                  )}
+                >
+                  {m.name}
+                  <span className="nums text-[0.55rem] opacity-70">{methodMasteries[m.name] ?? 0}%</span>
+                </button>
+              );
+            })}
           </div>
 
-          {dueCount > 0 && (
-            <span className="nums shrink-0 inline-flex items-center gap-1.5 rounded-full bg-caution px-2.5 py-0.5 text-[0.6rem] font-semibold text-surface ml-auto">
-              <span className="size-1.5 rounded-full bg-surface shrink-0" />
-              {t("dueForReview", { count: dueCount })}
-            </span>
-          )}
-        </div>
-
-        {/* Method tabs — filtered by selected puzzle */}
-        <div className="flex gap-1 flex-wrap items-center max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:snap-x max-lg:snap-mandatory max-lg:pb-1 max-lg:scrollbar-none">
-          {puzzleMethods.map((m) => {
-            const MIcon = METHOD_ICONS[m.name] ?? Layers;
-            const isActive = m.id === activeMethodId;
-            const mPct = methodMasteries[m.name] ?? 0;
-            return (
-              <button
-                key={m.id}
-                onClick={() => onSelectMethod(m.id)}
-                className={cn(
-                  "relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors cursor-pointer",
-                  // Touch: scroll-snap chips with >=40px tap targets.
-                  "max-lg:h-10 max-lg:shrink-0 max-lg:snap-start max-lg:px-3.5",
-                  isActive
-                    ? "bg-ink text-surface"
-                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="method-tab-active"
-                    className="absolute inset-0 rounded-md bg-ink -z-10"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <MIcon className="size-3" />
-                {m.name}
-                <span className="nums text-[0.55rem] opacity-70 ml-0.5">{mPct}%</span>
-              </button>
-            );
-          })}
-        </div>
-      </header>
-
-      {!method ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-[0.72rem] text-ink-3">{t("selectMethodEmpty")}</p>
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col gap-6 overflow-y-auto min-h-0 pb-4">
-          {/* Method mastery header */}
-          <section className="shrink-0 rounded-xl border border-line bg-surface p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="grid size-8 place-items-center rounded-lg border border-line bg-surface-2">
-                  {(() => { const Icon = METHOD_ICONS[method.name] ?? Layers; return <Icon className="size-4 text-ink" />; })()}
+          {!method ? (
+            <p className="py-10 text-center text-[0.72rem] text-ink-3">{t("selectMethodHint")}</p>
+          ) : (
+            <>
+              {/* Method banner */}
+              <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-surface p-5">
+                <div className="flex min-w-0 items-center gap-4">
+                  {/* Mastery ring — the method's progress at a glance */}
+                  <div className="relative size-14 shrink-0">
+                    <svg viewBox="0 0 36 36" className="size-14 -rotate-90">
+                      <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3" className="stroke-line" />
+                      <motion.circle
+                        cx="18"
+                        cy="18"
+                        r="15.5"
+                        fill="none"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        initial={{ strokeDasharray: "0 100" }}
+                        animate={{ strokeDasharray: `${Math.max(mastery, 0.5)} 100` }}
+                        transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                        className={cn(
+                          "stroke-ink/70",
+                          mastery >= 80 && "stroke-ready",
+                          mastery >= 50 && mastery < 80 && "stroke-caution",
+                        )}
+                      />
+                    </svg>
+                    <span className="nums absolute inset-0 grid place-items-center text-[0.68rem] font-semibold text-ink">
+                      {mastery}%
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-[0.95rem] font-semibold tracking-tight text-ink">{method.name}</h3>
+                    <p className="mt-0.5 max-w-md text-[0.68rem] leading-relaxed text-ink-3">
+                      {methodDescKey ? t(methodDescKey) : method.description}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-[0.82rem] font-semibold text-ink">{method.name}</h2>
-                  <p className="text-[0.62rem] text-ink-3">{methodDescKey ? t(methodDescKey) : method.description}</p>
-                </div>
-              </div>
-              {phases.length > 0 && (
-                <button
-                  onClick={() => onFullSolve(method.id)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
-                >
-                  <Target className="size-3" />{t("fullSolve.title")}
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-32 rounded-full bg-surface-2 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${mastery}%` }}
-                    transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-                    className={cn("h-full rounded-full", METHOD_ACCENTS[method.name] ?? "bg-ink/60")}
-                  />
-                </div>
-                <span className="nums text-[0.68rem] font-medium text-ink">{mastery}%</span>
-                <span className="text-[0.58rem] text-ink-3">{t(`mastery.${masteryLevel(mastery)}`)}</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Exercise cards — only for methods with training phases (CFOP,
-              Roux…). "Advanced 3x3" has no phases, so its subsets below are
-              the only practice surface. */}
-          {phases.length > 0 && (
-            <section className="shrink-0">
-              <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">{t("exercises")}</h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {phases.map((phase) => (
-                  <ExerciseCard
-                    key={phase.id}
-                    phase={phase}
-                    puzzleType={method.puzzleType}
-                    onDrill={() => {
-                      const sid = findSubsetId(method.id, phase.id);
-                      if (sid) onDrill(method.id, phase.id, sid);
-                    }}
-                    onRecognize={() => {
-                      const sid = findSubsetId(method.id, phase.id);
-                      if (sid) onRecognize(method.id, phase.id, sid);
-                    }}
-                    onPracticeMode={(modeId) => {
-                      const pt = getPhasePracticeType(phase.id);
-                      if (pt) onPracticeMode(method.id, phase.id, phase.name, pt, modeId);
-                    }}
-                    onStats={() => onStats(method.id, phase.id, phase.name)}
-                    phaseModes={
-                      !phase.hasAlgorithms
-                        ? (() => { const pt = getPhasePracticeType(phase.id); return pt ? getPhaseModesWithIcons(pt) : []; })()
-                        : null
-                    }
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Algorithm Sets — subset drill/recognize cards for every subset
-              not already surfaced by a phase card (COLL, Winter Variation,
-              CLS, SV, ELL, Anti PLL…). Drill/Recognize use phaseId "" exactly
-              like the Algorithms → Training bridge. */}
-          {subsetCards.length > 0 && (
-            <section className="shrink-0">
-              <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3">{t("algorithmSets")}</h2>
-                <span className="text-[0.58rem] text-ink-3/60">{t("drillOrRecognizeEachSet")}</span>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {subsetCards.map(({ subset, caseCount }) => (
-                  <SubsetCard
-                    key={subset.id}
-                    subset={subset}
-                    caseCount={caseCount}
-                    puzzleType={method.puzzleType}
-                    onDrill={() => onDrill(method.id, "", subset.id)}
-                    onRecognize={() => onRecognize(method.id, "", subset.id)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Quick Summary + Calendar */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {phases.length > 0 && (
-              <section className="lg:col-span-1 rounded-xl border border-line bg-surface p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="size-3.5 text-ink-2" />
-                  <h2 className="text-[0.7rem] font-semibold text-ink">{t("quickSummary")}</h2>
-                </div>
-                <div className="space-y-2.5">
-                  {phases.slice(0, 5).map((phase) => {
-                    const stats = phaseStatsMap[phase.id];
-                    const hasData = stats != null && stats.totalAttempts > 0;
-                    return (
-                      <div key={phase.id} className="flex items-center gap-2">
-                        <div className={cn("size-1.5 rounded-full", PHASE_DOT[phase.id] ?? "bg-ink-3")} />
-                        <span className="text-[0.62rem] text-ink-2 flex-1">{phase.name}</span>
-                        <span className={cn(
-                          "nums text-[0.58rem] font-medium",
-                          hasData ? (stats.accuracy >= 80 ? "text-ready" : stats.accuracy >= 50 ? "text-caution" : "text-hold") : "text-ink-3/50",
-                        )}>
-                          {hasData ? `${stats.accuracy}%` : "—"}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="text-[0.62rem] font-medium text-ink-3">{t(`mastery.${masteryLevel(mastery)}`)}</span>
+                  {phases.length > 0 && (
+                    <button
+                      onClick={() => onFullSolve(method.id)}
+                      className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-ink px-3.5 text-[0.68rem] font-semibold text-surface transition-colors hover:bg-ink/90"
+                    >
+                      <Timer className="size-3.5" />
+                      {t("fullSolve.title")}
+                    </button>
+                  )}
                 </div>
               </section>
-            )}
 
-            <section className={cn("rounded-xl border border-line bg-surface p-4", phases.length > 0 ? "lg:col-span-2" : "lg:col-span-3")}>
-              <TrainingCalendar />
-            </section>
-          </div>
+              {/* Exercises — phases as rows */}
+              {phases.length > 0 && (
+                <section className="flex flex-col gap-2.5">
+                  <SectionHeader title={t("exercises")} eyebrow={`${phases.length}`} />
+                  <div className="flex flex-col gap-2">
+                    {phases.map((phase) => (
+                      <PhaseRow
+                        key={phase.id}
+                        phase={phase}
+                        puzzleType={method.puzzleType}
+                        stats={phaseStatsMap[phase.id] ?? null}
+                        onDrill={() => {
+                          const sid = findSubsetId(method.id, phase.id);
+                          if (sid) onDrill(method.id, phase.id, sid);
+                        }}
+                        onRecognize={() => {
+                          const sid = findSubsetId(method.id, phase.id);
+                          if (sid) onRecognize(method.id, phase.id, sid);
+                        }}
+                        onPracticeMode={(modeId) => {
+                          const pt = getPhasePracticeType(phase.id);
+                          if (pt) onPracticeMode(method.id, phase.id, phase.name, pt, modeId);
+                        }}
+                        onStats={() => onStats(method.id, phase.id, phase.name)}
+                        phaseModes={
+                          !phase.hasAlgorithms
+                            ? (() => {
+                                const pt = getPhasePracticeType(phase.id);
+                                return pt ? getPhaseModesWithIcons(pt) : [];
+                              })()
+                            : null
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
 
-          {/* Quick Start — SRS daily review queue */}
-          {dbReady && (
-            <ReviewQueueSection
-              onStartReview={onStartReview}
-              onOpenInsights={onOpenInsights}
-              onDueCountChange={onDueCountChange}
-            />
+              {/* Algorithm Sets — subsets as rows */}
+              {subsetRows.length > 0 && (
+                <section className="flex flex-col gap-2.5">
+                  <SectionHeader title={t("algorithmSets")} eyebrow={t("drillOrRecognizeEachSet")} />
+                  <div className="flex flex-col gap-2">
+                    {subsetRows.map(({ subset, caseCount }) => (
+                      <SubsetRow
+                        key={subset.id}
+                        subset={subset}
+                        caseCount={caseCount}
+                        puzzleType={method.puzzleType}
+                        onDrill={() => onDrill(method.id, "", subset.id)}
+                        onRecognize={() => onRecognize(method.id, "", subset.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   Subset card (Algorithm Sets — drill/recognize a whole subset)
-   ─────────────────────────────────────────────────────────────────────── */
+/* ── Method rail item (practice tab, desktop) ──────────────────────────── */
 
-export function SubsetCard({
+function MethodRailItem({
+  method,
+  mastery,
+  active,
+  onClick,
+}: {
+  method: AlgorithmMethod;
+  mastery: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const Icon = METHOD_ICONS[method.name] ?? Layers;
+  return (
+    <button
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30",
+        active ? "text-ink" : "text-ink-3 hover:bg-surface-2/60 hover:text-ink",
+      )}
+    >
+      {active && (
+        <motion.div
+          layoutId="training-method-pill"
+          className="absolute inset-0 rounded-md bg-surface-2"
+          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        />
+      )}
+      <Icon className={cn("relative size-3.5", active ? "text-ink" : "text-ink-3/70")} />
+      <span className="relative min-w-0 flex-1 truncate text-[0.7rem] font-medium">{method.name}</span>
+      <span className="nums relative text-[0.58rem] text-ink-3">{mastery}%</span>
+    </button>
+  );
+}
+
+/* ── Action chip — visible, hierarchical (primary = ink fill) ──────────── */
+
+/* ── Action chip — uniformly quiet so every mode reads equal; the only
+   filled control in the workspace is Full Solve in the method banner. ── */
+
+function ActionChip({
+  onClick,
+  disabled,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-8 max-lg:h-9 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface-2/70 px-3 text-[0.65rem] font-medium text-ink-2 transition-all hover:border-ink/20 hover:bg-surface-2 hover:text-ink",
+        disabled && "cursor-not-allowed opacity-40",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── Phase row (exercise) — info left, visible actions right ──────────── */
+
+function PhaseRow({
+  phase,
+  puzzleType,
+  stats,
+  onDrill,
+  onRecognize,
+  onPracticeMode,
+  onStats,
+  phaseModes,
+}: {
+  phase: PhaseDef;
+  puzzleType: string;
+  stats: PhaseStatsRecord | null;
+  onDrill: () => void;
+  onRecognize: () => void;
+  onPracticeMode: (modeId: string) => void;
+  onStats: () => void;
+  phaseModes: PhaseModeDef[] | null;
+}) {
+  const { t } = useTranslation("training");
+  const Icon = phase.icon;
+  const descKey = PHASE_DESC_KEY[`${puzzleType}:${phase.id}`];
+  const hasData = stats != null && stats.totalAttempts > 0;
+  const isAlgo = phase.hasAlgorithms;
+  const modes = phaseModes ?? [];
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
+          <Icon className="size-4 text-ink-2" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-[0.78rem] font-semibold text-ink">{phase.name}</p>
+            <span className={cn("size-1.5 shrink-0 rounded-full", PHASE_DOT[phase.id] ?? "bg-ink-3")} />
+            <span className="shrink-0 text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3">
+              {isAlgo ? t("algorithmic") : t("intuitive")}
+            </span>
+          </div>
+          <p className="truncate text-[0.62rem] text-ink-3">{descKey ? t(descKey) : phase.description}</p>
+        </div>
+        {hasData && (
+          <span
+            className={cn(
+              "nums hidden shrink-0 text-[0.68rem] font-medium sm:inline",
+              stats.accuracy >= 80 ? "text-ready" : stats.accuracy >= 50 ? "text-caution" : "text-hold",
+            )}
+            title={t("stats")}
+          >
+            {stats.accuracy}%
+          </span>
+        )}
+      </div>
+
+      {/* Visible actions — all quiet outlines; Full Solve in the banner is
+          the single filled control in the workspace */}
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+        {isAlgo ? (
+          <>
+            <ActionChip onClick={onDrill}>
+              <Gauge className="size-3" /> {t("drill.title")}
+            </ActionChip>
+            <ActionChip onClick={onRecognize}>
+              <Eye className="size-3" /> {t("recognize.title")}
+            </ActionChip>
+            <ActionChip onClick={onStats}>
+              <BarChart3 className="size-3" /> {t("stats")}
+            </ActionChip>
+          </>
+        ) : modes.length > 0 ? (
+          <>
+            {modes.map((m) => (
+              <ActionChip key={m.id} onClick={() => onPracticeMode(m.id)}>
+                <m.icon className="size-3" /> {m.label}
+              </ActionChip>
+            ))}
+            <ActionChip onClick={onStats}>
+              <BarChart3 className="size-3" /> {t("stats")}
+            </ActionChip>
+          </>
+        ) : (
+          <ActionChip onClick={onStats}>
+            <BarChart3 className="size-3" /> {t("stats")}
+          </ActionChip>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Subset row (algorithm set) — same pattern ────────────────────────── */
+
+function SubsetRow({
   subset,
   caseCount,
   puzzleType,
@@ -529,127 +667,29 @@ export function SubsetCard({
   const { t } = useTranslation("training");
   const disabled = caseCount <= 0;
   const descKey = SUBSET_DESC_KEY[`${puzzleType}:${subset.name}`];
-  return (
-    <motion.div
-      whileTap={disabled ? undefined : { scale: 0.98 }}
-      className={cn(
-        "group flex flex-col gap-3 rounded-xl border p-4 transition-all duration-200",
-        disabled
-          ? "border-line/50 bg-surface/60 opacity-70"
-          : "border-line bg-surface hover:border-ink/12 hover:bg-surface-2/60 hover:shadow-sm",
-      )}
-    >
-      <div className="flex items-center gap-2.5">
-        <div className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
-          <Sparkles className="size-3.5 text-ink-2" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{subset.name}</span>
-          <span className="nums text-[0.6rem] text-ink-3">
-            {disabled ? t("comingSoon") : t("caseCount", { count: caseCount })}
-          </span>
-        </div>
-      </div>
-      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{descKey ? t(descKey) : subset.description}</p>
-      <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:pt-2">
-        <button
-          onClick={onDrill}
-          disabled={disabled}
-          className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
-        >
-          {t("drill.title")}
-        </button>
-        <button
-          onClick={onRecognize}
-          disabled={disabled}
-          className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
-        >
-          {t("recognize.title")}
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Exercise card (direct navigation — no L2)
-   ─────────────────────────────────────────────────────────────────────── */
-
-export function ExerciseCard({
-  phase,
-  puzzleType,
-  onDrill,
-  onRecognize,
-  onPracticeMode,
-  onStats,
-  phaseModes,
-}: {
-  phase: PhaseDef;
-  puzzleType: string;
-  onDrill: () => void;
-  onRecognize: () => void;
-  onPracticeMode: (modeId: string) => void;
-  onStats: () => void;
-  phaseModes: PhaseModeDef[] | null;
-}) {
-  const { t } = useTranslation("training");
-  const dotColor = PHASE_DOT[phase.id] ?? "bg-ink-3";
-  const Icon = phase.icon;
-  const descKey = PHASE_DESC_KEY[`${puzzleType}:${phase.id}`];
 
   return (
-    <motion.div
-      whileTap={{ scale: 0.98 }}
-      className="group flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:border-ink/12 hover:bg-surface-2/60 hover:shadow-sm"
-    >
-      <div className="flex items-center gap-2.5">
-        <div className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
-          <Icon className="size-3.5 text-ink-2" />
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
+          <Sparkles className="size-4 text-ink-2" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{phase.name}</span>
-            <span className={cn("size-1.5 shrink-0 rounded-full", dotColor)} />
-          </div>
-          <span className="nums text-[0.6rem] text-ink-3">{phase.hasAlgorithms ? t("algorithmic") : t("intuitive")}</span>
+          <p className="truncate text-[0.78rem] font-semibold text-ink">{subset.name}</p>
+          <p className="truncate text-[0.62rem] text-ink-3">{descKey ? t(descKey) : subset.description}</p>
         </div>
+        <span className="nums shrink-0 text-[0.6rem] text-ink-3">
+          {disabled ? t("comingSoon") : t("caseCount", { count: caseCount })}
+        </span>
       </div>
-      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{descKey ? t(descKey) : phase.description}</p>
-      <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-3 max-lg:gap-1.5 max-lg:pt-2">
-        {phase.hasAlgorithms ? (
-          <>
-            <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              {t("drill.title")}
-            </button>
-            <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              {t("recognize.title")}
-            </button>
-            <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
-              {t("stats")}
-            </button>
-          </>
-        ) : phaseModes && phaseModes.length > 0 ? (
-          <>
-            {phaseModes.map((pm) => (
-              <button
-                key={pm.id}
-                onClick={() => onPracticeMode(pm.id)}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:justify-center max-lg:py-2.5 max-lg:text-[0.68rem]"
-              >
-                <pm.icon className="size-3" />
-                {pm.label}
-              </button>
-            ))}
-            <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
-              {t("stats")}
-            </button>
-          </>
-        ) : (
-          <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:col-span-3 max-lg:py-2.5 max-lg:text-[0.7rem]">
-            {t("stats")}
-          </button>
-        )}
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+        <ActionChip onClick={onDrill} disabled={disabled}>
+          <Gauge className="size-3" /> {t("drill.title")}
+        </ActionChip>
+        <ActionChip onClick={onRecognize} disabled={disabled}>
+          <Eye className="size-3" /> {t("recognize.title")}
+        </ActionChip>
       </div>
-    </motion.div>
+    </div>
   );
 }

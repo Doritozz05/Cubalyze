@@ -932,6 +932,17 @@
     "selectPuzzle": "Selecciona puzzle",
     "dueForReview_one": "{{count}} pendiente de repaso",
     "dueForReview_other": "{{count}} pendientes de repaso",
+    "tabs": {
+      "practice": "Práctica",
+      "calendar": "Calendario",
+      "review": "Repaso"
+    },
+    "startReviewShort": "Iniciar repaso",
+    "todayDue_one": "Hoy · {{count}} pendiente de repaso",
+    "todayDue_other": "Hoy · {{count}} pendientes de repaso",
+    "goPractice": "Ir a entrenar",
+    "calendarPlanHint": "Haz clic en un día para añadir una tarea de entrenamiento.",
+    "selectMethodHint": "Selecciona un método para ver sus ejercicios y conjuntos de algoritmos.",
     "selectMethodEmpty": "Selecciona un método arriba para ver los ejercicios",
     "fullSolve": {
       "title": "Resolución completa",
@@ -1346,10 +1357,11 @@
         "Usa patrones M' U M' para orientar aristas con eficiencia",
         "Busca el EO en < 1.5s con ≤ 7 movimientos"
       ]
-    },
-    "review": {
-      "title": "Repaso",
-      "reason": {
+    }, "review": {
+  "title": "Repaso",
+  "emptyTitle": "Nada que repasar",
+  "emptyBody": "Los casos que entrenes o falles aparecerán aquí para repaso espaciado.",
+  "reason": {
         "overdue": "Atrasado",
         "due": "Pendiente",
         "weak": "Débil",
@@ -1433,6 +1445,17 @@
     "calendar": {
       "schedule": "Calendario",
       "today": "Hoy",
+      "upcoming": "Próximas",
+      "weekEmpty": "Nada planeado para los próximos 7 días.",
+      "suggestions": "Sugerencias de plan",
+      "suggestionsHint": "Un clic crea una rutina — edítala cuando quieras desde el calendario.",
+      "added": "Añadido a tu plan",
+      "template": {
+        "f2lDrill": "Drill de F2L diario",
+        "pllRecognition": "Reconocimiento de PLL",
+        "crossBlind": "Cruz a ciegas",
+        "fullSolve": "Full solve semanal"
+      },
       "weekday": {
         "sun": "Domingo",
         "mon": "Lunes",
