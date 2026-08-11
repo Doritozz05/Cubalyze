@@ -254,6 +254,13 @@ export function useCubeTurnControls({
         drag.totalDist += Math.hypot(dx, dy);
         if (!drag.startPick) return;
 
+        // While a previous move is still animating, cubies sit on a pivot
+        // group and are mid-rotation — pickLayer() would return corrupted
+        // face labels and stale grid positions, cascading into many wrong
+        // moves. Skip until the animation settles; the next pointer-move
+        // after it completes will pick cleanly.
+        if (engine.isAnimating()) return;
+
         // Sticker geometry: resolve the move from START sticker → CURRENT
         // sticker. Fires on every boundary crossing; re-baselines so one
         // drag can chain several turns.

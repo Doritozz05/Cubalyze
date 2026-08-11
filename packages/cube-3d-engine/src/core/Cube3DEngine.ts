@@ -171,6 +171,11 @@ export class Cube3DEngine {
     return !this.isRunning || (this.sceneManager?.isContextEvicted() ?? false);
   }
 
+  /** True when any layer rotation is in-flight (animated or live-twist). */
+  public isAnimating(): boolean {
+    return this.rotationEngine?.isAnimating() ?? false;
+  }
+
   public requestRender(): void {
     if (!this.isRunning) return;
     if (this.sceneManager?.isContextEvicted()) return;
