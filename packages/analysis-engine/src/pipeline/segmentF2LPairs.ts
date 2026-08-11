@@ -9,6 +9,33 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { pickSlotFrame } from './slotFrame';
 
 /**
+ * A slot completion that dips at the next entry (killed by the 1-entry
+ * persistence check) is re-examined against a window of this many FUTURE
+ * entries: if the slot re-appears complete AND a DIFFERENT undedicated slot
+ * completes inside the window, the first completion was a real pair boundary
+ * that the next pair's insertion displaced, and it fires EARLY at its first
+ * home (see the scan loop).
+ *
+ * reconz-5061: the first pair ("U R' U' R") finishes with FL home, the
+ * second pair ("L' U' L") passes through it for two moves, and FL is home
+ * again at its end — alongside BL. With only the 1-entry lookahead, FL fired
+ * together with BL at the second pair's end: one stole the whole segment
+ * ("F2L 1 BL — 7 moves") and the other got an empty one ("F2L 2 FL — 0
+ * moves"). BL completing inside the window proves the displacement came from
+ * the BL insertion, so FL fires at its first home (move 9) and the two
+ * algorithms stay separate.
+ *
+ * A re-appearance WITHOUT another slot's completion is a pass-through of the
+ * pair's OWN algorithm — reconz-12340's "U R U R' U R' F R F'" has FR home
+ * mid-algorithm but only really completes at the F R F' tail, which carries
+ * no other completion: the first home is killed and the pair fires at the
+ * genuine re-completion. 3 covers the measured disturbance gap (5061: BL
+ * completes exactly 3 entries after FL's first home) while keeping the
+ * false-positive window tight.
+ */
+const PERSISTENCE_WINDOW = 3;
+
+/**
  * Raw entry state in the SOLVER's frame (no frame rotation applied): when P2
  * frame recovery rotated the timeline, the pre-recovery snapshots were
  * preserved on the timeline and must drive the slot analysis (piece-anchored
@@ -296,14 +323,61 @@ export function segmentF2LPairs(
     // lookahead and fires directly.
     let newBits = (comp.slotMask & unsolvedMask & ~declaredMask) & ~prevMask;
     if (newBits && i < end) {
+      // Persistence, phase 1 — the completion must survive the NEXT entry:
+      // an insertion often passes through the home position mid-algorithm
+      // (e.g. "R U R' U R' F R F'" shows FR home at its 4th move but dips
+      // and only really completes at its last); firing the dip would
+      // fabricate a pair. The F2L-span end has no lookahead and fires
+      // directly.
       const next = frameStateAt(i + 1);
-      if (next) {
-        const nextComp = countCompletedF2LSlotsInFrame(
-          next,
-          crossFace,
-          schemeToUse,
-        );
-        newBits &= nextComp.slotMask;
+      const survivedBits = next
+        ? countCompletedF2LSlotsInFrame(next, crossFace, schemeToUse)
+            .slotMask & newBits
+        : 0;
+      if (survivedBits) {
+        // Per-bit persistence: only the completions that survive the NEXT
+        // entry fire here — a simultaneous completion that dips re-fires at
+        // its own real completion (it stays excluded via prevMask).
+        newBits = survivedBits;
+      } else {
+        // Phase 2 — the completion dipped at the next entry. It is either
+        // a mid-algorithm pass-through (killed here; it re-fires at its
+        // real completion) or a REAL pair boundary that the NEXT pair's
+        // insertion displaced (reconz-5061: "U R' U' R" finishes with FL
+        // home, then the "L' U' L" insertion passes through it, and both
+        // FL and BL are home at the second pair's end — firing both there
+        // merged the two algorithms into "F2L1 BL 7 moves" + "F2L2 FL 0
+        // moves"). Distinguish with the window: fire at the FIRST home only
+        // when the slot re-appears AND a DIFFERENT (undedicated) slot
+        // completed inside the window — the displacement came from that
+        // other pair's insertion. A re-appearance with no other completion
+        // (reconz-12340's "F R F'" tail) is a pass-through of this pair's
+        // own algorithm — wait for the genuine re-completion.
+        let reappears = 0;
+        let otherCompletes = 0;
+        let prevInWindow = comp.slotMask;
+        const hi = Math.min(end, i + PERSISTENCE_WINDOW);
+        for (let j = i + 1; j <= hi; j++) {
+          const later = frameStateAt(j);
+          if (!later) break;
+          const laterComp = countCompletedF2LSlotsInFrame(
+            later,
+            crossFace,
+            schemeToUse,
+          );
+          reappears |= laterComp.slotMask;
+          otherCompletes |=
+            laterComp.slotMask & unsolvedMask & ~declaredMask & ~prevInWindow;
+          prevInWindow = laterComp.slotMask;
+        }
+        if (reappears & newBits) {
+          // The slot came back inside the window. Fire at the first home
+          // only if another slot's completion displaced it.
+          if ((otherCompletes & ~newBits) === 0) newBits = 0;
+        } else {
+          // Never came back inside the window: pure pass-through, killed.
+          newBits = 0;
+        }
       }
     }
     if (newBits) {
