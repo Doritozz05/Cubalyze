@@ -116,11 +116,13 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
  *   • A math-core {@link CubeState} mirrors every move for LOGIC (solved
  *     detection, timer). It is never serialized to facelets in the hot path,
  *     so rotated frames never desync the centers.
- *   • Drag (virtual-cube.net model): the move is derived from the GEOMETRY of
- *     the pressed sticker and the sticker under the pointer (row/column
- *     slices, face turns on edge crossings) — never from the sticker's face
- *     alone. Dragging the background rotates the whole cube in discrete 90°
- *     steps while the camera stays locked on the isometric view.
+ *   • Drag (csTimer live-twist model): the LAYER under the finger follows it
+ *     live and snaps 90° on release (past the halfway point). Vertical drags
+ *     turn the column at the sticker (R/M/L), horizontal drags the row
+ *     (U/E/D) — grabbing the right column up turns R, the middle column M,
+ *     a right-swipe on U turns U, on D turns D. Dragging the background
+ *     rotates the whole cube in discrete 90° steps while the camera stays
+ *     locked on the isometric view.
  *   • The scramble is applied INSTANTLY (no animation); the per-move turn
  *     speed is user-configurable, and 'instant' disables move animations too.
  *
@@ -306,7 +308,11 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   const { performAction, pointerHandlers } = useCubeTurnControls({
     engineRef,
-    onAction: applyAction,
+    // Drag snap duration follows the same turn-speed preference as the
+    // keyboard path (0 = instant, so the live twist lands without a snap).
+    snapDurationMs: TURN_SPEED_BASE_MS[cubeTurnSpeed],
+    onAction: applyAction, // keyboard path: animate the move, then commit
+    onTurnCommitted: commitMove, // touch path: the snap already animated
   });
 
   // ── csTimer-layout keyboard binding (only while this view is mounted) ───
