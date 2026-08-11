@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -460,13 +460,73 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
 - **Queda fuera**: coordenadas x/y, colores, iconos, XP, mastery y la lógica de
   layout (`skillTreeLayout.ts` — sin strings).
 
-### Tanda 9 — Profile (tab)
-- **Zonas**:
-  - `ProfileView` (cabecera, métricas, XP, logros) + `ProfileHero` (fechas con locale activo — hoy `en-US` hardcodeado).
-  - Logros/badges (`CreativeBadges`, logros de cubos) + `subBadges`.
-  - (La sección Profile de Settings ya se tradujo la etiqueta; quedan sus controles — ver tanda 11.)
-- **Namespace**: `profile`.
-- **Dificultad**: media.
+### Tanda 9 — Profile (tab) *(hecha)*
+- **Zonas** (volumen medido: 3 archivos · ~1.040 líneas · ~45 strings de UI):
+  - `ProfileView` (575 l): header "Profile", 5 tabs (Overview/Stats/Training/
+    Algorithms/Skills), `OverviewTab` (Activity/last 52 weeks, "No solves yet",
+    Recent solves/last 5), `StatsTab` (headers Puzzle/PB/Ao5/Ao12/Solves,
+    "No statistics yet"), `TrainingTab` (Review queue/today + 4 KPIs
+    Overdue/Weak/Review/New + 2 frases con plurales), `AlgorithmsTab`
+    (Algorithm mastery/SRS states, avg mastery, Reviewed, Mastered/Learning/New,
+    2 frases), `SkillsTab` (Skill tree/xp, "of {n} XP", "{a} of {b} skills
+    completed", By category/progress), `QUICK_ACTIONS` (5 tarjetas
+    label+description), aria-labels, "All data local".
+  - `ProfileHero` (Identity): default display name "Speedcuber", "Member since
+    {date}" con `toLocaleDateString("en-US")` **hardcodeado** (→ locale activo),
+    botón Edit, alt "Profile avatar", tooltip de badges `PB {puzzle} is Sub
+    {threshold}` (el texto del badge "Sub {n}" es jerga WCA y se mantiene).
+  - `StatStrip` (Identity): KPIs "PB single"/Ao5/Ao12/Solves/Streak + subs
+    "best in {puzzle}", "{n} total", "day"/"days" (plural).
+  - `CATEGORY_LABELS` en `SkillsTab` (7 de 16 categorías, con fallback crudo
+    al id → mejora real: reutilizar `skillTree.category.*` que ya tiene las 16).
+  - (Settings → Profile section: controles de avatar/bio/país → **tanda 11**.)
+- **Namespace**: `profile` (nuevo, ~45 claves: hero.*, tabs, overview.*,
+  stats.*, training.*, algorithms.*, skills.*, quick.*, strip.*) +
+  **reutilización**: `nav.{timer,stats,training,algorithms,skills}` (tabs y
+  quick actions), `training.review.reason.{overdue,weak,new,due}` (KPIs de
+  cola), `training.mastery.{mastered,learning,new}` (estados SRS),
+  `skillTree.category.*` (SkillsTab byCategory — elimina CATEGORY_LABELS),
+  `common.profile` (header de ruta).
+- **Decisiones clave**:
+  - **Fechas localizadas**: `formatMemberSince` pasa de `toLocaleDateString("en-US")`
+    a locale activo según `i18n.language` (primer fix del pendiente documentado
+    en el principio 6 del README).
+  - **Jerga mantenida**: "Sub {n}" (badges, estándar WCA), "PB single", Ao5/
+    Ao12 (siglas WCA, mismo criterio que tanda 3), nombres de puzzle (datos).
+  - **Reutilización**: los tabs y las quick actions usan `nav.*` (labels ya
+    traducidos); el TrainingTab reutiliza las claves de motivo de la cola SRS
+    de 7C (misma terminología que ReviewQueueSection); el AlgorithmsTab
+    reutiliza `mastery.*` de 7A.
+  - **Plurales**: `_one/_other` en "{n} algorithms overdue", "{n} algorithms in
+    today's queue", "{a} of {b} skills completed", "day"/"days", "{n} total".
+  - **Interpolación**: `Member since {date}`, `PB {puzzle} is Sub {threshold}`,
+    `best in {puzzle}`, `of {xp} XP`, `{done} of {total}`.
+  - **Datos de usuario NO se traducen**: displayName, handle, bio, país
+    (código), puzzle, métodos declarados.
+  - **aria-labels**: "Profile sections", "Local data notice", `${label} —
+    ${description}` (quick actions) → claves con interpolación.
+- **Dificultad**: media (3 archivos, reutilización alta, 1 fix de locale).
+- Hecho: namespace `profile` en en/es (60 hojas) y los 3 archivos traducidos.
+  `ProfileView` (tabs con `nav:*` + `profile.tabs.overview`, paneles
+  Overview/Stats/Training/Algorithms/Skills con estados vacíos y plurales
+  `_one/_other`, `QUICK_ACTIONS` con `labelKey: ParseKeys<'nav'>` +
+  `descriptionKey: ParseKeys<'profile'>`, aria-labels interpolados, "All data
+  local"), `ProfileHero` (default name, `Member since {date}` con el locale
+  activo — **fix del `toLocaleDateString("en-US")` hardcodeado** documentado
+  en el principio 6, Edit, avatarAlt, `PB {puzzle} is Sub {threshold}`),
+  `StatStrip` (KPIs con plural `day` y subs `bestIn`/`total` interpolados).
+  Reutilización aplicada: `training:review.queue.title` + `review.reason.*`
+  (KPIs de cola SRS — incl. `reason.due` para el KPI de review, hallazgo del
+  code review: evita etiquetas duplicadas con 7C), `training:mastery.*`
+  (estados de dominio), `skillTree:title` + `CATEGORY_KEY` (16 categorías —
+  elimina el `CATEGORY_LABELS` parcial de 7 claves con fallback crudo al id),
+  `nav:*` (tabs + quick actions), `common:profile` (header). Jerga mantenida:
+  "Sub {n}" (badges WCA), "PB single", Ao5/Ao12, DNF/+2, XP, nombres de
+  puzzle (datos). `LastSolves` acepta `locale` prop para las fechas cortas.
+  Code review: aprobado tras reutilizar `training:review.reason.due` en el
+  KPI de review (consistencia SRS con 7C). Validado: tsc web+desktop 0,
+  eslint 0, vitest 6/6, paridad en/es perfecta (60/60 profile), build de
+  producción OK, 0 strings residuales en la zona.
 
 ### Tanda 10 — Reconstructions (tab)
 - **Zonas**: `ReconstructionsView` (lista, filtros, orden) · `ReconstructionDetailView` (detalle por fases) · `OurDetectionPanel` (detección automática de fases, mensajes de estado).

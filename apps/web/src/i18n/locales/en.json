@@ -2578,5 +2578,84 @@
         ]
       }
     }
+  },
+  "profile": {
+    "hero": {
+      "defaultName": "Speedcuber",
+      "memberSince": "Member since {{date}}",
+      "edit": "Edit",
+      "avatarAlt": "Profile avatar",
+      "pbTitle": "PB {{puzzle}} is Sub {{threshold}}"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "aria": "Profile sections"
+    },
+    "overview": {
+      "activity": "Activity",
+      "last52Weeks": "last 52 weeks",
+      "noSolvesTitle": "No solves yet",
+      "noSolvesDescription": "Your practice activity will appear here once you complete your first solves.",
+      "recentSolves": "Recent solves",
+      "last5": "last 5"
+    },
+    "stats": {
+      "puzzle": "Puzzle",
+      "pb": "PB",
+      "ao5": "Ao5",
+      "ao12": "Ao12",
+      "solves": "Solves",
+      "noStatsTitle": "No statistics yet",
+      "noStatsDescription": "Solve times per puzzle will show here once you start practicing."
+    },
+    "training": {
+      "today": "today",
+      "unavailable": "Training data unavailable",
+      "preparing": "Preparing training data…",
+      "empty": "Your review queue is empty — practice a few algorithms and your SRS schedule will build itself.",
+      "overdueCount_one": "{{count}} algorithm overdue — review it to keep retention high.",
+      "overdueCount_other": "{{count}} algorithms overdue — review them to keep retention high.",
+      "queueCount_one": "{{count}} algorithm in today's queue.",
+      "queueCount_other": "{{count}} algorithms in today's queue."
+    },
+    "algorithms": {
+      "title": "Algorithm mastery",
+      "eyebrow": "SRS states",
+      "unavailable": "Algorithm data unavailable",
+      "errorLoad": "Failed to load algorithm mastery",
+      "preparing": "Preparing algorithm data…",
+      "emptyCatalog": "The algorithm catalog is empty — open the Algorithms view to start practicing cases (OLL, PLL, F2L…).",
+      "avgMastery": "avg mastery",
+      "reviewed": "Reviewed",
+      "masteryNote": "Mastery reflects your FSRS review state across the whole catalog. Cases in relearning (lapsed) count as learning until they reach a stable review state."
+    },
+    "skills": {
+      "eyebrow": "xp",
+      "complete": "complete",
+      "ofXp": "of {{xp}} XP",
+      "completedCount": "{{count}} of {{total}} skills completed",
+      "byCategory": "By category",
+      "progress": "progress"
+    },
+    "quick": {
+      "title": "Quick actions",
+      "timer": "Start a new solve",
+      "stats": "Full statistics & analysis",
+      "training": "Drills, SRS review, challenges",
+      "algorithms": "Browse and practice algorithms",
+      "skills": "Skill tree progression"
+    },
+    "strip": {
+      "pbSingle": "PB single",
+      "solves": "Solves",
+      "streak": "Streak",
+      "bestIn": "best in {{puzzle}}",
+      "total": "{{count}} total",
+      "day_one": "day",
+      "day_other": "days"
+    },
+    "retry": "Retry",
+    "localNotice": "All data local",
+    "localNoticeAria": "Local data notice"
   }
 }

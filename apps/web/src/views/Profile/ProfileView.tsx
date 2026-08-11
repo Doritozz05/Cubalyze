@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   Activity,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileStats, type PuzzleStats, type ProfileStats, bestEffectiveTime } from "@/hooks/useProfileStats";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
@@ -28,32 +30,22 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { formatTime, statLabel } from "@/utils/formatTime";
 import { effectiveTime } from "@/types";
-import { ALL_SKILL_NODES } from "@/views/SkillTree/skillTreeData";
+import { ALL_SKILL_NODES, CATEGORY_KEY } from "@/views/SkillTree/skillTreeData";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Solve as UISolve } from "@/types";
 
 const QUICK_ACTIONS: Array<{
   id: ViewId;
-  label: string;
-  description: string;
+  labelKey: ParseKeys<"nav">;
+  descriptionKey: ParseKeys<"profile">;
   icon: React.ElementType;
 }> = [
-  { id: "timer", label: "Timer", description: "Start a new solve", icon: Timer },
-  { id: "insights", label: "Stats", description: "Full statistics & analysis", icon: BarChart3 },
-  { id: "training", label: "Training", description: "Drills, SRS review, challenges", icon: Target },
-  { id: "algorithms", label: "Algorithms", description: "Browse and practice algorithms", icon: BookOpen },
-  { id: "skill-tree", label: "Skills", description: "Skill tree progression", icon: Network },
+  { id: "timer", labelKey: "timer", descriptionKey: "quick.timer", icon: Timer },
+  { id: "insights", labelKey: "stats", descriptionKey: "quick.stats", icon: BarChart3 },
+  { id: "training", labelKey: "training", descriptionKey: "quick.training", icon: Target },
+  { id: "algorithms", labelKey: "algorithms", descriptionKey: "quick.algorithms", icon: BookOpen },
+  { id: "skill-tree", labelKey: "skills", descriptionKey: "quick.skills", icon: Network },
 ];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  fundamentals: "Fundamentals",
-  cross: "Cross",
-  f2l: "F2L",
-  "last-layer": "Last layer",
-  lookahead: "Lookahead",
-  "finger-tricks": "Finger tricks",
-  inspection: "Inspection",
-};
 
 function PuzzleRow({ p }: { p: PuzzleStats }) {
   return (
@@ -75,7 +67,7 @@ function PuzzleRow({ p }: { p: PuzzleStats }) {
   );
 }
 
-function LastSolves({ solves }: { solves: UISolve[] }) {
+function LastSolves({ solves, locale }: { solves: UISolve[]; locale: string }) {
   const recent = solves.slice(0, 5);
   if (recent.length === 0) return null;
   const bestEff = bestEffectiveTime(recent);
@@ -92,7 +84,7 @@ function LastSolves({ solves }: { solves: UISolve[] }) {
             <div className="flex items-center gap-2 text-ink-3">
               <span className="w-4 text-right text-[0.65rem]">{i + 1}</span>
               <span className="text-[0.65rem] uppercase tracking-wide">
-                {new Date(solve.timestamp).toLocaleDateString(undefined, {
+                {new Date(solve.timestamp).toLocaleDateString(locale, {
                   month: "short",
                   day: "numeric",
                 })}
@@ -112,25 +104,26 @@ function LastSolves({ solves }: { solves: UISolve[] }) {
 }
 
 function OverviewTab({ stats }: { stats: ProfileStats | null }) {
+  const { t, i18n } = useTranslation("profile");
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-surface p-4">
-        <SectionHeader title="Activity" eyebrow="last 52 weeks" />
+        <SectionHeader title={t("overview.activity")} eyebrow={t("overview.last52Weeks")} />
         {stats && stats.solves.length > 0 ? (
           <ActivityHeatmap counts={stats.heatmapCounts} weeks={52} className="mt-3" />
         ) : (
           <EmptyState
             icon={<Activity className="size-5" />}
-            title="No solves yet"
-            description="Your practice activity will appear here once you complete your first solves."
+            title={t("overview.noSolvesTitle")}
+            description={t("overview.noSolvesDescription")}
           />
         )}
       </div>
       {stats && stats.solves.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-4">
-          <SectionHeader title="Recent solves" eyebrow="last 5" />
+          <SectionHeader title={t("overview.recentSolves")} eyebrow={t("overview.last5")} />
           <div className="mt-3">
-            <LastSolves solves={stats.solves} />
+            <LastSolves solves={stats.solves} locale={i18n.language} />
           </div>
         </div>
       )}
@@ -139,14 +132,15 @@ function OverviewTab({ stats }: { stats: ProfileStats | null }) {
 }
 
 function StatsTab({ stats }: { stats: ProfileStats | null }) {
+  const { t } = useTranslation("profile");
   return (
     <div className="rounded-xl border border-line bg-surface">
       <div className="grid grid-cols-[1fr_repeat(4,auto)] items-center gap-x-4 px-4 pb-1.5 pt-3 text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
-        <span>Puzzle</span>
-        <span className="w-16 text-right">PB</span>
-        <span className="w-16 text-right">Ao5</span>
-        <span className="w-16 text-right">Ao12</span>
-        <span className="w-16 text-right">Solves</span>
+        <span>{t("stats.puzzle")}</span>
+        <span className="w-16 text-right">{t("stats.pb")}</span>
+        <span className="w-16 text-right">{t("stats.ao5")}</span>
+        <span className="w-16 text-right">{t("stats.ao12")}</span>
+        <span className="w-16 text-right">{t("stats.solves")}</span>
       </div>
       <div className="divide-y divide-line/60">
         {stats && stats.byPuzzle.length > 0 ? (
@@ -155,8 +149,8 @@ function StatsTab({ stats }: { stats: ProfileStats | null }) {
           <div className="px-4 py-8">
             <EmptyState
               icon={<BarChart3 className="size-5" />}
-              title="No statistics yet"
-              description="Solve times per puzzle will show here once you start practicing."
+              title={t("stats.noStatsTitle")}
+              description={t("stats.noStatsDescription")}
             />
           </div>
         )}
@@ -166,6 +160,7 @@ function StatsTab({ stats }: { stats: ProfileStats | null }) {
 }
 
 function TrainingTab() {
+  const { t, i18n } = useTranslation("profile");
   const { queue, ready, loading, error, refresh } = useSRSQueue();
   const due = useMemo(() => queue.filter((q) => q.reason === "overdue").length, [queue]);
   const review = useMemo(() => queue.filter((q) => q.reason === "review").length, [queue]);
@@ -182,7 +177,7 @@ function TrainingTab() {
       <div className="rounded-xl border border-line bg-surface p-4">
         <EmptyState
           icon={<Target className="size-5" />}
-          title="Training data unavailable"
+          title={t("training.unavailable")}
           description={error}
           action={
             <button
@@ -190,7 +185,7 @@ function TrainingTab() {
               onClick={() => void refresh()}
               className="cursor-pointer rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-surface transition-colors hover:bg-ink/90"
             >
-              Retry
+              {t("retry")}
             </button>
           }
         />
@@ -205,7 +200,7 @@ function TrainingTab() {
   if (!ready) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-line bg-surface p-8">
-        <Spinner size="sm" label="Preparing training data…" />
+        <Spinner size="sm" label={t("training.preparing")} />
       </div>
     );
   }
@@ -222,35 +217,40 @@ function TrainingTab() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-surface p-4">
-        <SectionHeader title="Review queue" eyebrow="today" />
+        <SectionHeader title={i18n.t("training:review.queue.title")} eyebrow={t("training.today")} />
         <div className="mt-3 grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-line bg-line">
           <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
             <span className="nums text-lg text-dnf">{due}</span>
-            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">Overdue</span>
+            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+              {i18n.t("training:review.reason.overdue")}
+            </span>
           </div>
           <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
             <span className="nums text-lg text-caution">{weak}</span>
-            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">Weak</span>
+            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+              {i18n.t("training:review.reason.weak")}
+            </span>
           </div>
           <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
             <span className="nums text-lg text-ink-2">{review}</span>
-            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">Review</span>
+            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+              {i18n.t("training:review.reason.due")}
+            </span>
           </div>
           <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
             <span className="nums text-lg text-ink">{newCount}</span>
-            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">New</span>
+            <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+              {i18n.t("training:review.reason.new")}
+            </span>
           </div>
         </div>
         {queue.length === 0 ? (
-          <p className="mt-3 text-xs text-ink-3">
-            Your review queue is empty — practice a few algorithms and your SRS schedule will build
-            itself.
-          </p>
+          <p className="mt-3 text-xs text-ink-3">{t("training.empty")}</p>
         ) : (
           <p className="mt-3 text-xs text-ink-3">
             {due > 0
-              ? `${due} algorithm${due > 1 ? "s" : ""} overdue — review them to keep retention high.`
-              : `${queue.length} algorithm${queue.length > 1 ? "s" : ""} in today's queue.`}
+              ? t("training.overdueCount", { count: due })
+              : t("training.queueCount", { count: queue.length })}
           </p>
         )}
       </div>
@@ -259,6 +259,7 @@ function TrainingTab() {
 }
 
 function AlgorithmsTab() {
+  const { t, i18n } = useTranslation("profile");
   const { getSRSInsights, ready } = useTrainingProgress();
   const [insights, setInsights] = useState<{
     totalCases: number;
@@ -272,6 +273,8 @@ function AlgorithmsTab() {
   // Bump to re-run the insights load after a failure (Retry button).
   const [reloadKey, setReloadKey] = useState(0);
 
+  // t is stable across renders; the fallback error message is static per render
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     let cancelled = false;
     if (ready) {
@@ -282,15 +285,14 @@ function AlgorithmsTab() {
         })
         .catch((err) => {
           if (cancelled) return;
-          setInsightsError(
-            err instanceof Error ? err.message : "Failed to load algorithm mastery",
-          );
+          setInsightsError(err instanceof Error ? err.message : t("algorithms.errorLoad"));
         });
     }
     return () => {
       cancelled = true;
     };
   }, [ready, getSRSInsights, reloadKey]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const mastered = insights ? insights.stateCounts.review : 0;
   const learning = insights
@@ -301,12 +303,12 @@ function AlgorithmsTab() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-surface p-4">
-        <SectionHeader title="Algorithm mastery" eyebrow="SRS states" />
+        <SectionHeader title={t("algorithms.title")} eyebrow={t("algorithms.eyebrow")} />
         {insightsError ? (
           <div className="mt-3">
             <EmptyState
               icon={<BookOpen className="size-5" />}
-              title="Algorithm data unavailable"
+              title={t("algorithms.unavailable")}
               description={insightsError}
               action={
                 <button
@@ -314,22 +316,19 @@ function AlgorithmsTab() {
                   onClick={() => setReloadKey((k) => k + 1)}
                   className="cursor-pointer rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-surface transition-colors hover:bg-ink/90"
                 >
-                  Retry
+                  {t("retry")}
                 </button>
               }
             />
           </div>
         ) : !ready ? (
           <div className="mt-3 flex justify-center rounded-lg border border-dashed border-line py-6">
-            <Spinner size="sm" label="Preparing algorithm data…" />
+            <Spinner size="sm" label={t("algorithms.preparing")} />
           </div>
         ) : !insights ? (
           <Skeleton className="mt-3 h-24 w-full rounded-lg" />
         ) : insights.totalCases === 0 ? (
-          <p className="mt-3 text-xs text-ink-3">
-            The algorithm catalog is empty — open the Algorithms view to start practicing cases
-            (OLL, PLL, F2L…).
-          </p>
+          <p className="mt-3 text-xs text-ink-3">{t("algorithms.emptyCatalog")}</p>
         ) : (
           <>
             <div className="mt-3 flex items-center gap-4">
@@ -337,14 +336,14 @@ function AlgorithmsTab() {
                 value={Math.round(insights.avgMastery)}
                 max={100}
                 label={`${Math.round(insights.avgMastery)}%`}
-                sub="avg mastery"
+                sub={t("algorithms.avgMastery")}
                 size={84}
                 strokeWidth={6}
                 color="ready"
               />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between text-[0.65rem]">
-                  <span className="text-ink-2">Reviewed</span>
+                  <span className="text-ink-2">{t("algorithms.reviewed")}</span>
                   <span className="nums text-ink-3">
                     {insights.reviewed}/{insights.totalCases}
                   </span>
@@ -359,24 +358,23 @@ function AlgorithmsTab() {
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <span className="nums text-lg text-ready">{mastered}</span>
                 <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
-                  Mastered
+                  {i18n.t("training:mastery.mastered")}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <span className="nums text-lg text-caution">{learning}</span>
                 <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
-                  Learning
+                  {i18n.t("training:mastery.learning")}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <span className="nums text-lg text-ink">{fresh}</span>
-                <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">New</span>
+                <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+                  {i18n.t("training:mastery.new")}
+                </span>
               </div>
             </div>
-            <p className="mt-3 text-xs text-ink-3">
-              Mastery reflects your FSRS review state across the whole catalog. Cases in
-              relearning (lapsed) count as learning until they reach a stable review state.
-            </p>
+            <p className="mt-3 text-xs text-ink-3">{t("algorithms.masteryNote")}</p>
           </>
         )}
       </div>
@@ -385,6 +383,8 @@ function AlgorithmsTab() {
 }
 
 function SkillsTab() {
+  const { t } = useTranslation("profile");
+  const { t: tSkills } = useTranslation("skillTree");
   const { completedIds, ready } = useSkillProgress();
   const allNodes = useMemo(() => ALL_SKILL_NODES, []);
   const completed = useMemo(
@@ -409,13 +409,13 @@ function SkillsTab() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-surface p-4">
-        <SectionHeader title="Skill tree" eyebrow="xp" />
+        <SectionHeader title={tSkills("title")} eyebrow={t("skills.eyebrow")} />
         <div className="mt-3 flex items-center gap-4">
           <MetricRing
             value={pct}
             max={100}
             label={`${pct}%`}
-            sub="complete"
+            sub={t("skills.complete")}
             size={84}
             strokeWidth={6}
             color="ready"
@@ -423,11 +423,13 @@ function SkillsTab() {
           <div className="flex-1 space-y-1.5">
             <div className="flex items-baseline justify-between">
               <span className="nums text-lg text-ink">{xp.toLocaleString()}</span>
-              <span className="text-[0.65rem] text-ink-3">of {totalXp.toLocaleString()} XP</span>
+              <span className="text-[0.65rem] text-ink-3">
+                {t("skills.ofXp", { xp: totalXp.toLocaleString() })}
+              </span>
             </div>
             <Progress value={pct} className="h-1.5" />
             <p className="text-[0.65rem] text-ink-3">
-              {completed.length} of {allNodes.length} skills completed
+              {t("skills.completedCount", { count: completed.length, total: allNodes.length })}
             </p>
           </div>
         </div>
@@ -435,15 +437,16 @@ function SkillsTab() {
 
       {ready && byCategory.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-4">
-          <SectionHeader title="By category" eyebrow="progress" />
+          <SectionHeader title={t("skills.byCategory")} eyebrow={t("skills.progress")} />
           <div className="mt-3 space-y-3">
             {byCategory.map(([cat, { done, total }]) => {
               const catPct = total > 0 ? Math.round((done / total) * 100) : 0;
+              const catKey = CATEGORY_KEY[cat as keyof typeof CATEGORY_KEY];
               return (
                 <div key={cat} className="space-y-1">
                   <div className="flex items-baseline justify-between text-[0.65rem]">
                     <span className="text-ink-2">
-                      {CATEGORY_LABELS[cat] ?? cat}
+                      {catKey ? tSkills(catKey) : cat}
                     </span>
                     <span className="nums text-ink-3">
                       {done}/{total}
@@ -473,6 +476,7 @@ export interface ProfileViewProps {
  * algorithm catalog (Algorithms) and skill-tree XP (Skills).
  */
 export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
+  const { t, i18n } = useTranslation("profile");
   const { profile, loading: profileLoading } = useProfile();
   const { stats, loading: statsLoading } = useProfileStats();
 
@@ -485,7 +489,7 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-4 py-6 sm:px-6">
       <h1 className="mb-4 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
-        Profile
+        {i18n.t("common:profile")}
       </h1>
 
       <ProfileHero
@@ -501,16 +505,16 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
 
       <Tabs defaultValue="overview" className="mt-5">
         <TabsList
-          aria-label="Profile sections"
+          aria-label={t("tabs.aria")}
           className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5"
         >
           {(
             [
-              ["overview", "Overview"],
-              ["stats", "Stats"],
-              ["training", "Training"],
-              ["algorithms", "Algorithms"],
-              ["skills", "Skills"],
+              ["overview", t("tabs.overview")],
+              ["stats", i18n.t("nav:stats")],
+              ["training", i18n.t("nav:training")],
+              ["algorithms", i18n.t("nav:algorithms")],
+              ["skills", i18n.t("nav:skills")],
             ] as const
           ).map(([value, label]) => (
             <TabsTrigger
@@ -542,10 +546,13 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
 
       <section className="mt-6">
         <h2 className="mb-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
-          Quick actions
+          {t("quick.title")}
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {QUICK_ACTIONS.map(({ id, label, description, icon: Icon }) => (
+          {QUICK_ACTIONS.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
+            const label = i18n.t(`nav:${labelKey}` as never);
+            const description = t(descriptionKey);
+            return (
             <button
               key={id}
               type="button"
@@ -559,16 +566,17 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
               <span className="text-xs font-semibold text-ink">{label}</span>
               <span className="text-[0.6rem] leading-tight text-ink-3">{description}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       <section
-        aria-label="Local data notice"
+        aria-label={t("localNoticeAria")}
         className="mt-8 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
       >
         <CheckCircle2 className="size-3 text-ready" aria-hidden="true" />
-        <span>All data local</span>
+        <span>{t("localNotice")}</span>
       </section>
     </div>
   );

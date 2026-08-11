@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { MetricTile, type MetricTileAccent } from "@/components/Stats/atoms/MetricTile";
 import { statLabel } from "@/utils/formatTime";
 import type { ProfileStats } from "@/hooks/useProfileStats";
@@ -25,6 +26,8 @@ function fmt(value: number | null): string {
  * tabular class; DNF/missing renders as "—" (never 0.00).
  */
 export const StatStrip = memo(function StatStrip({ stats, loading, puzzle, className }: StatStripProps) {
+  const { t } = useTranslation("profile");
+
   if (loading || !stats) {
     return (
       <div
@@ -52,31 +55,31 @@ export const StatStrip = memo(function StatStrip({ stats, loading, puzzle, class
     target
       ? [
           {
-            label: "PB single",
+            label: t("strip.pbSingle"),
             value: fmt(target.stats.best),
-            sub: target.count > 0 ? `best in ${target.puzzle}` : undefined,
+            sub: target.count > 0 ? t("strip.bestIn", { puzzle: target.puzzle }) : undefined,
             accent: "ready",
           },
           { label: "Ao5", value: fmt(target.stats.ao5) },
           { label: "Ao12", value: fmt(target.stats.ao12) },
           {
-            label: "Solves",
+            label: t("strip.solves"),
             value: `${target.count}`,
-            sub: target.stats.total > 0 ? `${target.stats.total} total` : undefined,
+            sub: target.stats.total > 0 ? t("strip.total", { count: target.stats.total }) : undefined,
           },
           {
-            label: "Streak",
+            label: t("strip.streak"),
             value: `${stats.streakDays}d`,
-            sub: stats.streakDays === 1 ? "day" : "days",
+            sub: t("strip.day", { count: stats.streakDays }),
             accent: stats.streakDays > 0 ? "ready" : "ink",
           },
         ]
       : [
-          { label: "PB single", value: "—" },
+          { label: t("strip.pbSingle"), value: "—" },
           { label: "Ao5", value: "—" },
           { label: "Ao12", value: "—" },
-          { label: "Solves", value: "—" },
-          { label: "Streak", value: "0d" },
+          { label: t("strip.solves"), value: "—" },
+          { label: t("strip.streak"), value: "0d" },
         ];
 
   return (

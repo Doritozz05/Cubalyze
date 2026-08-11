@@ -2578,5 +2578,84 @@
         ]
       }
     }
+  },
+  "profile": {
+    "hero": {
+      "defaultName": "Speedcuber",
+      "memberSince": "Miembro desde {{date}}",
+      "edit": "Editar",
+      "avatarAlt": "Avatar del perfil",
+      "pbTitle": "PB {{puzzle}} es Sub {{threshold}}"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "aria": "Secciones del perfil"
+    },
+    "overview": {
+      "activity": "Actividad",
+      "last52Weeks": "últimas 52 semanas",
+      "noSolvesTitle": "Aún no hay resoluciones",
+      "noSolvesDescription": "Tu actividad de práctica aparecerá aquí cuando completes tus primeras resoluciones.",
+      "recentSolves": "Resoluciones recientes",
+      "last5": "últimas 5"
+    },
+    "stats": {
+      "puzzle": "Puzzle",
+      "pb": "PB",
+      "ao5": "Ao5",
+      "ao12": "Ao12",
+      "solves": "Resoluciones",
+      "noStatsTitle": "Aún no hay estadísticas",
+      "noStatsDescription": "Los tiempos por puzzle aparecerán aquí cuando empieces a practicar."
+    },
+    "training": {
+      "today": "hoy",
+      "unavailable": "Datos de entrenamiento no disponibles",
+      "preparing": "Preparando datos de entrenamiento…",
+      "empty": "Tu cola de repaso está vacía — practica algunos algoritmos y tu calendario SRS se construirá solo.",
+      "overdueCount_one": "{{count}} algoritmo atrasado — repásalo para mantener la retención alta.",
+      "overdueCount_other": "{{count}} algoritmos atrasados — repásalos para mantener la retención alta.",
+      "queueCount_one": "{{count}} algoritmo en la cola de hoy.",
+      "queueCount_other": "{{count}} algoritmos en la cola de hoy."
+    },
+    "algorithms": {
+      "title": "Dominio de algoritmos",
+      "eyebrow": "Estados SRS",
+      "unavailable": "Datos de algoritmos no disponibles",
+      "errorLoad": "No se pudo cargar el dominio de algoritmos",
+      "preparing": "Preparando datos de algoritmos…",
+      "emptyCatalog": "El catálogo de algoritmos está vacío — abre la vista de Algoritmos para empezar a practicar casos (OLL, PLL, F2L…).",
+      "avgMastery": "dominio medio",
+      "reviewed": "Repasados",
+      "masteryNote": "El dominio refleja tu estado de repaso FSRS en todo el catálogo. Los casos en reaprendizaje (caducados) cuentan como aprendizaje hasta alcanzar un estado de repaso estable."
+    },
+    "skills": {
+      "eyebrow": "xp",
+      "complete": "completado",
+      "ofXp": "de {{xp}} XP",
+      "completedCount": "{{count}} de {{total}} habilidades completadas",
+      "byCategory": "Por categoría",
+      "progress": "progreso"
+    },
+    "quick": {
+      "title": "Acciones rápidas",
+      "timer": "Empieza una nueva resolución",
+      "stats": "Estadísticas y análisis completos",
+      "training": "Ejercicios, repaso SRS, retos",
+      "algorithms": "Explora y practica algoritmos",
+      "skills": "Progreso del árbol de habilidades"
+    },
+    "strip": {
+      "pbSingle": "PB single",
+      "solves": "Resoluciones",
+      "streak": "Racha",
+      "bestIn": "mejor en {{puzzle}}",
+      "total": "{{count}} en total",
+      "day_one": "día",
+      "day_other": "días"
+    },
+    "retry": "Reintentar",
+    "localNotice": "Todos los datos son locales",
+    "localNoticeAria": "Aviso de datos locales"
   }
 }

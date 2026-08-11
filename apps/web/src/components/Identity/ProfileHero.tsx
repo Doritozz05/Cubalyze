@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
 import { CountryFlag } from "./CountryFlag";
@@ -41,12 +42,9 @@ export interface ProfileHeroProps {
   className?: string;
 }
 
-/** Empty-state fallback until the user edits their profile. */
-const DEFAULT_DISPLAY_NAME = "Speedcuber";
-
-function formatMemberSince(createdAt: number): string {
+function formatMemberSince(createdAt: number, locale: string): string {
   if (!createdAt) return "—";
-  return new Date(createdAt).toLocaleDateString("en-US", {
+  return new Date(createdAt).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
   });
@@ -65,6 +63,7 @@ export function ProfileHero({
   badges = [],
   className,
 }: ProfileHeroProps) {
+  const { t, i18n } = useTranslation("profile");
   const isTouch = useIsTouch();
   const avatarSize = isTouch ? 80 : 112;
 
@@ -89,11 +88,13 @@ export function ProfileHero({
     );
   }
 
-  const displayName = profile.displayName.trim() || DEFAULT_DISPLAY_NAME;
+  const displayName = profile.displayName.trim() || t("hero.defaultName");
   const handle = profile.handle.trim()
     ? `@${profile.handle}`
     : `@user-${profile.userId.slice(0, 6)}`;
-  const memberSince = `Member since ${formatMemberSince(profile.createdAt)}`;
+  const memberSince = t("hero.memberSince", {
+    date: formatMemberSince(profile.createdAt, i18n.language),
+  });
 
   const chips = [
     { key: "handle", value: handle },
@@ -114,7 +115,7 @@ export function ProfileHero({
       {profile.avatarKind === "photo" && profile.avatarData ? (
         <img
           src={profile.avatarData}
-          alt="Profile avatar"
+          alt={t("hero.avatarAlt")}
           className="shrink-0 rounded-2xl object-cover ring-1 ring-line"
           style={{ width: avatarSize, height: avatarSize }}
         />
@@ -152,7 +153,10 @@ export function ProfileHero({
                   return (
                     <span
                       key={badge.puzzle}
-                      title={`PB ${badge.puzzleLabel} is Sub ${badge.thresholdLabel}`}
+                      title={t("hero.pbTitle", {
+                        puzzle: badge.puzzleLabel,
+                        threshold: badge.thresholdLabel,
+                      })}
                       style={{
                         transform: `rotate(${rotation}deg)`,
                         transformOrigin: "center",
@@ -208,7 +212,7 @@ export function ProfileHero({
               className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2/50 px-3 py-1.5 text-[0.7rem] font-medium text-ink-2 transition-all duration-150 hover:border-ink/30 hover:bg-surface-2 hover:text-ink cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
             >
               <Pencil className="size-3" />
-              Edit
+              {t("hero.edit")}
             </button>
           ) : null}
         </div>
