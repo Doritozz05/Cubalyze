@@ -670,7 +670,7 @@ export function CrossTrainerView({
               <div className="flex items-center gap-2 mb-2">
                 <Layers className="size-4 text-ink-2" />
                 <span className="text-[0.7rem] font-semibold text-ink">
-                  Optimal solution · {cross.optimalDepth} moves
+                  {t("crossTrainer.optimalSolutionTitle", { count: cross.optimalDepth })}
                 </span>
                 <span className="flex-1" />
                 <button
@@ -691,7 +691,7 @@ export function CrossTrainerView({
                 </p>
               ) : (
                 <p className="text-[0.6rem] text-ink-3/50 italic">
-                  Solve first, then reveal to compare. Use replay to see it in 3D.
+                  {t("crossTrainer.solveFirstHint")}
                 </p>
               )}
             </div>
@@ -700,10 +700,13 @@ export function CrossTrainerView({
             <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[0.62rem] font-medium text-ink-2">
-                  Optimal replay
+                  {t("crossTrainer.optimalReplay")}
                 </span>
                 <span className="nums text-[0.6rem] text-ink-3">
-                  Move {Math.max(0, currentMoveIdx + 1)}/{cross.replayMoves.length}
+                  {t("crossTrainer.moveCounter", {
+                    current: Math.max(0, currentMoveIdx + 1),
+                    total: cross.replayMoves.length,
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">

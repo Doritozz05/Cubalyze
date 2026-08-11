@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -58,6 +59,7 @@ export function TourTooltip({
   onBack,
   onSkip,
 }: TourTooltipProps) {
+  const { t } = useTranslation("onboarding");
   const touchBtn = isTouch ? "h-11" : "";
 
   return (
@@ -84,7 +86,7 @@ export function TourTooltip({
 
       <div className="flex items-center justify-between gap-2">
         <span className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
-          Step {stepIndex + 1} of {totalSteps}
+          {t("stepOf", { current: stepIndex + 1, total: totalSteps })}
         </span>
         <div className="flex items-center gap-1" aria-hidden="true">
           {Array.from({ length: totalSteps }).map((_, i) => (
@@ -108,7 +110,7 @@ export function TourTooltip({
 
       <div className="mt-5 flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onSkip} className={cn(touchBtn)}>
-          Skip
+          {t("skip")}
         </Button>
         <div className="flex items-center gap-2">
           {!isFirst ? (
@@ -118,11 +120,11 @@ export function TourTooltip({
               onClick={onBack}
               className={cn(touchBtn)}
             >
-              Back
+              {t("back")}
             </Button>
           ) : null}
           <Button size="sm" onClick={onNext} className={cn(touchBtn)}>
-            {isLast ? "Done" : "Next"}
+            {isLast ? t("done") : t("next")}
           </Button>
         </div>
       </div>

@@ -642,6 +642,28 @@
       "themeSubtitle": "Switch color theme"
     }
   },
+  "onboarding": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "stepOf": "Step {{current}} of {{total}}",
+    "srStepOf": "Step {{current}} of {{total}}: {{title}}",
+    "tour": {
+      "timerTitle": "Your timer",
+      "timerBody": "Hold space (or tap & hold on touch) and release to start — the 15s WCA inspection is built in. Every solve gets instant phase analysis.",
+      "statsTitle": "Your stats",
+      "statsBody": "Session overview, phase splits, PB progression and 3D replay of any solve live here.",
+      "algorithmsTitle": "Algorithms",
+      "algorithmsBody": "Browse cases by method — CFOP, Roux, ZZ… Send any case to the trainer with one click.",
+      "profileTitle": "Your identity",
+      "profileBody": "Your CubeMark is generated from your anonymous ID. Set your name, handle and avatar here.",
+      "widgetsTitle": "Widgets",
+      "widgetsBody": "Floating tools — times log, scramble visualizer, metronome. Open the explorer and build your own layout.",
+      "finalTitle": "You're all set",
+      "finalBody": "Make your first solve, or explore Settings for shortcuts, theme and smart cube."
+    }
+  },
   "insights": {
     "common": {
       "clean": "Clean",
@@ -1050,6 +1072,7 @@
       "modeWeakest": "Weakest",
       "modeRandom": "Random",
       "solution": "Solution",
+      "setup": "Setup",
       "correct": "✓ Correct!",
       "itWas": "✗ It was {{case}}",
       "next": "Next",
@@ -1259,6 +1282,11 @@
       "optimalDepth": "Optimal depth",
       "yourLast": "Your last",
       "noAttempts": "No attempts yet. Time your cross and enter your move count above.",
+      "optimalSolutionTitle_one": "Optimal solution · {{count}} move",
+      "optimalSolutionTitle_other": "Optimal solution · {{count}} moves",
+      "solveFirstHint": "Solve first, then reveal to compare. Use replay to see it in 3D.",
+      "optimalReplay": "Optimal replay",
+      "moveCounter": "Move {{current}}/{{total}}",
       "tips": [
         "Plan your entire cross during inspection — no move counting during execution.",
         "World-class crosses are ≤ 6 moves. The theoretical max is 8.",
@@ -3097,6 +3125,7 @@
       "searchPlaceholder": "Search solver, competition, technique…",
       "allSources": "All sources",
       "allPuzzles": "All puzzles",
+      "allMethods": "All methods",
       "methodOther": "Other",
       "sortFastest": "Fastest",
       "sortSlowest": "Slowest",

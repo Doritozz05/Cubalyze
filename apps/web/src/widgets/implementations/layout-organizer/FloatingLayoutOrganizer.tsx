@@ -7,6 +7,7 @@ import type { ParseKeys } from "i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
+import { WIDGET_LABEL_KEY } from "@/widgets/i18n";
 import type { WidgetId } from "@/widgets/types";
 import type { CustomLayout } from "@/widgets/widgetStore";
 import { cn } from "@/lib/utils";
@@ -159,7 +160,8 @@ const LAYOUT_DESC_KEY: Record<string, ParseKeys<"widgets">> = {
 const SVG_W = 140;
 const SVG_H = 80;
 
-function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: string[] }) {
+function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: WidgetId[] }) {
+  const { t } = useTranslation("widgets");
   const area = getArea();
   const scaleX = SVG_W / area.w;
   const scaleY = SVG_H / area.h;
@@ -174,7 +176,6 @@ function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: st
         const sw = Math.max(4, Math.min(r.w * scaleX, SVG_W - sx));
         const sh = Math.max(4, Math.min(r.h * scaleY, SVG_H - sy));
         const hue = (i * 53) % 360;
-        const def = getWidget(id);
         return (
           <g key={id}>
             <rect x={sx} y={sy} width={sw} height={sh} rx={2}
@@ -186,7 +187,7 @@ function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: st
               <text x={sx + sw / 2} y={sy + sh / 2 + 2.5} textAnchor="middle"
                 fontSize={5} fill={`hsl(${hue} 50% 80%)`}
                 style={{ pointerEvents: "none", userSelect: "none" }}>
-                {def?.name?.split(" ")[0] ?? id}
+                {t(WIDGET_LABEL_KEY[id]).split(" ")[0] ?? id}
               </text>
             )}
           </g>
@@ -385,9 +386,8 @@ export function FloatingLayoutOrganizer() {
                     // Descriptive label when widgets are missing
                     let missingText = "";
                     if (missingIds.length === 1) {
-                      const def = getWidget(missingIds[0]);
                       missingText = t("panel.layoutOrganizer.widgetNeeded", {
-                        name: def?.name ?? missingIds[0],
+                        name: t(WIDGET_LABEL_KEY[missingIds[0]]),
                       });
                     } else if (missingIds.length > 1) {
                       missingText = t("panel.layoutOrganizer.widgetsNeeded", {
@@ -497,7 +497,7 @@ export function FloatingLayoutOrganizer() {
                   return (
                     <span key={id} className="flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[0.62rem] text-ink-2">
                       {Icon && <Icon className="size-2.5 shrink-0 text-ink-3" />}
-                      {def?.name ?? id}
+                      {t(WIDGET_LABEL_KEY[id])}
                     </span>
                   );
                 })}

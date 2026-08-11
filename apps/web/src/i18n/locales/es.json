@@ -642,6 +642,28 @@
       "themeSubtitle": "Cambia el tema de color"
     }
   },
+  "onboarding": {
+    "skip": "Omitir",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "done": "Listo",
+    "stepOf": "Paso {{current}} de {{total}}",
+    "srStepOf": "Paso {{current}} de {{total}}: {{title}}",
+    "tour": {
+      "timerTitle": "Tu cronómetro",
+      "timerBody": "Mantén pulsado espacio (o toca y mantén en táctil) y suelta para empezar: la inspección WCA de 15 s está integrada. Cada resolución recibe análisis de fases al instante.",
+      "statsTitle": "Tus estadísticas",
+      "statsBody": "Resumen de sesión, reparto de fases, progresión de PB y reproducción 3D de cualquier resolución viven aquí.",
+      "algorithmsTitle": "Algoritmos",
+      "algorithmsBody": "Explora casos por método (CFOP, Roux, ZZ…). Envía cualquier caso al entrenador con un clic.",
+      "profileTitle": "Tu identidad",
+      "profileBody": "Tu CubeMark se genera a partir de tu ID anónimo. Configura aquí tu nombre, usuario y avatar.",
+      "widgetsTitle": "Widgets",
+      "widgetsBody": "Herramientas flotantes: registro de tiempos, visualizador de scrambles, metrónomo. Abre el explorador y crea tu propio diseño.",
+      "finalTitle": "Todo listo",
+      "finalBody": "Haz tu primera resolución o explora Ajustes para ver atajos, tema y smart cube."
+    }
+  },
   "insights": {
     "common": {
       "clean": "Limpio",
@@ -1050,6 +1072,7 @@
       "modeWeakest": "Débil",
       "modeRandom": "Aleatorio",
       "solution": "Solución",
+      "setup": "Setup",
       "correct": "✓ ¡Correcto!",
       "itWas": "✗ Era {{case}}",
       "next": "Siguiente",
@@ -1259,6 +1282,11 @@
       "optimalDepth": "Profundidad óptima",
       "yourLast": "Tu último",
       "noAttempts": "Aún no hay intentos. Cronometra tu cruz y escribe tu número de movimientos arriba.",
+      "optimalSolutionTitle_one": "Solución óptima · {{count}} movimiento",
+      "optimalSolutionTitle_other": "Solución óptima · {{count}} movimientos",
+      "solveFirstHint": "Resuelve primero y luego revela para comparar. Usa la reproducción para verlo en 3D.",
+      "optimalReplay": "Reproducción óptima",
+      "moveCounter": "Movimiento {{current}}/{{total}}",
       "tips": [
         "Planifica toda la cruz durante la inspección — sin contar movimientos durante la ejecución.",
         "Las cruces de nivel mundial tienen ≤ 6 movimientos. El máximo teórico es 8.",
@@ -3097,6 +3125,7 @@
       "searchPlaceholder": "Busca resolutor, competición, técnica…",
       "allSources": "Todas las fuentes",
       "allPuzzles": "Todos los puzzles",
+      "allMethods": "Todos los métodos",
       "methodOther": "Otros",
       "sortFastest": "Más rápido",
       "sortSlowest": "Más lento",

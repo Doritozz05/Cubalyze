@@ -392,7 +392,11 @@ export function ReconstructionsView() {
                       : "text-ink-3 hover:text-ink hover:bg-surface-2",
                   )}
                 >
-                  {m === "Other" ? t("list.methodOther") : m}
+                  {m === "All"
+                    ? t("list.allMethods")
+                    : m === "Other"
+                      ? t("list.methodOther")
+                      : m}
                   <span className="nums ml-1 opacity-60">{count.toLocaleString()}</span>
                 </button>
               );

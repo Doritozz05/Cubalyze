@@ -497,7 +497,7 @@ function QuizPanel({
 
               {currentCase.setupScramble && (
                 <div className="text-center">
-                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">{t("recognize.setup")}</span>
                   <p className="nums text-[0.72rem] text-ink-2/80 mt-0.5 leading-relaxed">{currentCase.setupScramble}</p>
                 </div>
               )}
