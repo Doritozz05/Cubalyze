@@ -8,6 +8,8 @@ import { preferencesStore } from '@cubeforge/state';
 import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
 import { Palette, Sun, Moon, Monitor } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { ParseKeys } from 'i18next';
 
 import {
   Select,
@@ -23,16 +25,27 @@ import {
  * Contains visual preferences like the interface theme, the 3D cube appearance, and
  * custom sticker colors. When the 'custom' skin is selected, per-face color pickers appear below.
  */
-const FACE_LABELS: Record<string, string> = {
-  U: 'Up (White)',
-  D: 'Down (Yellow)',
-  F: 'Front (Green)',
-  B: 'Back (Blue)',
-  R: 'Right (Red)',
-  L: 'Left (Orange)',
+type FaceLetter = 'U' | 'D' | 'F' | 'B' | 'R' | 'L';
+
+const FACE_LABEL_KEY: Record<FaceLetter, ParseKeys<'settings'>> = {
+  U: 'appearance.faceU',
+  D: 'appearance.faceD',
+  F: 'appearance.faceF',
+  B: 'appearance.faceB',
+  R: 'appearance.faceR',
+  L: 'appearance.faceL',
+};
+
+const SKIN_LABEL_KEY: Record<string, ParseKeys<'settings'>> = {
+  default: 'appearance.skinDefault',
+  stickerless: 'appearance.skinStickerless',
+  coreless: 'appearance.skinCoreless',
+  translucent: 'appearance.skinTranslucent',
+  custom: 'appearance.skinCustom',
 };
 
 export function AppearanceSection() {
+  const { t } = useTranslation('settings');
   const theme = useStore(preferencesStore, (s) => s.theme);
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
@@ -46,41 +59,39 @@ export function AppearanceSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Palette className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] text-ink-2">
-          Customize the look and feel of your workspace, from the interface theme to the 3D cube representation.
-        </p>
+        <p className="text-[0.82rem] text-ink-2">{t('appearance.header')}</p>
       </div>
 
       {/* Theme selector */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium text-ink">Theme</h4>
+          <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.theme')}</h4>
           <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
-            Select your preferred interface color mode.
+            {t('appearance.themeHint')}
           </p>
         </div>
         <div className="mt-0.5 shrink-0">
           <Select value={theme} onValueChange={setTheme}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select theme" />
+              <SelectValue placeholder={t('appearance.selectTheme')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="system">
                 <div className="flex items-center gap-2">
                   <Monitor className="size-3.5" />
-                  <span>System</span>
+                  <span>{t('appearance.system')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="dark">
                 <div className="flex items-center gap-2">
                   <Moon className="size-3.5" />
-                  <span>Dark</span>
+                  <span>{t('appearance.dark')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="light">
                 <div className="flex items-center gap-2">
                   <Sun className="size-3.5" />
-                  <span>Light</span>
+                  <span>{t('appearance.light')}</span>
                 </div>
               </SelectItem>
             </SelectContent>
@@ -91,20 +102,20 @@ export function AppearanceSection() {
       {/* Skin selector */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium text-ink">3D Appearance</h4>
+          <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.appearance3d')}</h4>
           <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
-            Choose the visual style for the 3D cube representation.
+            {t('appearance.appearance3dHint')}
           </p>
         </div>
         <div className="mt-0.5 shrink-0">
           <Select value={appearance3d} onValueChange={setAppearance3d}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select appearance" />
+              <SelectValue placeholder={t('appearance.selectAppearance')} />
             </SelectTrigger>
             <SelectContent>
               {CUBE_SKINS.map((skin) => (
                 <SelectItem key={skin.id} value={skin.id}>
-                  {skin.label}
+                  {t(SKIN_LABEL_KEY[skin.id])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -116,16 +127,16 @@ export function AppearanceSection() {
       {appearance3d === 'custom' && (
         <div className="rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="mb-4">
-            <h4 className="text-[0.85rem] font-medium text-ink">Custom Sticker Colors</h4>
+            <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.customStickers')}</h4>
             <p className="mt-1 text-[0.72rem] text-ink-3">
-              Pick a color for each face. Changes apply in real-time to the 3D cube.
+              {t('appearance.customStickersHint')}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {(Object.keys(FACE_LABELS) as Array<'U' | 'D' | 'F' | 'B' | 'R' | 'L'>).map((face) => (
+            {(Object.keys(FACE_LABEL_KEY) as FaceLetter[]).map((face) => (
               <ColorPicker
                 key={face}
-                label={FACE_LABELS[face]}
+                label={t(FACE_LABEL_KEY[face])}
                 value={customStickerColors[face]}
                 onChange={(color) => setCustomStickerColors({ [face]: color })}
               />

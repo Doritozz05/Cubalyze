@@ -661,11 +661,44 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   tsc web+desktop 0, eslint 0, vitest 28/28, paridad 139/139, build de
   producción OK, 0 strings residuales en la zona.
 
-### Tanda 12 — Settings restantes (11 secciones)
-- **Zonas** (cada sección completa: título, descripciones, toggles, selects, placeholders):
-  `Appearance` (tema, skin 3D, colores de stickers) · `Timer` (inspección, focus mode, voz) · `Scramble` (verificación, display) · `Analysis` (método, BPA/WPA) · `Training` · `Notifications` (sonidos, volumen, recordatorios) · `Shortcuts` (atajos de teclado) · `Data` (export/import — 660 l) · `Profile` (avatar, bio, país) · `SmartCube` (Bluetooth, GAN) · `Advanced` (debug, reset) · `Credits` (textos largos de agradecimientos).
-- **Namespace**: `settings`.
-- **Dificultad**: media-alta por volumen; patrón ya establecido en tanda 1.
+### Tanda 12 — Settings restantes (3 sub-tandas, ~3.600 líneas en `components/Settings/`)
+- **Ya traducido (tanda 1)**: `SettingsDialog` + `SettingsSidebar` + `settings.constants.ts`
+  (13 secciones con `labelKey`/`descriptionKey` tipados) + namespace `settings`
+  base (title/language/preferences/selectSection/sections.*).
+- **12A — General + Appearance + Timer** (~515 l, ~50 strings): `GeneralSection`
+  (precisión de tiempos centiseg/miliseg, haptics, tour de onboarding),
+  `AppearanceSection` (tema system/dark/light, skin 3D — labels de `CUBE_SKINS`
+  del engine = datos, colores de stickers personalizados + `FACE_LABELS`
+  Up/Down/Front/Back/Right/Left con color), `TimerSection` (modo de entrada
+  timer/manual, click to start, duración de hold 0/300/550/1000 ms, hardware
+  timer none/Stackmat/GAN + hints de conexión, inspección WCA 15s, avisos de
+  voz, tipo de voz male/female, PB delta, session stats, focus mode).
+- **12B — Profile + Data + Scramble + Analysis** (~1.270 l): `ProfileSection`
+  (451 l — avatar, display name, bio, país, métodos; datos de usuario NO se
+  traducen) · `DataSection` (661 l — export/import JSON, mensajes de
+  archivo/estado) · `ScrambleSection` (verificación, display) ·
+  `AnalysisSection` (método, BPA/WPA).
+- **12C — Notifications + Shortcuts + SmartCube + Advanced + Credits + atoms**
+  (~1.450 l): `NotificationsSection` (sonidos, volumen, recordatorios),
+  `ShortcutsSection` (atajos de teclado), `SmartCubeSection` (Bluetooth, GAN),
+  `AdvancedSection` (debug, reset), `CreditsSection` (textos largos de
+  agradecimientos), `PlaceholderSection`, `ColorPicker`, `SettingToggle`.
+- **Namespace**: `settings` (sub-namespaces `general.*`, `appearance.*`,
+  `timer.*`, etc.).
+- **Dificultad**: media-alta por volumen; patrón de row ya establecido
+  (label + hint + control) y `SettingToggle` recibe title/description como
+  props (sin strings internos). Los valores de estado (timer/manual,
+  centiseconds/milliseconds, none/stackmat/gan, system/dark/light, male/female)
+  son datos — solo se traduce la etiqueta visible.
+- **12A (General + Appearance + Timer) hecha** ✅ — sub-namespaces
+  `general.*`/`appearance.*`/`timer.*` (104 hojas de settings en total).
+  `GeneralSection` (precisión, haptics, tour), `AppearanceSection` (tema,
+  skins vía `SKIN_LABEL_KEY`, stickers + `FACE_LABEL_KEY` tipado con union),
+  `TimerSection` (entrada manual, click-to-start, hold, hardware timer +
+  hints, inspección, voz, PB delta, session stats, focus mode). Hallazgos del
+  review aplicados: comentario obsoleto de GeneralSection corregido, skins
+  traducidos (antes datos EN). Validado: tsc 0, eslint 0, paridad 104/104.
+- **12B/12C pendientes**.
 
 ### Tanda 13 — Datos y superficies no-React
 - **Zonas**:
