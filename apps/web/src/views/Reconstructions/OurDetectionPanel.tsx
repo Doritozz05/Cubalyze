@@ -74,29 +74,31 @@ function interleave(
   return out;
 }
 
-// Grid: Phase | Case | Moves | # — same template as the raw Steps table,
-// so both panels align visually. Every data row carries a full-strength
-// bottom border (like the one under the header).
-const ROW_GRID = "grid grid-cols-[7.5rem_6.5rem_1fr_2.75rem]";
+// Grid layout: parent wrapper defines the shared 4-column tracks so all rows
+// align to the same column widths (the Case column uses max-content across all
+// rows so the Moves column forms a perfectly straight vertical baseline).
+const GRID_CONTAINER = "grid grid-cols-[7.5rem_max-content_1fr_2.75rem]";
+const ROW_GRID = "grid grid-cols-subgrid col-span-4";
 const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
 const ROW_LINE = "border-b border-line";
 
 /** Moves column: every token rendered identically (face moves and
  *  rotations alike), sized/colored exactly like the phase titles so the
- *  algorithm reads as strong as its label. */
+ *  algorithm reads as strong as its label. Wraps naturally when reaching
+ *  the # column. */
 function MovesSeq({ tokens }: { tokens: string[] | null }) {
   if (!tokens || tokens.length === 0) {
     return <span className="text-[0.74rem] text-ink-3">—</span>;
   }
   return (
-    <span className="min-w-0 truncate font-mono text-[0.74rem] font-medium text-ink">
+    <span className="min-w-0 break-words whitespace-normal font-mono text-[0.74rem] font-medium text-ink leading-relaxed">
       {tokens.join(" ")}
     </span>
   );
 }
 
 function CountCell({ count }: { count: number }) {
-  return <span className="nums text-right text-xs text-ink-2">{count}</span>;
+  return <span className="nums text-right text-xs text-ink-2 whitespace-nowrap">{count}</span>;
 }
 
 // ─── Panel ─────────────────────────────────────────────────────────────────
@@ -248,23 +250,25 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         </div>
       </div>
 
-      {/* ── Column headers ── */}
+      {/* ── Outer table grid container for subgrid alignment ── */}
+      <div className={GRID_CONTAINER}>
+        {/* ── Column headers ── */}
       <div
         className={cn(
           ROW_GRID,
           "items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
         )}
       >
-        <span>{t("detail.colPhase")}</span>
-        <span>{t("detail.colCase")}</span>
-        <span>{t("detail.colMoves")}</span>
-        <span className="text-right">#</span>
+        <span className="whitespace-nowrap">{t("detail.colPhase")}</span>
+        <span className="whitespace-nowrap">{t("detail.colCase")}</span>
+        <span className="whitespace-nowrap">{t("detail.colMoves")}</span>
+        <span className="text-right whitespace-nowrap">#</span>
       </div>
 
       {/* ── Orientation row: up/front after grip (case) + inspection rot. ── */}
       <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-        <span className="text-[0.74rem] font-medium text-ink">{t("detection.orientation")}</span>
-        <span className="flex min-w-0 items-center gap-1.5">
+        <span className="text-[0.74rem] font-medium text-ink whitespace-nowrap">{t("detection.orientation")}</span>
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
           {orient && (
             <>
               <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
@@ -280,13 +284,14 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           {!orient && <span className="text-[0.64rem] text-ink-3">—</span>}
         </span>
         <MovesSeq tokens={inspectionTokens.length > 0 ? inspectionTokens : null} />
-        <span className="nums text-right text-xs text-ink-3">—</span>
+        <span className="nums text-right text-xs text-ink-3 whitespace-nowrap">—</span>
       </div>
 
       {/* ── Cross ── */}
-      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>          <span className="flex min-w-0 flex-col">
-            <span className="text-[0.74rem] font-medium text-ink">{t("detection.cross")}</span>
-            <span className="mt-0.5 flex items-center gap-1.5">
+      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
+        <span className="flex min-w-0 flex-col">
+          <span className="text-[0.74rem] font-medium text-ink">{t("detection.cross")}</span>
+          <span className="mt-0.5 flex items-center gap-1.5">
             {isXCross && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -343,10 +348,10 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
             </span>
           </span>
           <span className="text-[0.64rem] text-ink-3/50">—</span>
-          <span className="min-w-0">
+          <span className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
             <MovesSeq tokens={p.display} />
             {p.auf.length > 0 && (
-              <span className="ml-2 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
+              <span className="shrink-0 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
                 {t("detection.auf", { moves: p.auf.join(" ") })}
               </span>
             )}
@@ -378,6 +383,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           <CountCell count={pllMoves?.length ?? 0} />
         </div>
       )}
+      </div>
 
       {/* ── Footer: rotations + tps ── */}
       <div className="flex items-center gap-3 bg-surface-2/60 px-3 py-1.5 text-[0.6rem] text-ink-3">

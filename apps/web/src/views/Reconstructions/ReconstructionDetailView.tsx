@@ -29,25 +29,6 @@ import { formatDisplayDate } from "./ReconstructionsView";
 
 // ─── Phase type / color helpers ─────────────────────────────────────────────
 
-type PhaseKind = "cross" | "f2l" | "oll" | "pll" | "other";
-
-function phaseKind(label: string): PhaseKind {
-  const l = label.toLowerCase();
-  if (/cross/i.test(l)) return "cross";
-  if (/oll/i.test(l) && !/f2l|pair/i.test(l)) return "oll";
-  if (/pll/i.test(l)) return "pll";
-  if (/f2l|pair/i.test(l)) return "f2l";
-  return "other";
-}
-
-const KIND_DOT: Record<PhaseKind, string> = {
-  cross: "bg-phase-blue-500",
-  f2l: "bg-phase-emerald",
-  oll: "bg-phase-amber",
-  pll: "bg-phase-violet",
-  other: "bg-line-2",
-};
-
 
 export function getMethodBadgeClass(method: string): string {
   const m = (method || "").toUpperCase();
@@ -84,17 +65,13 @@ function StatChip({ label, value, accent }: { label: string; value: string; acce
 // ─── Phase row ──────────────────────────────────────────────────────────────
 
 function PhaseRow({ phase, last }: { phase: ReconPhase; last: boolean }) {
-  const kind = phaseKind(phase.label);
-
   return (
     <div
       className={cn(
-        "grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem] items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2",
+        "grid grid-cols-subgrid col-span-4 items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2",
         !last && "border-b border-line/60",
       )}
     >
-      <span className={cn("size-1.5 rounded-full", KIND_DOT[kind])} />
-
       <span className="flex min-w-0 items-center gap-1.5">
         <span className="truncate text-[0.74rem] font-medium text-ink">{phase.label}</span>
       </span>
@@ -363,21 +340,22 @@ export function ReconstructionDetailView({
                 </span>
               </div>
 
-              <div className="grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem] items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
-                <span />
-                <span>{t("detail.colPhase")}</span>
-                <span>{t("detail.colCase")}</span>
-                <span>{t("detail.colMoves")}</span>
-                <span className="text-right">#</span>
-              </div>
+              <div className="grid grid-cols-[7.5rem_max-content_1fr_2.75rem]">
+                <div className="grid grid-cols-subgrid col-span-4 items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
+                  <span>{t("detail.colPhase")}</span>
+                  <span>{t("detail.colCase")}</span>
+                  <span>{t("detail.colMoves")}</span>
+                  <span className="text-right">#</span>
+                </div>
 
-              {record.phases.map((p, i) => (
-                <PhaseRow
-                  key={`${p.label}-${i}`}
-                  phase={p}
-                  last={i === record.phases.length - 1}
-                />
-              ))}
+                {record.phases.map((p, i) => (
+                  <PhaseRow
+                    key={`${p.label}-${i}`}
+                    phase={p}
+                    last={i === record.phases.length - 1}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
