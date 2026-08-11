@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +31,13 @@ function normalizeMethodName(m: string): string {
   return m;
 }
 
+const SORT_OPTIONS = [
+  { id: "fastest", labelKey: "sortFastest" },
+  { id: "slowest", labelKey: "sortSlowest" },
+  { id: "newest", labelKey: "sortNewest" },
+  { id: "oldest", labelKey: "sortOldest" },
+] as const;
+
 const SOURCE_CHIPS: ("All" | "cuberoot" | "reconz")[] = ["All", "cuberoot", "reconz"];
 
 /** Distinct puzzles present in the dataset, sorted (the Select adds "All"). */
@@ -43,12 +51,7 @@ function puzzleOptions(index: ReconIndexEntry[] | null): string[] {
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
   });
 }
-const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
-  { id: "fastest", label: "Fastest" },
-  { id: "slowest", label: "Slowest" },
-  { id: "newest", label: "Newest" },
-  { id: "oldest", label: "Oldest" },
-];
+
 
 /**
  * Extract a plausible competition year from a free-text source.
@@ -180,6 +183,7 @@ function ReconRow({
 // ─── View ───────────────────────────────────────────────────────────────────
 
 export function ReconstructionsView() {
+  const { t } = useTranslation("reconstructions");
   const [index, setIndex] = useState<ReconIndexEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -197,6 +201,8 @@ export function ReconstructionsView() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // t is stable across renders; the fallback error message is static per render
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     let cancelled = false;
     fetchReconIndex()
@@ -204,12 +210,13 @@ export function ReconstructionsView() {
         if (!cancelled) setIndex(entries);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load reconstructions");
+        if (!cancelled) setError(e instanceof Error ? e.message : t("list.errorLoad"));
       });
     return () => {
       cancelled = true;
     };
   }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Solves matching puzzle + source filters (before method and search)
   const puzzleScopedSolves = useMemo(() => {
@@ -344,18 +351,17 @@ export function ReconstructionsView() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold tracking-tight text-ink">
-              Reconstructions
+              {t("nav:reconstructions")}
             </h2>
             <p className="text-xs text-ink-3">
-              Reconstructed solves from reco.nz and CubeRoot — browse solver
-              profiles, cases and techniques.
+              {t("list.subtitle")}
             </p>
           </div>
           <div className="nums flex items-baseline gap-1.5 text-xs text-ink-3">
             <span className="text-sm font-semibold text-ink">
               {sorted.length.toLocaleString()}
             </span>
-            solves
+            {t("list.solvesCount", { count: sorted.length })}
           </div>
         </div>
 
@@ -365,7 +371,7 @@ export function ReconstructionsView() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search solver, competition, technique…"
+            placeholder={t("list.searchPlaceholder")}
             className="h-8 w-full rounded-md border border-line bg-surface pl-8 pr-3 text-[0.78rem] text-ink placeholder:text-ink-3/60 focus:border-ink/30 focus:outline-none"
           />
         </div>
@@ -386,7 +392,7 @@ export function ReconstructionsView() {
                       : "text-ink-3 hover:text-ink hover:bg-surface-2",
                   )}
                 >
-                  {m}
+                  {m === "Other" ? t("list.methodOther") : m}
                   <span className="nums ml-1 opacity-60">{count.toLocaleString()}</span>
                 </button>
               );
@@ -405,17 +411,17 @@ export function ReconstructionsView() {
                     : "text-ink-3 hover:text-ink hover:bg-surface-2",
                 )}
               >
-                {s === "All" ? "All sources" : s}
+                {s === "All" ? t("list.allSources") : s}
               </button>
             ))}
           </div>
 
           <Select value={puzzle} onValueChange={setPuzzle}>
             <SelectTrigger className="h-7 w-32 gap-2 rounded-md border-line bg-surface px-2 text-[0.65rem] font-medium text-ink">
-              <SelectValue placeholder="All puzzles" />
+              <SelectValue placeholder={t("list.allPuzzles")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-[0.68rem]">All puzzles</SelectItem>
+              <SelectItem value="all" className="text-[0.68rem]">{t("list.allPuzzles")}</SelectItem>
               {puzzleOptions(index).map((p) => (
                 <SelectItem key={p} value={p} className="text-[0.68rem]">
                   {p}
@@ -436,7 +442,7 @@ export function ReconstructionsView() {
                     : "text-ink-3 hover:text-ink hover:bg-surface-2",
                 )}
               >
-                {o.label}
+                {t(`list.${o.labelKey}`)}
               </button>
             ))}
           </div>
@@ -448,7 +454,9 @@ export function ReconstructionsView() {
         <div className="flex flex-1 flex-col items-center justify-center gap-2">
           <p className="text-sm text-dnf">{error}</p>
           <p className="text-xs text-ink-3">
-            Run <code className="font-mono">pnpm dlx tsx pruebas/scripts/build-recon-web-data.ts</code> to generate the assets.
+            {t("list.errorHint", {
+              command: "pnpm dlx tsx pruebas/scripts/build-recon-web-data.ts",
+            })}
           </p>
         </div>
       ) : !index ? (
@@ -462,19 +470,19 @@ export function ReconstructionsView() {
           {/* Column header */}
           <div className="grid shrink-0 grid-cols-[2.75rem_1.6fr_4.25rem_6.75rem_1.7fr_4.5rem_1.2fr] items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-wider text-ink-3">
             <span className="text-right">#</span>
-            <span>Solver</span>
-            <span>Time</span>
-            <span className="max-xl:hidden">Date</span>
-            <span className="max-lg:hidden">Competition</span>
-            <span>Method</span>
-            <span className="text-right max-lg:hidden">Tech</span>
+            <span>{t("list.colSolver")}</span>
+            <span>{t("list.colTime")}</span>
+            <span className="max-xl:hidden">{t("list.colDate")}</span>
+            <span className="max-lg:hidden">{t("list.colCompetition")}</span>
+            <span>{t("list.colMethod")}</span>
+            <span className="text-right max-lg:hidden">{t("list.colTech")}</span>
           </div>
 
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
             {sorted.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-1 py-16 text-center">
-                <p className="text-sm text-ink-2">No reconstructions match</p>
-                <p className="text-xs text-ink-3">Try clearing the search or filters.</p>
+                <p className="text-sm text-ink-2">{t("list.emptyTitle")}</p>
+                <p className="text-xs text-ink-3">{t("list.emptyHint")}</p>
               </div>
             ) : (
               <div

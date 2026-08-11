@@ -25,6 +25,7 @@
  */
 import { useMemo } from "react";
 import { Eye, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import {
   SectionHeader,
@@ -101,6 +102,7 @@ function CountCell({ count }: { count: number }) {
 // ─── Panel ─────────────────────────────────────────────────────────────────
 
 export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
+  const { t } = useTranslation("reconstructions");
   // Only CFOP on a 3×3 makes sense for the state-based CFOP detector.
   const canDetect =
     record.methodGroup === "CFOP" && record.puzzle === "3x3";
@@ -133,8 +135,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
     // to never throw on incoherent transcripts) — surface it, don't hide it.
     return (
       <div className="mt-4 rounded-lg border border-caution/40 bg-caution/5 px-3 py-2.5 text-[0.66rem] text-caution">
-        Our detection failed to analyze this solve (API error). This is a bug
-        — the incoherence path is supposed to be handled internally.
+        {t("detection.apiError")}
       </div>
     );
   }
@@ -237,11 +238,13 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface">
       <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-        <SectionHeader title="Our detection" eyebrow="CFOP" />
+        <SectionHeader title={t("detection.title")} eyebrow={t("detection.eyebrow")} />
         <div className="flex items-center gap-2">
           <WarningsBadge warnings={warnings} />
           <CoherenceBadge coherent={recon.finalSolved} />
-          <span className="nums text-xs text-ink-3">{totalMoves} moves</span>
+          <span className="nums text-xs text-ink-3">
+            {t("detail.movesCount", { count: totalMoves })}
+          </span>
         </div>
       </div>
 
@@ -252,24 +255,24 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           "items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
         )}
       >
-        <span>Phase</span>
-        <span>Case</span>
-        <span>Moves</span>
+        <span>{t("detection.colPhase")}</span>
+        <span>{t("detection.colCase")}</span>
+        <span>{t("detection.colMoves")}</span>
         <span className="text-right">#</span>
       </div>
 
       {/* ── Orientation row: up/front after grip (case) + inspection rot. ── */}
       <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-        <span className="text-[0.74rem] font-medium text-ink">Orientation</span>
+        <span className="text-[0.74rem] font-medium text-ink">{t("detection.orientation")}</span>
         <span className="flex min-w-0 items-center gap-1.5">
           {orient && (
             <>
               <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
-                up
+                {t("detection.up")}
               </span>
               <FaceChip face={orient.up} />
               <span className="ml-1 text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
-                front
+                {t("detection.front")}
               </span>
               <FaceChip face={orient.front} />
             </>
@@ -281,10 +284,9 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       </div>
 
       {/* ── Cross ── */}
-      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-        <span className="flex min-w-0 flex-col">
-          <span className="text-[0.74rem] font-medium text-ink">Cross</span>
-          <span className="mt-0.5 flex items-center gap-1.5">
+      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>          <span className="flex min-w-0 flex-col">
+            <span className="text-[0.74rem] font-medium text-ink">{t("detection.cross")}</span>
+            <span className="mt-0.5 flex items-center gap-1.5">
             {isXCross && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -301,10 +303,10 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   {recon.cross.type === "pseudo xcross"
-                    ? "The written cross block never contained a real cross (edges left misordered / partial — fixed inside the F2L pairs)"
+                    ? t("detection.xcrossPseudo")
                     : recon.cross.xcrossPair
-                      ? `${recon.cross.xcrossPair.name} pair solved at cross completion`
-                      : "An F2L pair was already solved at cross completion"}
+                      ? t("detection.xcrossPair", { name: recon.cross.xcrossPair.name })
+                      : t("detection.xcrossGeneric")}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -321,7 +323,9 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">
-              {p.slot ? `F2L ${crossPairCount + i + 1}` : "F2L"}
+              {p.slot
+                ? t("detection.f2lPair", { count: crossPairCount + i + 1 })
+                : t("detection.f2l")}
             </span>
             <span className="mt-0.5 flex items-center gap-1.5">
               {p.slot ? (
@@ -330,7 +334,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                 </span>
               ) : (
                 <span className="text-[0.64rem] text-ink-3">
-                  (no pair segmentation)
+                  {t("detection.noPairSegmentation")}
                 </span>
               )}
               {p.colors.map((c) => (
@@ -343,7 +347,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
             <MovesSeq tokens={p.display} />
             {p.auf.length > 0 && (
               <span className="ml-2 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
-                auf {p.auf.join(" ")}
+                {t("detection.auf", { moves: p.auf.join(" ") })}
               </span>
             )}
           </span>
@@ -355,7 +359,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       {recon.oll && (
         <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <span className="flex min-w-0 flex-col">
-            <span className="text-[0.74rem] font-medium text-ink">OLL</span>
+            <span className="text-[0.74rem] font-medium text-ink">{t("detection.oll")}</span>
             {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
           </span>
           <span className="text-[0.64rem] text-ink-3/50">—</span>
@@ -366,7 +370,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       {recon.pll && (
         <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
           <span className="flex min-w-0 flex-col">
-            <span className="text-[0.74rem] font-medium text-ink">PLL</span>
+            <span className="text-[0.74rem] font-medium text-ink">{t("detection.pll")}</span>
             {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
           </span>
           <span className="text-[0.64rem] text-ink-3/50">—</span>
@@ -379,7 +383,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       <div className="flex items-center gap-3 bg-surface-2/60 px-3 py-1.5 text-[0.6rem] text-ink-3">
         <span className="flex items-center gap-1">
           <RotateCcw className="size-3" />
-          {recon.rotations.length} rotation{recon.rotations.length !== 1 ? "s" : ""}
+          {t("detection.rotationCount", { count: recon.rotations.length })}
           {recon.rotations.length > 0 && (
             <span className="font-mono">
               ({recon.rotations.map((r) => r.token).join(" ")})
@@ -387,7 +391,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           )}
         </span>
         {recon.tps != null && (
-          <span className="nums">{recon.tps.toFixed(2)} tps</span>
+          <span className="nums">{t("detection.tps", { tps: recon.tps.toFixed(2) })}</span>
         )}
         {recon.inspection && (
           <span className="flex items-center gap-1 font-mono">

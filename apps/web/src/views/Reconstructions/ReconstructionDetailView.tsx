@@ -11,6 +11,7 @@ import {
   Calendar,
   UserRound,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,7 @@ export function ReconstructionDetailView({
   recordKey: string;
   onBack: () => void;
 }) {
+  const { t } = useTranslation("reconstructions");
   const [record, setRecord] = useState<ReconFullRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -138,11 +140,13 @@ export function ReconstructionDetailView({
         if (!cancelled) setRecord(r);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load reconstruction");
+        if (!cancelled) setError(e instanceof Error ? e.message : t("detail.errorLoad"));
       });
     return () => {
       cancelled = true;
     };
+    // t is stable across renders; fallback message is static per render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordKey]);
 
   const solve = useMemo(() => (record ? reconToSolve(record) : null), [record]);
@@ -163,7 +167,7 @@ export function ReconstructionDetailView({
       <div className="flex h-full flex-col items-center justify-center gap-2">
         <p className="text-sm text-dnf">{error}</p>
         <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="size-3.5" /> Back
+          <ArrowLeft className="size-3.5" /> {t("common:back")}
         </Button>
       </div>
     );
@@ -196,7 +200,7 @@ export function ReconstructionDetailView({
             onClick={onBack}
             className="mb-3 flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors hover:text-ink"
           >
-            <ArrowLeft className="size-3.5" /> Reconstructions
+            <ArrowLeft className="size-3.5" /> {t("detail.back")}
           </button>
 
           {/* ── Header ── */}
@@ -245,14 +249,17 @@ export function ReconstructionDetailView({
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar className="size-3" /> {formatDisplayDate(record.date, record.competition, record.url)}
-                </span>
-                <span className="nums flex items-center gap-1">
-                  <span className="text-ink-2">#{record.id}</span>
-                  {record.solveNum != null && <span className="text-ink-3">solve {record.solveNum}</span>}
-                </span>
+                </span>                  <span className="nums flex items-center gap-1">
+                    <span className="text-ink-2">#{record.id}</span>
+                    {record.solveNum != null && (
+                      <span className="text-ink-3">
+                        {t("detail.solveNum", { count: record.solveNum })}
+                      </span>
+                    )}
+                  </span>
                 {record.reconstructor && (
                   <span className="flex items-center gap-1">
-                    <UserRound className="size-3" /> recon {record.reconstructor}
+                    <UserRound className="size-3" /> {t("detail.reconBy", { name: record.reconstructor })}
                   </span>
                 )}
                 {record.compWcaId && (
@@ -280,7 +287,7 @@ export function ReconstructionDetailView({
                     rel="noreferrer"
                     className="flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors hover:text-ink"
                   >
-                    <ExternalLink className="size-3" /> Source
+                    <ExternalLink className="size-3" /> {t("detail.source")}
                   </a>
                 )}
                 {record.stats.videoUrl && (
@@ -290,7 +297,7 @@ export function ReconstructionDetailView({
                     rel="noreferrer"
                     className="flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors hover:text-ink"
                   >
-                    <Video className="size-3" /> Video
+                    <Video className="size-3" /> {t("detail.video")}
                   </a>
                 )}
               </div>
@@ -302,9 +309,11 @@ export function ReconstructionDetailView({
             <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
-                  Scramble
+                  {t("detail.scramble")}
                 </span>
-                <span className="text-[0.58rem] text-ink-3">{stm ?? "—"} STM</span>
+                <span className="text-[0.58rem] text-ink-3">
+                  {stm != null ? t("detail.stm", { count: stm }) : "—"}
+                </span>
               </div>
               <p className="font-mono text-[0.72rem] leading-relaxed text-ink-2">
                 {record.scramble}
@@ -314,22 +323,22 @@ export function ReconstructionDetailView({
 
           {/* ── Stat chips ── */}
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
-            <StatChip label="STM" value={stm != null ? String(stm) : "—"} />
-            <StatChip label="TPS" value={tps != null ? tps.toFixed(2) : "—"} />
+            <StatChip label={t("detail.chipStm")} value={stm != null ? String(stm) : "—"} />
+            <StatChip label={t("detail.chipTps")} value={tps != null ? tps.toFixed(2) : "—"} />
             <StatChip
-              label="Cross STM"
+              label={t("detail.chipCrossStm")}
               value={record.stats.crossStm != null ? String(record.stats.crossStm) : "—"}
             />
-            <StatChip label="F2L" value={record.stats.f2l != null ? String(record.stats.f2l) : "—"} />
-            <StatChip label="LL" value={record.stats.ll != null ? String(record.stats.ll) : "—"} />
+            <StatChip label={t("detail.chipF2l")} value={record.stats.f2l != null ? String(record.stats.f2l) : "—"} />
+            <StatChip label={t("detail.chipLl")} value={record.stats.ll != null ? String(record.stats.ll) : "—"} />
             <StatChip
-              label="Rotations"
+              label={t("detail.chipRotations")}
               value={String(record.rotationCount ?? 0)}
             />
             {record.average != null && (
-              <StatChip label="Avg" value={formatTime(record.average * 1000)} />
+              <StatChip label={t("detail.chipAvg")} value={formatTime(record.average * 1000)} />
             )}
-            {record.cube && <StatChip label="Cube" value={record.cube} />}
+            {record.cube && <StatChip label={t("detail.chipCube")} value={record.cube} />}
           </div>
 
           {/* ── Replay ── */}
@@ -346,17 +355,19 @@ export function ReconstructionDetailView({
           {record.phases.length > 0 && (
             <div className="mt-4 rounded-lg border border-line bg-surface">
               <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-                <SectionHeader title="Steps" eyebrow="phases · cases · moves" />
+                <SectionHeader title={t("detail.stepsTitle")} eyebrow={t("detail.stepsEyebrow")} />
                 <span className="nums text-xs text-ink-3">
-                  {record.phases.reduce((n, p) => n + p.moveCount, 0)} moves
+                  {t("detail.movesCount", {
+                    count: record.phases.reduce((n, p) => n + p.moveCount, 0),
+                  })}
                 </span>
               </div>
 
               <div className="grid grid-cols-[0.75rem_7.5rem_6.5rem_1fr_2.75rem] items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
                 <span />
-                <span>Phase</span>
-                <span>Case</span>
-                <span>Moves</span>
+                <span>{t("detail.colPhase")}</span>
+                <span>{t("detail.colCase")}</span>
+                <span>{t("detail.colMoves")}</span>
                 <span className="text-right">#</span>
               </div>
 
@@ -374,10 +385,10 @@ export function ReconstructionDetailView({
           {record.text && (
             <div className="mt-4 rounded-lg border border-line bg-surface">
               <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-                <SectionHeader title="Reconstruction" eyebrow="raw solution" />
+                <SectionHeader title={t("detail.reconTitle")} eyebrow={t("detail.reconEyebrow")} />
                 <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 gap-1 px-2 text-xs text-ink-3 hover:text-ink">
                   {copied ? <Check className="size-3 text-ready" /> : <Copy className="size-3" />}
-                  {copied ? "Copied" : "Copy"}
+                  {copied ? t("detail.copied") : t("detail.copy")}
                 </Button>
               </div>
               <pre className="max-h-80 overflow-y-auto px-4 py-3 font-mono text-[0.72rem] leading-relaxed text-ink-2">

@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -27,8 +27,9 @@ Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) �
 5. **Interpolaciones**: `` `Delete "${name}"?` `` → `t('deleteSession', { name })`.
    **Plurales**: `{{count}} solves` / `_one`.
 6. **Fechas y números**: `Intl.DateTimeFormat`/`NumberFormat` con el locale
-   activo (date-fns ya instalado para casos complejos). Hoy hay
-   `toLocaleDateString("en-US")` hardcodeado en ProfileHero.
+   activo (date-fns ya instalado para casos complejos). El hardcode de
+   `toLocaleDateString("en-US")` de ProfileHero se resolvió en la tanda 9
+   (`formatMemberSince(createdAt, i18n.language)`).
 7. **TTS y notificaciones** usan el idioma activo en el momento (ver tanda 3).
 8. **packages/ui** comparte el singleton de i18n de web (se bundlea dentro).
 
@@ -528,10 +529,68 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   eslint 0, vitest 6/6, paridad en/es perfecta (60/60 profile), build de
   producción OK, 0 strings residuales en la zona.
 
-### Tanda 10 — Reconstructions (tab)
-- **Zonas**: `ReconstructionsView` (lista, filtros, orden) · `ReconstructionDetailView` (detalle por fases) · `OurDetectionPanel` (detección automática de fases, mensajes de estado).
-- **Namespace**: `reconstructions`.
-- **Dificultad**: media.
+### Tanda 10 — Reconstructions (tab) *(hecha)*
+- **Zonas** (volumen medido: 3 archivos de UI · ~1.300 líneas · ~45 strings de UI):
+  - `ReconstructionsView` (505 l): header "Reconstructions" + subtítulo,
+    contador "{n} solves" (plural), búsqueda (placeholder), chips de fuente
+    ("All sources"), select de puzzles ("All puzzles"), chips de método
+    dinámicos ("All" + métodos — los métodos son datos), 4 opciones de orden
+    (Fastest/Slowest/Newest/Oldest), encabezados de tabla
+    (#/Solver/Time/Date/Competition/Method/Tech), estado vacío
+    ("No reconstructions match" + hint), error de carga + hint del script.
+  - `ReconstructionDetailView` (392 l): botón back, header del record (datos:
+    solver, método, source, record, oficial…), stat chips (STM/TPS/Cross
+    STM/F2L/LL/Rotations/Avg/Cube), Scramble + "{n} STM", links Source/Video,
+    sección Steps ("phases · cases · moves", "{n} moves" plural, headers
+    Phase/Case/Moves/#), sección Reconstruction ("raw solution", botón
+    Copy/Copied). `ReplaySection` **ya traducido** (tanda 5) — se reutiliza.
+  - `OurDetectionPanel` (400 l): título "Our detection" eyebrow CFOP,
+    headers de tabla, fila Orientation (labels up/front), filas Cross/F2L
+    {n}/OLL/PLL (jerga CFOP mantenida), "(no pair segmentation)", chip
+    "auf {moves}", tooltip XCross (3 variantes con interpolación), footer
+    "{n} rotation{s}" (plural) + "{tps} tps", mensaje de error de la API
+    (bug visible).
+- **Namespace**: `reconstructions` (nuevo, ~45 claves: list.*, detail.*,
+  detection.*) + **reutilización**: `nav:reconstructions` (título y back),
+  `common:back` (botón Back del error). `reconData.ts` es solo datos
+  (solvers, competiciones, métodos, tags — NO se traducen).
+- **Decisiones clave**:
+  - **Datos NO se traducen**: solver, competición, método, tags, puzzles,
+    labels de fases (`phase.label` del registro), "record"/"official"/"wca",
+    "solve {n}", "recon {reconstructor}".
+  - **Jerga CFOP mantenida**: Cross, F2L, OLL, PLL, XCross, auf, STM, TPS,
+    Scramble, Cube, "raw solution" → "solución cruda" NO (es UI → se
+    traduce: "solución sin procesar"). Los nombres de fase del registro son
+    datos; los labels fijos del panel de detección son UI.
+  - **Interpolación**: `{count} solves` (plural `_one/_other`), `{count}
+    moves`, `{count} rotation(s)`, `{stm} STM`, `{tps} tps`, `auf {moves}`,
+    `{name} pair solved at cross completion`, `F2L {n}`.
+  - **aria/errores**: "Failed to load reconstructions/reconstruction" → claves
+    `list.errorLoad`/`detail.errorLoad`; hint del script con `{command}`.
+  - **Plurales** `_one/_other` donde el español flexiona (solvesCount,
+    movesCount, rotationCount).
+- **Dificultad**: media-baja (3 archivos, mucho dato, reutilización de atoms
+  ya traducidos de la tanda 5: SectionHeader, FaceChip, CoherenceBadge,
+  WarningsBadge, SkippedBadge, ReplaySection).
+- Hecho: namespace `reconstructions` en en/es (67 hojas: list.*, detail.*,
+  detection.*) y los 3 archivos traducidos. `ReconstructionsView` (subtítulo,
+  contador `solvesCount` plural, placeholder de búsqueda, chips de fuente/
+  puzzle, `SORT_OPTIONS` con `labelKey`, encabezados de tabla, estado vacío,
+  `errorHint` con `{{command}}` interpolado — el `<code>` monospace se pierde,
+  trade-off del patrón `timeHint` de 7A; chip de método `Other` renderizado
+  traducido vía `list.methodOther` manteniendo el valor de estado),
+  `ReconstructionDetailView` (back, `solveNum`/`reconBy` interpolados, stat
+  chips, `detail.stm` solo con número, Steps con plural `movesCount`,
+  Copy/Copied), `OurDetectionPanel` (título, filas de orientación y fases,
+  tooltips XCross con 3 variantes interpoladas, footer `rotationCount` plural
+  + `tps`, error de API). Jerga mantenida: Cross/F2L/OLL/PLL, auf, STM, TPS,
+  Scramble, wca, solve {n}, nombres de método y datos. `ReplaySection` y los
+  atoms reutilizados sin tocar (tanda 5). Code review: hallazgos aplicados —
+  `Other` no estaba localizado (nuevo `list.methodOther`), `detection.cross`
+  pasó a "Cross" (jerga, coherente con la tabla Steps adyacente que muestra
+  labels de datos), `detail.stm` dejó de pasar `"—"` como `count`. Validado:
+  tsc web+desktop 0, eslint 0, vitest 6/6, paridad en/es perfecta (67/67),
+  build de producción OK, 0 strings residuales en la zona.
 
 ### Tanda 11 — Widgets (dock + explorer + 13 widgets)
 - **Zonas**:
