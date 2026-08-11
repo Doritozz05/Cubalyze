@@ -12,10 +12,12 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { METHODS } from "@cubeforge/algorithm-db";
 import type { QueueReason } from "@cubeforge/training";
+import type { ParseKeys } from "i18next";
 import { Spinner } from "@/components/ui/spinner";
 import {
   RotateCcw,
@@ -35,11 +37,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const REASON_META: Record<QueueReason, { label: string; badge: string; dot: string }> = {
-  overdue: { label: "Overdue", badge: "bg-caution text-surface font-semibold", dot: "bg-caution" },
-  review: { label: "Due", badge: "bg-phase-blue text-white font-semibold", dot: "bg-phase-blue" },
-  weak: { label: "Weak", badge: "bg-phase-violet text-white font-semibold", dot: "bg-phase-violet" },
-  new: { label: "New", badge: "bg-phase-emerald text-white font-semibold", dot: "bg-phase-emerald" },
+const REASON_META: Record<QueueReason, { labelKey: ParseKeys<"training">; badge: string; dot: string }> = {
+  overdue: { labelKey: "review.reason.overdue", badge: "bg-caution text-surface font-semibold", dot: "bg-caution" },
+  review: { labelKey: "review.reason.due", badge: "bg-phase-blue text-white font-semibold", dot: "bg-phase-blue" },
+  weak: { labelKey: "review.reason.weak", badge: "bg-phase-violet text-white font-semibold", dot: "bg-phase-violet" },
+  new: { labelKey: "review.reason.new", badge: "bg-phase-emerald text-white font-semibold", dot: "bg-phase-emerald" },
 };
 
 
@@ -57,6 +59,7 @@ export interface ReviewQueueSectionProps {
 }
 
 export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountChange }: ReviewQueueSectionProps) {
+  const { t } = useTranslation("training");
   const { ready, loading, error, queue } = useSRSQueue();
   const [methodFilter, setMethodFilter] = useState<string>("all");
 
@@ -95,7 +98,7 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
       <section className="shrink-0 rounded-xl border border-line bg-surface p-4">
         <div className="flex items-center gap-2 mb-3">
           <RotateCcw className="size-3.5 text-ink-2" />
-          <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
+          <h2 className="text-[0.72rem] font-semibold text-ink">{t("review.queue.title")}</h2>
         </div>
         <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
           <Spinner size="xs" />
@@ -109,7 +112,7 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
       <section className="shrink-0 rounded-xl border border-line bg-surface p-4">
         <div className="flex items-center gap-2 mb-3">
           <RotateCcw className="size-3.5 text-ink-2" />
-          <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
+          <h2 className="text-[0.72rem] font-semibold text-ink">{t("review.queue.title")}</h2>
         </div>
         <p className="text-[0.62rem] text-hold">{error}</p>
       </section>
@@ -121,24 +124,24 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <RotateCcw className="size-3.5 text-ink-2" />
-        <h2 className="text-[0.72rem] font-semibold text-ink">Review Queue</h2>
+        <h2 className="text-[0.72rem] font-semibold text-ink">{t("review.queue.title")}</h2>
         {onOpenInsights && (
           <button
             onClick={() => onOpenInsights(methodFilter === "all" ? undefined : methodFilter)}
             className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-1 text-[0.58rem] font-medium text-ink-2 transition-colors hover:bg-line hover:text-ink"
           >
-            <BarChart3 className="size-3" /> Insights
+            <BarChart3 className="size-3" /> {t("review.queue.insights")}
           </button>
         )}
         <span className="nums text-[0.6rem] text-ink-3 ml-auto">
-          {counts.total} item{counts.total !== 1 ? "s" : ""}
+          {t("review.queue.itemCount", { count: counts.total })}
         </span>
       </div>
 
       {queue.length === 0 ? (
         <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
           <CheckCircle2 className="size-3.5 text-ready shrink-0" />
-          All caught up! Nothing due for review today.
+          {t("review.queue.allCaughtUp")}
         </div>
       ) : (
         <>
@@ -146,19 +149,19 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="flex flex-col gap-0.5 rounded-lg bg-surface-2/60 p-2">
               <span className="flex items-center gap-1 text-[0.55rem] text-ink-3">
-                <TriangleAlert className="size-2.5 text-caution" />Overdue
+                <TriangleAlert className="size-2.5 text-caution" />{t("review.reason.overdue")}
               </span>
               <span className="nums text-[0.8rem] font-semibold text-ink">{counts.overdue}</span>
             </div>
             <div className="flex flex-col gap-0.5 rounded-lg bg-surface-2/60 p-2">
               <span className="flex items-center gap-1 text-[0.55rem] text-ink-3">
-                <Flame className="size-2.5 text-phase-violet" />Weak
+                <Flame className="size-2.5 text-phase-violet" />{t("review.reason.weak")}
               </span>
               <span className="nums text-[0.8rem] font-semibold text-ink">{counts.weak}</span>
             </div>
             <div className="flex flex-col gap-0.5 rounded-lg bg-surface-2/60 p-2">
               <span className="flex items-center gap-1 text-[0.55rem] text-ink-3">
-                <Sparkles className="size-2.5 text-phase-emerald" />New
+                <Sparkles className="size-2.5 text-phase-emerald" />{t("review.reason.new")}
               </span>
               <span className="nums text-[0.8rem] font-semibold text-ink">{counts.fresh}</span>
             </div>
@@ -167,13 +170,13 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
           {/* Method filter */}
           {queueMethods.length > 1 && (
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[0.58rem] text-ink-3 shrink-0">Method</span>
+              <span className="text-[0.58rem] text-ink-3 shrink-0">{t("method")}</span>
               <Select value={methodFilter} onValueChange={setMethodFilter}>
                 <SelectTrigger className="h-7 w-32 rounded-md border-line bg-surface-2 px-2 text-[0.65rem] font-medium text-ink">
-                  <SelectValue placeholder="All methods" />
+                  <SelectValue placeholder={t("allMethods")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-[0.68rem]">All methods</SelectItem>
+                  <SelectItem value="all" className="text-[0.68rem]">{t("allMethods")}</SelectItem>
                   {queueMethods.map((m) => (
                     <SelectItem key={m.id} value={m.id} className="text-[0.68rem]">
                       {m.name}
@@ -209,7 +212,7 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
                       meta.badge,
                     )}
                   >
-                    {meta.label}
+                    {t(meta.labelKey)}
                   </span>
                   <span className="nums shrink-0 text-[0.55rem] text-ink-3 w-8 text-right">
                     {Math.round(item.retrievability * 100)}%
@@ -226,7 +229,7 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-[0.68rem] font-semibold text-surface transition-colors hover:bg-ink/90 disabled:opacity-40 disabled:cursor-not-allowed max-lg:py-2.5"
           >
             <Play className="size-3.5" />
-            Start Review ({filtered.length})
+            {t("review.queue.startReview", { count: filtered.length })}
           </button>
         </>
       )}

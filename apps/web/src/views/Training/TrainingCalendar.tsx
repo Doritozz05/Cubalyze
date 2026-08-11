@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, parse, getDay } from "date-fns";
+import { es, enUS } from "date-fns/locale";
+import type { ParseKeys } from "i18next";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Repeat, X, Check, Pencil, FileText, Palette, Timer, MoreHorizontal, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TOUCH_FULL_BLEED } from "@/lib/touch";
@@ -30,15 +33,15 @@ type PanelMode = "list" | "add" | "edit";
 
 /* ── Constants ────────────────────────────────────────────────────────── */
 
-const TASK_COLORS: { value: TaskColor; label: string; dot: string }[] = [
-  { value: "blue",    label: "Blue",    dot: "bg-phase-blue" },
-  { value: "emerald", label: "Green",   dot: "bg-phase-emerald" },
-  { value: "amber",   label: "Yellow",  dot: "bg-phase-amber" },
-  { value: "violet",  label: "Purple",  dot: "bg-phase-violet" },
-  { value: "rose",    label: "Pink",    dot: "bg-phase-rose" },
-  { value: "cyan",    label: "Cyan",    dot: "bg-phase-cyan" },
-  { value: "orange",  label: "Orange",  dot: "bg-phase-orange" },
-  { value: "pink",    label: "Magenta", dot: "bg-phase-pink" },
+const TASK_COLORS: { value: TaskColor; labelKey: ParseKeys<"training">; dot: string }[] = [
+  { value: "blue",    labelKey: "calendar.color.blue",    dot: "bg-phase-blue" },
+  { value: "emerald", labelKey: "calendar.color.emerald", dot: "bg-phase-emerald" },
+  { value: "amber",   labelKey: "calendar.color.amber",   dot: "bg-phase-amber" },
+  { value: "violet",  labelKey: "calendar.color.violet",  dot: "bg-phase-violet" },
+  { value: "rose",    labelKey: "calendar.color.rose",    dot: "bg-phase-rose" },
+  { value: "cyan",    labelKey: "calendar.color.cyan",    dot: "bg-phase-cyan" },
+  { value: "orange",  labelKey: "calendar.color.orange",  dot: "bg-phase-orange" },
+  { value: "pink",    labelKey: "calendar.color.pink",    dot: "bg-phase-pink" },
 ];
 
 const COLOR_MAP = new Map(TASK_COLORS.map((c) => [c.value, c]));
@@ -58,17 +61,24 @@ const COLOR_HEX: Record<TaskColor, string> = {
 };
 
 const DEFAULT_COLOR: TaskColor = "blue";
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAYS_SHORT = ["S", "M", "T", "W", "T", "F", "S"];
 
-const REPEAT_OPTIONS: { value: RepeatType; label: string; icon: React.ElementType }[] = [
-  { value: "none",     label: "Once",      icon: Timer },
-  { value: "daily",    label: "Every day", icon: Repeat },
-  { value: "weekdays", label: "Weekdays",  icon: Calendar },
-  { value: "weekly",   label: "Weekly",    icon: Repeat },
-  { value: "monthly",  label: "Monthly",   icon: Calendar },
-  { value: "custom",   label: "Custom…",   icon: MoreHorizontal },
+const REPEAT_OPTIONS: { value: RepeatType; labelKey: ParseKeys<"training">; icon: React.ElementType }[] = [
+  { value: "none",     labelKey: "calendar.repeat.none",     icon: Timer },
+  { value: "daily",    labelKey: "calendar.repeat.daily",    icon: Repeat },
+  { value: "weekdays", labelKey: "calendar.repeat.weekdays", icon: Calendar },
+  { value: "weekly",   labelKey: "calendar.repeat.weekly",   icon: Repeat },
+  { value: "monthly",  labelKey: "calendar.repeat.monthly",  icon: Calendar },
+  { value: "custom",   labelKey: "calendar.repeat.custom",   icon: MoreHorizontal },
 ];
+
+const REPEAT_DESC_KEY: Record<RepeatType, ParseKeys<"training">> = {
+  none: "calendar.repeatDesc.oneTime",
+  daily: "calendar.repeatDesc.everyDay",
+  weekdays: "calendar.repeatDesc.weekdaysRange",
+  weekly: "calendar.repeatDesc.weekly",
+  monthly: "calendar.repeatDesc.monthly",
+  custom: "calendar.repeatDesc.custom",
+};
 
 let _taskId = 0;
 function nextTaskId(): string {
@@ -101,19 +111,6 @@ function getTasksForDate(tasks: TrainingTask[], date: Date): TrainingTask[] {
   });
 }
 
-function formatRepeatDescription(repeat: RepeatType, daysOfWeek: number[]): string {
-  if (repeat === "none") return "One time";
-  if (repeat === "daily") return "Every day";
-  if (repeat === "weekdays") return "Weekdays (Mon–Fri)";
-  if (repeat === "weekly") return "Weekly";
-  if (repeat === "monthly") return "Monthly";
-  if (repeat === "custom") {
-    if (daysOfWeek.length === 0) return "Custom";
-    return `Weekly on ${daysOfWeek.map((d) => WEEKDAYS[d]).join(", ")}`;
-  }
-  return "";
-}
-
 function emptyDraft(date: Date): Omit<TrainingTask, "id" | "createdAt"> {
   return {
     title: "",
@@ -130,6 +127,29 @@ function emptyDraft(date: Date): Omit<TrainingTask, "id" | "createdAt"> {
    ─────────────────────────────────────────────────────────────────────── */
 
 export function TrainingCalendar() {
+  const { t, i18n } = useTranslation("training");
+  // date-fns locale follows the active UI language so month/day names match.
+  const dfLocale = i18n.language === "es" ? es : enUS;
+  // Day names are indexed 0-6 (Sunday first) to match date-fns getDay().
+  const weekdayNames = [
+    t("calendar.weekday.sun"), t("calendar.weekday.mon"), t("calendar.weekday.tue"),
+    t("calendar.weekday.wed"), t("calendar.weekday.thu"), t("calendar.weekday.fri"),
+    t("calendar.weekday.sat"),
+  ];
+  const weekdayShorts = [
+    t("calendar.weekdayShort.sun"), t("calendar.weekdayShort.mon"), t("calendar.weekdayShort.tue"),
+    t("calendar.weekdayShort.wed"), t("calendar.weekdayShort.thu"), t("calendar.weekdayShort.fri"),
+    t("calendar.weekdayShort.sat"),
+  ];
+  const repeatDescription = (task: TrainingTask) => {
+    if (task.repeat === "custom" && task.daysOfWeek.length > 0) {
+      return t("calendar.repeatDesc.weeklyOn", {
+        days: task.daysOfWeek.map((d) => weekdayNames[d]).join(", "),
+      });
+    }
+    return t(REPEAT_DESC_KEY[task.repeat]);
+  };
+
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   // Tasks live in SQLite (single source of truth); the hook keeps a
@@ -279,26 +299,26 @@ export function TrainingCalendar() {
         {/* Header row */}
         <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
           <CalendarDays className="size-3.5 text-ink-2 shrink-0" />
-          <h2 className="text-[0.72rem] font-semibold text-ink">Schedule</h2>
+          <h2 className="text-[0.72rem] font-semibold text-ink">{t("calendar.schedule")}</h2>
           <div className="flex items-center gap-0.5">
             <button onClick={prevMonth} className="rounded p-1 text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors">
               <ChevronLeft className="size-3.5" />
             </button>
             <span className="text-[0.7rem] font-semibold text-ink min-w-25 text-center select-none">
-              {format(currentMonth, "MMMM yyyy")}
+              {format(currentMonth, "MMMM yyyy", { locale: dfLocale })}
             </span>
             <button onClick={nextMonth} className="rounded p-1 text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors">
               <ChevronRight className="size-3.5" />
             </button>
           </div>
           <button onClick={goToday} className="ml-auto rounded-md px-2 py-0.5 text-[0.6rem] font-medium text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors shrink-0">
-            Today
+            {t("calendar.today")}
           </button>
         </div>
 
         {/* Weekday headers */}
         <div className="grid grid-cols-7 px-3">
-          {WEEKDAYS_SHORT.map((d, i) => (
+          {weekdayShorts.map((d, i) => (
             <div key={i} className="py-1 text-center text-[0.6rem] font-medium text-ink-3/50 uppercase tracking-wider">
               {d}
             </div>
@@ -372,7 +392,10 @@ export function TrainingCalendar() {
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30">
                     <div className="bg-canvas border border-line rounded-lg shadow-lg py-1.5 px-2.5 min-w-35">
                       <div className="text-[0.6rem] font-medium text-ink-3/60 mb-1 pb-1 border-b border-line">
-                        {format(day, "MMM d")} — {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
+                        {t("calendar.tooltipCount", {
+                          date: format(day, "MMM d", { locale: dfLocale }),
+                          count: dayTasks.length,
+                        })}
                       </div>
                       <div className="space-y-1">
                         {dayTasks.map((task) => (
@@ -400,7 +423,7 @@ export function TrainingCalendar() {
           showCloseButton={false}
         >
           <DialogHeader className="sr-only">
-            <DialogTitle>Task Panel</DialogTitle>
+            <DialogTitle>{t("calendar.taskPanel")}</DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col h-full max-h-[80vh]">
@@ -417,11 +440,17 @@ export function TrainingCalendar() {
                 {selectedDate && (
                   <div className="min-w-0">
                     <span className="block text-sm font-medium text-ink truncate leading-tight">
-                      {panelMode === "add" ? "New task" : panelMode === "edit" ? "Edit task" : format(selectedDate, "EEE, MMM d")}
+                      {panelMode === "add"
+                        ? t("calendar.newTask")
+                        : panelMode === "edit"
+                          ? t("calendar.editTask")
+                          : format(selectedDate, "EEE, MMM d", { locale: dfLocale })}
                     </span>
                     {panelMode === "list" && (
                       <span className="block text-[0.6rem] text-ink-3 leading-tight">
-                        {selectedTasks.length === 0 ? "No tasks" : `${selectedTasks.length} task${selectedTasks.length !== 1 ? "s" : ""}`}
+                        {selectedTasks.length === 0
+                          ? t("calendar.noTasks")
+                          : t("calendar.taskCount", { count: selectedTasks.length })}
                       </span>
                     )}
                   </div>
@@ -430,7 +459,7 @@ export function TrainingCalendar() {
               <button
                 onClick={closePanel}
                 className="grid size-7 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                aria-label="Close"
+                aria-label={i18n.t("common:close")}
               >
                 <X className="size-4" />
               </button>
@@ -445,7 +474,7 @@ export function TrainingCalendar() {
                       <CalendarDays className="size-5 text-ink-3/50" />
                     </div>
                     <p className="text-[0.7rem] text-ink-3/60 text-center max-w-50">
-                      No tasks for this day.
+                      {t("calendar.noTasksForDay")}
                     </p>
                   </div>
                 ) : (
@@ -466,15 +495,15 @@ export function TrainingCalendar() {
                                 {task.repeat !== "none" && (
                                   <div className="mt-1 flex items-center gap-1.5">
                                     <Repeat className="size-2.5 text-ink-3/50" />
-                                    <span className="text-[0.6rem] text-ink-3/60">{formatRepeatDescription(task.repeat, task.daysOfWeek)}</span>
+                                    <span className="text-[0.6rem] text-ink-3/60">{repeatDescription(task)}</span>
                                   </div>
                                 )}
                               </div>
                               <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleEditTask(task)} className="rounded p-1 text-ink-3/40 hover:text-ink hover:bg-surface-2 transition-all" title="Edit">
+                                <button onClick={() => handleEditTask(task)} className="rounded p-1 text-ink-3/40 hover:text-ink hover:bg-surface-2 transition-all" title={t("calendar.editTitle")}>
                                   <Pencil className="size-3" />
                                 </button>
-                                <button onClick={() => handleDeleteTask(task.id)} className="rounded p-1 text-ink-3/40 hover:text-hold hover:bg-hold/10 transition-all" title="Delete">
+                                <button onClick={() => handleDeleteTask(task.id)} className="rounded p-1 text-ink-3/40 hover:text-hold hover:bg-hold/10 transition-all" title={t("calendar.deleteTitle")}>
                                   <Trash2 className="size-3" />
                                 </button>
                               </div>
@@ -487,7 +516,7 @@ export function TrainingCalendar() {
                 )}
 
                 <button onClick={handleStartAdd} className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-4 py-2.5 text-[0.65rem] font-medium text-ink-3 hover:text-ink hover:border-ink/20 transition-colors w-full justify-center">
-                  <Plus className="size-3.5" /> Add Task
+                  <Plus className="size-3.5" /> {t("calendar.addTask")}
                 </button>
               </div>
             )}
@@ -499,14 +528,14 @@ export function TrainingCalendar() {
                   {/* Title */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                      <Pencil className="size-3" /> Title <span className="text-hold ml-auto">required</span>
+                      <Pencil className="size-3" /> {t("calendar.title")} <span className="text-hold ml-auto">{t("calendar.required")}</span>
                     </label>
                     <input
                       ref={titleInputRef}
                       type="text"
                       value={draft.title}
                       onChange={(e) => updateDraft("title", e.target.value)}
-                      placeholder="e.g. Practice OLL 21-33"
+                      placeholder={t("calendar.titlePlaceholder")}
                       className="w-full rounded-lg border border-line bg-canvas px-3 py-2 text-[0.72rem] text-ink placeholder:text-ink-3/40 outline-none focus:border-ink/30 transition-colors"
                       onKeyDown={(e) => { if (e.key === "Enter" && draft.title.trim()) handleSaveTask(); if (e.key === "Escape") closePanel(); }}
                       autoFocus
@@ -516,12 +545,12 @@ export function TrainingCalendar() {
                   {/* Description */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                      <FileText className="size-3" /> Description <span className="text-ink-3/50 ml-auto">optional</span>
+                      <FileText className="size-3" /> {t("calendar.description")} <span className="text-ink-3/50 ml-auto">{t("calendar.optional")}</span>
                     </label>
                     <textarea
                       value={draft.description}
                       onChange={(e) => updateDraft("description", e.target.value)}
-                      placeholder="e.g. Focus on recognition and finger tricks"
+                      placeholder={t("calendar.descriptionPlaceholder")}
                       className="min-h-16 w-full resize-none rounded-lg border border-line bg-canvas px-3 py-2 text-[0.65rem] text-ink placeholder:text-ink-3/40 outline-none focus:border-ink/30 transition-colors"
                     />
                   </div>
@@ -529,7 +558,7 @@ export function TrainingCalendar() {
                   {/* Date */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                      <Calendar className="size-3" /> Start Date
+                      <Calendar className="size-3" /> {t("calendar.startDate")}
                     </label>
                     <input
                       type="date"
@@ -542,7 +571,7 @@ export function TrainingCalendar() {
                   {/* Repeat */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                      <Repeat className="size-3" /> Repeats
+                      <Repeat className="size-3" /> {t("calendar.repeats")}
                     </label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {REPEAT_OPTIONS.map((opt) => {
@@ -563,7 +592,7 @@ export function TrainingCalendar() {
                             )}
                           >
                             <Icon className={cn("size-3", isActive ? "text-surface/70" : "text-ink-3/50")} />
-                            {opt.label}
+                            {t(opt.labelKey)}
                           </button>
                         );
                       })}
@@ -574,11 +603,11 @@ export function TrainingCalendar() {
                   {(draft.repeat === "custom" || draft.repeat === "weekdays" || draft.repeat === "weekly") && (
                     <div className={cn("space-y-1.5 rounded-lg border border-line bg-surface p-3.5", draft.repeat !== "custom" && "opacity-60")}>
                       <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                        <Calendar className="size-3" /> Days
-                        {draft.repeat !== "custom" && <span className="ml-auto text-[0.6rem] text-ink-3/40 italic">auto</span>}
+                        <Calendar className="size-3" /> {t("calendar.days")}
+                        {draft.repeat !== "custom" && <span className="ml-auto text-[0.6rem] text-ink-3/40 italic">{t("calendar.auto")}</span>}
                       </label>
                       <div className="flex gap-1">
-                        {WEEKDAYS.map((dayName, i) => {
+                        {weekdayNames.map((dayName, i) => {
                           const isActive = draft.daysOfWeek.includes(i);
                           const canToggle = draft.repeat === "custom";
                           const shouldShowActive =
@@ -601,20 +630,20 @@ export function TrainingCalendar() {
                               )}
                               title={dayName}
                             >
-                              {WEEKDAYS_SHORT[i]}
+                              {weekdayShorts[i]}
                             </button>
                           );
                         })}
                       </div>
-                      {draft.repeat === "weekdays" && <p className="text-[0.6rem] text-ink-3/40 italic">Weekdays only.</p>}
-                      {draft.repeat === "weekly" && <p className="text-[0.6rem] text-ink-3/40 italic">Same day each week.</p>}
+                      {draft.repeat === "weekdays" && <p className="text-[0.6rem] text-ink-3/40 italic">{t("calendar.weekdaysOnly")}</p>}
+                      {draft.repeat === "weekly" && <p className="text-[0.6rem] text-ink-3/40 italic">{t("calendar.sameDayEachWeek")}</p>}
                     </div>
                   )}
 
                   {/* Color */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                      <Palette className="size-3" /> Color
+                      <Palette className="size-3" /> {t("calendar.colorLabel")}
                     </label>
                     <div className="flex gap-2">
                       {TASK_COLORS.map((c) => (
@@ -626,7 +655,7 @@ export function TrainingCalendar() {
                             c.dot,
                             draft.color === c.value ? "ring-2 ring-offset-2 ring-offset-background scale-110" : "hover:scale-110 opacity-70 hover:opacity-100",
                           )}
-                          title={c.label}
+                          title={t(c.labelKey)}
                         />
                       ))}
                     </div>
@@ -636,18 +665,22 @@ export function TrainingCalendar() {
                 {/* Footer */}
                 <div className="flex shrink-0 items-center justify-between border-t border-line bg-surface px-5 py-3">
                   <p className="text-[0.6rem] text-ink-3">
-                    {draft.title.trim() ? (editingTaskId ? "Changes saved locally" : "Task will be added") : "Enter a title to save"}
+                    {draft.title.trim()
+                      ? editingTaskId
+                        ? t("calendar.savedLocally")
+                        : t("calendar.willBeAdded")
+                      : t("calendar.enterTitle")}
                   </p>
                   <div className="flex items-center gap-2">
                     <button onClick={closePanel} className="rounded-md border border-line px-3 py-1.5 text-[0.62rem] font-medium text-ink-3 hover:text-ink transition-colors">
-                      Cancel
+                      {i18n.t("common:cancel")}
                     </button>
                     <button
                       onClick={handleSaveTask}
                       disabled={!draft.title.trim()}
                       className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.62rem] font-medium text-surface hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Check className="size-3" />{editingTaskId ? "Update" : "Create"}
+                      <Check className="size-3" />{editingTaskId ? t("calendar.update") : t("calendar.create")}
                     </button>
                   </div>
                 </div>

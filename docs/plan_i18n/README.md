@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -297,9 +297,49 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   interpolación vía `i18n.t` + `returnObjects` + `.replace` con fallback (blind.
   {{phase}}). Validado: tsc web+desktop 0, eslint 0, paridad 6/6, build de
   producción OK, 0 strings residuales en la zona.
-- **7C — SRS y calendario**: `SRSReviewView` (verdictos, revisión) · `SRSInsightsView` · `TrainingCalendar` · `ReviewQueueSection` · `ReviewSteps` · `VerdictOverlay`.
-- **Namespace**: `training`.
-- **Dificultad**: alta (mayor volumen del proyecto; ~10 vistas grandes, muchas con verdictos e interpolaciones).
+- **7C — SRS y calendario** (2.078 líneas en 5 archivos; `VerdictOverlay` ya
+  traducido en 7A) → **3 sub-bloques**:
+  - **7C-1 — Cola de repaso** (`ReviewQueueSection` · 400 l): tarjeta "Review
+    Queue" del dashboard con badges de motivo (Overdue/Due/Weak/New), stats
+    (Overdue/Weak/New), filtro de método y botón "Start Review (N)".
+  - **7C-2 — Sesión de repaso SRS** (`SRSReviewView` · `ReviewSteps` · 1.100 l):
+    máquina de 3 etapas (Recognize → Execute → Grade), señales Retention/
+    Mastery/Recognition, 4 botones FSRS con hints, resumen final con plurales
+    ("N casos revisados · M superados"), errores de persistencia, mensajes de
+    accesibilidad (`announce`) con interpolación.
+  - **7C-3 — Insights + calendario** (`SRSInsightsView` · `TrainingCalendar` ·
+    700 l): dashboard de salud de memoria (stats, distribución de retención,
+    curva de intervalos, estados FSRS, proyección "Due in") y calendario de
+    tareas completo (colores, repeticiones, días de la semana localizados).
+- **Namespace**: `training` (sub-ns `review`/`insights`/`calendar` + claves
+  planas `method`, `allMethods`, `backToTraining`).
+- **Dificultad**: alta — 5 archivos grandes, configuración de constantes de
+  datos (`STAGES`/`GRADES`/`REASON_META`/`TASK_COLORS`/`REPEAT_OPTIONS` →
+  `labelKey`/`hintKey` y `t()` en render), plurales y `announce`.
+- **Decisiones clave**:
+  - **date-fns v4**: meses/días del calendario se localizan pasando el locale
+    (`enUS`/`es`) a `format()` según `i18n.language` — no hay precendente en el
+    proyecto, se introduce ahora para el calendario.
+  - **Días de la semana**: `calendar.weekday.*` (nombres) y `calendar.weekdayShort.*`
+    (siglas de una letra; ES: D L M X J V S) — los índices 0-6 (domingo=0) se
+    mantienen para la lógica de repeticiones y la rejilla sigue arrancando en
+    domingo (coherente con las letras).
+  - **Jerga mantenida**: "scramble", "setup", "FSRS", "finger tricks", notación.
+  - **Reutilización**: `training:noDiagram` (7B), `common:back`/`cancel`/`delete`/`close`,
+    `nav:training` (breadcrumb), `training:mastery.*` (7A).
+  - **Plurales**: `review.queue.itemCount`, `review.session.reviewedSummary`,
+    `review.session.overdueDays`, `calendar.taskCount`, `calendar.tooltipCount`.
+  - **Queda fuera**: los labels de los buckets de retención (`<60%`, `60–80%`…)
+    vienen del paquete de datos — se mantienen (documentado).
+- Hecho: sub-namespaces `review`/`insights`/`calendar` + claves planas
+  `method`/`allMethods`/`backToTraining` en en/es (~125 claves nuevas) y los 5
+  archivos traducidos. Las constantes de datos (`STAGES`/`GRADES`/`REASON_META`/
+  `TASK_COLORS`/`REPEAT_OPTIONS`) migraron a `labelKey`/`hintKey` tipadas con
+  `ParseKeys<'training'>` (mismo patrón que `SLOT_LABELS`). `gradePrompt` y
+  `currentSplit` pierden el `<span>` estilizado (texto plano con interpolación
+  `{{again}}`/`{{good}}` — trade-off aceptado). `announce` del repaso
+  interpolado y localizado. Validado: tsc web+desktop 0, eslint 0, paridad 6/6,
+  build de producción OK, 0 strings residuales en la zona.
 
 ### Tanda 8 — Skill Tree (tab)
 - **Zonas**:

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
@@ -12,6 +13,7 @@ import type { HintContext } from "@/components/Timer/hintFor";
 import type { useDrillTimer } from "@/hooks/useDrillTimer";
 import type { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import type { SRSGrade } from "@cubeforge/training";
+import type { ParseKeys } from "i18next";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { TrainingBreadcrumb, VerdictOverlay } from "./";
 import { RotateCcw, SkipForward, Trophy, Eye, EyeOff, Zap } from "lucide-react";
@@ -22,19 +24,19 @@ import { RotateCcw, SkipForward, Trophy, Eye, EyeOff, Zap } from "lucide-react";
 
 export type ReviewStage = "recognition" | "execution" | "grading";
 
-export const STAGES: { id: ReviewStage; label: string }[] = [
-  { id: "recognition", label: "Recognize" },
-  { id: "execution", label: "Execute" },
-  { id: "grading", label: "Grade" },
+export const STAGES: { id: ReviewStage; labelKey: ParseKeys<"training"> }[] = [
+  { id: "recognition", labelKey: "review.session.stageRecognition" },
+  { id: "execution", labelKey: "review.session.stageExecution" },
+  { id: "grading", labelKey: "review.session.stageGrading" },
 ];
 
 export const STAGE_ORDER: ReviewStage[] = ["recognition", "execution", "grading"];
 
-export const GRADES: { grade: SRSGrade; label: string; hint: string; cls: string }[] = [
-  { grade: "again", label: "Again", hint: "Couldn't recall", cls: "bg-hold text-white" },
-  { grade: "hard", label: "Hard", hint: "Struggled", cls: "bg-caution text-ink" },
-  { grade: "good", label: "Good", hint: "Solid recall", cls: "bg-ready text-white" },
-  { grade: "easy", label: "Easy", hint: "Instant", cls: "bg-phase-blue text-white" },
+export const GRADES: { grade: SRSGrade; labelKey: ParseKeys<"training">; hintKey: ParseKeys<"training">; cls: string }[] = [
+  { grade: "again", labelKey: "review.session.gradeAgain", hintKey: "review.session.gradeAgainHint", cls: "bg-hold text-white" },
+  { grade: "hard", labelKey: "review.session.gradeHard", hintKey: "review.session.gradeHardHint", cls: "bg-caution text-ink" },
+  { grade: "good", labelKey: "review.session.gradeGood", hintKey: "review.session.gradeGoodHint", cls: "bg-ready text-white" },
+  { grade: "easy", labelKey: "review.session.gradeEasy", hintKey: "review.session.gradeEasyHint", cls: "bg-phase-blue text-white" },
 ];
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -67,12 +69,13 @@ export function Signal({ label, value, tone }: { label: string; value: string; t
 }
 
 export function Shell({ onBack, children }: { onBack: () => void; children: React.ReactNode }) {
+  const { t, i18n } = useTranslation("training");
   return (
     <div className="relative flex-1 min-h-0 w-full h-full">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         <TrainingBreadcrumb
           onBack={onBack}
-          segments={[{ label: "Training" }, { label: "Review", isCurrent: true }]}
+          segments={[{ label: i18n.t("nav:training") }, { label: t("review.title"), isCurrent: true }]}
         />
         {children}
       </div>
@@ -97,6 +100,7 @@ export function RecognitionStep({
   onRecognized: () => void;
   onNotRecognized: () => void;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="mt-5 flex flex-col gap-4">
       <div className="flex items-center gap-4">
@@ -125,15 +129,14 @@ export function RecognitionStep({
             )
           ) : (
             <div className="flex size-28 items-center justify-center rounded-lg bg-surface-2 sm:size-36">
-              <span className="text-[0.6rem] text-ink-3/40">No diagram</span>
+              <span className="text-[0.6rem] text-ink-3/40">{t("noDiagram")}</span>
             </div>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.72rem] font-semibold text-ink">Do you recognize this case?</p>
+          <p className="text-[0.72rem] font-semibold text-ink">{t("review.session.doYouRecognize")}</p>
           <p className="text-[0.62rem] text-ink-3 mt-1">
-            Recall which algorithm solves it. Your answer feeds the recognition
-            metric — a separate signal from execution speed.
+            {t("review.session.recognitionHint")}
           </p>
         </div>
       </div>
@@ -142,13 +145,13 @@ export function RecognitionStep({
           onClick={onNotRecognized}
           className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-[0.7rem] font-semibold text-ink transition-colors hover:bg-line max-lg:py-3"
         >
-          <EyeOff className="size-3.5" /> Not recognized
+          <EyeOff className="size-3.5" /> {t("review.session.notRecognized")}
         </button>
         <button
           onClick={onRecognized}
           className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-ink px-3 py-2.5 text-[0.7rem] font-semibold text-surface transition-colors hover:bg-ink/90 max-lg:py-3"
         >
-          <Eye className="size-3.5" /> Recognized
+          <Eye className="size-3.5" /> {t("review.session.recognized")}
         </button>
       </div>
     </div>
@@ -192,10 +195,11 @@ export function ExecutionStep({
   onIncorrect: () => void;
   onSkipExecution: () => void;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="mt-5 flex flex-col gap-4">
       <div className="rounded-lg bg-surface-2/60 p-3">
-        <p className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1.5">Setup scramble</p>
+        <p className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1.5">{t("review.session.setupScramble")}</p>
         {currentSetup ? (
           <ScrambleDisplay
             scramble={currentSetup}
@@ -209,7 +213,7 @@ export function ExecutionStep({
             awaitingSolve={hasSmartCube ? validation.awaitingSolve : false}
           />
         ) : (
-          <p className="nums text-[0.8rem] text-ink-3/40 italic">No setup available for this case</p>
+          <p className="nums text-[0.8rem] text-ink-3/40 italic">{t("review.session.noSetup")}</p>
         )}
       </div>
 
@@ -242,7 +246,7 @@ export function ExecutionStep({
           onClick={onSkipExecution}
           className="self-center text-[0.62rem] text-ink-3 hover:text-ink transition-colors"
         >
-          Skip execution — go straight to grading
+          {t("review.session.skipExecution")}
         </button>
       )}
     </div>
@@ -264,27 +268,32 @@ export function GradingStep({
   onGrade: (g: SRSGrade) => void;
   onSkip: () => void;
 }) {
+  const { t } = useTranslation("training");
+  const gradeLabel = (g: SRSGrade): ParseKeys<"training"> =>
+    GRADES.find((x) => x.grade === g)?.labelKey ?? "review.session.gradeAgain";
   return (
     <div className="mt-5 flex flex-col gap-4">
       <div className="grid grid-cols-3 gap-2">
-        <Signal label="Retention" value={`${Math.round(current.retrievability * 100)}%`}
+        <Signal label={t("review.session.retention")} value={`${Math.round(current.retrievability * 100)}%`}
           tone={current.retrievability < 0.6 ? "text-hold" : current.retrievability < 0.85 ? "text-caution" : "text-ready"} />
-        <Signal label="Mastery" value={`${current.mastery}%`}
+        <Signal label={t("review.session.mastery")} value={`${current.mastery}%`}
           tone={current.mastery < 40 ? "text-hold" : current.mastery < 70 ? "text-caution" : "text-ready"} />
-        <Signal label="Recognition" value={`${current.recognitionAccuracy}%`}
+        <Signal label={t("review.session.recognition")} value={`${current.recognitionAccuracy}%`}
           tone={current.recognitionAccuracy < 60 ? "text-hold" : "text-ink"} />
       </div>
 
       {defaultAlgorithm && (
         <div className="rounded-lg bg-surface-2/60 p-3">
-          <p className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">Algorithm</p>
+          <p className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">{t("review.session.algorithm")}</p>
           <p className="nums text-[0.72rem] text-ink font-medium">{defaultAlgorithm.moves.join(" ")}</p>
         </div>
       )}
 
       <p className="rounded-lg bg-surface-2/60 p-3 text-[0.62rem] text-ink-2 leading-relaxed">
-        Grade how well you remembered it. <span className="font-medium text-ink">Again</span> resets the
-        interval, <span className="font-medium text-ink">Good</span> grows it at the case&apos;s own pace.
+        {t("review.session.gradePrompt", {
+          again: t(gradeLabel("again")),
+          good: t(gradeLabel("good")),
+        })}
       </p>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -297,8 +306,8 @@ export function GradingStep({
               g.cls,
             )}
           >
-            <span className="text-[0.75rem]">{g.label}</span>
-            <span className="text-[0.55rem] font-medium opacity-75">{g.hint}</span>
+            <span className="text-[0.75rem]">{t(g.labelKey)}</span>
+            <span className="text-[0.55rem] font-medium opacity-75">{t(g.hintKey)}</span>
           </button>
         ))}
       </div>
@@ -306,7 +315,7 @@ export function GradingStep({
         onClick={onSkip}
         className="inline-flex items-center justify-center gap-1.5 self-center rounded-md px-3 py-1.5 text-[0.62rem] text-ink-3 hover:text-ink transition-colors"
       >
-        <SkipForward className="size-3" /> Skip
+        <SkipForward className="size-3" /> {t("review.session.skip")}
       </button>
     </div>
   );
@@ -325,6 +334,7 @@ export function CompletionSummary({
   onBack: () => void;
   onReviewAgain: () => void;
 }) {
+  const { t } = useTranslation("training");
   const results = session.results;
   const goodCount = results.filter((r) => r.grade === "good" || r.grade === "easy").length;
 
@@ -339,11 +349,11 @@ export function CompletionSummary({
           <div className="grid size-12 place-items-center rounded-full bg-ready-soft">
             <Trophy className="size-6 text-ready" />
           </div>
-          <h2 className="text-[0.95rem] font-semibold text-ink">Review complete!</h2>
+          <h2 className="text-[0.95rem] font-semibold text-ink">{t("review.session.completeTitle")}</h2>
           <p className="text-[0.68rem] text-ink-3">
             {results.length === 0
-              ? "No items were reviewed in this session."
-              : `${results.length} case${results.length !== 1 ? "s" : ""} reviewed · ${goodCount} passed`}
+              ? t("review.session.noItemsReviewed")
+              : t("review.session.reviewedSummary", { count: results.length, passed: goodCount })}
           </p>
 
           {results.length > 0 && (
@@ -353,7 +363,7 @@ export function CompletionSummary({
                   <div key={`${r.algorithmId}-${i}`} className="flex items-center gap-2.5">
                     <span className="nums text-[0.6rem] font-medium text-ink w-9 shrink-0">{r.caseNumber}</span>
                     <span className="text-[0.6rem] text-ink-2 flex-1 truncate">
-                      {GRADES.find((g) => g.grade === r.grade)?.label}
+                      {t(GRADES.find((g) => g.grade === r.grade)?.labelKey ?? "review.session.gradeAgain")}
                     </span>
                     <span className="nums text-[0.58rem] text-ink-3">{r.intervalDays}d</span>
                   </div>
@@ -367,13 +377,13 @@ export function CompletionSummary({
               onClick={onReviewAgain}
               className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3.5 py-2 text-[0.68rem] font-semibold text-surface hover:bg-ink/90"
             >
-              <RotateCcw className="size-3.5" /> Review again
+              <RotateCcw className="size-3.5" /> {t("review.session.reviewAgain")}
             </button>
             <button
               onClick={onBack}
               className="inline-flex items-center gap-1.5 rounded-md bg-surface-2 px-3.5 py-2 text-[0.68rem] font-semibold text-ink hover:bg-line"
             >
-              <Zap className="size-3.5" /> Back to training
+              <Zap className="size-3.5" /> {t("backToTraining")}
             </button>
           </div>
         </motion.div>
