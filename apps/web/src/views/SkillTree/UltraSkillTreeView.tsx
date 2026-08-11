@@ -4,6 +4,7 @@ import type { ParseKeys } from "i18next";
 import { Search, SlidersHorizontal, Map, LayoutList, Check, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
 import { SkillNodeModal } from "./SkillNodeModal";
@@ -134,34 +135,42 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             {/* View Mode Toggle */}
             <div className="flex items-center rounded-lg border border-line bg-surface-2/40 p-0.5">
-              <button
-                type="button"
-                onClick={() => setViewMode("graph")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
-                  viewMode === "graph"
-                    ? "bg-surface text-ink font-semibold shadow-xs border border-line"
-                    : "text-ink-3 hover:text-ink",
-                )}
-                title={t("viewTreeTitle")}
-              >
-                <Map className="size-3.5" />
-                <span>{t("viewTree")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
-                  viewMode === "list"
-                    ? "bg-surface text-ink font-semibold shadow-xs border border-line"
-                    : "text-ink-3 hover:text-ink",
-                )}
-                title={t("viewCardsTitle")}
-              >
-                <LayoutList className="size-3.5" />
-                <span>{t("viewCards")}</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("graph")}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
+                      viewMode === "graph"
+                        ? "bg-surface text-ink font-semibold shadow-xs border border-line"
+                        : "text-ink-3 hover:text-ink",
+                    )}
+                  >
+                    <Map className="size-3.5" />
+                    <span>{t("viewTree")}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("viewTreeTitle")}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
+                      viewMode === "list"
+                        ? "bg-surface text-ink font-semibold shadow-xs border border-line"
+                        : "text-ink-3 hover:text-ink",
+                    )}
+                  >
+                    <LayoutList className="size-3.5" />
+                    <span>{t("viewCards")}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("viewCardsTitle")}</TooltipContent>
+              </Tooltip>
             </div>
 
             <div className="relative flex-1 sm:w-56">
@@ -254,19 +263,25 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                           {t(TIER_KEY[node.tier])}
                         </span>
                         {!isLocked ? (
-                          <button
-                            type="button"
-                            onClick={(e) => handleToggleComplete(node.id, e)}
-                            className={cn(
-                              "flex size-6 items-center justify-center rounded-full border transition-all cursor-pointer",
-                              isCompleted
-                                ? "border-ink bg-ink text-surface shadow-xs"
-                                : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink",
-                            )}
-                            title={t(isCompleted ? "markUnlocked" : "markCompleted")}
-                          >
-                            <Check className="size-3.5 stroke-[2.5]" />
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => handleToggleComplete(node.id, e)}
+                                className={cn(
+                                  "flex size-6 items-center justify-center rounded-full border transition-all cursor-pointer",
+                                  isCompleted
+                                    ? "border-ink bg-ink text-surface shadow-xs"
+                                    : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink",
+                                )}
+                              >
+                                <Check className="size-3.5 stroke-[2.5]" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">
+                              {t(isCompleted ? "markUnlocked" : "markCompleted")}
+                            </TooltipContent>
+                          </Tooltip>
                         ) : (
                           <span className="flex size-6 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-3">
                             <Lock className="size-3" />

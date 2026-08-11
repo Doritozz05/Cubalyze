@@ -9,6 +9,7 @@ import type { PhaseStatsRecord } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCrossScramble } from "@/hooks/useCrossScramble";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
@@ -532,19 +533,23 @@ export function CrossTrainerView({
               {f}
             </button>
           ))}
-          <button
-            onClick={handleCnToggle}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.62rem] font-medium transition-colors",
-              cnMode
-                ? "bg-phase-purple text-white font-semibold"
-                : "text-ink-3 hover:text-ink hover:bg-surface-2",
-            )}
-            title={t("crossTrainer.colorNeutralTitle")}
-          >
-            <Palette className="size-3" />
-            {t("crossTrainer.cn")}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleCnToggle}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.62rem] font-medium transition-colors",
+                  cnMode
+                    ? "bg-phase-purple text-white font-semibold"
+                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                )}
+              >
+                <Palette className="size-3" />
+                {t("crossTrainer.cn")}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{t("crossTrainer.colorNeutralTitle")}</TooltipContent>
+          </Tooltip>
           <span className="flex-1" />
           <button
             onClick={handleNewScramble}
@@ -578,23 +583,27 @@ export function CrossTrainerView({
                   {t("crossTrainer.cube")}
                 </h4>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setStickeringOn((v) => !v)}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors",
-                      stickeringOn
-                        ? "bg-phase-blue-500/10 text-phase-blue"
-                        : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                    )}
-                    title={t("crossTrainer.toggleHighlight")}
-                  >
-                    {stickeringOn ? (
-                      <Eye className="size-3" />
-                    ) : (
-                      <EyeOff className="size-3" />
-                    )}
-                    {t("crossTrainer.cross")}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setStickeringOn((v) => !v)}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors",
+                          stickeringOn
+                            ? "bg-phase-blue-500/10 text-phase-blue"
+                            : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                        )}
+                      >
+                        {stickeringOn ? (
+                          <Eye className="size-3" />
+                        ) : (
+                          <EyeOff className="size-3" />
+                        )}
+                        {t("crossTrainer.cross")}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">{t("crossTrainer.toggleHighlight")}</TooltipContent>
+                  </Tooltip>
                   <button
                     onClick={calibrate}
                     disabled={!isReady}
@@ -821,15 +830,23 @@ export function CrossTrainerView({
                   </span>
                 )}
                 <span className="flex-1" />
-                <button
-                  onClick={handleSubmitMoves}
-                  disabled={userMoves === null || timerPhase !== "stopped"}
-                  title={timerPhase !== "stopped" ? t("crossTrainer.stopTimerFirst") : undefined}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors disabled:opacity-30"
-                >
-                  <Target className="size-3" />
-                  {t("crossTrainer.submit")}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <button
+                        onClick={handleSubmitMoves}
+                        disabled={userMoves === null || timerPhase !== "stopped"}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      >
+                        <Target className="size-3" />
+                        {t("crossTrainer.submit")}
+                      </button>
+                    </span>
+                  </TooltipTrigger>
+                  {timerPhase !== "stopped" ? (
+                    <TooltipContent side="top">{t("crossTrainer.stopTimerFirst")}</TooltipContent>
+                  ) : null}
+                </Tooltip>
               </div>
 
               {/* Recent attempts list */}

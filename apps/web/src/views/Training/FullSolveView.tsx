@@ -13,6 +13,7 @@ import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
@@ -453,45 +454,56 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             {SOLVE_MODE_IDS.map((id) => {
               const keys = SOLVE_MODE_KEYS[id];
               return (
-                <button
-                  key={id}
-                  onClick={() => handleSolveModeChange(id)}
-                  className={cn(
-                    "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:shrink-0 max-lg:px-3.5",
-                    solveMode === id
-                      ? "bg-ink text-surface"
-                      : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                  )}
-                  title={t(keys.description)}
-                >
-                  {t(keys.label)}
-                  {solveMode === id && (
-                    <motion.div
-                      layoutId="fullsolve-mode-active"
-                      className="absolute inset-0 rounded-md bg-ink -z-10"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                </button>
+                <Tooltip key={id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleSolveModeChange(id)}
+                      className={cn(
+                        "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:shrink-0 max-lg:px-3.5",
+                        solveMode === id
+                          ? "bg-ink text-surface"
+                          : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                      )}
+                    >
+                      {t(keys.label)}
+                      {solveMode === id && (
+                        <motion.div
+                          layoutId="fullsolve-mode-active"
+                          className="absolute inset-0 rounded-md bg-ink -z-10"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t(keys.description)}</TooltipContent>
+                </Tooltip>
               );
             })}
             <span className="w-px h-5 bg-line mx-1" />
-            <button
-              onClick={handleToggleInspection}
-              disabled={timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors",
-                timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"
-                  ? "opacity-40 cursor-not-allowed"
-                  : useInspection
-                    ? "bg-caution/10 text-caution border border-caution/20"
-                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
-              )}
-              title={useInspection ? t("fullSolve.disableInspection") : t("fullSolve.enableInspection")}
-            >
-              <Eye className="size-3" />
-              {t("fullSolve.inspection")}{useInspection ? " (15s)" : ""}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <button
+                    onClick={handleToggleInspection}
+                    disabled={timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors disabled:pointer-events-none",
+                      timerPhase === "running" || timerPhase === "holding" || timerPhase === "ready"
+                        ? "opacity-40 cursor-not-allowed"
+                        : useInspection
+                          ? "bg-caution/10 text-caution border border-caution/20"
+                          : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                    )}
+                  >
+                    <Eye className="size-3" />
+                    {t("fullSolve.inspection")}{useInspection ? " (15s)" : ""}
+                  </button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {useInspection ? t("fullSolve.disableInspection") : t("fullSolve.enableInspection")}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Mode-specific settings bar */}

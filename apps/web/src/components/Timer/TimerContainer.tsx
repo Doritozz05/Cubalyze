@@ -12,6 +12,7 @@ import type { TimerState, Solve, Penalty } from "@/types";
 import type { HintContext } from "./hintFor";
 
 import { useIsTouch } from "@/hooks/use-mobile";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimerContainerProps {
   /** Current phase from the engine. */
@@ -255,59 +256,71 @@ export function TimerContainer({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={() => {
-              hapticTap();
-              const next: Penalty = lastSolve.penalty === "none" ? "+2" : lastSolve.penalty === "+2" ? "none" : "+2";
-              onUpdatePenalty(lastSolve.id, next);
-            }}
-            className={cn(
-              // Touch: bigger, thumb-friendly penalty pills.
-              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
-              lastSolve.penalty === "+2"
-                ? "bg-plus2-soft text-plus2 font-bold ring-1 ring-plus2/30"
-                : "text-ink-3 hover:bg-surface-3 hover:text-ink",
-            )}
-            title={t("togglePlus2")}
-          >
-            +2
-          </button>
-          <div className="h-3 w-px bg-line/40" />
-          <button
-            type="button"
-            onClick={() => {
-              hapticTap();
-              const next: Penalty = lastSolve.penalty === "DNF" ? "none" : "DNF";
-              onUpdatePenalty(lastSolve.id, next);
-            }}
-            className={cn(
-              // Touch: bigger, thumb-friendly penalty pills.
-              "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
-              lastSolve.penalty === "DNF"
-                ? "bg-dnf-soft text-dnf font-bold ring-1 ring-dnf/30"
-                : "text-ink-3 hover:bg-surface-3 hover:text-ink",
-            )}
-            title={t("toggleDnf")}
-          >
-            DNF
-          </button>
-          {onDeleteSolve && (
-            <>
-              <div className="h-3 w-px bg-line/40" />
+          <Tooltip>
+            <TooltipTrigger asChild>
               <button
                 type="button"
                 onClick={() => {
                   hapticTap();
-                  onDeleteSolve(lastSolve.id);
+                  const next: Penalty = lastSolve.penalty === "none" ? "+2" : lastSolve.penalty === "+2" ? "none" : "+2";
+                  onUpdatePenalty(lastSolve.id, next);
                 }}
                 className={cn(
-                  "h-6 px-2 rounded-full text-ink-3 hover:bg-dnf-soft hover:text-dnf transition-all duration-150 cursor-pointer outline-none select-none grid place-items-center max-lg:h-10 max-lg:px-3",
+                  // Touch: bigger, thumb-friendly penalty pills.
+                  "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
+                  lastSolve.penalty === "+2"
+                    ? "bg-plus2-soft text-plus2 font-bold ring-1 ring-plus2/30"
+                    : "text-ink-3 hover:bg-surface-3 hover:text-ink",
                 )}
-                title={t("deleteSolve")}
               >
-                <Trash2 className="size-3.5 max-lg:size-4" />
+                +2
               </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{t("togglePlus2")}</TooltipContent>
+          </Tooltip>
+          <div className="h-3 w-px bg-line/40" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  const next: Penalty = lastSolve.penalty === "DNF" ? "none" : "DNF";
+                  onUpdatePenalty(lastSolve.id, next);
+                }}
+                className={cn(
+                  // Touch: bigger, thumb-friendly penalty pills.
+                  "h-6 px-2.5 rounded-full text-[0.72rem] font-medium tracking-wide transition-all duration-150 cursor-pointer outline-none select-none max-lg:h-10 max-lg:px-4 max-lg:text-sm",
+                  lastSolve.penalty === "DNF"
+                    ? "bg-dnf-soft text-dnf font-bold ring-1 ring-dnf/30"
+                    : "text-ink-3 hover:bg-surface-3 hover:text-ink",
+                )}
+              >
+                DNF
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{t("toggleDnf")}</TooltipContent>
+          </Tooltip>
+          {onDeleteSolve && (
+            <>
+              <div className="h-3 w-px bg-line/40" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      hapticTap();
+                      onDeleteSolve(lastSolve.id);
+                    }}
+                    className={cn(
+                      "h-6 px-2 rounded-full text-ink-3 hover:bg-dnf-soft hover:text-dnf transition-all duration-150 cursor-pointer outline-none select-none grid place-items-center max-lg:h-10 max-lg:px-3",
+                    )}
+                  >
+                    <Trash2 className="size-3.5 max-lg:size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("deleteSolve")}</TooltipContent>
+              </Tooltip>
             </>
           )}
           {(onUpdateSolve || onUpdateNote) && (
@@ -342,47 +355,59 @@ export function TimerContainer({
                     autoFocus
                     className="h-6 w-28 max-lg:w-36 max-lg:h-9 rounded-full bg-surface-2 border border-line px-2.5 text-xs text-ink placeholder:text-ink-3 outline-none focus:border-ink/40"
                   />
-                  <button
-                    type="submit"
-                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ready hover:bg-ready-soft transition-colors cursor-pointer"
-                    title={t("saveNote")}
-                  >
-                    <Check className="size-3.5 max-lg:size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingNote(false)}
-                    className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
-                    title={t("cancel")}
-                  >
-                    <X className="size-3.5 max-lg:size-4" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="submit"
+                        className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ready hover:bg-ready-soft transition-colors cursor-pointer"
+                      >
+                        <Check className="size-3.5 max-lg:size-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t("saveNote")}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingNote(false)}
+                        className="h-6 w-6 max-lg:h-9 max-lg:w-9 grid place-items-center rounded-full text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
+                      >
+                        <X className="size-3.5 max-lg:size-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t("cancel")}</TooltipContent>
+                  </Tooltip>
                 </form>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    hapticTap();
-                    setNoteInput(lastSolve.note ?? "");
-                    setIsEditingNote(true);
-                  }}
-                  className={cn(
-                    "h-6 px-2 rounded-full transition-all duration-150 cursor-pointer outline-none select-none flex items-center gap-1.5 max-lg:h-10 max-lg:px-3 text-[0.72rem] max-lg:text-sm font-medium",
-                    lastSolve.note
-                      ? "text-phase-indigo bg-phase-indigo/10 hover:bg-phase-indigo/20 font-semibold ring-1 ring-phase-indigo/30"
-                      : "text-ink-3 hover:bg-surface-2 hover:text-ink"
-                  )}
-                  title={
-                    lastSolve.note
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hapticTap();
+                        setNoteInput(lastSolve.note ?? "");
+                        setIsEditingNote(true);
+                      }}
+                      className={cn(
+                        "h-6 px-2 rounded-full transition-all duration-150 cursor-pointer outline-none select-none flex items-center gap-1.5 max-lg:h-10 max-lg:px-3 text-[0.72rem] max-lg:text-sm font-medium",
+                        lastSolve.note
+                          ? "text-phase-indigo bg-phase-indigo/10 hover:bg-phase-indigo/20 font-semibold ring-1 ring-phase-indigo/30"
+                          : "text-ink-3 hover:bg-surface-2 hover:text-ink"
+                      )}
+                    >
+                      <MessageSquare className="size-3.5 max-lg:size-4" />
+                      {lastSolve.note ? (
+                        <span className="max-w-24 truncate text-[0.72rem] max-lg:text-xs">{lastSolve.note}</span>
+                      ) : null}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {lastSolve.note
                       ? t("noteWithValue", { note: lastSolve.note })
-                      : t("addNote")
-                  }
-                >
-                  <MessageSquare className="size-3.5 max-lg:size-4" />
-                  {lastSolve.note ? (
-                    <span className="max-w-24 truncate text-[0.72rem] max-lg:text-xs">{lastSolve.note}</span>
-                  ) : null}
-                </button>
+                      : t("addNote")}
+                  </TooltipContent>
+                </Tooltip>
               )}
             </>
           )}

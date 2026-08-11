@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Case3DCanvas } from "./Case3DDiagram";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
@@ -436,33 +437,51 @@ export function AlgorithmEditorDialog({
                 {is3D ? (
                   /* 3D: exact ±90° steps + isometric reset */
                   <div className="flex items-center gap-1.5 mt-2.5">
-                    <button
-                      onClick={() => rotate3DBy(-90)}
-                      disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
-                      title={t("editor.rotateCCW")}
-                    >
-                      <RotateCcw className="size-3" />
-                      −90°
-                    </button>
-                    <button
-                      onClick={() => rotate3DBy(90)}
-                      disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
-                      title={t("editor.rotateCW")}
-                    >
-                      <RotateCw className="size-3" />
-                      +90°
-                    </button>
-                    <button
-                      onClick={resetIsometric}
-                      disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
-                      title={t("editor.resetIsometric")}
-                    >
-                      <Focus className="size-3" />
-                      ISO
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            onClick={() => rotate3DBy(-90)}
+                            disabled={!engineReady}
+                            className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                          >
+                            <RotateCcw className="size-3" />
+                            −90°
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t("editor.rotateCCW")}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            onClick={() => rotate3DBy(90)}
+                            disabled={!engineReady}
+                            className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                          >
+                            <RotateCw className="size-3" />
+                            +90°
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t("editor.rotateCW")}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            onClick={resetIsometric}
+                            disabled={!engineReady}
+                            className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                          >
+                            <Focus className="size-3" />
+                            ISO
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t("editor.resetIsometric")}</TooltipContent>
+                    </Tooltip>
                   </div>
                 ) : (
                   /* 2D: rotation nudge buttons */

@@ -3,6 +3,7 @@
 import { Pencil, Trash2, Sparkles, GripVertical, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Algorithm } from "@cubeforge/algorithm-db";
@@ -106,28 +107,36 @@ export function SortableAlgorithmItem({
           {isCustom && (
             // Touch: edit/delete always visible (no hover-only) + larger targets.
             <span className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity max-lg:opacity-100 max-lg:gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                className="grid size-4 place-items-center rounded text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors max-lg:size-9"
-                title={t("editAlgorithm")}
-                aria-label={t("editAlgorithm")}
-              >
-                <Pencil className="size-2.5 max-lg:size-3.5" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="grid size-4 place-items-center rounded text-ink-3 hover:text-dnf hover:bg-dnf/5 transition-colors max-lg:size-9"
-                title={t("deleteAlgorithm")}
-                aria-label={t("deleteAlgorithm")}
-              >
-                <Trash2 className="size-2.5 max-lg:size-3.5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                    className="grid size-4 place-items-center rounded text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors max-lg:size-9"
+                    aria-label={t("editAlgorithm")}
+                  >
+                    <Pencil className="size-2.5 max-lg:size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("editAlgorithm")}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                    className="grid size-4 place-items-center rounded text-ink-3 hover:text-dnf hover:bg-dnf/5 transition-colors max-lg:size-9"
+                    aria-label={t("deleteAlgorithm")}
+                  >
+                    <Trash2 className="size-2.5 max-lg:size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("deleteAlgorithm")}</TooltipContent>
+              </Tooltip>
             </span>
           )}
         </div>

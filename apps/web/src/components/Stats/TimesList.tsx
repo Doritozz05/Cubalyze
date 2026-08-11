@@ -263,7 +263,6 @@ const SolveRow = memo(function SolveRow({
             <button
               onClick={handleNoteClick}
               className="max-w-25 shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-accent bg-accent/10 hover:bg-accent/20 italic transition-colors flex items-center gap-1 cursor-pointer font-medium"
-              title={solve.note}
             >
               <MessageSquare className="size-3 shrink-0" />
               <span className="truncate">{solve.note}</span>

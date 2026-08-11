@@ -7,6 +7,7 @@ import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
 import { CountryFlag } from "./CountryFlag";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
 
@@ -151,37 +152,41 @@ export function ProfileHero({
                     BADGE_COLOR_STYLES[badge.color] ?? DEFAULT_BADGE_STYLE;
                   const rotation = BADGE_ROTATIONS[idx % BADGE_ROTATIONS.length];
                   return (
-                    <span
-                      key={badge.puzzle}
-                      title={t("hero.pbTitle", {
-                        puzzle: badge.puzzleLabel,
-                        threshold: badge.thresholdLabel,
-                      })}
-                      style={{
-                        transform: `rotate(${rotation}deg)`,
-                        transformOrigin: "center",
-                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                      }}
-                      className={cn(
-                        "group relative inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
-                        "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
-                        "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
-                      )}
-                    >
+                    <Tooltip key={badge.puzzle}>
+                      <TooltipTrigger asChild>
+                        <span
+                          style={{
+                            transform: `rotate(${rotation}deg)`,
+                            transformOrigin: "center",
+                            transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                          }}
+                          className={cn(
+                            "group relative inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
+                            "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
+                            "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
+                          )}
+                        >
                       <span
                         className={cn(
                           "absolute inset-0 rounded-[6px] dark:scale-[0.985]",
                           style.bg,
                         )}
                         aria-hidden="true"
-                      />
-                      <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
-                        <span className="nums">Sub {badge.thresholdLabel}</span>
-                        <span className="opacity-75">{badge.puzzleLabel}</span>
-                      </span>
-                    </span>
+                      />                        <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
+                          <span className="nums">Sub {badge.thresholdLabel}</span>
+                          <span className="opacity-75">{badge.puzzleLabel}</span>
+                        </span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {t("hero.pbTitle", {
+                          puzzle: badge.puzzleLabel,
+                          threshold: badge.thresholdLabel,
+                        })}
+                      </TooltipContent>
+                    </Tooltip>
                   );
-                })}
+                  })}
                 {badges.length > 4 && (
                   <span
                     style={{

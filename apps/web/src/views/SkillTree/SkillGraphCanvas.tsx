@@ -102,6 +102,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { TIER_KEY, type SkillNode } from "./skillTreeData";
@@ -185,20 +186,26 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
 
         {/* Status / Toggle Badge */}
         {!isLocked && onToggleComplete ? (
-          <button
-            type="button"
-            onClick={handleToggle}
-            title={t(isCompleted ? "markAccessible" : "markCompleted")}
-            aria-label={t(isCompleted ? "markAccessible" : "markCompleted")}
-            className={cn(
-              "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
-              isCompleted
-                ? "border-ink bg-ink text-surface shadow-sm"
-                : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink hover:bg-surface-2",
-            )}
-          >
-            <Check className={cn("size-3.5 stroke-[2.5]", isCompleted ? "opacity-100" : "opacity-40")} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleToggle}
+                aria-label={t(isCompleted ? "markAccessible" : "markCompleted")}
+                className={cn(
+                  "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
+                  isCompleted
+                    ? "border-ink bg-ink text-surface shadow-sm"
+                    : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink hover:bg-surface-2",
+                )}
+              >
+                <Check className={cn("size-3.5 stroke-[2.5]", isCompleted ? "opacity-100" : "opacity-40")} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {t(isCompleted ? "markAccessible" : "markCompleted")}
+            </TooltipContent>
+          </Tooltip>
         ) : isCompleted ? (
           <div className="absolute -top-1 -right-1 z-20 flex size-5.5 items-center justify-center rounded-full border border-ink bg-ink text-surface shadow-xs">
             <Check className="size-3 stroke-[2.5]" />
@@ -605,34 +612,46 @@ export function SkillGraphCanvas({
 
       {/* Floating Viewport Controls */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono max-lg:top-auto max-lg:bottom-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
-          onClick={handleZoomIn}
-          title={t("zoomIn")}
-        >
-          <ZoomIn className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
-          onClick={handleZoomOut}
-          title={t("zoomOut")}
-        >
-          <ZoomOut className="w-3.5 h-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+              onClick={handleZoomIn}
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("zoomIn")}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+              onClick={handleZoomOut}
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("zoomOut")}</TooltipContent>
+        </Tooltip>
         <div className="w-px h-4 bg-line" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
-          onClick={resetView}
-          title={t("resetView")}
-        >
-          <Maximize2 className="w-3.5 h-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+              onClick={resetView}
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("resetView")}</TooltipContent>
+        </Tooltip>
         <span className="px-2 text-[0.62rem] text-ink-3 font-semibold">
           {Math.round(zoom * 100)}%
         </span>

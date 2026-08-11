@@ -273,7 +273,6 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
               onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); setImportMode('json'); }}
               disabled={!onImportSolves}
               className="rounded-lg border border-phase-indigo/25 bg-phase-indigo/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-phase-indigo/10 hover:border-phase-indigo/40 cursor-pointer"
-              title={t('data.importJsonTitle')}
             >
               {t('data.importJson')}{' '}
               <span className="text-phase-indigo text-[0.7rem] font-normal">

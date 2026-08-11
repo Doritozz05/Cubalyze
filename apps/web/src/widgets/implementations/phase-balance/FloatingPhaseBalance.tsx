@@ -211,13 +211,18 @@ function AverageBreakdown({
                   </span>
                 )}
                 {row.benchmarkDelta !== undefined && (
-                  <span
-                    className="nums w-14 text-right text-ink-3"
-                    title={t("panel.phaseBalance.yourAvgMinusRef")}
-                  >
-                    ref {row.benchmarkDelta > 0 ? "+" : ""}
-                    {(row.benchmarkDelta * 100).toFixed(1)}%
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        tabIndex={0}
+                        className="nums w-14 text-right text-ink-3 outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50 rounded-sm"
+                      >
+                        ref {row.benchmarkDelta > 0 ? "+" : ""}
+                        {(row.benchmarkDelta * 100).toFixed(1)}%
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t("panel.phaseBalance.yourAvgMinusRef")}</TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>

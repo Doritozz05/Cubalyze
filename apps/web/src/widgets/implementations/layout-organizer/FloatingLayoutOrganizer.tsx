@@ -11,6 +11,7 @@ import { WIDGET_LABEL_KEY } from "@/widgets/i18n";
 import type { WidgetId } from "@/widgets/types";
 import type { CustomLayout } from "@/widgets/widgetStore";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ── Widget size registry ─────────────────────────────────────────────────
 const WIDGET_SIZES: Record<string, { w: number; h: number }> = {
@@ -308,27 +309,37 @@ export function FloatingLayoutOrganizer() {
                 {t("panel.layoutOrganizer.activeCount", { count: activeCount })}
               </p>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={handleDockAll}
-                  disabled={floatingIds.length === 0}
-                  className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
-                  title={
-                    floatingIds.length === 0
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <button
+                        onClick={handleDockAll}
+                        disabled={floatingIds.length === 0}
+                        className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
+                      >
+                        <ArrowDownToLine className="size-2.5" />
+                        {t("panel.layoutOrganizer.dockAll")}
+                      </button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {floatingIds.length === 0
                       ? t("panel.layoutOrganizer.noFloating")
-                      : t("panel.layoutOrganizer.dockAll", { count: floatingIds.length })
-                  }
-                >
-                  <ArrowDownToLine className="size-2.5" />
-                  {t("panel.layoutOrganizer.dockAll")}
-                </button>
-                <button
-                  onClick={() => setSaveInputOpen((v) => !v)}
-                  className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-                  title={t("panel.layoutOrganizer.savePositions")}
-                >
-                  <Save className="size-2.5" />
-                  {t("panel.layoutOrganizer.saveLayout")}
-                </button>
+                      : t("panel.layoutOrganizer.dockAll", { count: floatingIds.length })}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setSaveInputOpen((v) => !v)}
+                      className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                    >
+                      <Save className="size-2.5" />
+                      {t("panel.layoutOrganizer.saveLayout")}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t("panel.layoutOrganizer.savePositions")}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -436,19 +447,23 @@ export function FloatingLayoutOrganizer() {
                             </p>
                           </div>
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCustom(layout.id);
-                          }}
-                          className="absolute right-1 top-1 grid size-5 place-items-center rounded text-ink-3/50 opacity-0 transition-all hover:bg-surface-2 hover:text-dnf group-hover:opacity-100 z-10"
-                          aria-label={t("panel.layoutOrganizer.deleteLayoutNamed", {
-                            name: layout.name,
-                          })}
-                          title={t("panel.layoutOrganizer.deleteLayout")}
-                        >
-                          <Trash2 className="size-2.5" />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCustom(layout.id);
+                              }}
+                              className="absolute right-1 top-1 grid size-5 place-items-center rounded text-ink-3/50 opacity-0 transition-all hover:bg-surface-2 hover:text-dnf group-hover:opacity-100 z-10"
+                              aria-label={t("panel.layoutOrganizer.deleteLayoutNamed", {
+                                name: layout.name,
+                              })}
+                            >
+                              <Trash2 className="size-2.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">{t("panel.layoutOrganizer.deleteLayout")}</TooltipContent>
+                        </Tooltip>
                       </div>
                     );
                   })}

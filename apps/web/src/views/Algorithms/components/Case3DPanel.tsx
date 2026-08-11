@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { X, ChevronLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Case3DDiagram } from "./Case3DDiagram";
 import { AlgorithmEditorDialog } from "./AlgorithmEditorDialog";
 import { SortableAlgorithmItem } from "./SortableAlgorithmItem";
@@ -288,14 +289,18 @@ export function Case3DPanel({
                     })
                   : ""}
               </h4>
-              <button
-                onClick={handleOpenAddDialog}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
-                title={t("addCustomAlgorithm")}
-              >
-                <Plus className="size-3" />
-                {t("addCustom")}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleOpenAddDialog}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    {t("addCustom")}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("addCustomAlgorithm")}</TooltipContent>
+              </Tooltip>
             </div>
 
             <DndContext

@@ -21,6 +21,7 @@ import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
@@ -487,14 +488,20 @@ export function AlgorithmDrillView({
                     <input type="checkbox" checked={revealIfFail} onChange={(e) => setRevealIfFail(e.target.checked)} className="size-3 rounded border-line accent-ink" />
                     {t("drill.revealIfFail")}
                   </label>
-                  <button
-                    onClick={() => setShowAlgorithm((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-3 hover:text-ink hover:bg-line"
-                    title={showAlgorithm ? t("drill.hideAlgorithm") : t("drill.showAlgorithm")}
-                  >
-                    {showAlgorithm ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
-                    {showAlgorithm ? t("drill.hide") : t("drill.show")}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setShowAlgorithm((v) => !v)}
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-3 hover:text-ink hover:bg-line"
+                      >
+                        {showAlgorithm ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                        {showAlgorithm ? t("drill.hide") : t("drill.show")}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {showAlgorithm ? t("drill.hideAlgorithm") : t("drill.showAlgorithm")}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               {!showAlgorithm && (
@@ -593,12 +600,17 @@ function DrillHeader({
         {DRILL_MODE_IDS.map((id) => {
           const keys = DRILL_MODE_KEYS[id];
           return (
-            <button key={id} onClick={() => onModeChange(id)}
-              className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:min-w-16 max-lg:px-3.5",
-                drillMode === id ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")} title={t(keys.description)}>
-              {t(keys.label)}
-              {drillMode === id && <motion.div layoutId="drill-mode-active" className="absolute inset-0 rounded-md bg-ink -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
-            </button>
+            <Tooltip key={id}>
+              <TooltipTrigger asChild>
+                <button onClick={() => onModeChange(id)}
+                  className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:min-w-16 max-lg:px-3.5",
+                    drillMode === id ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")}>
+                  {t(keys.label)}
+                  {drillMode === id && <motion.div layoutId="drill-mode-active" className="absolute inset-0 rounded-md bg-ink -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{t(keys.description)}</TooltipContent>
+            </Tooltip>
           );
         })}
       </div>

@@ -11,6 +11,7 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DPanel } from "./Case3DPanel";
@@ -272,14 +273,18 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
               <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">
                 {t("algorithmsCount", { count: algorithms.length })}
               </h4>
-              <button
-                onClick={handleOpenAddDialog}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
-                title={t("addCustomAlgorithm")}
-              >
-                <Plus className="size-3" />
-                {t("addCustom")}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleOpenAddDialog}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    {t("addCustom")}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("addCustomAlgorithm")}</TooltipContent>
+              </Tooltip>
             </div>
 
             <DndContext

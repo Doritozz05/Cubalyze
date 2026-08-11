@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { PuzzleCategory } from "@/types";
@@ -368,29 +369,37 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                   </Button>
 
                   <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handlePrevCase}
-                      className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
-                      title={t("panel.algorithmDb.previousCase")}
-                    >
-                      <ChevronLeft className="size-3" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handlePrevCase}
+                          className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
+                        >
+                          <ChevronLeft className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("panel.algorithmDb.previousCase")}</TooltipContent>
+                    </Tooltip>
                     <span className="font-mono text-[0.62rem] font-bold text-ink px-1">
                       {activeCaseIndex + 1}/{subsetCases.length}
                     </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleNextCase}
-                      className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
-                      title={t("panel.algorithmDb.nextCase")}
-                    >
-                      <ChevronRight className="size-3" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleNextCase}
+                          className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
+                        >
+                          <ChevronRight className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("panel.algorithmDb.nextCase")}</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
 

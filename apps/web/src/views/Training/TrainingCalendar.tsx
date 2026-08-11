@@ -9,6 +9,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Repeat, X, Check
 import { cn } from "@/lib/utils";
 import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCalendarTasks } from "@/hooks/useCalendarTasks";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -500,12 +501,22 @@ export function TrainingCalendar() {
                                 )}
                               </div>
                               <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleEditTask(task)} className="rounded p-1 text-ink-3/40 hover:text-ink hover:bg-surface-2 transition-all" title={t("calendar.editTitle")}>
-                                  <Pencil className="size-3" />
-                                </button>
-                                <button onClick={() => handleDeleteTask(task.id)} className="rounded p-1 text-ink-3/40 hover:text-hold hover:bg-hold/10 transition-all" title={t("calendar.deleteTitle")}>
-                                  <Trash2 className="size-3" />
-                                </button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button onClick={() => handleEditTask(task)} className="rounded p-1 text-ink-3/40 hover:text-ink hover:bg-surface-2 transition-all">
+                                      <Pencil className="size-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">{t("calendar.editTitle")}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button onClick={() => handleDeleteTask(task.id)} className="rounded p-1 text-ink-3/40 hover:text-hold hover:bg-hold/10 transition-all">
+                                      <Trash2 className="size-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">{t("calendar.deleteTitle")}</TooltipContent>
+                                </Tooltip>
                               </div>
                             </div>
                           </div>
@@ -618,20 +629,23 @@ export function TrainingCalendar() {
                                 : isActive;
 
                           return (
-                            <button
-                              key={i}
-                              onClick={() => canToggle && toggleDayOfWeek(i)}
-                              disabled={!canToggle}
-                              className={cn(
-                                "flex h-8 w-8 items-center justify-center rounded-md text-[0.6rem] font-medium transition-all",
-                                shouldShowActive ? "bg-ink text-surface shadow-sm" : "bg-surface-2 text-ink-3/50 hover:text-ink hover:bg-surface-2/80",
-                                !canToggle && "cursor-default",
-                                canToggle && "cursor-pointer",
-                              )}
-                              title={dayName}
-                            >
-                              {weekdayShorts[i]}
-                            </button>
+                            <Tooltip key={i}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => canToggle && toggleDayOfWeek(i)}
+                                  disabled={!canToggle}
+                                  className={cn(
+                                    "flex h-8 w-8 items-center justify-center rounded-md text-[0.6rem] font-medium transition-all disabled:pointer-events-none",
+                                    shouldShowActive ? "bg-ink text-surface shadow-sm" : "bg-surface-2 text-ink-3/50 hover:text-ink hover:bg-surface-2/80",
+                                    !canToggle && "cursor-default",
+                                    canToggle && "cursor-pointer",
+                                  )}
+                                >
+                                  {weekdayShorts[i]}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">{dayName}</TooltipContent>
+                            </Tooltip>
                           );
                         })}
                       </div>
@@ -647,16 +661,19 @@ export function TrainingCalendar() {
                     </label>
                     <div className="flex gap-2">
                       {TASK_COLORS.map((c) => (
-                        <button
-                          key={c.value}
-                          onClick={() => updateDraft("color", c.value)}
-                          className={cn(
-                            "h-7 w-7 rounded-full transition-all duration-150",
-                            c.dot,
-                            draft.color === c.value ? "ring-2 ring-offset-2 ring-offset-background scale-110" : "hover:scale-110 opacity-70 hover:opacity-100",
-                          )}
-                          title={t(c.labelKey)}
-                        />
+                        <Tooltip key={c.value}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => updateDraft("color", c.value)}
+                              className={cn(
+                                "h-7 w-7 rounded-full transition-all duration-150",
+                                c.dot,
+                                draft.color === c.value ? "ring-2 ring-offset-2 ring-offset-background scale-110" : "hover:scale-110 opacity-70 hover:opacity-100",
+                              )}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="top">{t(c.labelKey)}</TooltipContent>
+                        </Tooltip>
                       ))}
                     </div>
                   </div>

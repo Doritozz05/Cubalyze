@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
 import type { AlgorithmCase } from "@cubeforge/algorithm-db";
 import { TrainingBreadcrumb } from "./components";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { findSubsetId, masteryLevel } from "@cubeforge/training";
 import type { AlgorithmProgressRecord, PhaseStatsRecord } from "@cubeforge/training";
@@ -262,16 +263,31 @@ function OverviewTab({
           <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-4">{t("statsView.masteryDistribution")}</h3>
           <div className="flex gap-2 h-6 rounded-full overflow-hidden bg-surface-2">
             {mastered > 0 && (
-              <motion.div initial={{ width: 0 }} animate={{ width: `${(mastered / totalCases) * 100}%` }}
-                transition={{ duration: 0.6 }} className="bg-ready h-full" title={t("drill.masteredCount", { count: mastered })} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(mastered / totalCases) * 100}%` }}
+                    transition={{ duration: 0.6 }} className="bg-ready h-full" />
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("drill.masteredCount", { count: mastered })}</TooltipContent>
+              </Tooltip>
             )}
             {learning > 0 && (
-              <motion.div initial={{ width: 0 }} animate={{ width: `${(learning / totalCases) * 100}%` }}
-                transition={{ duration: 0.6, delay: 0.1 }} className="bg-caution h-full" title={t("statsView.countLearning", { count: learning })} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(learning / totalCases) * 100}%` }}
+                    transition={{ duration: 0.6, delay: 0.1 }} className="bg-caution h-full" />
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("statsView.countLearning", { count: learning })}</TooltipContent>
+              </Tooltip>
             )}
             {beginner > 0 && (
-              <motion.div initial={{ width: 0 }} animate={{ width: `${(beginner / totalCases) * 100}%` }}
-                transition={{ duration: 0.6, delay: 0.2 }} className="bg-hold h-full" title={t("statsView.countBeginner", { count: beginner })} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(beginner / totalCases) * 100}%` }}
+                    transition={{ duration: 0.6, delay: 0.2 }} className="bg-hold h-full" />
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("statsView.countBeginner", { count: beginner })}</TooltipContent>
+              </Tooltip>
             )}
           </div>
           <div className="flex flex-wrap gap-4 mt-3">

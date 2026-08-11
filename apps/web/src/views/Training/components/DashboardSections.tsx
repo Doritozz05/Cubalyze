@@ -635,7 +635,6 @@ export function ExerciseCard({
                 key={pm.id}
                 onClick={() => onPracticeMode(pm.id)}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:justify-center max-lg:py-2.5 max-lg:text-[0.68rem]"
-                title={pm.label}
               >
                 <pm.icon className="size-3" />
                 {pm.label}
