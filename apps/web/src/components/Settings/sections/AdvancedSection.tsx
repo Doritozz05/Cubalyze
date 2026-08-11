@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ParseKeys } from "i18next";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import {
@@ -32,12 +34,12 @@ import {
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { isDev, isTauri, isLocalhost } from "@/utils/env";
 
-/** Storage-type → human label. */
-const STORAGE_LABEL: Record<string, string> = {
-  opfs: "Persistent (OPFS)",
-  desktop: "Desktop (file)",
-  memory: "In-memory (volatile)",
-  unknown: "Unknown",
+/** Storage-type → i18n key. Unknown types fall back to the raw id. */
+const STORAGE_LABEL_KEY: Partial<Record<string, ParseKeys<"settings">>> = {
+  opfs: "advanced.storage.opfs",
+  desktop: "advanced.storage.desktop",
+  memory: "advanced.storage.memory",
+  unknown: "advanced.storage.unknown",
 };
 
 /** Keys under the app's namespace in localStorage. */
@@ -115,6 +117,8 @@ function useAppStorageEntries() {
  *   - Beta features toggle.
  */
 export function AdvancedSection() {
+  const { t } = useTranslation("settings");
+
   const betaFeatures = useStore(preferencesStore, (s) => s.betaFeatures);
   const setBetaFeatures = useStore(preferencesStore, (s) => s.setBetaFeatures);
   const resetPreferences = useStore(preferencesStore, (s) => s.resetPreferences);
@@ -142,9 +146,9 @@ export function AdvancedSection() {
 
   const envFlags = useMemo(
     () => [
-      { key: "dev-server", label: "Dev server", value: isDev() },
-      { key: "tauri", label: "Desktop (Tauri)", value: isTauri() },
-      { key: "localhost", label: "Localhost", value: isLocalhost() },
+      { key: "dev-server", labelKey: "advanced.devServer" as const, value: isDev() },
+      { key: "tauri", labelKey: "advanced.desktopTauri" as const, value: isTauri() },
+      { key: "localhost", labelKey: "advanced.localhost" as const, value: isLocalhost() },
     ],
     [],
   );
@@ -172,7 +176,7 @@ export function AdvancedSection() {
           <Wrench className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] leading-5 text-ink-2">
-          Developer tools, data and debugging. Use with care.
+          {t("advanced.info")}
         </p>
       </div>
 
@@ -181,11 +185,10 @@ export function AdvancedSection() {
         <div className="min-w-0 flex-1">
           <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <RotateCcw className="size-3.5 text-dnf" />
-            Reset all options
+            {t("advanced.resetAll")}
           </h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Restore every preference — theme, timer, scramble, notifications — to its
-            default value. Your solves, profile and training data are untouched.
+            {t("advanced.resetAllHint")}
           </p>
         </div>
         <AlertDialog>
@@ -195,24 +198,23 @@ export function AdvancedSection() {
               size="sm"
               className="shrink-0 border-dnf/30 text-dnf hover:bg-dnf/10 hover:text-dnf"
             >
-              Reset
+              {t("advanced.reset")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="max-w-sm">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-base">Reset all options?</AlertDialogTitle>
+              <AlertDialogTitle className="text-base">{t("advanced.resetTitle")}</AlertDialogTitle>
               <AlertDialogDescription className="text-sm">
-                This restores every app preference to its default. Your solve data,
-                profile and training progress are kept.
+                {t("advanced.resetDescription")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="max-lg:h-11 h-8 text-xs">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="max-lg:h-11 h-8 text-xs">{i18n.t("common:cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 className="max-lg:h-11 h-8 bg-dnf text-xs text-white hover:bg-dnf/90"
                 onClick={handleReset}
               >
-                Reset
+                {t("advanced.reset")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -221,16 +223,16 @@ export function AdvancedSection() {
 
       {/* ── Debug / logs ────────────────────────────────────────────── */}
       <SettingToggle
-        title="Debug logs"
-        description="Enable verbose per-solve diagnostics in the browser console (move data, BLE audit, analysis pipeline). Mostly useful when reporting bugs."
+        title={t("advanced.debugLogs")}
+        description={t("advanced.debugLogsHint")}
         checked={debugLogs}
         onCheckedChange={handleToggleDebugLogs}
       />
 
       {/* ── Beta features ───────────────────────────────────────────── */}
       <SettingToggle
-        title="Beta features"
-        description="Opt in to experimental features that are still in development. Turn this off if something feels unstable."
+        title={t("advanced.betaFeatures")}
+        description={t("advanced.betaFeaturesHint")}
         checked={betaFeatures}
         onCheckedChange={setBetaFeatures}
       />
@@ -241,37 +243,37 @@ export function AdvancedSection() {
           <div>
             <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <Database className="size-3.5 text-ink-2" />
-              Storage inspector
+              {t("advanced.storageInspector")}
             </h4>
             <p className="mt-1.5 text-[0.72rem] leading-5 text-ink-3">
-              Where your data lives and how much space it uses.
+              {t("advanced.storageInspectorHint")}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={refresh}>
-            Refresh
+            {t("advanced.refresh")}
           </Button>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div className="rounded-lg border border-line bg-surface-2/40 p-3">
-            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">Backend</p>
+            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">{t("advanced.backend")}</p>
             <p className="mt-1 flex items-center gap-1.5 text-[0.8rem] font-medium text-ink">
               <HardDrive className="size-3.5 text-ink-2" />
-              {STORAGE_LABEL[storageType] ?? storageType}
+              {STORAGE_LABEL_KEY[storageType] ? t(STORAGE_LABEL_KEY[storageType]) : storageType}
             </p>
             {storageType === "memory" && (
               <p className="mt-1 flex items-center gap-1 text-[0.6rem] text-dnf">
                 <TriangleAlert className="size-3" />
-                Data lost on reload — export regularly
+                {t("advanced.dataLost")}
               </p>
             )}
           </div>
           <div className="rounded-lg border border-line bg-surface-2/40 p-3">
-            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">Used</p>
+            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">{t("advanced.used")}</p>
             <p className="mt-1 text-[0.8rem] font-medium text-ink">{formatBytes(usage)}</p>
           </div>
           <div className="rounded-lg border border-line bg-surface-2/40 p-3">
-            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">Quota</p>
+            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">{t("advanced.quota")}</p>
             <p className="mt-1 text-[0.8rem] font-medium text-ink">{formatBytes(quota)}</p>
           </div>
         </div>
@@ -294,10 +296,10 @@ export function AdvancedSection() {
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <p className="text-[0.62rem] text-ink-3">
-            Clearing app storage resets preferences & session id (a reload is required).
+            {t("advanced.clearStorageHint")}
           </p>
           <Button variant="outline" size="sm" onClick={handleClearAppStorage}>
-            Clear app storage
+            {t("advanced.clearStorage")}
           </Button>
         </div>
       </div>
@@ -306,10 +308,10 @@ export function AdvancedSection() {
       <div className="rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
           <Flag className="size-3.5 text-ink-2" />
-          Environment flags
+          {t("advanced.envFlags")}
         </h4>
         <p className="mt-1.5 text-[0.72rem] leading-5 text-ink-3">
-          Runtime environment detected by the app — useful when sharing bug reports.
+          {t("advanced.envFlagsHint")}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {envFlags.map((flag) => (
@@ -326,12 +328,12 @@ export function AdvancedSection() {
               ) : (
                 <span className="size-1.5 rounded-full bg-line-2" />
               )}
-              {flag.label}
+              {t(flag.labelKey)}
             </span>
           ))}
           <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface-2/40 px-2.5 py-1 text-[0.68rem] font-medium text-ink-3">
             <Bug className="size-3" />
-            {envActive} active
+            {t("advanced.activeCount", { count: envActive })}
           </span>
         </div>
       </div>
@@ -339,8 +341,7 @@ export function AdvancedSection() {
       <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
         <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-ink-3" />
         <span className="text-[0.65rem] leading-5 text-ink-3">
-          Changes here affect only this device. Reset options is safe — it never deletes
-          solves, profile or training progress.
+          {t("advanced.footer")}
         </span>
       </div>
     </div>

@@ -2,12 +2,21 @@
 
 import { Cpu, Bluetooth, BluetoothConnected, Compass } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { ParseKeys } from "i18next";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore } from "@cubeforge/state";
 import { cn } from "@/lib/utils";
 
 type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
+
+const STATUS_KEY: Record<ConnStatus, ParseKeys<"settings">> = {
+  connecting: "smartCube.status.connecting",
+  connected: "smartCube.status.connected",
+  disconnected: "smartCube.status.disconnected",
+  reconnecting: "smartCube.status.reconnecting",
+};
 
 /**
  * Smart Cube section (read-only status panel).
@@ -27,6 +36,8 @@ import { toast } from "sonner";
 import i18n from "@/i18n";
 
 export function SmartCubeSection() {
+  const { t } = useTranslation("settings");
+
   const [status, setStatus] = useState<ConnStatus>(
     globalCubeAdapter.isConnected ? "connected" : "disconnected",
   );
@@ -98,7 +109,7 @@ export function SmartCubeSection() {
       ) : (
         <Bluetooth className="size-3" />
       )}
-      {status}
+      {t(STATUS_KEY[status])}
     </span>
   );
 
@@ -109,7 +120,7 @@ export function SmartCubeSection() {
           <Cpu className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] text-ink-2">
-          Bluetooth pairing, the gyroscope/IMU feed, and connection management for your Smart Cube.
+          {t("smartCube.info")}
         </p>
       </div>
 
@@ -118,14 +129,14 @@ export function SmartCubeSection() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h4 className="text-[0.85rem] font-medium text-ink">
-              Connected cube
+              {t("smartCube.connectedCube")}
             </h4>
             {statusBadge}
           </div>
           <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
             {isConnected
               ? `${globalCubeAdapter.vendor} · ${model}`
-              : "No cube paired. Click Connect to search for your Smart Cube."}
+              : t("smartCube.noCube")}
           </p>
           {isConnected && (
             <p className="mt-2 flex items-center gap-1.5 text-[0.74rem] text-ink-3">
@@ -138,8 +149,8 @@ export function SmartCubeSection() {
                 )}
               />
               {isGyroSupported
-                ? "Gyroscope/IMU available on this cube"
-                : "No gyroscope/IMU on this cube"}
+                ? t("smartCube.gyroAvailable")
+                : t("smartCube.gyroUnavailable")}
             </p>
           )}
         </div>
@@ -152,7 +163,7 @@ export function SmartCubeSection() {
               onClick={handleDisconnect}
               className="max-lg:h-11 h-8 border-line text-xs font-medium text-ink hover:bg-surface-2"
             >
-              Disconnect
+              {t("smartCube.disconnect")}
             </Button>
           ) : (
             <Button
@@ -161,7 +172,7 @@ export function SmartCubeSection() {
               disabled={isTransitioning}
               className="max-lg:h-11 h-8 text-xs font-medium"
             >
-              {isTransitioning ? "Connecting..." : "Connect"}
+              {isTransitioning ? t("smartCube.connecting") : t("smartCube.connect")}
             </Button>
           )}
         </div>

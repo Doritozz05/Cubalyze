@@ -1,6 +1,8 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import type { ParseKeys } from "i18next";
+import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
   Bluetooth,
@@ -17,12 +19,12 @@ import { cn } from "@/lib/utils";
 
 interface CreditItem {
   name: string;
-  detail?: string;
+  detailKey?: ParseKeys<"settings">;
   link?: string;
 }
 
 interface CreditCategory {
-  title: string;
+  titleKey: ParseKeys<"settings">;
   icon: LucideIcon;
   /** Phase-palette tone used for the category's icon chip. */
   tone: keyof typeof TONES;
@@ -40,167 +42,159 @@ const TONES = {
 
 const CATEGORIES: CreditCategory[] = [
   {
-    title: "Algorithm database",
+    titleKey: "credits.categories.algorithmDb.title",
     icon: Database,
     tone: "emerald",
     items: [
       {
         name: "SpeedCubeDB",
-        detail:
-          "Core algorithm database (PLL, OLL, F2L, COLL, WV, CLS, ELL, SV, Anti-PLL) with community votes and per-algorithm verification.",
+        detailKey: "credits.categories.algorithmDb.i1",
         link: "https://speedcubedb.com",
       },
       {
         name: "BirdF2L",
-        detail:
-          "F2L algorithm dataset (LGPL-3.0) and the advanced F2L case taxonomy used across the app.",
+        detailKey: "credits.categories.algorithmDb.i2",
         link: "https://github.com/andydude/birdf2l",
       },
     ],
   },
   {
-    title: "Speedcubing reconstructions",
+    titleKey: "credits.categories.reconstructions.title",
     icon: ScanSearch,
     tone: "sky",
     items: [
       {
         name: "CubeRoot",
-        detail:
-          "Official and unofficial reconstructions, with a link back to every original solve.",
+        detailKey: "credits.categories.reconstructions.i1",
         link: "https://cuberoot.me",
       },
       {
         name: "reco.nz (reconz)",
-        detail:
-          "Community reconstructions compiled by the speedcubing community (Brest and many reconstructors), credited per solve.",
+        detailKey: "credits.categories.reconstructions.i2",
         link: "https://reco.nz",
       },
       {
         name: "World Cube Association",
-        detail:
-          "Competition metadata and results referenced in reconstruction records.",
+        detailKey: "credits.categories.reconstructions.i3",
         link: "https://www.worldcubeassociation.org",
       },
     ],
   },
   {
-    title: "Solvers & algorithms",
+    titleKey: "credits.categories.solvers.title",
     icon: Cpu,
     tone: "violet",
     items: [
       {
         name: "Kociemba's Two-Phase Algorithm",
-        detail: "The two-phase solver that powers the solve-analysis engine.",
+        detailKey: "credits.categories.solvers.i1",
       },
       {
         name: "min2phase.js",
-        detail:
-          "JavaScript port of Kociemba's algorithm (MIT / GPL-3.0).",
+        detailKey: "credits.categories.solvers.i2",
         link: "https://github.com/cs0x7f/min2phase",
       },
     ],
   },
   {
-    title: "3D & rendering",
+    titleKey: "credits.categories.rendering.title",
     icon: Layers,
     tone: "cyan",
     items: [
       {
         name: "three.js",
-        detail: "3D cube rendering engine (MIT).",
+        detailKey: "credits.categories.rendering.i1",
         link: "https://threejs.org",
       },
       {
         name: "three-stdlib",
-        detail: "Helper utilities for three.js.",
+        detailKey: "credits.categories.rendering.i2",
       },
     ],
   },
   {
-    title: "Hardware & connectivity",
+    titleKey: "credits.categories.hardware.title",
     icon: Bluetooth,
     tone: "blue",
     items: [
       {
         name: "GAN Cube smart cubes",
-        detail:
-          "GAN 356i and Gen2/Gen3 series — the hardware supported through our Bluetooth integration.",
+        detailKey: "credits.categories.hardware.i1",
         link: "https://www.gancube.com",
       },
       {
         name: "gan-web-bluetooth",
-        detail:
-          "Community reverse-engineering of the GAN BLE protocol (by afedotov), which our protocol implementation is based on.",
+        detailKey: "credits.categories.hardware.i2",
         link: "https://github.com/afedotov/gan-web-bluetooth",
       },
       {
         name: "Web Bluetooth API",
-        detail: "Browser connectivity for smart-cube communication.",
+        detailKey: "credits.categories.hardware.i3",
       },
     ],
   },
   {
-    title: "Community & inspiration",
+    titleKey: "credits.categories.community.title",
     icon: Users,
     tone: "rose",
     items: [
       {
         name: "Speedsolving.com",
-        detail:
-          "The speedcubing community and its collective algorithm knowledge.",
+        detailKey: "credits.categories.community.i1",
         link: "https://www.speedsolving.com",
       },
       {
         name: "CubeSkills",
-        detail: "CFOP solve-split reference benchmarks.",
+        detailKey: "credits.categories.community.i2",
         link: "https://www.cubeskills.com",
       },
       {
         name: "Every reconstructor & algorithm author",
-        detail:
-          "Individual contributions are credited per solve and per algorithm throughout the app.",
+        detailKey: "credits.categories.community.i3",
       },
     ],
   },
 ];
 
 /** Tech-stack chips ("built with") — the engine room behind the app. */
-const BUILT_WITH: { name: string; detail: string }[] = [
+const BUILT_WITH: { name: string; detailKey: ParseKeys<"settings"> }[] = [
   {
     name: "React · React DOM · Vite · TypeScript",
-    detail: "Application framework and tooling.",
+    detailKey: "credits.builtWithDetails.d1",
   },
   {
     name: "Tailwind CSS · Radix UI · CVA · clsx · tailwind-merge",
-    detail: "Design system and UI primitives.",
+    detailKey: "credits.builtWithDetails.d2",
   },
   {
     name: "Zustand · RxJS · React Router · TanStack Virtual · Comlink",
-    detail: "State, reactive streams, navigation, virtualization, workers.",
+    detailKey: "credits.builtWithDetails.d3",
   },
   {
     name: "Framer Motion · Recharts · Lucide icons · canvas-confetti",
-    detail: "Animation, charts and iconography.",
+    detailKey: "credits.builtWithDetails.d4",
   },
   {
     name: "date-fns · country-flag-icons · embla-carousel-react · react-day-picker",
-    detail: "Dates, flags, carousels and calendars.",
+    detailKey: "credits.builtWithDetails.d5",
   },
   {
     name: "react-hook-form · vaul · sonner · input-otp · uuid · use-debounce",
-    detail: "Forms, drawers, toasts and utilities.",
+    detailKey: "credits.builtWithDetails.d6",
   },
   {
     name: "next-themes · react-resizable-panels",
-    detail: "Theming and resizable layouts.",
+    detailKey: "credits.builtWithDetails.d7",
   },
   {
     name: "SQLite (public domain) · SheetJS",
-    detail: "Local database engine (Apache-2.0 wrapper) and spreadsheet import/export (Apache-2.0).",
+    detailKey: "credits.builtWithDetails.d8",
   },
 ];
 
 export function CreditsSection() {
+  const { t } = useTranslation("settings");
+
   const linkedCount = CATEGORIES.reduce(
     (acc, cat) => acc + cat.items.filter((i) => i.link).length,
     0,
@@ -216,13 +210,10 @@ export function CreditsSection() {
         </div>
         <div className="min-w-0">
           <h4 className="text-[0.85rem] font-semibold leading-5 text-ink">
-            Made possible by the community
+            {t("credits.introTitle")}
           </h4>
           <p className="mt-1 text-[0.75rem] leading-5 text-ink-3">
-            CubeForge is built on the work of the speedcubing community and a
-            wide range of open-source projects — {linkedCount} sources with
-            links, {totalCount} credits in total. We are grateful to everyone
-            who shares algorithms, reconstructions and knowledge.
+            {t("credits.introBody", { linked: linkedCount, total: totalCount })}
           </p>
         </div>
       </div>
@@ -234,10 +225,10 @@ export function CreditsSection() {
             <Package className="size-3.5" />
           </span>
           <h4 className="text-[0.8rem] font-semibold leading-5 text-ink">
-            Built with
+            {t("credits.builtWithTitle")}
           </h4>
           <span className="ml-auto hidden rounded-md border border-line bg-surface-2/40 px-2 py-0.5 text-[0.62rem] font-medium text-ink-3 sm:inline-block">
-            {BUILT_WITH.length} library groups
+            {t("credits.libraryGroups", { count: BUILT_WITH.length })}
           </span>
         </header>
         <div className="flex flex-wrap gap-2">
@@ -250,7 +241,7 @@ export function CreditsSection() {
                 {chip.name}
               </span>
               <span className="text-[0.62rem] leading-snug text-ink-3">
-                {chip.detail}
+                {t(chip.detailKey)}
               </span>
             </span>
           ))}
@@ -263,7 +254,7 @@ export function CreditsSection() {
           const Icon = category.icon;
           return (
             <section
-              key={category.title}
+              key={category.titleKey}
               className="flex flex-col rounded-xl border border-line bg-surface p-4 transition-shadow duration-200 hover:shadow-sm"
             >
               <header className="mb-3 flex items-center gap-2.5">
@@ -276,7 +267,7 @@ export function CreditsSection() {
                   <Icon className="size-3.5" />
                 </span>
                 <h4 className="text-[0.8rem] font-semibold leading-5 text-ink">
-                  {category.title}
+                  {t(category.titleKey)}
                 </h4>
               </header>
               <ul className="flex flex-col gap-3">
@@ -297,9 +288,9 @@ export function CreditsSection() {
                         {item.name}
                       </span>
                     )}
-                    {item.detail && (
+                    {item.detailKey && (
                       <p className="mt-0.5 text-[0.7rem] leading-relaxed text-ink-3">
-                        {item.detail}
+                        {t(item.detailKey)}
                       </p>
                     )}
                   </li>
@@ -314,12 +305,7 @@ export function CreditsSection() {
       <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
         <FileText className="mt-0.5 size-3.5 shrink-0 text-ink-3" />
         <p className="text-[0.65rem] leading-relaxed text-ink-3">
-          Full data provenance and regeneration notes are documented in{" "}
-          <code className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-[0.62rem] text-ink-2">
-            DATA_SOURCES.md
-          </code>{" "}
-          at the repository root. CubeForge itself is released under the MIT
-          license.
+          {t("credits.provenance", { file: "DATA_SOURCES.md" })}
         </p>
       </div>
     </div>

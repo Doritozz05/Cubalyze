@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ · Tanda 12A (Settings: General/Appearance/Timer) ✅ · Tanda 12B (Settings: Profile/Data/Scramble/Analysis) ✅ — todo en `feat/spanish-translation` · 12C pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ · Tanda 12A (Settings: General/Appearance/Timer) ✅ · Tanda 12B (Settings: Profile/Data/Scramble/Analysis) ✅ · Tanda 12C (Settings: Notifications/Shortcuts/SmartCube/Advanced/Credits + atoms) ✅ — **Settings completo** · Tanda 13 (Datos y superficies no-React) pendiente.
 
 ---
 
@@ -711,8 +711,28 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   vía `i18n.t("toast:...")` global en ProfileSection, estados como datos.
   Validado: tsc web+desktop 0, eslint 0, vitest 6/6, paridad 217/217, 0
   strings residuales.
-- **12C pendiente** (Notifications + Shortcuts + SmartCube + Advanced +
-  Credits + atoms).
+- **12C (Notifications + Shortcuts + SmartCube + Advanced + Credits +
+  atoms) hecha** ✅ — sub-namespaces `notifications.*`/`shortcuts.*`/
+  `smartCube.*`/`advanced.*`/`credits.*`/`placeholder.*` (322 hojas de
+  settings en total) + `common.ok` (nuevo). `NotificationsSection` (master,
+  sonidos, volumen, PB sound/banner, recordatorios de práctica y repaso con
+  TimeInput labels), `ShortcutsSection` (`SHORTCUT_DEFS` con
+  `labelKey`/`descriptionKey: ParseKeys<'settings'>` — 3 atajos + pressKey +
+  footer), `SmartCubeSection` (`STATUS_KEY: Record<ConnStatus, ParseKeys>` —
+  badge de estado localizado, cubo conectado, giroscopio, Conectar/
+  Desconectar), `AdvancedSection` (reset con AlertDialog, debug logs, beta,
+  inspector de almacenamiento con `STORAGE_LABEL_KEY` **y fallback al id
+  crudo** (fix del code review), envFlags con `labelKey` + plural
+  `activeCount`, clear storage), `CreditsSection` (CATEGORIES con
+  `titleKey`/`detailKey`, BUILT_WITH con `detailKey`, intro con
+  interpolación `{{linked}}`/`{{total}}`, plural `libraryGroups`, provenance
+  con `{{file}}` — nombres de librerías/datos NO traducidos),
+  `PlaceholderSection` (ready), `ColorPicker` (OK vía `i18n.t("common:ok")`).
+  Cross-namespace (cancel/ok) vía `i18n.t` global (patrón 7C/9). Code
+  review: hallazgo aplicado — fallback de storageType desconocido restaurado
+  (`STORAGE_LABEL_KEY[storageType] ? t(...) : storageType`). Validado: tsc
+  web+desktop 0, eslint 0, vitest 6/6, paridad 322/322, common OK, 0
+  strings residuales. **Con esto la Tanda 12 (Settings) queda COMPLETA.**
 
 ### Tanda 12C — Notifications + Shortcuts + SmartCube + Advanced + Credits + atoms (~1.450 l)
 - **Zonas**: `NotificationsSection` (sonidos, volumen, recordatorios),

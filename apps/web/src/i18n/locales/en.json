@@ -14,7 +14,8 @@
     "profile": "Profile",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
-    "widgets": "Widgets"
+    "widgets": "Widgets",
+    "ok": "OK"
   },
   "nav": {
     "title": "Navigation",
@@ -291,6 +292,143 @@
       "readError": "Failed to read file: {{message}}",
       "notJsonError": "This file is not a CubeForge JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.",
       "importError": "Import failed: {{message}}"
+    },
+    "notifications": {
+      "info": "Control every alert, sound and daily reminder the app can send.",
+      "master": "Notifications",
+      "masterHint": "Master switch. When off, every notification below is suppressed — no sounds, no banners, no daily reminders.",
+      "sounds": "Sounds",
+      "soundsHint": "Play sound effects — inspection voice cues ('8 seconds' / '12 seconds') and the PB victory fanfare.",
+      "volume": "Volume",
+      "volumeHint": "Master volume for inspection voice cues and the PB fanfare (0–100%).",
+      "pbVictorySound": "PB victory sound",
+      "pbVictorySoundHint": "Play a subtle victory fanfare when achieving a new Personal Best (Single, Ao5, Ao12).",
+      "pbBanner": "PB celebration banner",
+      "pbBannerHint": "Display a minimalist floating banner upon setting a new Personal Best.",
+      "practiceReminder": "Daily practice reminder",
+      "practiceReminderHint": "Get a gentle nudge at a set time each day to practice. Shows a browser notification (if allowed) and an in-app toast.",
+      "practiceTime": "Practice reminder time",
+      "reviewReminder": "Daily review reminder",
+      "reviewReminderHint": "Remind yourself to clear the SRS review queue (OLL/PLL/F2L flashcards) at a set time each day.",
+      "reviewTime": "Review reminder time"
+    },
+    "shortcuts": {
+      "info": "Customize keyboard shortcuts for the timer. Click a shortcut and press the desired key to rebind.",
+      "newScramble": "New scramble",
+      "newScrambleDesc": "Generate a fresh scramble",
+      "copyScramble": "Copy scramble",
+      "copyScrambleDesc": "Copy scramble to clipboard",
+      "cancelTimer": "Cancel timer",
+      "cancelTimerDesc": "Cancel / reset the timer",
+      "pressKey": "Press key...",
+      "footer": "Shortcuts are disabled when an input field is focused. The spacebar is reserved for the timer and cannot be rebound."
+    },
+    "smartCube": {
+      "info": "Bluetooth pairing, the gyroscope/IMU feed, and connection management for your Smart Cube.",
+      "connectedCube": "Connected cube",
+      "noCube": "No cube paired. Click Connect to search for your Smart Cube.",
+      "gyroAvailable": "Gyroscope/IMU available on this cube",
+      "gyroUnavailable": "No gyroscope/IMU on this cube",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "status": {
+        "connecting": "Connecting",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "reconnecting": "Reconnecting"
+      }
+    },
+    "advanced": {
+      "info": "Developer tools, data and debugging. Use with care.",
+      "resetAll": "Reset all options",
+      "resetAllHint": "Restore every preference — theme, timer, scramble, notifications — to its default value. Your solves, profile and training data are untouched.",
+      "reset": "Reset",
+      "resetTitle": "Reset all options?",
+      "resetDescription": "This restores every app preference to its default. Your solve data, profile and training progress are kept.",
+      "debugLogs": "Debug logs",
+      "debugLogsHint": "Enable verbose per-solve diagnostics in the browser console (move data, BLE audit, analysis pipeline). Mostly useful when reporting bugs.",
+      "betaFeatures": "Beta features",
+      "betaFeaturesHint": "Opt in to experimental features that are still in development. Turn this off if something feels unstable.",
+      "storageInspector": "Storage inspector",
+      "storageInspectorHint": "Where your data lives and how much space it uses.",
+      "refresh": "Refresh",
+      "backend": "Backend",
+      "used": "Used",
+      "quota": "Quota",
+      "dataLost": "Data lost on reload — export regularly",
+      "clearStorageHint": "Clearing app storage resets preferences & session id (a reload is required).",
+      "clearStorage": "Clear app storage",
+      "envFlags": "Environment flags",
+      "envFlagsHint": "Runtime environment detected by the app — useful when sharing bug reports.",
+      "devServer": "Dev server",
+      "desktopTauri": "Desktop (Tauri)",
+      "localhost": "Localhost",
+      "activeCount_one": "{{count}} active",
+      "activeCount_other": "{{count}} active",
+      "footer": "Changes here affect only this device. Reset options is safe — it never deletes solves, profile or training progress.",
+      "storage": {
+        "opfs": "Persistent (OPFS)",
+        "desktop": "Desktop (file)",
+        "memory": "In-memory (volatile)",
+        "unknown": "Unknown"
+      }
+    },
+    "credits": {
+      "introTitle": "Made possible by the community",
+      "introBody": "CubeForge is built on the work of the speedcubing community and a wide range of open-source projects — {{linked}} sources with links, {{total}} credits in total. We are grateful to everyone who shares algorithms, reconstructions and knowledge.",
+      "builtWithTitle": "Built with",
+      "libraryGroups_one": "{{count}} library group",
+      "libraryGroups_other": "{{count}} library groups",
+      "builtWithDetails": {
+        "d1": "Application framework and tooling.",
+        "d2": "Design system and UI primitives.",
+        "d3": "State, reactive streams, navigation, virtualization, workers.",
+        "d4": "Animation, charts and iconography.",
+        "d5": "Dates, flags, carousels and calendars.",
+        "d6": "Forms, drawers, toasts and utilities.",
+        "d7": "Theming and resizable layouts.",
+        "d8": "Local database engine (Apache-2.0 wrapper) and spreadsheet import/export (Apache-2.0)."
+      },
+      "categories": {
+        "algorithmDb": {
+          "title": "Algorithm database",
+          "i1": "Core algorithm database (PLL, OLL, F2L, COLL, WV, CLS, ELL, SV, Anti-PLL) with community votes and per-algorithm verification.",
+          "i2": "F2L algorithm dataset (LGPL-3.0) and the advanced F2L case taxonomy used across the app."
+        },
+        "reconstructions": {
+          "title": "Speedcubing reconstructions",
+          "i1": "Official and unofficial reconstructions, with a link back to every original solve.",
+          "i2": "Community reconstructions compiled by the speedcubing community (Brest and many reconstructors), credited per solve.",
+          "i3": "Competition metadata and results referenced in reconstruction records."
+        },
+        "solvers": {
+          "title": "Solvers & algorithms",
+          "i1": "The two-phase solver that powers the solve-analysis engine.",
+          "i2": "JavaScript port of Kociemba's algorithm (MIT / GPL-3.0)."
+        },
+        "rendering": {
+          "title": "3D & rendering",
+          "i1": "3D cube rendering engine (MIT).",
+          "i2": "Helper utilities for three.js."
+        },
+        "hardware": {
+          "title": "Hardware & connectivity",
+          "i1": "GAN 356i and Gen2/Gen3 series — the hardware supported through our Bluetooth integration.",
+          "i2": "Community reverse-engineering of the GAN BLE protocol (by afedotov), which our protocol implementation is based on.",
+          "i3": "Browser connectivity for smart-cube communication."
+        },
+        "community": {
+          "title": "Community & inspiration",
+          "i1": "The speedcubing community and its collective algorithm knowledge.",
+          "i2": "CFOP solve-split reference benchmarks.",
+          "i3": "Individual contributions are credited per solve and per algorithm throughout the app."
+        }
+      },
+      "provenance": "Full data provenance and regeneration notes are documented in {{file}} at the repository root. CubeForge itself is released under the MIT license."
+    },
+    "placeholder": {
+      "ready": "This section is ready for configuration. Check back soon for new options."
     }
   },
   "timer": {

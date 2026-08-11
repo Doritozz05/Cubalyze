@@ -14,7 +14,8 @@
     "profile": "Perfil",
     "lightMode": "Modo claro",
     "darkMode": "Modo oscuro",
-    "widgets": "Widgets"
+    "widgets": "Widgets",
+    "ok": "Aceptar"
   },
   "nav": {
     "title": "Navegación",
@@ -291,6 +292,143 @@
       "readError": "No se pudo leer el archivo: {{message}}",
       "notJsonError": "Este archivo no es una exportación JSON de CubeForge. Usa “Importar datos” para otros formatos, o vuelve a exportar con “Exportar todo (JSON)”.",
       "importError": "Importación fallida: {{message}}"
+    },
+    "notifications": {
+      "info": "Controla cada aviso, sonido y recordatorio diario que la app puede enviar.",
+      "master": "Notificaciones",
+      "masterHint": "Interruptor principal. Cuando está desactivado, todas las notificaciones de abajo se suprimen: sin sonidos, sin banners, sin recordatorios diarios.",
+      "sounds": "Sonidos",
+      "soundsHint": "Reproduce efectos de sonido: avisos de voz de inspección («8 segundos» / «12 segundos») y la fanfarria de victoria de PB.",
+      "volume": "Volumen",
+      "volumeHint": "Volumen general de los avisos de voz de inspección y la fanfarria de PB (0–100%).",
+      "pbVictorySound": "Sonido de victoria de PB",
+      "pbVictorySoundHint": "Reproduce una sutil fanfarria de victoria al lograr un nuevo récord personal (Simple, Ao5, Ao12).",
+      "pbBanner": "Banner de celebración de PB",
+      "pbBannerHint": "Muestra un banner flotante minimalista al establecer un nuevo récord personal.",
+      "practiceReminder": "Recordatorio diario de práctica",
+      "practiceReminderHint": "Recibe un aviso suave a una hora fija cada día para practicar. Muestra una notificación del navegador (si está permitido) y un toast en la app.",
+      "practiceTime": "Hora del recordatorio de práctica",
+      "reviewReminder": "Recordatorio diario de repaso",
+      "reviewReminderHint": "Recuerda vaciar la cola de repaso SRS (tarjetas de OLL/PLL/F2L) a una hora fija cada día.",
+      "reviewTime": "Hora del recordatorio de repaso"
+    },
+    "shortcuts": {
+      "info": "Personaliza los atajos de teclado del cronómetro. Haz clic en un atajo y pulsa la tecla deseada para reasignarlo.",
+      "newScramble": "Nueva scramble",
+      "newScrambleDesc": "Genera una scramble nueva",
+      "copyScramble": "Copiar scramble",
+      "copyScrambleDesc": "Copia la scramble al portapapeles",
+      "cancelTimer": "Cancelar cronómetro",
+      "cancelTimerDesc": "Cancelar / reiniciar el cronómetro",
+      "pressKey": "Pulsa una tecla...",
+      "footer": "Los atajos se desactivan cuando un campo de entrada tiene el foco. La barra espaciadora está reservada para el cronómetro y no se puede reasignar."
+    },
+    "smartCube": {
+      "info": "Emparejamiento Bluetooth, el flujo del giroscopio/IMU y la gestión de conexión de tu Smart Cube.",
+      "connectedCube": "Cubo conectado",
+      "noCube": "No hay ningún cubo emparejado. Haz clic en Conectar para buscar tu Smart Cube.",
+      "gyroAvailable": "Giroscopio/IMU disponible en este cubo",
+      "gyroUnavailable": "Sin giroscopio/IMU en este cubo",
+      "disconnect": "Desconectar",
+      "connect": "Conectar",
+      "connecting": "Conectando...",
+      "status": {
+        "connecting": "Conectando",
+        "connected": "Conectado",
+        "disconnected": "Desconectado",
+        "reconnecting": "Reconectando"
+      }
+    },
+    "advanced": {
+      "info": "Herramientas de desarrollo, datos y depuración. Úsalas con cuidado.",
+      "resetAll": "Restablecer todas las opciones",
+      "resetAllHint": "Restaura todas las preferencias (tema, cronómetro, scramble, notificaciones) a su valor por defecto. Tus resoluciones, perfil y datos de entrenamiento no se tocan.",
+      "reset": "Restablecer",
+      "resetTitle": "¿Restablecer todas las opciones?",
+      "resetDescription": "Esto restaura todas las preferencias de la app a su valor por defecto. Tus datos de resoluciones, perfil y progreso de entrenamiento se conservan.",
+      "debugLogs": "Registros de depuración",
+      "debugLogsHint": "Activa diagnósticos detallados por resolución en la consola del navegador (datos de movimientos, auditoría BLE, pipeline de análisis). Útil sobre todo al reportar errores.",
+      "betaFeatures": "Funciones beta",
+      "betaFeaturesHint": "Activa funciones experimentales que aún están en desarrollo. Desactívalo si algo se siente inestable.",
+      "storageInspector": "Inspector de almacenamiento",
+      "storageInspectorHint": "Dónde viven tus datos y cuánto espacio ocupan.",
+      "refresh": "Actualizar",
+      "backend": "Backend",
+      "used": "En uso",
+      "quota": "Cuota",
+      "dataLost": "Los datos se pierden al recargar: exporta con regularidad",
+      "clearStorageHint": "Vaciar el almacenamiento de la app restablece las preferencias y el id de sesión (se requiere recargar).",
+      "clearStorage": "Vaciar almacenamiento de la app",
+      "envFlags": "Indicadores de entorno",
+      "envFlagsHint": "Entorno de ejecución detectado por la app: útil al compartir informes de errores.",
+      "devServer": "Servidor de desarrollo",
+      "desktopTauri": "Escritorio (Tauri)",
+      "localhost": "Localhost",
+      "activeCount_one": "{{count}} activo",
+      "activeCount_other": "{{count}} activos",
+      "footer": "Los cambios aquí solo afectan a este dispositivo. Restablecer opciones es seguro: nunca borra resoluciones, perfil ni progreso de entrenamiento.",
+      "storage": {
+        "opfs": "Persistente (OPFS)",
+        "desktop": "Escritorio (archivo)",
+        "memory": "En memoria (volátil)",
+        "unknown": "Desconocido"
+      }
+    },
+    "credits": {
+      "introTitle": "Hecho posible por la comunidad",
+      "introBody": "CubeForge se construye sobre el trabajo de la comunidad de speedcubing y una amplia gama de proyectos de código abierto: {{linked}} fuentes con enlaces y {{total}} créditos en total. Estamos agradecidos con todos los que comparten algoritmos, reconstrucciones y conocimiento.",
+      "builtWithTitle": "Construido con",
+      "libraryGroups_one": "{{count}} grupo de librerías",
+      "libraryGroups_other": "{{count}} grupos de librerías",
+      "builtWithDetails": {
+        "d1": "Framework y herramientas de la aplicación.",
+        "d2": "Sistema de diseño y primitivas de UI.",
+        "d3": "Estado, flujos reactivos, navegación, virtualización, workers.",
+        "d4": "Animación, gráficos e iconografía.",
+        "d5": "Fechas, banderas, carruseles y calendarios.",
+        "d6": "Formularios, paneles, toasts y utilidades.",
+        "d7": "Temas y diseños redimensionables.",
+        "d8": "Motor de base de datos local (wrapper Apache-2.0) e importación/exportación de hojas de cálculo (Apache-2.0)."
+      },
+      "categories": {
+        "algorithmDb": {
+          "title": "Base de datos de algoritmos",
+          "i1": "Base de datos principal de algoritmos (PLL, OLL, F2L, COLL, WV, CLS, ELL, SV, Anti-PLL) con votos de la comunidad y verificación por algoritmo.",
+          "i2": "Conjunto de algoritmos F2L (LGPL-3.0) y la taxonomía avanzada de casos F2L usada en toda la app."
+        },
+        "reconstructions": {
+          "title": "Reconstrucciones de speedcubing",
+          "i1": "Reconstrucciones oficiales y no oficiales, con un enlace de vuelta a cada resolución original.",
+          "i2": "Reconstrucciones de la comunidad recopiladas por la comunidad de speedcubing (Brest y muchos reconstructores), acreditadas por resolución.",
+          "i3": "Metadatos y resultados de competiciones referenciados en los registros de reconstrucción."
+        },
+        "solvers": {
+          "title": "Solvers y algoritmos",
+          "i1": "El solver de dos fases que impulsa el motor de análisis de resoluciones.",
+          "i2": "Port a JavaScript del algoritmo de Kociemba (MIT / GPL-3.0)."
+        },
+        "rendering": {
+          "title": "3D y renderizado",
+          "i1": "Motor de renderizado 3D del cubo (MIT).",
+          "i2": "Utilidades auxiliares para three.js."
+        },
+        "hardware": {
+          "title": "Hardware y conectividad",
+          "i1": "GAN 356i y series Gen2/Gen3: el hardware compatible con nuestra integración Bluetooth.",
+          "i2": "Ingeniería inversa comunitaria del protocolo BLE de GAN (por afedotov), en la que se basa nuestra implementación del protocolo.",
+          "i3": "Conectividad del navegador para la comunicación con smart cubes."
+        },
+        "community": {
+          "title": "Comunidad e inspiración",
+          "i1": "La comunidad de speedcubing y su conocimiento colectivo de algoritmos.",
+          "i2": "Puntos de referencia de división de resolución CFOP.",
+          "i3": "Las contribuciones individuales se acreditan por resolución y por algoritmo en toda la app."
+        }
+      },
+      "provenance": "La procedencia completa de los datos y las notas de regeneración están documentadas en {{file}} en la raíz del repositorio. CubeForge se publica bajo la licencia MIT."
+    },
+    "placeholder": {
+      "ready": "Esta sección está lista para configurarse. Vuelve pronto para ver nuevas opciones."
     }
   },
   "timer": {

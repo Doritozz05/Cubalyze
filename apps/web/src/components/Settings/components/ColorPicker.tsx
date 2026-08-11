@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import i18n from "@/i18n";
 import { cn } from "@/lib/utils";
 
 export interface ColorPickerProps {
@@ -97,7 +98,7 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
               onClick={handleHexSubmit}
               className="rounded-md bg-ink px-2.5 py-1 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
             >
-              OK
+              {i18n.t("common:ok")}
             </button>
           </div>
 
