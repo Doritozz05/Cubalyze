@@ -2345,236 +2345,236 @@
         ]
       },
       "bld-old-pochmann": {
-        "title": "Old Pochmann Method",
-        "subtitle": "Solve edges and corners one piece at a time using the classic BLD method",
-        "description": "Learn the Old Pochmann method: use a fixed buffer piece and swap individual edges/corners using T-Perm and Y-Perm — the entry point to blindfolded solving.",
-        "theory": "OP uses a buffer piece (UR for edges, UBR for corners) and swaps it with the target piece using setup moves + T-Perm (edges) or modified Y-Perm (corners). Each piece is solved individually. This method teaches the fundamentals of BLD piece tracing.",
-        "exampleFormula": "T-Perm: R U R' U' R' F R2 U' R' U' R U R' F' — edge swap",
+        "title": "Método Old Pochmann",
+        "subtitle": "Resuelve aristas y esquinas de una en una con el método BLD clásico",
+        "description": "Aprende el método Old Pochmann: usa una pieza buffer fija e intercambia aristas/esquinas individuales con el T-Perm y el Y-Perm — el punto de entrada a la resolución a ciegas.",
+        "theory": "El OP usa una pieza buffer (UR para aristas, UBR para esquinas) y la intercambia con la pieza objetivo usando movimientos de preparación (setup) + T-Perm (aristas) o Y-Perm modificado (esquinas). Cada pieza se resuelve individualmente. Este método enseña los fundamentos del rastreo de piezas del BLD.",
+        "exampleFormula": "T-Perm: R U R' U' R' F R2 U' R' U' R U R' F' — intercambio de aristas",
         "drills": [
-          "Practice T-Perm and Y-Perm until they're automatic with eyes closed",
-          "Trace edge cycles on a solved cube with your eyes open first"
+          "Practica el T-Perm y el Y-Perm hasta que sean automáticos con los ojos cerrados",
+          "Rastrea ciclos de aristas en un cubo resuelto con los ojos abiertos primero"
         ]
       },
       "bld-memo-basics": {
-        "title": "BLD Memo Basics",
-        "subtitle": "Learn Speffz letter scheme and basic memorization for edges and corners",
-        "description": "Master the Speffz lettering scheme and create a basic memo system: assign letters to stickers, trace piece cycles, and create memorable words/images.",
-        "theory": "Speffz assigns one letter to each sticker (24 edge stickers = A-X, 24 corner stickers = A-X). Tracing cycles: start at buffer, follow the piece that belongs there, continue until back at buffer. Convert letter pairs into memorable images or words.",
+        "title": "Fundamentos de memo BLD",
+        "subtitle": "Aprende el esquema de letras Speffz y la memorización básica de aristas y esquinas",
+        "description": "Domina el esquema de letras Speffz y crea un sistema de memo básico: asigna letras a las pegatinas, rastrea ciclos de piezas y crea palabras/imágenes memorables.",
+        "theory": "Speffz asigna una letra a cada pegatina (24 pegatinas de arista = A-X, 24 de esquina = A-X). Rastreo de ciclos: empieza en el buffer, sigue la pieza que corresponde a esa posición y continúa hasta volver al buffer. Convierte los pares de letras en imágenes o palabras memorables.",
         "drills": [
-          "Practice tracing edge cycles on a solved cube (no memo needed)",
-          "Create your letter pair image list for all 576 combinations"
+          "Practica rastrear ciclos de aristas en un cubo resuelto (sin memo)",
+          "Crea tu lista de imágenes de pares de letras para las 576 combinaciones"
         ]
       },
       "bld-m2-op": {
-        "title": "M2 for Edges",
-        "subtitle": "Upgrade edge solving from Old Pochmann to M2 — faster, fewer moves per edge",
-        "description": "Replace Old Pochmann edges with the M2 method: use the DF buffer and M2 move to swap pieces, with special algorithms for M-slice targets.",
-        "theory": "M2 is significantly faster than OP for edges. Each edge is solved with M2 + setup moves (1-3 moves typically). M-slice targets (FU, BD, BU) require special handling. Combined with OP corners, M2/OP is the standard intermediate BLD method.",
+        "title": "M2 para aristas",
+        "subtitle": "Mejora la resolución de aristas de Old Pochmann a M2 — más rápida, menos movimientos por arista",
+        "description": "Sustituye las aristas de Old Pochmann por el método M2: usa el buffer DF y el movimiento M2 para intercambiar piezas, con algoritmos especiales para los objetivos del corte M.",
+        "theory": "El M2 es significativamente más rápido que el OP para aristas. Cada arista se resuelve con M2 + movimientos de preparación (normalmente 1-3 movimientos). Los objetivos del corte M (FU, BD, BU) requieren manejo especial. Combinado con esquinas OP, el M2/OP es el método BLD intermedio estándar.",
         "drills": [
-          "Practice M2 edge execution without memo until it's fluid",
-          "Learn the special M-slice target algorithms (FU, BD, BU cases)"
+          "Practica la ejecución M2 de aristas sin memo hasta que fluya",
+          "Aprende los algoritmos especiales de objetivos del corte M (casos FU, BD, BU)"
         ]
       },
       "bld-letter-pairs": {
-        "title": "Letter Pair Images",
-        "subtitle": "Build a complete letter pair image system for rapid and reliable memorization",
-        "description": "Develop a personal letter pair image system: a unique, vivid image for every two-letter combination (AA, AB, AC... XX) for fast memo encoding.",
-        "theory": "Letter pair images are the standard BLD memo technique. Each pair of letters becomes one mental image (e.g., QK = Quack, MB = Mobile). Images are placed in a memory palace (Roman room) or linked in a story. A good image system enables sub-30s memo.",
+        "title": "Imágenes de pares de letras",
+        "subtitle": "Construye un sistema completo de imágenes de pares de letras para una memorización rápida y fiable",
+        "description": "Desarrolla un sistema personal de imágenes de pares de letras: una imagen única y vívida para cada combinación de dos letras (AA, AB, AC... XX) para codificar la memo rápidamente.",
+        "theory": "Las imágenes de pares de letras son la técnica de memo BLD estándar. Cada par de letras se convierte en una imagen mental (p. ej., QK = Quack, MB = Móvil). Las imágenes se colocan en un palacio de la memoria (habitación romana) o se encadenan en una historia. Un buen sistema de imágenes permite memo sub-30s.",
         "drills": [
-          "Create images for all 576 letter pairs over 2-4 weeks",
-          "Practice memo-only: memorize, wait 5 minutes, recall without solving"
+          "Crea imágenes para los 576 pares de letras en 2-4 semanas",
+          "Practica solo memo: memoriza, espera 5 minutos y recuerda sin resolver"
         ]
       },
       "bld-audio-loops": {
-        "title": "Audio Loop Memo",
-        "subtitle": "Use rhythmic audio repetition for short-term edge memo during execution",
-        "description": "Apply audio loop memorization for edges: convert letter sequences into rhythmic sounds you repeat internally during corner execution.",
-        "theory": "Audio memo is for short-term recall (edges, executed second). Convert letter string into a rhythmic sound loop (e.g., 'KA-JE-PO-SU-TA' with rhythm). Repeating this internally during corner execution keeps it in phonological working memory. Enables sub-15s edge memo.",
+        "title": "Memo con bucle de audio",
+        "subtitle": "Usa la repetición rítmica de audio para la memo de aristas a corto plazo durante la ejecución",
+        "description": "Aplica la memorización con bucle de audio para las aristas: convierte las secuencias de letras en sonidos rítmicos que repites internamente durante la ejecución de las esquinas.",
+        "theory": "La memo de audio es para el recuerdo a corto plazo (aristas, que se ejecutan en segundo lugar). Convierte la cadena de letras en un bucle de sonido rítmico (p. ej., 'KA-YE-PO-SU-TA' con ritmo). Repetirlo internamente durante la ejecución de las esquinas lo mantiene en la memoria de trabajo fonológica. Permite memo de aristas sub-15s.",
         "drills": [
-          "Practice converting 6-8 letter strings into audio loops",
-          "Test: memo edges with audio, solve corners OP, recall edges from audio"
+          "Practica convertir cadenas de 6-8 letras en bucles de audio",
+          "Prueba: memo de aristas con audio, resuelve esquinas OP y recuerda las aristas desde el audio"
         ]
       },
       "bld-3-style": {
-        "title": "3-Style Commutators",
-        "subtitle": "Solve 3 pieces per algorithm using pure commutators — the fastest BLD method",
-        "description": "Transition to full 3-Style: solve 3 edges or 3 corners with one commutator algorithm (8-12 moves), replacing piece-by-piece methods entirely.",
-        "theory": "3-Style uses commutators of the form [A, B] = A B A' B' to cycle 3 pieces. Each cycle solves 2 pieces (buffer + 2 targets) with one algorithm. Full 3-Style requires ~800 algorithms. Most cubers learn a subset of the most common cases.",
-        "exampleFormula": "[R U R', D2] = R U R' D2 R U' R' D2 — corner commutator",
+        "title": "Conmutadores 3-Style",
+        "subtitle": "Resuelve 3 piezas por algoritmo con conmutadores puros — el método BLD más rápido",
+        "description": "Transición al 3-Style completo: resuelve 3 aristas o 3 esquinas con un algoritmo conmutador (8-12 movimientos), sustituyendo por completo los métodos pieza a pieza.",
+        "theory": "El 3-Style usa conmutadores de la forma [A, B] = A B A' B' para ciclar 3 piezas. Cada ciclo resuelve 2 piezas (buffer + 2 objetivos) con un algoritmo. El 3-Style completo requiere ~800 algoritmos. La mayoría de los cuberos aprenden un subconjunto de los casos más comunes.",
+        "exampleFormula": "[R U R', D2] = R U R' D2 R U' R' D2 — conmutador de esquinas",
         "drills": [
-          "Start with 3-Style corners (easier, fewer cases) then progress to edges",
-          "Learn 5 new commutators per week until you've covered the common cases"
+          "Empieza con esquinas en 3-Style (más fáciles, menos casos) y luego progresa a aristas",
+          "Aprende 5 conmutadores nuevos por semana hasta cubrir los casos comunes"
         ]
       },
       "bld-multi": {
         "title": "Multi-BLD",
-        "subtitle": "Solve multiple cubes blindfolded in one attempt — memory palace mastery",
-        "description": "Extend BLD to multiple cubes: memorize and solve 2+ cubes blindfolded consecutively using memory palaces and long-term memo techniques.",
-        "theory": "Multi-BLD scales BLD memo from short-term to long-term memory. Each cube gets its own memory palace location. Review system: memo cubes 1-N, then mentally review all before starting execution. World-class: 50+ cubes blindfolded.",
+        "subtitle": "Resuelve varios cubos a ciegas en un intento — dominio del palacio de la memoria",
+        "description": "Amplía el BLD a varios cubos: memoriza y resuelve 2+ cubos a ciegas consecutivamente usando palacios de la memoria y técnicas de memo a largo plazo.",
+        "theory": "El Multi-BLD escala la memo BLD de corto a largo plazo. Cada cubo tiene su propia ubicación en el palacio de la memoria. Sistema de repaso: memoriza los cubos 1-N y repasa mentalmente todos antes de empezar la ejecución. Nivel mundial: 50+ cubos a ciegas.",
         "drills": [
-          "Start with 2 cubes, add 1 per successful attempt",
-          "Build and practice with 5+ memory palace locations"
+          "Empieza con 2 cubos y añade 1 por intento con éxito",
+          "Construye y practica con 5+ ubicaciones de palacio de la memoria"
         ]
       },
       "bld-4bld-5bld": {
         "title": "BigBLD (4BLD/5BLD)",
-        "subtitle": "Extend BLD to 4x4 and 5x5 cubes with center, wing, and corner systems",
-        "description": "Apply BLD principles to 4x4 and 5x5 cubes: additional piece types (centers, wings, midges), specialized commutators, and expanded memo systems.",
-        "theory": "4BLD/5BLD add centers and wing edges to the standard BLD challenge. Centers require orientation awareness. 4x4 uses U2/r2 methods as a stepping stone from M2/OP. 5x5 adds midges. The memo load scales significantly — 5BLD requires ~100+ targets.",
+        "subtitle": "Amplía el BLD a cubos 4x4 y 5x5 con sistemas de centros, alas y esquinas",
+        "description": "Aplica los principios del BLD a cubos 4x4 y 5x5: tipos de piezas adicionales (centros, alas, medias aristas), conmutadores especializados y sistemas de memo ampliados.",
+        "theory": "El 4BLD/5BLD añade centros y aristas-alas al reto BLD estándar. Los centros requieren conciencia de la orientación. El 4x4 usa los métodos U2/r2 como trampolín desde el M2/OP. El 5x5 añade las medias aristas. La carga de memo escala de forma significativa — el 5BLD requiere ~100+ objetivos.",
         "drills": [
-          "Start 4BLD with U2 centers + r2 wings + OP corners",
-          "Progress to 3-Style for all piece types as you advance"
+          "Empieza 4BLD con centros U2 + alas r2 + esquinas OP",
+          "Progresa al 3-Style para todos los tipos de piezas a medida que avanzas"
         ]
       },
       "fmc-blockbuilding": {
-        "title": "FMC Blockbuilding",
-        "subtitle": "Construct efficient 2x2x2 and 2x2x3 blocks as the FMC foundation",
-        "description": "Learn systematic block building for FMC: start with a 2x2x2 block, expand to 2x2x3, then extend to F2L-1 — prioritizing low move counts over speed.",
-        "theory": "FMC block building is fundamentally different from speedsolving: you're optimizing for moves, not time. Start with the easiest 2x2x2 (look for pre-built pairs), expand to 2x2x3, then leave one F2L slot unsolved (F2L-1) to enable better last layer options.",
+        "title": "Construcción de bloques FMC",
+        "subtitle": "Construye bloques 2x2x2 y 2x2x3 eficientes como base del FMC",
+        "description": "Aprende la construcción de bloques sistemática para FMC: empieza con un bloque 2x2x2, amplía a 2x2x3 y extiende a F2L-1 — priorizando el bajo número de movimientos sobre la velocidad.",
+        "theory": "La construcción de bloques en FMC es fundamentalmente distinta del speedsolving: optimizas movimientos, no tiempo. Empieza con el 2x2x2 más fácil (busca pares pre-construidos), amplía a 2x2x3 y deja una ranura F2L sin resolver (F2L-1) para habilitar mejores opciones de última capa.",
         "drills": [
-          "Build 2x2x2 blocks from 10 scrambles, aim for ≤6 moves each",
-          "Expand each to 2x2x3 in ≤8 additional moves"
+          "Construye bloques 2x2x2 desde 10 scrambles, apuntando a ≤6 movimientos cada uno",
+          "Amplía cada uno a 2x2x3 en ≤8 movimientos adicionales"
         ]
       },
       "fmc-pseudo-blocks": {
-        "title": "Pseudo Blocks & Pre-Moves",
-        "subtitle": "Build blocks relative to offset centers using pre-moves for flexibility",
-        "description": "Use pre-moves and pseudo blocks to find shorter block solutions by temporarily ignoring center alignment.",
-        "theory": "A pre-move is applied BEFORE the scramble to shift piece positions. Pseudo blocks are solved relative to an offset center. These techniques dramatically expand the blockbuilding possibilities, often saving 2-4 moves on the 2x2x2 or 2x2x3 phase.",
+        "title": "Bloques pseudo y pre-movimientos",
+        "subtitle": "Construye bloques relativos a centros desplazados usando pre-movimientos para ganar flexibilidad",
+        "description": "Usa pre-movimientos y bloques pseudo para encontrar soluciones de bloque más cortas ignorando temporalmente la alineación de los centros.",
+        "theory": "Un pre-movimiento se aplica ANTES del scramble para desplazar las posiciones de las piezas. Los bloques pseudo se resuelven relativos a un centro desplazado. Estas técnicas amplían drásticamente las posibilidades de construcción de bloques, ahorrando a menudo 2-4 movimientos en la fase del 2x2x2 o el 2x2x3.",
         "drills": [
-          "Practice finding 2x2x2 pseudo blocks — compare move count with standard",
-          "Learn to write pre-moves and reverse them at the end of the solution"
+          "Practica encontrar bloques pseudo 2x2x2 — compara el número de movimientos con el estándar",
+          "Aprende a escribir pre-movimientos y a invertirlos al final de la solución"
         ]
       },
       "fmc-niss": {
-        "title": "NISS Technique",
-        "subtitle": "Normal-Inverse Scramble Switch: find solutions on both scramble directions",
-        "description": "Master NISS: solve on the inverse scramble to find opportunities invisible from the normal direction, switching back and forth for optimal solutions.",
-        "theory": "NISS is arguably the most powerful single technique in FMC. A sequence found on the inverse scramble, when reversed, is a valid sequence on the normal scramble. Switching lets you find continuations for both. Most sub-30 FMC solutions use NISS.",
+        "title": "Técnica NISS",
+        "subtitle": "Cambio normal-inverso: encuentra soluciones en ambas direcciones del scramble",
+        "description": "Domina el NISS: resuelve sobre el scramble inverso para encontrar oportunidades invisibles desde la dirección normal, alternando entre ambas para soluciones óptimas.",
+        "theory": "El NISS es probablemente la técnica individual más potente del FMC. Una secuencia encontrada en el scramble inverso, al invertirse, es una secuencia válida en el scramble normal. Alternar permite encontrar continuaciones para ambos. La mayoría de las soluciones FMC sub-30 usan NISS.",
         "drills": [
-          "Practice on a scramble: find continuations on both normal and inverse",
-          "Learn to write NISS notation: moves in parentheses are on inverse"
+          "Practica con un scramble: encuentra continuaciones en normal e inverso",
+          "Aprende la notación NISS: los movimientos entre paréntesis son en el inverso"
         ]
       },
       "fmc-insertions": {
-        "title": "Insertions (Commutator)",
-        "subtitle": "Insert commutators into a skeleton for move-cancellation optimization",
-        "description": "Build a skeleton (partial solution leaving 3-5 unsolved pieces), then insert commutators at optimal points to solve remaining pieces with maximum cancellation.",
-        "theory": "Instead of solving the last pieces at the end, insert a commutator earlier in the solve where it cancels moves with surrounding sequences. A well-placed insertion can solve 3 corners in 8 moves but cancel 4-6, netting only 2-4 moves. This is the key to sub-28 solves.",
+        "title": "Inserciones (conmutadores)",
+        "subtitle": "Inserta conmutadores en un esqueleto para optimizar la cancelación de movimientos",
+        "description": "Construye un esqueleto (solución parcial que deja 3-5 piezas sin resolver) e inserta conmutadores en los puntos óptimos para resolver las piezas restantes con la máxima cancelación.",
+        "theory": "En lugar de resolver las últimas piezas al final, inserta un conmutador antes en la resolución, donde cancele movimientos con las secuencias circundantes. Una inserción bien colocada puede resolver 3 esquinas en 8 movimientos pero cancelar 4-6, sumando solo 2-4 movimientos. Esta es la clave de las resoluciones sub-28.",
         "drills": [
-          "Practice building skeletons that leave exactly 3-5 corners",
-          "Use insertion finder tools to compare your insertions with optimal"
+          "Practica construir esqueletos que dejen exactamente 3-5 esquinas",
+          "Usa herramientas buscadoras de inserciones para comparar tus inserciones con las óptimas"
         ]
       },
       "fmc-edge-orientation": {
-        "title": "FMC Edge Orientation",
-        "subtitle": "Orient edges early to reduce the cube to a more manageable state",
-        "description": "Apply systematic edge orientation early in the FMC solution to restrict subsequent moves and simplify block building.",
-        "theory": "EO in FMC (similar to ZZ's first step) orients all edges so you only need R, L, U, D moves. This reduces the search space and often leads to shorter continuations. EO-first approaches are the foundation of modern DR-based FMC solving.",
+        "title": "Orientación de aristas en FMC",
+        "subtitle": "Orienta las aristas pronto para reducir el cubo a un estado más manejable",
+        "description": "Aplica la orientación de aristas sistemática al principio de la solución FMC para restringir los movimientos posteriores y simplificar la construcción de bloques.",
+        "theory": "La EO en FMC (similar al primer paso del ZZ) orienta todas las aristas para que solo necesites movimientos R, L, U, D. Esto reduce el espacio de búsqueda y a menudo lleva a continuaciones más cortas. Los enfoques EO-primero son la base de la resolución FMC moderna basada en DR.",
         "drills": [
-          "Practice identifying misoriented edges on a given scramble",
-          "Solve EO in ≤6 moves and note how it simplifies the next steps"
+          "Practica identificar aristas mal orientadas en un scramble dado",
+          "Resuelve la EO en ≤6 movimientos y observa cómo simplifica los pasos siguientes"
         ]
       },
       "fmc-domino-reduction": {
-        "title": "Domino Reduction (DR)",
-        "subtitle": "Reduce the cube to a 3-color 'domino' state — the modern standard for elite FMC",
-        "description": "Achieve Domino Reduction: transform the cube into a state solvable using only U, D, R2, L2, F2, B2 moves — the modern standard for elite FMC solving.",
-        "theory": "DR is the dominant technique in modern FMC. The solve is split: (1) reach DR state (typically 10-14 moves), (2) solve from DR (typically 10-14 moves). The DR state limits available moves, making the second phase highly constrained and efficient.",
+        "title": "Reducción a dominó (DR)",
+        "subtitle": "Reduce el cubo a un estado 'dominó' de 3 colores — el estándar moderno del FMC de élite",
+        "description": "Logra la Reducción a Dominó: transforma el cubo en un estado resoluble solo con movimientos U, D, R2, L2, F2, B2 — el estándar moderno de la resolución FMC de élite.",
+        "theory": "La DR es la técnica dominante del FMC moderno. La resolución se divide: (1) alcanzar el estado DR (normalmente 10-14 movimientos), (2) resolver desde DR (normalmente 10-14 movimientos). El estado DR limita los movimientos disponibles, haciendo la segunda fase muy restringida y eficiente.",
         "drills": [
-          "Practice reaching DR from random scrambles — compare move counts",
-          "Study DR solutions from top solvers (Sebastiano Tronto, Wong Chong Wen, Cale Schoon)"
+          "Practica alcanzar la DR desde scrambles aleatorios — compara el número de movimientos",
+          "Estudia soluciones DR de los mejores resolutores (Sebastiano Tronto, Wong Chong Wen, Cale Schoon)"
         ]
       },
       "fmc-htr": {
-        "title": "Half-Turn Reduction (HTR)",
-        "subtitle": "Further reduce from DR to a half-turn-only state for the finish",
-        "description": "From a DR state, find an HTR — a further reduced state where only half-turns (R2, L2, U2, D2, F2, B2) are needed to solve the cube.",
-        "theory": "HTR is an advanced extension of DR. From DR, solve corner permutation and some edges to reach a state solvable with only half-turns. The final phase from HTR to solved is extremely constrained, often yielding very short solutions.",
+        "title": "Reducción de medias vueltas (HTR)",
+        "subtitle": "Reduce aún más desde la DR a un estado de solo medias vueltas para el final",
+        "description": "Desde un estado DR, encuentra un HTR — un estado aún más reducido donde solo se necesitan medias vueltas (R2, L2, U2, D2, F2, B2) para resolver el cubo.",
+        "theory": "El HTR es una extensión avanzada de la DR. Desde la DR, resuelve la permutación de esquinas y algunas aristas para alcanzar un estado resoluble solo con medias vueltas. La fase final desde HTR a resuelto está extremadamente restringida, dando a menudo soluciones muy cortas.",
         "drills": [
-          "From a DR state, practice finding HTR continuations",
-          "Learn HTR triggers and common HTR patterns"
+          "Desde un estado DR, practica encontrar continuaciones HTR",
+          "Aprende los triggers y patrones HTR más comunes"
         ]
       },
       "fmc-full-mastery": {
-        "title": "FMC Full Mastery",
-        "subtitle": "Complete FMC proficiency: consistent sub-25 solutions with advanced techniques",
-        "description": "Achieve complete FMC mastery capable of consistent sub-25 (and often sub-23) solutions using DR, HTR, optimized insertions, and NISS.",
-        "theory": "Full FMC mastery combines all techniques: DR/HTR for efficient solves, NISS for expanded search, insertions for final optimization, and the ability to evaluate multiple approaches in 60 minutes. The world's best average under 23 moves in competition.",
+        "title": "Dominio completo del FMC",
+        "subtitle": "Soltura total del FMC: soluciones sub-25 constantes con técnicas avanzadas",
+        "description": "Logra el dominio completo del FMC capaz de soluciones sub-25 constantes (y a menudo sub-23) usando DR, HTR, inserciones optimizadas y NISS.",
+        "theory": "El dominio total del FMC combina todas las técnicas: DR/HTR para resoluciones eficientes, NISS para ampliar la búsqueda, inserciones para la optimización final y la capacidad de evaluar varios enfoques en 60 minutos. Los mejores del mundo promedian menos de 23 movimientos en competición.",
         "drills": [
-          "Complete 25 official FMC attempts (60 min each, no tools)",
-          "Analyze each attempt: where could you have saved moves?"
+          "Completa 25 intentos oficiales de FMC (60 min cada uno, sin herramientas)",
+          "Analiza cada intento: ¿dónde podrías haber ahorrado movimientos?"
         ]
       },
       "cube-theory-basics": {
-        "title": "Cube Theory Basics",
-        "subtitle": "Understand parity, permutation parity, and why certain states are impossible",
-        "description": "Learn fundamental cube theory: why a single edge flip or corner twist is impossible, the concept of parity, and how permutation parity constrains cube states.",
-        "theory": "The cube has mathematical invariants: total edge flip parity must be even, total corner twist must be a multiple of 3, and overall permutation parity must be even. Understanding these explains why certain OLL/PLL combinations occur and helps with algorithm design.",
+        "title": "Fundamentos de la teoría del cubo",
+        "subtitle": "Comprende la paridad, la paridad de permutación y por qué ciertos estados son imposibles",
+        "description": "Aprende la teoría fundamental del cubo: por qué es imposible un solo flip de arista o giro de esquina, el concepto de paridad y cómo la paridad de permutación restringe los estados del cubo.",
+        "theory": "El cubo tiene invariantes matemáticos: la paridad total de flips de aristas debe ser par, el giro total de esquinas debe ser múltiplo de 3 y la paridad global de permutación debe ser par. Comprender esto explica por qué ocurren ciertas combinaciones de OLL/PLL y ayuda en el diseño de algoritmos.",
         "drills": [
-          "Prove to yourself: can you flip exactly one edge? Twist one corner?",
-          "Calculate the number of possible cube states (43 quintillion)"
+          "Compruébalo tú mismo: ¿puedes voltear exactamente una arista? ¿Girar una esquina?",
+          "Calcula el número de estados posibles del cubo (43 trillones)"
         ]
       },
       "commutators-theory": {
-        "title": "Commutator Theory",
-        "subtitle": "Understand [A, B] = A B A' B' structure for creating custom algorithms",
-        "description": "Master commutator theory: design your own algorithms using the commutator/conjugate framework. Essential for BLD, FMC, and advanced method development.",
-        "theory": "A commutator [A, B] cycles pieces where A and B's affected areas overlap. Pure commutators affect only the intersection of affected pieces. Conjugates (setup + alg + undo setup) extend this to any position. This is the core concept behind 3-Style BLD and FMC insertions.",
-        "exampleFormula": "[R U R', D2] — the commutator swaps 3 corners",
+        "title": "Teoría de conmutadores",
+        "subtitle": "Comprende la estructura [A, B] = A B A' B' para crear algoritmos personalizados",
+        "description": "Domina la teoría de conmutadores: diseña tus propios algoritmos usando el marco de conmutadores/conjugados. Esencial para BLD, FMC y el desarrollo de métodos avanzados.",
+        "theory": "Un conmutador [A, B] cicla piezas donde las áreas afectadas de A y B se solapan. Los conmutadores puros afectan solo a la intersección de las piezas afectadas. Los conjugados (setup + algoritmo + deshacer setup) lo extienden a cualquier posición. Este es el concepto central detrás del 3-Style BLD y las inserciones FMC.",
+        "exampleFormula": "[R U R', D2] — el conmutador intercambia 3 esquinas",
         "drills": [
-          "Write 10 different commutators and trace which pieces they affect",
-          "Design a commutator that cycles 3 specific edges of your choice"
+          "Escribe 10 conmutadores diferentes y traza qué piezas afectan",
+          "Diseña un conmutador que cicle 3 aristas concretas que tú elijas"
         ]
       },
       "group-theory-cube": {
-        "title": "Group Theory & The Cube",
-        "subtitle": "Apply mathematical group theory to understand cube structure and solve optimization",
-        "description": "Study the cube as a mathematical group: generators, subgroups, cosets, and how God's Number (20) was proven using group theory and computer search.",
-        "theory": "The Rubik's cube group has order ~4.3×10^19. Key subgroups: the square group (only half-turns), the 2-gen group (RU). Understanding group structure enables optimal solving. Kociemba's two-phase algorithm exploits the subgroup chain: cube → H-group → solved.",
+        "title": "Teoría de grupos y el cubo",
+        "subtitle": "Aplica la teoría matemática de grupos para comprender la estructura del cubo y optimizar la resolución",
+        "description": "Estudia el cubo como grupo matemático: generadores, subgrupos, clases laterales y cómo se demostró el Número de Dios (20) con teoría de grupos y búsqueda computacional.",
+        "theory": "El grupo del cubo de Rubik tiene orden ~4,3×10^19. Subgrupos clave: el grupo cuadrado (solo medias vueltas) y el grupo 2-gen (RU). Comprender la estructura del grupo permite la resolución óptima. El algoritmo bifásico de Kociemba explota la cadena de subgrupos: cubo → grupo H → resuelto.",
         "drills": [
-          "Study the cube group's generators and how they relate to solving methods",
-          "Explore the square group by solving with only half-turns"
+          "Estudia los generadores del grupo del cubo y su relación con los métodos de resolución",
+          "Explora el grupo cuadrado resolviendo solo con medias vueltas"
         ]
       },
       "optimal-solving-theory": {
-        "title": "Optimal Solving Theory",
-        "subtitle": "Understand Kociemba's two-phase algorithm and how computers find optimal solutions",
-        "description": "Study how optimal solvers work: phase-based reduction, pruning tables, IDA* search, and why finding truly optimal solutions is computationally feasible.",
-        "theory": "Kociemba's algorithm reduces the cube in two phases: (1) to the H-group, (2) from H-group to solved. Pruning tables prune the search tree. This finds solutions ≤20 moves in milliseconds, enabling real-time analysis and scramble verification.",
+        "title": "Teoría de la resolución óptima",
+        "subtitle": "Comprende el algoritmo bifásico de Kociemba y cómo los ordenadores encuentran soluciones óptimas",
+        "description": "Estudia cómo funcionan los resolvedores óptimos: reducción por fases, tablas de poda, búsqueda IDA* y por qué encontrar soluciones realmente óptimas es computacionalmente factible.",
+        "theory": "El algoritmo de Kociemba reduce el cubo en dos fases: (1) al grupo H y (2) del grupo H a resuelto. Las tablas de poda recortan el árbol de búsqueda. Esto encuentra soluciones de ≤20 movimientos en milisegundos, permitiendo el análisis en tiempo real y la verificación de scrambles.",
         "drills": [
-          "Use a cube solver to analyze the optimal solution for your solves",
-          "Compare your cross solution to the optimal cross from a solver"
+          "Usa un resolvedor de cubo para analizar la solución óptima de tus resoluciones",
+          "Compara tu solución de cruz con la cruz óptima de un resolvedor"
         ]
       },
       "algorithm-optimization": {
-        "title": "Algorithm Optimization",
-        "subtitle": "Analyze, compare, and select optimal algs based on speed, ergonomics, and context",
-        "description": "Develop the skill to evaluate algorithms critically: compare alternatives, measure execution speed, assess regrip cost, and select the best option for YOUR hands.",
-        "theory": "An algorithm isn't just about move count — it's about finger trick compatibility, regrip count, transition smoothness from the previous step, and personal ergonomics. Top cubers often know 2-3 alternatives per case and choose based on hand position.",
+        "title": "Optimización de algoritmos",
+        "subtitle": "Analiza, compara y selecciona algoritmos óptimos según velocidad, ergonomía y contexto",
+        "description": "Desarrolla la habilidad de evaluar algoritmos críticamente: compara alternativas, mide la velocidad de ejecución, evalúa el coste de regrip y selecciona la mejor opción para TUS manos.",
+        "theory": "Un algoritmo no es solo número de movimientos — es compatibilidad con fingertricks, número de regrips, fluidez de transición desde el paso anterior y ergonomía personal. Los mejores cuberos suelen conocer 2-3 alternativas por caso y eligen según la posición de las manos.",
         "drills": [
-          "For each PLL, try all 3-4 common algs and pick the fastest for you",
-          "Audit your algorithm set: replace any alg with ≥1s execution time"
+          "Para cada PLL, prueba los 3-4 algoritmos comunes y elige el más rápido para ti",
+          "Audita tu set de algoritmos: sustituye cualquier algoritmo con ≥1s de ejecución"
         ]
       },
       "method-comparison": {
-        "title": "Method Comparison & Selection",
-        "subtitle": "Understand trade-offs between CFOP, Roux, ZZ, and Petrus for different goals",
-        "description": "Analyze the strengths and weaknesses of major methods: CFOP (algorithmic, high TPS), Roux (intuitive, low moves), ZZ (rotationless, oriented), Petrus (block building).",
-        "theory": "CFOP: highest TPS potential, largest community, most resources. Roux: lowest average move count (~48), intuitive, M-slice heavy. ZZ: rotationless, guaranteed edge orientation, natural ZBLL pairing. Petrus: excellent for FMC, builds spatial awareness.",
+        "title": "Comparación y selección de métodos",
+        "subtitle": "Comprende los trade-offs entre CFOP, Roux, ZZ y Petrus para distintos objetivos",
+        "description": "Analiza las fortalezas y debilidades de los métodos principales: CFOP (algorítmico, alto TPS), Roux (intuitivo, pocos movimientos), ZZ (sin rotaciones, orientado), Petrus (construcción de bloques).",
+        "theory": "CFOP: mayor potencial de TPS, comunidad más grande, más recursos. Roux: menor número medio de movimientos (~48), intuitivo, con mucho corte M. ZZ: sin rotaciones, orientación de aristas garantizada, emparejamiento natural con ZBLL. Petrus: excelente para FMC, desarrolla la conciencia espacial.",
         "drills": [
-          "Complete 25 solves with each method and compare your splits",
-          "Identify which method's strengths align with your natural abilities"
+          "Completa 25 resoluciones con cada método y compara tus tiempos por fase",
+          "Identifica qué fortalezas de método se alinean con tus habilidades naturales"
         ]
       },
       "elite-theory": {
-        "title": "Elite Theory & Innovation",
-        "subtitle": "Contribute to cubing knowledge: discover new algs, optimize methods, or develop novel techniques",
-        "description": "Reach the frontier of cubing theory where you can generate novel algorithms, propose method improvements, or contribute new techniques to the community.",
-        "theory": "The cutting edge of cubing theory involves algorithm generation (using computer search with CubeExplorer or ksolve), method hybridization (combining concepts from different methods), and technique innovation. This is where the next generation of world records comes from.",
+        "title": "Teoría de élite e innovación",
+        "subtitle": "Contribuye al conocimiento del cubing: descubre algoritmos nuevos, optimiza métodos o desarrolla técnicas novedosas",
+        "description": "Alcanza la frontera de la teoría del cubing donde puedas generar algoritmos novedosos, proponer mejoras de métodos o aportar técnicas nuevas a la comunidad.",
+        "theory": "La vanguardia de la teoría del cubing implica la generación de algoritmos (con búsqueda computacional en CubeExplorer o ksolve), la hibridación de métodos (combinando conceptos de distintos métodos) y la innovación técnica. Aquí es donde nace la próxima generación de récords mundiales.",
         "drills": [
-          "Use CubeExplorer or ksolve to generate optimized algs for a specific case",
-          "Propose and test a method hybridization idea over 100 solves"
+          "Usa CubeExplorer o ksolve para generar algoritmos optimizados para un caso concreto",
+          "Propón y prueba una idea de hibridación de métodos durante 100 resoluciones"
         ]
       }
     }

@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ · Tanda 8B (Skill Tree: ramas 1-4) ✅ · Tanda 8C (Skill Tree: ramas 5-9) ✅ · Tanda 8D (Skill Tree: ramas 10-13) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -437,8 +437,24 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
     drills), títulos EN residuales solo jerga intencional (EOLine, EOCross,
     LSE, CMLL…). Validado: tsc web+desktop 0, eslint 0, vitest 6/6, paridad
     en/es perfecta.
-  - **8E — Ramas 14-16 + cierre**: Blindfold (8) + FMC (8) + Theory (7) = 23
-    skills ≈ 150 campos + build de producción + escaneo global del namespace.
+  - **8E — Ramas 14-16 + cierre** ✅: Blindfold (8) + FMC (8) + Theory (7) =
+    23 skills ≈ 150 campos traducidos en es.json (script one-shot con merge
+    directo, luego borrado). Terminología consolidada (buffer, movimientos de
+    preparación/setup, rastreo de piezas, palacio de la memoria, bucle de
+    audio, esqueleto, cancelación de movimientos, tabla de poda, búsqueda
+    IDA*, Número de Dios, grupo cuadrado, grupo 2-gen, clases laterales) y
+    jerga mantenida en ambos idiomas: nombres de métodos y técnicas (Old
+    Pochmann, M2, Speffz, 3-Style, Multi-BLD, BigBLD, NISS, DR, HTR, EO,
+    F2L-1, T-Perm/Y-Perm, OLL/PLL, CFOP/Roux/ZZ/Petrus, CubeExplorer, ksolve,
+    Kociemba, Sebastiano Tronto, Wong Chong Wen, Cale Schoon, Rubik),
+    notación y fórmulas. Verificado: paridad estructural 23/23, 0 títulos EN
+    residuales (jerga: Multi-BLD, BigBLD).
+  - **Cierre de la tanda 8** ✅: los 130 skills y 16 ramas del Skill Tree
+    totalmente traducidos en es.json. Escaneo global del namespace: **0 nodos
+    con título aún EN**. Tamaño final de locales: en.json ~150 KB, es.json
+    ~168 KB (el coste de bundle ~100 KB extra ya estaba documentado y
+    aceptado). Validado en cada sub-tanda: tsc web+desktop 0, eslint 0,
+    vitest 6/6, paridad en/es perfecta; en 8E además build de producción OK.
 - **Dificultad**: alta por volumen (≈900 claves, ~40k palabras ES); por eso se
   divide en 5 sub-tandas con contenido acotado por ramas.
 - **Queda fuera**: coordenadas x/y, colores, iconos, XP, mastery y la lógica de
