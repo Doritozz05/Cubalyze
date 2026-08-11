@@ -358,7 +358,7 @@ export function ProfileSection() {
               <SelectItem key={c.code} value={c.code}>
                 <span className="flex items-center gap-2">
                   <CountryFlag country={c.code} withTooltip={false} />
-                  {c.name}
+                  {countryName(c.code)}
                 </span>
               </SelectItem>
             ))}

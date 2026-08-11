@@ -15,7 +15,8 @@
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "widgets": "Widgets",
-    "ok": "OK"
+    "ok": "OK",
+    "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics"
   },
   "nav": {
     "title": "Navigation",

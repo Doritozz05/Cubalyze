@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ · Tanda 12A (Settings: General/Appearance/Timer) ✅ · Tanda 12B (Settings: Profile/Data/Scramble/Analysis) ✅ · Tanda 12C (Settings: Notifications/Shortcuts/SmartCube/Advanced/Credits + atoms) ✅ — **Settings completo** · Tanda 13 (Datos y superficies no-React) pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ · Tanda 12A (Settings: General/Appearance/Timer) ✅ · Tanda 12B (Settings: Profile/Data/Scramble/Analysis) ✅ · Tanda 12C (Settings: Notifications/Shortcuts/SmartCube/Advanced/Credits + atoms) ✅ — **Settings completo** · Tanda 13 (Datos y superficies no-React) ✅ — **traducción COMPLETA** 🎉 — todo en `feat/spanish-translation`.
 
 ---
 
@@ -744,15 +744,83 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   `shortcuts.*`, `smartCube.*`, `advanced.*`, `credits.*`).
 - **Dificultad**: media; `CreditsSection` tiene textos largos.
 
-### Tanda 13 — Datos y superficies no-React
-- **Zonas**:
-  - `countries.ts` (253 países) → `Intl.DisplayNames` con el locale activo (sin traducción manual).
-  - PWA manifest (`vite.config.ts`) + `index.html` (título/meta) — evaluar multi-idioma o dejar en inglés base.
-  - `exportSolves.ts`/`importSolves.ts` (nombres de archivo, mensajes) · `subBadges.ts`.
-  - **packages/ui** (texto de componentes compartidos): `breadcrumb`, `carousel`, `dialog`, `pagination`, `sheet`, `sidebar`, `calendar` (meses), `chart` (tooltips de números).
-  - `audioSystem.ts` si no se hizo en tanda 4.
-- **Namespace**: `data`, `ui`.
-- **Dificultad**: media; `Intl.DisplayNames` elimina la traducción manual de países.
+### Tanda 13 — Datos y superficies no-React (3 sub-tandas pequeñas, la última tanda)
+- **Audit previo (medido)**: `audioSystem.ts` (TTS) ya se localizó en la tanda 4
+  (`i18n.language` + ns `audio`) — sin trabajo pendiente. La mayor parte de
+  esta tanda es un **audit que concluye «no se traduce»** con documentación;
+  el trabajo real es 13A (países) y 13B (título del documento).
+- **13A — Países con `Intl.DisplayNames`** (~1 archivo + 1 consumo):
+  - `countries.ts` (253 países, `COUNTRIES`/`COUNTRY_MAP` con nombres EN) — el
+    array de datos se mantiene (códigos + nombres EN como fallback), y
+    `countryName(code)` pasa a resolver con `new Intl.DisplayNames([locale],
+    { type: "region" }).of(code)` donde `locale = i18n.language` (mismo patrón
+    que `formatMemberSince` de la tanda 9), con memoización del `DisplayNames`
+    por idioma y fallback al nombre EN del mapa si el código no se resuelve.
+  - Consumidores: `CountryFlag` (tooltip + aria — ya pasa por `countryName`,
+    sin cambios) y `ProfileSection` (el `SelectItem` renderiza `{c.name}`
+    directo → cambiar a `countryName(c.code)` para que el selector de países
+    se vea en el idioma activo).
+  - **Decisión**: los nombres EN de `COUNTRIES` se mantienen como fallback
+    (no se borran); el `Intl.DisplayNames` elimina la traducción manual de 253
+    países y soporta en/es (y cualquier idioma futuro) gratis.
+- **13B — Documento y PWA** (~2 archivos):
+  - `i18n/index.ts`: ya sincroniza `<html lang>` vía `applyHtmlLang` +
+    listener de `languageChanged` (hecho en tandas previas). Se añade el
+    **título de pestaña localizado**: `document.title = i18n.t("common:appTitle")`
+    en el mismo listener (clave nueva `common.appTitle` en en/es).
+  - `index.html`: `lang="en"` + meta/og + `<title>` estáticos EN se **mantienen
+    como base SEO** (el `lang` runtime lo corrige `applyHtmlLang`; el título
+    runtime lo corrige 13B). El aria-label "Loading" del loader pre-React
+    también se mantiene EN (carga instantánea, no vale la pena).
+  - PWA manifest (`vite.config.ts`): `name`/`short_name`/`description` EN se
+    mantienen (contrato de instalación estático; el idioma de la app se elige
+    en runtime) — **documentado, no se toca**.
+- **13C — Audit de utilidades y packages/ui** (0-2 archivos, mayormente
+  documentación):
+  - `exportSolves.ts`/`importSolves.ts`: los headers CSV/JSON
+    ("No.,Time,Penalty,Scramble,Date,Method,Note", "No.;Time;Comment;…",
+    "Puzzle";"Category";…) son el **contrato de formato de archivo** — NO se
+    traducen (rompería la round-trip con csTimer/CubeForge y el parser).
+    "Unknown"/"Solves"/"Info" (fallback de sesión, nombre de hoja XLSX) son
+    datos de archivo — NO se traducen. El único error visible ("Failed to
+    read file") ya se muestra localizado por `DataSection` (`data.readError`,
+    tanda 12B).
+  - `subBadges.ts`: "Sub {n} · {puzzle}" es jerga WCA + nombres de puzzles =
+    datos (criterio de la tanda 9) — NO se traduce.
+  - `packages/ui`: `sidebar.tsx` (SheetTitle "Sidebar" + aria "Toggle
+    sidebar"), `pagination.tsx` (aria "Go to previous/next page"),
+    `command.tsx` (title default "Command palette") tienen strings EN en
+    props/aria por defecto — pero **ninguno de esos componentes se usa hoy en
+    la app** (la app tiene su propio `LeftSidebar`; no hay SidebarProvider,
+    ni Pagination ni CommandDialog en `apps/web`). Se documenta: si se usan
+    en el futuro, el consumidor debe pasar los labels traducidos desde su
+    `t()` (patrón `label` prop del resto de atoms) — los defaults EN quedan.
+- **Namespace**: `common` (solo `appTitle`).
+- **Dificultad**: baja; `Intl.DisplayNames` es el único mecanismo nuevo.
+- **Hecho (tanda 13 COMPLETA)** ✅ — 5 archivos + locales:
+  - **13A**: `countryName()` resuelve con `Intl.DisplayNames` memoizado por
+    idioma (`i18n.language`, guard de disponibilidad + try/catch por códigos
+    inválidos) con fallback al nombre EN del bundle y luego al código
+    (coherente con el doc-comment original y el render `name || code` de
+    `CountryFlag`). `ProfileSection` (SelectItem del selector de países)
+    pasó de `{c.name}` a `countryName(c.code)` — el trigger ya lo usaba.
+    `CountryFlag` añade `useTranslation()` (sin ns) para suscribirse al
+    cambio de idioma (hallazgo del code review: antes dependía de que un
+    padre usara el hook — frágil). Verificado en node: ES→"Spain"/"España",
+    US→"United States"/"Estados Unidos", JP→"Japan"/"Japón", XK→"Kosovo".
+  - **13B**: `common.appTitle` nuevo en en/es; `i18n/index.ts` añade
+    `applyDocumentTitle()` (con guard no-DOM) llamada en el init y en el
+    listener de `languageChanged` — la pestaña cambia de título con el
+    idioma. `index.html` y el manifest PWA se mantienen EN (base SEO +
+    contrato de instalación, documentado).
+  - **13C (audit)**: headers CSV/JSON = contrato de formato, "Unknown"/
+    "Solves"/"Info" = datos de archivo, "Sub {n}" = jerga WCA, packages/ui
+    (sidebar/pagination/command) sin uso en la app — todo documentado en
+    este bloque, sin cambios.
+  - Validado: tsc web+desktop 0, eslint 0, vitest 6/6, **paridad global
+    2208/2208**, build de producción OK. **Con la tanda 13 el plan de
+    internacionalización queda COMPLETO** — todas las superficies de la app
+    migradas a claves tipadas en/es.
 
 ---
 

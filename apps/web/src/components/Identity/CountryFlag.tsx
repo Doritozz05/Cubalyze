@@ -1,6 +1,7 @@
 "use client";
 
 import * as Flags from "country-flag-icons/react/3x2";
+import { useTranslation } from "react-i18next";
 import { countryName } from "@/utils/countries";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,9 @@ export function CountryFlag({
   className,
   label,
 }: CountryFlagProps) {
+  // Subscribe to language changes so the localized country name re-renders
+  // even when no parent uses useTranslation (tanda 13).
+  useTranslation();
   const code = (country ?? "").trim().toUpperCase();
   const name = countryName(code);
   const Flag = code ? FLAGS[code] : undefined;

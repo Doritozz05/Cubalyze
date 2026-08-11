@@ -15,7 +15,8 @@
     "lightMode": "Modo claro",
     "darkMode": "Modo oscuro",
     "widgets": "Widgets",
-    "ok": "Aceptar"
+    "ok": "Aceptar",
+    "appTitle": "CubeForge — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing"
   },
   "nav": {
     "title": "Navegación",
