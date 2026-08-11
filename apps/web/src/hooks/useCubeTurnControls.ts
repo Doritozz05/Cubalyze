@@ -16,15 +16,22 @@ import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
  *   • 1 finger drag ON a cube face  → the layer LIVE-TWISTS following the
  *     finger (arc-length tracking). On release it SNAPS 90° (animated) when
  *     the twist is at least `commitThresholdDeg`, otherwise it springs back.
+ *   • TAP on a cube face             → deterministic CLOCKWISE turn of that
+ *     face (csTimer's click behavior; every sticker owns its face move).
  *   • 1 finger drag on the background → orbit the camera (inertia included)
  *   • 2 fingers                      → pinch zoom
  *   • Keyboard (csTimer layout)      → animated face turns via `performAction`
  *
+ * Pointer-cancel (scroll / OS gesture) never commits — the twist springs
+ * back and the logical state is untouched.
+ *
  * The layer under the finger is resolved once on pointer-down (raycast →
  * `pickLayer`), then the engine's live-twist API drives its angle frame by
- * frame. The move is committed through `onAction` ONLY after the snap
- * animation completes, so the logical state (CubeState) always lands exactly
- * on the finished visual — no desync, deterministic by construction.
+ * frame. On release the logical move is committed through `onTurnCommitted`
+ * IMMEDIATELY (release time, before the snap animation finishes) so the
+ * state order always matches the visual order even when a keyboard move
+ * lands mid-snap; the snap then finishes on the engine, which applies its
+ * own matching logical update (snapTask). Deterministic by construction.
  *
  * The drag math (`pickLayer` + `layerTwistAngleDelta`) lives in the engine
  * package and is fully unit-tested there.
@@ -265,7 +272,7 @@ export function useCubeTurnControls({
   );
 
   const finishPointer = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>, allowCommit = true) => {
       const canvas = e.target as HTMLCanvasElement;
       const engine = engineRef.current;
       const drag = dragRef.current;
@@ -281,30 +288,40 @@ export function useCubeTurnControls({
 
       if (wasTurn && engine) {
         if (pointers.current.size === 0) {
-          // Release with a twist: commit past the threshold, else spring back.
+          // Release with a twist: commit past the threshold, tap = CW turn,
+          // otherwise spring back. On pointer-cancel (scroll/OS gesture) we
+          // NEVER commit — just spring back.
           drag.snapping = true;
+          const face = drag.pick!.face;
+          const angleSign = FACE_ROTATION_MAP[face].angleSign;
           const abs = Math.abs(drag.angleDeg);
-          if (abs >= commitThresholdDeg) {
-            const target = Math.sign(drag.angleDeg) * 90;
-            const face = drag.pick!.face;
-            const angleSign = FACE_ROTATION_MAP[face].angleSign;
+
+          // Only commit when the live twist is still active: a keyboard move
+          // that collided with the drag already snapped the twist away (its
+          // own turn is what the visuals show) — committing would record a
+          // phantom move.
+          const canCommit = allowCommit && engine.isLayerTwistActive();
+
+          let target: number | null = null;
+          if (canCommit && drag.totalDist < minSwipeDistance) {
+            // Tap on a face → deterministic clockwise turn of that face
+            // (csTimer's click behavior). Every sticker owns its face move, so
+            // this always resolves to the tapped sticker's layer and never
+            // needs a gesture direction.
+            onTurnCommittedRef.current?.({ kind: "turn", face, direction: 1 });
+            target = angleSign * 90;
+          } else if (canCommit && abs >= commitThresholdDeg) {
+            // Drag past the threshold → snap the full 90° in the dragged
+            // direction. Commit the logical move NOW (release time) so the
+            // state order matches the visual order even when a keyboard move
+            // lands during the snap, and the timer starts immediately.
+            target = Math.sign(drag.angleDeg) * 90;
             const direction = Math.round(target / (90 * angleSign)) as 1 | -1;
-            // Commit the logical move NOW (release time) and let the snap
-            // animation play out in the background. This keeps the state order
-            // identical to the visual order even when a keyboard move lands
-            // during the snap, and the timer starts immediately.
-            //
-            // Only commit when the live twist is still active: a keyboard move
-            // that collided with the drag already snapped the twist away (its
-            // own turn is what the visuals show) — committing would record a
-            // phantom move.
-            if (engine.isLayerTwistActive()) {
-              onTurnCommittedRef.current?.({ kind: "turn", face, direction });
-            }
-            void engine.finishLayerTwist(target, 90);
-          } else {
-            void engine.cancelLayerTwist(90);
+            onTurnCommittedRef.current?.({ kind: "turn", face, direction });
           }
+
+          if (target !== null) void engine.finishLayerTwist(target, 90);
+          else void engine.cancelLayerTwist(90);
         } else {
           // 2 → 1 fingers mid-turn: abort the twist; the remaining finger
           // starts a fresh gesture (handled below).
@@ -352,7 +369,7 @@ export function useCubeTurnControls({
         }
       }
     },
-    [commitThresholdDeg, engineRef],
+    [commitThresholdDeg, engineRef, minSwipeDistance],
   );
 
   return {
@@ -361,7 +378,8 @@ export function useCubeTurnControls({
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,
       onPointerUp: finishPointer,
-      onPointerCancel: finishPointer,
+      // A cancelled pointer (scroll / OS gesture) must never commit a turn.
+      onPointerCancel: (e) => finishPointer(e, false),
     },
   };
 }

@@ -41,10 +41,12 @@
     "help": "Controles",
     "helpShort": "Teclado y gestos",
     "gestureHint": "Desliza una cara para girarla · arrastra el fondo para orbitar · pellizca para hacer zoom",
+    "gestureHint": "Desliza una cara para girarla · arrastra el fondo para orbitar · pellizca para hacer zoom",
     "initializing": "Inicializando cubo 3D…",
     "unavailable": "Vista 3D no disponible: hay demasiadas vistas 3D abiertas en este dispositivo. Cierra otra vista 3D y vuelve a abrir.",
     "solved": "Resuelto",
     "nextSolveHint": "Pulsa Enter para la siguiente resolución",
+    "replayScramble": "Replicar scramble",
     "keys": {
       "title": "Controles de teclado",
       "subtitle": "Diseño de csTimer: tus índices descansan en U (F = U', J = U). En el sentido horario y antihorario son teclas separadas.",

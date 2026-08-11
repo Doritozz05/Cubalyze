@@ -102,8 +102,14 @@ export interface CubeEngineMove {
  * +1 = the face's clockwise move in cube notation.
  *
  * - `turn`   → one move on the face's layer (or the slice layer for M/E/S).
- * - `wide`   → two concurrent moves: the face layer + the paired slice
- *              turned the OPPOSITE way (r = R M', l = L M, u = U E', d = D E).
+ * - `wide`   → two concurrent moves: the face layer + the paired slice. A
+ *              wide move rotates BOTH layers as one rigid block, so the
+ *              slice gets the SAME physical angle as the face layer around
+ *              the shared axis. The notation primes (r = R M', u = U E',
+ *              d = D E) only describe the slice's own WCA convention in the
+ *              identity string — they never flip the physical direction
+ *              (matches math-core's `expandWideMoves`, so visual and state
+ *              stay in lockstep).
  * - `rotate` → all layers of the axis at once (a whole-cube rotation).
  */
 export function actionToMoves(action: CubeKeyAction, order: number = 3): CubeEngineMove[] {
@@ -131,7 +137,10 @@ export function actionToMoves(action: CubeKeyAction, order: number = 3): CubeEng
         {
           axis: sliceM.axis,
           layerValues: [sliceM.layerValue],
-          angle: -action.direction * sliceM.angleSign * 90,
+          // Rigid block: same physical angle as the face layer (NOT multiplied
+          // by the slice's own angleSign — the prime lives in the notation,
+          // not in the rotation direction).
+          angle: action.direction * faceM.angleSign * 90,
         },
       ];
     }

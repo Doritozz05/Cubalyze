@@ -85,10 +85,13 @@ export function rotateVectorByQuaternion(v: Vec3Like, q: QuatLike): Vec3Like {
 /**
  * Resolve a raycast hit on a cubie into the layer to turn.
  *
- * @param input.meshLocalNormal  The hit face normal in the MESH's local
- *   space (`hit.face.normal` from three.js). Sticker panels are flat planes,
- *   so this is exactly the sticker's outward direction (±X/±Y/±Z); box-core
- *   faces are axis-aligned too, so the same logic covers stickerless skins.
+ * @param input.meshLocalNormal  The hit face normal in the CUBIE's local
+ *   space. Three.js reports `hit.face.normal` in the mesh's own space — for
+ *   sticker panels that is always +Z (the shared ShapeGeometry), so callers
+ *   MUST first rotate it by the sticker mesh's own quaternion (see
+ *   Cube3DEngine.pickLayer) to recover the sticker's outward direction
+ *   (±X/±Y/±Z in cubie space). Box-core faces are axis-aligned with no
+ *   rotation, so the same logic covers stickerless skins.
  * @param input.cubieQuaternion  The owning cubie Group's quaternion. Because
  *   the cube root stays at identity in the simulator, rotating the mesh-local
  *   normal by the cubie's own quaternion yields the face in CUBE frame — so

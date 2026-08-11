@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, HelpCircle, RotateCcw, X } from "lucide-react";
+import { Check, HelpCircle, RefreshCcw, RotateCcw, X } from "lucide-react";
 import { useStore } from "zustand";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -153,10 +153,14 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         engine.resetCube();
         resetCamera();
         // Premium feel: play the scramble as animated moves. Falls back to an
-        // instant facelet sync when a token can't be animated (rare).
-        void engine.applyScrambleAnimated(scrambleStr, 110).then((ok) => {
-          if (!ok && engineRef.current) syncState();
-        });
+        // instant facelet sync when a token can't be animated, or when the
+        // animation unexpectedly fails (disposed engine, etc.).
+        void engine
+          .applyScrambleAnimated(scrambleStr, 110)
+          .then((ok) => {
+            if (!ok && engineRef.current) syncState();
+          })
+          .catch(() => syncState());
       }
       setPhase("idle");
       setElapsedMs(0);
@@ -281,6 +285,15 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   }, [startSolve]);
 
   /**
+   * Replay: re-apply the CURRENT scramble (cube → solved → scrambled again,
+   * animated) and reset the timer to idle, keeping the same sequence on
+   * screen so the solve can be redone.
+   */
+  const handleReplayScramble = useCallback(() => {
+    startSolve(scramble);
+  }, [scramble, startSolve]);
+
+  /**
    * Reset: cube back to SOLVED (undoes every move including whole-cube
    * rotations x/y/z) + camera rotation reset + timer back to idle. The
    * scramble stays on screen so the solve can be redone.
@@ -323,11 +336,26 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   return (
     <div className="relative flex h-full w-full min-h-0 flex-col">
-      {/* Top bar: scramble display only (timer + controls live on the canvas) */}
-      <div className="flex shrink-0 items-center gap-4 px-4 pt-3 sm:px-6">
+      {/* Top bar: scramble display + replay button (timer + canvas controls overlay) */}
+      <div className="flex shrink-0 items-start gap-4 px-4 pt-3 sm:px-6">
         <div className="min-w-0 flex-1">
           <ScrambleDisplay scramble={scramble} onRegenerate={handleRegenerate} />
         </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReplayScramble}
+              disabled={!isReady}
+              className="h-7 px-2 text-ink-2 hover:text-ink"
+              aria-label={t("replayScramble")}
+            >
+              <RefreshCcw className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("replayScramble")}</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Canvas */}

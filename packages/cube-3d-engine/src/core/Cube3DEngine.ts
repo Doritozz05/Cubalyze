@@ -7,7 +7,7 @@ import { parseScrambleMoves, scrambleMoveDurationMs } from '../animation/Scrambl
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable, type PhaseMask } from '@cubeforge/math-core';
-import { resolveLayerHit, type CubeLayerPick } from './layerPick';
+import { resolveLayerHit, rotateVectorByQuaternion, type CubeLayerPick } from './layerPick';
 import type { CubeOrientation, RotationEvent, CubeFace } from '@cubeforge/types';
 import type { Subscription } from 'rxjs';
 
@@ -491,12 +491,26 @@ export class Cube3DEngine {
     if (!obj) return null;
     const cubie = obj as Group;
 
+    // The raycast's `hit.face.normal` is the STICKER's geometry normal (+Z
+    // for every sticker panel — they all use the same flat ShapeGeometry).
+    // Sticker meshes carry their own rotation (CubeMeshFactory orients each
+    // face's panel: e.g. the U sticker is rotated -90° around X), so the
+    // cubie-local face axis is `geometryNormal × stickerQuaternion`. Without
+    // this step every sticker on the cube would resolve to the F face.
     const resolved = resolveLayerHit({
-      meshLocalNormal: {
-        x: hit.face.normal.x,
-        y: hit.face.normal.y,
-        z: hit.face.normal.z,
-      },
+      meshLocalNormal: rotateVectorByQuaternion(
+        {
+          x: hit.face.normal.x,
+          y: hit.face.normal.y,
+          z: hit.face.normal.z,
+        },
+        {
+          x: hit.object.quaternion.x,
+          y: hit.object.quaternion.y,
+          z: hit.object.quaternion.z,
+          w: hit.object.quaternion.w,
+        },
+      ),
       cubieQuaternion: cubie.quaternion,
     });
 

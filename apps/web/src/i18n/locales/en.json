@@ -45,6 +45,7 @@
     "unavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
     "solved": "Solved",
     "nextSolveHint": "Press Enter for the next solve",
+    "replayScramble": "Replay scramble",
     "keys": {
       "title": "Keyboard controls",
       "subtitle": "The csTimer layout: your index fingers rest on U (F = U', J = U). Clockwise and counterclockwise are separate keys.",
