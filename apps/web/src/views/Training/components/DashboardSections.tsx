@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubeforge/algorithm-db";
@@ -12,6 +13,82 @@ import type { PuzzleCategory } from "@/types";
 import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubeforge/training";
 import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel } from "@cubeforge/training";
 import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+
+/**
+ * Localized descriptions for the training catalog (tanda 13 sweep).
+ * The catalog data in packages (methodRegistry / training catalog) stays EN
+ * as the canonical source; these maps localize it at the render point.
+ * Keys are "<puzzleType>:<name-or-id>" for phases/subsets (ids/names repeat
+ * across 3x3 and 2x2) and the method name for methods. Unknown entries fall
+ * back to the catalog description.
+ */
+const METHOD_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
+  CFOP: "catalog.method.CFOP",
+  Roux: "catalog.method.Roux",
+  ZZ: "catalog.method.ZZ",
+  Petrus: "catalog.method.Petrus",
+  "Advanced 3x3": "catalog.method.Advanced 3x3",
+  Ortega: "catalog.method.Ortega",
+  CLL: "catalog.method.CLL",
+  EG: "catalog.method.EG",
+};
+
+const PHASE_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
+  "3x3x3:cross": "catalog.phase.3x3x3.cross",
+  "3x3x3:f2l": "catalog.phase.3x3x3.f2l",
+  "3x3x3:af2l": "catalog.phase.3x3x3.af2l",
+  "3x3x3:oll": "catalog.phase.3x3x3.oll",
+  "3x3x3:pll": "catalog.phase.3x3x3.pll",
+  "3x3x3:first-block": "catalog.phase.3x3x3.first-block",
+  "3x3x3:second-block": "catalog.phase.3x3x3.second-block",
+  "3x3x3:cmll": "catalog.phase.3x3x3.cmll",
+  "3x3x3:lse": "catalog.phase.3x3x3.lse",
+  "3x3x3:eoline": "catalog.phase.3x3x3.eoline",
+  "3x3x3:f2l-zz": "catalog.phase.3x3x3.f2l-zz",
+  "3x3x3:ll-zz": "catalog.phase.3x3x3.ll-zz",
+  "3x3x3:block-222": "catalog.phase.3x3x3.block-222",
+  "3x3x3:block-223": "catalog.phase.3x3x3.block-223",
+  "3x3x3:eo-petrus": "catalog.phase.3x3x3.eo-petrus",
+  "3x3x3:f2l-petrus": "catalog.phase.3x3x3.f2l-petrus",
+  "3x3x3:ll-petrus": "catalog.phase.3x3x3.ll-petrus",
+  "2x2x2:oll": "catalog.phase.2x2x2.oll",
+  "2x2x2:pbl": "catalog.phase.2x2x2.pbl",
+  "2x2x2:cll": "catalog.phase.2x2x2.cll",
+  "2x2x2:eg1": "catalog.phase.2x2x2.eg1",
+  "2x2x2:eg2": "catalog.phase.2x2x2.eg2",
+};
+
+const SUBSET_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
+  "3x3x3:F2L": "catalog.subset.3x3x3.F2L",
+  "3x3x3:Basic F2L": "catalog.subset.3x3x3.Basic F2L",
+  "3x3x3:Advanced F2L": "catalog.subset.3x3x3.Advanced F2L",
+  "3x3x3:OLL": "catalog.subset.3x3x3.OLL",
+  "3x3x3:PLL": "catalog.subset.3x3x3.PLL",
+  "3x3x3:COLL": "catalog.subset.3x3x3.COLL",
+  "3x3x3:Winter Variation": "catalog.subset.3x3x3.Winter Variation",
+  "3x3x3:VLS": "catalog.subset.3x3x3.VLS",
+  "3x3x3:ZBLL": "catalog.subset.3x3x3.ZBLL",
+  "3x3x3:CLS": "catalog.subset.3x3x3.CLS",
+  "3x3x3:Summer Variation": "catalog.subset.3x3x3.Summer Variation",
+  "3x3x3:ELL": "catalog.subset.3x3x3.ELL",
+  "3x3x3:Anti PLL": "catalog.subset.3x3x3.Anti PLL",
+  "3x3x3:CMLL": "catalog.subset.3x3x3.CMLL",
+  "3x3x3:LSE": "catalog.subset.3x3x3.LSE",
+  "3x3x3:First Block": "catalog.subset.3x3x3.First Block",
+  "3x3x3:Second Block": "catalog.subset.3x3x3.Second Block",
+  "3x3x3:OCLL": "catalog.subset.3x3x3.OCLL",
+  "3x3x3:EOLine": "catalog.subset.3x3x3.EOLine",
+  "3x3x3:ZZLL": "catalog.subset.3x3x3.ZZLL",
+  "3x3x3:2x2x2 Block": "catalog.subset.3x3x3.2x2x2 Block",
+  "3x3x3:2x2x3 Block": "catalog.subset.3x3x3.2x2x3 Block",
+  "3x3x3:EO": "catalog.subset.3x3x3.EO",
+  "2x2x2:OLL": "catalog.subset.2x2x2.OLL",
+  "2x2x2:PBL": "catalog.subset.2x2x2.PBL",
+  "2x2x2:CLL": "catalog.subset.2x2x2.CLL",
+  "2x2x2:EG": "catalog.subset.2x2x2.EG",
+  "2x2x2:EG-1": "catalog.subset.2x2x2.EG-1",
+  "2x2x2:EG-2": "catalog.subset.2x2x2.EG-2",
+};
 import {
   Select,
   SelectContent,
@@ -150,6 +227,7 @@ export function FlatDashboard({
 }) {
   const { t } = useTranslation("training");
   const method = METHODS.find((m) => m.id === activeMethodId);
+  const methodDescKey = method ? METHOD_DESC_KEY[method.name] : undefined;
   const phases = method ? getPhasesForMethod(method.name) : [];
   const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
 
@@ -294,7 +372,7 @@ export function FlatDashboard({
                 </div>
                 <div>
                   <h2 className="text-[0.82rem] font-semibold text-ink">{method.name}</h2>
-                  <p className="text-[0.62rem] text-ink-3">{method.description}</p>
+                  <p className="text-[0.62rem] text-ink-3">{methodDescKey ? t(methodDescKey) : method.description}</p>
                 </div>
               </div>
               {phases.length > 0 && (
@@ -333,6 +411,7 @@ export function FlatDashboard({
                   <ExerciseCard
                     key={phase.id}
                     phase={phase}
+                    puzzleType={method.puzzleType}
                     onDrill={() => {
                       const sid = findSubsetId(method.id, phase.id);
                       if (sid) onDrill(method.id, phase.id, sid);
@@ -373,6 +452,7 @@ export function FlatDashboard({
                     key={subset.id}
                     subset={subset}
                     caseCount={caseCount}
+                    puzzleType={method.puzzleType}
                     onDrill={() => onDrill(method.id, "", subset.id)}
                     onRecognize={() => onRecognize(method.id, "", subset.id)}
                   />
@@ -436,16 +516,19 @@ export function FlatDashboard({
 export function SubsetCard({
   subset,
   caseCount,
+  puzzleType,
   onDrill,
   onRecognize,
 }: {
   subset: AlgorithmSubset;
   caseCount: number;
+  puzzleType: string;
   onDrill: () => void;
   onRecognize: () => void;
 }) {
   const { t } = useTranslation("training");
   const disabled = caseCount <= 0;
+  const descKey = SUBSET_DESC_KEY[`${puzzleType}:${subset.name}`];
   return (
     <motion.div
       whileTap={disabled ? undefined : { scale: 0.98 }}
@@ -467,7 +550,7 @@ export function SubsetCard({
           </span>
         </div>
       </div>
-      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{subset.description}</p>
+      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{descKey ? t(descKey) : subset.description}</p>
       <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:pt-2">
         <button
           onClick={onDrill}
@@ -494,6 +577,7 @@ export function SubsetCard({
 
 export function ExerciseCard({
   phase,
+  puzzleType,
   onDrill,
   onRecognize,
   onPracticeMode,
@@ -501,6 +585,7 @@ export function ExerciseCard({
   phaseModes,
 }: {
   phase: PhaseDef;
+  puzzleType: string;
   onDrill: () => void;
   onRecognize: () => void;
   onPracticeMode: (modeId: string) => void;
@@ -510,6 +595,7 @@ export function ExerciseCard({
   const { t } = useTranslation("training");
   const dotColor = PHASE_DOT[phase.id] ?? "bg-ink-3";
   const Icon = phase.icon;
+  const descKey = PHASE_DESC_KEY[`${puzzleType}:${phase.id}`];
 
   return (
     <motion.div
@@ -528,7 +614,7 @@ export function ExerciseCard({
           <span className="nums text-[0.6rem] text-ink-3">{phase.hasAlgorithms ? t("algorithmic") : t("intuitive")}</span>
         </div>
       </div>
-      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{phase.description}</p>
+      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{descKey ? t(descKey) : phase.description}</p>
       <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-3 max-lg:gap-1.5 max-lg:pt-2">
         {phase.hasAlgorithms ? (
           <>

@@ -480,6 +480,14 @@
     "applyScramble3d": "Apply scramble to 3D cube",
     "reset3d": "Reset cube pieces to solved state",
     "calibrateGyro": "Calibrate gyroscope orientation",
+    "calibrate": "Calibrate",
+    "calibrateHint": "Calibrate gyroscope (white top, green front)",
+    "waitingForCube": "Waiting for cube...",
+    "waitingShort": "Waiting...",
+    "init3d": "Initializing 3D Cube...",
+    "init3dShort": "Initializing...",
+    "viewUnavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
+    "viewUnavailableShort": "3D unavailable — too many 3D views open",
     "close3d": "Close 3D view"
   },
   "stats": {
@@ -1464,7 +1472,82 @@
     },
     "method": "Method",
     "allMethods": "All methods",
-    "backToTraining": "Back to training"
+    "backToTraining": "Back to training",
+    "catalog": {
+      "method": {
+        "CFOP": "Cross, F2L, OLL, PLL — the most popular speedsolving method.",
+        "Roux": "Blockbuilding method with CMLL and LSE. Very efficient move count.",
+        "ZZ": "Edge orientation first, then blockbuilding. No cube rotations needed.",
+        "Petrus": "Blockbuilding method: 2x2x2 → 2x2x3 → EO → F2L → LL.",
+        "Advanced 3x3": "Advanced 3×3 algorithm sets from other methods — ELL (CFCE), CLS (MGLS), Summer Variation (ZZ/Petrus), Anti-PLL (1LLL practice).",
+        "Ortega": "Most popular 2×2 method: face → OLL → PBL.",
+        "CLL": "Corners of Last Layer — 42 cases when first layer is solved.",
+        "EG": "Extended CLL: EG-1 (adjacent swap) and EG-2 (diagonal swap) when first face is solved."
+      },
+      "phase": {
+        "3x3x3": {
+          "cross": "Solve the cross efficiently. Fewer moves, faster solutions.",
+          "f2l": "Basic first two layers — 41 algorithmic pairs.",
+          "af2l": "Advanced first two layers — 126 trapped & keyhole cases.",
+          "oll": "Orient last layer — 57 cases to master.",
+          "pll": "Permute last layer — 21 cases for the final step.",
+          "first-block": "Build a 1×2×3 block on the left.",
+          "second-block": "Build the right 1×2×3 block efficiently.",
+          "cmll": "Corners of last layer — 42 cases.",
+          "lse": "Last six edges — EO, UL/UR, M-slice.",
+          "eoline": "Edge Orientation + Line. No rotations needed.",
+          "f2l-zz": "First two layers using only R, U, L moves.",
+          "ll-zz": "OCLL, COLL, ZZLL — last layer for ZZ.",
+          "block-222": "Build the first 2×2×2 block.",
+          "block-223": "Extend to a 2×2×3 block.",
+          "eo-petrus": "Edge Orientation after blocks.",
+          "f2l-petrus": "Finish F2L after EO.",
+          "ll-petrus": "COLL + EPLL for Petrus last layer."
+        },
+        "2x2x2": {
+          "oll": "Orient top face — 7 cases to master.",
+          "pbl": "Permute Both Layers — 6 cases for 2×2.",
+          "cll": "Corners of Last Layer — 42 cases for 2×2.",
+          "eg1": "Bottom layer adjacent swap — 42 cases.",
+          "eg2": "Bottom layer diagonal swap — 42 cases."
+        }
+      },
+      "subset": {
+        "3x3x3": {
+          "F2L": "First Two Layers — algorithmic pairs for each slot.",
+          "Basic F2L": "41 standard F2L cases (easy to advanced pairs).",
+          "Advanced F2L": "126 Advanced F2L cases (BirdF2L patterns: trapped corner, trapped edge, both trapped).",
+          "OLL": "Orientation of Last Layer — 57 cases to orient all last layer pieces.",
+          "PLL": "Permutation of Last Layer — 21 cases to permute the last layer pieces.",
+          "COLL": "Corners of Last Layer — orient + permute corners when edges are oriented.",
+          "Winter Variation": "Orient LL corners while inserting last F2L pair. 27 cases.",
+          "VLS": "Valk Last Slot — orient LL edges while inserting last F2L pair.",
+          "ZBLL": "Zborowski-Bruchem Last Layer — 493 cases solving LL in one alg when edges are oriented.",
+          "CLS": "Corners Last Slot — solve the last slot while orienting the last layer corners. 97 cases.",
+          "Summer Variation": "Orient last layer corners while inserting the last pair with the edge misoriented. 27 cases.",
+          "ELL": "Edges of the Last Layer — 25 cases solving the LL edges when the corners are solved.",
+          "Anti PLL": "Anti-PLL — 22 cases of the PLL algs from the opposite angle, for 2-sided recognition practice.",
+          "CMLL": "Corners of Last Layer (Roux) — 42 cases ignoring M-slice.",
+          "LSE": "Last Six Edges — EO, UL/UR, M-slice finish.",
+          "First Block": "Roux First Block techniques and patterns.",
+          "Second Block": "Roux Second Block techniques and patterns.",
+          "OCLL": "Orient Corners of Last Layer (ZZ) — 7 cases (edges already oriented).",
+          "EOLine": "Edge Orientation + Line placement.",
+          "ZZLL": "ZZ Last Layer — ZBLL subset for ZZ.",
+          "2x2x2 Block": "Building the first 2x2x2 block.",
+          "2x2x3 Block": "Extending to a 2x2x3 block.",
+          "EO": "Edge orientation for Petrus."
+        },
+        "2x2x2": {
+          "OLL": "Orient the last face (7 cases for 2×2).",
+          "PBL": "Permute Both Layers — solve the cube after OLL.",
+          "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
+          "EG": "Extended CLL — 128 cases total.",
+          "EG-1": "Bottom layer has adjacent swap. 42 cases.",
+          "EG-2": "Bottom layer has diagonal swap. 42 cases."
+        }
+      }
+    }
   },
   "skillTree": {
     "title": "Speedcubing Skill Tree",

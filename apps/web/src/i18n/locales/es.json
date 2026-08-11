@@ -480,6 +480,14 @@
     "applyScramble3d": "Aplicar scramble al cubo 3D",
     "reset3d": "Restablecer las piezas del cubo a su estado resuelto",
     "calibrateGyro": "Calibrar la orientación del giroscopio",
+    "calibrate": "Calibrar",
+    "calibrateHint": "Calibrar el giroscopio (blanco arriba, verde al frente)",
+    "waitingForCube": "Esperando el cubo...",
+    "waitingShort": "Esperando...",
+    "init3d": "Inicializando cubo 3D...",
+    "init3dShort": "Inicializando...",
+    "viewUnavailable": "Vista 3D no disponible: hay demasiadas vistas 3D abiertas en este dispositivo. Cierra otra vista 3D y vuelve a abrirlo.",
+    "viewUnavailableShort": "3D no disponible: hay demasiadas vistas 3D abiertas",
     "close3d": "Cerrar vista 3D"
   },
   "stats": {
@@ -1464,7 +1472,82 @@
     },
     "method": "Método",
     "allMethods": "Todos los métodos",
-    "backToTraining": "Volver al entrenamiento"
+    "backToTraining": "Volver al entrenamiento",
+    "catalog": {
+      "method": {
+        "CFOP": "Cross, F2L, OLL, PLL: el método de speedcubing más popular.",
+        "Roux": "Método de construcción de bloques con CMLL y LSE. Conteo de movimientos muy eficiente.",
+        "ZZ": "Orientación de aristas primero y luego construcción de bloques. Sin rotaciones del cubo.",
+        "Petrus": "Método de construcción de bloques: 2x2x2 → 2x2x3 → EO → F2L → LL.",
+        "Advanced 3x3": "Conjuntos de algoritmos avanzados de 3×3 de otros métodos: ELL (CFCE), CLS (MGLS), Summer Variation (ZZ/Petrus), Anti-PLL (práctica de 1LLL).",
+        "Ortega": "El método de 2×2 más popular: cara → OLL → PBL.",
+        "CLL": "Esquinas de la última capa: 42 casos cuando la primera capa está resuelta.",
+        "EG": "CLL extendido: EG-1 (intercambio adyacente) y EG-2 (intercambio diagonal) cuando la primera cara está resuelta."
+      },
+      "phase": {
+        "3x3x3": {
+          "cross": "Resuelve la cruz con eficiencia. Menos movimientos, soluciones más rápidas.",
+          "f2l": "Primeras dos capas básicas: 41 pares algorítmicos.",
+          "af2l": "Primeras dos capas avanzadas: 126 casos de pieza atrapada y keyhole.",
+          "oll": "Orienta la última capa: 57 casos por dominar.",
+          "pll": "Permuta la última capa: 21 casos para el paso final.",
+          "first-block": "Construye un bloque 1×2×3 a la izquierda.",
+          "second-block": "Construye el bloque 1×2×3 derecho con eficiencia.",
+          "cmll": "Esquinas de la última capa: 42 casos.",
+          "lse": "Últimas seis aristas: EO, UL/UR, M-slice.",
+          "eoline": "Orientación de aristas + Line. Sin rotaciones.",
+          "f2l-zz": "Primeras dos capas usando solo movimientos R, U, L.",
+          "ll-zz": "OCLL, COLL, ZZLL: última capa para ZZ.",
+          "block-222": "Construye el primer bloque 2×2×2.",
+          "block-223": "Amplía a un bloque 2×2×3.",
+          "eo-petrus": "Orientación de aristas después de los bloques.",
+          "f2l-petrus": "Termina el F2L después de EO.",
+          "ll-petrus": "COLL + EPLL para la última capa de Petrus."
+        },
+        "2x2x2": {
+          "oll": "Orienta la cara superior: 7 casos por dominar.",
+          "pbl": "Permuta ambas capas: 6 casos para 2×2.",
+          "cll": "Esquinas de la última capa: 42 casos para 2×2.",
+          "eg1": "Intercambio adyacente en la capa inferior: 42 casos.",
+          "eg2": "Intercambio diagonal en la capa inferior: 42 casos."
+        }
+      },
+      "subset": {
+        "3x3x3": {
+          "F2L": "Primeras dos capas: pares algorítmicos para cada ranura.",
+          "Basic F2L": "41 casos F2L estándar (pares de fáciles a avanzados).",
+          "Advanced F2L": "126 casos F2L avanzados (patrones de BirdF2L: esquina atrapada, arista atrapada, ambas atrapadas).",
+          "OLL": "Orientación de la última capa: 57 casos para orientar todas las piezas.",
+          "PLL": "Permutación de la última capa: 21 casos para permutar las piezas.",
+          "COLL": "Esquinas de la última capa: orienta y permuta las esquinas cuando las aristas están orientadas.",
+          "Winter Variation": "Orienta las esquinas de la última capa al insertar el último par F2L. 27 casos.",
+          "VLS": "Valk Last Slot: orienta las aristas de la última capa al insertar el último par F2L.",
+          "ZBLL": "Zborowski-Bruchem Last Layer: 493 casos que resuelven la última capa con un algoritmo cuando las aristas están orientadas.",
+          "CLS": "Corners Last Slot: resuelve la última ranura orientando las esquinas de la última capa. 97 casos.",
+          "Summer Variation": "Orienta las esquinas de la última capa al insertar el último par con la arista desorientada. 27 casos.",
+          "ELL": "Aristas de la última capa: 25 casos que resuelven las aristas cuando las esquinas están resueltas.",
+          "Anti PLL": "Anti-PLL: 22 casos de los algoritmos PLL desde el ángulo opuesto, para practicar el reconocimiento desde dos lados.",
+          "CMLL": "Esquinas de la última capa (Roux): 42 casos ignorando el M-slice.",
+          "LSE": "Últimas seis aristas: final con EO, UL/UR y M-slice.",
+          "First Block": "Técnicas y patrones del Primer Bloque de Roux.",
+          "Second Block": "Técnicas y patrones del Segundo Bloque de Roux.",
+          "OCLL": "Orienta las esquinas de la última capa (ZZ): 7 casos (aristas ya orientadas).",
+          "EOLine": "Orientación de aristas + colocación de la Line.",
+          "ZZLL": "ZZ Last Layer: subconjunto de ZBLL para ZZ.",
+          "2x2x2 Block": "Construcción del primer bloque 2x2x2.",
+          "2x2x3 Block": "Ampliación a un bloque 2x2x3.",
+          "EO": "Orientación de aristas para Petrus."
+        },
+        "2x2x2": {
+          "OLL": "Orienta la última cara (7 casos para 2×2).",
+          "PBL": "Permuta ambas capas: resuelve el cubo después de OLL.",
+          "CLL": "Esquinas de la última capa: 42 casos que orientan y permutan las esquinas cuando la primera capa está resuelta.",
+          "EG": "CLL extendido: 128 casos en total.",
+          "EG-1": "La capa inferior tiene un intercambio adyacente. 42 casos.",
+          "EG-2": "La capa inferior tiene un intercambio diagonal. 42 casos."
+        }
+      }
+    }
   },
   "skillTree": {
     "title": "Árbol de habilidades de speedcubing",
