@@ -57,8 +57,9 @@ export interface NavGroup {
 
 /**
  * Nav rail sections. "Main" holds the live stage (timer + 3D cube);
- * "Insights" holds the unified stats + analysis dashboard that takes over
- * the stage (sidebar of solves + overview / per-solve analysis).
+ * "Progress" holds the unified stats + analysis dashboard (Insights) that
+ * takes over the stage (sidebar of solves + overview / per-solve analysis).
+ * "Training" holds the practice surfaces (drills, algorithms, skill tree).
  * "Explore" holds discovery surfaces like the Widgets panel.
  *
  * Profile lives in the sidebar FOOTER (next to Settings) — its item shows
@@ -72,17 +73,17 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    titleKey: "progress",
+    items: [
+      { id: "insights", labelKey: "stats", icon: BarChart3 },
+    ],
+  },
+  {
     titleKey: "training",
     items: [
       { id: "training", labelKey: "training", icon: Target },
       { id: "algorithms", labelKey: "algorithms", icon: BookOpen },
       { id: "skill-tree", labelKey: "skills", icon: Network },
-    ],
-  },
-  {
-    titleKey: "progress",
-    items: [
-      { id: "insights", labelKey: "stats", icon: BarChart3 },
     ],
   },
   {
