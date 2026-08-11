@@ -9,6 +9,8 @@ import { getWidget } from "@/widgets/registry";
 import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useTranslation } from "react-i18next";
+import { WIDGET_LABEL_KEY } from "@/widgets/i18n";
 import type { WidgetId } from "@/widgets/types";
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -34,6 +36,7 @@ function DockPill({
   widgetId: WidgetId;
   onPillRef?: (id: string, el: HTMLElement | null) => void;
 }) {
+  const { t } = useTranslation("widgets");
   const definition = getWidget(widgetId);
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
   const isDocked = status === "docked";
@@ -185,10 +188,10 @@ function DockPill({
           "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
           "cursor-grab active:cursor-grabbing",
         )}
-        aria-label={`${definition.name} — pinned`}
+        aria-label={t("dock.pinned", { name: t(WIDGET_LABEL_KEY[widgetId]) })}
       >
         <Icon className="size-3.5 shrink-0" />
-        <span className="truncate max-w-28">{definition.name}</span>
+        <span className="truncate max-w-28">{t(WIDGET_LABEL_KEY[widgetId])}</span>
       </Reorder.Item>
 
       {/* Lifted clone — portaled to <body> so the dock's overflow NEVER clips
@@ -208,7 +211,7 @@ function DockPill({
           )}
         >
           <Icon className="size-3.5 shrink-0" />
-          <span className="truncate max-w-28">{definition.name}</span>
+          <span className="truncate max-w-28">{t(WIDGET_LABEL_KEY[widgetId])}</span>
         </div>,
         document.body,
       )}
@@ -226,6 +229,7 @@ function DockPill({
  * the dock, a gap spacer is rendered at the target drop position.
  */
 export function WidgetDock() {
+  const { t } = useTranslation("widgets");
   const reduceMotion = useReducedMotion();
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
@@ -407,7 +411,7 @@ export function WidgetDock() {
     <div
       ref={containerRef}
       role="toolbar"
-      aria-label="Docked widgets"
+      aria-label={t("dock.dockedWidgets")}
       onScroll={updateScrollEdges}
       className="flex min-w-0 flex-1 items-center overflow-x-auto px-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
       style={{ maskImage: edgeMask, WebkitMaskImage: edgeMask }}

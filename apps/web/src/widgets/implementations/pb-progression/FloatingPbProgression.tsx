@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TrendingDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { effectiveTime } from "@/types";
@@ -28,6 +29,7 @@ interface PbMilestone {
  * Designed with minimalist, flat, speedcubing-grade aesthetics.
  */
 export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionProps) {
+  const { t } = useTranslation("widgets");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const filteredSolves = useMemo(() => {
@@ -125,9 +127,14 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
     <FloatingWidgetWrapper
       widgetId="pb-progression"
       icon={TrendingDown}
-      label="PB progression"
+      label={t("def.pbProgression")}
       pillBadge={currentPb ? formatTime(currentPb.time) : undefined}
-      pillBadge2={puzzle ?? (pbCount > 0 ? `${pbCount} PB${pbCount !== 1 ? "s" : ""}` : undefined)}
+      pillBadge2={
+        puzzle ??
+        (pbCount > 0
+          ? t("panel.pbProgression.pbs", { count: pbCount })
+          : undefined)
+      }
       headerActions={headerActions}
       panelWidth={310}
       panelMaxHeight={340}
@@ -176,8 +183,12 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
             {chartData && (
               <div className="rounded-lg border border-line/60 bg-surface-2/20 p-2">
                 <div className="flex items-center justify-between mb-1 text-[0.6rem] font-mono text-ink-3 px-1">
-                  <span>Staircase Trend</span>
-                  <span>{milestonesChrono.length} Milestones</span>
+                  <span>{t("panel.pbProgression.staircaseTrend")}</span>
+                  <span>
+                    {t("panel.pbProgression.milestones", {
+                      count: milestonesChrono.length,
+                    })}
+                  </span>
                 </div>
                 <div className="relative w-full overflow-hidden">
                   <svg
@@ -249,8 +260,12 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
             {/* Timeline Milestones List */}
             <div className="space-y-1 pt-1">
               <div className="flex items-center justify-between text-[0.6rem] uppercase tracking-wider font-semibold text-ink-3 font-mono px-0.5 pb-1 border-b border-line/50">
-                <span>Milestone History</span>
-                <span>{milestonesList.length} PBs</span>
+                <span>{t("panel.pbProgression.milestoneHistory")}</span>
+                <span>
+                  {t("panel.pbProgression.pbs", {
+                    count: milestonesList.length,
+                  })}
+                </span>
               </div>
 
               <div className="relative pt-1">

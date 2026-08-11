@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -592,13 +592,74 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   tsc web+desktop 0, eslint 0, vitest 6/6, paridad en/es perfecta (67/67),
   build de producción OK, 0 strings residuales en la zona.
 
-### Tanda 11 — Widgets (dock + explorer + 13 widgets)
-- **Zonas**:
-  - `WidgetExplorer` (catálogo: títulos + descripciones de widgets) · `WidgetCard` · `WidgetPreviews` · `WidgetHost` (controles de panel flotante) · `WidgetDock`.
-  - **Cada widget** (título, descripción, `FloatingPanel`, `Preview`):
-    1. `algorithm-db` (buscador de algoritmos) 2. `cube-button` (botón de cubo 3D) 3. `layout-organizer` 4. `metronome` 5. `notes` (contenido del usuario NO se traduce) 6. `pb-progression` 7. `phase-balance` 8. `scramble-2d` 9. `solve-timeline` 10. `time-distribution` 11. `times-log`.
-- **Namespace**: `widgets`.
-- **Dificultad**: media-alta (11 widgets + infraestructura); los títulos/descripciones usan `labelKey` (dato).
+### Tanda 11 — Widgets (dock + explorer + 11 widgets) *(hecha)*
+- **Zonas** (volumen medido: ~2.000 líneas · 11 widgets + infraestructura ·
+  ~65-70 strings de UI · 0 archivos con i18n hoy):
+  - **Chrome de UI**: `WidgetExplorer` (221 l: título "Widgets", placeholder
+    "Search widgets...", select "Category", busca en `name`/`description`),
+    `WidgetCard` (162 l: `{widget.name}`, `{widget.description}`, botón
+    "Floating button", aria "Toggle {name}"), `WidgetExplorerSidebar`
+    (categorías All/Visual/Timer/Analysis/Training — labels de datos),
+    `WidgetDock` (444 l: pills `{definition.name}`, aria "Docked widgets",
+    "{name} — pinned"), `FloatingWidgetWrapper` (583 l: label prop, aria
+    Expand/Close/Minimize), `WidgetHost`/`WidgetPreviews`/`PhaseSkipBadge`
+    (sin strings).
+  - **Los 11 widgets** (título + descripción en `definition.ts` — dato — +
+    strings de su `Floating*Panel`): `algorithm-db` (Puzzle/Method/Submethod
+    placeholders, List/Algorithm/All cases, Previous/Next case, Copy, "No
+    algorithm available"), `cube-button` ("Open 3D cube view"),
+    `layout-organizer` (6 layouts: Cascade/Split/Left column/Right
+    column/Focus/Spread + descriptions, tooltips "No floating widgets"/"Dock
+    all {n} floating widget(s)"/"Save current layout positions", placeholder
+    "Layout name...", "Delete layout"), `metronome` (Start/Stop, "Sound
+    Mode"), `notes` (tabs Scratchpad/Goals/Notebook + placeholders — el
+    contenido del usuario NO se traduce), `pb-progression` ("Staircase
+    Trend", "Milestone History"), `phase-balance` (Above/Below self avg,
+    "Latest comparable solve", "Recent average", "Self baseline vs reference
+    split", 2 tooltips largos + aria del reference), `scramble-2d` (sin
+    strings), `solve-timeline` (3 tooltips: análisis incompleto / pipeline /
+    entrada manual), `time-distribution` (labels "Mean {n}"/"Best {n}"),
+    `times-log` (sin strings).
+- **Namespace**: `widgets` (nuevo, ~65-70 claves: `category.*`,
+  `explorer.*`, `dock.*`, `wrapper.*`, `def.*` (11 títulos + 11
+  descripciones), `panel.*` por widget). **Títulos/descripciones vía
+  `labelKey` (dato)**: mapa local `WIDGET_LABEL_KEY`/`WIDGET_DESC_KEY:
+  Record<WidgetId, ParseKeys<"widgets">>` + `CATEGORY_LABEL_KEY: Record<
+  WidgetCategoryId, ParseKeys<"widgets">>` (mismo patrón que
+  `CATEGORY_KEY` de la tanda 8A) — los `definition.ts` (registro/datos) NO se
+  tocan; la traducción ocurre en los puntos de render (WidgetCard,
+  WidgetDock, FloatingWidgetWrapper, WidgetExplorerSidebar).
+- **Decisiones clave**:
+  - **Búsqueda bilingüe**: `WidgetExplorer` busca en `name`/`description`
+    (datos EN) — añadir los valores traducidos al texto de búsqueda para que
+    la búsqueda funcione en ES (e.g. buscar "notas" encuentra Notes).
+  - **Datos NO se traducen**: tags de widgets, autor, versión, ids de
+    categoría (estado), contenido de notas del usuario, algoritmos,
+    scrambles, tiempos. Los labels fijos de los paneles (Mean/Best, tabs de
+    Notes, layouts) son UI → se traducen.
+  - **Jerga/UI de cubing mantenida**: "3D", "TPS", "PB", "Sub-{n}",
+    "STM", nombres de widgets técnicos con carga semántica propia (Scramble,
+    Solve timeline, Phase balance, Pb progression → títulos traducidos como
+    "Progresión de PB", "Equilibrio de fases", etc.).
+  - **Interpolación/plurales**: "Dock all {count} floating
+    widget{s}" (plural), "Expand/Close {label}" con el label traducido,
+    "Toggle {name}", "{name} — pinned".
+  - **ARIA completo**: todos los aria-label/title con texto son UI.
+  - `FloatingWidgetWrapper` recibe `label` como prop — el consumidor (Widget
+    Registry/Host) pasa el nombre traducido; el fallback queda en el dato EN.
+- **Resultado**: namespace `widgets` (139 hojas en/es) en 25 archivos
+  (+688/−141). Chrome traducido (explorer con **búsqueda bilingüe** sobre los
+  títulos/descripciones traducidos, dock, sidebar, wrapper con aria
+  interpolados) + los 11 paneles (labels `def.*`, layouts, tooltips largos,
+  plurals dockAll/activeCount/analysed/phases/solves/milestones/pbs).
+  **Hallazgos del code review (aplicados)**: `label="Times"` hardcodeado en
+  FloatingTimesPanel + "Clear" (times-log) traducidos; `CATEGORY_LABEL`
+  huérfano eliminado de registry.ts (la tag usa ahora `CATEGORY_TAG_KEY`).
+  **Fixes de la tanda 10**: `detection.colPhase/colCase/colMoves` →
+  `detail.*` (las claves viven en detail) y cross-namespace con
+  `i18n.t("ns:key")` global (patrón 7C/9) en vez del `t` local. Validado:
+  tsc web+desktop 0, eslint 0, vitest 28/28, paridad 139/139, build de
+  producción OK, 0 strings residuales en la zona.
 
 ### Tanda 12 — Settings restantes (11 secciones)
 - **Zonas** (cada sección completa: título, descripciones, toggles, selects, placeholders):

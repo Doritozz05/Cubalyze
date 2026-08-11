@@ -183,7 +183,7 @@ function ReconRow({
 // ─── View ───────────────────────────────────────────────────────────────────
 
 export function ReconstructionsView() {
-  const { t } = useTranslation("reconstructions");
+  const { t, i18n } = useTranslation("reconstructions");
   const [index, setIndex] = useState<ReconIndexEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -351,7 +351,7 @@ export function ReconstructionsView() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold tracking-tight text-ink">
-              {t("nav:reconstructions")}
+              {i18n.t("nav:reconstructions")}
             </h2>
             <p className="text-xs text-ink-3">
               {t("list.subtitle")}

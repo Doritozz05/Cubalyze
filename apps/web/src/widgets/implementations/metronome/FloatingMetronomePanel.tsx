@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Activity, Play, Square, Volume2, VolumeX, Minus, Plus, Music } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -29,6 +30,7 @@ const QUICK_TPS_PRESETS = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0];
  * Supports direct TPS control (2.0 to 15.0 TPS) and customizable Sound Modes.
  */
 export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProps) {
+  const { t } = useTranslation("widgets");
   const [isPlaying, setIsPlaying] = useState(false);
   const [tps, setTps] = useState(3.0); // Default 3.0 TPS = 180 BPM
   const [beatsPerBar, setBeatsPerBar] = useState(4);
@@ -225,7 +227,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
     <FloatingWidgetWrapper
       widgetId="metronome"
       icon={Activity}
-      label="Metronome"
+      label={t("def.metronome")}
       panelWidth={280}
       defaultPosition={{ x: 920, y: 72 }}
       className={className}
@@ -253,7 +255,9 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
               "size-11 rounded-full shadow-sm transition-all duration-150 active:scale-95",
               !isPlaying && "bg-accent hover:bg-accent/90 text-white",
             )}
-            aria-label={isPlaying ? "Stop metronome" : "Start metronome"}
+            aria-label={
+              isPlaying ? t("panel.metronome.stop") : t("panel.metronome.start")
+            }
           >
             {isPlaying ? (
               <Square className="size-4.5 fill-current" />
@@ -348,7 +352,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
         <div className="space-y-1.5">
           <div className="flex items-center gap-1 text-[0.68rem] font-semibold text-ink-2">
             <Music className="size-3 text-ink-2" />
-            <span>Sound Mode</span>
+            <span>{t("panel.metronome.soundMode")}</span>
           </div>
           <ToggleGroup
             type="single"

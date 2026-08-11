@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check, Tag } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Algorithms/components/Case2x2Diagram";
@@ -28,6 +29,7 @@ export function AlgorithmViewerCard({
   subsetName = "",
   className,
 }: AlgorithmViewerCardProps) {
+  const { t } = useTranslation("widgets");
   const [copiedSetup, setCopiedSetup] = useState(false);
   const [copiedAlg, setCopiedAlg] = useState(false);
   const [selectedAlgId, setSelectedAlgId] = useState<string | null>(null);
@@ -150,12 +152,12 @@ export function AlgorithmViewerCard({
             {copiedSetup ? (
               <>
                 <Check className="size-3 text-ready" />
-                <span className="text-ready">Copied</span>
+                <span className="text-ready">{t("panel.algorithmDb.copied")}</span>
               </>
             ) : (
               <>
                 <Copy className="size-3" />
-                <span>Copy</span>
+                <span>{t("panel.algorithmDb.copy")}</span>
               </>
             )}
           </Button>
@@ -166,7 +168,7 @@ export function AlgorithmViewerCard({
       <div className="flex flex-col gap-1.5 bg-surface-2/40 border border-line rounded-md p-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[0.62rem] font-medium text-ink-3">
-            Algorithm
+            {t("panel.algorithmDb.viewAlgorithm")}
           </span>
 
           <Button
@@ -179,12 +181,12 @@ export function AlgorithmViewerCard({
             {copiedAlg ? (
               <>
                 <Check className="size-3 text-ready" />
-                <span className="text-ready">Copied</span>
+                <span className="text-ready">{t("panel.algorithmDb.copied")}</span>
               </>
             ) : (
               <>
                 <Copy className="size-3" />
-                <span>Copy</span>
+                <span>{t("panel.algorithmDb.copy")}</span>
               </>
             )}
           </Button>
@@ -192,7 +194,7 @@ export function AlgorithmViewerCard({
 
         {/* Algorithm moves container */}
         <div className="font-mono text-xs font-semibold text-ink bg-surface-1 border border-line rounded p-2 leading-relaxed wrap-break-word shadow-xs">
-          {movesText || "No algorithm available"}
+          {movesText || t("panel.algorithmDb.noAlgorithm")}
         </div>
 
         {/* Triggers */}

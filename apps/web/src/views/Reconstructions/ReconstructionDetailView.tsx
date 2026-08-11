@@ -126,7 +126,7 @@ export function ReconstructionDetailView({
   recordKey: string;
   onBack: () => void;
 }) {
-  const { t } = useTranslation("reconstructions");
+  const { t, i18n } = useTranslation("reconstructions");
   const [record, setRecord] = useState<ReconFullRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -167,7 +167,7 @@ export function ReconstructionDetailView({
       <div className="flex h-full flex-col items-center justify-center gap-2">
         <p className="text-sm text-dnf">{error}</p>
         <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="size-3.5" /> {t("common:back")}
+          <ArrowLeft className="size-3.5" /> {i18n.t("common:back")}
         </Button>
       </div>
     );

@@ -2732,5 +2732,184 @@
       "xcrossGeneric": "Un par F2L ya estaba resuelto al completar la cruz",
       "apiError": "Nuestra detección no pudo analizar esta resolución (error de API). Esto es un bug — se supone que el camino de incoherencia se maneja internamente."
     }
+  },
+  "widgets": {
+    "category": {
+      "all": "Todos los widgets",
+      "visual": "Visual",
+      "timer": "Cronómetro",
+      "analysis": "Análisis",
+      "training": "Entrenamiento"
+    },
+    "tag": {
+      "all": "Todo",
+      "visual": "Visual",
+      "timer": "Cronómetro",
+      "analysis": "Análisis",
+      "training": "Entrenamiento"
+    },
+    "explorer": {
+      "title": "Widgets",
+      "subtitle": "Descubre y activa paneles, herramientas y visualizadores opcionales.",
+      "category": "Categoría:",
+      "categoryPlaceholder": "Categoría",
+      "searchPlaceholder": "Buscar widgets...",
+      "noResults": "No se encontraron widgets",
+      "noResultsHint": "Prueba con otra categoría o término de búsqueda."
+    },
+    "sidebar": {
+      "categories": "Categorías"
+    },
+    "card": {
+      "floatingButton": "Botón flotante",
+      "pinnedToHeader": "Fijado al header",
+      "opensAsPanel": "Se abre como panel",
+      "toggle": "Activar {{name}}"
+    },
+    "dock": {
+      "dockedWidgets": "Widgets acoplados",
+      "pinned": "{{name}} — fijado"
+    },
+    "wrapper": {
+      "expand": "Expandir",
+      "minimize": "Minimizar",
+      "expandLabel": "Expandir {{label}}",
+      "closeLabel": "Cerrar {{label}}"
+    },
+    "def": {
+      "timesLog": "Tiempos",
+      "timesLogDescription": "Historial de resoluciones flotante con penalizaciones, análisis y acciones rápidas. Minimizable a una píldora compacta.",
+      "scramble2d": "Scramble",
+      "scramble2dDescription": "Red 2D del cubo que muestra el estado del scramble actual. Diseño estilo csTimer con colores estándar WCA.",
+      "cubeButton": "Cubo 3D",
+      "cubeButtonDescription": "Botón flotante para activar la vista 3D interactiva del cubo. Arrastra para reposicionar.",
+      "timeDistribution": "Distribución de tiempos",
+      "timeDistributionDescription": "Histograma con la distribución de tus tiempos. Barras estilo csTimer con media y desviación estándar. Ve tu consistencia de un vistazo.",
+      "pbProgression": "Progresión de PB",
+      "pbProgressionDescription": "Línea temporal de récords personales mostrando cada hito. Sigue tu progreso desde la primera resolución hasta tu mejor marca.",
+      "solveTimeline": "Línea temporal de la resolución",
+      "solveTimelineDescription": "Desglose por fases + pausas de la última resolución. Muestra la misma línea temporal de Insights en la vista de cronómetro sin navegar.",
+      "phaseBalance": "Equilibrio de fases",
+      "phaseBalanceDescription": "Compara tu distribución real de fases CFOP con tu promedio reciente, usando solo resoluciones comparables del pipeline de análisis endurecido.",
+      "metronome": "Metrónomo TPS",
+      "metronomeDescription": "Metrónomo de audio de alta precisión con conversión a TPS (giros por segundo) para practicar fluidez y ritmo.",
+      "notes": "Notas",
+      "notesDescription": "Bloc rápido, lista de objetivos de entrenamiento y gestor de notas de speedcubing para tus sesiones.",
+      "algorithmDb": "Algoritmos",
+      "algorithmDbDescription": "Explora algoritmos de speedcubing por método y subconjunto con visualizaciones 2D/3D, scrambles de preparación y desglose de la solución.",
+      "layoutOrganizer": "Diseños",
+      "layoutOrganizerDescription": "Organiza al instante todos tus widgets flotantes en un diseño profesional. Genera ajustes dinámicos según tus widgets activos y el tamaño de pantalla."
+    },
+    "panel": {
+      "algorithmDb": {
+        "puzzle": "Puzzle",
+        "method": "Método",
+        "submethod": "Submétodo",
+        "viewList": "Lista",
+        "viewAlgorithm": "Algoritmo",
+        "allCases": "Todos los casos",
+        "previousCase": "Caso anterior",
+        "nextCase": "Caso siguiente",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "noAlgorithm": "No hay algoritmo disponible"
+      },
+      "layoutOrganizer": {
+        "cascade": "Cascada",
+        "cascadeDesc": "Cascada diagonal",
+        "grid": "Cuadrícula",
+        "gridDesc": "Columnas y filas",
+        "split": "Dividido",
+        "splitDesc": "Dos columnas iguales",
+        "left": "Columna izquierda",
+        "leftDesc": "Apilado a la izquierda",
+        "right": "Columna derecha",
+        "rightDesc": "Apilado a la derecha",
+        "focus": "Foco",
+        "focusDesc": "Uno prominente, el resto a un lado",
+        "spread": "Repartido",
+        "spreadDesc": "Distribuido con escalonamiento",
+        "noFloating": "No hay widgets flotantes",
+        "dockAll_one": "Acoplar {{count}} widget flotante",
+        "dockAll_other": "Acoplar {{count}} widgets flotantes",
+        "savePositions": "Guardar posiciones de diseño actuales",
+        "layoutNamePlaceholder": "Nombre del diseño...",
+        "deleteLayout": "Eliminar diseño",
+        "deleteLayoutNamed": "Eliminar diseño {{name}}",
+        "noActive": "No hay widgets activos",
+        "noActiveHint": "Abre widgets desde el dock del header o el explorador para ver aquí los ajustes de diseño.",
+        "presets": "Ajustes",
+        "activeCount_one": "{{count}} widget activo",
+        "activeCount_other": "{{count}} widgets activos",
+        "dockAll": "Acoplar todos",
+        "saveLayout": "Guardar diseño"
+      },
+      "metronome": {
+        "stop": "Detener metrónomo",
+        "start": "Iniciar metrónomo",
+        "soundMode": "Modo de sonido"
+      },
+      "notes": {
+        "scratchpad": "Bloc",
+        "goals": "Objetivos",
+        "notebook": "Cuaderno",
+        "newNote": "Nueva nota de práctica",
+        "scratchpadHint": "Bloc rápido de sesión:",
+        "scratchpadPlaceholder": "Escribe notas rápidas, algoritmos a repasar o conclusiones de la sesión...",
+        "goalPlaceholder": "Añade un objetivo (p. ej., Sub-12 Ao50 en 3x3)...",
+        "titlePlaceholder": "Título...",
+        "contentPlaceholder": "Contenido de la nota..."
+      },
+      "pbProgression": {
+        "staircaseTrend": "Tendencia escalonada",
+        "milestoneHistory": "Historial de hitos",
+        "milestones_one": "{{count}} hito",
+        "milestones_other": "{{count}} hitos",
+        "pbs_one": "{{count}} PB",
+        "pbs_other": "{{count}} PB"
+      },
+      "phaseBalance": {
+        "balanced": "Equilibrado",
+        "aboveSelfAvg": "Por encima de tu promedio",
+        "belowSelfAvg": "Por debajo de tu promedio",
+        "latestComparable": "Última resolución comparable",
+        "recentAverage": "Promedio reciente",
+        "communityUnavailable": "Referencia comunitaria no disponible para este promedio",
+        "referenceTooltip": "La referencia educativa comunitaria solo se aplica a promedios efectivos de 8 a 60 segundos. Fuera de ese rango, tu línea base propia sigue siendo la comparación más honesta.",
+        "needFiveTooltip": "Se necesitan cinco resoluciones comparables antes de mostrar la referencia educativa comunitaria. Tu línea base propia ya está disponible.",
+        "baselineSplit": "Línea base propia vs división de referencia",
+        "aboutReference": "Acerca de la referencia {{label}}",
+        "reference": "referencia",
+        "last20Comparable": "últimas 20 comparables",
+        "referenceTooltipContent": "Esta es una referencia de división educativa, no una norma estadística universal. {{caveat}}",
+        "legendSolid": "sólido = tuyo",
+        "legendMuted": "atenuado = referencia",
+        "yourAvgMinusRef": "Tu promedio menos la referencia",
+        "analysed_one": "{{count}} analizada",
+        "analysed_other": "{{count}} analizadas",
+        "notEnoughData": "No hay suficientes datos comparables de CFOP"
+      },
+      "solveTimeline": {
+        "incompleteAnalysis": "Esta resolución tiene un análisis incompleto. Vuelve a analizarla para mostrar las fases comparables.",
+        "pipelineRunning": "El pipeline de análisis está en ejecución. Vuelve a comprobarlo en un momento.",
+        "manualEntry": "Entrada manual. Conecta un Smart Cube para obtener el análisis por fases.",
+        "noAnalysis": "Aún no hay análisis",
+        "skips": "Saltos",
+        "phases_one": "{{count}} fase",
+        "phases_other": "{{count}} fases"
+      },
+      "timeDistribution": {
+        "mean": "Media {{value}}",
+        "best": "Mejor {{value}}",
+        "solves_one": "{{count}} resolución",
+        "solves_other": "{{count}} resoluciones"
+      },
+      "timesLog": {
+        "clear": "Borrar"
+      },
+      "cubeButton": {
+        "open3d": "Abrir vista 3D del cubo"
+      }
+    }
   }
 }

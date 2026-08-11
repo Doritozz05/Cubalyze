@@ -255,9 +255,9 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           "items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
         )}
       >
-        <span>{t("detection.colPhase")}</span>
-        <span>{t("detection.colCase")}</span>
-        <span>{t("detection.colMoves")}</span>
+        <span>{t("detail.colPhase")}</span>
+        <span>{t("detail.colCase")}</span>
+        <span>{t("detail.colMoves")}</span>
         <span className="text-right">#</span>
       </div>
 

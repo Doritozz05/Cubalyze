@@ -15,6 +15,12 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsTouch } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
+import {
+  CATEGORY_LABEL_KEY,
+  WIDGET_DESC_KEY,
+  WIDGET_LABEL_KEY,
+} from "@/widgets/i18n";
 
 import {
   Select,
@@ -56,6 +62,7 @@ export interface WidgetExplorerProps {
  *   └─────────────────────────────────────────────┘
  */
 export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
+  const { t } = useTranslation("widgets");
   const isTouch = useIsTouch();
   const [activeCategory, setActiveCategory] = useState<WidgetCategoryId>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,11 +93,16 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
         (w) =>
           w.name.toLowerCase().includes(q) ||
           w.description.toLowerCase().includes(q) ||
-          w.tags.some((t) => t.toLowerCase().includes(q)),
+          t(WIDGET_LABEL_KEY[w.id]).toLowerCase().includes(q) ||
+          t(WIDGET_DESC_KEY[w.id]).toLowerCase().includes(q) ||
+          w.tags.some((tag) => tag.toLowerCase().includes(q)),
       );
     }
 
     return list;
+    // t is stable across renders (react-i18next memoizes it) — only the
+    // resolved values change when a locale switches.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allWidgets, activeCategory, searchQuery]);
 
   const handleSelectCategory = useCallback((id: WidgetCategoryId) => {
@@ -115,10 +127,10 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             <div>
               <h2 className="flex items-center gap-2 text-[0.95rem] font-semibold text-ink">
                 <Puzzle className="size-4 text-ink-3" />
-                Widgets
+                {t("explorer.title")}
               </h2>
               <p className="mt-1 text-[0.78rem] text-ink-3">
-                Discover and toggle optional panels, tools, and visualizers.
+                {t("explorer.subtitle")}
               </p>
             </div>
 
@@ -137,14 +149,16 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             <SelectTrigger className="h-9 w-full max-w-60 gap-2 rounded-lg border border-line bg-surface-2 px-3 text-xs font-semibold text-ink shadow-xs">
               <div className="flex items-center gap-2 truncate">
                 <Filter className="size-3.5 shrink-0 text-ink-3" />
-                <span className="text-ink-3 font-normal">Category:</span>
-                <SelectValue placeholder="Category" />
+                <span className="text-ink-3 font-normal">{t("explorer.category")}</span>
+                <SelectValue placeholder={t("explorer.categoryPlaceholder")} />
               </div>
             </SelectTrigger>
             <SelectContent side="bottom" align="start">
               {WIDGET_CATEGORIES.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                  <span className="font-medium">{cat.label}</span>
+                  <span className="font-medium">
+                    {t(CATEGORY_LABEL_KEY[cat.id])}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -158,7 +172,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search widgets..."
+              placeholder={t("explorer.searchPlaceholder")}
               className={cn(
                 "nums h-9 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[0.82rem] text-ink outline-none",
                 "placeholder:text-ink-3/50",
@@ -174,9 +188,9 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
           {filteredWidgets.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
               <Puzzle className="size-8 text-ink-3/30" />
-              <p className="text-sm text-ink-2">No widgets found</p>
+              <p className="text-sm text-ink-2">{t("explorer.noResults")}</p>
               <p className="text-xs text-ink-3">
-                Try a different category or search term.
+                {t("explorer.noResultsHint")}
               </p>
             </div>
           ) : (
@@ -197,7 +211,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
         <Drawer open={open} onOpenChange={onOpenChange}>
           <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] h-[85vh] p-0 pb-safe focus:outline-none">
             <DrawerHeader className="sr-only">
-              <DrawerTitle>Widgets</DrawerTitle>
+              <DrawerTitle>{t("explorer.title")}</DrawerTitle>
             </DrawerHeader>
             {innerContent}
           </DrawerContent>
@@ -209,7 +223,7 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
             showCloseButton={false}
           >
             <DialogHeader className="sr-only">
-              <DialogTitle>Widgets</DialogTitle>
+              <DialogTitle>{t("explorer.title")}</DialogTitle>
             </DialogHeader>
             {innerContent}
           </DialogContent>

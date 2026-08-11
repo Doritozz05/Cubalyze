@@ -1,6 +1,6 @@
 "use client";
 
-import type { WidgetDefinition, WidgetId, WidgetCategory, WidgetCategoryId } from "./types";
+import type { WidgetDefinition, WidgetId, WidgetCategory } from "./types";
 import { timesLogDefinition } from "./implementations/times-log/definition";
 import { scramble2DDefinition } from "./implementations/scramble-2d/definition";
 import { cubeButtonDefinition } from "./implementations/cube-button/definition";
@@ -23,15 +23,6 @@ export const WIDGET_CATEGORIES: WidgetCategory[] = [
   { id: "analysis", label: "Analysis" },
   { id: "training", label: "Training" },
 ];
-
-/** Maps category IDs to human labels (for card tags). */
-export const CATEGORY_LABEL: Record<WidgetCategoryId, string> = {
-  all: "All",
-  visual: "Visual",
-  timer: "Timer",
-  analysis: "Analysis",
-  training: "Training",
-};
 
 /**
  * ── BUILT-IN WIDGET REGISTRY ─────────────────────────────────────────────

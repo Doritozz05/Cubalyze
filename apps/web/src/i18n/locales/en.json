@@ -2732,5 +2732,184 @@
       "xcrossGeneric": "An F2L pair was already solved at cross completion",
       "apiError": "Our detection failed to analyze this solve (API error). This is a bug — the incoherence path is supposed to be handled internally."
     }
+  },
+  "widgets": {
+    "category": {
+      "all": "All widgets",
+      "visual": "Visual",
+      "timer": "Timer",
+      "analysis": "Analysis",
+      "training": "Training"
+    },
+    "tag": {
+      "all": "All",
+      "visual": "Visual",
+      "timer": "Timer",
+      "analysis": "Analysis",
+      "training": "Training"
+    },
+    "explorer": {
+      "title": "Widgets",
+      "subtitle": "Discover and toggle optional panels, tools, and visualizers.",
+      "category": "Category:",
+      "categoryPlaceholder": "Category",
+      "searchPlaceholder": "Search widgets...",
+      "noResults": "No widgets found",
+      "noResultsHint": "Try a different category or search term."
+    },
+    "sidebar": {
+      "categories": "Categories"
+    },
+    "card": {
+      "floatingButton": "Floating button",
+      "pinnedToHeader": "Pinned to header",
+      "opensAsPanel": "Opens as panel",
+      "toggle": "Toggle {{name}}"
+    },
+    "dock": {
+      "dockedWidgets": "Docked widgets",
+      "pinned": "{{name}} — pinned"
+    },
+    "wrapper": {
+      "expand": "Expand",
+      "minimize": "Minimize",
+      "expandLabel": "Expand {{label}}",
+      "closeLabel": "Close {{label}}"
+    },
+    "def": {
+      "timesLog": "Times",
+      "timesLogDescription": "Floating solve history with penalties, analysis, and quick actions. Minimizable to a compact pill.",
+      "scramble2d": "Scramble",
+      "scramble2dDescription": "2D cube net showing the current scramble state. csTimer-style layout with WCA-standard colors.",
+      "cubeButton": "3D cube",
+      "cubeButtonDescription": "Floating button to toggle the interactive 3D cube view. Drag to reposition.",
+      "timeDistribution": "Time distribution",
+      "timeDistributionDescription": "Histogram showing the distribution of your solve times. csTimer-style bins with mean and standard deviation. See your consistency at a glance.",
+      "pbProgression": "PB progression",
+      "pbProgressionDescription": "Personal Best timeline showing every PB milestone. Track your improvement journey from first solve to current best.",
+      "solveTimeline": "Solve timeline",
+      "solveTimelineDescription": "Phase breakdown + pauses of the last solve. Shows the same detailed timeline from Insights right on the timer view without navigating away.",
+      "phaseBalance": "Phase balance",
+      "phaseBalanceDescription": "Compare your real CFOP phase distribution with your own recent average, using only comparable solves from the hardened analysis pipeline.",
+      "metronome": "TPS metronome",
+      "metronomeDescription": "High-precision audio metronome with TPS (Turns Per Second) conversion for fluidity & pacing practice.",
+      "notes": "Notes",
+      "notesDescription": "Quick scratchpad, training goals checklist, and speedcubing notes manager for your practice sessions.",
+      "algorithmDb": "Algorithms",
+      "algorithmDbDescription": "Browse speedcubing algorithms by method and subset with 2D/3D visualizations, setup scrambles, and solution breakdown.",
+      "layoutOrganizer": "Layouts",
+      "layoutOrganizerDescription": "Instantly arrange all your floating widgets into a professional layout. Generates dynamic presets based on your active widgets and screen size."
+    },
+    "panel": {
+      "algorithmDb": {
+        "puzzle": "Puzzle",
+        "method": "Method",
+        "submethod": "Submethod",
+        "viewList": "List",
+        "viewAlgorithm": "Algorithm",
+        "allCases": "All cases",
+        "previousCase": "Previous case",
+        "nextCase": "Next case",
+        "copy": "Copy",
+        "copied": "Copied",
+        "noAlgorithm": "No algorithm available"
+      },
+      "layoutOrganizer": {
+        "cascade": "Cascade",
+        "cascadeDesc": "Diagonal waterfall",
+        "grid": "Grid",
+        "gridDesc": "Columns & rows",
+        "split": "Split",
+        "splitDesc": "Two equal columns",
+        "left": "Left column",
+        "leftDesc": "Stacked on the left",
+        "right": "Right column",
+        "rightDesc": "Stacked on the right",
+        "focus": "Focus",
+        "focusDesc": "One prominent, rest aside",
+        "spread": "Spread",
+        "spreadDesc": "Distributed with stagger",
+        "noFloating": "No floating widgets",
+        "dockAll_one": "Dock all {{count}} floating widget",
+        "dockAll_other": "Dock all {{count}} floating widgets",
+        "savePositions": "Save current layout positions",
+        "layoutNamePlaceholder": "Layout name...",
+        "deleteLayout": "Delete layout",
+        "deleteLayoutNamed": "Delete layout {{name}}",
+        "noActive": "No active widgets",
+        "noActiveHint": "Open widgets from the header dock or explorer to see layout presets here.",
+        "presets": "Presets",
+        "activeCount_one": "{{count}} active widget",
+        "activeCount_other": "{{count}} active widgets",
+        "dockAll": "Dock All",
+        "saveLayout": "Save Layout"
+      },
+      "metronome": {
+        "stop": "Stop metronome",
+        "start": "Start metronome",
+        "soundMode": "Sound Mode"
+      },
+      "notes": {
+        "scratchpad": "Scratchpad",
+        "goals": "Goals",
+        "notebook": "Notebook",
+        "newNote": "New Practice Note",
+        "scratchpadHint": "Quick session scratchpad:",
+        "scratchpadPlaceholder": "Write quick notes, algorithms to review, or session takeaways...",
+        "goalPlaceholder": "Add goal (e.g., Sub-12 Ao50 in 3x3)...",
+        "titlePlaceholder": "Title...",
+        "contentPlaceholder": "Note content..."
+      },
+      "pbProgression": {
+        "staircaseTrend": "Staircase Trend",
+        "milestoneHistory": "Milestone History",
+        "milestones_one": "{{count}} Milestone",
+        "milestones_other": "{{count}} Milestones",
+        "pbs_one": "{{count}} PB",
+        "pbs_other": "{{count}} PBs"
+      },
+      "phaseBalance": {
+        "balanced": "Balanced",
+        "aboveSelfAvg": "Above self avg",
+        "belowSelfAvg": "Below self avg",
+        "latestComparable": "Latest comparable solve",
+        "recentAverage": "Recent average",
+        "communityUnavailable": "Community reference unavailable for this average",
+        "referenceTooltip": "The educational community reference is only applied to effective averages from 8 to 60 seconds. Outside that range, your self-baseline remains the more honest comparison.",
+        "needFiveTooltip": "Five comparable solves are needed before showing the educational community reference. Your self-baseline is already available.",
+        "baselineSplit": "Self baseline vs reference split",
+        "aboutReference": "About the {{label}} reference",
+        "reference": "reference",
+        "last20Comparable": "last 20 comparable",
+        "referenceTooltipContent": "This is an educational split reference, not a universal statistical norm. {{caveat}}",
+        "legendSolid": "solid = yours",
+        "legendMuted": "muted = reference",
+        "yourAvgMinusRef": "Your average minus reference",
+        "analysed_one": "{{count}} analysed",
+        "analysed_other": "{{count}} analysed",
+        "notEnoughData": "Not enough comparable CFOP data"
+      },
+      "solveTimeline": {
+        "incompleteAnalysis": "This solve has an incomplete analysis. Re-analyze it to show comparable phases.",
+        "pipelineRunning": "The analysis pipeline is running. Check back shortly.",
+        "manualEntry": "Manual entry. Connect a Smart Cube to get phase analysis.",
+        "noAnalysis": "No analysis yet",
+        "skips": "Skips",
+        "phases_one": "{{count}} phase",
+        "phases_other": "{{count}} phases"
+      },
+      "timeDistribution": {
+        "mean": "Mean {{value}}",
+        "best": "Best {{value}}",
+        "solves_one": "{{count}} solve",
+        "solves_other": "{{count}} solves"
+      },
+      "timesLog": {
+        "clear": "Clear"
+      },
+      "cubeButton": {
+        "open3d": "Open 3D cube view"
+      }
+    }
   }
 }

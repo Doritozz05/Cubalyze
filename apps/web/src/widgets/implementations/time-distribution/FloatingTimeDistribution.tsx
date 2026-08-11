@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { deriveHistogram } from "@/utils/insights";
@@ -23,6 +24,7 @@ export interface FloatingTimeDistributionProps {
  * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
  */
 export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistributionProps) {
+  const { t } = useTranslation("widgets");
   const filteredSolves = useMemo(() => {
     if (!puzzle) return solves;
     const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
@@ -56,8 +58,8 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
     <FloatingWidgetWrapper
       widgetId="time-distribution"
       icon={BarChart3}
-      label="Distribution"
-      pillBadge={`${stats.count} solves`}
+      label={t("def.timeDistribution")}
+      pillBadge={t("panel.timeDistribution.solves", { count: stats.count })}
       pillBadge2={puzzle}
       headerActions={headerActions}
       panelWidth={340}
@@ -125,11 +127,15 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
                   <span className="inline-block size-2 rounded-sm bg-ready" />
-                  Mean {stats.mean != null ? formatTime(stats.mean) : "—"}
+                  {t("panel.timeDistribution.mean", {
+                    value: stats.mean != null ? formatTime(stats.mean) : "—",
+                  })}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="inline-block size-2 rounded-sm bg-ink-2" />
-                  Best {stats.best != null ? formatTime(stats.best) : "—"}
+                  {t("panel.timeDistribution.best", {
+                    value: stats.best != null ? formatTime(stats.best) : "—",
+                  })}
                 </span>
               </div>
               <span className="nums">

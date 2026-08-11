@@ -6,6 +6,7 @@ import {
   Pause,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
@@ -41,6 +42,7 @@ export function FloatingPhaseTimeline({
   solves,
   lastAnalysis,
 }: FloatingPhaseTimelineProps) {
+  const { t } = useTranslation("widgets");
   const [selectedIdx, setSelectedIdx] = useState(0);
 
   const { selectedSolve, derived, skippedPhases } = useMemo(() => {
@@ -108,9 +110,15 @@ export function FloatingPhaseTimeline({
     <FloatingWidgetWrapper
       widgetId="solve-timeline"
       icon={Activity}
-      label="Solve timeline"
+      label={t("def.solveTimeline")}
       pillBadge={selectedSolve ? formatTime(selectedSolve.time) : undefined}
-      pillBadge2={timelinePhaseEntries.length > 0 ? `${timelinePhaseEntries.length} phases` : undefined}
+      pillBadge2={
+        timelinePhaseEntries.length > 0
+          ? t("panel.solveTimeline.phases", {
+              count: timelinePhaseEntries.length,
+            })
+          : undefined
+      }
       panelWidth={340}
       panelMaxHeight={360}
       defaultPosition={{ x: 420, y: 72 }}
@@ -154,20 +162,22 @@ export function FloatingPhaseTimeline({
         ) : !derived ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <Activity className="size-8 text-ink-3/30" />
-            <p className="text-sm text-ink-2">No analysis yet</p>
+            <p className="text-sm text-ink-2">{t("panel.solveTimeline.noAnalysis")}</p>
             <p className="text-xs text-ink-3">
               {selectedSolve.source === "smart"
                 ? selectedSolve.analysis
-                  ? "This solve has an incomplete analysis. Re-analyze it to show comparable phases."
-                  : "The analysis pipeline is running. Check back shortly."
-                : "Manual entry. Connect a Smart Cube to get phase analysis."}
+                  ? t("panel.solveTimeline.incompleteAnalysis")
+                  : t("panel.solveTimeline.pipelineRunning")
+                : t("panel.solveTimeline.manualEntry")}
             </p>
           </div>
         ) : (
           <>
             {skippedPhases.length > 0 && (
               <div className="mb-2 flex items-center gap-1.5 rounded-md border border-line/60 bg-surface-2/50 px-2 py-1.5">
-                <span className="text-[0.56rem] font-medium uppercase tracking-wide text-ink-3">Skips</span>
+                <span className="text-[0.56rem] font-medium uppercase tracking-wide text-ink-3">
+                  {t("panel.solveTimeline.skips")}
+                </span>
                 {skippedPhases.map((phase) => (
                   <PhaseSkipBadge key={phase} phaseName={phase} compact />
                 ))}

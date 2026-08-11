@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Box } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useDraggable, type Position } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { CUBE_BUTTON_SENTINEL } from "./definition";
@@ -60,6 +61,7 @@ export function FloatingCubeButton({
   smartCubeConnected: _smartCubeConnected = true,
   cubePanelOpen = false,
 }: FloatingCubeButtonProps) {
+  const { t } = useTranslation("widgets");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -136,7 +138,7 @@ export function FloatingCubeButton({
         "transition-colors hover:border-ink-2/40 " +
         (drag.isDragging ? "cursor-grabbing" : "cursor-pointer")
       }
-      aria-label="Open 3D cube view"
+      aria-label={t("panel.cubeButton.open3d")}
     >
       <Box className="size-5 text-ink-2" />
     </button>,
