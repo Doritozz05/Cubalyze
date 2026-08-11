@@ -87,7 +87,25 @@ describe('RotationEngine live twist (drag-to-turn)', () => {
   it('rejects a second live twist while one is active', () => {
     const { engine } = build();
     expect(engine.beginTwist('z', [1])).toBe(true);
+    expect(engine.isLiveTwistActive()).toBe(true);
     expect(engine.beginTwist('x', [1])).toBe(false);
+  });
+
+  it('isLiveTwistActive clears once the twist is finished or cancelled', async () => {
+    const { engine } = build();
+    expect(engine.isLiveTwistActive()).toBe(false);
+    engine.beginTwist('z', [1]);
+    expect(engine.isLiveTwistActive()).toBe(true);
+    const done = engine.finishTwist(90, 0);
+    engine.update(10_000);
+    await done;
+    expect(engine.isLiveTwistActive()).toBe(false);
+
+    engine.beginTwist('x', [1]);
+    const done2 = engine.finishTwist(0, 0);
+    engine.update(20_000);
+    await done2;
+    expect(engine.isLiveTwistActive()).toBe(false);
   });
 
   it('beginTwist snaps a colliding timed rotation first (no double-rotation)', async () => {

@@ -252,6 +252,15 @@ export class Cube3DEngine {
     return this.rotationEngine.finishTwist(0, durationMs);
   }
 
+  /**
+   * True while a free-form drag twist is active (layer following the finger
+   * but not yet committed/cancelled). Lets the caller skip a commit when a
+   * keyboard collision already cancelled the twist mid-drag.
+   */
+  public isLayerTwistActive(): boolean {
+    return this.rotationEngine?.isLiveTwistActive() ?? false;
+  }
+
   public resetCube(): void {
     // Force-complete any in-flight layer rotations FIRST. A task that is
     // still turning when we reset would snap AFTER the reset and re-apply its

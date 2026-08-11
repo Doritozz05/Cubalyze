@@ -135,8 +135,13 @@ export class RotationEngine {
       // 2. Find a free slot in the pool
       let task = this.pool.find(t => !t.inUse);
       if (!task) {
-        // Fallback extremely rare: if pool is full, snap the oldest
-        const oldest = this.pool.reduce((prev, curr) => (prev.startTime < curr.startTime ? prev : curr));
+        // Fallback extremely rare: if pool is full, snap the oldest timed
+        // task. NEVER a live twist (its startTime is 0, which would make it
+        // the "oldest" — snapping it would silently cancel an active drag).
+        const candidates = this.pool.filter((t) => t.mode !== 'live');
+        const oldest = (candidates.length > 0 ? candidates : this.pool).reduce((prev, curr) =>
+          prev.startTime <= curr.startTime ? prev : curr,
+        );
         this.snapTask(oldest);
         task = oldest;
       }
@@ -266,6 +271,11 @@ export class RotationEngine {
    */
   public isAnimating(): boolean {
     return this.pool.some((t) => t.inUse);
+  }
+
+  /** True while a free-form drag twist is active (before it commits/cancels). */
+  public isLiveTwistActive(): boolean {
+    return this.pool.some((t) => t.inUse && t.mode === 'live');
   }
 
   public update(timeNowMs: number): void {

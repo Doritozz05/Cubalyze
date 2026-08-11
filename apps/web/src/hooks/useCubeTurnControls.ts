@@ -265,7 +265,7 @@ export function useCubeTurnControls({
   );
 
   const finishPointer = useCallback(
-    async (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = e.target as HTMLCanvasElement;
       const engine = engineRef.current;
       const drag = dragRef.current;
@@ -286,16 +286,24 @@ export function useCubeTurnControls({
           const abs = Math.abs(drag.angleDeg);
           if (abs >= commitThresholdDeg) {
             const target = Math.sign(drag.angleDeg) * 90;
-            await engine.finishLayerTwist(target, 90);
-            // Map the finished engine angle back to a cube-notation direction
-            // (angle = direction × angleSign × 90) — same convention as the
-            // smart-cube move path, so the committed state is exact.
             const face = drag.pick!.face;
             const angleSign = FACE_ROTATION_MAP[face].angleSign;
             const direction = Math.round(target / (90 * angleSign)) as 1 | -1;
-            onTurnCommittedRef.current?.({ kind: "turn", face, direction });
+            // Commit the logical move NOW (release time) and let the snap
+            // animation play out in the background. This keeps the state order
+            // identical to the visual order even when a keyboard move lands
+            // during the snap, and the timer starts immediately.
+            //
+            // Only commit when the live twist is still active: a keyboard move
+            // that collided with the drag already snapped the twist away (its
+            // own turn is what the visuals show) — committing would record a
+            // phantom move.
+            if (engine.isLayerTwistActive()) {
+              onTurnCommittedRef.current?.({ kind: "turn", face, direction });
+            }
+            void engine.finishLayerTwist(target, 90);
           } else {
-            await engine.cancelLayerTwist(90);
+            void engine.cancelLayerTwist(90);
           }
         } else {
           // 2 → 1 fingers mid-turn: abort the twist; the remaining finger

@@ -177,7 +177,8 @@ export function swipeTurnDirection(input: {
  *
  * The returned sign composes with the move pipeline exactly like
  * {@link swipeTurnDirection}: a drag along t̂ gives a positive angle, and the
- * committed direction is `round(angle / (90 · angleSign))`.
+ * committed direction for a finished twist target (±90°) is
+ * `round(target / (90 · angleSign))`.
  */
 export function layerTwistAngleDelta(input: {
   axisVector: Vec3Like;
