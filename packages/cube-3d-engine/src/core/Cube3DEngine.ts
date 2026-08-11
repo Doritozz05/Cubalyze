@@ -1,4 +1,4 @@
-import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3, Group } from 'three';
+import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3, Group, Object3D, Raycaster, Vector2 } from 'three';
 import { SceneManager } from './SceneManager';
 import { CubeMeshFactory, type CubeStyleOptions } from './CubeMeshFactory';
 import { CubeModel } from './CubeModel';
@@ -7,6 +7,7 @@ import { parseScrambleMoves, scrambleMoveDurationMs } from '../animation/Scrambl
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable, type PhaseMask } from '@cubeforge/math-core';
+import { resolveLayerHit, type CubeLayerPick } from './layerPick';
 import type { CubeOrientation, RotationEvent, CubeFace } from '@cubeforge/types';
 import type { Subscription } from 'rxjs';
 
@@ -394,6 +395,62 @@ export class Cube3DEngine {
   public resetGyroCalibration(): void {
     if (!this.gyroFusion) return;
     this.gyroFusion.resetCalibration();
+  }
+
+  /**
+   * Raycast the cube surface and resolve which layer would be turned by a
+   * pointer at the given NDC coordinates.
+   *
+   * Used by the virtual-cube touch controls (swipe a face to turn it). The
+   * ray is fired from the orbit camera through the canvas pixel; the first
+   * hit is walked up to its owning cubie, then {@link resolveLayerHit}
+   * derives the layer (axis + layerValue + WCA face) in the cube frame.
+   *
+   * @param ndcX  Pointer X in normalized device coords [−1, 1] (left→right).
+   * @param ndcY  Pointer Y in normalized device coords [−1, 1] (bottom→top).
+   * @returns The resolved layer pick (with the world-space hit point) or
+   *   `null` when the pointer misses the cube (e.g. background / evicted).
+   */
+  public pickLayer(ndcX: number, ndcY: number): CubeLayerPick | null {
+    if (!this.model || !this.sceneManager) return null;
+    if (!this.isRunning || this.sceneManager.isContextEvicted()) return null;
+    if (!Number.isFinite(ndcX) || !Number.isFinite(ndcY)) return null;
+
+    // Ensure world matrices are current before raycasting (the dirty-flag
+    // loop may be paused while the scene is static).
+    this.model.root.updateMatrixWorld(true);
+
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.sceneManager.camera);
+
+    const cubieGroups = this.model.getAllCubies();
+    const hits = raycaster.intersectObjects(cubieGroups, true);
+    if (hits.length === 0) return null;
+
+    const hit = hits[0];
+    if (!hit.face) return null;
+
+    // Walk up from the hit mesh (sticker / core) to its cubie Group.
+    let obj: Object3D | null = hit.object;
+    while (obj && !cubieGroups.includes(obj as Group)) {
+      obj = obj.parent;
+    }
+    if (!obj) return null;
+    const cubie = obj as Group;
+
+    const resolved = resolveLayerHit({
+      meshLocalNormal: {
+        x: hit.face.normal.x,
+        y: hit.face.normal.y,
+        z: hit.face.normal.z,
+      },
+      cubieQuaternion: cubie.quaternion,
+    });
+
+    return {
+      ...resolved,
+      worldPoint: { x: hit.point.x, y: hit.point.y, z: hit.point.z },
+    };
   }
 
   public setIsometricView(): void {

@@ -25,6 +25,7 @@
     "progress": "Progress",
     "explore": "Explore",
     "timer": "Timer",
+    "cube": "Cube",
     "algorithms": "Algorithms",
     "skills": "Skills",
     "stats": "Stats",
@@ -33,6 +34,28 @@
     "more": "More",
     "moreOptions": "More options",
     "primary": "Primary"
+  },
+  "cube": {
+    "title": "Virtual cube",
+    "newScramble": "New scramble",
+    "reset": "Reset",
+    "help": "Controls",
+    "helpShort": "Keyboard & gestures",
+    "gestureHint": "Swipe a face to turn it · drag the background to orbit · pinch to zoom",
+    "initializing": "Initializing 3D cube…",
+    "unavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
+    "movesEmpty": "No moves yet — turn the cube or press a key",
+    "movesAria": "Recent moves",
+    "keys": {
+      "title": "Keyboard controls",
+      "subtitle": "The csTimer layout: your index fingers rest on U (F = U', J = U). Clockwise and counterclockwise are separate keys.",
+      "faces": "Face turns",
+      "rotations": "Cube rotations",
+      "wide": "Wide moves",
+      "slices": "Slice moves",
+      "close": "Close",
+      "footer": "Alt/Ctrl are reserved for global shortcuts. The layout matches csTimer so your muscle memory carries over."
+    }
   },
   "settings": {
     "title": "Settings",
