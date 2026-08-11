@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ · Tanda 8B (Skill Tree: ramas 1-4) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ · Tanda 8B (Skill Tree: ramas 1-4) ✅ · Tanda 8C (Skill Tree: ramas 5-9) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -406,8 +406,22 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
     intencional), muestreo de calidad ES vs EN correcto. Validado: tsc
     web+desktop 0, eslint 0, vitest 6/6, paridad en/es perfecta, 0 strings
     residuales.
-  - **8C — Ramas 5-9**: Lookahead (8) + Finger Tricks (9) + Inspection (7) +
-    Color Neutrality (5) + Hardware (7) = 36 skills ≈ 235 campos.
+  - **8C — Ramas 5-9** ✅: Lookahead (8) + Finger Tricks (9) + Inspection (7) +
+    Color Neutrality (5) + Hardware (7) = 36 skills ≈ 235 campos traducidos en
+    es.json (script one-shot con merge directo, luego borrado). Terminología
+    consolidada (lookahead/seguimiento, par esquina-arista, ranura, sujeción
+    base, regrip, flick, trigger, lockup, TPS, BPM, corner cutting, rodaje,
+    muelles, torpederos anti-pop, raíles de las piezas) y jerga de cubing
+    mantenida en ambos idiomas (F2L, OLL, PLL, T-Perm/H-Perm/Z-Perm, U-perms,
+    XCross, WV, ZBLL, Roux, LSE, CN, CNY, Speedcube, WCA, Sledgehammer,
+    keyhole, fingertricks, M2/trigger, flagship); nombres de técnicas
+    reconocibles mantenidos como jerga (Lookahead, Color Neutrality,
+    Inspection, Finger Tricks, Hardware en títulos donde funcionan como
+    nombres propios). Verificado: paridad estructural 36/36 (claves
+    title/subtitle/description/theory/exampleFormula/drills idénticas a en.json
+    incl. conteo de drills), 0 títulos EN residuales en la zona 8C (los 3 que
+    detecta el escáner son de ramas 8D). Validado: tsc web+desktop 0, eslint 0,
+    vitest 6/6, paridad en/es perfecta.
   - **8D — Ramas 10-13**: Psychology (7) + Training (8) + Roux (8) + ZZ (7) =
     30 skills ≈ 195 campos.
   - **8E — Ramas 14-16 + cierre**: Blindfold (8) + FMC (8) + Theory (7) = 23

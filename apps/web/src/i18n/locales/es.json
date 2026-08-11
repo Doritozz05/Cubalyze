@@ -1685,363 +1685,363 @@
         ]
       },
       "basic-lookahead": {
-        "title": "Basic lookahead",
-        "subtitle": "Look for the next F2L pair while solving the current one",
-        "description": "Train your eyes to scan for the next corner-edge pair while your hands execute the current insertion, eliminating the pause between F2L slots.",
-        "theory": "Lookahead is the single most important skill for breaking through speed plateaus. The brain has ~0.5-1s of 'free' processing during any F2L insertion — use it to find the next pair. Slow down execution to give your eyes time to look ahead.",
+        "title": "Lookahead básico",
+        "subtitle": "Busca el siguiente par F2L mientras resuelves el actual",
+        "description": "Entrena tus ojos para escanear el siguiente par esquina-arista mientras tus manos ejecutan la inserción actual, eliminando la pausa entre ranuras F2L.",
+        "theory": "El lookahead es la habilidad más importante para romper mesetas de velocidad. El cerebro tiene ~0,5-1s de procesamiento 'libre' durante cualquier inserción F2L — úsalo para encontrar el siguiente par. Reduce la velocidad de ejecución para dar tiempo a tus ojos a mirar hacia delante.",
         "drills": [
-          "Slow-turning practice: solve at 50% speed, focus only on piece tracking",
-          "Metronome practice: turn one move per beat at 60 BPM, never pause"
+          "Práctica de giro lento: resuelve al 50% de velocidad, céntrate solo en seguir las piezas",
+          "Práctica con metrónomo: un movimiento por pulso a 60 BPM, sin pausas"
         ]
       },
       "f2l-lookahead": {
-        "title": "F2L lookahead flow",
-        "subtitle": "Maintain continuous piece awareness through all four F2L slots",
-        "description": "Develop the ability to track multiple F2L pieces simultaneously and seamlessly transition from one slot to the next with zero pause.",
-        "theory": "Top cubers 'know' which pair they will solve next before finishing the current one. This requires training peripheral vision and pattern anticipation. Start by always knowing your NEXT pair before your current pair is inserted.",
+        "title": "Flujo de lookahead F2L",
+        "subtitle": "Mantén conciencia continua de las piezas a través de las cuatro ranuras F2L",
+        "description": "Desarrolla la capacidad de seguir varias piezas F2L a la vez y de transicionar sin fisuras de una ranura a la siguiente con cero pausas.",
+        "theory": "Los mejores cuberos 'saben' qué par resolverán a continuación antes de terminar el actual. Esto requiere entrenar la visión periférica y la anticipación de patrones. Empieza sabiendo siempre tu SIGUIENTE par antes de que el actual esté insertado.",
         "drills": [
-          "Pair prediction: before inserting, say aloud which pair you'll solve next",
-          "Solve F2L pairs in any order based on what you see first"
+          "Predicción de par: antes de insertar, di en voz alta qué par resolverás después",
+          "Resuelve pares F2L en cualquier orden según lo que veas primero"
         ]
       },
       "cross-f2l-transition": {
-        "title": "Cross→F2L transition",
-        "subtitle": "Track the first F2L pair during cross execution",
-        "description": "During the final cross moves, locate and begin tracking the first F2L pair so you can start it immediately after cross completion.",
-        "theory": "The cross-to-F2L transition is the most common pause point. If your cross is planned in inspection, your eyes are free during execution to find pair #1. The goal: 0.0s pause between the last cross move and first F2L move.",
+        "title": "Transición cruz→F2L",
+        "subtitle": "Sigue el primer par F2L durante la ejecución de la cruz",
+        "description": "Durante los últimos movimientos de la cruz, localiza y empieza a seguir el primer par F2L para poder comenzarlo inmediatamente tras completar la cruz.",
+        "theory": "La transición cruz-F2L es el punto de pausa más común. Si tu cruz está planificada en la inspección, tus ojos quedan libres durante la ejecución para encontrar el par nº 1. El objetivo: 0,0s de pausa entre el último movimiento de la cruz y el primer movimiento del F2L.",
         "drills": [
-          "Practice cross→F2L exclusively: solve cross, then immediately insert pair 1",
-          "Use a metronome at 3 TPS, never pause between cross and F2L"
+          "Practica solo la transición cruz→F2L: resuelve la cruz e inserta el par 1 al instante",
+          "Usa un metrónomo a 3 TPS, sin pausar nunca entre cruz y F2L"
         ]
       },
       "metronome-pacing": {
-        "title": "Metronome pacing",
-        "subtitle": "Solve at a consistent, externally-paced rhythm to eliminate pauses",
-        "description": "Use a metronome to enforce steady turning speed, training your eyes to track pieces at a fixed pace without rushing or pausing.",
-        "theory": "A metronome at 60-180 BPM forces consistent TPS. Start slow (60 BPM = 1 TPS) and increase gradually. When you can solve at 120 BPM without pauses, your lookahead can handle 2 TPS. This trains your brain to process visual information at speed.",
+        "title": "Ritmo con metrónomo",
+        "subtitle": "Resuelve con un ritmo constante y marcado externamente para eliminar pausas",
+        "description": "Usa un metrónomo para imponer una velocidad de giro constante, entrenando tus ojos a seguir las piezas a un ritmo fijo sin precipitarte ni pausar.",
+        "theory": "Un metrónomo a 60-180 BPM fuerza un TPS constante. Empieza lento (60 BPM = 1 TPS) y aumenta gradualmente. Cuando resuelvas a 120 BPM sin pausas, tu lookahead maneja 2 TPS. Esto entrena al cerebro a procesar información visual a velocidad.",
         "drills": [
-          "Start at 60 BPM, increase by 10 BPM when you can solve pause-free",
-          "Target: 180 BPM (3 TPS) with zero pauses in F2L"
+          "Empieza a 60 BPM y sube de 10 en 10 cuando resuelvas sin pausas",
+          "Objetivo: 180 BPM (3 TPS) con cero pausas en el F2L"
         ]
       },
       "continuous-lookahead": {
-        "title": "Continuous lookahead",
-        "subtitle": "Maintain unbroken piece tracking from cross through PLL",
-        "description": "Achieve a state where your eyes are always one step ahead of your hands throughout the entire solve, with no visual pauses.",
-        "theory": "Continuous lookahead means your eyes never stop scanning. During F2L pair 3, you're already tracking pair 4. During OLL execution, you're already identifying the PLL case. This flow state is what separates 15-second cubers from 10-second cubers.",
+        "title": "Lookahead continuo",
+        "subtitle": "Mantén un seguimiento ininterrumpido de las piezas desde la cruz hasta el PLL",
+        "description": "Alcanza un estado donde tus ojos van siempre un paso por delante de tus manos durante toda la resolución, sin pausas visuales.",
+        "theory": "El lookahead continuo significa que tus ojos nunca dejan de escanear. Durante el par 3 del F2L, ya estás siguiendo el par 4. Durante la ejecución del OLL, ya estás identificando el caso PLL. Este estado de flujo es lo que separa a los cuberos de 15 segundos de los de 10.",
         "drills": [
-          "Solve at 70% max speed — prioritize smoothness over TPS",
-          "Video record solves and count pause frames between steps"
+          "Resuelve al 70% de tu velocidad máxima — prioriza la fluidez sobre el TPS",
+          "Graba tus resoluciones y cuenta los frames de pausa entre pasos"
         ]
       },
       "predictive-tracking": {
-        "title": "Predictive tracking",
-        "subtitle": "Anticipate where pieces will end up after your current moves",
-        "description": "Mentally simulate how your current moves affect piece positions, predicting their final locations before the sequence completes.",
-        "theory": "Predictive tracking eliminates the 'search' phase after each insertion. By understanding how your algorithm moves pieces, you know where to look next before you finish. This requires deep familiarity with how each F2L case affects the cube.",
+        "title": "Seguimiento predictivo",
+        "subtitle": "Anticipa dónde terminarán las piezas tras tus movimientos actuales",
+        "description": "Simula mentalmente cómo afectan tus movimientos actuales a las posiciones de las piezas, prediciendo su ubicación final antes de que la secuencia termine.",
+        "theory": "El seguimiento predictivo elimina la fase de 'búsqueda' tras cada inserción. Al entender cómo mueve las piezas tu algoritmo, sabes dónde mirar antes de terminar. Requiere un conocimiento profundo de cómo afecta cada caso F2L al cubo.",
         "drills": [
-          "Before inserting a pair, predict exactly where pair 2 pieces will be",
-          "Practice tracking a specific edge through multiple F2L insertions"
+          "Antes de insertar un par, predice exactamente dónde estarán las piezas del par 2",
+          "Practica seguir una arista concreta a través de varias inserciones F2L"
         ]
       },
       "zero-pause-flow": {
-        "title": "Zero-pause flow",
-        "subtitle": "Solve with absolutely zero pauses — every move flows into the next",
-        "description": "Enter a flow state where the solve is one continuous motion without any recognition pauses, hesitations, or breaks in rhythm.",
-        "theory": "Zero-pause solving is the hallmark of elite speedcubers. Every move is connected. Recognition, decision, and execution form one seamless loop. This requires all algorithms in muscle memory, all recognition patterns subconscious, and full lookahead mastery.",
+        "title": "Flujo sin pausas",
+        "subtitle": "Resuelve con cero pausas absolutas: cada movimiento fluye al siguiente",
+        "description": "Entra en un estado de flujo donde la resolución es un movimiento continuo sin pausas de reconocimiento, dudas ni rupturas de ritmo.",
+        "theory": "Resolver sin pausas es el sello de los speedcubers de élite. Cada movimiento está conectado. El reconocimiento, la decisión y la ejecución forman un bucle sin fisuras. Requiere todos los algoritmos en memoria muscular, todos los patrones de reconocimiento subconscientes y dominio total del lookahead.",
         "drills": [
-          "Record solves and check for ANY frame without a turn",
-          "Target: max 0.3s pause at any point in the solve"
+          "Graba resoluciones y comprueba si hay CUALQUIER frame sin un giro",
+          "Objetivo: máximo 0,3s de pausa en cualquier punto de la resolución"
         ]
       },
       "subconscious-recognition": {
-        "title": "Subconscious Recognition",
-        "subtitle": "Recognize cases instantly without conscious thought — pure pattern response",
-        "description": "Process OLL, PLL, and F2L cases at a subconscious level, where your hands begin executing before you consciously 'know' what the case is.",
-        "theory": "At the highest level, recognition bypasses conscious thought. Pattern → algorithm mapping becomes a direct neural pathway. This is achieved through thousands of repetitions. Your hands 'know' the algorithm before your conscious mind names the case.",
+        "title": "Reconocimiento subconsciente",
+        "subtitle": "Reconoce casos al instante sin pensamiento consciente — respuesta pura al patrón",
+        "description": "Procesa los casos OLL, PLL y F2L a nivel subconsciente, donde tus manos empiezan a ejecutar antes de que 'sepas' conscientemente qué caso es.",
+        "theory": "Al nivel más alto, el reconocimiento evita el pensamiento consciente. El mapeo patrón → algoritmo se convierte en una vía neuronal directa. Se logra con miles de repeticiones. Tus manos 'conocen' el algoritmo antes de que tu mente consciente nombre el caso.",
         "drills": [
-          "Speed recognition drills at 2x normal pace",
-          "Practice naming cases while executing them to verify subconscious knowledge"
+          "Ejercicios de reconocimiento rápido al doble de ritmo normal",
+          "Practica nombrar casos mientras los ejecutas para verificar el conocimiento subconsciente"
         ]
       },
       "basic-u-flicks": {
-        "title": "Basic U flicks",
-        "subtitle": "Execute U and U' moves with index finger pushes and pulls",
-        "description": "Learn the fundamental index finger techniques: right index push for U, left index pull for U', replacing whole-hand wrist turns.",
-        "theory": "U flicks are the most common moves in cubing. Right index pushes the UFR corner forward for U. Left index pulls the UBL corner toward you for U'. These are faster and more precise than wrist turns and are the foundation of all fingertricks.",
+        "title": "Flicks U básicos",
+        "subtitle": "Ejecuta U y U' con empujes y tirones del índice",
+        "description": "Aprende las técnicas fundamentales del índice: empuje del índice derecho para U, tirón del izquierdo para U', sustituyendo los giros de muñeca de toda la mano.",
+        "theory": "Los flicks U son los movimientos más comunes del cubing. El índice derecho empuja la esquina UFR hacia delante para U. El izquierdo tira de la esquina UBL hacia ti para U'. Son más rápidos y precisos que los giros de muñeca y son la base de todos los fingertricks.",
         "drills": [
-          "Execute (U U') x 20 focusing on finger movement, not wrist",
-          "Practice trigger R U R' U' repeatedly for 30 seconds"
+          "Ejecuta (U U') x 20 centrándote en el movimiento del dedo, no de la muñeca",
+          "Practica el trigger R U R' U' repetidamente durante 30 segundos"
         ]
       },
       "r-moves-proper": {
-        "title": "R-move technique",
-        "subtitle": "Execute R and R' with proper wrist and finger technique",
-        "description": "Master R moves using the right hand with minimal regripping, and learn the proper grip that allows fluid R and U combination triggers.",
-        "theory": "R is executed by pulling the right layer toward you with the right hand. R' pushes it away. The key is keeping the cube stable with the left hand while the right executes. Learn to hold the cube so R and U moves can flow together without regripping.",
+        "title": "Técnica de movimientos R",
+        "subtitle": "Ejecuta R y R' con técnica correcta de muñeca y dedos",
+        "description": "Domina los movimientos R con la mano derecha y mínimos regrips, y aprende la sujeción que permite triggers fluidos combinando R y U.",
+        "theory": "R se ejecuta tirando de la capa derecha hacia ti con la mano derecha. R' la empuja hacia fuera. La clave es mantener el cubo estable con la izquierda mientras la derecha ejecuta. Aprende a sujetar el cubo para que R y U fluyan juntos sin regripar.",
         "drills": [
-          "Practice R U R' U' trigger 50 times, maintaining grip stability",
-          "Execute all PLL U-perms focusing on R-U flow"
+          "Practica el trigger R U R' U' 50 veces manteniendo la estabilidad de la sujeción",
+          "Ejecuta todos los U-perms de PLL centrándote en el flujo R-U"
         ]
       },
       "f-move-ergonomics": {
-        "title": "F & F' move ergonomics",
-        "subtitle": "Execute F and F' moves using index finger pinches and thumb flicks without regripping",
-        "description": "Master index finger pinches for F and thumb flicks for F' to execute frontal face turns seamlessly from standard home grip.",
-        "theory": "Wrist-heavy F moves cause regrips and slow down algorithms like T-Perm, Sledgehammer, and OLLs. Pushing F with the right index finger and flicking F' with the right thumb allows rapid execution while keeping hands fixed in home grip.",
+        "title": "Ergonomía de F y F'",
+        "subtitle": "Ejecuta F y F' con pellizcos del índice y flicks del pulgar sin regripar",
+        "description": "Domina los pellizcos del índice para F y los flicks del pulgar para F', ejecutando giros de la cara frontal sin salir de la sujeción base.",
+        "theory": "Los movimientos F con mucha muñeca provocan regrips y frenan algoritmos como el T-Perm, el Sledgehammer y los OLL. Empujar F con el índice derecho y hacer F' con el pulgar derecho permite una ejecución rápida manteniendo las manos en la sujeción base.",
         "drills": [
-          "Execute F R U R' U' F' 30 times using index pinch for F and thumb flick for F'",
-          "Practice T-Perm paying attention to seamless F/F' transitions"
+          "Ejecuta F R U R' U' F' 30 veces usando el pellizco del índice para F y el flick del pulgar para F'",
+          "Practica el T-Perm prestando atención a las transiciones F/F' sin fisuras"
         ]
       },
       "double-flicks-u2": {
-        "title": "Double flicks (U2)",
-        "subtitle": "Execute U2 in one fluid motion using index-middle finger combo",
-        "description": "Master the U2 double flick: right index followed by right middle finger in one seamless motion, achieving U2 in half the time of two separate U moves.",
-        "theory": "The U2 double flick is a core speed technique. Right index pushes, then right middle finger immediately follows through. The key is keeping both fingers close to the U layer and maintaining momentum. Also learn the left-hand mirror for ambidextrous solving.",
+        "title": "Dobles flicks (U2)",
+        "subtitle": "Ejecuta U2 en un solo movimiento fluido combinando índice y medio",
+        "description": "Domina el doble flick de U2: índice derecho seguido de medio derecho en un único movimiento, logrando U2 en la mitad de tiempo que dos U separados.",
+        "theory": "El doble flick de U2 es una técnica de velocidad clave. El índice derecho empuja y el medio sigue inmediatamente. La clave es mantener ambos dedos cerca de la capa U y conservar el impulso. Aprende también el espejo con la izquierda para resolver ambidiestro.",
         "drills": [
-          "Execute U2 double flicks 100 times each hand",
-          "Practice algs with many U2s (H-Perm, Z-Perm) at speed"
+          "Ejecuta dobles flicks de U2 100 veces con cada mano",
+          "Practica algoritmos con muchos U2 (H-Perm, Z-Perm) a velocidad"
         ]
       },
       "d-moves-ring": {
-        "title": "D-move ring technique",
-        "subtitle": "Execute D and D' moves with ring fingers for cross and F2L efficiency",
-        "description": "Use ring fingers to execute D-layer moves without regripping, essential for efficient cross execution and keyhole F2L techniques.",
-        "theory": "D moves are critical for cross and keyhole. Right ring finger pushes DFR corner for D, left ring finger pushes DFL for D'. Practice these in cross sequences: a good cross often alternates R, U, and D moves seamlessly.",
+        "title": "Técnica de anular para D",
+        "subtitle": "Ejecuta D y D' con los dedos anulares para eficiencia en cruz y F2L",
+        "description": "Usa los dedos anulares para ejecutar movimientos de la capa D sin regripar, esencial para una ejecución eficiente de la cruz y las técnicas keyhole de F2L.",
+        "theory": "Los movimientos D son críticos para la cruz y el keyhole. El anular derecho empuja la esquina DFR para D; el anular izquierdo empuja DFL para D'. Practícalos en secuencias de cruz: una buena cruz suele alternar R, U y D sin fisuras.",
         "drills": [
-          "Execute D and D' with ring fingers 50 times, minimize hand shift",
-          "Practice cross sequences incorporating D moves without pauses"
+          "Ejecuta D y D' con los anulares 50 veces minimizando el desplazamiento de las manos",
+          "Practica secuencias de cruz que incorporen movimientos D sin pausas"
         ]
       },
       "m-slice-basics": {
-        "title": "M-slice technique",
-        "subtitle": "Execute M, M', and M2 for advanced algs and Roux",
-        "description": "Learn proper M-slice execution: M' with ring/middle finger push from back, M with pull from front, and M2 double flick.",
-        "theory": "M moves follow the L direction: M' goes the same direction as L', M goes with L. For M', push the BD edge forward with your ring or middle finger from behind. M pulls the UF edge toward you. Essential for H-Perm, Z-Perm, and Roux LSE.",
+        "title": "Técnica del corte M",
+        "subtitle": "Ejecuta M, M' y M2 para algoritmos avanzados y Roux",
+        "description": "Aprende la ejecución correcta del corte M: M' empujando desde atrás con anular/medio, M tirando desde delante, y M2 con doble flick.",
+        "theory": "Los movimientos M siguen la dirección de L: M' va en la misma dirección que L', M va con L. Para M', empuja la arista BD hacia delante con el anular o el medio desde detrás. M tira de la arista UF hacia ti. Esencial para el H-Perm, el Z-Perm y el LSE de Roux.",
         "drills": [
-          "Execute H-Perm (M2 U M2 U2 M2 U M2) 25 times focusing on M2 flicks",
-          "Practice M' U and M U' triggers in isolation"
+          "Ejecuta el H-Perm (M2 U M2 U2 M2 U M2) 25 veces centrándote en los flicks de M2",
+          "Practica los triggers M' U y M U' de forma aislada"
         ]
       },
       "advanced-finger-tricks": {
-        "title": "Advanced finger tricks",
-        "subtitle": "Master wide moves (r,l,f), S-slice, and pinch moves",
-        "description": "Expand your physical vocabulary to include wide turns, S/E-slice moves, and compound techniques that reduce move counts in advanced algorithms.",
-        "theory": "Wide moves (r = R + M') are essential for rotationless OLL. S-slice moves appear in advanced F2L. Pinch moves (thumb+index gripping a layer) enable fast F and B moves. Each new physical technique unlocks faster execution of advanced algorithms.",
+        "title": "Finger tricks avanzados",
+        "subtitle": "Domina los movimientos anchos (r, l, f), el corte S y los pellizcos",
+        "description": "Amplía tu vocabulario físico para incluir giros anchos, movimientos de los cortes S/E y técnicas compuestas que reducen el número de movimientos en algoritmos avanzados.",
+        "theory": "Los movimientos anchos (r = R + M') son esenciales para el OLL sin rotaciones. Los cortes S aparecen en el F2L avanzado. Los pellizcos (agarrar una capa con pulgar + índice) permiten F y B rápidos. Cada técnica física nueva desbloquea una ejecución más rápida de algoritmos avanzados.",
         "drills": [
-          "Practice r U R' U' r' F R F' (wide OLL trigger)",
-          "Learn S-move technique for ZBLL and advanced F2L algorithms"
+          "Practica r U R' U' r' F R F' (trigger OLL ancho)",
+          "Aprende la técnica del movimiento S para ZBLL y algoritmos F2L avanzados"
         ]
       },
       "regrip-minimization": {
-        "title": "Regrip minimization",
-        "subtitle": "Reduce hand repositioning to near-zero throughout the entire solve",
-        "description": "Eliminate unnecessary regrips by choosing algorithms that flow naturally from the ending position of the previous step.",
-        "theory": "Every regrip costs ~0.2-0.3s. A solve with 10 regrips loses 2-3 seconds. Choose algorithms that end in positions compatible with the next step. Use the home grip consistently. Plan algorithm transitions so your hands are always ready.",
+        "title": "Minimización de regrips",
+        "subtitle": "Reduce la reposición de las manos a casi cero durante toda la resolución",
+        "description": "Elimina regrips innecesarios eligiendo algoritmos que fluyan naturalmente desde la posición final del paso anterior.",
+        "theory": "Cada regrip cuesta ~0,2-0,3s. Una resolución con 10 regrips pierde 2-3 segundos. Elige algoritmos que terminen en posiciones compatibles con el siguiente paso. Usa la sujeción base de forma constante. Planifica las transiciones de algoritmos para que tus manos estén siempre listas.",
         "drills": [
-          "Record solves and count regrips — target: ≤2 per solve",
-          "Audit your algorithm set: replace algorithms that cause regrips"
+          "Graba resoluciones y cuenta los regrips — objetivo: ≤2 por resolución",
+          "Audita tu set de algoritmos: sustituye los que provoquen regrips"
         ]
       },
       "peak-tps-execution": {
-        "title": "Peak TPS execution",
-        "subtitle": "Achieve and maintain 10+ TPS on known algorithms with full accuracy",
-        "description": "Push your physical turning speed to elite levels (10-12+ TPS) on algorithms while maintaining lockup-free accuracy and fluid transitions.",
-        "theory": "TPS naturally increases with practice but plateaus without deliberate speed training. Focus on 'burst TPS' during PLL execution and steady-state TPS during F2L. The balance is speed vs lockups — faster is only better if you don't lock up.",
+        "title": "Ejecución a TPS máximo",
+        "subtitle": "Alcanza y mantén 10+ TPS en algoritmos conocidos con precisión total",
+        "description": "Lleva tu velocidad física de giro a niveles de élite (10-12+ TPS) en algoritmos manteniendo precisión sin lockups y transiciones fluidas.",
+        "theory": "El TPS sube naturalmente con la práctica, pero se estanca sin entrenamiento deliberado de velocidad. Céntrate en el 'TPS en ráfaga' durante la ejecución del PLL y el TPS constante durante el F2L. El equilibrio es velocidad vs lockups — más rápido solo es mejor si no te atas.",
         "drills": [
-          "PLL Time Attack targeting sub-35s for all 21",
-          "TPS burst drills: execute T-Perm as fast as possible, verify accuracy"
+          "PLL Time Attack apuntando a sub-35s para los 21",
+          "Ejercicios de ráfaga TPS: ejecuta el T-Perm lo más rápido posible y verifica la precisión"
         ]
       },
       "inspection-basics": {
-        "title": "Inspection basics",
-        "subtitle": "Use the 15-second WCA inspection to plan the cross before starting",
-        "description": "Learn to use inspection time productively: locate cross pieces, plan a basic cross solution, and position hands before starting the timer.",
-        "theory": "Inspection is not just 'looking at the cube' — it's active planning. Find all four cross edges, plan their sequence, and rehearse mentally. Even planning 2-3 edges is better than starting blind. Build the habit of using every second of inspection.",
+        "title": "Fundamentos de la inspección",
+        "subtitle": "Usa la inspección WCA de 15 segundos para planificar la cruz antes de empezar",
+        "description": "Aprende a aprovechar el tiempo de inspección: localiza las piezas de la cruz, planifica una solución básica y coloca las manos antes de arrancar el temporizador.",
+        "theory": "La inspección no es solo 'mirar el cubo' — es planificación activa. Encuentra las cuatro aristas de la cruz, planifica su secuencia y ensáyala mentalmente. Incluso planificar 2-3 aristas es mejor que empezar a ciegas. Construye el hábito de usar cada segundo de inspección.",
         "drills": [
-          "Use a 15s countdown — plan what you can, then execute",
-          "Start with planning 2 cross edges, progress to all 4"
+          "Usa una cuenta atrás de 15s — planifica lo que puedas y ejecuta",
+          "Empieza planificando 2 aristas de la cruz y progresa hasta las 4"
         ]
       },
       "cross-planning-inspect": {
-        "title": "Full cross during inspection",
-        "subtitle": "Plan the complete 4-edge cross solution within 15 seconds every solve",
-        "description": "Consistently plan all four cross edge placements during inspection, including move sequence and final positions of cross edges.",
-        "theory": "This is the baseline inspection skill for sub-25 solving. Identify each cross edge's path, calculate the sequence, and visualize the final cross state. The brain can hold 6-8 moves in working memory easily — a full cross plan fits within this limit.",
+        "title": "Cruz completa en la inspección",
+        "subtitle": "Planifica la solución completa de las 4 aristas en 15 segundos en cada resolución",
+        "description": "Planifica de forma constante las cuatro colocaciones de aristas de la cruz durante la inspección, incluyendo la secuencia de movimientos y las posiciones finales.",
+        "theory": "Esta es la habilidad de inspección base para el sub-25. Identifica el recorrido de cada arista de la cruz, calcula la secuencia y visualiza el estado final. El cerebro retiene 6-8 movimientos en memoria de trabajo sin problema — una cruz completa cabe en ese límite.",
         "drills": [
-          "Use unlimited inspection initially, then reduce to 15s",
-          "After solving cross, verify all edges match both centers"
+          "Usa inspección ilimitada al principio y reduce luego a 15s",
+          "Tras resolver la cruz, verifica que todas las aristas coinciden con ambos centros"
         ]
       },
       "full-inspection-15s": {
-        "title": "15-second inspection mastery",
-        "subtitle": "Maximize every second of inspection: plan cross and spot F2L opportunities",
-        "description": "Structure your 15 seconds: 5s for cross planning, 5s for cross rehearsal, 5s for F2L piece spotting — extracting maximum value from inspection.",
-        "theory": "Elite cubers have a structured inspection routine: (1) locate cross pieces on preferred face, (2) plan sequence, (3) mentally rehearse, (4) identify first F2L pair pieces. This deliberate structure prevents panic and maximizes pre-solve preparation.",
+        "title": "Dominio de la inspección de 15 segundos",
+        "subtitle": "Aprovecha cada segundo: planifica la cruz y detecta oportunidades F2L",
+        "description": "Estructura tus 15 segundos: 5s para la planificación de la cruz, 5s para ensayarla, 5s para localizar piezas F2L — sacando el máximo valor de la inspección.",
+        "theory": "Los cuberos de élite tienen una rutina de inspección estructurada: (1) localizar las piezas de la cruz en la cara preferida, (2) planificar la secuencia, (3) ensayar mentalmente, (4) identificar las piezas del primer par F2L. Esta estructura deliberada evita el pánico y maximiza la preparación previa.",
         "drills": [
-          "Practice with a partner enforcing strict 15s inspection",
-          "After inspection, rate yourself: did you find pair 1 pieces?"
+          "Practica con un compañero que imponga inspección estricta de 15s",
+          "Tras la inspección, autoevalúate: ¿encontraste las piezas del par 1?"
         ]
       },
       "cross-one-inspect": {
-        "title": "Cross+1 inspection",
-        "subtitle": "Plan the cross AND predict the location of the first F2L pair during inspection",
-        "description": "During the 15-second inspection, plan the full cross AND identify or predict where the first F2L pair pieces will end up after cross execution.",
-        "theory": "Cross+1 is the single highest-impact inspection skill for breaking sub-15. By tracking the corner and edge of pair 1 through your cross solution, you eliminate the post-cross pause entirely. This requires visualizing the cube state after cross completion.",
+        "title": "Inspección cruz+1",
+        "subtitle": "Planifica la cruz Y predice la ubicación del primer par F2L durante la inspección",
+        "description": "En la inspección de 15 segundos, planifica la cruz completa Y identifica o predice dónde terminarán las piezas del primer par F2L tras la ejecución de la cruz.",
+        "theory": "Cruz+1 es la habilidad de inspección de mayor impacto para romper el sub-15. Siguiendo la esquina y la arista del par 1 a través de tu solución de cruz, eliminas por completo la pausa post-cruz. Requiere visualizar el estado del cubo tras completar la cruz.",
         "drills": [
-          "Cross+1 drill: execute cross, immediately solve pair 1 without pause",
-          "Track a specific piece through cross — predict its final location"
+          "Ejercicio cruz+1: ejecuta la cruz y resuelve el par 1 al instante sin pausa",
+          "Sigue una pieza concreta a través de la cruz — predice su ubicación final"
         ]
       },
       "pair-prediction": {
-        "title": "Multi-pair prediction",
-        "subtitle": "Predict how F2L pairs change during cross and between slots",
-        "description": "During inspection and throughout the solve, mentally track how piece positions evolve with each move, anticipating F2L pairs multiple steps ahead.",
-        "theory": "Multi-pair prediction is the bridge to elite solving. By understanding how cross moves affect F2L pieces, you can spot emerging pairs before they fully form. This requires deep cube awareness — knowing where each tracked piece goes after every move.",
+        "title": "Predicción de múltiples pares",
+        "subtitle": "Predice cómo cambian los pares F2L durante la cruz y entre ranuras",
+        "description": "Durante la inspección y toda la resolución, sigue mentalmente cómo evolucionan las posiciones de las piezas con cada movimiento, anticipando pares F2L varios pasos por delante.",
+        "theory": "La predicción de múltiples pares es el puente hacia la resolución de élite. Entendiendo cómo afectan los movimientos de la cruz a las piezas F2L, puedes detectar pares emergentes antes de que se formen. Requiere una conciencia profunda del cubo: saber dónde va cada pieza seguida tras cada movimiento.",
         "drills": [
-          "After planning cross, predict which corner-edge combinations will be near each other",
-          "Track all 8 F2L pieces through cross execution (name their positions)"
+          "Tras planificar la cruz, predice qué combinaciones esquina-arista quedarán cerca",
+          "Sigue las 8 piezas F2L a través de la ejecución de la cruz (nombra sus posiciones)"
         ]
       },
       "multi-solution-compare": {
-        "title": "Multi-solution comparison",
-        "subtitle": "Evaluate multiple cross/F2L strategies during inspection and pick the best",
-        "description": "In 15 seconds, mentally compare 2-3 cross approaches and select the one with the best F2L follow-up potential, not just the shortest cross.",
-        "theory": "The shortest cross is not always the best. An 8-move cross with perfect F2L setup beats a 5-move cross with terrible follow-up. At the master level, inspection involves strategic choice: which face? XCross possible? Best pair 1 accessibility?",
+        "title": "Comparación de múltiples soluciones",
+        "subtitle": "Evalúa varias estrategias de cruz/F2L durante la inspección y elige la mejor",
+        "description": "En 15 segundos, compara mentalmente 2-3 enfoques de cruz y selecciona el de mejor potencial de seguimiento F2L, no solo la cruz más corta.",
+        "theory": "La cruz más corta no siempre es la mejor. Una cruz de 8 movimientos con un F2L perfecto supera a una de 5 movimientos con mal seguimiento. A nivel maestro, la inspección implica elección estratégica: ¿qué cara? ¿XCross posible? ¿Mejor accesibilidad del par 1?",
         "drills": [
-          "For each scramble, plan 2 different crosses, compare quality",
-          "Time the first 15 moves for each cross choice, compare results"
+          "Para cada scramble, planifica 2 cruces diferentes y compara su calidad",
+          "Cronometra los primeros 15 movimientos de cada opción de cruz y compara resultados"
         ]
       },
       "full-solve-planning": {
-        "title": "Full solve architecture",
-        "subtitle": "Mentally outline the entire solve structure during inspection",
-        "description": "Develop a high-level solve strategy during inspection: cross plan, F2L slot solving order, potential XCross/multislot opportunities, and transition awareness.",
-        "theory": "At the elite level, inspection isn't just about cross+1 — it's about solve architecture. Which slots look easy? Which pair should be last? Is WV applicable? This strategic overview prevents mid-solve indecision and ensures optimal slot ordering.",
+        "title": "Arquitectura de la resolución completa",
+        "subtitle": "Esboza mentalmente toda la estructura de la resolución durante la inspección",
+        "description": "Desarrolla una estrategia de alto nivel durante la inspección: plan de cruz, orden de las ranuras F2L, oportunidades de XCross/multislot y conciencia de las transiciones.",
+        "theory": "A nivel de élite, la inspección no es solo cruz+1 — es arquitectura de la resolución. ¿Qué ranuras parecen fáciles? ¿Qué par debe ir el último? ¿Es aplicable la WV? Esta visión estratégica evita la indecisión a mitad de la resolución y garantiza un orden óptimo de ranuras.",
         "drills": [
-          "During inspection, name the order you'll solve F2L slots",
-          "After solve, compare planned vs actual slot order"
+          "Durante la inspección, nombra el orden en que resolverás las ranuras F2L",
+          "Tras resolver, compara el orden planificado vs el real de las ranuras"
         ]
       },
       "single-cross-mastery": {
-        "title": "Single Cross Mastery",
-        "subtitle": "Achieve consistent, efficient solves on one cross color before expanding",
-        "description": "Master your primary cross color (typically white) to the point where cross planning and F2L recognition are automatic and effortless.",
-        "theory": "Before expanding to other colors, your primary color should be deeply ingrained — you should see F2L pairs instantly and plan crosses in seconds. This ensures you have a 'home base' to return to when learning new colors feels frustrating.",
+        "title": "Dominio de una sola cruz",
+        "subtitle": "Logra resoluciones constantes y eficientes con un color de cruz antes de ampliar",
+        "description": "Domina tu color de cruz principal (normalmente blanco) hasta que la planificación de la cruz y el reconocimiento F2L sean automáticos y sin esfuerzo.",
+        "theory": "Antes de ampliar a otros colores, tu color principal debe estar profundamente arraigado: debes ver los pares F2L al instante y planificar cruces en segundos. Así tienes una 'base' a la que volver cuando aprender nuevos colores resulte frustrante.",
         "drills": [
-          "Achieve consistent sub-30 solves on white cross before starting CN",
-          "Ensure cross planning on white takes ≤12 seconds in inspection"
+          "Logra resoluciones sub-30 constantes con cruz blanca antes de empezar con la CN",
+          "Asegúrate de que la planificación de la cruz en blanco tarda ≤12s en la inspección"
         ]
       },
       "dual-color-neutrality": {
-        "title": "Dual Color Neutrality",
-        "subtitle": "Solve on both white and yellow cross with equal proficiency",
-        "description": "Extend your solving ability to the opposite cross color (yellow if you started on white), maintaining the same lookahead and recognition speed.",
-        "theory": "Dual CN (white + yellow) is the most practical step toward full CN. F2L colors are identical (just inverted), so recognition patterns transfer easily. The cross on the second color will be slow at first — expect ~100 solves before comfort.",
+        "title": "Neutralidad de color dual",
+        "subtitle": "Resuelve con cruz blanca y amarilla con la misma soltura",
+        "description": "Amplía tu capacidad al color de cruz opuesto (amarillo si empezaste con blanco), manteniendo la misma velocidad de lookahead y reconocimiento.",
+        "theory": "La CN dual (blanco + amarillo) es el paso más práctico hacia la CN completa. Los colores F2L son idénticos (solo invertidos), así que los patrones de reconocimiento se transfieren fácilmente. La cruz del segundo color será lenta al principio — espera ~100 resoluciones antes de la comodidad.",
         "drills": [
-          "Complete 100 solves exclusively on yellow cross",
-          "Compare yellow vs white solve times — target: within 10%"
+          "Completa 100 resoluciones exclusivamente con cruz amarilla",
+          "Compara los tiempos amarillo vs blanco — objetivo: dentro del 10%"
         ]
       },
       "opposite-color-training": {
-        "title": "Opposite Color Training",
-        "subtitle": "Add red/orange and blue/green cross pairs systematically by dedicated practice blocks",
-        "description": "Methodically add new cross colors one pair at a time, building recognition patterns for non-primary colors through dedicated practice blocks.",
-        "theory": "The most effective CN training method: dedicate 1-2 weeks per new color pair (red+orange first, then blue+green). Solve 50+ solves per day on the new color. The CNY method: Color-Neutral-Yellow, alternating new colors with yellow solves to maintain dual CN.",
+        "title": "Entrenamiento de colores opuestos",
+        "subtitle": "Añade los pares rojo/naranja y azul/verde sistemáticamente con bloques de práctica dedicados",
+        "description": "Añade nuevos colores de cruz metódicamente, uno de cada vez, construyendo patrones de reconocimiento para colores no principales con bloques de práctica dedicados.",
+        "theory": "El método de entrenamiento CN más eficaz: dedica 1-2 semanas a cada par nuevo (rojo+naranja primero, luego azul+verde). Resuelve 50+ resoluciones al día con el color nuevo. El método CNY (Color-Neutral-Yellow): alterna colores nuevos con resoluciones en amarillo para mantener la CN dual.",
         "drills": [
-          "Week 1-2: red cross only (100 solves total)",
-          "Week 3-4: orange, Week 5-6: blue, Week 7-8: green"
+          "Semana 1-2: solo cruz roja (100 resoluciones en total)",
+          "Semana 3-4: naranja, Semana 5-6: azul, Semana 7-8: verde"
         ]
       },
       "full-color-neutrality": {
-        "title": "Full Color Neutrality",
-        "subtitle": "Solve on any of the six faces with zero hesitation or speed penalty",
-        "description": "Achieve complete color neutrality: inspect and choose the best cross among all six faces without any speed difference between colors.",
-        "theory": "Full CN increases the probability of finding a ≤4-move cross from ~6% to ~29%. It requires rewiring F2L recognition to be color-relative rather than color-absolute. At full mastery, you won't remember which color you started on after the solve.",
+        "title": "Neutralidad de color completa",
+        "subtitle": "Resuelve en cualquiera de las seis caras sin dudar ni penalización de velocidad",
+        "description": "Alcanza la neutralidad de color completa: inspecciona y elige la mejor cruz entre las seis caras sin ninguna diferencia de velocidad entre colores.",
+        "theory": "La CN completa aumenta la probabilidad de encontrar una cruz de ≤4 movimientos de ~6% a ~29%. Requiere recablear el reconocimiento F2L para que sea relativo al color, no absoluto. Al dominio total, no recordarás con qué color empezaste tras la resolución.",
         "drills": [
-          "Random cross color sessions: let a die choose your cross color",
-          "Target: all 6 colors within 5% of each other in average time"
+          "Sesiones de color aleatorio: deja que un dado elija tu color de cruz",
+          "Objetivo: los 6 colores dentro del 5% entre sí en tiempo medio"
         ]
       },
       "subconscious-cn": {
-        "title": "Subconscious Color Neutrality",
-        "subtitle": "Choose the optimal cross color automatically during inspection without conscious deliberation",
-        "description": "Your brain automatically evaluates all six faces during inspection and selects the best option without you consciously 'trying' each color.",
-        "theory": "At this level, CN is fully internalized. Your eyes scan all faces in 2-3 seconds and your brain registers the best option. You no longer see 'colors' — you see relative block positions and cross edge arrangements. This frees cognitive resources for deeper inspection.",
+        "title": "Neutralidad de color subconsciente",
+        "subtitle": "Elige el color de cruz óptimo automáticamente durante la inspección sin deliberación consciente",
+        "description": "Tu cerebro evalúa automáticamente las seis caras durante la inspección y selecciona la mejor opción sin que 'pruebes' conscientemente cada color.",
+        "theory": "A este nivel, la CN está totalmente interiorizada. Tus ojos escanean todas las caras en 2-3 segundos y tu cerebro registra la mejor opción. Ya no ves 'colores' — ves posiciones relativas de bloques y disposiciones de aristas de cruz. Esto libera recursos cognitivos para una inspección más profunda.",
         "drills": [
-          "Time your color selection: pick the best cross in under 3 seconds",
-          "After solve, try to recall which color you used — if you can't, you've internalized CN"
+          "Cronometra tu elección de color: elige la mejor cruz en menos de 3 segundos",
+          "Tras resolver, intenta recordar qué color usaste — si no puedes, has interiorizado la CN"
         ]
       },
       "cube-anatomy-hardware": {
-        "title": "Cube Hardware 101",
-        "subtitle": "Understand cube components: core, screws, springs, pieces, and how they interact",
-        "description": "Learn the physical construction of a speedcube: core mechanism, center pieces with screws/springs, edge pieces with torpedoes, and corner pieces with stalks.",
-        "theory": "A modern speedcube has a spherical core with 6 screws+springs for tensioning, 12 edge pieces with anti-pop torpedoes, and 8 corner pieces. Understanding how these interact helps with setup and maintenance decisions.",
+        "title": "Hardware del cubo 101",
+        "subtitle": "Comprende los componentes del cubo: núcleo, tornillos, muelles, piezas y cómo interactúan",
+        "description": "Aprende la construcción física de un speedcube: mecanismo del núcleo, centros con tornillos/muelles, aristas con torpederos y esquinas con raíces.",
+        "theory": "Un speedcube moderno tiene un núcleo esférico con 6 tornillos+muelles para el tensado, 12 aristas con torpederos anti-pop y 8 esquinas. Comprender cómo interactúan ayuda en las decisiones de configuración y mantenimiento.",
         "drills": [
-          "Disassemble and reassemble your cube to understand its structure",
-          "Identify all components and their functions"
+          "Desmonta y monta tu cubo para entender su estructura",
+          "Identifica todos los componentes y sus funciones"
         ]
       },
       "basic-lubrication": {
-        "title": "Basic Lubrication",
-        "subtitle": "Apply lube correctly to improve speed, smoothness, and cube lifespan",
-        "description": "Learn to clean and lubricate your cube: disassemble, apply lube to tracks and core, reassemble, and break in properly.",
-        "theory": "Lubrication reduces friction between pieces. Thin/fast lubes go on piece tracks for speed. Thick lubes go in the core for stability and control. Apply 2-4 drops, spread evenly, and do 50+ solves to break in. Over-lubing makes cubes gummy.",
+        "title": "Lubricación básica",
+        "subtitle": "Aplica lubricante correctamente para mejorar velocidad, fluidez y vida del cubo",
+        "description": "Aprende a limpiar y lubricar tu cubo: desmontar, aplicar lubricante a los raíles y al núcleo, montar y hacer el rodaje correctamente.",
+        "theory": "La lubricación reduce la fricción entre piezas. Los lubricantes finos/rápidos van en los raíles de las piezas para velocidad. Los espesos van al núcleo para estabilidad y control. Aplica 2-4 gotas, repártelas uniformemente y haz 50+ resoluciones de rodaje. Lubricar en exceso vuelve el cubo pegajoso.",
         "drills": [
-          "Complete your first clean+lube cycle following a video guide",
-          "Test cube feel before and after to understand lube effect"
+          "Completa tu primer ciclo de limpieza+lubricación siguiendo una guía en vídeo",
+          "Prueba la sensación del cubo antes y después para entender el efecto del lubricante"
         ]
       },
       "tensioning-basics": {
-        "title": "Tensioning Basics",
-        "subtitle": "Adjust screw tension and spring compression for optimal cube feel",
-        "description": "Understand how screw depth and spring compression affect stability, corner cutting, and speed. Find your personal optimal tension.",
-        "theory": "Tighter screws = more stable but slower, less corner cutting. Looser = faster but more lockups and pops. Spring compression controls resistance. Most modern cubes have dual-adjustment: set screw depth for overall tension, adjust compression for spring feel.",
+        "title": "Fundamentos del tensado",
+        "subtitle": "Ajusta la profundidad de los tornillos y la compresión de los muelles para un tacto óptimo",
+        "description": "Comprende cómo afectan la profundidad del tornillo y la compresión del muelle a la estabilidad, el corner cutting y la velocidad. Encuentra tu tensión óptima.",
+        "theory": "Tornillos más apretados = más estabilidad pero menos velocidad y corner cutting. Más flojos = más rápidos pero más lockups y pops. La compresión del muelle controla la resistencia. La mayoría de los cubos modernos tienen doble ajuste: fija la profundidad del tornillo para la tensión general y ajusta la compresión para el tacto del muelle.",
         "drills": [
-          "Experiment with 3 tension levels: loose, medium, tight — feel the difference",
-          "Find the tightest setting that still allows 45° corner cutting"
+          "Experimenta con 3 niveles de tensión: floja, media, firme — siente la diferencia",
+          "Encuentra el ajuste más firme que aún permita corner cutting de 45°"
         ]
       },
       "magnet-adjustment": {
-        "title": "Magnet Adjustment",
-        "subtitle": "Configure magnet strength for your turning style and speed",
-        "description": "Adjust or swap magnets to match your turning force. Stronger magnets = more stability and snap, weaker = more fluidity with less resistance.",
-        "theory": "Magnets provide tactile feedback and auto-alignment. Core magnets (corner-to-core) add stability without slowing individual layer turns. Edge-corner magnets help with alignment. Adjustable systems let you fine-tune the magnetic 'click' to your preference.",
+        "title": "Ajuste de imanes",
+        "subtitle": "Configura la fuerza magnética según tu estilo de giro y velocidad",
+        "description": "Ajusta o cambia los imanes para que coincidan con tu fuerza de giro. Imanes más fuertes = más estabilidad y encaje; más débiles = más fluidez con menos resistencia.",
+        "theory": "Los imanes proporcionan feedback táctil y auto-alineación. Los imanes de núcleo (esquina-núcleo) añaden estabilidad sin frenar los giros individuales de capa. Los de arista-esquina ayudan a la alineación. Los sistemas ajustables permiten afinar el 'clic' magnético a tu gusto.",
         "drills": [
-          "Try all magnet settings on your adjustable cube",
-          "Note solve times and feel at each setting to find your sweet spot"
+          "Prueba todos los ajustes magnéticos de tu cubo ajustable",
+          "Anota tiempos y tacto en cada ajuste para encontrar tu punto dulce"
         ]
       },
       "cube-selection": {
-        "title": "Cube Selection Strategy",
-        "subtitle": "Choose the right cube for your skill level, style, and goals",
-        "description": "Understand the speedcube market: budget, mid-range, and flagship cubes. Match cube characteristics to your solving style and level.",
-        "theory": "Beginners: any modern magnetic budget cube ($10-20). Intermediate: dual-adjustment cubes ($25-40). Advanced: flagship cubes with core magnets and customization ($40-80). Key factors: turning feel (crunchy vs buttery), size (54-56mm), and weight.",
+        "title": "Estrategia de selección de cubo",
+        "subtitle": "Elige el cubo adecuado para tu nivel, estilo y objetivos",
+        "description": "Comprende el mercado de speedcubes: opciones económicas, de gama media y flagships. Haz coincidir las características del cubo con tu estilo y nivel.",
+        "theory": "Principiantes: cualquier cubo magnético económico moderno ($10-20). Intermedios: cubos de doble ajuste ($25-40). Avanzados: flagships con imanes de núcleo y personalización ($40-80). Factores clave: tacto de giro (crujiente vs mantecoso), tamaño (54-56mm) y peso.",
         "drills": [
-          "Research the top 5 cubes used in recent WCA competitions",
-          "If possible, try a friend's cube to compare feels"
+          "Investiga los 5 cubos más usados en competiciones WCA recientes",
+          "Si es posible, prueba el cubo de un amigo para comparar sensaciones"
         ]
       },
       "custom-cube-setup": {
-        "title": "Custom Cube Setup",
-        "subtitle": "Create a personalized cube setup matching your exact preferences",
-        "description": "Combine lube selection, tension optimization, and magnet configuration into a personalized setup that maximizes YOUR turning style.",
-        "theory": "Every cuber's setup is unique. Fast turners prefer tighter tensions with light lube. Precise solvers prefer stronger magnets. The perfect setup is iterative: adjust one variable at a time, test with 50+ solves, then tweak again.",
+        "title": "Configuración personalizada del cubo",
+        "subtitle": "Crea una configuración de cubo personalizada que coincida con tus preferencias exactas",
+        "description": "Combina la elección de lubricante, la optimización de tensión y la configuración de imanes en una configuración personalizada que maximice TU estilo de giro.",
+        "theory": "La configuración de cada cubero es única. Los que giran rápido prefieren tensiones más firmes con lubricante ligero. Los resolutores precisos prefieren imanes más fuertes. La configuración perfecta es iterativa: ajusta una variable a la vez, prueba con 50+ resoluciones y vuelve a afinar.",
         "drills": [
-          "Document your current setup (lube type, tensions, magnet strength)",
-          "Adjust one variable, solve 50 times, record feel and times"
+          "Documenta tu configuración actual (tipo de lubricante, tensiones, fuerza magnética)",
+          "Ajusta una variable, resuelve 50 veces y registra tacto y tiempos"
         ]
       },
       "maintenance-optimization": {
-        "title": "Maintenance & Optimization",
-        "subtitle": "Regular cleaning, re-lubrication, and wear monitoring for peak performance",
-        "description": "Establish a maintenance routine: cleaning schedule, lube reapplication timing, spring replacement, and monitoring cube wear over thousands of solves.",
-        "theory": "Cubes degrade gradually: lube dries out, springs weaken, plastic wears. A maintained cube should be cleaned every 500-1000 solves and re-lubed. Springs lose tension after ~10k solves. Regular maintenance prevents gradual speed loss.",
+        "title": "Mantenimiento y optimización",
+        "subtitle": "Limpieza regular, relubricación y vigilancia del desgaste para un rendimiento máximo",
+        "description": "Establece una rutina de mantenimiento: calendario de limpieza, momento de reaplicar lubricante, sustitución de muelles y control del desgaste a lo largo de miles de resoluciones.",
+        "theory": "Los cubos se degradan gradualmente: el lubricante se seca, los muelles se debilitan, el plástico se desgasta. Un cubo bien mantenido debe limpiarse cada 500-1000 resoluciones y relubricarse. Los muelles pierden tensión tras ~10k resoluciones. El mantenimiento regular evita la pérdida gradual de velocidad.",
         "drills": [
-          "Create a maintenance log: track solves since last clean/lube",
-          "Learn to identify when your cube needs lubrication by feel"
+          "Crea un registro de mantenimiento: sigue las resoluciones desde la última limpieza/lubricación",
+          "Aprende a identificar al tacto cuándo tu cubo necesita lubricación"
         ]
       },
       "nerves-management": {
