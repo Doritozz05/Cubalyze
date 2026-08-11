@@ -546,5 +546,103 @@
       "update": "Actualizar",
       "addAlgorithm": "Añadir algoritmo"
     }
+  },
+  "training": {
+    "back": "Atrás",
+    "puzzle": "Puzzle",
+    "selectPuzzle": "Selecciona puzzle",
+    "dueForReview_one": "{{count}} pendiente de repaso",
+    "dueForReview_other": "{{count}} pendientes de repaso",
+    "selectMethodEmpty": "Selecciona un método arriba para ver los ejercicios",
+    "fullSolve": "Resolución completa",
+    "exercises": "Ejercicios",
+    "algorithmSets": "Conjuntos de algoritmos",
+    "drillOrRecognizeEachSet": "entrena o reconoce cada conjunto",
+    "comingSoon": "próximamente",
+    "caseCount_one": "{{count}} caso",
+    "caseCount_other": "{{count}} casos",
+    "drill": "Entrenar",
+    "recognize": "Reconocer",
+    "quickSummary": "Resumen rápido",
+    "algorithmic": "Algorítmico",
+    "intuitive": "Intuitivo",
+    "stats": "Estadísticas",
+    "speedVsEfficiency": "Velocidad vs Eficiencia",
+    "mastery": {
+      "new": "Nuevo",
+      "learning": "Aprendiendo",
+      "practicing": "Practicando",
+      "mastered": "Dominado",
+      "expert": "Experto"
+    },
+    "practice": {
+      "scramble": "Scramble",
+      "statsAndTips": "Estadísticas y consejos",
+      "attempts": "Intentos",
+      "best": "Mejor",
+      "avg": "Media",
+      "streak": "Racha",
+      "tips": "Consejos",
+      "attemptsCount_one": "{{count}} intento",
+      "attemptsCount_other": "{{count}} intentos",
+      "smartCube": "Smart Cube"
+    },
+    "verdict": {
+      "announce": "Intento completado. Tiempo {{time}}. TPS {{tps}}. Marca correcto o incorrecto, o salta.",
+      "tps": "TPS {{tps}}",
+      "correct": "Correcto",
+      "incorrect": "Incorrecto",
+      "skip": "Saltar sin registrar"
+    },
+    "tips": {
+      "cross": [
+        "Resuelve siempre la cruz abajo (cara D) para mejor lookahead",
+        "Planifica toda la cruz durante la inspección — no improvises",
+        "Busca 8 movimientos o menos para una cruz eficiente",
+        "Sigue tu primer par de F2L mientras resuelves la cruz"
+      ],
+      "eoline": [
+        "Cuenta las aristas mal orientadas antes de empezar — conoce tu caso de EO",
+        "Coloca las aristas de la línea mientras orientas — combina pasos",
+        "Usa solo movimientos R, U, L, D cuando el EO esté hecho",
+        "Planifica el EO y la línea durante la inspección"
+      ],
+      "first-block": [
+        "Construye un bloque 1×2×3 en el lado izquierdo",
+        "Usa movimientos R, U, r, u para construir bloques con eficiencia",
+        "Busca pares ya formados durante la inspección",
+        "No te limites — usa el cubo entero"
+      ],
+      "second-block": [
+        "Construye el bloque 1×2×3 derecho con eficiencia",
+        "Usa solo R, U, r, M para conservar el primer bloque",
+        "Sigue tu siguiente par mientras insertas el actual",
+        "Intenta resolver cada par en ≤ 8 movimientos"
+      ],
+      "block-222": [
+        "Construye un bloque 2×2×2 en cualquier esquina — libertad total",
+        "Busca pares ya formados o un bloque 1×1×2",
+        "No te fijes en una sola cara — usa el cubo entero",
+        "Busca ≤ 5 movimientos para el bloque 2×2×2"
+      ],
+      "block-223": [
+        "Amplía tu 2×2×2 hasta un bloque 2×2×3",
+        "Usa la libertad del lado sin resolver",
+        "Busca pares fáciles de unir al 2×2×2",
+        "Planifica la ampliación durante la inspección"
+      ],
+      "lse": [
+        "El LSE debería llevar ~2-3 segundos a nivel avanzado",
+        "Usa solo movimientos M y U — sin rotaciones del cubo",
+        "EO → colocación de UL/UR → permutación del M-slice",
+        "Objetivo: EO en < 1s, UL/UR en < 1s, M-slice en < 0.5s"
+      ],
+      "eo-petrus": [
+        "Las aristas mal orientadas son las que requieren movimientos F o B",
+        "4 aristas mal orientadas es el caso más común — practícalo",
+        "Usa patrones M' U M' para orientar aristas con eficiencia",
+        "Busca el EO en < 1.5s con ≤ 7 movimientos"
+      ]
+    }
   }
 }

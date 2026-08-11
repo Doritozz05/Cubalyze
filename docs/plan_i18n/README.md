@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -176,6 +176,52 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
 
 ### Tanda 7 — Training (tab; la zona más grande → 3 sub-tandas)
 - **7A — Dashboard + práctica básica**: `TrainingDashboard` + `DashboardSections` (tarjetas de modos) · `PlainPracticeView` · `StatChip` · `TrainingBreadcrumb` · `TouchAside`.
+
+#### Tanda 7A — detalle *(hecha)*
+- **Zonas**:
+  - `TrainingDashboard` (routing; 1 string: exerciseLabel "Speed vs Efficiency").
+  - `DashboardSections`: `FlatDashboard` (header puzzle, badge SRS "N due for review",
+    empty state, botón Full Solve, secciones Exercises / Algorithm Sets / Quick
+    Summary, labels Algorithmic/Intuitive) + `SubsetCard` (coming soon, contador de
+    casos con plural, Drill/Recognize) + `ExerciseCard` (Drill/Recognize/Stats,
+    labels de modos de práctica).
+  - `PlainPracticeView`: label Scramble, aside "Stats & Tips", StatChips
+    (Attempts/Best/Avg/Streak), bloque Tips con 32 tips (8 fases × 4),
+    contador "N attempts", badge Smart Cube.
+  - `TrainingBreadcrumb` (backLabel por defecto localizado) · `TouchAside`/`StatChip`
+    (sin strings propios — title/label vienen del padre).
+  - `VerdictOverlay` (anticipado de 7C: se muestra en la práctica básica —
+    Correct/Incorrect/Skip without recording/TPS + anuncio a11y).
+- **Namespace**: `training` (~80 claves: dashboard.*, mode.*, mastery.*, verdict.*,
+  tips.*, practice.*).
+- **Decisiones**:
+  - Maestría: labels del catálogo (`MASTERY_LEVEL_LABELS`) → claves
+    `training:mastery.{new,learning,practicing,mastered,expert}` vía
+    `t(\`mastery.${masteryLevel(mastery)}\`)` — el tipo `MasteryLabel` es un key
+    estable. Se elimina el helper `masteryLabel` (único uso interno en el dashboard).
+  - Modos: se mantienen los labels del catálogo tal cual (Plain, Blind, ≤8, CN,
+    S/E, Full, EO, UL/UR, M, Detect, ≤mvs) — el id 'plain' mapea a 'Plain' O
+    'Full' según el phaseType, así que un mapa `mode.{id}` sería incorrecto.
+  - Tips: los 32 strings de `PHASE_TIPS` migran al locale
+    (`training:tips.{phaseId}` como array, acceso con `i18n.t` global casteado
+    (clave dinámica) + `returnObjects` + guard `Array.isArray`); `PHASE_TIPS`
+    desaparece. La tarjeta de Tips se oculta si la fase no tiene tips.
+  - Maestría implementada con `t(\`mastery.${masteryLevel(mastery)}\`)` y el
+    helper exportado `masteryLabel` eliminado (único uso interno).
+  - Reutilización: `common:back` (breadcrumb, vía `i18n.t` global por ParseKeys con
+    ns acotado) · chips y badge con claves propias `practice.*`.
+  - Se mantiene (datos del catálogo): nombres/descripciones de métodos, fases y
+    subconjuntos (Cross, F2L, OLL, COLL…), notación, siglas.
+  - Pendiente hasta 7C (visible en el dashboard en inglés): `TrainingCalendar` y
+    `ReviewQueueSection` — se traducen en 7C junto con SRS.
+- **Plurales**: dueForReview, caseCount, attemptsCount (`_one/_other`).
+- **Dificultad**: media (volumen alto por los 32 tips + maestría del catálogo).
+- Hecho: namespace `training` en en/es; `TrainingDashboard`, `DashboardSections`
+  (FlatDashboard/SubsetCard/ExerciseCard con hooks propios), `PlainPracticeView`
+  (32 tips + chips + contador con plural + badge), `TrainingBreadcrumb` (back por
+  defecto localizado), `VerdictOverlay` (anticipado de 7C: botones, TPS y anuncio
+  a11y interpolado). Validado: tsc web+desktop 0, eslint 0, paridad 6/6, build de
+  producción OK.
 - **7B — Drills y fases**: `AlgorithmDrillView` (750 l) · `AlgorithmRecognizeView` · `EODetectView` · `EOEfficiencyView` · `LSESubPhaseView` · `PhaseStatsView` · `BlindPracticeView` · `FullSolveView` (845 l) · `CrossTrainerView` (853 l) + `CrossTrainerPanels` + `FullSolvePanels`.
 - **7C — SRS y calendario**: `SRSReviewView` (verdictos, revisión) · `SRSInsightsView` · `TrainingCalendar` · `ReviewQueueSection` · `ReviewSteps` · `VerdictOverlay`.
 - **Namespace**: `training`.

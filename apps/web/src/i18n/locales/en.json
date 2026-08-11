@@ -546,5 +546,103 @@
       "update": "Update",
       "addAlgorithm": "Add algorithm"
     }
+  },
+  "training": {
+    "back": "Back",
+    "puzzle": "Puzzle",
+    "selectPuzzle": "Select puzzle",
+    "dueForReview_one": "{{count}} due for review",
+    "dueForReview_other": "{{count}} due for review",
+    "selectMethodEmpty": "Select a method above to see exercises",
+    "fullSolve": "Full Solve",
+    "exercises": "Exercises",
+    "algorithmSets": "Algorithm Sets",
+    "drillOrRecognizeEachSet": "drill or recognize each set",
+    "comingSoon": "coming soon",
+    "caseCount_one": "{{count}} case",
+    "caseCount_other": "{{count}} cases",
+    "drill": "Drill",
+    "recognize": "Recognize",
+    "quickSummary": "Quick Summary",
+    "algorithmic": "Algorithmic",
+    "intuitive": "Intuitive",
+    "stats": "Stats",
+    "speedVsEfficiency": "Speed vs Efficiency",
+    "mastery": {
+      "new": "New",
+      "learning": "Learning",
+      "practicing": "Practicing",
+      "mastered": "Mastered",
+      "expert": "Expert"
+    },
+    "practice": {
+      "scramble": "Scramble",
+      "statsAndTips": "Stats & Tips",
+      "attempts": "Attempts",
+      "best": "Best",
+      "avg": "Avg",
+      "streak": "Streak",
+      "tips": "Tips",
+      "attemptsCount_one": "{{count}} attempt",
+      "attemptsCount_other": "{{count}} attempts",
+      "smartCube": "Smart Cube"
+    },
+    "verdict": {
+      "announce": "Attempt complete. Time {{time}}. TPS {{tps}}. Mark correct or incorrect, or skip.",
+      "tps": "TPS {{tps}}",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "skip": "Skip without recording"
+    },
+    "tips": {
+      "cross": [
+        "Always solve cross on bottom (D face) for better lookahead",
+        "Plan your entire cross during inspection — don't improvise",
+        "Aim for 8 moves or fewer for an efficient cross",
+        "Track your first F2L pair while solving the cross"
+      ],
+      "eoline": [
+        "Count bad edges before starting — know your EO case",
+        "Place the line edges while orienting — combine steps",
+        "Use only R, U, L, D moves after EO is done",
+        "Plan both EO and line during inspection"
+      ],
+      "first-block": [
+        "Build a 1×2×3 block on the left side",
+        "Use R, U, r, u moves for efficient block building",
+        "Look for pre-formed pairs during inspection",
+        "Don't restrict yourself — use the whole cube"
+      ],
+      "second-block": [
+        "Build the right 1×2×3 block efficiently",
+        "Use only R, U, r, M moves to preserve the first block",
+        "Track your next pair while inserting the current one",
+        "Aim to solve each pair in ≤ 8 moves"
+      ],
+      "block-222": [
+        "Build a 2×2×2 block in any corner — full freedom",
+        "Look for pre-formed pairs or a 1×1×2 block",
+        "Don't lock into one face — use the whole cube",
+        "Aim for ≤ 5 moves for the 2×2×2 block"
+      ],
+      "block-223": [
+        "Extend your 2×2×2 to a 2×2×3 block",
+        "Use the freedom of the unsolved side",
+        "Look for easy pairs to attach to the 2×2×2",
+        "Plan your extension during inspection"
+      ],
+      "lse": [
+        "LSE should take ~2-3 seconds at advanced level",
+        "Use M and U moves only — no cube rotations",
+        "EO → UL/UR placement → M-slice permutation",
+        "Target: EO in < 1s, UL/UR in < 1s, M-slice in < 0.5s"
+      ],
+      "eo-petrus": [
+        "Bad edges are edges that require F or B moves",
+        "4 bad edges is the most common case — drill it",
+        "Use M' U M' patterns to flip edges efficiently",
+        "Aim for EO in < 1.5s with ≤ 7 moves"
+      ]
+    }
   }
 }

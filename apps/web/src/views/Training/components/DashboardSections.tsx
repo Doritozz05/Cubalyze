@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubeforge/algorithm-db";
@@ -9,7 +10,7 @@ import { ReviewQueueSection } from "./";
 import { TrainingCalendar } from "../TrainingCalendar";
 import type { PuzzleCategory } from "@/types";
 import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubeforge/training";
-import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel, MASTERY_LEVEL_LABELS } from "@cubeforge/training";
+import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel } from "@cubeforge/training";
 import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
   Select,
@@ -105,10 +106,6 @@ const PHASE_DOT: Record<string, string> = {
   "f2l-petrus": "bg-phase-emerald", "ll-petrus": "bg-phase-amber",
 };
 
-export function masteryLabel(pct: number): string {
-  return MASTERY_LEVEL_LABELS[masteryLevel(pct)];
-}
-
 /* ──────────────────────────────────────────────────────────────────────────
    Flat Dashboard (Fase 6)
    ─────────────────────────────────────────────────────────────────────── */
@@ -151,6 +148,7 @@ export function FlatDashboard({
   dueCount: number;
   dbReady: boolean;
 }) {
+  const { t } = useTranslation("training");
   const method = METHODS.find((m) => m.id === activeMethodId);
   const phases = method ? getPhasesForMethod(method.name) : [];
   const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
@@ -210,10 +208,10 @@ export function FlatDashboard({
         {/* Header row: Dropdown puzzle selector + SRS badge */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-3">Puzzle</span>
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-3">{t("puzzle")}</span>
             <Select value={selectedPuzzle} onValueChange={(val) => onSelectPuzzle(val as PuzzleCategory)}>
               <SelectTrigger className="h-8 w-36 gap-2 rounded-lg border-line bg-surface px-2.5 text-[0.7rem] font-semibold text-ink shadow-xs">
-                <SelectValue placeholder="Select puzzle" />
+                <SelectValue placeholder={t("selectPuzzle")} />
               </SelectTrigger>
               <SelectContent>
                 {PUZZLE_CATEGORIES.map((p) => {
@@ -241,7 +239,7 @@ export function FlatDashboard({
           {dueCount > 0 && (
             <span className="nums shrink-0 inline-flex items-center gap-1.5 rounded-full bg-caution px-2.5 py-0.5 text-[0.6rem] font-semibold text-surface ml-auto">
               <span className="size-1.5 rounded-full bg-surface shrink-0" />
-              {dueCount} due for review
+              {t("dueForReview", { count: dueCount })}
             </span>
           )}
         </div>
@@ -283,7 +281,7 @@ export function FlatDashboard({
 
       {!method ? (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-[0.72rem] text-ink-3">Select a method above to see exercises</p>
+          <p className="text-[0.72rem] text-ink-3">{t("selectMethodEmpty")}</p>
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-6 overflow-y-auto min-h-0 pb-4">
@@ -304,7 +302,7 @@ export function FlatDashboard({
                   onClick={() => onFullSolve(method.id)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
                 >
-                  <Target className="size-3" />Full Solve
+                  <Target className="size-3" />{t("fullSolve")}
                 </button>
               )}
             </div>
@@ -319,7 +317,7 @@ export function FlatDashboard({
                   />
                 </div>
                 <span className="nums text-[0.68rem] font-medium text-ink">{mastery}%</span>
-                <span className="text-[0.58rem] text-ink-3">{masteryLabel(mastery)}</span>
+                <span className="text-[0.58rem] text-ink-3">{t(`mastery.${masteryLevel(mastery)}`)}</span>
               </div>
             </div>
           </section>
@@ -329,7 +327,7 @@ export function FlatDashboard({
               the only practice surface. */}
           {phases.length > 0 && (
             <section className="shrink-0">
-              <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">Exercises</h2>
+              <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">{t("exercises")}</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {phases.map((phase) => (
                   <ExerciseCard
@@ -366,8 +364,8 @@ export function FlatDashboard({
           {subsetCards.length > 0 && (
             <section className="shrink-0">
               <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3">Algorithm Sets</h2>
-                <span className="text-[0.58rem] text-ink-3/60">drill or recognize each set</span>
+                <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3">{t("algorithmSets")}</h2>
+                <span className="text-[0.58rem] text-ink-3/60">{t("drillOrRecognizeEachSet")}</span>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {subsetCards.map(({ subset, caseCount }) => (
@@ -389,7 +387,7 @@ export function FlatDashboard({
               <section className="lg:col-span-1 rounded-xl border border-line bg-surface p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="size-3.5 text-ink-2" />
-                  <h2 className="text-[0.7rem] font-semibold text-ink">Quick Summary</h2>
+                  <h2 className="text-[0.7rem] font-semibold text-ink">{t("quickSummary")}</h2>
                 </div>
                 <div className="space-y-2.5">
                   {phases.slice(0, 5).map((phase) => {
@@ -446,6 +444,7 @@ export function SubsetCard({
   onDrill: () => void;
   onRecognize: () => void;
 }) {
+  const { t } = useTranslation("training");
   const disabled = caseCount <= 0;
   return (
     <motion.div
@@ -464,7 +463,7 @@ export function SubsetCard({
         <div className="min-w-0 flex-1">
           <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{subset.name}</span>
           <span className="nums text-[0.6rem] text-ink-3">
-            {disabled ? "coming soon" : `${caseCount} case${caseCount !== 1 ? "s" : ""}`}
+            {disabled ? t("comingSoon") : t("caseCount", { count: caseCount })}
           </span>
         </div>
       </div>
@@ -475,14 +474,14 @@ export function SubsetCard({
           disabled={disabled}
           className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
         >
-          Drill
+          {t("drill")}
         </button>
         <button
           onClick={onRecognize}
           disabled={disabled}
           className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
         >
-          Recognize
+          {t("recognize")}
         </button>
       </div>
     </motion.div>
@@ -508,6 +507,7 @@ export function ExerciseCard({
   onStats: () => void;
   phaseModes: PhaseModeDef[] | null;
 }) {
+  const { t } = useTranslation("training");
   const dotColor = PHASE_DOT[phase.id] ?? "bg-ink-3";
   const Icon = phase.icon;
 
@@ -525,7 +525,7 @@ export function ExerciseCard({
             <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{phase.name}</span>
             <span className={cn("size-1.5 shrink-0 rounded-full", dotColor)} />
           </div>
-          <span className="nums text-[0.6rem] text-ink-3">{phase.hasAlgorithms ? "Algorithmic" : "Intuitive"}</span>
+          <span className="nums text-[0.6rem] text-ink-3">{phase.hasAlgorithms ? t("algorithmic") : t("intuitive")}</span>
         </div>
       </div>
       <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{phase.description}</p>
@@ -533,13 +533,13 @@ export function ExerciseCard({
         {phase.hasAlgorithms ? (
           <>
             <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Drill
+              {t("drill")}
             </button>
             <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Recognize
+              {t("recognize")}
             </button>
             <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Stats
+              {t("stats")}
             </button>
           </>
         ) : phaseModes && phaseModes.length > 0 ? (
@@ -556,12 +556,12 @@ export function ExerciseCard({
               </button>
             ))}
             <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Stats
+              {t("stats")}
             </button>
           </>
         ) : (
           <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:col-span-3 max-lg:py-2.5 max-lg:text-[0.7rem]">
-            Stats
+            {t("stats")}
           </button>
         )}
       </div>

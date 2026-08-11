@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
@@ -75,6 +76,7 @@ export function TrainingDashboard({
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
 }: TrainingDashboardProps = {}) {
+  const { t } = useTranslation("training");
   const [selectedPuzzle, setSelectedPuzzle] = useState<PuzzleCategory>(puzzleProp);
 
   // Synchronize internal puzzle selection with header/app puzzle prop
@@ -350,7 +352,7 @@ export function TrainingDashboard({
           {modeId === "speed-vs-eff" && (
             <PlainPracticeView
               {...props}
-              exerciseLabel="Speed vs Efficiency"
+              exerciseLabel={t("speedVsEfficiency")}
               exerciseId={EXERCISE_IDS.speedEfficiency(methodId, phaseId)}
             />
           )}
