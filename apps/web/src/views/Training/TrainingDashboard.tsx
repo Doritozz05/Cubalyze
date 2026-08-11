@@ -484,8 +484,8 @@ export function TrainingDashboard({
           </div>
         </div>
 
-        {/* Due count badge on the far right */}
-        {dueCount > 0 && (
+        {/* Due count badge on the far right (only in review section) */}
+        {activeSection === "review" && dueCount > 0 && (
           <span className="nums inline-flex shrink-0 items-center gap-1.5 rounded-full bg-caution px-2.5 py-0.5 text-[0.6rem] font-semibold text-surface">
             <span className="size-1.5 shrink-0 rounded-full bg-surface" />
             {t("dueForReview", { count: dueCount })}
@@ -501,8 +501,6 @@ export function TrainingDashboard({
           onSelectMethod={setActiveMethodId}
           methodMasteries={methodMasteries}
           phaseStatsMap={phaseStatsMap}
-          dueCount={dueCount}
-          onStartReview={handleStartReview}
           onDrill={handleDrill}
           onRecognize={handleRecognize}
           onPracticeMode={handlePracticeMode}

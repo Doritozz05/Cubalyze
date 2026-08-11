@@ -32,8 +32,6 @@ import {
   ArrowUp,
   MoveVertical,
   BarChart3,
-  Play,
-  RotateCcw,
   Timer,
 } from "lucide-react";
 
@@ -186,8 +184,6 @@ export function TrainingPractice({
   onSelectMethod,
   methodMasteries,
   phaseStatsMap,
-  dueCount,
-  onStartReview,
   onDrill,
   onRecognize,
   onPracticeMode,
@@ -200,9 +196,6 @@ export function TrainingPractice({
   methodMasteries: Record<string, number>;
   /** Real per-phase accuracy (0-100) keyed by phaseId — shown inline on rows. */
   phaseStatsMap: Record<string, PhaseStatsRecord | null>;
-  /** Live count of cases due for SRS review (drives the today strip). */
-  dueCount: number;
-  onStartReview: (methodId?: string) => void;
   onDrill: (methodId: string, phaseId: string, subsetId: string) => void;
   onRecognize: (methodId: string, phaseId: string, subsetId: string) => void;
   onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
@@ -332,23 +325,6 @@ export function TrainingPractice({
       {/* Main workspace */}
       <div className="min-w-0 flex-1 overflow-y-auto pb-safe">
         <div className="flex flex-col gap-6 p-4 sm:p-6">
-          {/* Today strip — due review, only when there is something to do */}
-          {dueCount > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution/25 bg-caution/5 px-3.5 py-2.5">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <RotateCcw className="size-3.5 shrink-0 text-caution" />
-                <p className="truncate text-[0.68rem] text-ink-2">{t("dueForReview", { count: dueCount })}</p>
-              </div>
-              <button
-                onClick={() => onStartReview()}
-                className="inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-ink px-2.5 text-[0.62rem] font-semibold text-surface transition-colors hover:bg-ink/90"
-              >
-                <Play className="size-3" />
-                {t("startReviewShort")}
-              </button>
-            </div>
-          )}
-
           {/* Mobile method chips */}
           <div
             ref={methodChipsRef}
