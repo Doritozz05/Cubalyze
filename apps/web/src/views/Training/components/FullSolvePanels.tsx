@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
@@ -49,10 +50,11 @@ export function PhaseTargetsPanel({
   totalActual: number;
   onMarkSplit: () => void;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="rounded-xl border border-line bg-surface p-4">
       <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        Phase Targets
+        {t("fullSolve.phaseTargets")}
       </h3>
       <div className="space-y-2.5">
         {splits.map((split) => {
@@ -106,7 +108,7 @@ export function PhaseTargetsPanel({
         })}
       </div>
       <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
-        <span className="text-[0.6rem] text-ink-3">Total target</span>
+        <span className="text-[0.6rem] text-ink-3">{t("fullSolve.totalTarget")}</span>
         <div className="flex items-center gap-2">
           <span className="nums text-[0.68rem] font-semibold text-ink">
             {totalTarget.toFixed(1)}s
@@ -126,62 +128,65 @@ export function PhaseTargetsPanel({
 }
 
 export function MoveLimitInfo({ moveLimit }: { moveLimit: number }) {
+  const { t } = useTranslation("training");
   return (
     <div className="rounded-xl border border-line bg-surface p-4">
       <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        Move Limit
+        {t("fullSolve.moveLimitTitle")}
       </h3>
       <div className="text-center py-4">
         <span className="nums text-[2.5rem] font-bold text-ink">{moveLimit}</span>
-        <p className="text-[0.6rem] text-ink-3 mt-1">max moves allowed</p>
+        <p className="text-[0.6rem] text-ink-3 mt-1">{t("fullSolve.maxMovesAllowed")}</p>
       </div>
       <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
-        <p>• CFOP average: ~55-60 moves</p>
-        <p>• Roux average: ~45-50 moves</p>
-        <p>• Advanced goal: ≤ 50 moves</p>
-        <p>• World-class: ≤ 45 moves</p>
+        <p>• {t("fullSolve.moveLimitBullets.cfop")}</p>
+        <p>• {t("fullSolve.moveLimitBullets.roux")}</p>
+        <p>• {t("fullSolve.moveLimitBullets.advanced")}</p>
+        <p>• {t("fullSolve.moveLimitBullets.worldClass")}</p>
       </div>
     </div>
   );
 }
 
 export function TpsInfo({ tpsThreshold }: { tpsThreshold: number }) {
+  const { t } = useTranslation("training");
   return (
     <div className="rounded-xl border border-line bg-surface p-4">
       <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        TPS Challenge
+        {t("fullSolve.tpsChallenge")}
       </h3>
       <div className="text-center py-4">
         <span className="nums text-[2.5rem] font-bold text-ink">{tpsThreshold}</span>
-        <p className="text-[0.6rem] text-ink-3 mt-1">minimum TPS</p>
+        <p className="text-[0.6rem] text-ink-3 mt-1">{t("fullSolve.minimumTps")}</p>
       </div>
       <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
-        <p>• Beginner: 2-3 TPS</p>
-        <p>• Intermediate: 3-5 TPS</p>
-        <p>• Advanced: 5-8 TPS</p>
-        <p>• Elite: 8-12+ TPS</p>
+        <p>• {t("fullSolve.tpsBullets.beginner")}</p>
+        <p>• {t("fullSolve.tpsBullets.intermediate")}</p>
+        <p>• {t("fullSolve.tpsBullets.advanced")}</p>
+        <p>• {t("fullSolve.tpsBullets.elite")}</p>
       </div>
     </div>
   );
 }
 
 export function RotationlessInfo({ hadRotations }: { hadRotations: boolean }) {
+  const { t } = useTranslation("training");
   return (
     <div className="rounded-xl border border-line bg-surface p-4">
       <h3 className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">
-        Rotationless
+        {t("fullSolve.rotationlessTitle")}
       </h3>
       <div className="text-center py-4">
         <Lock className={cn("size-10 mx-auto mb-2", hadRotations ? "text-hold" : "text-ready")} />
         <p className={cn("text-[0.72rem] font-semibold", hadRotations ? "text-hold" : "text-ready")}>
-          {hadRotations ? "Rotation Used" : "Clean Solve!"}
+          {hadRotations ? t("fullSolve.rotationUsed") : t("fullSolve.cleanSolve")}
         </p>
       </div>
       <div className="space-y-1.5 text-[0.58rem] text-ink-3/70">
-        <p>• Use d moves instead of y + U</p>
-        <p>• Learn F2L cases from all angles</p>
-        <p>• ZZ method forces rotationless solving</p>
-        <p>• Reduces pauses from re-orientation</p>
+        <p>• {t("fullSolve.rotationlessBullets.dMoves")}</p>
+        <p>• {t("fullSolve.rotationlessBullets.f2lAngles")}</p>
+        <p>• {t("fullSolve.rotationlessBullets.zzMethod")}</p>
+        <p>• {t("fullSolve.rotationlessBullets.reducesPauses")}</p>
       </div>
     </div>
   );

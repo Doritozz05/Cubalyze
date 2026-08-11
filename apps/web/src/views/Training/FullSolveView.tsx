@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
@@ -84,12 +85,15 @@ function formatTime(ms: number): string {
     : `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
 }
 
-const SOLVE_MODES: { id: FullSolveMode; label: string; desc: string }[] = [
-  { id: "targets", label: "Phase targets", desc: "Track each phase vs your target times" },
-  { id: "move-limit", label: "Move limit", desc: "Solve in ≤ X moves" },
-  { id: "tps-challenge", label: "TPS challenge", desc: "Maintain TPS above threshold" },
-  { id: "rotationless", label: "Rotationless", desc: "Zero cube rotations" },
-];
+const SOLVE_MODE_IDS = ["targets", "move-limit", "tps-challenge", "rotationless"] as const;
+
+/** Solve mode id → i18n keys (labels + tooltip descriptions). */
+const SOLVE_MODE_KEYS = {
+  targets: { label: "fullSolve.modes.targets.label", description: "fullSolve.modes.targets.description" },
+  "move-limit": { label: "fullSolve.modes.move-limit.label", description: "fullSolve.modes.move-limit.description" },
+  "tps-challenge": { label: "fullSolve.modes.tps-challenge.label", description: "fullSolve.modes.tps-challenge.description" },
+  rotationless: { label: "fullSolve.modes.rotationless.label", description: "fullSolve.modes.rotationless.description" },
+} as const;
 
 /* ──────────────────────────────────────────────────────────────────────────
    Main Component
@@ -420,6 +424,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
   }, [reset, phaseTargets, persistTotal]);
 
   // ── Render ──────────────────────────────────────────────────────────
+  const { t } = useTranslation("training");
   return (
     <div className="relative flex-1 min-h-0 w-full h-full">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden">
@@ -430,7 +435,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
               onBack={onBack}
               segments={[
                 { label: method?.name ?? "?" },
-                { label: "Full Solve", isCurrent: true },
+                { label: t("fullSolve.title"), isCurrent: true },
               ]}
             />
             <span className="nums text-[0.62rem] text-ink-3 ml-auto">
@@ -438,35 +443,38 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
             </span>
             {hasSmartCube && (
               <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold bg-phase-blue text-white">
-                Smart Cube
+                {t("practice.smartCube")}
               </span>
             )}
           </div>
 
           {/* Mode tabs */}
           <div className="flex gap-1 flex-wrap items-center max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:snap-x max-lg:pb-1">
-            {SOLVE_MODES.map((mode) => (
-              <button
-                key={mode.id}
-                onClick={() => handleSolveModeChange(mode.id)}
-                className={cn(
-                  "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:shrink-0 max-lg:px-3.5",
-                  solveMode === mode.id
-                    ? "bg-ink text-surface"
-                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                )}
-                title={mode.desc}
-              >
-                {mode.label}
-                {solveMode === mode.id && (
-                  <motion.div
-                    layoutId="fullsolve-mode-active"
-                    className="absolute inset-0 rounded-md bg-ink -z-10"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
+            {SOLVE_MODE_IDS.map((id) => {
+              const keys = SOLVE_MODE_KEYS[id];
+              return (
+                <button
+                  key={id}
+                  onClick={() => handleSolveModeChange(id)}
+                  className={cn(
+                    "relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:shrink-0 max-lg:px-3.5",
+                    solveMode === id
+                      ? "bg-ink text-surface"
+                      : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                  )}
+                  title={t(keys.description)}
+                >
+                  {t(keys.label)}
+                  {solveMode === id && (
+                    <motion.div
+                      layoutId="fullsolve-mode-active"
+                      className="absolute inset-0 rounded-md bg-ink -z-10"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
             <span className="w-px h-5 bg-line mx-1" />
             <button
               onClick={handleToggleInspection}
@@ -479,10 +487,10 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                     ? "bg-caution/10 text-caution border border-caution/20"
                     : "text-ink-3 hover:text-ink hover:bg-surface-2",
               )}
-              title={useInspection ? "Disable 15s inspection" : "Enable WCA-style 15s inspection"}
+              title={useInspection ? t("fullSolve.disableInspection") : t("fullSolve.enableInspection")}
             >
               <Eye className="size-3" />
-              Inspection{useInspection ? " (15s)" : ""}
+              {t("fullSolve.inspection")}{useInspection ? " (15s)" : ""}
             </button>
           </div>
 
@@ -490,7 +498,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
           {solveMode === "move-limit" && (
             <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
               <MoveHorizontal className="size-3.5" />
-              <span>Max moves:</span>
+              <span>{t("fullSolve.maxMovesLabel")}</span>
               <input
                 type="number"
                 min={20}
@@ -499,13 +507,13 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                 onChange={(e) => setMoveLimit(parseInt(e.target.value, 10) || 60)}
                 className="nums w-14 rounded-md border border-line bg-surface-2 px-2 py-0.5 text-[0.65rem] text-ink text-center"
               />
-              <span className="text-ink-3/50">(standard solve: ~55-60 moves)</span>
+              <span className="text-ink-3/50">{t("fullSolve.standardMovesHint")}</span>
             </div>
           )}
           {solveMode === "tps-challenge" && (
             <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
               <Gauge className="size-3.5" />
-              <span>Min TPS:</span>
+              <span>{t("fullSolve.minTpsLabel")}</span>
               <input
                 type="number"
                 min={1}
@@ -520,7 +528,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
           {solveMode === "rotationless" && (
             <div className="flex items-center gap-2 text-[0.62rem] text-ink-3">
               <Lock className="size-3.5" />
-              <span>Solve without any cube rotations (y, y', y2). Mark if you rotated below.</span>
+              <span>{t("fullSolve.rotationlessSettings")}</span>
             </div>
           )}
         </header>
@@ -596,7 +604,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                       <span className="nums text-[2.5rem] font-bold text-ink">
                         {formatTime(lastSolve.totalMs)}
                       </span>
-                      <span className="text-[0.65rem] text-ink-3">Total solve time</span>
+                      <span className="text-[0.65rem] text-ink-3">{t("fullSolve.totalSolveTime")}</span>
                     </div>
 
                     {/* Split breakdown — only shown in targets mode */}
@@ -647,13 +655,13 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                       <div className="flex items-center justify-center gap-3">
                         <div className="flex items-center gap-1.5 text-[0.6rem] text-ink-3">
                           <Target className="size-3" />
-                          Total target: {totalTarget.toFixed(1)}s
+                          {t("fullSolve.totalTargetValue", { value: totalTarget.toFixed(1) })}
                         </div>
                         <div className={cn(
                           "flex items-center gap-1.5 text-[0.6rem] font-medium",
                           totalActual <= totalTarget ? "text-ready" : "text-hold",
                         )}>
-                          Actual: {totalActual.toFixed(1)}s
+                          {t("fullSolve.actualValue", { value: totalActual.toFixed(1) })}
                         </div>
                       </div>
                     )}
@@ -661,7 +669,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                     {/* Mode-specific result input */}
                     {solveMode === "move-limit" && (
                       <div className="flex flex-col items-center gap-2 pt-2 border-t border-line">
-                        <span className="text-[0.6rem] text-ink-3">How many moves did you use?</span>
+                        <span className="text-[0.6rem] text-ink-3">{t("fullSolve.howManyMoves")}</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
@@ -678,8 +686,8 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                               userMoveCount <= moveLimit ? "text-ready" : "text-hold",
                             )}>
                               {userMoveCount <= moveLimit
-                                ? `${moveLimit - userMoveCount} under limit`
-                                : `${userMoveCount - moveLimit} over limit`}
+                                ? t("fullSolve.underLimit", { count: moveLimit - userMoveCount })
+                                : t("fullSolve.overLimit", { count: userMoveCount - moveLimit })}
                             </span>
                           )}
                         </div>
@@ -688,7 +696,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
 
                     {solveMode === "tps-challenge" && (
                       <div className="flex flex-col items-center gap-2 pt-2 border-t border-line">
-                        <span className="text-[0.6rem] text-ink-3">How many moves was your solution?</span>
+                        <span className="text-[0.6rem] text-ink-3">{t("fullSolve.howManyMovesSolution")}</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
@@ -704,9 +712,9 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                               "text-[0.65rem] font-semibold",
                               (userMoveCount / (lastSolve.totalMs / 1000)) >= tpsThreshold ? "text-ready" : "text-hold",
                             )}>
-                              {(userMoveCount / (lastSolve.totalMs / 1000)).toFixed(1)} TPS
+                              {t("fullSolve.tpsValue", { tps: (userMoveCount / (lastSolve.totalMs / 1000)).toFixed(1) })}
                               {(userMoveCount / (lastSolve.totalMs / 1000)) >= tpsThreshold
-                                ? " - Passed!" : " - Below target"}
+                                ? t("fullSolve.passed") : t("fullSolve.belowTarget")}
                             </span>
                           )}
                         </div>
@@ -715,7 +723,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
 
                     {solveMode === "rotationless" && (
                       <div className="flex flex-col items-center gap-2 pt-2 border-t border-line">
-                        <span className="text-[0.6rem] text-ink-3">Did you use any cube rotations?</span>
+                        <span className="text-[0.6rem] text-ink-3">{t("fullSolve.didRotate")}</span>
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => setHadRotations(false)}
@@ -724,7 +732,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                               !hadRotations ? "bg-ready/10 text-ready border border-ready/30" : "bg-surface-2 text-ink-3 hover:text-ink",
                             )}
                           >
-                            <Check className="size-3 inline mr-1" />No rotations
+                            <Check className="size-3 inline mr-1" />{t("fullSolve.noRotations")}
                           </button>
                           <button
                             onClick={() => setHadRotations(true)}
@@ -733,7 +741,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                               hadRotations ? "bg-hold/10 text-hold border border-hold/30" : "bg-surface-2 text-ink-3 hover:text-ink",
                             )}
                           >
-                            <RotateCw className="size-3 inline mr-1" />Had rotations
+                            <RotateCw className="size-3 inline mr-1" />{t("fullSolve.hadRotations")}
                           </button>
                         </div>
                       </div>
@@ -743,7 +751,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                       onClick={handleNewSolve}
                       className="mx-auto inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-[0.7rem] font-semibold text-surface hover:bg-ink/90 transition-colors"
                     >
-                      New Solve
+                      {t("fullSolve.newSolve")}
                     </button>
                   </motion.div>
                 )}
@@ -780,14 +788,13 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
               {/* Phase split hint */}
               {timerPhase === "running" && activeSplit && (
                 <p className="pb-4 text-[0.6rem] text-ink-3/60">
-                  Currently: <span className="font-medium text-ink-2">{activeSplit.phaseName}</span>
-                  {" — "}tap phase in sidebar to mark split
+                  {t("fullSolve.currentSplit", { phase: activeSplit.phaseName })}
                 </p>
               )}
             </div>
 
             {/* Right: phase detail panel */}
-            <TouchAside title="Targets" className="min-h-0 lg:w-64 lg:shrink-0 flex flex-col gap-3">
+            <TouchAside title={t("fullSolve.targets")} className="min-h-0 lg:w-64 lg:shrink-0 flex flex-col gap-3">
               {/* Mini 3D Cube */}
               {hasSmartCube && (
                 <MiniCube3DPanel className="shrink-0" />
@@ -823,10 +830,10 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                   </div>
                   <div>
                     <p className="text-[0.6rem] text-ink-2 leading-relaxed">
-                      {solveMode === "targets" && "Click each phase in the sidebar to mark splits as you progress. The timer runs continuously — no pauses allowed."}
-                      {solveMode === "move-limit" && `Aim to solve within ${moveLimit} moves. Count your moves mentally or use a smart cube for automatic tracking.`}
-                      {solveMode === "tps-challenge" && `Maintain ${tpsThreshold}+ TPS throughout the solve. Enter your move count after stopping the timer.`}
-                      {solveMode === "rotationless" && "Complete the entire solve without a single cube rotation (y, y', y2). This builds lookahead and F2L efficiency."}
+                      {solveMode === "targets" && t("fullSolve.tipTargets")}
+                      {solveMode === "move-limit" && t("fullSolve.tipMoveLimit", { limit: moveLimit })}
+                      {solveMode === "tps-challenge" && t("fullSolve.tipTps", { tps: tpsThreshold })}
+                      {solveMode === "rotationless" && t("fullSolve.tipRotationless")}
                     </p>
                   </div>
                 </div>

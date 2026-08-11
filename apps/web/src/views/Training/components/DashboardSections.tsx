@@ -302,7 +302,7 @@ export function FlatDashboard({
                   onClick={() => onFullSolve(method.id)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
                 >
-                  <Target className="size-3" />{t("fullSolve")}
+                  <Target className="size-3" />{t("fullSolve.title")}
                 </button>
               )}
             </div>
@@ -474,14 +474,14 @@ export function SubsetCard({
           disabled={disabled}
           className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
         >
-          {t("drill")}
+          {t("drill.title")}
         </button>
         <button
           onClick={onRecognize}
           disabled={disabled}
           className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
         >
-          {t("recognize")}
+          {t("recognize.title")}
         </button>
       </div>
     </motion.div>
@@ -533,10 +533,10 @@ export function ExerciseCard({
         {phase.hasAlgorithms ? (
           <>
             <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              {t("drill")}
+              {t("drill.title")}
             </button>
             <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              {t("recognize")}
+              {t("recognize.title")}
             </button>
             <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
               {t("stats")}

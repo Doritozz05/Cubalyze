@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -223,6 +223,80 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   a11y interpolado). Validado: tsc web+desktop 0, eslint 0, paridad 6/6, build de
   producción OK.
 - **7B — Drills y fases**: `AlgorithmDrillView` (750 l) · `AlgorithmRecognizeView` · `EODetectView` · `EOEfficiencyView` · `LSESubPhaseView` · `PhaseStatsView` · `BlindPracticeView` · `FullSolveView` (845 l) · `CrossTrainerView` (853 l) + `CrossTrainerPanels` + `FullSolvePanels`.
+
+#### Tanda 7B — detalle *(hecha)* · 4.509 líneas en 11 archivos, ~190 strings → 3 sub-bloques
+- **Namespace**: expansión de `training` con sub-namespaces por vista
+  (`drill.*`, `recognize.*`, `statsView.*`, `crossTrainer.*`, `fullSolve.*`,
+  `blind.*`, `eoDetect.*`, `eoEfficiency.*`, `lse.*`) — reutilizando claves de
+  7A (`practice.*` chips, `mastery.*`, `drill`/`recognize`/`fullSolve`/`stats`).
+- **7B-1 — Drills de algoritmos** (1.403 l):
+  - `AlgorithmDrillView`: modos de drill (Single/Random/Sequential/Weakness con
+    descripción en `title`), selector de caso ("Select Case", "{n} cases"),
+    paneles Random/Sequential/Weakness ("Next Random Case", "Case {i} of {n}",
+    "Weakest Cases First"…), sección Algorithm ("Reveal if fail", "Hide/Show",
+    "Algorithm hidden — reveal after attempting"), "{mastered}/{total} mastered",
+    chips de sesión (Accuracy/Streak/Avg time/Attempts).
+  - `AlgorithmRecognizeView`: toggle Weakest/Random, quiz ("Solution", "Setup",
+    "No diagram", "✓ Correct!"/"✗ It was {case}", "Next"), panel de progreso
+    ("Cases seen", "Accuracy", "Correct/Incorrect", tip de modo débil).
+- **7B-2 — Stats de fase + prácticas EO/LSE/Blind** (1.027 l):
+  - `PhaseStatsView`: tabs Overview/Cases/History (la `capitalize` deja de
+    aplicarse → claves con capitalización propia), StatCards ("Avg mastery",
+    "Best time", "Total attempts", "Cases" con "mastered"/"attempts"),
+    "Mastery Distribution" + leyenda (Mastered/Learning/Beginner/New → reutiliza
+    `mastery.*` + clave `beginner`), "14-Day Trend", "Phase Performance"
+    (Avg time/Exec acc/Rec acc/Efficiency/Fail rate/Attempts + párrafo de
+    explicación), "Weakest Cases"/"Weak Recognition", "Spaced Repetition Ready"
+    (2 variantes con interpolación), tabs de casos ("Sort by:" mastery/time/name)
+    e historial ("Session History (14 days)", "{t}s avg", "{acc}% acc").
+  - `EODetectView` ("Edge Detection", "Bad edges:", instrucción, 4 tips),
+    `EOEfficiencyView` ("Efficient EO", "Hide/Show guide" + guía de 4 casos),
+    `LSESubPhaseView` (3 sub-fases EO/UL/UR/M-Slice con 12 tips),
+    `BlindPracticeView` (estados idle/inspección/solving: "Blind {phase}",
+    "Start Inspection (15s)", "Memorizing…", "Scramble hidden — solve blind!" + 4 tips).
+- **7B-3 — Cross trainer + Full solve** (2.079 l):
+  - `CrossTrainerView`: estados del timer ("Press & hold space…", "Stopped · {t}"),
+    "Your move count" + instrucción con interpolación (óptimo + tolerancia),
+    feedback de moves ("Optimal! 🎯", "{n} under/over optimal"), "Reveal/Hide",
+    aria-labels del replay (Restart/Step backward/Step forward/Play/Pause),
+    "CN"/"{face}-cross", tooltips ("Color-neutral: picks the best cross face…",
+    "Toggle cross-piece highlight"). `CrossTrainerPanels`: chips (Accuracy/Best/
+    Avg moves/Avg time/Efficiency), "Current scramble" (Mode/Solved face/Optimal
+    depth/Your last/Streak, "Color-neutral"/"{face} fixed"), 5 tips, empty state
+    de intentos.
+  - `FullSolveView`: modos (Phase targets/Move limit/TPS/Rotationless con
+    descripciones), "Inspection (15s)" + titles, "Max moves:"/"Min TPS:",
+    instrucción rotationless, "Total solve time", "Currently: {phase} — tap
+    phase…", 4 tips de modo interpolados. `FullSolvePanels`: "Phase Targets",
+    "Total target", "Move Limit" ("max moves allowed" + 4 bullets de medias),
+    "TPS Challenge" ("minimum TPS" + 4 bullets), "Rotationless"
+    ("Rotation Used"/"Clean Solve!" + 4 bullets).
+- **Decisiones**:
+  - Jerga mantenida: notación, nombres de casos/fases/métodos (datos del
+    catálogo), "Scramble", "Smart Cube", "Setup", "Solution", siglas (CN, EO,
+    LSE, TPS, UL/UR, M-Slice, ≤mvs), "CFOP/Roux" en los bullets de medias.
+  - Maestría reutilizada de 7A (`training:mastery.*`) + clave nueva `beginner`.
+  - Chips reutilizados de 7A (`practice.attempts/best/avg/streak/tips`,
+    `practice.statsAndTips`, `practice.scramble`, `practice.smartCube`).
+  - `PhaseStatsView`: los ids de tab/sort se mantienen como valores de estado
+    (localStorage) — solo se traduce la etiqueta visible.
+  - VerdictOverlay/tips del timer ya localizados (7A) — las vistas de práctica
+    reutilizan los componentes ya traducidos (ScrambleDisplay, TimerContainer,
+    TouchAside, TrainingBreadcrumb, VerdictOverlay).
+- **Plurales**: casesCount, masteredCount, countLearning/countBeginner,
+  attemptsCount (reutilizada).
+- **Dificultad**: muy alta — mayor volumen del proyecto; se implementó en los 3
+  sub-bloques con validación al final de cada uno.
+- Hecho: sub-namespaces `drill`/`recognize`/`statsView`/`eoDetect`/`eoEfficiency`/
+  `lse`/`blind`/`crossTrainer`/`fullSolve` en en/es (~230 claves nuevas) y los 11
+  archivos traducidos. Nota de arquitectura: `drill`, `recognize` y `fullSolve`
+  eran claves planas en 7A y ahora son sub-namespaces — sus etiquetas viven en
+  `.title` y `DashboardSections` se actualizó (rompería tsc si quedara algo).
+  `currentSplit` unifica el split de fase en texto plano (antes tenía un `<span>`
+  estilizado — trade-off aceptado, mismo patrón que `timeHint` de 7A). Tips con
+  interpolación vía `i18n.t` + `returnObjects` + `.replace` con fallback (blind.
+  {{phase}}). Validado: tsc web+desktop 0, eslint 0, paridad 6/6, build de
+  producción OK, 0 strings residuales en la zona.
 - **7C — SRS y calendario**: `SRSReviewView` (verdictos, revisión) · `SRSInsightsView` · `TrainingCalendar` · `ReviewQueueSection` · `ReviewSteps` · `VerdictOverlay`.
 - **Namespace**: `training`.
 - **Dificultad**: alta (mayor volumen del proyecto; ~10 vistas grandes, muchas con verdictos e interpolaciones).
