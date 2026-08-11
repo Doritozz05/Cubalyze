@@ -272,7 +272,7 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
               {t("panel.phaseBalance.notEnoughData")}
             </p>
             <p className="max-w-60 text-[0.66rem] leading-relaxed text-ink-3">
-              Complete analysed CFOP solves that reach a solved state. Incomplete, non-CFOP, and DNF solves stay out of this comparison.
+              {t("panel.phaseBalance.notEnoughDataHint")}
             </p>
           </div>
         ) : (
@@ -286,8 +286,14 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
               />
             </div>
             <div className="flex items-center justify-between border-t border-line/60 pt-2 text-[0.56rem] text-ink-3">
-              <span>{data.analysedSolves} comparable solves</span>
-              <span>{data.hasEnoughForTrend ? "self-baseline ready" : `need ${5 - data.analysedSolves} more for trend`}</span>
+              <span>{t("panel.phaseBalance.comparableSolves", { count: data.analysedSolves })}</span>
+              <span>
+                {data.hasEnoughForTrend
+                  ? t("panel.phaseBalance.selfBaselineReady")
+                  : t("panel.phaseBalance.needMoreForTrend", {
+                      count: 5 - data.analysedSolves,
+                    })}
+              </span>
             </div>
           </>
         )}

@@ -32,6 +32,16 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
   const { t } = useTranslation("widgets");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const formatTimestamp = (ts: number): string => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+    if (diffDays === 0) return t("panel.pbProgression.today");
+    if (diffDays === 1) return t("panel.pbProgression.yesterday");
+    if (diffDays < 7) return t("panel.pbProgression.daysAgo", { count: diffDays });
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
   const filteredSolves = useMemo(() => {
     if (!puzzle) return solves;
     const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
@@ -144,9 +154,9 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
         {milestonesChrono.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 py-10 text-center">
             <TrendingDown className="size-6 text-ink-3/30" />
-            <p className="text-xs font-medium text-ink-2">No PBs recorded</p>
+            <p className="text-xs font-medium text-ink-2">{t("panel.pbProgression.noPbs")}</p>
             <p className="text-[0.65rem] text-ink-3">
-              Complete solves to track your progression timeline.
+              {t("panel.pbProgression.noPbsHint")}
             </p>
           </div>
         ) : (
@@ -155,7 +165,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
             <div className="grid grid-cols-3 gap-2 rounded-lg border border-line bg-surface-2/40 p-2 text-left">
               <div>
                 <span className="block text-[0.6rem] font-medium uppercase tracking-wider text-ink-3">
-                  Current
+                  {t("panel.pbProgression.current")}
                 </span>
                 <span className="nums text-sm font-semibold text-ink">
                   {currentPb ? formatTime(currentPb.time) : "—"}
@@ -163,7 +173,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
               </div>
               <div>
                 <span className="block text-[0.6rem] font-medium uppercase tracking-wider text-ink-3">
-                  Total Drop
+                  {t("panel.pbProgression.totalDrop")}
                 </span>
                 <span className="nums text-sm font-medium text-ready">
                   {totalDrop > 0 ? `−${formatTime(totalDrop)}` : "0.00s"}
@@ -171,7 +181,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
               </div>
               <div>
                 <span className="block text-[0.6rem] font-medium uppercase tracking-wider text-ink-3">
-                  Faster
+                  {t("panel.pbProgression.faster")}
                 </span>
                 <span className="nums text-sm font-medium text-ink-2">
                   {percentageDrop}%
@@ -304,7 +314,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
                               </span>
                               {pb.isCurrent && (
                                 <span className="rounded border border-line bg-surface-2 px-1 py-0.2 text-[0.6rem] font-mono font-medium text-ink-2">
-                                  Current
+                                  {t("panel.pbProgression.current")}
                                 </span>
                               )}
                             </div>
@@ -319,7 +329,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
                                 {improvement ? "−" : "+"}{formatTime(Math.abs(pb.delta))}
                               </span>
                             ) : (
-                              <span className="text-ink-3/70">Initial PB</span>
+                              <span className="text-ink-3/70">{t("panel.pbProgression.initialPb")}</span>
                             )}
                             <span>{formatTimestamp(pb.timestamp)}</span>
                           </div>
@@ -337,12 +347,4 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
   );
 }
 
-function formatTimestamp(ts: number): string {
-  const d = new Date(ts);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
+

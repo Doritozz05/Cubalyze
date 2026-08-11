@@ -79,7 +79,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
       defaultPosition={{ x: 880, y: 440 }}
       headerActions={
         <div className="flex items-center gap-1 rounded bg-surface-2 border border-line px-1.5 py-0.5 text-[0.62rem] text-ink-3 font-mono">
-          <span>{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
+          <span>{t("panel.notes.count", { count: notes.length })}</span>
         </div>
       }
     >
@@ -147,7 +147,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                   className="h-6 px-1.5 text-[0.62rem] text-ink-2 hover:text-ink"
                 >
                   {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-                  <span>{copied ? "Copied!" : "Copy"}</span>
+                  <span>{copied ? t("panel.notes.copied") : t("panel.notes.copy")}</span>
                 </Button>
               </div>
 
@@ -182,7 +182,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                 {todos.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-ink-3">
                     <ListTodo className="size-6 mb-1 opacity-40" />
-                    <p className="text-[0.68rem]">No goals added yet</p>
+                    <p className="text-[0.68rem]">{t("panel.notes.noGoalsYet")}</p>
                   </div>
                 ) : (
                   todos.map((todo) => (
@@ -225,7 +225,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                     onClick={clearCompletedTodos}
                     className="text-[0.62rem] text-ink-3 hover:text-ink transition-colors"
                   >
-                    Clear completed ({completedCount})
+                    {t("panel.notes.clearCompleted", { count: completedCount })}
                   </button>
                 </div>
               )}
@@ -317,7 +317,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                   </>
                 ) : (
                   <div className="flex h-full items-center justify-center text-ink-3 text-[0.68rem]">
-                    Select or create a note
+                    {t("panel.notes.selectOrCreate")}
                   </div>
                 )}
               </div>

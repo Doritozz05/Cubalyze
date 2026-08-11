@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Activity, Play, Square, Volume2, VolumeX, Minus, Plus, Music } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import type { ParseKeys } from "i18next";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -16,11 +17,11 @@ export interface FloatingMetronomePanelProps {
 
 export type SoundMode = "digital" | "wood" | "synth" | "bell";
 
-const SOUND_MODES: { id: SoundMode; label: string }[] = [
-  { id: "digital", label: "Beep" },
-  { id: "wood", label: "Wood" },
-  { id: "synth", label: "Synth" },
-  { id: "bell", label: "Bell" },
+const SOUND_MODES: { id: SoundMode; labelKey: ParseKeys<"widgets"> }[] = [
+  { id: "digital", labelKey: "panel.metronome.soundBeep" },
+  { id: "wood", labelKey: "panel.metronome.soundWood" },
+  { id: "synth", labelKey: "panel.metronome.soundSynth" },
+  { id: "bell", labelKey: "panel.metronome.soundBell" },
 ];
 
 const QUICK_TPS_PRESETS = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0];
@@ -277,7 +278,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
         {/* TPS Slider (2.0 to 15.0 TPS) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-ink-2">
-            <span className="font-semibold text-ink">TPS Target (2 – 15)</span>
+            <span className="font-semibold text-ink">{t("panel.metronome.tpsTarget")}</span>
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
@@ -373,7 +374,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
                     : "bg-surface border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
                 )}
               >
-                {mode.label}
+                {t(mode.labelKey)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -382,7 +383,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
         {/* Beats Per Bar & Volume Row */}
         <div className="pt-2 border-t border-line flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="text-ink-3 text-[0.68rem]">Accent:</span>
+            <span className="text-ink-3 text-[0.68rem]">{t("panel.metronome.accent")}</span>
             <ToggleGroup
               type="single"
               value={beatsPerBar.toString()}

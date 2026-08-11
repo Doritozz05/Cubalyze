@@ -403,7 +403,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                 ) : (
                   <div className="flex flex-col items-center justify-center p-6 bg-surface-2/30 border border-line border-dashed rounded-lg text-center text-ink-3">
                     <BookOpen className="size-6 mb-1 opacity-50" />
-                    <span className="text-xs font-medium">No case selected</span>
+                    <span className="text-xs font-medium">{t("panel.algorithmDb.noCaseSelected")}</span>
                   </div>
                 )}
               </div>

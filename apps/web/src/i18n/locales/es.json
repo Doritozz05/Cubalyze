@@ -3242,7 +3242,14 @@
         "nextCase": "Caso siguiente",
         "copy": "Copiar",
         "copied": "Copiado",
-        "noAlgorithm": "No hay algoritmo disponible"
+        "noAlgorithm": "No hay algoritmo disponible",
+        "noCaseSelected": "Ningún caso seleccionado",
+        "setup": "Setup:",
+        "triggers": "Disparadores:",
+        "alternativeAlgorithms": "Algoritmos alternativos ({{count}}):",
+        "algShort": "Alg {{number}}",
+        "probability": "Probabilidad:",
+        "difficulty": "Dificultad:"
       },
       "layoutOrganizer": {
         "cascade": "Cascada",
@@ -3272,12 +3279,25 @@
         "activeCount_one": "{{count}} widget activo",
         "activeCount_other": "{{count}} widgets activos",
         "dockAll": "Acoplar todos",
-        "saveLayout": "Guardar diseño"
+        "saveLayout": "Guardar diseño",
+        "saveLayoutButton": "Guardar",
+        "layoutSaved": "¡Diseño guardado!",
+        "customLayouts": "Diseños personalizados",
+        "widgetNeeded": "{{name}} requerido",
+        "widgetsNeeded": "{{count}} requeridos",
+        "widgetsCount_one": "{{count}} widget",
+        "widgetsCount_other": "{{count}} widgets"
       },
       "metronome": {
         "stop": "Detener metrónomo",
         "start": "Iniciar metrónomo",
-        "soundMode": "Modo de sonido"
+        "soundMode": "Modo de sonido",
+        "tpsTarget": "Objetivo de TPS (2 – 15)",
+        "accent": "Acento:",
+        "soundBeep": "Pitido",
+        "soundWood": "Madera",
+        "soundSynth": "Sinte",
+        "soundBell": "Campana"
       },
       "notes": {
         "scratchpad": "Bloc",
@@ -3288,7 +3308,14 @@
         "scratchpadPlaceholder": "Escribe notas rápidas, algoritmos a repasar o conclusiones de la sesión...",
         "goalPlaceholder": "Añade un objetivo (p. ej., Sub-12 Ao50 en 3x3)...",
         "titlePlaceholder": "Título...",
-        "contentPlaceholder": "Contenido de la nota..."
+        "contentPlaceholder": "Contenido de la nota...",
+        "count_one": "{{count}} nota",
+        "count_other": "{{count}} notas",
+        "copy": "Copiar",
+        "copied": "¡Copiado!",
+        "noGoalsYet": "Aún no hay objetivos",
+        "clearCompleted": "Borrar completados ({{count}})",
+        "selectOrCreate": "Selecciona o crea una nota"
       },
       "pbProgression": {
         "staircaseTrend": "Tendencia escalonada",
@@ -3296,7 +3323,16 @@
         "milestones_one": "{{count}} hito",
         "milestones_other": "{{count}} hitos",
         "pbs_one": "{{count}} PB",
-        "pbs_other": "{{count}} PB"
+        "pbs_other": "{{count}} PB",
+        "noPbs": "No hay PBs registrados",
+        "noPbsHint": "Completa resoluciones para seguir tu línea de progresión.",
+        "current": "Actual",
+        "totalDrop": "Caída total",
+        "faster": "Más rápido",
+        "initialPb": "PB inicial",
+        "today": "Hoy",
+        "yesterday": "Ayer",
+        "daysAgo": "hace {{count}} días"
       },
       "phaseBalance": {
         "balanced": "Equilibrado",
@@ -3317,7 +3353,11 @@
         "yourAvgMinusRef": "Tu promedio menos la referencia",
         "analysed_one": "{{count}} analizada",
         "analysed_other": "{{count}} analizadas",
-        "notEnoughData": "No hay suficientes datos comparables de CFOP"
+        "notEnoughData": "No hay suficientes datos comparables de CFOP",
+        "comparableSolves": "{{count}} resoluciones comparables",
+        "selfBaselineReady": "baseline propia lista",
+        "needMoreForTrend": "faltan {{count}} para la tendencia",
+        "notEnoughDataHint": "Completa resoluciones CFOP analizadas que lleguen al estado resuelto. Las resoluciones incompletas, no CFOP y DNF quedan fuera de esta comparación."
       },
       "solveTimeline": {
         "incompleteAnalysis": "Esta resolución tiene un análisis incompleto. Vuelve a analizarla para mostrar las fases comparables.",
@@ -3326,7 +3366,15 @@
         "noAnalysis": "Aún no hay análisis",
         "skips": "Saltos",
         "phases_one": "{{count}} fase",
-        "phases_other": "{{count}} fases"
+        "phases_other": "{{count}} fases",
+        "noSolvesYet": "Aún no hay resoluciones",
+        "noSolvesHint": "Completa una resolución para ver la línea temporal de fases.",
+        "backToLatest": "Volver a la más reciente",
+        "timelineUnavailable": "Datos de línea temporal no disponibles para esta resolución.",
+        "pauseCount_one": "{{count}} pausa · {{time}}",
+        "pauseCount_other": "{{count}} pausas · {{time}}",
+        "movesTotal_one": "{{count}} movimiento · {{time}} en total",
+        "movesTotal_other": "{{count}} movimientos · {{time}} en total"
       },
       "timeDistribution": {
         "mean": "Media {{value}}",

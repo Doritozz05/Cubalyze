@@ -139,7 +139,7 @@ export function AlgorithmViewerCard({
       {caseData.setupScramble && (
         <div className="flex items-center justify-between gap-2 text-[0.65rem] text-ink-3 px-1">
           <div className="min-w-0 flex-1 truncate">
-            <span className="font-semibold text-ink-2">Setup:</span>{" "}
+            <span className="font-semibold text-ink-2">{t("panel.algorithmDb.setup")}</span>{" "}
             <span className="font-mono text-ink-2 select-all">{caseData.setupScramble}</span>
           </div>
           <Button
@@ -201,7 +201,7 @@ export function AlgorithmViewerCard({
         {activeAlg?.triggers && activeAlg.triggers.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             <span className="text-[0.62rem] text-ink-3 flex items-center gap-1">
-              <Tag className="size-2.5" /> Triggers:
+              <Tag className="size-2.5" /> {t("panel.algorithmDb.triggers")}
             </span>
             {activeAlg.triggers.map((trigger, idx) => (
               <Badge
@@ -219,7 +219,7 @@ export function AlgorithmViewerCard({
         {algorithms.length > 1 && (
           <div className="mt-1 pt-1.5 border-t border-line/60">
             <span className="text-[0.62rem] text-ink-3 block mb-1 font-medium">
-              Alternative algorithms ({algorithms.length}):
+              {t("panel.algorithmDb.alternativeAlgorithms", { count: algorithms.length })}
             </span>
             <div className="flex flex-wrap gap-1">
               {algorithms.map((alg, index) => {
@@ -238,7 +238,7 @@ export function AlgorithmViewerCard({
                         : "text-ink-3 hover:text-ink"
                     )}
                   >
-                    Alg {index + 1}
+                    {t("panel.algorithmDb.algShort", { number: index + 1 })}
                   </Button>
                 );
               })}
@@ -249,10 +249,10 @@ export function AlgorithmViewerCard({
         {/* Additional Case Info Footer */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/40 text-[0.62rem] text-ink-3">
           {caseData.probability && (
-            <span>Probability: <strong className="text-ink-2 font-mono">{caseData.probability}</strong></span>
+            <span>{t("panel.algorithmDb.probability")} <strong className="text-ink-2 font-mono">{caseData.probability}</strong></span>
           )}
           {caseData.difficulty && (
-            <span>Difficulty: <strong className="text-ink-2">{caseData.difficulty}</strong></span>
+            <span>{t("panel.algorithmDb.difficulty")} <strong className="text-ink-2">{caseData.difficulty}</strong></span>
           )}
         </div>
       </div>

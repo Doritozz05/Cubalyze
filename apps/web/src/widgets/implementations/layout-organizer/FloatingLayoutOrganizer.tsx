@@ -351,7 +351,7 @@ export function FloatingLayoutOrganizer() {
                   className="flex items-center gap-1 rounded bg-ink px-2.5 py-1 text-[0.65rem] font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
                   <Check className="size-3" />
-                  Save
+                  {t("panel.layoutOrganizer.saveLayoutButton")}
                 </button>
               </div>
             )}
@@ -360,7 +360,7 @@ export function FloatingLayoutOrganizer() {
             {savedId && (
               <div className="flex items-center gap-1.5 border-b border-ready/20 bg-ready-soft/30 px-3 py-1.5">
                 <Check className="size-3 text-ready" />
-                <span className="text-[0.65rem] text-ready font-medium">Layout saved!</span>
+                <span className="text-[0.65rem] text-ready font-medium">{t("panel.layoutOrganizer.layoutSaved")}</span>
               </div>
             )}
 
@@ -368,7 +368,9 @@ export function FloatingLayoutOrganizer() {
             {customLayouts.length > 0 && (
               <div className="px-2.5 pt-2 pb-1">
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold">Custom Layouts</p>
+                  <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold">
+                    {t("panel.layoutOrganizer.customLayouts")}
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {customLayouts.map((layout) => {
@@ -384,9 +386,13 @@ export function FloatingLayoutOrganizer() {
                     let missingText = "";
                     if (missingIds.length === 1) {
                       const def = getWidget(missingIds[0]);
-                      missingText = `${def?.name ?? missingIds[0]} needed`;
+                      missingText = t("panel.layoutOrganizer.widgetNeeded", {
+                        name: def?.name ?? missingIds[0],
+                      });
                     } else if (missingIds.length > 1) {
-                      missingText = `${missingIds.length} needed`;
+                      missingText = t("panel.layoutOrganizer.widgetsNeeded", {
+                        count: missingIds.length,
+                      });
                     }
 
                     return (
@@ -421,7 +427,7 @@ export function FloatingLayoutOrganizer() {
                             </p>
                             <p className="text-[0.58rem] text-ink-3 leading-tight mt-0.5">
                               {isFullyActive ? (
-                                <span>{requiredIds.length} widget{requiredIds.length !== 1 ? "s" : ""}</span>
+                                <span>{t("panel.layoutOrganizer.widgetsCount", { count: requiredIds.length })}</span>
                               ) : (
                                 <span className="text-caution font-medium flex items-center gap-0.5">
                                   {missingText}
