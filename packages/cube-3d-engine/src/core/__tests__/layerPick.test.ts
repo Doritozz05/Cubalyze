@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveLayerHit, swipeTurnDirection, rotateVectorByQuaternion } from '../layerPick';
+import { resolveLayerHit, swipeTurnDirection, rotateVectorByQuaternion, layerTwistAngleDelta } from '../layerPick';
 
 const IDENTITY = { x: 0, y: 0, z: 0, w: 1 };
 
@@ -104,5 +104,65 @@ describe('swipeTurnDirection', () => {
       worldDrag: { x: 1, y: 0, z: 0 },
     });
     expect(dir).toBe(1);
+  });
+});
+
+describe('layerTwistAngleDelta', () => {
+  // The sign must compose with the move pipeline exactly like swipeTurnDirection:
+  // a drag along the positive-rotation tangent yields a POSITIVE angle.
+  it('U face: right drag on the front edge → positive angle (U\')', () => {
+    const delta = layerTwistAngleDelta({
+      axisVector: { x: 0, y: 1, z: 0 },
+      worldPoint: { x: 0, y: 1, z: 1 },
+      worldDrag: { x: 1, y: 0, z: 0 },
+    });
+    expect(delta).toBeGreaterThan(0);
+  });
+
+  it('U face: left drag on the front edge → negative angle (U)', () => {
+    const delta = layerTwistAngleDelta({
+      axisVector: { x: 0, y: 1, z: 0 },
+      worldPoint: { x: 0, y: 1, z: 1 },
+      worldDrag: { x: -1, y: 0, z: 0 },
+    });
+    expect(delta).toBeLessThan(0);
+  });
+
+  it('F face: left drag on the top edge → positive angle (F\')', () => {
+    const delta = layerTwistAngleDelta({
+      axisVector: { x: 0, y: 0, z: 1 },
+      worldPoint: { x: 0, y: 1, z: 1 },
+      worldDrag: { x: -1, y: 0, z: 0 },
+    });
+    expect(delta).toBeGreaterThan(0);
+  });
+
+  it('arc-length tracking: a drag of |t| world units = 1 radian ≈ 57.3°', () => {
+    // t = y × r = (1,0,0), |t| = 1. Drag exactly |t| along the tangent.
+    const delta = layerTwistAngleDelta({
+      axisVector: { x: 0, y: 1, z: 0 },
+      worldPoint: { x: 0, y: 1, z: 1 },
+      worldDrag: { x: 1, y: 0, z: 0 },
+    });
+    expect(delta).toBeCloseTo(180 / Math.PI, 5);
+  });
+
+  it('grab exactly on the axis (face center) → 0 delta (dead zone, no jitter)', () => {
+    const delta = layerTwistAngleDelta({
+      axisVector: { x: 0, y: 0, z: 1 },
+      worldPoint: { x: 0, y: 0, z: 1 },
+      worldDrag: { x: 1, y: 0, z: 0 },
+    });
+    expect(delta).toBe(0);
+  });
+
+  it('a drag perpendicular to the tangent contributes nothing', () => {
+    // U face front edge: tangent = +X; a pure vertical drag (world Y) is orthogonal.
+    const delta = layerTwistAngleDelta({
+      axisVector: { x: 0, y: 1, z: 0 },
+      worldPoint: { x: 0, y: 1, z: 1 },
+      worldDrag: { x: 0, y: 1, z: 0 },
+    });
+    expect(delta).toBe(0);
   });
 });

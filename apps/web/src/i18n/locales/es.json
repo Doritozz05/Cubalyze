@@ -36,16 +36,15 @@
     "primary": "Principal"
   },
   "cube": {
-    "title": "Cubo virtual",
-    "newScramble": "Nuevo scramble",
+    "timerAria": "Tiempo de la resolución",
     "reset": "Reiniciar",
     "help": "Controles",
     "helpShort": "Teclado y gestos",
     "gestureHint": "Desliza una cara para girarla · arrastra el fondo para orbitar · pellizca para hacer zoom",
     "initializing": "Inicializando cubo 3D…",
     "unavailable": "Vista 3D no disponible: hay demasiadas vistas 3D abiertas en este dispositivo. Cierra otra vista 3D y vuelve a abrir.",
-    "movesEmpty": "Aún no hay movimientos — gira el cubo o pulsa una tecla",
-    "movesAria": "Movimientos recientes",
+    "solved": "Resuelto",
+    "nextSolveHint": "Pulsa Enter para la siguiente resolución",
     "keys": {
       "title": "Controles de teclado",
       "subtitle": "Diseño de csTimer: tus índices descansan en U (F = U', J = U). En el sentido horario y antihorario son teclas separadas.",
@@ -53,6 +52,11 @@
       "rotations": "Rotaciones del cubo",
       "wide": "Movimientos anchos",
       "slices": "Movimientos de capa media",
+      "gestures": "Gestos táctiles",
+      "gestureSwipe": "Arrastra una cara — la capa sigue tu dedo y encaja 90° pasada la mitad",
+      "gestureOrbit": "Arrastra el fondo — orbita la cámara",
+      "gesturePinch": "Dos dedos — pellizca para hacer zoom",
+      "gestureRelease": "Suelta pronto — la capa vuelve a su sitio",
       "close": "Cerrar",
       "footer": "Alt/Ctrl están reservados para atajos globales. El diseño coincide con csTimer para que tu memoria muscular se mantenga."
     }

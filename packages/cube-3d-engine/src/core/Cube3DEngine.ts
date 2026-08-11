@@ -208,6 +208,50 @@ export class Cube3DEngine {
     );
   }
 
+  /**
+   * Start a free-form layer twist (drag-to-turn touch model).
+   *
+   * Detaches the layer onto a pivot and lets the caller drive its angle in
+   * real time with {@link setLayerTwistAngle}, so the slice follows the
+   * finger. Finish with {@link finishLayerTwist} (commit ±90°) or
+   * {@link cancelLayerTwist} (spring back). No logical state changes while
+   * twisting — the move only lands on commit.
+   *
+   * @returns `false` when a twist is already active or no pivot is free
+   *   (callers should fall back to orbit mode).
+   */
+  public beginLayerTwist(axis: RotationAxis, layerValues: number[]): boolean {
+    if (!this.rotationEngine) return false;
+    const ok = this.rotationEngine.beginTwist(axis, layerValues);
+    if (ok) this.requestRender();
+    return ok;
+  }
+
+  /** Drive the active layer twist to an absolute angle (degrees). */
+  public setLayerTwistAngle(angleDegrees: number): void {
+    if (!this.rotationEngine) return;
+    this.rotationEngine.setTwistAngle(angleDegrees);
+    this.requestRender();
+  }
+
+  /**
+   * Commit the active layer twist: animate from its current angle to
+   * `targetAngleDegrees` (±90 = complete turn, 0 = spring back) and apply
+   * the matching logical update. Resolves when the animation completes.
+   */
+  public finishLayerTwist(targetAngleDegrees: number, durationMs: number): Promise<void> {
+    if (!this.rotationEngine) return Promise.resolve();
+    this.requestRender();
+    return this.rotationEngine.finishTwist(targetAngleDegrees, durationMs);
+  }
+
+  /** Spring the active layer twist back to 0° (cancel the drag). */
+  public cancelLayerTwist(durationMs: number): Promise<void> {
+    if (!this.rotationEngine) return Promise.resolve();
+    this.requestRender();
+    return this.rotationEngine.finishTwist(0, durationMs);
+  }
+
   public resetCube(): void {
     // Force-complete any in-flight layer rotations FIRST. A task that is
     // still turning when we reset would snap AFTER the reset and re-apply its

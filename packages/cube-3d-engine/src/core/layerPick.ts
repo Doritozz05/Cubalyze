@@ -155,3 +155,44 @@ export function swipeTurnDirection(input: {
   if (dot === 0) return 1;
   return dot > 0 ? -1 : 1;
 }
+
+/**
+ * Continuous drag-follow math for the virtual-cube touch model.
+ *
+ * Instead of resolving a direction from a single swipe (see
+ * {@link swipeTurnDirection}), this returns the ANGLE DELTA (degrees, engine
+ * convention: positive = positive rotation around `axisVector`) for ONE
+ * pointer move, so the layer can track the finger live and then snap.
+ *
+ * A surface point at `worldPoint` moves along the tangent t = axis × point
+ * under a positive rotation. Arc-length tracking makes the grabbed sticker
+ * follow the pointer 1:1:
+ *
+ *   dθ = dot(worldDrag, t̂) / |t|    (radians)
+ *
+ * where |t| = |axis × point| is the grabbed point's distance from the axis.
+ * Points grabbed directly ON the axis (the face center) have |t| ≈ 0 and no
+ * reliable tangent — the delta is 0 and the caller keeps the previous angle
+ * (a small dead zone), which prevents jitter on center grabs.
+ *
+ * The returned sign composes with the move pipeline exactly like
+ * {@link swipeTurnDirection}: a drag along t̂ gives a positive angle, and the
+ * committed direction is `round(angle / (90 · angleSign))`.
+ */
+export function layerTwistAngleDelta(input: {
+  axisVector: Vec3Like;
+  worldPoint: Vec3Like;
+  worldDrag: Vec3Like;
+}): number {
+  const { axisVector: a, worldPoint: r, worldDrag: d } = input;
+  // Tangent of the surface point for a positive rotation around the axis.
+  const tx = a.y * r.z - a.z * r.y;
+  const ty = a.z * r.x - a.x * r.z;
+  const tz = a.x * r.y - a.y * r.x;
+  const len = Math.hypot(tx, ty, tz);
+  if (len < 1e-4) return 0;
+  // Signed arc length along the unit tangent (world units).
+  const arc = (tx * d.x + ty * d.y + tz * d.z) / len;
+  // dθ = arc / |t| — radians → degrees.
+  return (arc / len) * (180 / Math.PI);
+}

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { CubeState } from "@cubeforge/math-core";
 import { CUBE_KEYMAP, actionToMoves, actionToNotation } from "./cubeKeybinds";
 
 const notationFor = (code: string) => actionToNotation(CUBE_KEYMAP[code]);
+
+/** Invert a single WCA move ("R" → "R'", "r'" → "r", "x" → "x'"). */
+const inverseMove = (notation: string) =>
+  notation.endsWith("'") ? notation.slice(0, -1) : `${notation}'`;
 
 describe("CUBE_KEYMAP — csTimer layout", () => {
   it("maps the 12 face keys exactly like csTimer", () => {
@@ -93,5 +98,24 @@ describe("actionToMoves", () => {
 
   it("compacts repeated notation (U + U = U2)", () => {
     expect(actionToNotation(CUBE_KEYMAP.KeyJ)).toBe("U");
+  });
+});
+
+describe("CUBE_KEYMAP ↔ math-core determinism", () => {
+  it("every keymap notation is accepted by CubeState.applySequence", () => {
+    for (const code of Object.keys(CUBE_KEYMAP)) {
+      const notation = actionToNotation(CUBE_KEYMAP[code]);
+      expect(() => new CubeState().applySequence(notation), `${code} → ${notation}`).not.toThrow();
+    }
+  });
+
+  it("every move is exact: applying it then its inverse returns to solved", () => {
+    for (const code of Object.keys(CUBE_KEYMAP)) {
+      const notation = actionToNotation(CUBE_KEYMAP[code]);
+      const state = new CubeState();
+      state.applySequence(notation);
+      state.applySequence(inverseMove(notation));
+      expect(state.isSolved(), `${code} → ${notation} + ${inverseMove(notation)}`).toBe(true);
+    }
   });
 });
