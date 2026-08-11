@@ -7,8 +7,8 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
-(feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅
-— todo en `feat/spanish-translation` · resto pendiente.
+(feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
+Tanda 6 (Algorithms) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -164,14 +164,15 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   dnfSolves, phaseEyebrow/Gap, pauseInPhase). Validado: tsc web+desktop 0,
   eslint 0, paridad 6/6, build de producción OK.
 
-### Tanda 6 — Algorithms (tab)
+### ✅ Tanda 6 — Algorithms (tab) *(hecha)*
 - **Zonas**:
   - `AlgorithmDashboard` + `MethodTree` (árbol de métodos: CFOP/Roux/ZZ…).
   - `CaseGrid` + `CaseDetailPanel` + `Case3DPanel` + diagramas (labels de UI; la notación R U R' NO se traduce).
   - `AlgorithmEditorDialog` (formulario + validación + toasts).
   - `MobileMethodNavigator` + `SortableAlgorithmItem`.
-- **Namespace**: `algorithms`.
+- **Namespace**: `algorithms` (~70 claves: dashboard/grid/árbol/navigator/detail/panel3d/editor + plurales `_one/_other` en algorithmsCount, caseCount, readyToSave).
 - **Dificultad**: media. Decisión de producto: nombres de casos (OLL 24, "Sexy Move") — traducir solo las etiquetas de UI, no los identificadores.
+- Mantenido: notación (R U R'…), "Setup:", HTM/QTM/STM, 3×3/2×2, claves de slot FR/FL/BL/BR, nombres de métodos/subconjuntos (datos). Nombres de slots F2L localizados (Frente Derecha…). Validado: tsc web+desktop 0, eslint 0, paridad 6/6, build de producción OK.
 
 ### Tanda 7 — Training (tab; la zona más grande → 3 sub-tandas)
 - **7A — Dashboard + práctica básica**: `TrainingDashboard` + `DashboardSections` (tarjetas de modos) · `PlainPracticeView` · `StatChip` · `TrainingBreadcrumb` · `TouchAside`.
