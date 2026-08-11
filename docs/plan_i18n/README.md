@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ · Tanda 8B (Skill Tree: ramas 1-4) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -391,8 +391,21 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
     (mismo patrón que tips de 7A); la búsqueda pasa a depender del idioma
     (documentado). Validado: tsc web+desktop 0, eslint 0, paridad 756/756,
     build OK, 0 strings residuales.
-  - **8B — Ramas 1-4**: Fundamentals (8) + Cross (9) + F2L (11) + Last Layer
-    (13) = 41 skills ≈ 270 campos en es.json.
+  - **8B — Ramas 1-4** ✅: Fundamentals (8) + Cross (9) + F2L (11) + Last
+    Layer (13) = 41 skills ≈ 270 campos traducidos en es.json (script one-shot
+    `_8b-es.cjs` con merge directo sobre el JSON, luego borrado). Terminología
+    consolidada con tandas previas (piezas/aristas/esquinas/centros, capa,
+    ranura, insertar, scramble, resolución, pegatinas) y jerga de cubing
+    mantenida en ambos idiomas (CFOP, F2L, OLL, PLL, XCross, ZBLL, COLL, WV,
+    OLLCP, VLS, ZBLS, triggers, fingertricks, AUF, DNF, Multi-Slotting,
+    Pseudo-Slotting, sledgehammer/hedgeslammer, Sune, Kociemba, J Perm…);
+    fórmulas de ejemplo sin traducir (notación). Verificado: paridad
+    estructural 41/41 con en.json (claves title/subtitle/description/theory/
+    exampleFormula/drills idénticas — los nodos sin fórmula mantienen la clave
+    ausente), 0 nodos con título EN residual (los 3 coincidencias son jerga
+    intencional), muestreo de calidad ES vs EN correcto. Validado: tsc
+    web+desktop 0, eslint 0, vitest 6/6, paridad en/es perfecta, 0 strings
+    residuales.
   - **8C — Ramas 5-9**: Lookahead (8) + Finger Tricks (9) + Inspection (7) +
     Color Neutrality (5) + Hardware (7) = 36 skills ≈ 235 campos.
   - **8D — Ramas 10-13**: Psychology (7) + Training (8) + Roux (8) + ZZ (7) =

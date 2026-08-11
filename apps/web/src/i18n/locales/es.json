@@ -1257,431 +1257,431 @@
     },
     "nodes": {
       "cube-anatomy": {
-        "title": "Cube anatomy",
-        "subtitle": "Identify centers, edges, corners and understand piece movement",
-        "description": "Learn to identify the three piece types (centers, edges, corners), understand that centers are fixed and determine face color, and recognize how layers move.",
-        "theory": "A 3x3 cube has 6 fixed centers, 12 edge pieces with 2 stickers each, and 8 corner pieces with 3 stickers each. Centers define the color of each face. Understanding piece types is fundamental to all solving methods.",
+        "title": "Anatomía del cubo",
+        "subtitle": "Identifica centros, aristas y esquinas y comprende el movimiento de las piezas",
+        "description": "Aprende a identificar los tres tipos de piezas (centros, aristas y esquinas), comprende que los centros son fijos y determinan el color de cada cara, y reconoce cómo se mueven las capas.",
+        "theory": "Un cubo 3x3 tiene 6 centros fijos, 12 piezas de arista con 2 pegatinas cada una y 8 piezas de esquina con 3 pegatinas cada una. Los centros definen el color de cada cara. Comprender los tipos de piezas es fundamental para todos los métodos de resolución.",
         "drills": [
-          "Point to all 6 centers and name their colors",
-          "Count all 12 edges and identify their two colors",
-          "Locate all 8 corner pieces"
+          "Señala los 6 centros y nombra sus colores",
+          "Cuenta las 12 aristas e identifica sus dos colores",
+          "Localiza las 8 piezas de esquina"
         ]
       },
       "standard-notation": {
-        "title": "Standard notation",
-        "subtitle": "Read and execute R, L, U, D, F, B moves and their variants",
-        "description": "Master the standard cube notation: clockwise (R), counter-clockwise (R'), and double (R2) turns for all six faces.",
-        "theory": "Notation is the universal language of cubing. A letter alone = 90° clockwise, apostrophe = 90° counter-clockwise, 2 = 180°. Standard grip: white on top, green facing you. This enables reading algorithms and communicating with other cubers.",
-        "exampleFormula": "R U R' U' (Sexy Move) — the most fundamental trigger",
+        "title": "Notación estándar",
+        "subtitle": "Lee y ejecuta los movimientos R, L, U, D, F, B y sus variantes",
+        "description": "Domina la notación estándar del cubo: giros horarios (R), antihorarios (R') y dobles (R2) para las seis caras.",
+        "theory": "La notación es el lenguaje universal del cubo. Una letra sola = 90° en el sentido horario, el apóstrofo = 90° antihorario, el 2 = 180°. Sujeción estándar: blanco arriba, verde de frente. Esto permite leer algoritmos y comunicarse con otros cuberos.",
+        "exampleFormula": "R U R' U' (Sexy Move) — el trigger más fundamental",
         "drills": [
-          "Execute R U R' U' 6 times to return to solved state",
-          "Practice each face move looking at notation, not the cube"
+          "Ejecuta R U R' U' 6 veces para volver al estado resuelto",
+          "Practica cada movimiento de cara mirando la notación, no el cubo"
         ]
       },
       "first-cross": {
-        "title": "First cross",
-        "subtitle": "Solve the white cross on the bottom face",
-        "description": "Learn to place the four white edge pieces around the white center, matching each edge's side color with its corresponding center.",
-        "theory": "The cross is the foundation of CFOP. Solving it on the bottom (not top) from day one builds good habits. Each edge must match both the bottom center AND its adjacent side center. This typically takes 6-8 moves.",
+        "title": "Primera cruz",
+        "subtitle": "Resuelve la cruz blanca en la cara inferior",
+        "description": "Aprende a colocar las cuatro aristas blancas alrededor del centro blanco, haciendo coincidir el color lateral de cada arista con su centro correspondiente.",
+        "theory": "La cruz es la base del CFOP. Resolverla abajo (no arriba) desde el primer día crea buenos hábitos. Cada arista debe coincidir tanto con el centro inferior como con su centro lateral adyacente. Normalmente requiere 6-8 movimientos.",
         "drills": [
-          "Practice cross on bottom 20 times without timing",
-          "Verify edge colors match both centers after each solve"
+          "Practica la cruz abajo 20 veces sin cronometrar",
+          "Verifica que los colores de las aristas coinciden con ambos centros tras cada resolución"
         ]
       },
       "first-layer-corners": {
-        "title": "First layer corners",
-        "subtitle": "Insert white corners to complete the first layer",
-        "description": "Place the four white corner pieces in their correct positions, completing the entire white face and first layer.",
-        "theory": "Each corner has white plus two side colors. The corner must be placed between the corresponding side centers. The basic insertion uses R U R' or its mirror L' U' L. Avoid placing corners with white facing sideways incorrectly.",
-        "exampleFormula": "R U R' — white corner insertion from right",
+        "title": "Esquinas de la primera capa",
+        "subtitle": "Inserta las esquinas blancas para completar la primera capa",
+        "description": "Coloca las cuatro piezas de esquina blancas en sus posiciones correctas, completando toda la cara blanca y la primera capa.",
+        "theory": "Cada esquina tiene blanco más dos colores laterales. La esquina debe colocarse entre los centros laterales correspondientes. La inserción básica usa R U R' o su espejo L' U' L. Evita colocar las esquinas con el blanco mal orientado hacia los lados.",
+        "exampleFormula": "R U R' — inserción de esquina blanca desde la derecha",
         "drills": [
-          "Complete first layer from scramble 10 times",
-          "Count how many moves each corner takes"
+          "Completa la primera capa desde un scramble 10 veces",
+          "Cuenta cuántos movimientos tarda cada esquina"
         ]
       },
       "middle-layer-edges": {
-        "title": "Middle layer edges",
-        "subtitle": "Insert the four edge pieces into the middle layer",
-        "description": "Solve the four edge pieces of the middle layer using the standard left and right insertion algorithms.",
-        "theory": "After the first layer, 4 edges remain in the middle layer. Use U R U' R' U' F' U F (right insert) or U' L' U L U F U' F' (left insert). If an edge is in the wrong slot, use the same algorithm to remove it first.",
-        "exampleFormula": "U R U' R' U' F' U F — right edge insertion",
+        "title": "Aristas de la capa media",
+        "subtitle": "Inserta las cuatro aristas en la capa media",
+        "description": "Resuelve las cuatro aristas de la capa media usando los algoritmos estándar de inserción izquierda y derecha.",
+        "theory": "Tras la primera capa, quedan 4 aristas en la capa media. Usa U R U' R' U' F' U F (inserción derecha) o U' L' U L U F U' F' (inserción izquierda). Si una arista está en la ranura equivocada, usa el mismo algoritmo para sacarla primero.",
+        "exampleFormula": "U R U' R' U' F' U F — inserción derecha de arista",
         "drills": [
-          "Solve only the middle layer 10 times from a solved first layer",
-          "Practice recognizing edge orientation before inserting"
+          "Resuelve solo la capa media 10 veces desde una primera capa resuelta",
+          "Practica reconocer la orientación de la arista antes de insertarla"
         ]
       },
       "beginner-last-layer": {
-        "title": "Beginner last layer",
-        "subtitle": "Complete the last layer using the 4-step beginner method",
-        "description": "Solve the yellow face and permute the last layer pieces using the beginner method: orient edges, orient corners, permute corners, permute edges.",
-        "theory": "The beginner last layer uses 4 algorithms total: F R U R' U' F' (edge orientation), R U R' U R U2 R' (Sune for corners), U R U' L' U R' U' L (corner permutation), and R U' R U R U R U' R' U' R2 (edge permutation).",
-        "exampleFormula": "F R U R' U' F' — orient yellow edges to form cross",
+        "title": "Última capa para principiantes",
+        "subtitle": "Completa la última capa con el método de principiante en 4 pasos",
+        "description": "Resuelve la cara amarilla y permuta las piezas de la última capa con el método de principiante: orienta aristas, orienta esquinas, permuta esquinas y permuta aristas.",
+        "theory": "La última capa de principiante usa 4 algoritmos en total: F R U R' U' F' (orientación de aristas), R U R' U R U2 R' (Sune para esquinas), U R U' L' U R' U' L (permutación de esquinas) y R U' R U R U R U' R' U' R2 (permutación de aristas).",
+        "exampleFormula": "F R U R' U' F' — orienta las aristas amarillas para formar la cruz",
         "drills": [
-          "Execute each of the 4 algorithms 20 times until automatic",
-          "Complete full beginner method solves from scramble"
+          "Ejecuta cada uno de los 4 algoritmos 20 veces hasta que salgan solos",
+          "Completa resoluciones completas de principiante desde un scramble"
         ]
       },
       "first-complete-solve": {
-        "title": "First complete solve",
-        "subtitle": "Solve the entire cube from any scramble without assistance",
-        "description": "Complete a full solve from a scrambled cube without looking at any algorithm reference, demonstrating memory of all beginner method steps.",
-        "theory": "The transition from following instructions to independent solving is the first major milestone. It requires recalling all 4-6 algorithms from memory and applying them at the right moment. Most cubers achieve this within their first week.",
+        "title": "Primera resolución completa",
+        "subtitle": "Resuelve el cubo entero desde cualquier scramble sin ayuda",
+        "description": "Completa una resolución completa desde un cubo mezclado sin mirar ninguna referencia de algoritmos, demostrando que recuerdas todos los pasos del método de principiante.",
+        "theory": "La transición de seguir instrucciones a resolver de forma independiente es el primer hito importante. Requiere recordar los 4-6 algoritmos de memoria y aplicarlos en el momento correcto. La mayoría de los cuberos lo consiguen en su primera semana.",
         "drills": [
-          "Complete 5 full solves without any reference",
-          "Time each solve to establish your baseline"
+          "Completa 5 resoluciones completas sin ninguna referencia",
+          "Cronometra cada resolución para establecer tu punto de partida"
         ]
       },
       "consistent-solving": {
-        "title": "Consistent solving",
-        "subtitle": "Reliably solve the cube in under 2 minutes every attempt",
-        "description": "Achieve consistent sub-2-minute solves with zero DNFs, demonstrating reliable recall of all beginner method steps.",
-        "theory": "Consistency is the hallmark of a real cuber. Being able to solve every time without failure means the algorithms are in muscle memory, not just conscious recall. This builds the foundation for all speed improvement.",
+        "title": "Resolución constante",
+        "subtitle": "Resuelve el cubo de forma fiable en menos de 2 minutos en cada intento",
+        "description": "Consigue resoluciones constantes por debajo de 2 minutos con cero DNF, demostrando un recuerdo fiable de todos los pasos del método de principiante.",
+        "theory": "La constancia es la marca de un cubero real. Poder resolver siempre sin fallar significa que los algoritmos están en la memoria muscular, no solo en el recuerdo consciente. Esto construye la base para toda mejora de velocidad.",
         "drills": [
-          "Complete 25 consecutive solves with 100% success rate",
-          "Record solve times and check for downward trend"
+          "Completa 25 resoluciones consecutivas con un 100% de éxito",
+          "Anota los tiempos y comprueba que la tendencia es descendente"
         ]
       },
       "cross-on-bottom": {
-        "title": "Cross always on bottom",
-        "subtitle": "Solve the cross directly on the bottom face without rotation",
-        "description": "Transition from solving the cross on top (then flipping) to planning and executing it directly on the bottom face.",
-        "theory": "Solving cross on bottom saves 1-2 seconds of cube rotation and lets you immediately see the F2L pieces. It requires mentally tracking pieces you can't see. Start by solving 2 edges on bottom, then complete all 4.",
+        "title": "Cruz siempre abajo",
+        "subtitle": "Resuelve la cruz directamente en la cara inferior sin rotaciones",
+        "description": "Pasa de resolver la cruz arriba (y luego dar la vuelta) a planificarla y ejecutarla directamente en la cara inferior.",
+        "theory": "Resolver la cruz abajo ahorra 1-2 segundos de rotación del cubo y te permite ver inmediatamente las piezas del F2L. Requiere seguir mentalmente piezas que no ves. Empieza resolviendo 2 aristas abajo y luego completa las 4.",
         "drills": [
-          "Solve cross on bottom 50 times",
-          "Practice connecting cross edges without looking at the bottom"
+          "Resuelve la cruz abajo 50 veces",
+          "Practica conectar aristas de la cruz sin mirar la cara inferior"
         ]
       },
       "cross-efficiency-8": {
-        "title": "Cross in ≤8 moves",
-        "subtitle": "Solve any cross in 8 moves or fewer from any scramble",
-        "description": "Learn to find efficient cross solutions that never exceed 8 moves. The optimal cross for any scramble averages ~5.8 moves.",
-        "theory": "Every cross can be solved in 8 moves or fewer. The key is solving edges relative to each other (not relative to centers) and doing multiple edges in one move. Advanced cross uses D-layer alignment to reduce move count.",
+        "title": "Cruz en ≤8 movimientos",
+        "subtitle": "Resuelve cualquier cruz en 8 movimientos o menos desde cualquier scramble",
+        "description": "Aprende a encontrar soluciones de cruz eficientes que nunca superen los 8 movimientos. La cruz óptima de cualquier scramble promedia ~5.8 movimientos.",
+        "theory": "Toda cruz puede resolverse en 8 movimientos o menos. La clave es resolver las aristas unas respecto a otras (no respecto a los centros) y hacer varias aristas en un solo movimiento. La cruz avanzada usa la alineación de la capa D para reducir el número de movimientos.",
         "drills": [
-          "Plan cross solutions and count moves — aim for ≤7",
-          "Use cross solver tools to compare your solution with optimal"
+          "Planifica soluciones de cruz y cuenta los movimientos — busca ≤7",
+          "Usa herramientas de solver de cruz para comparar tu solución con la óptima"
         ]
       },
       "pair-preservation": {
-        "title": "Cross pair preservation",
-        "subtitle": "Preserve or position pre-existing F2L pairs while solving the cross",
-        "description": "Learn to track and preserve naturally formed F2L pairs during cross execution so they remain intact for instant F2L insertion.",
-        "theory": "During cross planning, inspect for pre-built or 1-move corner-edge pairs. Adjust your cross solution sequence to avoid separating these pairs, saving 4-5 moves during the first F2L slot without the full overhead of planning a complex XCross.",
+        "title": "Preservación de pares en la cruz",
+        "subtitle": "Preserva o posiciona pares F2L ya formados mientras resuelves la cruz",
+        "description": "Aprende a rastrear y preservar los pares F2L formados de forma natural durante la ejecución de la cruz para que permanezcan intactos y se inserten al instante.",
+        "theory": "Durante la planificación de la cruz, busca pares esquina-arista ya construidos o a 1 movimiento. Ajusta la secuencia de tu cruz para no separarlos, ahorrando 4-5 movimientos en la primera ranura F2L sin el coste de planificar un XCross completo.",
         "drills": [
-          "Scan scrambles for pre-built pairs during inspection",
-          "Execute cross solutions while preserving at least 1 F2L pair 20 times"
+          "Escanea scrambles buscando pares ya formados durante la inspección",
+          "Ejecuta soluciones de cruz preservando al menos 1 par F2L 20 veces"
         ]
       },
       "blind-cross": {
-        "title": "Blindfold cross",
-        "subtitle": "Plan the entire cross during inspection and execute with eyes closed",
-        "description": "Use inspection time to memorize the complete cross sequence, then execute it without looking at the bottom of the cube.",
-        "theory": "Blind cross execution frees your eyes to look ahead for F2L pairs during cross execution. This is the first step toward lookahead. It requires visualizing all 4 edge paths during inspection and trusting your muscle memory.",
+        "title": "Cruz a ciegas",
+        "subtitle": "Planifica toda la cruz durante la inspección y ejecútala con los ojos cerrados",
+        "description": "Usa el tiempo de inspección para memorizar la secuencia completa de la cruz y ejecútala sin mirar la parte inferior del cubo.",
+        "theory": "La ejecución de la cruz a ciegas libera tus ojos para anticipar pares F2L durante la cruz. Es el primer paso hacia el lookahead. Requiere visualizar los recorridos de las 4 aristas durante la inspección y confiar en tu memoria muscular.",
         "drills": [
-          "Plan the cross, close your eyes, execute, and check",
-          "Start with 2 edges blind, progress to all 4"
+          "Planifica la cruz, cierra los ojos, ejecuta y comprueba",
+          "Empieza con 2 aristas a ciegas y progresa hasta las 4"
         ]
       },
       "cross-planning": {
-        "title": "Cross planning under time",
-        "subtitle": "Plan the full cross solution within the 15-second inspection window",
-        "description": "Consistently plan a complete, efficient cross solution within the standard WCA 15-second inspection period.",
-        "theory": "At this level, you should identify the optimal cross face (if dual CN), plan all 4 edge placements, and rehearse the sequence mentally. Use the CsTimer inspection feature or a partner to enforce the 15s limit during practice.",
+        "title": "Planificación de la cruz contrarreloj",
+        "subtitle": "Planifica la solución completa de la cruz dentro de la ventana de inspección de 15 segundos",
+        "description": "Planifica de forma constante una solución de cruz completa y eficiente dentro del periodo de inspección estándar de 15 segundos de la WCA.",
+        "theory": "A este nivel, debes identificar la cara óptima de cruz (si eres CN dual), planificar las 4 colocaciones de aristas y ensayar la secuencia mentalmente. Usa la función de inspección de CsTimer o un compañero para respetar el límite de 15s en el entrenamiento.",
         "drills": [
-          "Set a 15s timer — plan and execute, rate your accuracy",
-          "Practice with scrambles that have 6-7 move optimal crosses"
+          "Pon un temporizador de 15s — planifica y ejecuta, valora tu precisión",
+          "Practica con scrambles cuya cruz óptima tenga 6-7 movimientos"
         ]
       },
       "optimal-cross": {
-        "title": "Optimal cross selection",
-        "subtitle": "Choose the best cross face among multiple options for maximum efficiency",
-        "description": "When solving dual CN or full CN, quickly evaluate cross options on multiple faces and select the most efficient one during inspection.",
-        "theory": "The probability of finding a 4-move or fewer cross jumps from ~6% (single color) to ~29% (full CN). This requires rapidly scanning 2-6 faces during inspection and estimating move counts without fully planning each.",
+        "title": "Selección de cruz óptima",
+        "subtitle": "Elige la mejor cara de cruz entre varias opciones para máxima eficiencia",
+        "description": "Cuando resuelves CN dual o CN completa, evalúa rápido las opciones de cruz en varias caras y selecciona la más eficiente durante la inspección.",
+        "theory": "La probabilidad de encontrar una cruz de 4 movimientos o menos salta de ~6% (un solo color) a ~29% (CN completa). Requiere escanear 2-6 caras durante la inspección y estimar el número de movimientos sin planificar cada una por completo.",
         "drills": [
-          "Scan all available cross colors, estimate moves, pick best",
-          "Compare your choice with post-solve analysis of optimal cross"
+          "Escanea todos los colores de cruz disponibles, estima movimientos y elige la mejor",
+          "Compara tu elección con el análisis posterior de la cruz óptima"
         ]
       },
       "xcross-basics": {
-        "title": "XCross basics",
-        "subtitle": "Solve the cross and first F2L pair simultaneously in one sequence",
-        "description": "Combine cross edge placement with the first F2L pair insertion, creating a 1x2x2 block during the cross phase. This saves 4-5 moves on average.",
-        "theory": "An XCross leverages pre-built or nearly-built corner-edge pairs near cross edges. During cross planning, identify if any F2L pair pieces are favorably positioned. The combined sequence typically uses 7-9 moves vs 11-13 for separate cross+pair.",
+        "title": "Fundamentos de XCross",
+        "subtitle": "Resuelve la cruz y el primer par F2L a la vez en una sola secuencia",
+        "description": "Combina la colocación de las aristas de la cruz con la inserción del primer par F2L, creando un bloque 1x2x2 durante la fase de cruz. Ahorra 4-5 movimientos de media.",
+        "theory": "Un XCross aprovecha pares esquina-arista ya construidos o casi construidos cerca de las aristas de la cruz. Durante la planificación, identifica si hay piezas de pares F2L bien posicionadas. La secuencia combinada suele usar 7-9 movimientos frente a los 11-13 de hacer la cruz y el par por separado.",
         "exampleFormula": "Scramble: D2 R' F B2 D2 → XCross: D2 R' U R F B2 D2",
         "drills": [
-          "Use an XCross scramble generator and solve 25 cases",
-          "Achieve XCross in 9 moves or fewer consistently"
+          "Usa un generador de scrambles XCross y resuelve 25 casos",
+          "Consigue XCross en 9 movimientos o menos de forma constante"
         ]
       },
       "xcross-mastery": {
-        "title": "XCross mastery",
-        "subtitle": "Find and execute XCross opportunities in 50%+ of solves",
-        "description": "Recognize XCross opportunities during inspection in at least half of all scrambles, and execute them fluidly with zero hesitation.",
-        "theory": "XCross mastery requires deep inspection analysis: seeing not just the cross but scanning for favorable corner-edge arrangements. This skill scales with color neutrality — more cross options = more XCross opportunities. Top cubers find XCross in 60-70% of solves.",
+        "title": "Dominio del XCross",
+        "subtitle": "Encuentra y ejecuta oportunidades de XCross en más del 50% de las resoluciones",
+        "description": "Reconoce oportunidades de XCross durante la inspección en al menos la mitad de los scrambles y ejecútalas con fluidez y sin dudar.",
+        "theory": "El dominio del XCross requiere un análisis profundo de inspección: ver no solo la cruz, sino buscar disposiciones favorables de esquina-arista. Esta habilidad escala con la neutralidad de color — más opciones de cruz = más oportunidades de XCross. Los mejores cuberos encuentran XCross en el 60-70% de las resoluciones.",
         "drills": [
-          "Practice 100 scrambles — identify XCross possibility in each",
-          "Time the XCross execution separately from the rest of the solve"
+          "Practica 100 scrambles — identifica la posibilidad de XCross en cada uno",
+          "Cronometra la ejecución del XCross por separado del resto de la resolución"
         ]
       },
       "cross-plus-two": {
-        "title": "Cross+2 planning",
-        "subtitle": "Plan cross plus tracking of TWO F2L pairs during inspection",
-        "description": "During the 15-second inspection, plan the full cross solution AND predict the landing positions of two F2L pairs for instant continuation.",
-        "theory": "This is an elite-level inspection skill used by the world's best. It requires visualizing 6-8 moves of cross execution and mentally tracking 4 additional pieces simultaneously. The payoff is 2 F2L pairs solved with zero pause after the cross.",
+        "title": "Planificación Cross+2",
+        "subtitle": "Planifica la cruz más el seguimiento de DOS pares F2L durante la inspección",
+        "description": "Durante la inspección de 15 segundos, planifica la solución completa de la cruz Y predice las posiciones de aterrizaje de dos pares F2L para continuar al instante.",
+        "theory": "Es una habilidad de inspección de nivel élite usada por los mejores del mundo. Requiere visualizar 6-8 movimientos de ejecución de la cruz y seguir mentalmente 4 piezas adicionales a la vez. La recompensa: 2 pares F2L resueltos con cero pausas después de la cruz.",
         "drills": [
-          "Inspect for 15s, execute cross, then immediately identify pair 1 and 2",
-          "Record the number of times you correctly predict both pairs"
+          "Inspecciona 15s, ejecuta la cruz e identifica al momento los pares 1 y 2",
+          "Anota las veces que predices correctamente ambos pares"
         ]
       },
       "intuitive-f2l-basics": {
-        "title": "Intuitive F2L transition",
-        "subtitle": "Replace the beginner corner-then-edge method with paired insertions",
-        "description": "Learn to pair each corner with its corresponding edge and insert them together, dramatically reducing move count vs the beginner method.",
-        "theory": "F2L pairs corners and edges before insertion instead of inserting separately. This reduces the first two layers from ~8 sub-steps to 4 slots. Initially slower, it rapidly becomes faster with practice. Understanding 3 basic cases (paired, separated, corner in slot) covers most situations.",
+        "title": "Transición al F2L intuitivo",
+        "subtitle": "Sustituye el método de principiante (esquina y luego arista) por inserciones por pares",
+        "description": "Aprende a emparejar cada esquina con su arista correspondiente e insertarlas juntas, reduciendo drásticamente el número de movimientos frente al método de principiante.",
+        "theory": "El F2L empareja esquinas y aristas antes de insertarlas en lugar de insertarlas por separado. Esto reduce las dos primeras capas de ~8 sub-pasos a 4 ranuras. Al principio es más lento, pero rápidamente se vuelve más rápido con la práctica. Entender 3 casos básicos (emparejado, separado, esquina en la ranura) cubre la mayoría de las situaciones.",
         "drills": [
-          "Practice F2L without timing — focus on understanding piece relationships",
-          "Solve only F2L (stop after 2 layers) 25 times"
+          "Practica F2L sin cronometrar — céntrate en entender las relaciones entre piezas",
+          "Resuelve solo el F2L (para tras 2 capas) 25 veces"
         ]
       },
       "f2l-case-recognition": {
-        "title": "F2L case recognition",
-        "subtitle": "Instantly identify all 41 standard F2L cases and their solutions",
-        "description": "Recognize every one of the 41 standard F2L cases without hesitation and know the optimal intuitive solution for each.",
-        "theory": "There are 41 unique F2L cases (including mirrors). Each case can be solved intuitively by understanding how to pair pieces. Recognition speed — not execution speed — is the bottleneck for most intermediate cubers in F2L.",
+        "title": "Reconocimiento de casos F2L",
+        "subtitle": "Identifica al instante los 41 casos F2L estándar y sus soluciones",
+        "description": "Reconoce sin dudar cada uno de los 41 casos F2L estándar y conoce la solución intuitiva óptima para cada uno.",
+        "theory": "Hay 41 casos F2L únicos (incluyendo espejos). Cada caso puede resolverse de forma intuitiva entendiendo cómo emparejar las piezas. La velocidad de reconocimiento — no la de ejecución — es el cuello de botella de la mayoría de los cuberos intermedios en F2L.",
         "drills": [
-          "Use F2L case trainers (J Perm, SpeedCubeDB) for all 41 cases",
-          "Drill recognition: name the case within 0.5s of seeing it"
+          "Usa entrenadores de casos F2L (J Perm, SpeedCubeDB) para los 41 casos",
+          "Entrena el reconocimiento: nombra el caso en menos de 0.5s al verlo"
         ]
       },
       "algorithmic-f2l": {
-        "title": "Algorithmic F2L",
-        "subtitle": "Learn optimized algorithms for difficult F2L cases",
-        "description": "Replace slow intuitive solutions for tough F2L cases with optimized, ergonomic algorithms that minimize regrips and rotations.",
-        "theory": "Some F2L cases (like corner in slot, edge oriented wrong) benefit from specific algorithms. These are typically shorter and more ergonomic than the intuitive approach. Learning ~10-15 algorithmic F2L cases provides the best return on investment.",
+        "title": "F2L algorítmico",
+        "subtitle": "Aprende algoritmos optimizados para los casos F2L difíciles",
+        "description": "Sustituye las soluciones intuitivas lentas de los casos F2L difíciles por algoritmos optimizados y ergonómicos que minimizan regrips y rotaciones.",
+        "theory": "Algunos casos F2L (como esquina en la ranura o arista mal orientada) se benefician de algoritmos específicos. Suelen ser más cortos y ergonómicos que el enfoque intuitivo. Aprender ~10-15 casos algorítmicos de F2L ofrece el mejor retorno de la inversión.",
         "drills": [
-          "Learn 3 algorithmic F2L cases per week until you've covered the hardest 15",
-          "Compare your solution vs the algorithmic one for move count"
+          "Aprende 3 casos F2L algorítmicos por semana hasta cubrir los 15 más difíciles",
+          "Compara tu solución frente a la algorítmica en número de movimientos"
         ]
       },
       "back-slot-f2l": {
-        "title": "Back slot insertion",
-        "subtitle": "Insert F2L pairs into back slots without cube rotation",
-        "description": "Solve F2L pairs directly into the back-left and back-right slots without rotating the cube to bring them to the front.",
-        "theory": "Back slot solving eliminates 2-4 unnecessary cube rotations per solve. It requires learning mirror solutions for cases and developing the ability to execute algorithms with pieces in non-front positions. This is a critical step toward rotationless solving.",
+        "title": "Inserción en ranura trasera",
+        "subtitle": "Inserta pares F2L en las ranuras traseras sin rotar el cubo",
+        "description": "Resuelve pares F2L directamente en las ranuras trasera-izquierda y trasera-derecha sin rotar el cubo para traerlos al frente.",
+        "theory": "Resolver en la ranura trasera elimina 2-4 rotaciones innecesarias por resolución. Requiere aprender las soluciones espejo de los casos y desarrollar la capacidad de ejecutar algoritmos con piezas en posiciones no frontales. Es un paso clave hacia la resolución sin rotaciones.",
         "drills": [
-          "Practice 25 solves inserting all pairs only into back slots",
-          "Learn the mirror of your favorite front-slot algorithms"
+          "Practica 25 resoluciones insertando todos los pares solo en ranuras traseras",
+          "Aprende el espejo de tus algoritmos favoritos de ranura frontal"
         ]
       },
       "sledgehammer-hedgeslammer": {
-        "title": "Sledgehammer & hedgeslammer",
-        "subtitle": "Use R' F R F' and F R' F' R triggers for pair insertion and edge control",
-        "description": "Master the two most versatile F2L triggers. Sledgehammer (R' F R F') and Hedgeslammer (F R' F' R) for rotationless inserts and edge orientation control.",
-        "theory": "These 4-move triggers are fundamental building blocks. Sledgehammer inserts a pair from above while flipping edge orientation. Hedgeslammer does the mirror. Together they enable rotationless back-slot solving and edge control during the last pair.",
-        "exampleFormula": "R' F R F' (Sledgehammer) — inserts pair + flips 2 edges",
+        "title": "Sledgehammer y hedgeslammer",
+        "subtitle": "Usa los triggers R' F R F' y F R' F' R para insertar pares y controlar la orientación",
+        "description": "Domina los dos triggers F2L más versátiles: Sledgehammer (R' F R F') y Hedgeslammer (F R' F' R) para inserciones sin rotación y control de la orientación de aristas.",
+        "theory": "Estos triggers de 4 movimientos son bloques fundamentales. El Sledgehammer inserta un par desde arriba mientras voltea la orientación de las aristas. El Hedgeslammer hace el espejo. Juntos permiten resolver la ranura trasera sin rotaciones y controlar la orientación durante el último par.",
+        "exampleFormula": "R' F R F' (Sledgehammer) — inserta el par y voltea 2 aristas",
         "drills": [
-          "Execute each trigger 50 times focusing on fingertrick fluidity",
-          "Identify all F2L cases where these triggers apply"
+          "Ejecuta cada trigger 50 veces centrándote en la fluidez del fingertrick",
+          "Identifica todos los casos F2L donde se aplican estos triggers"
         ]
       },
       "rotationless-f2l": {
-        "title": "Rotationless F2L",
-        "subtitle": "Solve all four F2L pairs without a single cube rotation",
-        "description": "Complete the entire F2L stage with zero y/y' rotations by using back-slot insertion techniques, triggers, and rotationless algorithms for all cases.",
-        "theory": "Each cube rotation costs ~0.3-0.5s. Eliminating all 4-6 typical rotations saves 1.5-3 seconds. This requires knowing solutions from every angle and using sledgehammer/hedgeslammer, wide moves, and d-moves to avoid reorienting.",
+        "title": "F2L sin rotaciones",
+        "subtitle": "Resuelve los cuatro pares F2L sin una sola rotación del cubo",
+        "description": "Completa toda la fase F2L con cero rotaciones y/y' usando técnicas de inserción trasera, triggers y algoritmos sin rotación para todos los casos.",
+        "theory": "Cada rotación cuesta ~0.3-0.5s. Eliminar las 4-6 rotaciones típicas ahorra 1.5-3 segundos. Requiere conocer soluciones desde todos los ángulos y usar sledgehammer/hedgeslammer, movimientos anchos y movimientos d para evitar reorientar.",
         "drills": [
-          "Complete 25 solves with a strict 0-rotation rule for F2L",
-          "For each rotation you're tempted to do, find a rotationless alternative"
+          "Completa 25 resoluciones con una regla estricta de 0 rotaciones en el F2L",
+          "Para cada rotación que sientas la tentación de hacer, busca una alternativa sin rotación"
         ]
       },
       "keyhole-technique": {
-        "title": "Keyhole technique",
-        "subtitle": "Use empty F2L slots to insert pieces more efficiently",
-        "description": "Leverage unsolved F2L slots to directly insert edge pieces in 3 moves using D-layer alignment, bypassing the standard pairing process.",
-        "theory": "When a corner is already solved and the edge is in the top layer, keyhole avoids the 7-8 move standard process. Align the empty slot under the edge's target using D moves, insert in 3 moves, then restore the cross. Ideal when 1-2 corners remain unsolved.",
-        "exampleFormula": "D' (align empty slot) + R U R' + D (restore cross)",
+        "title": "Técnica del keyhole",
+        "subtitle": "Usa ranuras F2L vacías para insertar piezas de forma más eficiente",
+        "description": "Aprovecha las ranuras F2L sin resolver para insertar piezas de arista en 3 movimientos con la alineación de la capa D, saltándote el proceso de emparejado estándar.",
+        "theory": "Cuando una esquina ya está resuelta y la arista está en la capa superior, el keyhole evita el proceso estándar de 7-8 movimientos. Alinea la ranura vacía bajo el objetivo de la arista con movimientos D, inserta en 3 movimientos y restaura la cruz. Ideal cuando quedan 1-2 esquinas sin resolver.",
+        "exampleFormula": "D' (alinea la ranura vacía) + R U R' + D (restaura la cruz)",
         "drills": [
-          "Solve 3 edges using only keyhole method",
-          "Identify keyhole opportunities during F2L inspection"
+          "Resuelve 3 aristas solo con el método keyhole",
+          "Identifica oportunidades de keyhole durante la inspección del F2L"
         ]
       },
       "edge-control-f2l": {
-        "title": "Edge orientation control",
-        "subtitle": "Manipulate top-layer edge orientation during final F2L pair insertion",
-        "description": "Choose F2L insertion variants that orient LL edges, avoiding dot OLL cases and guaranteeing favorable orientation for the last layer.",
-        "theory": "By selecting the right insertion for the 4th F2L pair (sledgehammer vs standard vs wide moves), you can orient 0, 2, or 4 LL edges. This guarantees a cross OLL and eliminates the slowest 8 OLL cases (dots).",
-        "exampleFormula": "Instead of R U R', use R' F R F' to flip 2 edges",
+        "title": "Control de orientación de aristas",
+        "subtitle": "Manipula la orientación de las aristas de la última capa durante la inserción del último par F2L",
+        "description": "Elige variantes de inserción F2L que orienten las aristas de la última capa, evitando los casos OLL de punto y garantizando una orientación favorable para la última capa.",
+        "theory": "Seleccionando la inserción correcta para el 4º par F2L (sledgehammer vs estándar vs movimientos anchos), puedes orientar 0, 2 o 4 aristas de la última capa. Esto garantiza un OLL de cruz y elimina los 8 casos OLL más lentos (los puntos).",
+        "exampleFormula": "En lugar de R U R', usa R' F R F' para voltear 2 aristas",
         "drills": [
-          "Complete 50 solves targeting zero dot OLLs via edge control",
-          "For each last slot, identify which insertion gives best edge orientation"
+          "Completa 50 resoluciones buscando cero OLL de punto mediante el control de aristas",
+          "Para cada última ranura, identifica qué inserción da la mejor orientación de aristas"
         ]
       },
       "zbls-set": {
-        "title": "ZBLS (last slot edge control)",
-        "subtitle": "Orient all LL edges during final F2L pair insertion regardless of pair state",
-        "description": "Master ZBLS (Zborowski-Bruchem Last Slot) to force all top-layer edges to orient during the last F2L slot, setting up 1-look ZBLL.",
-        "theory": "While basic edge control uses Sledgehammer for simple cases, ZBLS covers all last-slot scenarios (split pair, edge in slot, corner in slot). Orienting edges during the final F2L slot guarantees an oriented LL cross, unlocking 1-look ZBLL every solve.",
+        "title": "ZBLS (control de aristas en la última ranura)",
+        "subtitle": "Orienta todas las aristas de la última capa durante la inserción del último par F2L, sea cual sea el estado del par",
+        "description": "Domina el ZBLS (Zborowski-Bruchem Last Slot) para forzar que todas las aristas de la última capa queden orientadas durante la última ranura F2L, preparando un ZBLL de un vistazo.",
+        "theory": "Mientras que el control básico de aristas usa el Sledgehammer para casos sencillos, el ZBLS cubre todos los escenarios de la última ranura (par separado, arista en la ranura, esquina en la ranura). Orientar las aristas durante la última ranura garantiza una cruz OLL orientada, desbloqueando el ZBLL de un vistazo en cada resolución.",
         "drills": [
-          "Learn 10 essential ZBLS cases for common unjoined last-slot setups",
-          "Combine ZBLS practice with ZBLL T/U set execution"
+          "Aprende 10 casos ZBLS esenciales para las configuraciones comunes de última ranura sin unir",
+          "Combina la práctica de ZBLS con la ejecución de los sets T/U de ZBLL"
         ]
       },
       "multislotting": {
         "title": "Multi-Slotting",
-        "subtitle": "Solve two adjacent F2L pairs in one unified sequence",
-        "description": "Combine the insertion of two F2L pairs into a single fluid sequence without intermediate pauses or recognition gaps.",
-        "theory": "Multi-slotting leverages the movement of one pair to set up the pieces of the next pair. A 2-pair multislot typically saves 3-4 moves vs separate solutions. It requires tracking both slot states simultaneously and recognizing dual-pair patterns.",
-        "exampleFormula": "R U2 R' U R U' R' + L' U L (2-pair multislot)",
+        "subtitle": "Resuelve dos pares F2L adyacentes en una secuencia unificada",
+        "description": "Combina la inserción de dos pares F2L en una sola secuencia fluida sin pausas intermedias ni huecos de reconocimiento.",
+        "theory": "El multi-slotting aprovecha el movimiento de un par para preparar las piezas del siguiente. Un multislot de 2 pares ahorra típicamente 3-4 movimientos frente a las soluciones separadas. Requiere rastrear ambos estados de ranura a la vez y reconocer patrones de doble par.",
+        "exampleFormula": "R U2 R' U R U' R' + L' U L (multislot de 2 pares)",
         "drills": [
-          "Practice 2-pair prediction: identify what the cube looks like after pair 1",
-          "Learn 5-10 common multislotting patterns"
+          "Practica la predicción de 2 pares: identifica cómo quedará el cubo tras el par 1",
+          "Aprende 5-10 patrones comunes de multislotting"
         ]
       },
       "pseudo-slotting": {
         "title": "Pseudo-Slotting",
-        "subtitle": "Form F2L pairs relative to a temporarily offset cross alignment",
-        "description": "Solve F2L pairs assuming the D-layer is rotated off-alignment, resolving all pairs simultaneously with a final D or D2 alignment move.",
-        "theory": "Pseudo-slotting unlocks cases that look terrible under standard orientation. By temporarily offsetting the cross alignment (D or D'), 'bad' pairs become easy. At the end, one D/D2 move aligns everything. Used extensively by elite cubers for difficult cases.",
-        "exampleFormula": "D (offset) + U R U' R' + D' (alignment)",
+        "subtitle": "Forma pares F2L con una alineación de la cruz temporalmente desplazada",
+        "description": "Resuelve pares F2L asumiendo que la capa D está girada fuera de alineación, resolviendo todos los pares a la vez con un movimiento final de alineación D o D2.",
+        "theory": "El pseudo-slotting desbloquea casos que parecen terribles con la orientación estándar. Desplazando temporalmente la alineación de la cruz (D o D'), los pares 'malos' se vuelven fáciles. Al final, un movimiento D/D2 lo alinea todo. Lo usan mucho los cuberos de élite para casos difíciles.",
+        "exampleFormula": "D (desplazamiento) + U R U' R' + D' (alineación)",
         "drills": [
-          "Practice pseudo-F2L pair recognition under active D-rotations",
-          "Learn to identify when offsetting would help a difficult case"
+          "Practica el reconocimiento de pares pseudo-F2L con rotaciones D activas",
+          "Aprende a identificar cuándo el desplazamiento ayudaría en un caso difícil"
         ]
       },
       "two-look-oll": {
-        "title": "2-look OLL",
-        "subtitle": "Orient the last layer in 2 steps: edges then corners (10 algorithms)",
-        "description": "Replace the beginner OLL with the 2-look system: 3 edge orientation cases plus 7 corner orientation cases for a reliable 2-step solution.",
-        "theory": "2-look OLL reduces OLL from 57 to 10 algorithms. Step 1 orients edges (3 cases: line, L-shape, dot). Step 2 orients corners (7 cases: Sune, Anti-Sune, etc.). This is the standard intermediate approach and sufficient for sub-20 solving.",
-        "exampleFormula": "F R U R' U' F' → orient edges (line case)",
+        "title": "OLL en 2 pasos",
+        "subtitle": "Orienta la última capa en 2 pasos: primero aristas y luego esquinas (10 algoritmos)",
+        "description": "Sustituye el OLL de principiante por el sistema de 2 pasos: 3 casos de orientación de aristas más 7 de orientación de esquinas para una solución fiable en 2 pasos.",
+        "theory": "El OLL de 2 pasos reduce el OLL de 57 a 10 algoritmos. El paso 1 orienta las aristas (3 casos: línea, forma de L y punto). El paso 2 orienta las esquinas (7 casos: Sune, Anti-Sune, etc.). Es el enfoque intermedio estándar y suficiente para resolver en menos de 20 segundos.",
+        "exampleFormula": "F R U R' U' F' → orienta las aristas (caso línea)",
         "drills": [
-          "Learn all 10 algorithms in one week (1-2 per day)",
-          "Use OLL trainer to randomize all 10 cases"
+          "Aprende los 10 algoritmos en una semana (1-2 al día)",
+          "Usa el entrenador de OLL para practicar los 10 casos al azar"
         ]
       },
       "two-look-pll": {
-        "title": "2-look PLL",
-        "subtitle": "Permute the last layer in 2 steps: corners then edges (6 algorithms)",
-        "description": "Replace the beginner PLL with the 2-look system: 2 corner permutation cases plus 4 edge permutation cases.",
-        "theory": "2-look PLL reduces PLL from 21 to 6 algorithms. Step 1 permutes corners (A-perm or E-perm). Step 2 permutes edges (Ua, Ub, H, Z). Combined with 2-look OLL, this gives a 4-step last layer — sufficient for sub-25.",
-        "exampleFormula": "R U R' U' R' F R2 U' R' U' R U R' F' → T-Perm (corner swap)",
+        "title": "PLL en 2 pasos",
+        "subtitle": "Permuta la última capa en 2 pasos: primero esquinas y luego aristas (6 algoritmos)",
+        "description": "Sustituye el PLL de principiante por el sistema de 2 pasos: 2 casos de permutación de esquinas más 4 de permutación de aristas.",
+        "theory": "El PLL de 2 pasos reduce el PLL de 21 a 6 algoritmos. El paso 1 permuta las esquinas (A-perm o E-perm). El paso 2 permuta las aristas (Ua, Ub, H, Z). Combinado con el OLL de 2 pasos, da una última capa de 4 pasos — suficiente para el sub-25.",
+        "exampleFormula": "R U R' U' R' F R2 U' R' U' R U R' F' → T-Perm (intercambio de esquinas)",
         "drills": [
-          "Learn all 6 algorithms with correct fingertricks",
-          "Practice recognition: identify the PLL case in under 1 second"
+          "Aprende los 6 algoritmos con los fingertricks correctos",
+          "Practica el reconocimiento: identifica el caso PLL en menos de 1 segundo"
         ]
       },
       "full-pll": {
-        "title": "Full PLL",
-        "subtitle": "Learn all 21 PLL algorithms for 1-step last layer permutation",
-        "description": "Memorize and execute all 21 PLL algorithms with consistent sub-2.5s execution each, enabling 1-step permutation of the last layer.",
-        "theory": "Full PLL is the highest-value algorithm set for intermediate cubers. 21 algorithms unlock 1-step PLL. Focus on ergonomic algorithms and fingertricks from day one — bad finger habits are hard to unlearn. Target: sub-2s per PLL.",
+        "title": "PLL completo",
+        "subtitle": "Aprende los 21 algoritmos PLL para permutar la última capa en un solo paso",
+        "description": "Memoriza y ejecuta los 21 algoritmos PLL con una ejecución constante de menos de 2.5s cada uno, permitiendo la permutación de la última capa en un solo paso.",
+        "theory": "El PLL completo es el set de algoritmos de mayor valor para los cuberos intermedios. 21 algoritmos desbloquean el PLL en un paso. Céntrate en algoritmos ergonómicos y fingertricks desde el primer día — los malos hábitos de dedos son difíciles de desaprender. Objetivo: menos de 2s por PLL.",
         "exampleFormula": "R U R' U' R' F R2 U' R' U' R U R' F' — T-Perm",
         "drills": [
-          "PLL Time Attack: execute all 21 PLLs back-to-back, target sub-45s",
-          "Learn 3 new PLLs per day for one week"
+          "PLL Time Attack: ejecuta los 21 PLL seguidos, objetivo menos de 45s",
+          "Aprende 3 PLL nuevos al día durante una semana"
         ]
       },
       "two-sided-pll-recog": {
-        "title": "2-Sided PLL Recognition",
-        "subtitle": "Identify any PLL case by seeing only two adjacent faces",
-        "description": "Determine the exact PLL case from only two visible sides, eliminating the need to rotate the cube to see all faces for recognition.",
-        "theory": "This saves ~0.5s per solve by avoiding recognition rotations. Each PLL has unique 2-sided patterns based on color bars, headlights, and opposites. Most cubers learn this naturally after full PLL, but deliberate study accelerates mastery.",
+        "title": "Reconocimiento PLL de 2 caras",
+        "subtitle": "Identifica cualquier caso PLL viendo solo dos caras adyacentes",
+        "description": "Determina el caso PLL exacto viendo solo dos lados visibles, eliminando la necesidad de rotar el cubo para ver todas las caras al reconocer.",
+        "theory": "Ahorra ~0.5s por resolución evitando rotaciones de reconocimiento. Cada PLL tiene patrones únicos de 2 caras basados en barras de color, faros (headlights) y opuestos. La mayoría de los cuberos lo aprenden de forma natural tras el PLL completo, pero el estudio deliberado acelera el dominio.",
         "drills": [
-          "Cover two faces and identify the PLL from the visible two",
-          "Use 2-sided PLL recognition trainers (J Perm, SpeedCubeDB)"
+          "Tapa dos caras e identifica el PLL con las dos visibles",
+          "Usa entrenadores de reconocimiento PLL de 2 caras (J Perm, SpeedCubeDB)"
         ]
       },
       "auf-prediction": {
-        "title": "AUF Prediction & Execution",
-        "subtitle": "Predict and execute Adjust Upper Face moves during LL recognition and execution",
-        "description": "Anticipate the final U, U', or U2 alignment move during PLL recognition and execute it seamlessly without post-alg hesitation.",
-        "theory": "AUF (Adjust Upper Face) pauses cost 0.2s–0.4s per solve. By tracking key sticker bars during PLL recognition and algorithm execution, elite cubers determine the required AUF move before the algorithm finishes, executing it as part of the last move trigger.",
+        "title": "Predicción y ejecución del AUF",
+        "subtitle": "Predice y ejecuta los movimientos de Ajuste de la Cara Superior durante el reconocimiento y la ejecución de la última capa",
+        "description": "Anticipa el movimiento final U, U' o U2 durante el reconocimiento del PLL y ejecútalo sin dudar después del algoritmo.",
+        "theory": "Las pausas de AUF (Adjust Upper Face) cuestan 0.2s-0.4s por resolución. Rastreando las barras de pegatinas clave durante el reconocimiento y la ejecución del PLL, los cuberos de élite determinan el AUF necesario antes de que termine el algoritmo, ejecutándolo como parte del último trigger.",
         "drills": [
-          "Practice PLL execution ending immediately with predicted AUF",
-          "Drill 2-sided recognition and call out AUF before starting the alg"
+          "Practica la ejecución del PLL terminando directamente con el AUF predicho",
+          "Entrena el reconocimiento de 2 caras y di el AUF antes de empezar el algoritmo"
         ]
       },
       "full-oll": {
-        "title": "Full OLL",
-        "subtitle": "Learn all 57 OLL algorithms for 1-step last layer orientation",
-        "description": "Memorize and execute all 57 OLL algorithms with consistent sub-1.5s execution, enabling 1-step orientation every solve.",
-        "theory": "57 OLL cases are grouped by shape: dot (8), line (4), L-shape (8), cross (7), P-shape (4), T-shape (2), W-shape (2), square (2), fish (4), bolt (6), awkward (4), and all corners oriented (7). Learn grouped by shape for easier memorization.",
+        "title": "OLL completo",
+        "subtitle": "Aprende los 57 algoritmos OLL para orientar la última capa en un solo paso",
+        "description": "Memoriza y ejecuta los 57 algoritmos OLL con una ejecución constante de menos de 1.5s, permitiendo la orientación en un solo paso en cada resolución.",
+        "theory": "Los 57 casos OLL se agrupan por forma: punto (8), línea (4), forma de L (8), cruz (7), forma de P (4), forma de T (2), forma de W (2), cuadrado (2), pez (4), rayo (6), raro (4) y todas las esquinas orientadas (7). Aprende agrupados por forma para memorizar más fácil.",
         "drills": [
-          "Learn OLL in groups of 4-8, starting with the most common shapes",
-          "Use OLL trainer to drill all 57 cases randomized"
+          "Aprende el OLL en grupos de 4-8, empezando por las formas más comunes",
+          "Usa el entrenador de OLL para practicar los 57 casos al azar"
         ]
       },
       "oll-recognition-speed": {
-        "title": "OLL recognition speed",
-        "subtitle": "Identify OLL cases in under 0.5 seconds from any angle",
-        "description": "Achieve near-instant OLL recognition by internalizing shape patterns rather than counting oriented pieces or stickers.",
-        "theory": "Fast OLL recognizers see the overall shape (fish, knight move, lightning bolt) instantly. This is developed through high-volume exposure. Top cubers recognize OLL in 0.2-0.3s — faster than conscious thought.",
+        "title": "Velocidad de reconocimiento del OLL",
+        "subtitle": "Identifica los casos OLL en menos de 0.5 segundos desde cualquier ángulo",
+        "description": "Consigue un reconocimiento casi instantáneo del OLL interiorizando los patrones de forma en lugar de contar piezas o pegatinas orientadas.",
+        "theory": "Los reconocedores rápidos de OLL ven la forma general (pez, movimiento de caballo, rayo) al instante. Se desarrolla con mucha exposición. Los mejores cuberos reconocen el OLL en 0.2-0.3s — más rápido que el pensamiento consciente.",
         "drills": [
-          "Flash card drills: show OLL for 0.3s and name it",
-          "Recognition-only practice: identify 100 OLLs without executing them"
+          "Entrena con tarjetas: muestra un OLL durante 0.3s y nómbralo",
+          "Práctica solo de reconocimiento: identifica 100 OLL sin ejecutarlos"
         ]
       },
       "coll-set": {
-        "title": "COLL set",
-        "subtitle": "Solve corner orientation AND permutation in one algorithm (40 cases)",
-        "description": "When the LL cross is already formed, use COLL to solve corners in one step, leaving only edge PLLs (Ua, Ub, H, Z) or a PLL skip.",
-        "theory": "COLL is 40 algorithms grouped by corner orientation (H, Pi, U, T, L, Sune, Anti-sune). After COLL, only 4 fast edge PLLs remain. COLL is also a prerequisite and stepping stone to ZBLL. PLL skip occurs ~1/6 of the time.",
-        "exampleFormula": "F R U R' U' R U R' U' F' — COLL H case",
+        "title": "Set COLL",
+        "subtitle": "Resuelve la orientación Y la permutación de esquinas en un algoritmo (40 casos)",
+        "description": "Cuando la cruz de la última capa ya está formada, usa COLL para resolver las esquinas en un paso, dejando solo los PLL de aristas (Ua, Ub, H, Z) o un salto de PLL.",
+        "theory": "COLL son 40 algoritmos agrupados por orientación de esquinas (H, Pi, U, T, L, Sune, Anti-sune). Tras COLL, solo quedan 4 PLL de aristas rápidos. COLL también es un requisito previo y un trampolín hacia ZBLL. El salto de PLL ocurre ~1 de cada 6 veces.",
+        "exampleFormula": "F R U R' U' R U R' U' F' — caso H de COLL",
         "drills": [
-          "Learn COLL by orientation group (start with H and Pi — 8 cases)",
-          "Drill recognition by headlight colors (front and side)"
+          "Aprende COLL por grupo de orientación (empieza con H y Pi — 8 casos)",
+          "Entrena el reconocimiento por colores de faro (frontal y lateral)"
         ]
       },
       "winter-variation": {
-        "title": "Winter variation",
-        "subtitle": "Insert final F2L pair while orienting all LL corners (27 cases)",
-        "description": "When the LL cross is formed and the last F2L pair is joined, use WV to orient corners during insertion, achieving an OLL skip.",
-        "theory": "Winter Variation covers 27 cases where the last F2L pair is joined in the top layer and LL edges are oriented. Executing WV orients corners during insertion, skipping OLL entirely and going straight to PLL.",
-        "exampleFormula": "R U2 R' U' R U' R' — WV Case 1 (corner facing right)",
+        "title": "Winter Variation",
+        "subtitle": "Inserta el último par F2L mientras orientas todas las esquinas de la última capa (27 casos)",
+        "description": "Cuando la cruz de la última capa está formada y el último par F2L está unido, usa WV para orientar las esquinas durante la inserción, logrando un salto de OLL.",
+        "theory": "La Winter Variation cubre 27 casos en los que el último par F2L está unido en la capa superior y las aristas de la última capa están orientadas. Ejecutar WV orienta las esquinas durante la inserción, saltándose el OLL por completo y yendo directo al PLL.",
+        "exampleFormula": "R U2 R' U' R U' R' — WV Caso 1 (esquina mirando a la derecha)",
         "drills": [
-          "Learn WV grouped by corner orientation (3 main groups)",
-          "Practice recognizing when WV is applicable during last slot"
+          "Aprende WV agrupado por orientación de esquinas (3 grupos principales)",
+          "Practica reconocer cuándo es aplicable la WV durante la última ranura"
         ]
       },
       "ollcp-basics": {
-        "title": "OLLCP basics",
-        "subtitle": "Orient LL while permuting corners to force favorable PLL cases",
-        "description": "Use specific OLL variants that also permute corners, leaving only edge PLLs or achieving a PLL skip. Master key OLLCP subsets for common OLL shapes.",
-        "theory": "OLLCP extends OLL by recognizing corner permutation before execution. By choosing an OLL that also permutes corners correctly, you eliminate corner PLLs. Learning OLLCP for the 7 cross-OLL cases is the highest-value starting point.",
+        "title": "Fundamentos de OLLCP",
+        "subtitle": "Orienta la última capa mientras permutas las esquinas para forzar casos PLL favorables",
+        "description": "Usa variantes específicas de OLL que además permutan las esquinas, dejando solo PLL de aristas o logrando un salto de PLL. Domina los subconjuntos clave de OLLCP para las formas OLL comunes.",
+        "theory": "OLLCP amplía el OLL reconociendo la permutación de esquinas antes de ejecutar. Eligiendo un OLL que también permute las esquinas correctamente, eliminas los PLL de esquinas. Aprender OLLCP para los 7 casos de OLL de cruz es el punto de partida de mayor valor.",
         "drills": [
-          "Learn OLLCP for cross OLL cases first (highest frequency)",
-          "Practice corner permutation recognition before OLL execution"
+          "Aprende primero el OLLCP para los casos de cruz OLL (los más frecuentes)",
+          "Practica el reconocimiento de la permutación de esquinas antes de ejecutar el OLL"
         ]
       },
       "vls-basics": {
         "title": "VLS (Valk Last Slot)",
-        "subtitle": "Insert last F2L slot and solve OLL simultaneously regardless of edge state",
-        "description": "A superset of Winter Variation covering cases where LL edges are NOT oriented. Insert the last pair while solving OLL in one step.",
-        "theory": "VLS extends WV to unoriented edge cases. It covers ~216 cases total — typically only a subset is learned. Most useful when the last slot has a joined pair and you want to force OLL completion during insertion.",
-        "exampleFormula": "F R U R' U' F' + R U R' — VLS for specific edge orientation",
+        "subtitle": "Inserta la última ranura F2L y resuelve el OLL a la vez, sea cual sea el estado de las aristas",
+        "description": "Un superconjunto de la Winter Variation que cubre los casos en los que las aristas de la última capa NO están orientadas. Inserta el último par mientras resuelves el OLL en un solo paso.",
+        "theory": "VLS amplía la WV a los casos de aristas sin orientar. Cubre ~216 casos en total — normalmente solo se aprende un subconjunto. Es más útil cuando la última ranura tiene un par unido y quieres forzar la finalización del OLL durante la inserción.",
+        "exampleFormula": "F R U R' U' F' + R U R' — VLS para una orientación de aristas específica",
         "drills": [
-          "Start with VLS cases that appear most frequently in your solves",
-          "Use VLS recognition flashcards grouped by edge orientation"
+          "Empieza con los casos VLS que aparecen con más frecuencia en tus resoluciones",
+          "Usa tarjetas de reconocimiento VLS agrupadas por orientación de aristas"
         ]
       },
       "zbll-t-u": {
-        "title": "ZBLL T & U sets",
-        "subtitle": "Learn the T and U sets of ZBLL — 1-look LL when edges are oriented (144 cases)",
-        "description": "Solve the entire last layer in ONE algorithm when edges are oriented. Master the T and U subsets first — the most common and ergonomic ZBLL cases.",
-        "theory": "ZBLL removes the PLL step entirely when LL edges are oriented. T and U sets (72 cases each) are the most common and have the best algorithms. This is where elite cubers invest their algorithm learning time for maximum ROI.",
-        "exampleFormula": "R U2 R' U' R U' R' U2 R U R' U R U2 R' — ZBLL U case",
+        "title": "Sets T y U de ZBLL",
+        "subtitle": "Aprende los sets T y U del ZBLL — última capa de un vistazo cuando las aristas están orientadas (144 casos)",
+        "description": "Resuelve toda la última capa en UN algoritmo cuando las aristas están orientadas. Domina primero los subconjuntos T y U — los casos ZBLL más comunes y ergonómicos.",
+        "theory": "ZBLL elimina el paso de PLL por completo cuando las aristas de la última capa están orientadas. Los sets T y U (72 casos cada uno) son los más comunes y tienen los mejores algoritmos. Aquí es donde los cuberos de élite invierten su tiempo de aprendizaje de algoritmos para obtener el máximo retorno.",
+        "exampleFormula": "R U2 R' U' R U' R' U2 R U R' U R U2 R' — caso U de ZBLL",
         "drills": [
-          "Learn ZBLL T-set first (72 cases) over 2-3 months",
-          "Use ZBLL recognition trainers for Tran-style recognition"
+          "Aprende primero el set T de ZBLL (72 casos) en 2-3 meses",
+          "Usa entrenadores de reconocimiento ZBLL para el reconocimiento estilo Tran"
         ]
       },
       "full-zbll": {
-        "title": "Full ZBLL mastery",
-        "subtitle": "Complete 1-step last layer resolution — all 472 ZBLL cases",
-        "description": "Master the complete ZBLL set: all 472 cases across T, U, L, H, Pi, Sune, and Anti-sune groups for 1-look last layer in every edge-oriented scenario.",
-        "theory": "Full ZBLL is the ultimate last layer achievement. 472 cases organized into 7 groups. Combined with ZBLS/edge control to guarantee oriented edges, this enables consistent sub-0.8s last layer. Only a handful of cubers worldwide have truly mastered full ZBLL.",
+        "title": "Dominio completo del ZBLL",
+        "subtitle": "Resolución completa de la última capa en un paso — los 472 casos ZBLL",
+        "description": "Domina el set ZBLL completo: los 472 casos de los grupos T, U, L, H, Pi, Sune y Anti-sune para una última capa de un vistazo en cualquier escenario con aristas orientadas.",
+        "theory": "El ZBLL completo es el mayor logro de la última capa. 472 casos organizados en 7 grupos. Combinado con ZBLS/control de aristas para garantizar aristas orientadas, permite una última capa constante por debajo de 0.8s. Solo un puñado de cuberos en el mundo han dominado el ZBLL completo de verdad.",
         "drills": [
-          "Complete L, H, and Pi sets after T and U (total ~472 cases)",
-          "ZBLL time attack: execute random ZBLL cases at sub-1.2s each"
+          "Completa los sets L, H y Pi después de T y U (total ~472 casos)",
+          "ZBLL time attack: ejecuta casos ZBLL al azar en menos de 1.2s cada uno"
         ]
       },
       "basic-lookahead": {
