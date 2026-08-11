@@ -312,7 +312,7 @@ export function TrainingPractice({
   }, [method, phaseSubsetIds]);
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="mx-auto flex w-full max-w-7xl min-h-0 flex-1">
       {/* Method rail (desktop) */}
       <aside className="hidden w-52 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line p-2.5 lg:flex">
         <p className="px-2 pb-1.5 pt-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
@@ -331,7 +331,7 @@ export function TrainingPractice({
 
       {/* Main workspace */}
       <div className="min-w-0 flex-1 overflow-y-auto pb-safe">
-        <div className="mx-auto flex max-w-4xl flex-col gap-6 p-4 sm:p-6">
+        <div className="flex flex-col gap-6 p-4 sm:p-6">
           {/* Today strip — due review, only when there is something to do */}
           {dueCount > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution/25 bg-caution/5 px-3.5 py-2.5">

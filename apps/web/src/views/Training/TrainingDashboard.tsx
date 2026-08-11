@@ -417,45 +417,43 @@ export function TrainingDashboard({
     <div className="relative flex w-full min-h-0 flex-1 flex-col">
       {/* In-content toolbar: underline tabs + puzzle selector + due badge.
           No page header, no boxes — this is the app's filter-row voice. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-4 pt-4 sm:px-6">
-        <div className="flex items-center gap-5">
-          {TRAINING_SECTIONS.map((s) => {
-            const isActive = activeSection === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setActiveSection(s.id)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "relative cursor-pointer pb-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] transition-colors",
-                  isActive ? "text-ink" : "text-ink-3 hover:text-ink",
-                )}
-              >
-                {t(s.labelKey)}
-                {s.id === "review" && dueCount > 0 && (
-                  <span className="nums ml-1.5 inline-grid min-w-4 place-items-center rounded-full bg-caution px-1 py-px align-middle text-[0.55rem] font-bold leading-none text-surface">
-                    {dueCount}
-                  </span>
-                )}
-                {isActive && (
-                  <motion.span
-                    layoutId="training-view-underline"
-                    className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ink"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-4 pt-4 sm:px-6">
+        <div className="flex flex-wrap items-center gap-5 sm:gap-6">
+          {/* Section nav tabs */}
+          <div className="flex items-center gap-5">
+            {TRAINING_SECTIONS.map((s) => {
+              const isActive = activeSection === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "relative cursor-pointer pb-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] transition-colors",
+                    isActive ? "text-ink" : "text-ink-3 hover:text-ink",
+                  )}
+                >
+                  {t(s.labelKey)}
+                  {s.id === "review" && dueCount > 0 && (
+                    <span className="nums ml-1.5 inline-grid min-w-4 place-items-center rounded-full bg-caution px-1 py-px align-middle text-[0.55rem] font-bold leading-none text-surface">
+                      {dueCount}
+                    </span>
+                  )}
+                  {isActive && (
+                    <motion.span
+                      layoutId="training-view-underline"
+                      className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ink"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="flex items-center gap-2.5">
-          {dueCount > 0 && (
-            <span className="nums inline-flex shrink-0 items-center gap-1.5 rounded-full bg-caution px-2.5 py-0.5 text-[0.6rem] font-semibold text-surface">
-              <span className="size-1.5 shrink-0 rounded-full bg-surface" />
-              {t("dueForReview", { count: dueCount })}
-            </span>
-          )}
+          <div className="h-3.5 w-px bg-line/60 hidden sm:block" />
+
+          {/* Puzzle selector right next to tabs */}
           <div className="flex items-center gap-2">
             <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">{t("puzzle")}</span>
             <Select value={selectedPuzzle} onValueChange={(val) => handleSelectPuzzle(val as PuzzleCategory)}>
@@ -485,6 +483,14 @@ export function TrainingDashboard({
             </Select>
           </div>
         </div>
+
+        {/* Due count badge on the far right */}
+        {dueCount > 0 && (
+          <span className="nums inline-flex shrink-0 items-center gap-1.5 rounded-full bg-caution px-2.5 py-0.5 text-[0.6rem] font-semibold text-surface">
+            <span className="size-1.5 shrink-0 rounded-full bg-surface" />
+            {t("dueForReview", { count: dueCount })}
+          </span>
+        )}
       </div>
 
       {/* Section content */}

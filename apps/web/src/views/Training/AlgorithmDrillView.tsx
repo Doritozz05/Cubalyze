@@ -393,7 +393,7 @@ export function AlgorithmDrillView({
         />
 
         {/* Body */}
-        <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden lg:flex-row">
+        <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden lg:flex-row px-4 sm:px-6 lg:px-8 pb-4">
           {/* Left: Active drill area */}
           <div className="flex min-h-0 flex-1 flex-col gap-4 min-w-0">
             {/* Case info bar (compact) */}
