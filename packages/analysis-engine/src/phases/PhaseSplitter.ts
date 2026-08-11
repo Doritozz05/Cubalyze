@@ -36,6 +36,22 @@ type SplitOptions = {
   /** Require every phase and a solved final state when validating. */
   strict?: boolean;
   /**
+   * Face-move count of the reconstructionist's WRITTEN PLL block (text
+   * route only). `>= PLL_MIN_WRITTEN_MOVES` means a real last-layer
+   * algorithm was executed and the AUF-only PLL reclassification must not
+   * fire (the state checks cannot distinguish a lagging OLL boundary from a
+   * genuine AUF — reconz-11559). 0 = the block label explicitly says
+   * "PLL skip". Undefined = no written info (smart route) → no guard.
+   */
+  writtenPllMoves?: number;
+  /**
+   * Face-move count of the reconstructionist's WRITTEN OLL block (text
+   * route only). `>= OLL_MIN_WRITTEN_MOVES` means a real last-layer
+   * orientation algorithm was executed and the AUF-only OLL reclassification
+   * must not fire (same rationale as `writtenPllMoves` for PLL). Undefined =
+   * no written info (smart route) → no guard.
+   */
+  /**
    * TIEBREAK-ONLY hint for color-neutral detection: the timeline index where
    * the solver's written cross segment ends (from the reconstruction text).
    * Used only when two crosses are indistinguishable by state (same phase
@@ -76,6 +92,59 @@ type DetectionRun = {
  * for CFOP-standard solves it never lags the state cross by 3.
  */
 const PSEUDO_CROSS_MIN_GAP = 3;
+
+/**
+ * A PLL phase of this many timeline entries or fewer is a candidate for the
+ * AUF-only reclassification (paired with `isOneMoveFromSolved` — see below).
+ *
+ * An AUF alignment is 1-4 entries (U, U2, "U U'", … — the raw notation's
+ * U-turn conjugates to ANY face in the timeline, so the count, not the face,
+ * is the signal). A real PLL algorithm cannot finish the permutation in
+ * under ~9 moves (the shortest U-perm is 9-11 STM), so the threshold is
+ * safely below every genuine PLL phase while covering every alignment.
+ */
+const AUF_MAX_MOVES = 4;
+
+/**
+ * The state checks alone CANNOT tell an AUF from a real PLL whose OLL
+ * boundary detection lags INTO the PLL block (the OLL mask matches at the
+ * penultimate algorithm move, whose state is — by definition — one move
+ * from solved: reconz-11559's written "EPLL" reads exactly like reconz-5061's
+ * written "AUF" from the states). The reconstructionist's written block is
+ * the ONLY discriminator: a written PLL block of this many face moves or
+ * more is a real last-layer algorithm (the shortest is the 9-STM U-perm),
+ * so the reclassification must not fire. The text route passes the written
+ * block's face-move count via `SplitOptions.writtenPllMoves`; the smart
+ * route has no written info (undefined → the guard is inert) and relies on
+ * the state checks alone.
+ */
+const PLL_MIN_WRITTEN_MOVES = 5;
+
+/**
+ * True when a SINGLE face turn (any of the 18) brings the cube to
+ * solved-up-to-rotation.
+ *
+ * The AUF alignment — one U-turn in the SOLVER's frame — conjugates to one
+ * arbitrary face move in the timeline (reconz-5061's trailing "U2" is an R2
+ * in the cube frame), so the check must try every face, not just U. A real
+ * PLL state is never one move from solved (the shortest U-perm is 9-11
+ * STM), so this is the precise test for "the LL permutation was already
+ * solved when OLL completed" — it also shields the reclassification from
+ * solves whose OLL boundary lands late inside the PLL algorithm (their
+ * mid-PLL state is many moves from solved).
+ */
+function isOneMoveFromSolved(state: CubeState): boolean {
+  const turns = [
+    'U', 'U2', "U'", 'R', 'R2', "R'", 'F', 'F2', "F'",
+    'D', 'D2', "D'", 'L', 'L2', "L'", 'B', 'B2', "B'",
+  ];
+  for (const turn of turns) {
+    const candidate = state.clone();
+    candidate.applySequence(turn);
+    if (candidate.isSolvedUpToRotation()) return true;
+  }
+  return false;
+}
 
 /**
  * Splits a SolveTimeline into ordered phase segments.
@@ -416,6 +485,89 @@ export class PhaseSplitter {
     const skips: NonNullable<PhaseDetectionReport['skips']> = [];
 
     if (method.name === 'CFOP') {
+      // ─── AUF-only PLL = PLL skip ────────────────────────────────────────
+      // A PLL phase whose permutation was ALREADY solved when OLL completed
+      // (the solver-frame state is solved up to rotation + at most one
+      // U-turn) executes only the AUF alignment — there is no PLL step.
+      // Reclassify it as a skip (badge + report.skips) and fold the
+      // alignment span into OLL, so the move/duration accounting stays
+      // exact. (A real remaining permutation — U-perm, Z-perm, … — is never
+      // one U-turn from solved, so only the alignment case fires.)
+      const ollPhase = detection.phases.find(
+        (p) => p.phaseName === 'OLL',
+      );
+      const pllPhase = detection.phases.find(
+        (p) => p.phaseName === 'PLL',
+      );
+      const ollState =
+        ollPhase?.completionIndex !== undefined &&
+        ollPhase.completionIndex < timeline.entries.length
+          ? TimelineBuilder.fromSnapshot(
+              timeline.entries[ollPhase.completionIndex]?.state,
+            )
+          : null;
+      // Written-PLL guard: a reconstructionist who wrote a real PLL block
+      // (>=5 face moves — the shortest algorithm is the 9-STM U-perm) means
+      // a permutation step was executed; the state checks cannot distinguish
+      // that from a genuine AUF when the OLL boundary lags into the block
+      // (reconz-11559's "EPLL" ends one U-turn from solved, exactly like a
+      // real AUF), so the reclassification must not fire. The smart route
+      // passes nothing (undefined) and relies on the state checks alone.
+      const writtenRealPll =
+        options?.writtenPllMoves !== undefined &&
+        options.writtenPllMoves >= PLL_MIN_WRITTEN_MOVES;
+      // Short-circuit: the cheap guard blocks the reclassification before
+      // the expensive state check (18 clone+apply+isSolvedUpToRotation)
+      // ever runs.
+      const isAufOnly =
+        !writtenRealPll && ollState !== null && isOneMoveFromSolved(ollState);
+      if (
+        ollPhase &&
+        pllPhase &&
+        !pllPhase.skipped &&
+        pllPhase.moveCount >= 1 &&
+        pllPhase.moveCount <= AUF_MAX_MOVES &&
+        isAufOnly
+      ) {
+        // The PLL phase is 1-4 entries and ends solved (its completion is
+        // the solved state by detection) — too short for any real PLL
+        // algorithm, so it is the AUF alignment only: the LL permutation was
+        // already solved when OLL completed. Preserve the skipped-phase
+        // convention (same indices as the previous phase, zero
+        // moves/duration) and fold the alignment span into the last
+        // NON-skipped phase (buildSegments' trailing-fold invariant: the
+        // final active phase owns the trailing events — OLL normally, F2L
+        // when OLL itself is skipped, e.g. a VLS/1LLL finish), so every
+        // timeline entry stays owned exactly once.
+        const aufEndIndex = pllPhase.endIndex ?? ollPhase.completionIndex ?? 0;
+        const aufEndTimestamp = pllPhase.endTimestamp;
+        pllPhase.skipped = true;
+        pllPhase.startIndex = ollPhase.completionIndex ?? 0;
+        pllPhase.endIndex = ollPhase.completionIndex ?? 0;
+        pllPhase.completionIndex = ollPhase.completionIndex;
+        pllPhase.moveCount = 0;
+        pllPhase.durationMs = 0;
+        pllPhase.executionMs = 0;
+        pllPhase.startTimestamp = ollPhase.endTimestamp;
+        pllPhase.endTimestamp = ollPhase.endTimestamp;
+        // The PLL is now skipped — the last NON-skipped phase owns the
+        // alignment span.
+        const lastActive = [...detection.phases]
+          .reverse()
+          .find((p) => !p.skipped);
+        if (lastActive) {
+          lastActive.endIndex = aufEndIndex;
+          lastActive.endTimestamp = aufEndTimestamp;
+          lastActive.moveCount =
+            (lastActive.endIndex ?? 0) - (lastActive.startIndex ?? 0) + 1;
+          lastActive.durationMs = PhaseSplitter.safeElapsed(
+            lastActive.startTimestamp,
+            lastActive.endTimestamp,
+          );
+          lastActive.executionMs = lastActive.durationMs;
+        }
+      }
+
       if (detection.phases.some((p) => p.phaseName === 'OLL' && p.skipped)) {
         skips.push('oll');
       }

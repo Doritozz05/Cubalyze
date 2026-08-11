@@ -239,11 +239,12 @@ describe('CROSS + F2L deep study (A/B strict vs relaxed)', { skip: !ENABLED }, (
         const crossDiff = rawCrossEnd >= 0 && ourCrossEnd >= 0 ? ourCrossEnd - rawCrossEnd : NaN;
         const rawOllPhase = rec.phases.find((p) => /oll/i.test(p.label));
         const rawPllPhase = rec.phases.find((p) => /pll/i.test(p.label));
-        const rawHasPll = !!rawPllPhase || /AUF|auf/i.test(rec.phases.at(-1)?.label ?? '');
         const ourOllSkip = reconstruction.oll?.skipped === true;
         const ourPllSkip = reconstruction.pll?.skipped === true;
+        // A standalone trailing AUF (no PLL block) is a PLL skip, not a PLL
+        // execution (reconz-5061 "U2 // AUF"); a PLL block keeps its AUF.
         const skipMatch =
-          ourOllSkip === !rawOllPhase && ourPllSkip === !rawHasPll;
+          ourOllSkip === !rawOllPhase && ourPllSkip === !rawPllPhase;
         return {
           crossType: reconstruction.cross.type,
           crossMoves: reconstruction.cross.moves,

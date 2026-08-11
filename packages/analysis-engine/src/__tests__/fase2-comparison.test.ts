@@ -108,16 +108,17 @@ describe('Fase 2 comparison harness', () => {
       const crossOk = rawCrossEnd >= 0 && Math.abs(rawCrossEnd - ourCrossEnd) <= 2;
       if (crossOk) crossMatch++;
 
+      // A trailing AUF after a PLL block is the PLL's last move; a STANDALONE
+      // trailing AUF (no PLL block) is a PLL SKIP — the permutation was
+      // solved at OLL, only the alignment remains (reconz-5061's "U2 //
+      // AUF"). WVLS/ZBLS/ZBLL imply OLL completed inside the last F2L slot →
+      // OLL skip is expected, not a mismatch.
       const rawOllPhase = rec.phases.find((p) => /oll/i.test(p.label));
       const rawPllPhase = rec.phases.find((p) => /pll/i.test(p.label));
-      // A trailing AUF segment means PLL was executed (AUF is the last move
-      // of PLL, not a separate phase); WVLS/ZBLS/ZBLL imply OLL completed
-      // inside the last F2L slot → OLL skip is expected, not a mismatch.
-      const rawHasPll = !!rawPllPhase || /AUF|auf/i.test(rec.phases.at(-1)?.label ?? '');
       const ourOllSkip = reconstruction.oll?.skipped === true;
       const ourPllSkip = reconstruction.pll?.skipped === true;
       const rawOllSkip = !rawOllPhase;
-      const rawPllSkip = !rawHasPll;
+      const rawPllSkip = !rawPllPhase;
       const skipOk = ourOllSkip === rawOllSkip && ourPllSkip === rawPllSkip;
       if (skipOk) skipMatch++;
 
@@ -133,7 +134,7 @@ describe('Fase 2 comparison harness', () => {
           `  OURS pairs  : ${reconstruction.pairs.length} → ${reconstruction.pairs.map((p) => `${p.slot}(${p.colors.join('')})`).join(', ')}\n` +
           `  OLL/PLL     : ours ${reconstruction.oll ? (reconstruction.oll.skipped ? 'SKIP' : `${reconstruction.oll.moves.length}m`) : '—'} · ` +
           `${reconstruction.pll ? (reconstruction.pll.skipped ? 'SKIP' : `${reconstruction.pll.moves.length}m`) : '—'}` +
-          `  | raw ${rawOllPhase ? 'oll' : 'NO-oll'} ${rawHasPll ? 'pll' : 'NO-pll'} → ${skipOk ? '✓' : '✗'}`,
+          `  | raw ${rawOllPhase ? 'oll' : 'NO-oll'} ${rawPllPhase ? 'pll' : 'NO-pll'} → ${skipOk ? '✓' : '✗'}`,
       );
     }
 

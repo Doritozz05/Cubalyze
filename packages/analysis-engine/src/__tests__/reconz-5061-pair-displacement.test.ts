@@ -65,14 +65,27 @@ describe('reconz-5061 (Ruihang Xu — pair displaced by the next insertion)', ()
     expect(reconstruction.pairs[3].moves).toEqual(["U'", 'R', "U'", "R'"]);
 
     // Move accounting stays exact: cross 6 + pairs 4+3+4+4 = 21 face moves,
-    // then OLL 7 + AUF 1 (the OLL's rotations and the y regrips are reported
-    // separately, never counted as entries).
+    // then OLL 8 (the antisune + the trailing U2 alignment — see below). The
+    // rotations and the y regrips are reported separately, never counted as
+    // entries.
     const faceTotal =
       reconstruction.cross.moves.length +
       reconstruction.pairs.reduce((s, p) => s + p.moves.length, 0) +
       (reconstruction.oll?.moves.length ?? 0) +
       (reconstruction.pll?.moves.length ?? 0);
     expect(timeline.entries.length).toBe(faceTotal);
+
+    // AUF-only PLL = PLL skip: the OLL(CP) antisune already solved the
+    // permutation — the only thing left is the U2 alignment, so the PLL
+    // phase is a SKIP (badge + report.skips) and the alignment folds into
+    // the OLL moves.
+    expect(reconstruction.pll?.skipped).toBe(true);
+    expect(reconstruction.pll?.moves).toEqual([]);
+    expect(reconstruction.oll?.skipped).toBe(false);
+    expect(reconstruction.oll?.moves).toEqual([
+      'R', "U2'", "R'", "U'", 'R', "U'", "R'", 'U2',
+    ]);
+    expect(timeline.detectionReport?.skips).toContain('pll');
   });
 
   it('keeps the y regrips as rotations, never inside pair moves', () => {

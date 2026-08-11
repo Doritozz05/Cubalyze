@@ -23,6 +23,8 @@ export interface FrameRecoveryOptions {
   preferredCrossIdx?: number;
   /** Relax the cross criterion to permutation-only (see PhaseSplitter). */
   relaxedCross?: boolean;
+  /** Written PLL block face-move count (text route) — AUF reclass guard. */
+  writtenPllMoves?: number;
 }
 
 export function recoverRotatedFrame(

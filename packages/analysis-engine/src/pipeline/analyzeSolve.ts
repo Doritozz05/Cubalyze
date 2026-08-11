@@ -69,6 +69,16 @@ export interface AnalyzeSolveInput {
    * solver's frame, so the states are kept as-is.
    */
   solverGrip?: readonly string[];
+  /**
+   * Face-move count of the reconstructionist's WRITTEN PLL block (text
+   * route only). Guards the AUF-only PLL reclassification: a written PLL
+   * block of >=5 face moves is a real last-layer algorithm (see
+   * PhaseSplitter.PLL_MIN_WRITTEN_MOVES) and must never be reported as a
+   * skip, because the state checks cannot distinguish a lagging OLL
+   * boundary from a genuine AUF. 0 = the written label explicitly says
+   * "PLL skip". Smart route: undefined (no written info) → no guard.
+   */
+  writtenPllMoves?: number;
 }
 
 /** Wide d (Dw) tokens — the bottom two layers rotate together. Plain 'D'
@@ -268,6 +278,7 @@ export function buildAnnotatedTimeline(input: AnalyzeSolveInput): SolveTimeline 
     colorNeutral: true,
     preferredCrossIdx: input.preferredCrossIdx,
     relaxedCross: input.relaxedCross,
+    writtenPllMoves: input.writtenPllMoves,
   };
 
   PhaseSplitter.splitAndAnnotate(timeline, methodDef, splitOptions);

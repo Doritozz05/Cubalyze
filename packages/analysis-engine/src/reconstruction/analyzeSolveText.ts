@@ -417,6 +417,26 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     preferredCrossIdx = faceCount - 1;
   }
 
+  // ── Written PLL block (AUF-reclass guard) ─────────────────────────────
+  // The reconstructionist's own PLL/AUF block is the ONLY signal that tells
+  // a genuine AUF from a real PLL algorithm whose OLL boundary detection
+  // lags into the block (both leave the state one U-turn from solved at the
+  // OLL completion — reconz-11559's "EPLL" vs reconz-5061's "AUF"). A
+  // written PLL block of >=5 face moves is a real last-layer algorithm (the
+  // shortest is the 9-STM U-perm) and blocks the "PLL skip" reclassification
+  // in the PhaseSplitter; an explicit "PLL Skip"/"solved" label means there
+  // is no written algorithm at all (0 — never blocks); no PLL/AUF-named
+  // block (flat solutions, 1LLL finishes) leaves the guard inert.
+  const writtenPllPhase = [...rawPhases]
+    .reverse()
+    .find((p) => /pll|perm|auf/i.test(p.label));
+  let writtenPllMoves: number | undefined;
+  if (writtenPllPhase) {
+    writtenPllMoves = /skip|solved/i.test(writtenPllPhase.label)
+      ? 0
+      : writtenPllPhase.tokens.filter((t) => FACE_MOVE_RE.test(t)).length;
+  }
+
   const solveMoves = movesFromTokens(faceTokens);
   // DETECTION DELEGATED to the shared core: build + split + P2 frame
   // recovery all run inside `buildAnnotatedTimeline` — the EXACT synchronous
@@ -446,6 +466,7 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     // scramble frame).
     displayTokens,
     solverGrip: inspectionTokens.filter(isRotation),
+    writtenPllMoves,
   });
   if (input.totalTimeMs !== undefined && Number.isFinite(input.totalTimeMs)) {
     timeline.solveTimeMs = Math.max(0, input.totalTimeMs);

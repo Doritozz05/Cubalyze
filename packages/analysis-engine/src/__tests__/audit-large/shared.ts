@@ -152,14 +152,15 @@ export function classify(rec: Rec): AuditResult {
   const our = cross?.endIndex ?? -1;
   const diff = raw >= 0 ? our - raw : NaN;
 
-  // OLL/PLL skip agreement against the raw labels.
+  // OLL/PLL skip agreement against the raw labels. A standalone trailing
+  // AUF (no PLL block) is a PLL SKIP — the permutation was solved at OLL,
+  // only the alignment remains (reconz-5061 "U2 // AUF"); a PLL block
+  // keeps its trailing AUF.
   const rawOll = rec.phases.find((p) => /oll/i.test(p.label));
-  const rawHasPll =
-    !!rec.phases.find((p) => /pll/i.test(p.label)) ||
-    /AUF|auf/i.test(rec.phases.at(-1)?.label ?? '');
+  const rawPllExecuted = !!rec.phases.find((p) => /pll/i.test(p.label));
   const ourOllSkip = reconstruction.oll?.skipped === true;
   const ourPllSkip = reconstruction.pll?.skipped === true;
-  const skipMatch = ourOllSkip === !rawOll && ourPllSkip === !rawHasPll;
+  const skipMatch = ourOllSkip === !rawOll && ourPllSkip === !rawPllExecuted;
 
   const pairCount = reconstruction.pairs.length;
   const warnings = report.warnings ?? [];
