@@ -77,7 +77,7 @@ function interleave(
 // Grid layout: parent wrapper defines the shared 4-column tracks so all rows
 // align to the same column widths (the Case column uses max-content across all
 // rows so the Moves column forms a perfectly straight vertical baseline).
-const GRID_CONTAINER = "grid grid-cols-[7.5rem_max-content_1fr_2.75rem]";
+const GRID_CONTAINER = "grid grid-cols-[7.5rem_minmax(5rem,max-content)_1fr_2.75rem]";
 const ROW_GRID = "grid grid-cols-subgrid col-span-4";
 const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
 const ROW_LINE = "border-b border-line";
@@ -91,7 +91,7 @@ function MovesSeq({ tokens }: { tokens: string[] | null }) {
     return <span className="text-[0.74rem] text-ink-3">—</span>;
   }
   return (
-    <span className="min-w-0 break-words whitespace-normal font-mono text-[0.74rem] font-medium text-ink leading-relaxed">
+    <span className="min-w-0 wrap-break-word whitespace-normal font-mono text-[0.74rem] font-medium text-ink leading-relaxed">
       {tokens.join(" ")}
     </span>
   );

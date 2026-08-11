@@ -332,7 +332,7 @@ export function ReconstructionDetailView({
           {record.phases.length > 0 && (
             <div className="mt-4 rounded-lg border border-line bg-surface">
               <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-                <SectionHeader title={t("detail.stepsTitle")} eyebrow={t("detail.stepsEyebrow")} />
+                <SectionHeader title={t("detail.stepsTitle")} />
                 <span className="nums text-xs text-ink-3">
                   {t("detail.movesCount", {
                     count: record.phases.reduce((n, p) => n + p.moveCount, 0),
@@ -340,7 +340,7 @@ export function ReconstructionDetailView({
                 </span>
               </div>
 
-              <div className="grid grid-cols-[7.5rem_max-content_1fr_2.75rem]">
+              <div className="grid grid-cols-[7.5rem_minmax(5rem,max-content)_1fr_2.75rem]">
                 <div className="grid grid-cols-subgrid col-span-4 items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
                   <span>{t("detail.colPhase")}</span>
                   <span>{t("detail.colCase")}</span>
