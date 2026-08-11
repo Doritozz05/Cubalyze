@@ -100,10 +100,11 @@ import {
   Dna,
   Lightbulb,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
-import type { SkillNode } from "./skillTreeData";
+import { TIER_KEY, type SkillNode } from "./skillTreeData";
 
 interface SkillGraphCanvasProps {
   nodes: SkillNode[];
@@ -145,6 +146,7 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
   onSelectNode,
   onToggleComplete,
 }: SkillNodeItemProps) {
+  const { t } = useTranslation("skillTree");
   const isCompleted = node.status === "completed";
   const isUnlocked = node.status === "unlocked";
   const isLocked = node.status === "locked";
@@ -186,8 +188,8 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
           <button
             type="button"
             onClick={handleToggle}
-            title={isCompleted ? "Mark as accessible" : "Mark as completed"}
-            aria-label={isCompleted ? "Mark as accessible" : "Mark as completed"}
+            title={t(isCompleted ? "markAccessible" : "markCompleted")}
+            aria-label={t(isCompleted ? "markAccessible" : "markCompleted")}
             className={cn(
               "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
               isCompleted
@@ -220,10 +222,10 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
               : "text-ink-3",
           )}
         >
-          {node.title}
+          {t(node.titleKey)}
         </h4>
         <span className="text-[0.62rem] uppercase tracking-wider font-semibold text-ink-3 block">
-          {node.tier}
+          {t(TIER_KEY[node.tier])}
         </span>
       </div>
     </div>
@@ -237,6 +239,7 @@ export function SkillGraphCanvas({
   onSelectNode,
   onToggleComplete,
 }: SkillGraphCanvasProps) {
+  const { t } = useTranslation("skillTree");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 50, y: 50 });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -607,7 +610,7 @@ export function SkillGraphCanvas({
           size="icon"
           className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
           onClick={handleZoomIn}
-          title="Zoom in"
+          title={t("zoomIn")}
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </Button>
@@ -616,7 +619,7 @@ export function SkillGraphCanvas({
           size="icon"
           className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
           onClick={handleZoomOut}
-          title="Zoom out"
+          title={t("zoomOut")}
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </Button>
@@ -626,7 +629,7 @@ export function SkillGraphCanvas({
           size="icon"
           className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
           onClick={resetView}
-          title="Reset view"
+          title={t("resetView")}
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </Button>
@@ -704,7 +707,7 @@ export function SkillGraphCanvas({
       {/* Footer Info Legend */}
       <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
         <Info className="w-3.5 h-3.5 text-ink shrink-0" />
-        <span>Click an accessible node for full explanations or to mark as completed</span>
+        <span>{t("canvasHint")}</span>
       </div>
     </div>
   );

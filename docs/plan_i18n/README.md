@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -341,12 +341,68 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   interpolado y localizado. Validado: tsc web+desktop 0, eslint 0, paridad 6/6,
   build de producción OK, 0 strings residuales en la zona.
 
-### Tanda 8 — Skill Tree (tab)
-- **Zonas**:
-  - `UltraSkillTreeView` + `SkillGraphCanvas` (tooltips, leyendas) + `SkillNodeModal` (detalle del skill).
-  - **Contenido**: `skillTreeData.ts` — 149 skills × (title, subtitle, description, theory, recommendedDrills, exampleFormula). Estrategia: mantener el dato con `titleKey`/`descriptionKey` apuntando a `skillTree.*` (mismo patrón que nav/settings), o mover el contenido a los locales si se quiere traducir la teoría completa.
-- **Namespace**: `skillTree`.
-- **Dificultad**: alta por volumen de contenido (≈750 campos de texto).
+### Tanda 8 — Skill Tree (tab) → 5 sub-tandas (decisión del usuario: traducción completa)
+- **Zonas**: `UltraSkillTreeView` + `SkillGraphCanvas` (tooltips, leyendas) +
+  `SkillNodeModal` (detalle del skill) + `skillTreeData.ts` (contenido).
+- **Volumen real** (medido): 16 ramas × (name, subtitle) = 32 campos · 130 skills ×
+  (title, subtitle, description, theory) = 520 · 261 drills · ~35 exampleFormula =
+  **828 campos / ~83.500 caracteres EN** — el mayor contenido del proyecto por
+  amplio margen (≈10× cualquier tanda previa) y duplica el tamaño de los locales
+  (~44-48 KB → ~90-95 KB cada uno).
+- **Namespace**: `skillTree` (~900 claves nuevas).
+- **Estrategia de datos**: los campos de texto del `SkillNode` migran a claves
+  (`titleKey`/`subtitleKey`/`descriptionKey`/`theoryKey`/`exampleFormulaKey?`/
+  `drillKeys[]`) — patrón `labelKey` consolidado. El contenido **EN** se vuelca al
+  locale en 8A (migración mecánica scripteada) y cada sub-tanda traduce las
+  ramas asignadas del `es.json`; la app queda 100% funcional en cada paso.
+- **Decisiones clave**:
+  - **UI chrome** (~35 strings): toolbar (título, subtítulo, búsqueda,
+    `Completed:`), toggles Tree/Cards, filtros de rama (16 categorías), vacío,
+    `Branch (N):`, zoom/reset/leyenda del canvas, modal (teoría, fórmula,
+    prerequisitos, drills, badges de estado, `Mark as…`, `Practice Skill`,
+    `Locked: complete prerequisites…`).
+  - **Datos compartidos**: tiers (8: Beginner…Legendary), categorías (16),
+    estados (3) → mapas `TIER_KEY`/`CATEGORY_KEY`/`STATUS_KEY` con
+    `ParseKeys<'skillTree'>` (patrón `MODE_LABEL_KEYS`/`REASON_META`).
+  - **Búsqueda**: filtra contra `t(titleKey)`/`t(subtitleKey)`/`t(tierKey)`
+    (los campos ya no son texto plano).
+  - **Prerequisitos**: el modal muestra **IDs crudos** (`cube-anatomy`) — se
+    resuelven al título localizado vía mapa id→titleKey (mejora real, no solo
+    traducción).
+  - **Reutilización**: `common:close`/`cancel`, `nav:training`.
+  - **Coste de bundle**: ~100 KB extra de JS (locales embebidos) — documentado
+    y aceptado.
+  - **Jerga mantenida**: notación, siglas (CFOP, F2L, OLL, PLL, LSE, CMLL, EO,
+    NISS, DR, HTR, TPS, BLD, FMC…), nombres propios (Kociemba, Speffz,
+    Csikszentmihalyi, J Perm…), fórmulas de ejemplo.
+- **Sub-tandas** (validación completa tras cada una: tsc web+desktop, eslint,
+  paridad en/es, escaneo de strings):
+  - **8A — Infraestructura + UI chrome** ✅: `SkillNode`/`SkillBranch` migrados a
+    claves (`titleKey`/`subtitleKey`/`descriptionKey`/`theoryKey`/
+    `exampleFormulaKey?`/`drillsKey`) vía script one-shot; contenido EN volcado a
+    en/es.json (756 hojas en el ns `skillTree`; es con chrome traducido y
+    contenido EN como placeholder para 8B-8E); los 3 componentes traducidos con
+    `useTranslation('skillTree')` y **claves relativas** (nunca `skillTree.`);
+    búsqueda filtra contra `t(titleKey)`/`t(subtitleKey)`/`t(TIER_KEY[tier])`;
+    prerequisitos del modal resueltos a títulos vía `NODE_BY_ID`;
+    `TIER_KEY`/`CATEGORY_KEY`/`STATUS_KEY` en skillTreeData. Notas de
+    arquitectura: `ParseKeys` no incluye hojas de arrays → `drillsKey: string`
+    y se accede con `i18n.t` global + prefijo `skillTree:` + `returnObjects`
+    (mismo patrón que tips de 7A); la búsqueda pasa a depender del idioma
+    (documentado). Validado: tsc web+desktop 0, eslint 0, paridad 756/756,
+    build OK, 0 strings residuales.
+  - **8B — Ramas 1-4**: Fundamentals (8) + Cross (9) + F2L (11) + Last Layer
+    (13) = 41 skills ≈ 270 campos en es.json.
+  - **8C — Ramas 5-9**: Lookahead (8) + Finger Tricks (9) + Inspection (7) +
+    Color Neutrality (5) + Hardware (7) = 36 skills ≈ 235 campos.
+  - **8D — Ramas 10-13**: Psychology (7) + Training (8) + Roux (8) + ZZ (7) =
+    30 skills ≈ 195 campos.
+  - **8E — Ramas 14-16 + cierre**: Blindfold (8) + FMC (8) + Theory (7) = 23
+    skills ≈ 150 campos + build de producción + escaneo global del namespace.
+- **Dificultad**: alta por volumen (≈900 claves, ~40k palabras ES); por eso se
+  divide en 5 sub-tandas con contenido acotado por ramas.
+- **Queda fuera**: coordenadas x/y, colores, iconos, XP, mastery y la lógica de
+  layout (`skillTreeLayout.ts` — sin strings).
 
 ### Tanda 9 — Profile (tab)
 - **Zonas**:

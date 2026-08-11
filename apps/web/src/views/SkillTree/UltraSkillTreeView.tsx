@@ -1,38 +1,41 @@
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { Search, SlidersHorizontal, Map, LayoutList, Check, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { SkillGraphCanvas } from "./SkillGraphCanvas";
 import { SkillNodeModal } from "./SkillNodeModal";
-import { ALL_SKILL_NODES, type SkillNode } from "./skillTreeData";
+import { ALL_SKILL_NODES, CATEGORY_KEY, TIER_KEY, type SkillNode } from "./skillTreeData";
 import { useSkillProgress } from "@/hooks/useSkillProgress";
 
 interface UltraSkillTreeViewProps {
   onNavigate?: (view: string) => void;
 }
 
-const CATEGORY_ITEMS = [
-  { id: "all", label: "All skills" },
-  { id: "fundamentals", label: "Fundamentals" },
-  { id: "cross", label: "Cross" },
-  { id: "f2l", label: "F2L" },
-  { id: "last-layer", label: "Last layer" },
-  { id: "lookahead", label: "Lookahead" },
-  { id: "finger-tricks", label: "Finger tricks" },
-  { id: "inspection", label: "Inspection" },
-  { id: "color-neutrality", label: "Color neutrality" },
-  { id: "hardware", label: "Hardware" },
-  { id: "psychology", label: "Psychology" },
-  { id: "training", label: "Training" },
-  { id: "roux", label: "Roux" },
-  { id: "zz", label: "ZZ" },
-  { id: "blindfold", label: "Blindfold" },
-  { id: "fmc", label: "FMC" },
-  { id: "theory", label: "Theory" },
+const CATEGORY_ITEMS: { id: string; labelKey: ParseKeys<"skillTree"> }[] = [
+  { id: "all", labelKey: "category.all" },
+  { id: "fundamentals", labelKey: "category.fundamentals" },
+  { id: "cross", labelKey: "category.cross" },
+  { id: "f2l", labelKey: "category.f2l" },
+  { id: "last-layer", labelKey: "category.last-layer" },
+  { id: "lookahead", labelKey: "category.lookahead" },
+  { id: "finger-tricks", labelKey: "category.finger-tricks" },
+  { id: "inspection", labelKey: "category.inspection" },
+  { id: "color-neutrality", labelKey: "category.color-neutrality" },
+  { id: "hardware", labelKey: "category.hardware" },
+  { id: "psychology", labelKey: "category.psychology" },
+  { id: "training", labelKey: "category.training" },
+  { id: "roux", labelKey: "category.roux" },
+  { id: "zz", labelKey: "category.zz" },
+  { id: "blindfold", labelKey: "category.blindfold" },
+  { id: "fmc", labelKey: "category.fmc" },
+  { id: "theory", labelKey: "category.theory" },
 ];
 
 export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
+  const { t } = useTranslation("skillTree");
   // View mode: 'graph' (interactive tree) or 'list' (compact card grid)
   const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
 
@@ -70,17 +73,18 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   );
 
   const filteredNodes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return skillNodes.filter((node) => {
       const matchesCategory =
         filterCategory === "all" || node.category === filterCategory;
       const matchesSearch =
-        searchQuery.trim() === "" ||
-        node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.tier.toLowerCase().includes(searchQuery.toLowerCase());
+        q === "" ||
+        t(node.titleKey).toLowerCase().includes(q) ||
+        t(node.subtitleKey).toLowerCase().includes(q) ||
+        t(TIER_KEY[node.tier]).toLowerCase().includes(q);
       return matchesCategory && matchesSearch;
     });
-  }, [skillNodes, filterCategory, searchQuery]);
+  }, [skillNodes, filterCategory, searchQuery, t]);
 
   const stats = useMemo(() => {
     const completed = skillNodes.filter((n) => n.status === "completed").length;
@@ -119,10 +123,10 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
           {/* Title & Description */}
           <div>
             <h1 className="text-lg font-bold text-ink tracking-tight">
-              Speedcubing Skill Tree
+              {t("title")}
             </h1>
             <p className="text-xs text-ink-3 mt-0.5">
-              A complete progression from absolute beginner to world-class elite — mastering every dimension of speedcubing.
+              {t("subtitle")}
             </p>
           </div>
 
@@ -139,10 +143,10 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                     ? "bg-surface text-ink font-semibold shadow-xs border border-line"
                     : "text-ink-3 hover:text-ink",
                 )}
-                title="Graph view"
+                title={t("viewTreeTitle")}
               >
                 <Map className="size-3.5" />
-                <span>Tree</span>
+                <span>{t("viewTree")}</span>
               </button>
               <button
                 type="button"
@@ -153,10 +157,10 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                     ? "bg-surface text-ink font-semibold shadow-xs border border-line"
                     : "text-ink-3 hover:text-ink",
                 )}
-                title="List / Grid view"
+                title={t("viewCardsTitle")}
               >
                 <LayoutList className="size-3.5" />
-                <span>Cards</span>
+                <span>{t("viewCards")}</span>
               </button>
             </div>
 
@@ -164,7 +168,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
               <Input
                 type="text"
-                placeholder="Search technique..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8 pl-8 text-xs bg-surface-2/40 border-line/70 focus-visible:ring-1 focus-visible:ring-ink"
@@ -173,7 +177,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
 
             {/* Progress Badge */}
             <div className="px-3 py-1 rounded-lg bg-surface-2/50 border border-line text-xs flex items-center gap-1.5 shrink-0">
-              <span className="text-ink-3 font-medium">Completed:</span>
+              <span className="text-ink-3 font-medium">{t("completedLabel")}</span>
               <span className="text-ink font-bold">
                 {stats.completed}/{stats.total}
               </span>
@@ -185,7 +189,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
         {/* Category Pills Bar */}
         <div className="pt-2 flex items-center gap-1.5 overflow-x-auto border-t border-line/50 scrollbar-none">
           <span className="text-xs font-medium text-ink-3 flex items-center gap-1 mr-1 shrink-0">
-            <SlidersHorizontal className="w-3 h-3" /> Branch ({CATEGORY_ITEMS.length - 1}):
+            <SlidersHorizontal className="w-3 h-3" /> {t("branchLabel", { count: CATEGORY_ITEMS.length - 1 })}
           </span>
           {CATEGORY_ITEMS.map((cat) => {
             const isActive = filterCategory === cat.id;
@@ -201,7 +205,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                     : "bg-surface-2/30 border-line/40 text-ink-3 hover:text-ink hover:bg-surface-2/70"
                 }`}
               >
-                {cat.label}
+                {t(cat.labelKey)}
               </Button>
             );
           })}
@@ -223,8 +227,8 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
           {filteredNodes.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center text-center text-ink-3">
               <Sparkles className="size-8 text-ink-3/40 mb-2" />
-              <p className="text-sm font-medium">No skill nodes found</p>
-              <p className="text-xs">Try selecting a different branch or search query.</p>
+              <p className="text-sm font-medium">{t("noNodesFound")}</p>
+              <p className="text-xs">{t("noNodesHint")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -247,7 +251,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3 border border-line/50">
-                          {node.tier}
+                          {t(TIER_KEY[node.tier])}
                         </span>
                         {!isLocked ? (
                           <button
@@ -259,7 +263,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                                 ? "border-ink bg-ink text-surface shadow-xs"
                                 : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink",
                             )}
-                            title={isCompleted ? "Mark as unlocked" : "Mark as completed"}
+                            title={t(isCompleted ? "markUnlocked" : "markCompleted")}
                           >
                             <Check className="size-3.5 stroke-[2.5]" />
                           </button>
@@ -270,12 +274,12 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                         )}
                       </div>
 
-                      <h3 className="text-sm font-bold text-ink leading-tight">{node.title}</h3>
-                      <p className="text-xs text-ink-3 mt-1 line-clamp-2">{node.subtitle}</p>
+                      <h3 className="text-sm font-bold text-ink leading-tight">{t(node.titleKey)}</h3>
+                      <p className="text-xs text-ink-3 mt-1 line-clamp-2">{t(node.subtitleKey)}</p>
                     </div>
 
                     <div className="mt-3 flex items-center justify-between border-t border-line/40 pt-2 text.xs text-ink-3">
-                      <span className="text-[0.68rem] capitalize font-medium">{node.category}</span>
+                      <span className="text-[0.68rem] capitalize font-medium">{t(CATEGORY_KEY[node.category])}</span>
                       <span className="text-[0.68rem] font-mono font-semibold text-ink">+{node.xpReward} XP</span>
                     </div>
                   </div>
