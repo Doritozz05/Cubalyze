@@ -19,13 +19,14 @@ import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
  *     from the sticker's face alone. Same cubie, crossed over its own edge →
  *     a whole-face turn; same face, same row/column → the slice through that
  *     row/column; diagonal crossings → the slice at the shared coordinate
- *     (see `resolveDragTurn` in the engine package). Every boundary crossing
- *     fires the move immediately (animated at the current turn speed) and
- *     re-baselines, so one continuous drag can chain several turns. A drag
- *     that ENDS without crossing a boundary (e.g. a short pull on the big
- *     center sticker) still resolves on release: the move is derived by
- *     probing just past the sticker edge in the drag direction and applying
- *     the same geometry model.
+ *     (see `resolveDragTurn` in the engine package). The move fires EXACTLY
+ *     ONCE per drag, like virtual-cube (its dragCube resets `selectedCuby`
+ *     after the first resolved turn): the first boundary crossing that
+ *     resolves a move animates it, then the rest of the gesture is inert
+ *     until release. A drag that ENDS without crossing a boundary (e.g. a
+ *     short pull on the big center sticker) still resolves on release: the
+ *     move is derived by probing just past the sticker edge in the drag
+ *     direction and applying the same geometry model.
  *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
  *   • DRAG ON THE BACKGROUND → the CUBE rotates in discrete 90° steps (y for
  *     left/right swipes, x for up/down swipes) exactly like the x/y keys —
@@ -254,6 +255,12 @@ export function useCubeTurnControls({
         drag.totalDist += Math.hypot(dx, dy);
         if (!drag.startPick) return;
 
+        // One move per drag gesture (virtual-cube parity: dragCube resets
+        // selectedCuby after the first resolved turn, so a single drag never
+        // chains several moves). Once a move has fired, the rest of this
+        // gesture is inert; the release handler still cleans up normally.
+        if (drag.firedOnce) return;
+
         // While a previous move is still animating, cubies sit on a pivot
         // group and are mid-rotation — pickLayer() would return corrupted
         // face labels and stale grid positions, cascading into many wrong
@@ -262,9 +269,9 @@ export function useCubeTurnControls({
         if (engine.isAnimating()) return;
 
         // Sticker geometry: resolve the move from START sticker → CURRENT
-        // sticker. Fires on every boundary crossing; re-baselines so one
-        // drag can chain several turns.
-        if (drag.firedOnce || drag.totalDist >= minSwipeDistance) {
+        // sticker. Fires exactly once per drag — when the pointer first
+        // crosses into a sticker that resolves a move.
+        if (drag.totalDist >= minSwipeDistance) {
           const ndc = ndcFromPointer(e.target as HTMLCanvasElement, e.clientX, e.clientY);
           const cur: CubeLayerPick | null = ndc ? engine.pickLayer(ndc.x, ndc.y) : null;
           if (cur && cur.cubiePosition && drag.startPick.cubiePosition) {
@@ -280,7 +287,6 @@ export function useCubeTurnControls({
             );
             if (move) {
               onActionRef.current?.({ kind: "turn", face: move.face, direction: move.direction });
-              drag.startPick = cur;
               drag.firedOnce = true;
             }
           }

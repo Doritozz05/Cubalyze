@@ -346,7 +346,10 @@ const SAME_FACE_TURNS: {
     axis: 'x',
     turn: YAXIS,
     faces: [
-      { face: 5, order: REV, upaxis: 'z', lastaxis: 'y' },
+      // NOTE: the U-face row uses FWD (not REV) — this matches virtual-cube's
+      // turnorder exactly. A REV here inverts every same-face drag on the U
+      // face resolved through this entry (e.g. UBL → UFL must be U').
+      { face: 5, order: FWD, upaxis: 'z', lastaxis: 'y' },
       { face: 1, order: REV, upaxis: 'y', lastaxis: 'z' },
       { face: 4, order: REV, upaxis: 'z', lastaxis: 'y' },
       { face: 0, order: FWD, upaxis: 'y', lastaxis: 'z' },
@@ -398,7 +401,9 @@ const DIRECTION_FACE: Record<number, { compare: AxisKey[]; x?: number[]; y?: num
 };
 
 const DIAGONAL_FUNC: Record<number, Partial<Record<AxisKey, (x: number, y: number) => boolean>>> = {
-  0: { x: GT, y: LT },
+  // Face 0 (B) is { x: LT, y: GT } — the x/y comparators are deliberately
+  // NOT swapped here (a swap inverts every diagonal ending on the B face).
+  0: { x: LT, y: GT },
   1: { x: GT, y: LT },
   2: { y: LT, z: GT },
   3: { y: GT, z: LT },

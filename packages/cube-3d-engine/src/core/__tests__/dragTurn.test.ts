@@ -60,8 +60,8 @@ describe('resolveDragTurn — sticker-geometry drag model', () => {
       expect(notation(resolveDragTurn(s(0, 0, 1, 'F'), s(1, 0, 1, 'F')))).toBe('S');
     });
 
-    it('top face: UBL corner dragged forward (toward UFL) → U', () => {
-      expect(notation(resolveDragTurn(s(-1, 1, -1, 'U'), s(-1, 1, 1, 'U')))).toBe('U');
+    it("top face: UBL corner dragged forward (toward UFL) → U' (virtual-cube's turnorder direction)", () => {
+      expect(notation(resolveDragTurn(s(-1, 1, -1, 'U'), s(-1, 1, 1, 'U')))).toBe("U'");
     });
 
     it('top face: UBL corner dragged right (toward UBR) → L', () => {
@@ -88,6 +88,10 @@ describe('resolveDragTurn — sticker-geometry drag model', () => {
 
     it('crossing the F-R edge from the front-top edge (UF F → UR R) → F', () => {
       expect(notation(resolveDragTurn(s(0, 1, 1, 'F'), s(1, 1, 0, 'R')))).toBe('F');
+    });
+
+    it("same-face diagonal ending on B (DBL B → BL B) → U' (DIAGONAL_FUNC face 0 direction)", () => {
+      expect(notation(resolveDragTurn(s(-1, -1, -1, 'B'), s(-1, 0, 0, 'B')))).toBe("U'");
     });
   });
 });
