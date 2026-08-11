@@ -497,9 +497,9 @@ function MethodRailItem({
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
         />
       )}
-      <Icon className={cn("relative size-3.5", active ? "text-ink" : "text-ink-3/70")} />
-      <span className="relative min-w-0 flex-1 truncate text-[0.7rem] font-medium">{method.name}</span>
-      <span className="nums relative text-[0.58rem] text-ink-3">{mastery}%</span>
+      <Icon className={cn("relative z-10 size-3.5", active ? "text-ink" : "text-ink-3/70")} />
+      <span className="relative z-10 min-w-0 flex-1 truncate text-[0.7rem] font-medium">{method.name}</span>
+      <span className="nums relative z-10 text-[0.58rem] text-ink-3">{mastery}%</span>
     </button>
   );
 }
