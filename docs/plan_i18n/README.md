@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ · Tanda 8B (Skill Tree: ramas 1-4) ✅ · Tanda 8C (Skill Tree: ramas 5-9) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8A (Skill Tree: infraestructura + UI chrome) ✅ · Tanda 8B (Skill Tree: ramas 1-4) ✅ · Tanda 8C (Skill Tree: ramas 5-9) ✅ · Tanda 8D (Skill Tree: ramas 10-13) ✅ — todo en `feat/spanish-translation` · resto pendiente.
 
 ---
 
@@ -422,8 +422,21 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
     incl. conteo de drills), 0 títulos EN residuales en la zona 8C (los 3 que
     detecta el escáner son de ramas 8D). Validado: tsc web+desktop 0, eslint 0,
     vitest 6/6, paridad en/es perfecta.
-  - **8D — Ramas 10-13**: Psychology (7) + Training (8) + Roux (8) + ZZ (7) =
-    30 skills ≈ 195 campos.
+  - **8D — Ramas 10-13** ✅: Psychology (7) + Training (8) + Roux (8) + ZZ (7)
+    = 30 skills ≈ 195 campos traducidos en es.json (script one-shot con merge
+    directo, luego borrado). Terminología consolidada (respiración 4-7-8,
+    reformular la ansiedad, técnica Pomodoro, visión de túnel, práctica
+    deliberada, repetición espaciada, tiempos por fase, benchmarks, descarga,
+    bloque 1x2x3, construcción de bloques, aristas mal orientadas, hemisferio
+    frontal) y jerga mantenida en ambos idiomas: nombres de métodos y fases
+    (Roux, CMLL, LSE, EOLR, EOLine, EOCross, ZZ, ZBLL, COLL, EPLL, TSLE,
+    2GLL, ZZ-CT, NMB, FB/SB, Ao5, DNF, TPS, RSI, WCA, J Perm, SpeedCubeDB,
+    CsTimer, CubeForge, Csikszentmihalyi, Ericsson, Pomodoro), benchmarks
+    numéricos intactos (Sub-20/15/10, Cruz≤3s, F2L≤10s…). Verificado:
+    paridad estructural 30/30 (claves idénticas a en.json incl. conteo de
+    drills), títulos EN residuales solo jerga intencional (EOLine, EOCross,
+    LSE, CMLL…). Validado: tsc web+desktop 0, eslint 0, vitest 6/6, paridad
+    en/es perfecta.
   - **8E — Ramas 14-16 + cierre**: Blindfold (8) + FMC (8) + Theory (7) = 23
     skills ≈ 150 campos + build de producción + escaneo global del namespace.
 - **Dificultad**: alta por volumen (≈900 claves, ~40k palabras ES); por eso se

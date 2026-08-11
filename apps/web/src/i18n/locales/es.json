@@ -2045,303 +2045,303 @@
         ]
       },
       "nerves-management": {
-        "title": "Nerves Management",
-        "subtitle": "Control competition anxiety and maintain composure under pressure",
-        "description": "Develop techniques to manage nervousness: breathing exercises, positive self-talk, and reframing anxiety as excitement.",
-        "theory": "Competition nerves are universal — even world champions feel them. The difference is how they're managed. Deep breathing (4-7-8 pattern) activates the parasympathetic nervous system. Reframing 'I'm nervous' as 'I'm excited' changes the physiological response.",
+        "title": "Control de los nervios",
+        "subtitle": "Controla la ansiedad competitiva y mantén la compostura bajo presión",
+        "description": "Desarrolla técnicas para manejar los nervios: ejercicios de respiración, diálogo interno positivo y reformular la ansiedad como excitación.",
+        "theory": "Los nervios en competición son universales — hasta los campeones del mundo los sienten. La diferencia está en cómo se gestionan. La respiración profunda (patrón 4-7-8) activa el sistema nervioso parasimpático. Reformular 'estoy nervioso' como 'estoy emocionado' cambia la respuesta fisiológica.",
         "drills": [
-          "Practice 4-7-8 breathing before timed solves",
-          "Simulate competition pressure: have someone watch you solve"
+          "Practica la respiración 4-7-8 antes de las resoluciones cronometradas",
+          "Simula la presión competitiva: que alguien te observe resolver"
         ]
       },
       "pre-solve-routine": {
-        "title": "Pre-Solve Routine",
-        "subtitle": "Develop a consistent ritual before each solve to center focus and trigger flow",
-        "description": "Create a repeatable pre-solve ritual: deep breath, hand warmup, visualization, and intention setting — performed identically every solve.",
-        "theory": "A pre-solve routine is a psychological anchor. It signals your brain 'we're about to solve now' and triggers the optimal mental state. Most elite cubers have a specific sequence: inspect hands, deep breath, pick up cube, start inspection — always the same.",
+        "title": "Rutina previa a la resolución",
+        "subtitle": "Desarrolla un ritual constante antes de cada resolución para centrar el foco y activar el flujo",
+        "description": "Crea un ritual repetible previo a resolver: respiración profunda, calentamiento de manos, visualización y fijar la intención — ejecutado de forma idéntica en cada resolución.",
+        "theory": "La rutina previa es un ancla psicológica. Le indica a tu cerebro 'vamos a resolver ahora' y activa el estado mental óptimo. La mayoría de los cuberos de élite tienen una secuencia concreta: inspeccionar las manos, respirar hondo, coger el cubo, empezar la inspección — siempre igual.",
         "drills": [
-          "Design a 10-second pre-solve routine and use it for 50 solves",
-          "Evaluate if consistency improved with the routine"
+          "Diseña una rutina previa de 10 segundos y úsala durante 50 resoluciones",
+          "Evalúa si la constancia mejoró con la rutina"
         ]
       },
       "bad-solve-recovery": {
-        "title": "Bad Solve Recovery",
-        "subtitle": "Reset mentally after a poor solve and prevent one bad result from cascading",
-        "description": "Develop the resilience to immediately reset after a bad solve, treating each attempt as independent and preventing negative momentum.",
-        "theory": "The 'reset skill' is crucial in Ao5 format where one bad solve can cascade. Physical reset: put cube down, shake hands out, deep breath. Mental reset: treat the bad solve as data, not failure. The next solve is a fresh opportunity with zero connection to the last.",
+        "title": "Recuperación tras una mala resolución",
+        "subtitle": "Reiníciate mentalmente tras una resolución pobre y evita que un mal resultado se encadene",
+        "description": "Desarrolla la resiliencia para reiniciarte de inmediato tras una mala resolución, tratando cada intento como independiente y evitando la inercia negativa.",
+        "theory": "La 'habilidad de reinicio' es crucial en el formato Ao5, donde una mala resolución puede encadenarse. Reinicio físico: deja el cubo, sacude las manos, respira hondo. Reinicio mental: trata la mala resolución como un dato, no como un fracaso. La siguiente es una oportunidad nueva sin ninguna conexión con la anterior.",
         "drills": [
-          "After a bad solve, time your reset: can you be mentally ready in 10 seconds?",
-          "Practice with deliberate bad scrambles to train reset response"
+          "Tras una mala resolución, cronometra tu reinicio: ¿puedes estar mentalmente listo en 10 segundos?",
+          "Practica con scrambles malos deliberados para entrenar la respuesta de reinicio"
         ]
       },
       "competition-strategy": {
-        "title": "Competition Strategy",
-        "subtitle": "Plan approach: safe vs risky solves, round management, and pacing",
-        "description": "Develop strategic thinking for WCA competitions: when to play it safe (qualification rounds) and when to push for speed (finals).",
-        "theory": "Competition strategy varies by round. Qualification rounds: prioritize consistency and avoid DNFs — safe crosses, comfortable algorithms. Finals: push limits with aggressive lookahead and faster execution. Know the cut-off times and plan accordingly.",
+        "title": "Estrategia de competición",
+        "subtitle": "Planifica el enfoque: resoluciones seguras vs arriesgadas, gestión de rondas y ritmo",
+        "description": "Desarrolla el pensamiento estratégico para competiciones WCA: cuándo ir a lo seguro (rondas de clasificación) y cuándo apretar por velocidad (finales).",
+        "theory": "La estrategia competitiva varía según la ronda. Rondas de clasificación: prioriza la constancia y evita los DNF — cruces seguras, algoritmos cómodos. Finales: aprieta con lookahead agresivo y ejecución más rápida. Conoce los tiempos de corte y planifica en consecuencia.",
         "drills": [
-          "Simulate competition format at home: 5 solves, Ao5 scoring",
-          "Practice 'safe mode' (95% speed) and 'push mode' (100% speed) separately"
+          "Simula el formato de competición en casa: 5 resoluciones, puntuación Ao5",
+          "Practica el 'modo seguro' (95% de velocidad) y el 'modo empuje' (100%) por separado"
         ]
       },
       "focus-techniques": {
-        "title": "Deep Focus Techniques",
-        "subtitle": "Achieve sustained concentration during long practice sessions and competitions",
-        "description": "Train your ability to maintain high-quality focus for extended periods using concentration techniques from sports psychology.",
-        "theory": "Focus is a trainable skill. The Pomodoro technique (25 min focus, 5 min break) works for cubing practice. During competitions, 'tunnel vision' focus — blocking out crowd noise, other competitors, and external stimuli — preserves mental energy between solves.",
+        "title": "Técnicas de concentración profunda",
+        "subtitle": "Logra una concentración sostenida durante sesiones largas de práctica y competiciones",
+        "description": "Entrena tu capacidad de mantener un foco de alta calidad durante periodos prolongados usando técnicas de concentración de la psicología del deporte.",
+        "theory": "El foco es una habilidad entrenable. La técnica Pomodoro (25 min de foco, 5 de descanso) funciona para la práctica del cubo. En competición, el foco de 'visión de túnel' — bloquear el ruido del público, otros competidores y estímulos externos — preserva la energía mental entre resoluciones.",
         "drills": [
-          "Practice with deliberate distractions (music, conversation, noise)",
-          "25-minute focused sessions with 5-minute breaks"
+          "Practica con distracciones deliberadas (música, conversación, ruido)",
+          "Sesiones enfocadas de 25 minutos con descansos de 5"
         ]
       },
       "flow-state": {
-        "title": "Competition Flow State",
-        "subtitle": "Enter the optimal performance state where solving feels effortless and automatic",
-        "description": "Achieve the flow state during competition: complete absorption in the solve, loss of self-consciousness, and effortless automatic execution.",
-        "theory": "Flow state (Csikszentmihalyi) occurs when challenge perfectly matches skill. In cubing, flow means hands execute while conscious mind observes. Entry conditions: clear goals (the solve), immediate feedback (piece movement), and focused attention.",
+        "title": "Estado de flujo competitivo",
+        "subtitle": "Entra en el estado de rendimiento óptimo donde resolver resulta sin esfuerzo y automático",
+        "description": "Alcanza el estado de flujo en competición: absorción completa en la resolución, pérdida de la autoconciencia y ejecución automática sin esfuerzo.",
+        "theory": "El estado de flujo (Csikszentmihalyi) ocurre cuando el reto coincide perfectamente con la habilidad. En el cubing, el flujo significa que las manos ejecutan mientras la mente consciente observa. Condiciones de entrada: objetivos claros (la resolución), feedback inmediato (el movimiento de las piezas) y atención enfocada.",
         "drills": [
-          "Practice 'observer mode': let hands solve while you watch passively",
-          "Identify your personal flow triggers (music, silence, specific warmup)"
+          "Practica el 'modo observador': deja que las manos resuelvan mientras miras pasivamente",
+          "Identifica tus disparadores personales de flujo (música, silencio, calentamiento específico)"
         ]
       },
       "elite-composure": {
-        "title": "Elite Composure",
-        "subtitle": "Maintain world-class calm, confidence, and mental clarity in any competitive scenario",
-        "description": "Develop the unshakeable mental foundation of a world-class competitor: calm under all conditions, confident without arrogance, focused without tension.",
-        "theory": "Elite composure is built through exposure and reflection. Every competition, every failure, every success is data for mental growth. The goal: perform at your practice level (or better) regardless of stakes, audience, opponent, or prior results.",
+        "title": "Compostura de élite",
+        "subtitle": "Mantén una calma, confianza y claridad mental de nivel mundial en cualquier escenario competitivo",
+        "description": "Desarrolla la base mental inquebrantable de un competidor de clase mundial: calma en todas las condiciones, confianza sin arrogancia, foco sin tensión.",
+        "theory": "La compostura de élite se construye con exposición y reflexión. Cada competición, cada fracaso, cada éxito es un dato para el crecimiento mental. El objetivo: rendir a tu nivel de práctica (o mejor) sin importar las apuestas, el público, el rival o los resultados previos.",
         "drills": [
-          "Compete regularly — composure only develops through real pressure",
-          "After each competition, journal what went well mentally and what to improve"
+          "Compite con regularidad — la compostura solo se desarrolla con presión real",
+          "Tras cada competición, anota en un diario qué fue bien mentalmente y qué mejorar"
         ]
       },
       "session-structure": {
-        "title": "Training Session Structure",
-        "subtitle": "Design effective practice sessions with clear goals rather than mindless solving",
-        "description": "Learn to structure practice time: warmup, focused drills, timed solves, cooldown — replacing 'just solving' with deliberate, goal-oriented sessions.",
-        "theory": "Mindless solving is the #1 reason cubers plateau. A structured session: 5min warmup (slow solves), 15min focused drill (your weakest area), 20min timed solves tracking progress, 5min cooldown. Each session has one specific improvement goal.",
+        "title": "Estructura de la sesión de entrenamiento",
+        "subtitle": "Diseña sesiones de práctica efectivas con objetivos claros en lugar de resolver sin pensar",
+        "description": "Aprende a estructurar el tiempo de práctica: calentamiento, ejercicios enfocados, resoluciones cronometradas y enfriamiento — sustituyendo 'solo resolver' por sesiones deliberadas y orientadas a objetivos.",
+        "theory": "Resolver sin pensar es la razón nº 1 por la que los cuberos se estancan. Una sesión estructurada: 5 min de calentamiento (resoluciones lentas), 15 min de ejercicio enfocado (tu área más débil), 20 min de resoluciones cronometradas siguiendo el progreso, 5 min de enfriamiento. Cada sesión tiene un objetivo de mejora específico.",
         "drills": [
-          "Plan your next 5 practice sessions with specific goals",
-          "Track what you practiced and whether you improved"
+          "Planifica tus próximas 5 sesiones de práctica con objetivos concretos",
+          "Registra qué practicaste y si mejoraste"
         ]
       },
       "physical-ergonomics": {
-        "title": "Physical Ergonomics & Wrist Care",
-        "subtitle": "Practice hand stretches, posture, and strain prevention for safe high-TPS cubing",
-        "description": "Maintain hand, wrist, and forearm health through regular warming up, stretching, and ergonomic posture to prevent strain injuries like RSI.",
-        "theory": "High-volume speedcubing at 8-12+ TPS puts intense physical strain on finger tendons and wrist flexors. Incorporating 2-minute forearm stretches, wrist rotations, and proper seating posture prevents repetitive strain injuries (RSI) and long-term fatigue.",
+        "title": "Ergonomía física y cuidado de las muñecas",
+        "subtitle": "Practica estiramientos de manos, postura y prevención de lesiones para un cubing seguro a alto TPS",
+        "description": "Mantén la salud de manos, muñecas y antebrazos con calentamiento regular, estiramientos y postura ergonómica para prevenir lesiones por esfuerzo repetitivo como el RSI.",
+        "theory": "El speedcubing de alto volumen a 8-12+ TPS ejerce una tensión física intensa sobre los tendones de los dedos y los flexores de la muñeca. Incorporar estiramientos de antebrazo de 2 minutos, rotaciones de muñeca y una postura de asiento adecuada previene las lesiones por esfuerzo repetitivo (RSI) y la fatiga a largo plazo.",
         "drills": [
-          "Perform wrist and finger stretches before every high-volume practice session",
-          "Take 5-minute active rest breaks every 30 minutes of speed solving"
+          "Haz estiramientos de muñeca y dedos antes de cada sesión de alto volumen",
+          "Toma descansos activos de 5 minutos cada 30 minutos de resolución a velocidad"
         ]
       },
       "deliberate-practice": {
-        "title": "Deliberate Practice",
-        "subtitle": "Target specific weaknesses with focused drills rather than general solving",
-        "description": "Implement deliberate practice: identify your weakest skill, isolate it, drill it exclusively, and measure improvement before moving on.",
-        "theory": "Deliberate practice (Ericsson) is the science of skill acquisition. Identify your bottleneck (slow cross, poor F2L lookahead, PLL recognition), create isolated practice for that exact skill, drill with immediate feedback, and only move on when measurable improvement occurs.",
+        "title": "Práctica deliberada",
+        "subtitle": "Ataca debilidades específicas con ejercicios enfocados en lugar de resolver en general",
+        "description": "Implementa la práctica deliberada: identifica tu habilidad más débil, aíslala, practícala exclusivamente y mide la mejora antes de pasar a otra.",
+        "theory": "La práctica deliberada (Ericsson) es la ciencia de la adquisición de habilidades. Identifica tu cuello de botella (cruz lenta, lookahead F2L pobre, reconocimiento PLL), crea práctica aislada para esa habilidad exacta, ejercítala con feedback inmediato y solo avanza cuando se produzca una mejora medible.",
         "drills": [
-          "Identify your #1 weakness using split timing analysis",
-          "Dedicate 3 sessions exclusively to that weakness"
+          "Identifica tu debilidad nº 1 usando el análisis de tiempos por fases",
+          "Dedica 3 sesiones exclusivamente a esa debilidad"
         ]
       },
       "algorithm-drilling": {
-        "title": "Algorithm Drilling System",
-        "subtitle": "Use systematic drilling and spaced repetition to master algorithms permanently",
-        "description": "Apply spaced repetition principles to algorithm learning: drill new algorithms daily at first, then progressively space reviews as mastery increases.",
-        "theory": "Spaced repetition optimizes long-term algorithm retention. New alg: practice 20x immediately, then 10x after 1 hour, 5x next day, then every 3 days until automatic. Use algorithm trainers (J Perm, SpeedCubeDB) that track per-algorithm speed.",
+        "title": "Sistema de práctica de algoritmos",
+        "subtitle": "Usa la práctica sistemática y la repetición espaciada para dominar algoritmos de forma permanente",
+        "description": "Aplica los principios de la repetición espaciada al aprendizaje de algoritmos: practica los nuevos a diario al principio y espacia las revisiones progresivamente a medida que aumenta el dominio.",
+        "theory": "La repetición espaciada optimiza la retención a largo plazo de algoritmos. Algoritmo nuevo: 20x de inmediato, luego 10x tras 1 hora, 5x al día siguiente, y luego cada 3 días hasta que sea automático. Usa entrenadores de algoritmos (J Perm, SpeedCubeDB) que registran la velocidad por algoritmo.",
         "drills": [
-          "Create a spaced repetition schedule for your current algorithm learning set",
-          "Track execution time for each algorithm over 2 weeks"
+          "Crea un calendario de repetición espaciada para tu set actual de algoritmos en aprendizaje",
+          "Registra el tiempo de ejecución de cada algoritmo durante 2 semanas"
         ]
       },
       "weakness-analysis": {
-        "title": "Weakness Analysis",
-        "subtitle": "Use split timing and solve reconstruction to identify your exact bottlenecks",
-        "description": "Analyze your solves scientifically: measure time per phase, compare against benchmarks for your target level, and identify the biggest gap.",
-        "theory": "Raw solve times hide the real story. Split analysis reveals: is your cross 3s when it should be 2s? Is F2L recognition 60% of your time? Use CubeForge's analysis tools or CsTimer's multi-phase timing to get per-phase data. Fix your biggest gap first.",
+        "title": "Análisis de debilidades",
+        "subtitle": "Usa los tiempos por fases y la reconstrucción de resoluciones para identificar tus cuellos de botella exactos",
+        "description": "Analiza tus resoluciones científicamente: mide el tiempo por fase, compáralo con los benchmarks de tu nivel objetivo e identifica la mayor brecha.",
+        "theory": "Los tiempos brutos esconden la historia real. El análisis por fases revela: ¿tu cruz tarda 3s cuando debería tardar 2? ¿El reconocimiento F2L consume el 60% de tu tiempo? Usa las herramientas de análisis de CubeForge o el cronometrado multifase de CsTimer para obtener datos por fase. Arregla primero tu mayor brecha.",
         "drills": [
-          "Complete 25 solves with phase timing, identify worst phase",
-          "Compare your splits against benchmarks for your target level"
+          "Completa 25 resoluciones con tiempos por fase e identifica la peor fase",
+          "Compara tus tiempos por fase con los benchmarks de tu nivel objetivo"
         ]
       },
       "split-analysis": {
-        "title": "Split Analysis & Benchmarking",
-        "subtitle": "Compare your phase splits against target-level benchmarks to guide improvement",
-        "description": "Use standardized split benchmarks (cross, F2L, OLL, PLL times) for each skill level to identify which phase is holding you back.",
-        "theory": "Benchmark splits: Sub-20: Cross≤3s, F2L≤10s, OLL≤3s, PLL≤4s. Sub-15: Cross≤2.5s, F2L≤7.5s, OLL≤2.5s, PLL≤2.5s. Sub-10: Cross≤1.8s, F2L≤5s, OLL≤1.5s, PLL≤1.7s. Compare your splits, focus on the phase furthest from target.",
+        "title": "Análisis por fases y benchmarks",
+        "subtitle": "Compara tus tiempos por fase con los benchmarks del nivel objetivo para guiar la mejora",
+        "description": "Usa benchmarks estandarizados por fases (tiempos de cruz, F2L, OLL, PLL) para cada nivel de habilidad e identifica qué fase te está frenando.",
+        "theory": "Benchmarks por fases: Sub-20: Cruz≤3s, F2L≤10s, OLL≤3s, PLL≤4s. Sub-15: Cruz≤2,5s, F2L≤7,5s, OLL≤2,5s, PLL≤2,5s. Sub-10: Cruz≤1,8s, F2L≤5s, OLL≤1,5s, PLL≤1,7s. Compara tus tiempos y céntrate en la fase más alejada del objetivo.",
         "drills": [
-          "Record splits for 50 solves and create a phase-by-phase average",
-          "Set a target split for each phase based on your next level goal"
+          "Registra los tiempos por fase de 50 resoluciones y crea una media fase a fase",
+          "Fija un tiempo objetivo por fase según tu próximo nivel"
         ]
       },
       "smart-training-planning": {
-        "title": "Smart Training Planning",
-        "subtitle": "Create data-driven weekly training plans based on your split analysis",
-        "description": "Design weekly training plans that allocate practice time proportionally to your weaknesses, with built-in progress tracking and plan adjustment.",
-        "theory": "A smart training plan allocates time based on need, not preference. If cross is your weakness (30% above benchmark) and OLL is fine, spend 40% of practice on cross, 30% on F2L, 20% on PLL, 10% on OLL. Re-assess weekly and rebalance.",
+        "title": "Planificación inteligente del entrenamiento",
+        "subtitle": "Crea planes semanales basados en datos a partir de tu análisis por fases",
+        "description": "Diseña planes de entrenamiento semanales que asignen el tiempo de práctica proporcionalmente a tus debilidades, con seguimiento integrado del progreso y ajuste del plan.",
+        "theory": "Un plan de entrenamiento inteligente asigna el tiempo según la necesidad, no la preferencia. Si la cruz es tu debilidad (30% por encima del benchmark) y el OLL está bien, dedica 40% de la práctica a la cruz, 30% al F2L, 20% al PLL y 10% al OLL. Reevalúa cada semana y reequilibra.",
         "drills": [
-          "Create a 4-week training plan based on your current split analysis",
-          "Re-assess splits after 4 weeks and adjust the plan"
+          "Crea un plan de entrenamiento de 4 semanas basado en tu análisis por fases actual",
+          "Reevalúa los tiempos por fase tras 4 semanas y ajusta el plan"
         ]
       },
       "periodization": {
-        "title": "Training Periodization",
-        "subtitle": "Structure long-term training in cycles: build, peak, recover, compete",
-        "description": "Apply athletic periodization principles to speedcubing: structured cycles of skill building, speed peaking, tapering, and competition performance.",
-        "theory": "Periodization prevents burnout and maximizes competition performance. Build phase (3-4 weeks): learn new techniques and algorithms. Peak phase (2 weeks): maximize TPS and flow. Taper (1 week pre-comp): reduce volume, maintain quality. Compete: perform, then recover (1 week light practice).",
+        "title": "Periodización del entrenamiento",
+        "subtitle": "Estructura el entrenamiento a largo plazo en ciclos: construir, pico, recuperar, competir",
+        "description": "Aplica los principios de periodización atlética al speedcubing: ciclos estructurados de construcción de habilidades, pico de velocidad, descarga y rendimiento competitivo.",
+        "theory": "La periodización previene el agotamiento y maximiza el rendimiento competitivo. Fase de construcción (3-4 semanas): aprende técnicas y algoritmos nuevos. Fase de pico (2 semanas): maximiza TPS y flujo. Descarga (1 semana antes del evento): reduce el volumen y mantén la calidad. Compite: rinde y luego recupera (1 semana de práctica ligera).",
         "drills": [
-          "Plan a 6-week periodization cycle leading to a target date",
-          "Track volume, intensity, and performance throughout the cycle"
+          "Planifica un ciclo de periodización de 6 semanas hacia una fecha objetivo",
+          "Registra volumen, intensidad y rendimiento a lo largo del ciclo"
         ]
       },
       "roux-first-block": {
-        "title": "Roux First Block",
-        "subtitle": "Build a 1x2x3 block on the left side efficiently and intuitively",
-        "description": "Learn to construct the first 1x2x3 block (left side) using intuitive block building, typically in 7-10 moves, without relying on algorithms.",
-        "theory": "The first block is Roux's foundation. Build the 1x2x2 (square) first, then add the remaining 1x1x2 pair. Plan during inspection — identify a 2x2 square opportunity and expand. This builds spatial reasoning that benefits ALL methods.",
+        "title": "Primer bloque de Roux",
+        "subtitle": "Construye un bloque 1x2x3 en el lado izquierdo de forma eficiente e intuitiva",
+        "description": "Aprende a construir el primer bloque 1x2x3 (lado izquierdo) con construcción de bloques intuitiva, normalmente en 7-10 movimientos, sin depender de algoritmos.",
+        "theory": "El primer bloque es la base de Roux. Construye primero el 1x2x2 (cuadrado) y añade después el par 1x1x2 restante. Planifícalo durante la inspección: identifica una oportunidad de cuadrado 2x2 y amplíala. Esto desarrolla el razonamiento espacial que beneficia a TODOS los métodos.",
         "drills": [
-          "Practice first block only (stop after FB) 50 times",
-          "Target: first block in ≤10 moves, planned during inspection"
+          "Practica solo el primer bloque (detente tras el FB) 50 veces",
+          "Objetivo: primer bloque en ≤10 movimientos, planificado en la inspección"
         ]
       },
       "roux-second-block": {
-        "title": "Roux Second Block",
-        "subtitle": "Build the 1x2x3 block on the right side without breaking FB",
-        "description": "Construct the second 1x2x3 block on the right side using only R, r, M, and U moves, preserving the completed first block.",
-        "theory": "After FB, the cube is restricted to R, r, M, and U moves (no L, F, B). This constraint makes SB faster but requires different pair-building techniques. The square-first approach mirrors FB: build a 1x2x2, then add the final pair.",
+        "title": "Segundo bloque de Roux",
+        "subtitle": "Construye el bloque 1x2x3 del lado derecho sin romper el primer bloque",
+        "description": "Construye el segundo bloque 1x2x3 en el lado derecho usando solo movimientos R, r, M y U, preservando el primer bloque completado.",
+        "theory": "Tras el FB, el cubo queda restringido a R, r, M y U (sin L, F, B). Esta restricción hace el SB más rápido pero requiere técnicas distintas de emparejado. El enfoque cuadrado-primero refleja el FB: construye un 1x2x2 y añade luego el par final.",
         "drills": [
-          "Practice second block starting from a solved first block",
-          "Target: second block in ≤15 moves using only R/r/M/U"
+          "Practica el segundo bloque partiendo de un primer bloque resuelto",
+          "Objetivo: segundo bloque en ≤15 movimientos usando solo R/r/M/U"
         ]
       },
       "roux-cmll": {
-        "title": "Roux CMLL",
-        "subtitle": "Solve all corners in one algorithm — 42 cases (ignoring M-slice)",
-        "description": "Learn all 42 CMLL algorithms to solve the last layer corners in one step, ignoring the M-slice which is solved in LSE.",
-        "theory": "CMLL solves corners while ignoring the M-slice and U-layer edges. 42 cases (7 orientation groups × 6 permutation cases). Recognition is by top-face color pattern and side stickers. CMLL uses R and U moves primarily — fast and ergonomic.",
+        "title": "CMLL de Roux",
+        "subtitle": "Resuelve todas las esquinas en un algoritmo — 42 casos (ignorando el corte M)",
+        "description": "Aprende los 42 algoritmos CMLL para resolver las esquinas de la última capa en un solo paso, ignorando el corte M que se resuelve en el LSE.",
+        "theory": "El CMLL resuelve las esquinas ignorando el corte M y las aristas de la capa U. 42 casos (7 grupos de orientación × 6 casos de permutación). El reconocimiento se basa en el patrón de color de la cara superior y las pegatinas laterales. El CMLL usa principalmente movimientos R y U — rápido y ergonómico.",
         "drills": [
-          "Learn CMLL grouped by orientation (start H and Pi — 8 cases)",
-          "CMLL time attack: execute all 42 sub-50s"
+          "Aprende el CMLL agrupado por orientación (empieza por H y Pi — 8 casos)",
+          "CMLL time attack: ejecuta los 42 en menos de 50s"
         ]
       },
       "roux-lse-basics": {
-        "title": "LSE Basics",
-        "subtitle": "Solve Last Six Edges: orientation, UL/UR placement, and final permutation",
-        "description": "Master the LSE phase in 3 sub-steps: edge orientation, UL+UR edge placement, and M-slice permutation.",
-        "theory": "LSE uses only M and U moves. Step 1: orient all 6 edges (recognize bad edges on U/D faces using arrow rule). Step 2: place UL/UR edges on the bottom. Step 3: permute the remaining 4 M-slice edges (4 cases: Ua, Ub, H, Z equivalents).",
+        "title": "Fundamentos del LSE",
+        "subtitle": "Resuelve las últimas seis aristas: orientación, colocación de UL/UR y permutación final",
+        "description": "Domina la fase LSE en 3 sub-pasos: orientación de aristas, colocación de las aristas UL+UR y permutación del corte M.",
+        "theory": "El LSE usa solo movimientos M y U. Paso 1: orienta las 6 aristas (reconoce las aristas mal orientadas en las caras U/D con la regla de la flecha). Paso 2: coloca las aristas UL/UR abajo. Paso 3: permuta las 4 aristas restantes del corte M (4 casos: equivalentes a Ua, Ub, H, Z).",
         "drills": [
-          "Practice LSE edge orientation recognition — identify bad edges in under 2s",
-          "Drill the 4 final M-slice permutation cases"
+          "Practica el reconocimiento de orientación del LSE — identifica las aristas mal orientadas en menos de 2s",
+          "Practica los 4 casos de permutación final del corte M"
         ]
       },
       "roux-lse-advanced": {
-        "title": "Advanced LSE",
-        "subtitle": "Optimize LSE with advanced techniques: EOLR and efficient UL/UR placement",
-        "description": "Apply EOLR (Edge Orientation + Left/Right placement combined) and other advanced LSE techniques to reduce move count and eliminate pauses.",
-        "theory": "Advanced LSE combines EO and UL/UR placement into fewer moves. EOLR places UL/UR edges while orienting — saving 3-5 moves. Advanced solvers also use misoriented centers and BU recognition for the final permutation.",
+        "title": "LSE avanzado",
+        "subtitle": "Optimiza el LSE con técnicas avanzadas: EOLR y colocación eficiente de UL/UR",
+        "description": "Aplica el EOLR (orientación de aristas + colocación izquierda/derecha combinadas) y otras técnicas avanzadas de LSE para reducir el número de movimientos y eliminar pausas.",
+        "theory": "El LSE avanzado combina la EO y la colocación de UL/UR en menos movimientos. El EOLR coloca las aristas UL/UR mientras orienta — ahorrando 3-5 movimientos. Los resolutores avanzados también usan centros desorientados y el reconocimiento BU para la permutación final.",
         "drills": [
-          "Learn EOLR for the 6 most common edge orientation patterns",
-          "Practice LSE with BU (back-up) edge recognition"
+          "Aprende el EOLR para los 6 patrones de orientación de aristas más comunes",
+          "Practica el LSE con reconocimiento de arista BU (de apoyo)"
         ]
       },
       "roux-eolr": {
-        "title": "EOLR Mastery",
-        "subtitle": "Combine edge orientation with LR edge placement in one fluid step",
-        "description": "Full EOLR integration: orient all edges and place UL/UR edges simultaneously, reducing LSE from 3 sub-steps to effectively 2.",
-        "theory": "EOLR is the biggest advancement in Roux LSE. Instead of orient edges → place LR → permute M-slice, EOLR combines the first two. There are ~30 EOLR cases based on misoriented edge count and LR edge positions.",
+        "title": "Dominio del EOLR",
+        "subtitle": "Combina la orientación de aristas con la colocación de las aristas LR en un paso fluido",
+        "description": "Integración completa del EOLR: orienta todas las aristas y coloca las aristas UL/UR simultáneamente, reduciendo el LSE de 3 sub-pasos a efectivamente 2.",
+        "theory": "El EOLR es el mayor avance del LSE de Roux. En lugar de orientar aristas → colocar LR → permutar el corte M, el EOLR combina los dos primeros. Hay ~30 casos de EOLR según el número de aristas mal orientadas y las posiciones de las aristas LR.",
         "drills": [
-          "Learn EOLR cases grouped by edge orientation count",
-          "Practice EOLR→4c (M-slice permutation) as one continuous flow"
+          "Aprende los casos EOLR agrupados por número de aristas mal orientadas",
+          "Practica EOLR→4c (permutación del corte M) como un único flujo continuo"
         ]
       },
       "roux-non-matching": {
-        "title": "Non-Matching Blocks",
-        "subtitle": "Build blocks regardless of center color alignment, resolving at the end",
-        "description": "Use non-matching blocks (NMB) to exploit favorable piece positions even when centers don't align, fixing the offset at the end of the solve.",
-        "theory": "NMB allows building blocks relative to a 'wrong' center, solving pieces that would be difficult with standard alignment. The offset is corrected later in the solve. This technique is especially powerful in Roux and provides flexibility similar to pseudo-slotting in CFOP.",
+        "title": "Bloques no coincidentes",
+        "subtitle": "Construye bloques sin importar la alineación del centro, resolviéndolo al final",
+        "description": "Usa los bloques no coincidentes (NMB) para aprovechar posiciones favorables de piezas incluso cuando los centros no coinciden, corrigiendo el desplazamiento al final de la resolución.",
+        "theory": "El NMB permite construir bloques relativos a un centro 'incorrecto', resolviendo piezas que serían difíciles con la alineación estándar. El desplazamiento se corrige más adelante en la resolución. Esta técnica es especialmente potente en Roux y ofrece una flexibilidad similar al pseudo-slotting en CFOP.",
         "drills": [
-          "Practice first block with offset centers (e.g., build on red when blue is correct)",
-          "Learn to track the offset and resolve it during LSE"
+          "Practica el primer bloque con centros desplazados (p. ej., construir sobre rojo cuando el azul es el correcto)",
+          "Aprende a seguir el desplazamiento y resolverlo durante el LSE"
         ]
       },
       "roux-full-mastery": {
-        "title": "Roux Full Mastery",
-        "subtitle": "Complete Roux proficiency at expert level with sub-10 capability",
-        "description": "Achieve full Roux mastery: efficient blocks (~25 moves), instant CMLL recognition, advanced EOLR, and zero-pause LSE — capable of sub-8 solves.",
-        "theory": "Roux at the highest level rivals CFOP. The method excels in low move count (averaging 45-50 moves vs CFOP's 55-60) and high TPS potential in LSE. Mastery requires ~5000+ dedicated Roux solves and full integration of all advanced techniques.",
+        "title": "Dominio completo de Roux",
+        "subtitle": "Soltura total de Roux a nivel experto con capacidad sub-10",
+        "description": "Logra el dominio completo de Roux: bloques eficientes (~25 movimientos), reconocimiento CMLL instantáneo, EOLR avanzado y LSE sin pausas — capaz de resoluciones sub-8.",
+        "theory": "El Roux al más alto nivel rivaliza con el CFOP. El método destaca por su bajo número de movimientos (media de 45-50 frente a los 55-60 del CFOP) y su alto potencial de TPS en el LSE. El dominio requiere ~5000+ resoluciones dedicadas de Roux y la integración completa de todas las técnicas avanzadas.",
         "drills": [
-          "Complete 1000 Roux solves tracking block efficiency and LSE speed",
-          "Target: first block in ≤7 moves, second block ≤12, CMLL sub-1.5s, LSE sub-2s"
+          "Completa 1000 resoluciones de Roux registrando la eficiencia de los bloques y la velocidad del LSE",
+          "Objetivo: primer bloque en ≤7 movimientos, segundo ≤12, CMLL sub-1,5s, LSE sub-2s"
         ]
       },
       "zz-eoline": {
         "title": "EOLine",
-        "subtitle": "Orient all 12 edges and place DF/DB edges in one step during inspection",
-        "description": "Learn to orient all 12 edges and place the DF and DB edges simultaneously — the signature first step of the ZZ method.",
-        "theory": "EOLine is ZZ's defining step. Count bad edges (edges that can't be solved using only R, L, U, D). An even number of bad edges is orientable. Place DF and DB while fixing bad edges. After EOLine, the cube is solvable using only R, U, and L moves.",
+        "subtitle": "Orienta las 12 aristas y coloca las aristas DF/DB en un solo paso durante la inspección",
+        "description": "Aprende a orientar las 12 aristas y a colocar las aristas DF y DB simultáneamente — el característico primer paso del método ZZ.",
+        "theory": "La EOLine es el paso definitorio del ZZ. Cuenta las aristas mal orientadas (aristas que no pueden resolverse solo con R, L, U, D). Un número par de aristas mal orientadas es orientable. Coloca DF y DB mientras corriges las mal orientadas. Tras la EOLine, el cubo se resuelve usando solo movimientos R, U y L.",
         "drills": [
-          "Practice counting bad edges — identify all within 5 seconds",
-          "Plan EOLine during inspection — target: 8-10 moves"
+          "Practica contar aristas mal orientadas — identifica todas en menos de 5 segundos",
+          "Planifica la EOLine en la inspección — objetivo: 8-10 movimientos"
         ]
       },
       "zz-eocross": {
         "title": "EOCross",
-        "subtitle": "Orient edges while solving the full cross (not just the line) for better F2L",
-        "description": "Transition from EOLine to EOCross: orient all edges AND solve the full cross (DF, DB, DL, DR edges) in one step for better lookahead.",
-        "theory": "EOCross is more moves than EOLine but sets up a much better F2L stage. With a full cross solved and all edges oriented, F2L becomes rotationless by definition. Most modern ZZ solvers prefer EOCross for its ergonomic advantages.",
+        "subtitle": "Orienta las aristas mientras resuelves la cruz completa (no solo la línea) para un mejor F2L",
+        "description": "Transición de EOLine a EOCross: orienta todas las aristas Y resuelve la cruz completa (aristas DF, DB, DL, DR) en un paso para un mejor lookahead.",
+        "theory": "La EOCross usa más movimientos que la EOLine pero prepara una fase F2L mucho mejor. Con la cruz completa resuelta y todas las aristas orientadas, el F2L queda sin rotaciones por definición. La mayoría de los cuberos ZZ modernos prefieren la EOCross por sus ventajas ergonómicas.",
         "drills": [
-          "Plan EOCross during inspection — target: 12-14 moves",
-          "Compare EOLine vs EOCross solves to find your preference"
+          "Planifica la EOCross en la inspección — objetivo: 12-14 movimientos",
+          "Compara resoluciones con EOLine vs EOCross para encontrar tu preferencia"
         ]
       },
       "zz-f2l": {
-        "title": "ZZ F2L",
-        "subtitle": "Rotationless F2L using only R, U, and L moves with all edges oriented",
-        "description": "Solve F2L pairs using only R, U, L moves — no cube rotations needed since all edges are pre-oriented. Focus on block building efficiency.",
-        "theory": "ZZ F2L's main advantage: ZERO rotations. All pairs are solved in the front 180° hemisphere. Pairs can go into RF, LF, RB, or LB slots with equal ease. This trains rotationless solving skills that transfer directly to CFOP.",
+        "title": "F2L de ZZ",
+        "subtitle": "F2L sin rotaciones usando solo R, U y L con todas las aristas orientadas",
+        "description": "Resuelve pares F2L usando solo movimientos R, U y L — sin rotaciones del cubo porque todas las aristas están pre-orientadas. Céntrate en la eficiencia de construcción de bloques.",
+        "theory": "La principal ventaja del F2L de ZZ: CERO rotaciones. Todos los pares se resuelven en el hemisferio frontal de 180°. Los pares pueden ir a las ranuras RF, LF, RB o LB con la misma facilidad. Esto entrena habilidades de resolución sin rotaciones que se transfieren directamente al CFOP.",
         "drills": [
-          "Practice ZZ F2L only (stop after F2L) — target: sub-8s",
-          "Compare move count with your CFOP F2L to see efficiency gains"
+          "Practica solo el F2L de ZZ (detente tras el F2L) — objetivo: sub-8s",
+          "Compara el número de movimientos con tu F2L de CFOP para ver las ganancias de eficiencia"
         ]
       },
       "zz-coll-epll": {
-        "title": "ZZ COLL+EPLL",
-        "subtitle": "Use COLL for corner control and EPLL for fast edge permutation",
-        "description": "Apply COLL (40 cases) to solve corners after F2L, then use EPLL (4 cases: Ua, Ub, H, Z) to finish — the standard expert ZZ last layer.",
-        "theory": "Since ZZ orients all edges in the first step, the LL cross is always formed after F2L. This makes COLL the natural choice: solve corners in one step, leaving only the 4 fast edge PLLs. This is more efficient than standard OLL+PLL.",
+        "title": "COLL+EPLL de ZZ",
+        "subtitle": "Usa COLL para el control de esquinas y EPLL para la permutación rápida de aristas",
+        "description": "Aplica COLL (40 casos) para resolver las esquinas tras el F2L y usa luego EPLL (4 casos: Ua, Ub, H, Z) para terminar — la última capa ZZ experta estándar.",
+        "theory": "Como el ZZ orienta todas las aristas en el primer paso, la cruz de la última capa está siempre formada tras el F2L. Esto convierte al COLL en la elección natural: resuelve las esquinas en un paso, dejando solo los 4 PLL de aristas rápidos. Es más eficiente que el OLL+PLL estándar.",
         "drills": [
-          "Combine COLL recognition with EPLL execution into one flow",
-          "Target: COLL+EPLL in under 3.5s total"
+          "Combina el reconocimiento COLL con la ejecución EPLL en un único flujo",
+          "Objetivo: COLL+EPLL en menos de 3,5s en total"
         ]
       },
       "zz-zbll": {
-        "title": "ZZ to ZBLL",
-        "subtitle": "Full ZBLL integration — the ultimate ZZ last layer since edges are always oriented",
-        "description": "Leverage ZZ's guaranteed edge orientation to use ZBLL for 1-look last layer — solving OLL and PLL simultaneously in every solve.",
-        "theory": "ZZ + ZBLL is a natural pairing: ZZ guarantees oriented LL edges, which is exactly ZBLL's prerequisite. This means EVERY solve ends in a 1-look last layer. Combined with rotationless F2L, this is one of the most efficient solving systems possible.",
+        "title": "De ZZ a ZBLL",
+        "subtitle": "Integración completa del ZBLL — la última capa ZZ definitiva porque las aristas siempre están orientadas",
+        "description": "Aprovecha la orientación garantizada de aristas del ZZ para usar ZBLL en una última capa de un vistazo — resolviendo OLL y PLL simultáneamente en cada resolución.",
+        "theory": "ZZ + ZBLL es un emparejamiento natural: el ZZ garantiza aristas LL orientadas, que es exactamente el prerrequisito del ZBLL. Esto significa que CADA resolución termina con una última capa de un vistazo. Combinado con el F2L sin rotaciones, es uno de los sistemas de resolución más eficientes posibles.",
         "drills": [
-          "Only ZBLL cases applicable (edges already oriented — the full set is usable)",
-          "Practice ZZ specifically with ZBLL for T and U subsets first"
+          "Solo casos ZBLL aplicables (aristas ya orientadas — el set completo es utilizable)",
+          "Practica ZZ específicamente con ZBLL para los subconjuntos T y U primero"
         ]
       },
       "zz-ct": {
         "title": "ZZ-CT",
-        "subtitle": "ZZ with Corner Twisty — insert last pair solving CP for 2GLL finish",
-        "description": "Apply the ZZ-CT variant: use TSLE (tran-style last edge) during final pair insertion, then 2GLL for 2-gen last layer.",
-        "theory": "ZZ-CT is an alternative to ZBLL. TSLE inserts the last F2L edge while orienting corners (~100 cases). Then 2GLL solves the rest using only R and U moves. This trades ZBLL's algorithm count for a 2-step system with better ergonomics.",
+        "subtitle": "ZZ con Corner Twisty — inserta el último par resolviendo la CP para terminar con 2GLL",
+        "description": "Aplica la variante ZZ-CT: usa TSLE (última arista estilo tran) durante la inserción del par final y luego 2GLL para una última capa 2-gen.",
+        "theory": "El ZZ-CT es una alternativa al ZBLL. El TSLE inserta la última arista F2L mientras orienta las esquinas (~100 casos). Luego el 2GLL resuelve el resto usando solo movimientos R y U. Cambia el número de algoritmos del ZBLL por un sistema de 2 pasos con mejor ergonomía.",
         "drills": [
-          "Learn TSLE for the most common last-slot edge positions",
-          "Practice 2GLL recognition (2-gen PLL and ZBLL variants)"
+          "Aprende el TSLE para las posiciones más comunes de la última arista de la ranura",
+          "Practica el reconocimiento 2GLL (variantes de PLL 2-gen y ZBLL)"
         ]
       },
       "zz-full-mastery": {
-        "title": "ZZ Full Mastery",
-        "subtitle": "Complete ZZ proficiency with competition-ready sub-10 capability",
-        "description": "Achieve full ZZ mastery: efficient EOCross, optimized rotationless F2L, and rapid ZBLL or CT last layer — capable of sub-8 solves.",
-        "theory": "ZZ at the elite level combines the best of all worlds: rotationless solving, 1-look last layer, and low move counts. Fewer top solvers use ZZ than CFOP, but those who master it achieve remarkable efficiency. Average move count: 45-50.",
+        "title": "Dominio completo de ZZ",
+        "subtitle": "Soltura total de ZZ con capacidad sub-10 lista para competición",
+        "description": "Logra el dominio completo del ZZ: EOCross eficiente, F2L sin rotaciones optimizado y última capa rápida con ZBLL o CT — capaz de resoluciones sub-8.",
+        "theory": "El ZZ a nivel de élite combina lo mejor de todos los mundos: resolución sin rotaciones, última capa de un vistazo y bajo número de movimientos. Menos cuberos punteros usan ZZ que CFOP, pero quienes lo dominan logran una eficiencia notable. Número medio de movimientos: 45-50.",
         "drills": [
-          "Complete 1000 ZZ solves tracking EOCross efficiency and LL speed",
-          "Target: EOCross in ≤12 moves, F2L sub-6s, last layer sub-2s"
+          "Completa 1000 resoluciones de ZZ registrando la eficiencia de la EOCross y la velocidad de la última capa",
+          "Objetivo: EOCross en ≤12 movimientos, F2L sub-6s, última capa sub-2s"
         ]
       },
       "bld-old-pochmann": {
