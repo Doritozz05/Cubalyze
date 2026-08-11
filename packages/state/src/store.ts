@@ -26,6 +26,10 @@ export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
 
+  /** Show the top header bar (session switcher, puzzle selector, profile chip…). */
+  showHeader: boolean;
+  setShowHeader: (value: boolean) => void;
+
   /** 3D Appearance mode */
   appearance3d: string;
   setAppearance3d: (value: string) => void;
@@ -176,6 +180,7 @@ export interface PreferencesState {
 
 const DEFAULT_VALUES = {
   theme: 'system' as const,
+  showHeader: true,
   appearance3d: 'default',
   scrambleFollowsCube: true,
   inspection: true,
@@ -227,6 +232,7 @@ export const createPreferencesStore = () => {
         ...DEFAULT_VALUES,
 
         setTheme: (theme) => set({ theme }),
+        setShowHeader: (showHeader) => set({ showHeader }),
         setAppearance3d: (appearance3d) => set({ appearance3d }),
         setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),
         setInspection: (inspection) => set({ inspection }),
@@ -272,6 +278,7 @@ export const createPreferencesStore = () => {
         name: 'cubeforge-prefs',
         partialize: (state) => ({
           theme: state.theme,
+          showHeader: state.showHeader,
           appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
           inspection: state.inspection,

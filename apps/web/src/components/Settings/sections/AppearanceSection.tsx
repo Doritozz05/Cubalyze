@@ -7,6 +7,7 @@ import { preferencesStore } from '@cubeforge/state';
 // bundle just for this settings list.
 import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
+import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import { Palette, Sun, Moon, Monitor } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ParseKeys } from 'i18next';
@@ -52,6 +53,8 @@ export function AppearanceSection() {
   const setAppearance3d = useStore(preferencesStore, (s) => s.setAppearance3d);
   const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
   const setCustomStickerColors = useStore(preferencesStore, (s) => s.setCustomStickerColors);
+  const showHeader = useStore(preferencesStore, (s) => s.showHeader);
+  const setShowHeader = useStore(preferencesStore, (s) => s.setShowHeader);
 
   return (
     <div className="flex flex-col gap-5">
@@ -98,6 +101,14 @@ export function AppearanceSection() {
           </Select>
         </div>
       </div>
+
+      {/* Header toggle */}
+      <SettingToggle
+        title={t('appearance.showHeader')}
+        description={t('appearance.showHeaderHint')}
+        checked={showHeader}
+        onCheckedChange={setShowHeader}
+      />
 
       {/* Skin selector */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">

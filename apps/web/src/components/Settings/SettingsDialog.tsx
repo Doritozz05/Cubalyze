@@ -44,7 +44,7 @@ import type { Solve } from '@/types';
 export interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Section to show when the dialog opens (e.g. 'profile'). Default 'appearance'. */
+  /** Section to show when the dialog opens (e.g. 'profile'). Default 'general'. */
   initialSection?: string;
   /** Solves data for the Data/Export section. */
   solves?: Solve[];
@@ -83,8 +83,8 @@ const sectionVariants = {
 export function SettingsDialog({ open, onOpenChange, initialSection, solves, sessionName, onImportSolves, onExportAllJSON }: SettingsDialogProps) {
   const isTouch = useIsTouch();
   const { t } = useTranslation('settings');
-  const [activeSection, setActiveSection] = useState('appearance');
-  const prevSection = useRef('appearance');
+  const [activeSection, setActiveSection] = useState('general');
+  const prevSection = useRef('general');
   // Keep a ref to avoid recreating callbacks on every section change
   const activeSectionRef = useRef(activeSection);
   activeSectionRef.current = activeSection;
@@ -94,7 +94,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
     if (open) {
       const start = initialSection && SETTINGS_SECTIONS.some((s) => s.id === initialSection)
         ? initialSection
-        : 'appearance';
+        : 'general';
       setActiveSection(start);
       prevSection.current = start;
     }

@@ -131,7 +131,9 @@
       "faceF": "Front (Green)",
       "faceB": "Back (Blue)",
       "faceR": "Right (Red)",
-      "faceL": "Left (Orange)"
+      "faceL": "Left (Orange)",
+      "showHeader": "Show header",
+      "showHeaderHint": "Hide the top bar for a cleaner, distraction-free view. Note: the session switcher lives in the header — when hidden, switch sessions from the Insights dropdown."
     },
     "timer": {
       "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",

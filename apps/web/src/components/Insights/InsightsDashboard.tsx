@@ -30,6 +30,8 @@ export interface InsightsDashboardProps {
   fetchSessionSolves: (sessionId: string) => Promise<Solve[]>;
   /** Active session ID — used to pre-select in the dropdown. */
   activeSessionId: string | null;
+  /** Switch the active session (selecting a non-active session in the dropdown). */
+  onSwitchSession?: (id: string) => void;
   /** Personal best across the active session. */
   pb?: number;
   /** Pending analysis from the just-completed live solve. */
@@ -51,7 +53,9 @@ function puzzleLabel(pt: string): string {
 /**
  * Unified Insights dashboard with two independent filter dimensions:
  *
- *   1. Session selector — "All sessions" (default) or a specific session
+ *   1. Session selector — "All sessions" (default) or a specific session.
+ *      Picking a non-active session also switches the active session, so the
+ *      switcher stays reachable even when the header is hidden.
  *   2. Cube selector — "3×3" (default) or "2×2" (never mixed)
  *
  * Data = intersection of both filters:
@@ -63,6 +67,7 @@ export function InsightsDashboard({
   sessions,
   fetchSessionSolves,
   activeSessionId,
+  onSwitchSession,
   pb,
   pendingAnalysis,
   sessionId,
@@ -237,9 +242,19 @@ export function InsightsDashboard({
           </span>
           <Select
             value={selectedSession ?? "all"}
-            onValueChange={(v) =>
-              setSelectedSession(v === "all" ? null : v)
-            }
+            onValueChange={(v) => {
+              if (v === "all") {
+                setSelectedSession(null);
+                return;
+              }
+              // Selecting a non-active session switches the active session
+              // too — the session switcher lives in the header, so this
+              // keeps switching possible when the header is hidden. (The
+              // dashboard remounts on switch and resets to "All sessions",
+              // matching header-switch behavior.)
+              if (v !== activeSessionId) onSwitchSession?.(v);
+              setSelectedSession(v);
+            }}
           >
             <SelectTrigger
               size="sm"

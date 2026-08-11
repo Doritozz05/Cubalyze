@@ -131,7 +131,9 @@
       "faceF": "Frente (Verde)",
       "faceB": "Atrás (Azul)",
       "faceR": "Derecha (Rojo)",
-      "faceL": "Izquierda (Naranja)"
+      "faceL": "Izquierda (Naranja)",
+      "showHeader": "Mostrar cabecera",
+      "showHeaderHint": "Oculta la barra superior para una vista más limpia y sin distracciones. Nota: el selector de sesión vive en la cabecera; si está oculta, cambia de sesión desde el selector de Insights."
     },
     "timer": {
       "header": "Configura cómo debe comenzar una resolución. Estos ajustes también se aplican cuando no hay un Smart Cube conectado.",

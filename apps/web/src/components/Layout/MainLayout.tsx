@@ -283,7 +283,10 @@ export function MainLayout({
         "flex flex-1 flex-col min-h-0 overflow-hidden",
         // Header offset: desktop reserves exactly 3.5rem; touch also adds the
         // iOS top safe-area so the header (which grows on iOS) never overlaps.
+        // When the header is hidden, keep only the safe-area inset on touch so
+        // content never sits under the iOS status bar.
         !isFocused && !hideHeader && "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-14",
+        !isFocused && hideHeader && "max-lg:pt-[env(safe-area-inset-top)]",
         // Rail padding only where the desktop rail actually renders (>=1024px).
         // Tablets (<1024px) use the touch regime with the bottom tab bar.
         !isFocused && "lg:pl-14",

@@ -26,6 +26,7 @@ function CubePanelFallback() {
 }
 import { ThemeProvider } from "@/components/theme-provider";
 import { useStorageStatusStore } from "@/stores/storageStatus";
+import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { puzzleCategoryToOrder, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { AppShellProps } from "@/components/Layout/appShell.types";
@@ -88,6 +89,9 @@ export function AppShell(props: AppShellProps) {
 
   const isTouch = useIsTouch();
   const { t } = useTranslation("shell");
+
+  // User preference: hide the top header entirely (Settings → Appearance).
+  const showHeader = useStore(preferencesStore, (s) => s.showHeader);
 
   // ── Shell-level UI state (owned here, not in App) ──────────────────────
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
@@ -183,7 +187,7 @@ export function AppShell(props: AppShellProps) {
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={activeSessionId}
-          hideHeader={activeView === "skill-tree"}
+          hideHeader={activeView === "skill-tree" || !showHeader}
           onSwitchSession={onSwitchSession}
           onNewSession={onNewSession}
           onRenameSession={onRenameSession}
@@ -244,6 +248,7 @@ export function AppShell(props: AppShellProps) {
               onPuzzleChange={onPuzzleChange}
               onNavigate={onNavigate}
               onOpenSettings={handleOpenSettingsProfile}
+              onSwitchSession={onSwitchSession}
               fetchSessionSolves={fetchSessionSolves}
               timerStage={timerStage}
             />

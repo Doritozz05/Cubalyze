@@ -39,6 +39,14 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().showSessionStats).toBe(true);
   });
 
+  it('toggles showHeader (default ON)', () => {
+    expect(preferencesStore.getState().showHeader).toBe(true);
+    preferencesStore.getState().setShowHeader(false);
+    expect(preferencesStore.getState().showHeader).toBe(false);
+    preferencesStore.getState().setShowHeader(true);
+    expect(preferencesStore.getState().showHeader).toBe(true);
+  });
+
   it('handles spacebarHoldDelay, showBpaWpa, and timePrecision settings', () => {
     const store = preferencesStore.getState();
     expect(store.spacebarHoldDelay).toBe(300);

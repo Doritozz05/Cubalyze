@@ -68,6 +68,8 @@ export interface MainStageProps {
   onNavigate: (view: ViewId) => void;
   /** Opens Settings pre-selected to the profile section. */
   onOpenSettings: () => void;
+  /** Switch the active session (also reachable from Insights). */
+  onSwitchSession: (id: string) => void;
   /** Rendered when `activeView === "timer"`. */
   timerStage: React.ReactNode;
 }
@@ -92,6 +94,7 @@ export function MainStage(props: MainStageProps) {
     onPuzzleChange,
     onNavigate,
     onOpenSettings,
+    onSwitchSession,
     timerStage,
   } = props;
 
@@ -125,6 +128,7 @@ export function MainStage(props: MainStageProps) {
           sessions={sessions}
           fetchSessionSolves={fetchSessionSolves}
           activeSessionId={sessionId}
+          onSwitchSession={onSwitchSession}
           pb={currentPB ?? undefined}
           pendingAnalysis={lastAnalysis}
           sessionId={sessionId}
