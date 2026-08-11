@@ -50,7 +50,7 @@ const COLOR_MAP = new Map(TASK_COLORS.map((c) => [c.value, c]));
 /* Same vocabulary as the phase tokens — referenced via var() so the calendar
    always draws the app's single color source (light/dark aware), instead of
    duplicating hex values that drift from index.css. */
-const COLOR_HEX: Record<TaskColor, string> = {
+export const COLOR_HEX: Record<TaskColor, string> = {
   blue: "var(--phase-blue)",
   emerald: "var(--phase-emerald)",
   amber: "var(--phase-amber)",
@@ -88,7 +88,7 @@ function nextTaskId(): string {
 
 /* ── Task logic ───────────────────────────────────────────────────────── */
 
-function getTasksForDate(tasks: TrainingTask[], date: Date): TrainingTask[] {
+export function getTasksForDate(tasks: TrainingTask[], date: Date): TrainingTask[] {
   const dateStr = format(date, "yyyy-MM-dd");
   const dayOfWeek = getDay(date);
   const dayOfMonth = date.getDate();
@@ -127,8 +127,18 @@ function emptyDraft(date: Date): Omit<TrainingTask, "id" | "createdAt"> {
    Training Calendar Component
    ─────────────────────────────────────────────────────────────────────── */
 
-export function TrainingCalendar() {
+export function TrainingCalendar({
+  tasks: tasksProp,
+  setTasks: setTasksProp,
+}: {
+  /** Optional lifted state — lets a parent share the same task source (e.g. a side panel). */
+  tasks?: TrainingTask[];
+  setTasks?: React.Dispatch<React.SetStateAction<TrainingTask[]>>;
+} = {}) {
   const { t, i18n } = useTranslation("training");
+  const calendarState = useCalendarTasks();
+  const tasks = tasksProp ?? calendarState.tasks;
+  const setTasks = setTasksProp ?? calendarState.setTasks;
   // date-fns locale follows the active UI language so month/day names match.
   const dfLocale = i18n.language === "es" ? es : enUS;
   // Day names are indexed 0-6 (Sunday first) to match date-fns getDay().
@@ -155,7 +165,8 @@ export function TrainingCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   // Tasks live in SQLite (single source of truth); the hook keeps a
   // localStorage cache + one-time migration for zero-regression fallback.
-  const { tasks, setTasks } = useCalendarTasks();
+  // When `tasks`/`setTasks` are passed, the parent owns the hook so the
+  // grid and any side panel always share one source of truth.
   const [panelMode, setPanelMode] = useState<PanelMode>("list");
   const [draft, setDraft] = useState<Omit<TrainingTask, "id" | "createdAt"> | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -327,15 +338,13 @@ export function TrainingCalendar() {
         </div>
 
         {/* Day grid */}
-        <div className="grid grid-cols-7 px-3 pb-0">
+        <div className="grid grid-cols-7 px-3 pb-2">
           {calendarDays.map((day) => {
             const dayStr = format(day, "yyyy-MM-dd");
             const dayTasks = dayTasksMap.get(dayStr);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const inMonth = isSameMonth(day, currentMonth);
             const dayIsToday = isToday(day);
-            const visibleTasks = dayTasks?.slice(0, 2) ?? [];
-            const moreCount = (dayTasks?.length ?? 0) - 2;
 
             return (
               <button
@@ -343,7 +352,7 @@ export function TrainingCalendar() {
                 onClick={() => inMonth && handleSelectDay(day)}
                 disabled={!inMonth}
                 className={cn(
-                  "relative flex flex-col items-center justify-center min-h-12.5 px-0.5 py-0.5 transition-colors group",
+                  "relative flex flex-col items-center justify-center min-h-11 sm:min-h-12.5 px-0.5 py-0.5 transition-colors group",
                   !inMonth && "cursor-default",
                   inMonth && "cursor-pointer",
                 )}
@@ -362,27 +371,20 @@ export function TrainingCalendar() {
                   {format(day, "d")}
                 </span>
 
-                {/* Task pills */}
-                {visibleTasks.length > 0 && (
-                  <div className="w-full flex flex-col gap-px mt-0.5 px-0.5">
-                    {visibleTasks.map((task) => {
-                      const hex = COLOR_HEX[task.color];
-                      return (
-                        <div
-                          key={task.id}
-                          className="truncate rounded-sm text-[0.6rem] font-semibold leading-snug px-1 py-[1.5px]"
-                          style={{
-                            backgroundColor: hex + "1A",
-                            color: hex,
-                          }}
-                        >
-                          {task.title}
-                        </div>
-                      );
-                    })}
-                    {moreCount > 0 && (
-                      <span className="text-[0.6rem] font-medium text-ink-3/50 leading-tight text-center">
-                        +{moreCount}
+                {/* Task dots — quiet color cues; detail lives in the hover
+                    tooltip and the day panel, never colored text in the cell */}
+                {dayTasks && dayTasks.length > 0 && (
+                  <div className="mt-1 flex items-center justify-center gap-1">
+                    {dayTasks.slice(0, 3).map((task) => (
+                      <span
+                        key={task.id}
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: COLOR_HEX[task.color] }}
+                      />
+                    ))}
+                    {dayTasks.length > 3 && (
+                      <span className="nums text-[0.5rem] font-semibold leading-none text-ink-3">
+                        +{dayTasks.length - 3}
                       </span>
                     )}
                   </div>
