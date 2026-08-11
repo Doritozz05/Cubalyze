@@ -491,6 +491,19 @@ export class Cube3DEngine {
     if (!obj) return null;
     const cubie = obj as Group;
 
+    // Resolve the cubie's CURRENT grid position from the logical state (the
+    // authoritative integer coordinates — immune to float drift). Used by the
+    // drag-to-turn resolver to derive moves from sticker geometry.
+    const cubieIndex = cubieGroups.indexOf(cubie);
+    const logical = cubieIndex >= 0 ? this.model.getLogicalState()[cubieIndex] : undefined;
+    const cubiePosition = logical
+      ? { x: logical.gridX, y: logical.gridY, z: logical.gridZ }
+      : {
+          x: Math.round(cubie.position.x),
+          y: Math.round(cubie.position.y),
+          z: Math.round(cubie.position.z),
+        };
+
     // The raycast's `hit.face.normal` is the STICKER's geometry normal (+Z
     // for every sticker panel — they all use the same flat ShapeGeometry).
     // Sticker meshes carry their own rotation (CubeMeshFactory orients each
@@ -517,6 +530,7 @@ export class Cube3DEngine {
     return {
       ...resolved,
       worldPoint: { x: hit.point.x, y: hit.point.y, z: hit.point.z },
+      cubiePosition,
     };
   }
 

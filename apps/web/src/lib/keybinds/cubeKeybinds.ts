@@ -86,6 +86,12 @@ export const CUBE_KEYMAP: Readonly<Record<string, CubeKeyAction>> = {
   Semicolon: { kind: "rotate", axis: "y", direction: 1 }, // ; = y
   KeyQ: { kind: "rotate", axis: "z", direction: -1 }, // Q = z'
   KeyP: { kind: "rotate", axis: "z", direction: 1 }, // P = z
+
+  // ── Arrow keys (mirror the background-drag / virtual-cube rotation) ────
+  ArrowLeft: { kind: "rotate", axis: "y", direction: 1 }, // ← = y
+  ArrowRight: { kind: "rotate", axis: "y", direction: -1 }, // → = y'
+  ArrowUp: { kind: "rotate", axis: "x", direction: 1 }, // ↑ = x
+  ArrowDown: { kind: "rotate", axis: "x", direction: -1 }, // ↓ = x'
 };
 
 export interface CubeEngineMove {

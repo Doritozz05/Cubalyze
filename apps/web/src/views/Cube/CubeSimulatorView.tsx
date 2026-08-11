@@ -30,20 +30,77 @@ const CUBE_ORDER = 3;
 /** Solve phases of the simulator timer. */
 type SimPhase = "idle" | "running" | "solved";
 
-const kbdLabel = (code: string) =>
-  code
-    .replace("Key", "")
-    .replace("Digit", "")
-    .replace("Semicolon", ";")
-    .replace("Comma", ",")
-    .replace("Period", ".")
-    .replace("Slash", "/");
+type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
 
-const isSliceFace = (face: string) => face === "M" || face === "E" || face === "S";
+/** Base animation duration (ms) per turn speed. `instant` disables animation. */
+const TURN_SPEED_BASE_MS: Record<CubeTurnSpeed, number> = {
+  slow: 260,
+  normal: 140,
+  fast: 70,
+  instant: 0,
+};
 
-/** Small key → move chip used in the controls overlay. */
-function KeyChip({ code }: { code: string }) {
-  return <kbd className="min-w-6 rounded-md border border-line bg-surface px-1.5 py-0.5 text-center font-mono text-[0.65rem] font-semibold text-ink shadow-sm">{kbdLabel(code)}</kbd>;
+const TURN_SPEED_OPTIONS: CubeTurnSpeed[] = ["slow", "normal", "fast", "instant"];
+
+/** i18n key for each turn-speed label (typed literals — no dynamic keys). */
+const TURN_SPEED_LABEL_KEY: Record<
+  CubeTurnSpeed,
+  "keys.speedSlow" | "keys.speedNormal" | "keys.speedFast" | "keys.speedInstant"
+> = {
+  slow: "keys.speedSlow",
+  normal: "keys.speedNormal",
+  fast: "keys.speedFast",
+  instant: "keys.speedInstant",
+};
+
+/**
+ * QWERTY layout of the physical keyboard, in order, for the on-screen key
+ * map (mirrors virtual-cube.net's "Show Keyboard Map").
+ */
+const KEYBOARD_ROWS: string[][] = [
+  ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+  ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";"],
+  ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
+];
+
+const PUNCT_CODES: Record<string, string> = {
+  ";": "Semicolon",
+  ",": "Comma",
+  ".": "Period",
+  "/": "Slash",
+};
+
+const labelToCode = (label: string): string =>
+  /^[a-z]$/.test(label)
+    ? `Key${label.toUpperCase()}`
+    : /^\d$/.test(label)
+      ? `Digit${label}`
+      : (PUNCT_CODES[label] ?? "");
+
+/** Arrow cluster (whole-cube rotations, like virtual-cube's bottom row). */
+const ARROW_KEYS: { code: string; label: string }[] = [
+  { code: "ArrowLeft", label: "←" },
+  { code: "ArrowUp", label: "↑" },
+  { code: "ArrowRight", label: "→" },
+  { code: "ArrowDown", label: "↓" },
+];
+
+/** A single keycap in the on-screen keyboard: key label on top, move below. */
+function KeyCap({ label, notation, dim }: { label: string; notation?: string; dim?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex w-8 shrink-0 select-none flex-col items-center rounded-md border border-line bg-surface px-0.5 py-1 shadow-xs",
+        dim && "opacity-25",
+      )}
+    >
+      <span className="text-[0.55rem] leading-none font-medium text-ink-3">{label}</span>
+      <span className="mt-1 font-mono text-[0.62rem] leading-none font-semibold text-ink">
+        {notation ?? "·"}
+      </span>
+    </div>
+  );
 }
 
 /**
@@ -59,9 +116,13 @@ function KeyChip({ code }: { code: string }) {
  *   • A math-core {@link CubeState} mirrors every move for LOGIC (solved
  *     detection, timer). It is never serialized to facelets in the hot path,
  *     so rotated frames never desync the centers.
- *   • Touch: a face drag live-twists the layer under the finger and snaps 90°
- *     past the threshold (the engine's live-twist API). The committed move is
- *     mirrored to the CubeState only after the snap animation completes.
+ *   • Drag (virtual-cube.net model): the move is derived from the GEOMETRY of
+ *     the pressed sticker and the sticker under the pointer (row/column
+ *     slices, face turns on edge crossings) — never from the sticker's face
+ *     alone. Dragging the background rotates the whole cube in discrete 90°
+ *     steps while the camera stays locked on the isometric view.
+ *   • The scramble is applied INSTANTLY (no animation); the per-move turn
+ *     speed is user-configurable, and 'instant' disables move animations too.
  *
  * Timer: starts on the first real move (rotations never start/stop it),
  * stops when the cube is solved up to a whole-cube rotation, and Enter on a
@@ -81,6 +142,8 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   } = useCube3D({ order: CUBE_ORDER, connectSmartCube: false });
 
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
+  const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
+  const setCubeTurnSpeed = useStore(preferencesStore, (s) => s.setCubeTurnSpeed);
 
   const [scramble, setScramble] = useState(() => generateScrambleFor("3x3"));
   const [phase, setPhase] = useState<SimPhase>("idle");
@@ -120,22 +183,30 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     [],
   );
 
-  /** Push the CubeState to the 3D engine (instant facelet sync — used only for
-   *  scramble fallback and reset, whose frames are always canonical). */
+  /** Push the CubeState to the 3D engine (instant facelet sync — used for
+   *  scramble apply and reset, whose frames are always canonical). */
   const syncState = useCallback(() => {
     const engine = engineRef.current;
     if (!engine || !stateRef.current) return;
     engine.syncFacelets(FaceletStringConverter.toFaceletString(stateRef.current));
   }, [engineRef]);
 
-  /** Return the camera to the default orbit (reset rotation + view). */
+  /** Return the camera to the locked isometric view (same as the algorithms
+   *  3D: theta/phi = 30°, tilted right for the best perspective). */
   const resetCamera = useCallback(() => {
-    engineRef.current?.sceneManager.resetCamera();
+    engineRef.current?.setIsometricView();
   }, [engineRef]);
 
+  // Lock the initial camera to the isometric view once the engine is ready.
+  useEffect(() => {
+    if (!isReady) return;
+    engineRef.current?.setIsometricView();
+  }, [isReady, engineRef]);
+
   /**
-   * Start a new solve: reset the cube to solved, animate the scramble, and
-   * put the timer back to idle at 0.00.
+   * Start a new solve: reset the cube to solved, apply the scramble
+   * INSTANTLY (no animation — like virtual-cube.net), and put the timer back
+   * to idle at 0.00.
    */
   const startSolve = useCallback(
     (scrambleStr: string) => {
@@ -152,15 +223,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
       if (engine) {
         engine.resetCube();
         resetCamera();
-        // Premium feel: play the scramble as animated moves. Falls back to an
-        // instant facelet sync when a token can't be animated, or when the
-        // animation unexpectedly fails (disposed engine, etc.).
-        void engine
-          .applyScrambleAnimated(scrambleStr, 110)
-          .then((ok) => {
-            if (!ok && engineRef.current) syncState();
-          })
-          .catch(() => syncState());
+        syncState();
       }
       setPhase("idle");
       setElapsedMs(0);
@@ -178,9 +241,9 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   /**
    * Mirror a move into the CubeState and drive the timer. The visual was
-   * ALREADY animated by the caller (keyboard → rotateLayers, touch → live
-   * twist snap), so this never touches the renderer — state and visuals stay
-   * in lockstep by construction.
+   * ALREADY animated by the caller (keyboard → rotateLayers, drag → the
+   * resolved action through the same pipeline), so this never touches the
+   * renderer — state and visuals stay in lockstep by construction.
    */
   const commitMove = useCallback((action: CubeKeyAction) => {
     const state = stateRef.current;
@@ -214,13 +277,15 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   }, []);
 
   /**
-   * Keyboard path: animate the move on the engine (with the same layer
-   * mapping as the smart-cube path), then mirror it into the CubeState.
+   * Single move pipeline (keyboard, drag and background rotations): animate
+   * the move on the engine with the configured turn speed (0ms = instant),
+   * then mirror it into the CubeState.
    */
   const applyAction = useCallback(
     (action: CubeKeyAction) => {
       const engine = engineRef.current;
       if (!engine) return;
+      const baseMs = TURN_SPEED_BASE_MS[cubeTurnSpeed];
       const moves = actionToMoves(action, CUBE_ORDER);
       for (const mv of moves) {
         // Fire-and-forget: the RotationEngine serializes overlapping layers
@@ -229,20 +294,19 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
           mv.axis,
           mv.layerValues,
           mv.angle,
-          scrambleMoveDurationMs(mv.angle, 140),
+          scrambleMoveDurationMs(mv.angle, baseMs),
           undefined,
           "smooth",
         );
       }
       commitMove(action);
     },
-    [commitMove, engineRef],
+    [commitMove, cubeTurnSpeed, engineRef],
   );
 
   const { performAction, pointerHandlers } = useCubeTurnControls({
     engineRef,
-    onAction: applyAction, // keyboard path: animate the move, then commit
-    onTurnCommitted: commitMove, // touch path: the snap already animated
+    onAction: applyAction,
   });
 
   // ── csTimer-layout keyboard binding (only while this view is mounted) ───
@@ -286,7 +350,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   /**
    * Replay: re-apply the CURRENT scramble (cube → solved → scrambled again,
-   * animated) and reset the timer to idle, keeping the same sequence on
+   * instant) and reset the timer to idle, keeping the same sequence on
    * screen so the solve can be redone.
    */
   const handleReplayScramble = useCallback(() => {
@@ -295,7 +359,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   /**
    * Reset: cube back to SOLVED (undoes every move including whole-cube
-   * rotations x/y/z) + camera rotation reset + timer back to idle. The
+   * rotations x/y/z) + camera back to isometric + timer back to idle. The
    * scramble stays on screen so the solve can be redone.
    */
   const handleReset = useCallback(() => {
@@ -314,23 +378,6 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     () => formatTime(displayMs, timePrecision),
     [displayMs, timePrecision],
   );
-
-  // ── Help overlay data (derived from the keymap — single source of truth) ──
-  const helpGroups = useMemo(() => {
-    const entries = Object.entries(CUBE_KEYMAP);
-    const faces = entries.filter(([, a]) => a.kind === "turn" && !isSliceFace(a.face));
-    const slices = entries.filter(([, a]) => a.kind === "turn" && isSliceFace(a.face));
-    const wide = entries.filter(([, a]) => a.kind === "wide");
-    const rotations = entries.filter(([, a]) => a.kind === "rotate");
-    const toItems = (list: [string, CubeKeyAction][]) =>
-      list.map(([code, action]) => ({ code, label: actionToNotation(action) }));
-    return [
-      { title: t("keys.faces"), items: toItems(faces) },
-      { title: t("keys.rotations"), items: toItems(rotations) },
-      { title: t("keys.wide"), items: toItems(wide) },
-      { title: t("keys.slices"), items: toItems(slices) },
-    ];
-  }, [t]);
 
   const unavailable = initFailed || contextEvicted;
 
@@ -484,7 +531,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         ) : null}
       </div>
 
-      {/* Controls overlay (help) */}
+      {/* Controls overlay (help) — on-screen keyboard map, like virtual-cube.net */}
       <AnimatePresence>
         {showHelp && (
           <motion.div
@@ -505,7 +552,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.96, opacity: 0, y: 8 }}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              className="relative max-h-full w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-xl"
+              className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-xl"
             >
               <div className="mb-1 flex items-start justify-between gap-4">
                 <div>
@@ -519,23 +566,66 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
                 </Button>
               </div>
 
-              <div className="mt-4 space-y-4">
-                {helpGroups.map((group) => (
-                  <div key={group.title}>
-                    <h4 className="mb-1.5 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-ink-3">
-                      {group.title}
-                    </h4>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-                      {group.items.map((item) => (
-                        <span key={item.code} className="flex items-center gap-1.5 text-[0.7rem] text-ink-2">
-                          <KeyChip code={item.code} />
-                          <span className="font-mono font-semibold text-ink">{item.label}</span>
-                        </span>
-                      ))}
-                    </div>
+              {/* On-screen keyboard — each keycap shows its move */}
+              <div className="mt-4 flex flex-col items-center gap-1.5">
+                {KEYBOARD_ROWS.map((row) => (
+                  <div key={row[0]} className="flex gap-1">
+                    {row.map((label) => {
+                      const code = labelToCode(label);
+                      const action = CUBE_KEYMAP[code];
+                      return (
+                        <KeyCap
+                          key={label}
+                          label={label}
+                          notation={action ? actionToNotation(action) : undefined}
+                          dim={!action}
+                        />
+                      );
+                    })}
                   </div>
                 ))}
+                {/* Arrow cluster — whole-cube rotations (camera stays locked) */}
+                <div className="mt-1 flex gap-1">
+                  {ARROW_KEYS.map((k) => {
+                    const action = CUBE_KEYMAP[k.code];
+                    return (
+                      <KeyCap
+                        key={k.code}
+                        label={k.label}
+                        notation={action ? actionToNotation(action) : undefined}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
 
+              <div className="mt-4 space-y-4">
+                {/* Turn speed */}
+                <div>
+                  <h4 className="mb-1.5 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-ink-3">
+                    {t("keys.speed")}
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TURN_SPEED_OPTIONS.map((speed) => (
+                      <button
+                        key={speed}
+                        type="button"
+                        onClick={() => setCubeTurnSpeed(speed)}
+                        className={cn(
+                          "rounded-lg border px-2.5 py-1 text-[0.68rem] font-medium transition-colors",
+                          cubeTurnSpeed === speed
+                            ? "border-primary bg-primary/10 text-ink"
+                            : "border-line bg-background/40 text-ink-3 hover:border-ink-2/50 hover:text-ink",
+                        )}
+                        aria-pressed={cubeTurnSpeed === speed}
+                      >
+                        {t(TURN_SPEED_LABEL_KEY[speed])}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Gestures */}
                 <div className="rounded-xl border border-line/60 bg-background/40 p-3">
                   <h4 className="mb-1.5 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-ink-3">
                     {t("keys.gestures")}
@@ -543,8 +633,8 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
                   <ul className="space-y-1 text-[0.7rem] leading-relaxed text-ink-2">
                     <li>• {t("keys.gestureSwipe")}</li>
                     <li>• {t("keys.gestureOrbit")}</li>
+                    <li>• {t("keys.gestureTap")}</li>
                     <li>• {t("keys.gesturePinch")}</li>
-                    <li>• {t("keys.gestureRelease")}</li>
                   </ul>
                 </div>
               </div>
