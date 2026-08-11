@@ -14,32 +14,3409 @@
     "profile": "Profile",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
-    "widgets": "Widgets"
+    "widgets": "Widgets",
+    "ok": "OK",
+    "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics"
   },
   "nav": {
     "title": "Navigation",
-    "timer": "Timer",
-    "insights": "Insights",
-    "algorithms": "Algorithms",
+    "main": "Main",
     "training": "Training",
-    "skillTree": "Skill Tree",
+    "progress": "Progress",
+    "explore": "Explore",
+    "timer": "Timer",
+    "algorithms": "Algorithms",
+    "skills": "Skills",
+    "stats": "Stats",
     "reconstructions": "Reconstructions",
-    "profile": "Profile",
     "widgets": "Widgets",
-    "settings": "Settings"
+    "more": "More",
+    "moreOptions": "More options",
+    "primary": "Primary"
   },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "languageAuto": "System default",
-    "languageHint": "Choose the interface language, or follow your browser's"
+    "languageHint": "Choose the interface language, or follow your browser's",
+    "preferences": "Preferences",
+    "selectSection": "Select section",
+    "sections": {
+      "profile": {
+        "label": "Profile",
+        "description": "Your identity, avatar, and declared solving methods."
+      },
+      "general": {
+        "label": "General",
+        "description": "Application preferences and behavior."
+      },
+      "appearance": {
+        "label": "Appearance",
+        "description": "Visual display and notation preferences."
+      },
+      "smartCube": {
+        "label": "Smart cube",
+        "description": "Bluetooth, gyroscope, and hardware settings."
+      },
+      "timer": {
+        "label": "Timer",
+        "description": "Solve start rules and inspection."
+      },
+      "scramble": {
+        "label": "Scramble",
+        "description": "Scramble verification and display options."
+      },
+      "analysis": {
+        "label": "Analysis",
+        "description": "Solve breakdown, inspection, and metrics."
+      },
+      "training": {
+        "label": "Training",
+        "description": "Drills, targets, and practice routines."
+      },
+      "notifications": {
+        "label": "Notifications",
+        "description": "Alerts, sound, and timer feedback."
+      },
+      "shortcuts": {
+        "label": "Shortcuts",
+        "description": "Keyboard shortcuts for the timer and navigation."
+      },
+      "data": {
+        "label": "Data",
+        "description": "Export and manage your solve data."
+      },
+      "advanced": {
+        "label": "Advanced",
+        "description": "Developer tools, data, and debugging."
+      },
+      "credits": {
+        "label": "Credits",
+        "description": "Data sources, libraries, and community contributions."
+      }
+    },
+    "general": {
+      "header": "Global application settings and interface options.",
+      "timePrecision": "Time Precision",
+      "timePrecisionHint": "Choose whether displayed times use centisecond (0.01s) or millisecond (0.001s) accuracy.",
+      "selectPrecision": "Select precision",
+      "centiseconds": "Centiseconds (0.01s)",
+      "milliseconds": "Milliseconds (0.001s)",
+      "haptics": "Haptic feedback",
+      "hapticsHint": "Subtle vibration feedback on touch devices (tab switches, sheets, timer start/stop, penalties, and PB celebrations). No effect on desktop.",
+      "onboarding": "Onboarding tour",
+      "onboardingHint": "Replay the first-run tour that walks you through the main tabs.",
+      "replayTour": "Replay tour"
+    },
+    "appearance": {
+      "header": "Customize the look and feel of your workspace, from the interface theme to the 3D cube representation.",
+      "theme": "Theme",
+      "themeHint": "Select your preferred interface color mode.",
+      "selectTheme": "Select theme",
+      "system": "System",
+      "dark": "Dark",
+      "light": "Light",
+      "appearance3d": "3D Appearance",
+      "appearance3dHint": "Choose the visual style for the 3D cube representation.",
+      "selectAppearance": "Select appearance",
+      "skinDefault": "Default",
+      "skinStickerless": "Stickerless",
+      "skinCoreless": "Coreless",
+      "skinTranslucent": "Translucent",
+      "skinCustom": "Custom",
+      "customStickers": "Custom Sticker Colors",
+      "customStickersHint": "Pick a color for each face. Changes apply in real-time to the 3D cube.",
+      "faceU": "Up (White)",
+      "faceD": "Down (Yellow)",
+      "faceF": "Front (Green)",
+      "faceB": "Back (Blue)",
+      "faceR": "Right (Red)",
+      "faceL": "Left (Orange)"
+    },
+    "timer": {
+      "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",
+      "manualEntry": "Manual time entry",
+      "manualEntryHint": "Replace the timer with a text input to type times directly (like csTimer). Integers are centiseconds: \"10\" → 0.10s, \"1450\" → 14.50s. Also accepts \"1:23.45\", \"DNF\", \"15.50+\" (+2) and several times separated by commas. Inspection and hold-to-start are bypassed.",
+      "inputModePlaceholder": "Input mode",
+      "timerDefault": "Timer (default)",
+      "manualEntryOption": "Manual entry",
+      "clickToStart": "Click to start/stop",
+      "clickToStartHint": "Allow clicking the timer area to start and stop the timer with the mouse, just like the spacebar. When off, only the spacebar controls the timer.",
+      "holdDuration": "Spacebar hold duration",
+      "holdDurationHint": "Amount of time required holding the spacebar down before the timer turns green and is ready to start.",
+      "selectHoldTime": "Select hold time",
+      "holdInstant": "0 ms (Instant)",
+      "holdStandard": "300 ms (Standard)",
+      "holdWca": "550 ms (WCA style)",
+      "holdSecond": "1000 ms (1 second)",
+      "hardwareTimer": "Hardware timer",
+      "hardwareTimerHint": "Use an external physical timer (Stackmat via audio jack or GAN Smart Timer via Bluetooth) instead of the space bar.",
+      "stackmatHint": "Connect Stackmat via audio cable. Requires a USB sound card for best results. Enable microphone access when prompted.",
+      "ganHint": "Connect GAN Smart Timer via Bluetooth. Make sure the timer is powered on and in pairing mode.",
+      "selectTimer": "Select timer",
+      "noneKeyboard": "None (keyboard)",
+      "stackmat": "Stackmat",
+      "gan": "GAN Timer",
+      "inspection": "Inspection",
+      "inspectionHint": "Show the 15-second WCA inspection countdown before the timer starts. Recommended for competition-style practice.",
+      "audioCues": "Inspection audio cues",
+      "audioCuesHint": "Play official voice alerts ('8 seconds' and '12 seconds') during the WCA inspection countdown.",
+      "voice": "Voice",
+      "voiceHint": "Choose between male and female voice for the inspection alerts. Uses the official WCA audio clips.",
+      "selectVoice": "Select voice",
+      "male": "Male",
+      "female": "Female",
+      "pbDelta": "PB delta",
+      "pbDeltaHint": "Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best.",
+      "sessionStats": "Session stats",
+      "sessionStatsHint": "Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Turn it off for a cleaner timer screen.",
+      "focusMode": "Focus mode",
+      "focusModeHint": "Hide all UI elements (scramble, stats, sidebar) when the timer is ready and running to eliminate distractions."
+    },
+    "scramble": {
+      "header": "Configure how scramble sequences are generated, displayed, verified, and aligned with your cube.",
+      "showScramble": "Show scramble display",
+      "showScrambleHint": "Display the scramble sequence on the main timer screen and save the scramble with your solves.",
+      "verification": "Scramble verification",
+      "verificationHint": "When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing.",
+      "rotateWithCube": "Rotate scramble with cube",
+      "rotateWithCubeHint": "The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
+    },
+    "analysis": {
+      "header": "Select your solving method. Phase detection and metrics will adapt automatically. Analysis runs when a Smart Cube is connected.",
+      "bpaWpa": "Best & Worst Possible Average (BPA / WPA)",
+      "bpaWpaHint": "Show theoretical Best Possible Average (BPA) and Worst Possible Average (WPA) bounds in active stats when 1 solve remains in Ao5/Ao12.",
+      "solvingMethod": "Solving Method",
+      "methodCfop": "Cross, F2L, OLL, PLL — the most popular method.",
+      "methodRoux": "Blockbuilding with CMLL and LSE — no rotations.",
+      "methodZz": "Edge orientation first, then rotationless F2L + LL.",
+      "methodPetrus": "Blockbuilding with early edge orientation."
+    },
+    "profile": {
+      "defaultName": "Speedcuber",
+      "avatarAlt": "Profile avatar",
+      "processing": "Processing…",
+      "changePhoto": "Change photo",
+      "uploadPhoto": "Upload photo",
+      "resetIdenticon": "Reset identicon",
+      "photoInfo": "You uploaded a photo. Your CubeMark is kept — you can always switch back.",
+      "identiconInfo": "This is your CubeMark — a procedural identity generated from your user ID. It never changes when you rename yourself.",
+      "displayName": "Display name",
+      "handle": "Handle",
+      "handleHint": "Used to identify you across the platform. Leave empty to keep your generated one.",
+      "bio": "Bio",
+      "bioPlaceholder": "What kind of cuber are you?",
+      "country": "Country",
+      "selectCountry": "Select a country",
+      "notSet": "Not set",
+      "countryHint": "Shown next to your name and in your profile header.",
+      "mainPuzzle": "Main puzzle",
+      "declaredMethods": "Declared methods",
+      "saving": "Saving…",
+      "saveProfile": "Save profile",
+      "exportProfile": "Export profile (JSON)",
+      "identityNote": "Your identity is stored locally on this device. The CubeMark is your visual fingerprint — the photo is an overlay you can remove at any time."
+    },
+    "data": {
+      "volatileTitle": "Volatile storage detected",
+      "volatileHint": "This browser could not open persistent storage (OPFS), so the app is running in-memory. All solves and progress will be lost when you close or reload the page. Export your data now and consider using a supported browser (Chrome/Edge/Firefox) or the desktop app.",
+      "header": "Export your solve data to standard formats or import from csTimer, Twisty Timer, and other cubing apps.",
+      "importSolves": "Import solves",
+      "importHint": "Import from csTimer, Twisty Timer, CubeDesk, or any CSV file.",
+      "importData": "Import data",
+      "importJson": "Import CubeForge JSON",
+      "noDataLoss": "(no data loss)",
+      "noDataLossBadge": "No data loss",
+      "importJsonTitle": "Restores a CubeForge JSON export exactly — per-solve puzzle type and all metadata preserved.",
+      "csvTitle": "CubeForge CSV",
+      "csvHint": "Standard spreadsheet format. Times in seconds, ISO dates. Good for Excel / Google Sheets.",
+      "noSolves": "No solves to export yet.",
+      "exportCsv": "Export CSV",
+      "cstimerTitle": "csTimer format",
+      "recommended": "Recommended",
+      "cstimerHint": "Semicolon-delimited format natively importable by csTimer, Twisty Timer, and most cubing apps. Times in milliseconds, epoch dates.",
+      "exportCstimer": "Export csTimer",
+      "exportAllTitle": "Export all sessions (JSON)",
+      "exportAllHint": "Exports every session with all metadata per solve (including puzzle type and smart/manual source). Re-import with “Import CubeForge JSON (no data loss)” to restore all solves into your current session with nothing lost per solve.",
+      "exporting": "Exporting…",
+      "exportAll": "Export all",
+      "excelTitle": "Excel export",
+      "excelHint": "Real .xlsx workbook with columns pre-sized for analysis in Excel / Google Sheets. Includes a summary sheet.",
+      "exportExcel": "Export Excel",
+      "footer": "Exports include time, penalty, scramble, method, date, and notes. Use csTimer format for maximum compatibility — it works with csTimer, Twisty Timer, CubeDesk, and most cubing apps.",
+      "previewImport": "Preview import",
+      "importing": "Importing...",
+      "importComplete": "Import complete",
+      "importFailed": "Import failed",
+      "jsonBadgeNote": "Every solve keeps its original puzzle type (2x2, 3x3, …), method, notes, source and timestamp — exactly as exported. No category selection needed.",
+      "useCategoryImport": "Use category import instead",
+      "dropJson": "Drop your CubeForge JSON here or click to browse",
+      "dropJsonHint": "Files exported with “Export all sessions (JSON)”",
+      "chooseCategory": "Choose the puzzle category",
+      "chooseCategoryHint": "Solves will be saved into this category.",
+      "importingInto": "Importing into {{category}}",
+      "change": "Change",
+      "dropFile": "Drop your file here or click to browse",
+      "dropFileHint": "csTimer CSV, CubeForge CSV/JSON, Twisty Timer, or any CSV",
+      "formatCstimer": "csTimer format:",
+      "formatNewerCstimer": "Newer csTimer:",
+      "formatTwisty": "Twisty Timer:",
+      "detected": "Detected: {{format}}",
+      "formatNameCstimer": "csTimer",
+      "formatNameTwisty": "Twisty Timer",
+      "formatNameCubeforgeCsv": "CubeForge CSV",
+      "formatNameCubeforgeJson": "CubeForge JSON",
+      "formatNameGeneric": "Generic CSV",
+      "into": " · into {{category}}",
+      "solvesFound_one": "{{count}} solve found",
+      "solvesFound_other": "{{count}} solves found",
+      "errorsFound_one": " · {{count}} error",
+      "errorsFound_other": " · {{count}} errors",
+      "colTime": "Time",
+      "colPenalty": "Penalty",
+      "colScramble": "Scramble",
+      "colDate": "Date",
+      "colNote": "Note",
+      "cancel": "Cancel",
+      "importCountJson_one": "Import {{count}} solve (no data loss)",
+      "importCountJson_other": "Import {{count}} solves (no data loss)",
+      "importCountInto_one": "Import {{count}} solve into {{category}}",
+      "importCountInto_other": "Import {{count}} solves into {{category}}",
+      "importingLabel": "Importing solves...",
+      "importedCount_one": "{{count}} solve imported",
+      "importedCount_other": "{{count}} solves imported",
+      "skippedCount_one": "{{count}} line skipped due to errors",
+      "skippedCount_other": "{{count}} lines skipped due to errors",
+      "done": "Done",
+      "tryAgain": "Try again",
+      "parseError": "Could not parse any solves from this file. Check the format and try again.",
+      "readError": "Failed to read file: {{message}}",
+      "notJsonError": "This file is not a CubeForge JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.",
+      "importError": "Import failed: {{message}}"
+    },
+    "notifications": {
+      "info": "Control every alert, sound and daily reminder the app can send.",
+      "master": "Notifications",
+      "masterHint": "Master switch. When off, every notification below is suppressed — no sounds, no banners, no daily reminders.",
+      "sounds": "Sounds",
+      "soundsHint": "Play sound effects — inspection voice cues ('8 seconds' / '12 seconds') and the PB victory fanfare.",
+      "volume": "Volume",
+      "volumeHint": "Master volume for inspection voice cues and the PB fanfare (0–100%).",
+      "pbVictorySound": "PB victory sound",
+      "pbVictorySoundHint": "Play a subtle victory fanfare when achieving a new Personal Best (Single, Ao5, Ao12).",
+      "pbBanner": "PB celebration banner",
+      "pbBannerHint": "Display a minimalist floating banner upon setting a new Personal Best.",
+      "practiceReminder": "Daily practice reminder",
+      "practiceReminderHint": "Get a gentle nudge at a set time each day to practice. Shows a browser notification (if allowed) and an in-app toast.",
+      "practiceTime": "Practice reminder time",
+      "reviewReminder": "Daily review reminder",
+      "reviewReminderHint": "Remind yourself to clear the SRS review queue (OLL/PLL/F2L flashcards) at a set time each day.",
+      "reviewTime": "Review reminder time"
+    },
+    "shortcuts": {
+      "info": "Customize keyboard shortcuts for the timer. Click a shortcut and press the desired key to rebind.",
+      "newScramble": "New scramble",
+      "newScrambleDesc": "Generate a fresh scramble",
+      "copyScramble": "Copy scramble",
+      "copyScrambleDesc": "Copy scramble to clipboard",
+      "cancelTimer": "Cancel timer",
+      "cancelTimerDesc": "Cancel / reset the timer",
+      "pressKey": "Press key...",
+      "footer": "Shortcuts are disabled when an input field is focused. The spacebar is reserved for the timer and cannot be rebound."
+    },
+    "smartCube": {
+      "info": "Bluetooth pairing, the gyroscope/IMU feed, and connection management for your Smart Cube.",
+      "connectedCube": "Connected cube",
+      "noCube": "No cube paired. Click Connect to search for your Smart Cube.",
+      "gyroAvailable": "Gyroscope/IMU available on this cube",
+      "gyroUnavailable": "No gyroscope/IMU on this cube",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "status": {
+        "connecting": "Connecting",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "reconnecting": "Reconnecting"
+      }
+    },
+    "advanced": {
+      "info": "Developer tools, data and debugging. Use with care.",
+      "resetAll": "Reset all options",
+      "resetAllHint": "Restore every preference — theme, timer, scramble, notifications — to its default value. Your solves, profile and training data are untouched.",
+      "reset": "Reset",
+      "resetTitle": "Reset all options?",
+      "resetDescription": "This restores every app preference to its default. Your solve data, profile and training progress are kept.",
+      "debugLogs": "Debug logs",
+      "debugLogsHint": "Enable verbose per-solve diagnostics in the browser console (move data, BLE audit, analysis pipeline). Mostly useful when reporting bugs.",
+      "betaFeatures": "Beta features",
+      "betaFeaturesHint": "Opt in to experimental features that are still in development. Turn this off if something feels unstable.",
+      "storageInspector": "Storage inspector",
+      "storageInspectorHint": "Where your data lives and how much space it uses.",
+      "refresh": "Refresh",
+      "backend": "Backend",
+      "used": "Used",
+      "quota": "Quota",
+      "dataLost": "Data lost on reload — export regularly",
+      "clearStorageHint": "Clearing app storage resets preferences & session id (a reload is required).",
+      "clearStorage": "Clear app storage",
+      "envFlags": "Environment flags",
+      "envFlagsHint": "Runtime environment detected by the app — useful when sharing bug reports.",
+      "devServer": "Dev server",
+      "desktopTauri": "Desktop (Tauri)",
+      "localhost": "Localhost",
+      "activeCount_one": "{{count}} active",
+      "activeCount_other": "{{count}} active",
+      "footer": "Changes here affect only this device. Reset options is safe — it never deletes solves, profile or training progress.",
+      "storage": {
+        "opfs": "Persistent (OPFS)",
+        "desktop": "Desktop (file)",
+        "memory": "In-memory (volatile)",
+        "unknown": "Unknown"
+      }
+    },
+    "credits": {
+      "introTitle": "Made possible by the community",
+      "introBody": "CubeForge is built on the work of the speedcubing community and a wide range of open-source projects — {{linked}} sources with links, {{total}} credits in total. We are grateful to everyone who shares algorithms, reconstructions and knowledge.",
+      "builtWithTitle": "Built with",
+      "libraryGroups_one": "{{count}} library group",
+      "libraryGroups_other": "{{count}} library groups",
+      "builtWithDetails": {
+        "d1": "Application framework and tooling.",
+        "d2": "Design system and UI primitives.",
+        "d3": "State, reactive streams, navigation, virtualization, workers.",
+        "d4": "Animation, charts and iconography.",
+        "d5": "Dates, flags, carousels and calendars.",
+        "d6": "Forms, drawers, toasts and utilities.",
+        "d7": "Theming and resizable layouts.",
+        "d8": "Local database engine (Apache-2.0 wrapper) and spreadsheet import/export (Apache-2.0)."
+      },
+      "categories": {
+        "algorithmDb": {
+          "title": "Algorithm database",
+          "i1": "Core algorithm database (PLL, OLL, F2L, COLL, WV, CLS, ELL, SV, Anti-PLL) with community votes and per-algorithm verification.",
+          "i2": "F2L algorithm dataset (LGPL-3.0) and the advanced F2L case taxonomy used across the app."
+        },
+        "reconstructions": {
+          "title": "Speedcubing reconstructions",
+          "i1": "Official and unofficial reconstructions, with a link back to every original solve.",
+          "i2": "Community reconstructions compiled by the speedcubing community (Brest and many reconstructors), credited per solve.",
+          "i3": "Competition metadata and results referenced in reconstruction records."
+        },
+        "solvers": {
+          "title": "Solvers & algorithms",
+          "i1": "The two-phase solver that powers the solve-analysis engine.",
+          "i2": "JavaScript port of Kociemba's algorithm (MIT / GPL-3.0)."
+        },
+        "rendering": {
+          "title": "3D & rendering",
+          "i1": "3D cube rendering engine (MIT).",
+          "i2": "Helper utilities for three.js."
+        },
+        "hardware": {
+          "title": "Hardware & connectivity",
+          "i1": "GAN 356i and Gen2/Gen3 series — the hardware supported through our Bluetooth integration.",
+          "i2": "Community reverse-engineering of the GAN BLE protocol (by afedotov), which our protocol implementation is based on.",
+          "i3": "Browser connectivity for smart-cube communication."
+        },
+        "community": {
+          "title": "Community & inspiration",
+          "i1": "The speedcubing community and its collective algorithm knowledge.",
+          "i2": "CFOP solve-split reference benchmarks.",
+          "i3": "Individual contributions are credited per solve and per algorithm throughout the app."
+        }
+      },
+      "provenance": "Full data provenance and regeneration notes are documented in {{file}} at the repository root. CubeForge itself is released under the MIT license."
+    },
+    "placeholder": {
+      "ready": "This section is ready for configuration. Check back soon for new options."
+    }
   },
   "timer": {
     "scrambleCopied": "Scramble copied",
     "couldNotCopyScramble": "Couldn't copy scramble",
-    "updateFailed": "Update failed"
+    "updateFailed": "Update failed",
+    "hint": {
+      "inspecting": "inspecting",
+      "makeMoveToStart": "make a move to start",
+      "keepHolding": "keep holding",
+      "releaseToStart": "release to start",
+      "makeMoveToStop": "make a move to stop",
+      "pressToStop": "press to stop",
+      "completeScramble": "complete the scramble",
+      "pressSpaceInspection": "press space to start inspection",
+      "tapOrSpaceStart": "tap or press space to start",
+      "holdStartNext": "hold to start next",
+      "pressHoldStart": "press & hold to start"
+    },
+    "timerAriaClick": "Timer. Click to start/stop.",
+    "timerAriaSpace": "Timer. Use spacebar to start/stop.",
+    "penaltyNone": "Clean",
+    "togglePlus2": "Toggle +2 penalty",
+    "toggleDnf": "Toggle DNF penalty",
+    "deleteSolve": "Delete solve",
+    "notePlaceholder": "Add note...",
+    "saveNote": "Save note",
+    "cancel": "Cancel",
+    "addNote": "Add note",
+    "noteWithValue": "Note: {{note}}",
+    "copyScramble": "Copy scramble",
+    "copied": "Copied",
+    "copy": "Copy",
+    "newScramble": "New scramble",
+    "new": "New",
+    "ready": "Ready",
+    "solveToApply": "Solve the cube to apply this scramble",
+    "tooManyMistakes": "Too many mistakes — solve the cube to continue",
+    "focus": "Focus",
+    "enableFocusMode": "Enable Focus Mode",
+    "disableFocusMode": "Disable Focus Mode",
+    "newPersonalBest": "New Personal Best",
+    "closeCelebration": "Close celebration banner",
+    "pbAnnounce": "New personal best.",
+    "pbAnnounceSingle": "Single {{time}}.",
+    "pbAnnounceAo5": "Average of 5 {{time}}.",
+    "pbAnnounceAo12": "Average of 12 {{time}}.",
+    "applyScramble3d": "Apply scramble to 3D cube",
+    "reset3d": "Reset cube pieces to solved state",
+    "calibrateGyro": "Calibrate gyroscope orientation",
+    "calibrate": "Calibrate",
+    "calibrateHint": "Calibrate gyroscope (white top, green front)",
+    "waitingForCube": "Waiting for cube...",
+    "waitingShort": "Waiting...",
+    "init3d": "Initializing 3D Cube...",
+    "init3dShort": "Initializing...",
+    "viewUnavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
+    "viewUnavailableShort": "3D unavailable — too many 3D views open",
+    "close3d": "Close 3D view"
+  },
+  "stats": {
+    "best": "Best",
+    "mean": "Mean",
+    "solves": "Solves",
+    "clear": "Clear",
+    "noSolvesYet": "No solves yet",
+    "holdTimerToStart": "Hold the timer (or press Space) to start.",
+    "sessionBest": "Session best",
+    "restoreSessionStats": "Restore Session Stats",
+    "showStats": "Show stats",
+    "minimizeStats": "Minimize Stats",
+    "minimizeStatsTooltip": "Minimize stats",
+    "notePlaceholder": "Note...",
+    "addNote": "Add note",
+    "analyzeSolve": "Analyze solve",
+    "analysis": "Analysis",
+    "solveActions": "Solve actions",
+    "removePlus2": "Remove +2",
+    "markPlus2": "Mark +2",
+    "removeDnf": "Remove DNF",
+    "markDnf": "Mark DNF",
+    "clearPenalty": "Clear penalty",
+    "replay": "Replay",
+    "delete": "Delete",
+    "manualSolveAria": "Manual solve",
+    "addManualSolve": "Add manual solve",
+    "close": "Close",
+    "time": "Time",
+    "timePlaceholder": "e.g. 12.34, 1450, 1:23.45",
+    "timeHint": "Integers are centiseconds (10 → 0.10s, 1450 → 14.50s). Add DNF or 15.50+; separate several with commas.",
+    "generate": "Generate",
+    "method": "Method",
+    "penalty": "Penalty",
+    "clean": "Clean",
+    "notes": "Notes",
+    "optional": "optional",
+    "notesPlaceholder": "e.g. focus on lookahead",
+    "readyToLog": "Ready to log",
+    "fillInRequired": "Fill in time and scramble",
+    "cancel": "Cancel",
+    "adding": "Adding…",
+    "addSolve": "Add solve"
   },
   "views": {
     "placeholder": "View content"
+  },
+  "toast": {
+    "deleteFailed": "Delete failed",
+    "clearSessionFailed": "Couldn't clear session",
+    "sessionStarted": "New session started",
+    "createSessionFailed": "Couldn't create session",
+    "switchSessionFailed": "Couldn't switch session",
+    "solveNotSavedDb": "Solve not saved — database not ready. Try again.",
+    "solveSaveFailed": "Couldn't save solve — check console for details",
+    "puzzleSwitched": "Switched to {{puzzle}}",
+    "newScramble": "New scramble",
+    "solveLogged": "Logged: {{label}}",
+    "solveLoggedCount": "{{count}} solves logged",
+    "solveLoggedCount_one": "Solve logged",
+    "solveAddFailed": "Couldn't add solve",
+    "cubeConnected": "Cube connected!",
+    "cubeDisconnected": "Cube disconnected",
+    "cubeConnectFailed": "Failed to connect cube",
+    "disconnectFailed": "Failed to disconnect",
+    "disconnectCubeFailed": "Failed to disconnect cube",
+    "copied": "Copied!",
+    "checkFields": "Check the highlighted fields before saving",
+    "handleValidation": "3–20 characters: lowercase letters, numbers, underscore or dash.",
+    "bioTooLong": "Keep it under {{max}} characters ({{current}}).",
+    "profileSaved": "Profile saved",
+    "profileSaveFailed": "Couldn't save the profile",
+    "chooseImageFile": "Please choose an image file (JPG, PNG, WebP, GIF or SVG)",
+    "imageTooLarge": "Image too large — keep it under {{mb}} MB",
+    "avatarUpdated": "Avatar updated",
+    "avatarProcessFailed": "Couldn't process that image — try a JPG, PNG or WebP",
+    "avatarReset": "Back to your CubeMark",
+    "avatarResetFailed": "Couldn't reset the avatar",
+    "profileExported": "Profile exported",
+    "debugLogsEnabled": "Debug logs enabled — open the console",
+    "debugLogsDisabled": "Debug logs disabled",
+    "optionsReset": "All options reset to defaults",
+    "storageCleared": "App storage cleared (reload to apply)",
+    "exportSessionsFailed": "Couldn't export all sessions. Try again.",
+    "excelExportFailed": "Couldn't create the Excel file. Try again.",
+    "algorithmSaveFailed": "Failed to save algorithm",
+    "algorithmRemoved": "Algorithm removed"
+  },
+  "notifications": {
+    "practiceTitle": "Time to practice!",
+    "practiceBody": "Your daily practice session reminder. A few solves keep the flow alive.",
+    "reviewTitle": "Review queue waiting",
+    "reviewBody": "Your SRS flashcards are ready — knock out today's algorithm review."
+  },
+  "audio": {
+    "eightSeconds": "eight seconds",
+    "twelveSeconds": "twelve seconds"
+  },
+  "shell": {
+    "session": "Session",
+    "sessions": "Sessions",
+    "switchSession": "Switch session",
+    "newSession": "New session",
+    "renameSession": "Rename {{name}}",
+    "deleteSession": "Delete {{name}}",
+    "confirmRename": "Confirm rename",
+    "cancelRename": "Cancel rename",
+    "solveCount": "{{count}} solves",
+    "solveCount_one": "{{count}} solve",
+    "deleteSessionTitle": "Delete “{{name}}”?",
+    "deleteSessionDescription": "This permanently removes the session and all {{count}} of its solves. This can’t be undone.",
+    "deleteSessionDescription_one": "This permanently removes the session and its {{count}} solve. This can’t be undone.",
+    "deleteSessionMobileTitle": "Delete session?",
+    "deleteSessionMobileDescription": "Are you sure you want to delete “{{name}}”? All solves inside this session will be permanently deleted.",
+    "addManualSolve": "Add manual solve",
+    "openWidgets": "Open widgets",
+    "puzzleCategory": "Puzzle category",
+    "openProfile": "Open profile",
+    "smartCube": "Smart cube",
+    "smartCubeWithDevice": "Smart cube ({{device}})",
+    "connected": "Connected",
+    "batteryLevel": "Smart cube ({{device}}): {{level}}% battery",
+    "connectSmartCube": "Connect smart cube",
+    "connectSmartCubeDescription": "Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.",
+    "status": "Status",
+    "statusDisconnected": "Disconnected",
+    "statusConnecting": "Connecting",
+    "statusConnected": "Connected",
+    "connectionError": "Connection error",
+    "httpsRequired": "Web Bluetooth requires HTTPS. Open via http://localhost:5173 instead of the LAN IP.",
+    "bluetoothDisabled": "Web Bluetooth is globally disabled in your browser. Open chrome://flags/#enable-web-bluetooth, set it to Enabled, and restart your browser.",
+    "macBlockedError": "Browser blocks automatic MAC reading.",
+    "connectionFailed": "Failed to connect: {{error}}",
+    "macBlocked": "Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:",
+    "macManualEntry": "Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):",
+    "macAddress": "MAC address",
+    "disconnectCube": "Disconnect cube",
+    "connecting": "Connecting…",
+    "connectCube": "Connect cube",
+    "copy": "Copy",
+    "storageVolatile": "Storage is volatile — solves will be lost on reload. Export your data in Settings → Data.",
+    "loading3dCube": "Loading 3D cube…",
+    "resizeWidth": "Drag to resize width (Double-click to reset)",
+    "resizeHeight": "Drag to resize or close (Double-click to reset)",
+    "more": {
+      "settingsSubtitle": "Preferences & inputs",
+      "profileSubtitle": "Your identity & progress",
+      "skillsSubtitle": "Interactive skill tree graph",
+      "reconstructionsSubtitle": "Solve database & replays",
+      "smartCubeSubtitle": "Connect bluetooth cube",
+      "themeSubtitle": "Switch color theme"
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "stepOf": "Step {{current}} of {{total}}",
+    "srStepOf": "Step {{current}} of {{total}}: {{title}}",
+    "tour": {
+      "timerTitle": "Your timer",
+      "timerBody": "Hold space (or tap & hold on touch) and release to start — the 15s WCA inspection is built in. Every solve gets instant phase analysis.",
+      "statsTitle": "Your stats",
+      "statsBody": "Session overview, phase splits, PB progression and 3D replay of any solve live here.",
+      "algorithmsTitle": "Algorithms",
+      "algorithmsBody": "Browse cases by method — CFOP, Roux, ZZ… Send any case to the trainer with one click.",
+      "profileTitle": "Your identity",
+      "profileBody": "Your CubeMark is generated from your anonymous ID. Set your name, handle and avatar here.",
+      "widgetsTitle": "Widgets",
+      "widgetsBody": "Floating tools — times log, scramble visualizer, metronome. Open the explorer and build your own layout.",
+      "finalTitle": "You're all set",
+      "finalBody": "Make your first solve, or explore Settings for shortcuts, theme and smart cube."
+    }
+  },
+  "insights": {
+    "common": {
+      "clean": "Clean",
+      "solves": "Solves",
+      "noSolves": "No solves",
+      "solveAria": "Solve {{number}}: {{time}}",
+      "total": "Total",
+      "solvesCount_one": "{{count}} solve",
+      "solvesCount_other": "{{count}} solves"
+    },
+    "dashboard": {
+      "session": "Session",
+      "filterBySession": "Filter by session",
+      "allSessions": "All sessions",
+      "cube": "Cube",
+      "filterByCube": "Filter by cube type",
+      "loading": "Loading...",
+      "solves": "Solves",
+      "stats": "Stats",
+      "backToSolves": "Back to solves",
+      "back": "Back",
+      "solveDetails": "Solve details"
+    },
+    "overview": {
+      "emptyTitle": "No solves yet",
+      "emptyDescription": "Complete a few solves to see your session overview, trends, and analysis.",
+      "bestSingle": "Best single",
+      "offPb": "+{{time}} off PB",
+      "best": "Best",
+      "worst": "Worst",
+      "mean": "Mean",
+      "solveTime": "Solve time",
+      "totalSolves": "{{count}} total",
+      "solvesCount_one": "{{count}} solve",
+      "solvesCount_other": "{{count}} solves",
+      "solveNumber": "Solve {{number}}",
+      "solveProgression": "Solve progression",
+      "trend": "Trend",
+      "trendEyebrow": "Ao-N rolling average",
+      "trendNeedData": "Need at least {{count}} solves",
+      "tpsOverTime": "TPS over time",
+      "tpsAnalysed_one": "{{count}} analysed",
+      "tpsAnalysed_other": "{{count}} analysed",
+      "tpsNeedData": "Need at least 2 solves with TPS data",
+      "timeDistribution": "Time distribution",
+      "binEyebrow": "0.5s bins",
+      "noValidTimes": "No valid times to display",
+      "activity": "Activity",
+      "lastWeeks": "last {{count}} weeks",
+      "phaseSplit": "Phase split",
+      "avgOf": "avg of {{count}}",
+      "noAnalysis": "no analysis",
+      "phaseSplitEmpty": "Complete solves with a Smart Cube",
+      "penaltyMix": "Penalty mix",
+      "cleanSolves_one": "Clean: {{count}} solve",
+      "cleanSolves_other": "Clean: {{count}} solves",
+      "plus2Solves_one": "+2: {{count}} solve",
+      "plus2Solves_other": "+2: {{count}} solves",
+      "dnfSolves_one": "DNF: {{count}} solve",
+      "dnfSolves_other": "DNF: {{count}} solves"
+    },
+    "list": {
+      "sortNewest": "Newest",
+      "sortOldest": "Oldest",
+      "sortFastest": "Fastest",
+      "sortSlowest": "Slowest",
+      "sortPbGap": "PB gap",
+      "trend": "Trend",
+      "avg": "avg {{time}}",
+      "searchPlaceholder": "Search time, scramble, DNF, notes…",
+      "reset": "Reset",
+      "emptyDescription": "Complete a solve to start building your session.",
+      "noMatchTitle": "No solves match",
+      "noMatchDescription": "Try adjusting your filters or search.",
+      "resetFilters": "Reset filters",
+      "sessionBest": "Session best"
+    },
+    "replay": {
+      "title": "Replay",
+      "movesCount": "{{count}} moves",
+      "noMoveData": "No move data available for this solve.",
+      "noMoveDataManual": "Manual entries don't include per-move data.",
+      "noMoveDataSmartCube": "Connect a Smart Cube to capture moves.",
+      "move": "Move",
+      "restart": "Restart",
+      "restartAria": "Restart replay",
+      "stepBackward": "Step backward",
+      "stepBackwardAria": "Step backward one move",
+      "stepForward": "Step forward",
+      "stepForwardAria": "Step forward one move",
+      "play": "Play",
+      "pause": "Pause",
+      "speed": "{{speed}}x speed"
+    },
+    "analysis": {
+      "cyclePenalty": "Click to cycle penalty",
+      "smartCube": "Smart cube",
+      "manual": "Manual",
+      "delete": "Delete",
+      "solve": "Solve",
+      "live": "Live",
+      "overview": "Overview",
+      "noAnalysisYet": "No analysis yet",
+      "summary": "{{moves}} moves · {{phases}} phases · TPS {{tps}} · {{pauses}} pauses",
+      "note": "Note",
+      "edit": "Edit",
+      "addNote": "Add note",
+      "notePlaceholder": "Add a note for this solve...",
+      "save": "Save",
+      "noNotes": "No notes added to this solve.",
+      "noAnalysisTitle": "No analysis for this solve",
+      "noAnalysisSmart": "The analysis pipeline didn't run. Re-solve this scramble to generate analysis.",
+      "noAnalysisManual": "Manual entry. Connect a smart cube and solve this scramble to get per-move analysis.",
+      "timeline": "Timeline",
+      "timelineAria_one": "Solve timeline: {{count}} segment over {{time}}",
+      "timelineAria_other": "Solve timeline: {{count}} segments over {{time}}",
+      "timelineEyebrow": "{{moves}} moves · {{total}} total",
+      "timelineEyebrowPaused": "{{moves}} moves · {{total}} total · {{paused}} paused",
+      "vsAvg": "{{pct}}% vs avg",
+      "adjacentMoves": "Adjacent moves",
+      "pausesLegend": "Pauses ({{count}} · {{time}})",
+      "avgLegend": "Avg {{tps}}",
+      "phaseTime": "Time",
+      "phaseMoves": "Moves",
+      "pctOfSolve": "{{pct}}% of solve",
+      "keyMetrics": "Key metrics",
+      "pauses": "Pauses",
+      "efficiency": "Efficiency",
+      "phaseBreakdown": "Phase breakdown",
+      "phaseEyebrow_one": "{{count}} phase · {{active}} active",
+      "phaseEyebrow_other": "{{count}} phases · {{active}} active",
+      "phaseEyebrowGap_one": "{{count}} phase · {{active}} active (+{{gap}} idle/transition)",
+      "phaseEyebrowGap_other": "{{count}} phases · {{active}} active (+{{gap}} idle/transition)",
+      "crossTooltip": "{{color}} cross",
+      "colorWhite": "White",
+      "colorRed": "Red",
+      "colorGreen": "Green",
+      "colorYellow": "Yellow",
+      "colorOrange": "Orange",
+      "colorBlue": "Blue",
+      "xcrossPairSolved": "An F2L pair was already solved",
+      "atCrossCompletion": "at cross completion",
+      "phasePctTooltip": "{{pct}}% of phase total",
+      "pauseInPhase_one": "{{count}} pause in this phase",
+      "pauseInPhase_other": "{{count}} pauses in this phase",
+      "pauseCatTransition": "Transition",
+      "pauseCatPreAlgorithm": "Pre-algorithm",
+      "pauseCatMidPhase": "Mid-phase",
+      "pauseCauseOllRecog": "OLL recognition",
+      "pauseCausePllRecog": "PLL recognition",
+      "pauseCauseCmllRecog": "CMLL recognition",
+      "pauseCauseLseRecog": "LSE recognition",
+      "pauseCauseF2lPair": "F2L pair recognition",
+      "pauseCauseCrossSearch": "Cross piece search",
+      "pauseCauseBlockSearch": "Block building search",
+      "pauseCauseEdgeOrientation": "Edge orientation",
+      "pauseCauseAlgRecog": "{{phase}} algorithm recognition",
+      "pauseCauseHesitation": "{{phase}} hesitation",
+      "pauseCauseTransition": "{{from}} → {{to}} transition",
+      "pauseCauseTransitionSingle": "{{phase}} transition",
+      "gapExplanation": "Solve time {{total}} = {{active}} active + {{idle}} idle/transition",
+      "cfopDetails": "CFOP details",
+      "crossPlain": "Plain",
+      "crossEff": "Cross eff",
+      "crossToF2L": "Cross→F2L",
+      "ollRecog": "OLL recog",
+      "ollTps": "OLL TPS",
+      "pllRecog": "PLL recog",
+      "pllTps": "PLL TPS",
+      "lookahead": "Lookahead",
+      "f2lPairs": "F2L pairs",
+      "f2lPairBreakdown": "F2L pair breakdown",
+      "pair": "Pair {{number}}",
+      "slowest": "slowest",
+      "rouxDetails": "Roux details",
+      "fbEff": "FB eff",
+      "cmllRecog": "CMLL recog",
+      "rotEfficiency": "Rotations & efficiency",
+      "rotations": "Rotations",
+      "rotationsByPhase": "Rotations by phase",
+      "rotTime": "Rot time",
+      "drift": "Drift",
+      "redundancies": "Redundancies",
+      "cancellations": "Cancellations",
+      "rate": "{{pct}}% rate",
+      "reps": "{{count}} reps",
+      "copyScramble": "Copy scramble",
+      "skipped": "skipped",
+      "coherent": "Coherent",
+      "inconsistent": "Inconsistent",
+      "activityLess": "Less",
+      "activityMore": "More"
+    }
+  },
+  "algorithms": {
+    "back": "Back",
+    "close": "Close",
+    "backToCases": "Back to cases",
+    "addCustom": "Add custom",
+    "addCustomAlgorithm": "Add custom algorithm",
+    "practiceCase": "Practice this case",
+    "algorithmsCount_one": "Algorithm ({{count}})",
+    "algorithmsCount_other": "Algorithms ({{count}})",
+    "selectSubset": "Select a subset",
+    "casesForSubset": "{{subset}} Cases",
+    "caseCount_one": "{{count}} case",
+    "caseCount_other": "{{count}} cases",
+    "methods": "Methods",
+    "selectMethod": "Select a method",
+    "method": "Method",
+    "searchSubsets": "Search subsets…",
+    "noSubsetsMatch": "No subsets match “{{query}}”",
+    "noCasesInSubset": "No cases in this subset",
+    "selectSubsetFromLeft": "Select a subset from the left panel",
+    "noDiagram": "No diagram",
+    "dragToReorder": "Drag to reorder",
+    "editAlgorithm": "Edit algorithm",
+    "deleteAlgorithm": "Delete algorithm",
+    "custom": "custom",
+    "primary": "primary",
+    "unknownSource": "Unknown source",
+    "source": "Source",
+    "recognition": "Recognition",
+    "probability": "Probability",
+    "slotOrientation": "Slot orientation",
+    "slotFR": "Front right",
+    "slotFL": "Front left",
+    "slotBL": "Back left",
+    "slotBR": "Back right",
+    "algorithmsSlotSuffix": "/ {{total}} · {{slot}}",
+    "tooMany3DViews": "3D unavailable — too many 3D views open",
+    "rendering3D": "Rendering 3D…",
+    "editor": {
+      "editAlgorithm": "Edit algorithm",
+      "orientationPreview": "Orientation preview",
+      "use90Buttons": "Use the 90° buttons",
+      "rotateToMatch": "Rotate to match your view",
+      "rotateCCW": "Rotate 90° counter-clockwise",
+      "rotateCW": "Rotate 90° clockwise",
+      "resetIsometric": "Reset to isometric view",
+      "rotation": "Rotation:",
+      "algorithmNotation": "Algorithm notation",
+      "notationPlaceholder": "e.g. R U R' U' R' F R2 U' R' U' R U R' F'",
+      "notationHint": "Use standard cube notation. Wide moves (r, u, f) and slice moves (M, S, E) are supported.",
+      "difficulty": "Difficulty",
+      "difficultyBeginner": "Beginner",
+      "difficultyIntermediate": "Intermediate",
+      "difficultyAdvanced": "Advanced",
+      "notes": "Notes",
+      "optional": "optional",
+      "notesPlaceholder": "e.g. use left index push for the F'",
+      "readyToSave_one": "{{count}} move — ready to save",
+      "readyToSave_other": "{{count}} moves — ready to save",
+      "enterNotation": "Enter algorithm notation above",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "update": "Update",
+      "addAlgorithm": "Add algorithm"
+    }
+  },
+  "training": {
+    "back": "Back",
+    "puzzle": "Puzzle",
+    "selectPuzzle": "Select puzzle",
+    "dueForReview_one": "{{count}} due for review",
+    "dueForReview_other": "{{count}} due for review",
+    "selectMethodEmpty": "Select a method above to see exercises",
+    "fullSolve": {
+      "title": "Full Solve",
+      "inspection": "Inspection",
+      "disableInspection": "Disable 15s inspection",
+      "enableInspection": "Enable WCA-style 15s inspection",
+      "maxMovesLabel": "Max moves:",
+      "standardMovesHint": "(standard solve: ~55-60 moves)",
+      "minTpsLabel": "Min TPS:",
+      "rotationlessSettings": "Solve without any cube rotations (y, y', y2). Mark if you rotated below.",
+      "totalSolveTime": "Total solve time",
+      "totalTargetValue": "Total target: {{value}}s",
+      "actualValue": "Actual: {{value}}s",
+      "howManyMoves": "How many moves did you use?",
+      "howManyMovesSolution": "How many moves was your solution?",
+      "underLimit": "{{count}} under limit",
+      "overLimit": "{{count}} over limit",
+      "tpsValue": "{{tps}} TPS",
+      "passed": " - Passed!",
+      "belowTarget": " - Below target",
+      "didRotate": "Did you use any cube rotations?",
+      "noRotations": "No rotations",
+      "hadRotations": "Had rotations",
+      "newSolve": "New Solve",
+      "targets": "Targets",
+      "currentSplit": "Currently: {{phase}} — tap phase in sidebar to mark split",
+      "tipTargets": "Click each phase in the sidebar to mark splits as you progress. The timer runs continuously — no pauses allowed.",
+      "tipMoveLimit": "Aim to solve within {{limit}} moves. Count your moves mentally or use a smart cube for automatic tracking.",
+      "tipTps": "Maintain {{tps}}+ TPS throughout the solve. Enter your move count after stopping the timer.",
+      "tipRotationless": "Complete the entire solve without a single cube rotation (y, y', y2). This builds lookahead and F2L efficiency.",
+      "phaseTargets": "Phase Targets",
+      "totalTarget": "Total target",
+      "moveLimitTitle": "Move Limit",
+      "maxMovesAllowed": "max moves allowed",
+      "moveLimitBullets": {
+        "cfop": "CFOP average: ~55-60 moves",
+        "roux": "Roux average: ~45-50 moves",
+        "advanced": "Advanced goal: ≤ 50 moves",
+        "worldClass": "World-class: ≤ 45 moves"
+      },
+      "tpsChallenge": "TPS Challenge",
+      "minimumTps": "minimum TPS",
+      "tpsBullets": {
+        "beginner": "Beginner: 2-3 TPS",
+        "intermediate": "Intermediate: 3-5 TPS",
+        "advanced": "Advanced: 5-8 TPS",
+        "elite": "Elite: 8-12+ TPS"
+      },
+      "rotationlessTitle": "Rotationless",
+      "rotationUsed": "Rotation Used",
+      "cleanSolve": "Clean Solve!",
+      "rotationlessBullets": {
+        "dMoves": "Use d moves instead of y + U",
+        "f2lAngles": "Learn F2L cases from all angles",
+        "zzMethod": "ZZ method forces rotationless solving",
+        "reducesPauses": "Reduces pauses from re-orientation"
+      },
+      "modes": {
+        "targets": {
+          "label": "Phase targets",
+          "description": "Track each phase vs your target times"
+        },
+        "move-limit": {
+          "label": "Move limit",
+          "description": "Solve in ≤ X moves"
+        },
+        "tps-challenge": {
+          "label": "TPS challenge",
+          "description": "Maintain TPS above threshold"
+        },
+        "rotationless": {
+          "label": "Rotationless",
+          "description": "Zero cube rotations"
+        }
+      }
+    },
+    "exercises": "Exercises",
+    "algorithmSets": "Algorithm Sets",
+    "drillOrRecognizeEachSet": "drill or recognize each set",
+    "comingSoon": "coming soon",
+    "caseCount_one": "{{count}} case",
+    "caseCount_other": "{{count}} cases",
+    "drill": {
+      "title": "Drill",
+      "selectCase": "Select Case",
+      "selectCaseToGenerateSetup": "Select a case to generate setup",
+      "casesCount_one": "{{count}} case",
+      "casesCount_other": "{{count}} cases",
+      "noCase": "No case",
+      "masteryLabel": "Mastery: {{pct}}%",
+      "bestLabel": "Best: {{time}}",
+      "nextRandomCase": "Next Random Case",
+      "randomCaseHint": "A random case from the {{count}} {{name}}cases will be selected each time.",
+      "caseOf": "Case {{current}} of {{total}}",
+      "weakestCasesFirst": "Weakest Cases First",
+      "weakestHint": "Prioritized by lowest mastery. Practice your weakest cases to improve overall consistency.",
+      "algorithm": "Algorithm",
+      "noAlgorithm": "No algorithm available",
+      "revealIfFail": "Reveal if fail",
+      "hideAlgorithm": "Hide algorithm",
+      "showAlgorithm": "Show algorithm",
+      "hide": "Hide",
+      "show": "Show",
+      "algorithmHidden": "Algorithm hidden — reveal after attempting",
+      "casesAndStats": "Cases & Stats",
+      "masteredCount_one": "{{count}} mastered",
+      "masteredCount_other": "{{count}} mastered",
+      "accuracy": "Accuracy",
+      "avgTime": "Avg time",
+      "faceColors": {
+        "U": "White",
+        "R": "Red",
+        "F": "Green",
+        "D": "Yellow",
+        "L": "Orange",
+        "B": "Blue"
+      },
+      "modes": {
+        "single": {
+          "label": "Single",
+          "description": "Practice one case repeatedly"
+        },
+        "random": {
+          "label": "Random",
+          "description": "Random cases from the subset"
+        },
+        "sequential": {
+          "label": "Sequential",
+          "description": "All cases in order"
+        },
+        "weakness": {
+          "label": "Weakness",
+          "description": "Prioritize your worst cases"
+        }
+      }
+    },
+    "recognize": {
+      "title": "Recognize",
+      "weakestModeTip": "Weakest mode targets cases you struggle with most",
+      "modeWeakest": "Weakest",
+      "modeRandom": "Random",
+      "solution": "Solution",
+      "setup": "Setup",
+      "correct": "✓ Correct!",
+      "itWas": "✗ It was {{case}}",
+      "next": "Next",
+      "casesSeen": "Cases seen",
+      "progress": "Progress"
+    },
+    "quickSummary": "Quick Summary",
+    "algorithmic": "Algorithmic",
+    "intuitive": "Intuitive",
+    "stats": "Stats",
+    "speedVsEfficiency": "Speed vs Efficiency",
+    "mastery": {
+      "new": "New",
+      "learning": "Learning",
+      "practicing": "Practicing",
+      "mastered": "Mastered",
+      "expert": "Expert"
+    },
+    "practice": {
+      "scramble": "Scramble",
+      "statsAndTips": "Stats & Tips",
+      "attempts": "Attempts",
+      "best": "Best",
+      "avg": "Avg",
+      "streak": "Streak",
+      "tips": "Tips",
+      "attemptsCount_one": "{{count}} attempt",
+      "attemptsCount_other": "{{count}} attempts",
+      "smartCube": "Smart Cube"
+    },
+    "verdict": {
+      "announce": "Attempt complete. Time {{time}}. TPS {{tps}}. Mark correct or incorrect, or skip.",
+      "tps": "TPS {{tps}}",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "skip": "Skip without recording"
+    },
+    "noDiagram": "No diagram",
+    "statsView": {
+      "tabs": {
+        "overview": "Overview",
+        "cases": "Cases",
+        "history": "History"
+      },
+      "loading": "Loading progress...",
+      "avgMastery": "Avg mastery",
+      "bestTime": "Best time",
+      "totalAttempts": "Total attempts",
+      "cases": "Cases",
+      "masteredOf": "{{mastered}}/{{total}} mastered",
+      "masteryDistribution": "Mastery Distribution",
+      "legendBeginner": "Beginner",
+      "countLearning_one": "{{count}} learning",
+      "countLearning_other": "{{count}} learning",
+      "countBeginner_one": "{{count}} beginner",
+      "countBeginner_other": "{{count}} beginner",
+      "noTrainingData": "No training data yet",
+      "noTrainingHint": "Start practicing with Drill or Recognize mode to build up your progress stats.",
+      "trend14Day": "14-Day Trend",
+      "trendHint": "Avg time trending down — good progress!",
+      "phasePerformance": "Phase Performance",
+      "fromAllSessions": "from all training sessions",
+      "execAcc": "Exec acc",
+      "recAcc": "Rec acc",
+      "efficiency": "Efficiency",
+      "failRate": "Fail rate",
+      "accuracyNote": "Exec acc comes only from execution attempts; rec acc only from recognition quizzes — the two are never mixed. {{count}} attempts total.",
+      "weakestCases": "Weakest Cases",
+      "focusOnThese": "Focus on these",
+      "recogPct": "{{pct}}% recog",
+      "weakRecognition": "Weak Recognition",
+      "weakRecognitionHint": "You execute but don't recognize these yet",
+      "srsReady": "Spaced Repetition Ready",
+      "srsReadyBody": "{{mastered}} cases mastered. Review them in 1 day, 3 days, 7 days to lock in long-term retention.",
+      "srsReadyEmpty": "Start practicing this phase to unlock SRS-based review scheduling.",
+      "noCases": "No algorithm cases for this phase",
+      "noCasesHint": "Phase stats are tracked through training sessions",
+      "sortBy": "Sort by:",
+      "sort": {
+        "mastery": "Mastery",
+        "time": "Time",
+        "name": "Name"
+      },
+      "noHistory": "No session history yet",
+      "noHistoryHint": "Complete training sessions to build history",
+      "sessionHistory": "Session History (14 days)",
+      "avgSuffix": "{{time}}s avg",
+      "accSuffix": "{{acc}}% acc"
+    },
+    "eoDetect": {
+      "detect": "Detect",
+      "edgeDetection": "Edge Detection",
+      "instruction": "Count bad edges before starting. Bad edges = require F/B moves to orient.",
+      "badEdgesLabel": "Bad edges:",
+      "tips": [
+        "Look at U/D stickers and F/B stickers",
+        "4 bad edges = most common, 2 = easiest",
+        "6 bad edges = same as 2 good edges",
+        "Aim to identify in < 2 seconds"
+      ]
+    },
+    "eoEfficiency": {
+      "title": "Efficient EO",
+      "instruction": "Focus on solving EO in the fewest moves. Efficiency first, speed later.",
+      "showGuide": "Show guide",
+      "hideGuide": "Hide guide",
+      "guide": {
+        "bad2": "2 bad edges",
+        "bad4": "4 bad edges",
+        "bad6": "6 bad edges",
+        "all": "All bad",
+        "bad2Desc": "UF/UB or UL/UR, M' U M'",
+        "bad4Desc": "M' U M' U2 M' U M'",
+        "bad6Desc": "Same as 2 good edges",
+        "allDesc": "M' U M' repeated"
+      },
+      "tips": [
+        "Only M/M' and U moves needed for EO",
+        "4 bad edges = ~4-5 moves optimal",
+        "Plan full EO during inspection",
+        "Aim for ≤ 7 moves for any EO case"
+      ]
+    },
+    "lse": {
+      "focusTitle": "LSE: {{label}} Focus",
+      "instruction": "Practice only the {{label}} sub-step of LSE in isolation.",
+      "tips": {
+        "eo": [
+          "Look at U and D faces to determine orientation",
+          "'Good' edges are oriented — count them first",
+          "Use M' U M' to flip edges efficiently",
+          "4 bad edges is the most common case"
+        ],
+        "ulur": [
+          "Place UL and UR edges using M2 and U moves",
+          "Only 3 cases for UL/UR placement",
+          "Learn to recognize from the BU sticker",
+          "Aim for < 8 moves in this sub-step"
+        ],
+        "mslice": [
+          "Only 4 edges remain in the M-slice",
+          "Use U2 M2 U2 and similar patterns",
+          "Only 4 possible permutations",
+          "This should be the fastest sub-step"
+        ]
+      }
+    },
+    "blind": {
+      "blind": "Blind",
+      "title": "Blind {{phase}}",
+      "instruction": "15 seconds to inspect, then the scramble is hidden. Solve without looking!",
+      "startInspection": "Start Inspection (15s)",
+      "memorizing": "Memorizing... 15s remaining",
+      "hiddenWhenTimeUp": "Scramble will be hidden when time is up",
+      "solveBlind": "Scramble hidden — solve blind!",
+      "pressSpace": "Press space to start the timer",
+      "tips": [
+        "Memorize piece positions, not the scramble sequence",
+        "Break the {{phase}} into 2-3 sub-goals",
+        "Use a fixed solving order for consistency",
+        "Practice with easier scrambles first"
+      ]
+    },
+    "crossTrainer": {
+      "trainer": "Trainer",
+      "cube": "Cube",
+      "cross": "Cross",
+      "calibrate": "Calibrate",
+      "reset": "Reset",
+      "tooMany3DViews": "3D unavailable — too many 3D views open",
+      "initializing3D": "Initializing 3D...",
+      "crossEdgesHighlighted": "Cross edges highlighted",
+      "crossTimer": "Cross timer",
+      "solvingPressSpace": "Solving… press space to stop",
+      "depth": "Depth:",
+      "face": "Face:",
+      "cn": "CN",
+      "opt": "opt",
+      "faceCross": "{{face}}-cross",
+      "newScramble": "New scramble",
+      "colorNeutralTitle": "Color-neutral: picks the best cross face automatically",
+      "toggleHighlight": "Toggle cross-piece highlight",
+      "scrambleTitle": "Scramble · {{mode}} depth {{depth}}",
+      "restartReplay": "Restart replay",
+      "stepBackward": "Step backward",
+      "stepForward": "Step forward",
+      "play": "Play",
+      "pause": "Pause",
+      "stoppedTime": "Stopped · {{time}}",
+      "stopped": "Stopped",
+      "pressAndHold": "Press & hold space, release to start",
+      "reveal": "Reveal",
+      "yourMoveCount": "Your move count",
+      "moveCountInstruction": "Time your cross with the spacebar, then enter how many moves you used. The trainer compares against the optimal {{optimal}} (within {{tolerance}} moves counts as correct).",
+      "submit": "Submit",
+      "optimal": "Optimal! 🎯",
+      "underOptimal": "{{count}} under optimal 🎯",
+      "overOptimalOk": "{{count}} over optimal (ok)",
+      "overOptimal": "{{count}} over optimal",
+      "stopTimerFirst": "Stop the timer first (press space to start, space to stop)",
+      "avgMoves": "Avg moves",
+      "currentScramble": "Current scramble",
+      "mode": "Mode",
+      "colorNeutral": "Color-neutral",
+      "faceFixed": "{{face}} fixed",
+      "solvedFace": "Solved face",
+      "optimalDepth": "Optimal depth",
+      "yourLast": "Your last",
+      "noAttempts": "No attempts yet. Time your cross and enter your move count above.",
+      "optimalSolutionTitle_one": "Optimal solution · {{count}} move",
+      "optimalSolutionTitle_other": "Optimal solution · {{count}} moves",
+      "solveFirstHint": "Solve first, then reveal to compare. Use replay to see it in 3D.",
+      "optimalReplay": "Optimal replay",
+      "moveCounter": "Move {{current}}/{{total}}",
+      "tips": [
+        "Plan your entire cross during inspection — no move counting during execution.",
+        "World-class crosses are ≤ 6 moves. The theoretical max is 8.",
+        "Use the replay to study the optimal path and spot missed efficiencies.",
+        "Toggle the cross highlight to track the 4 target edges visually.",
+        "Color-neutral (CN) mode finds the best face for each scramble — saves ~0.5s per solve."
+      ]
+    },
+    "tips": {
+      "cross": [
+        "Always solve cross on bottom (D face) for better lookahead",
+        "Plan your entire cross during inspection — don't improvise",
+        "Aim for 8 moves or fewer for an efficient cross",
+        "Track your first F2L pair while solving the cross"
+      ],
+      "eoline": [
+        "Count bad edges before starting — know your EO case",
+        "Place the line edges while orienting — combine steps",
+        "Use only R, U, L, D moves after EO is done",
+        "Plan both EO and line during inspection"
+      ],
+      "first-block": [
+        "Build a 1×2×3 block on the left side",
+        "Use R, U, r, u moves for efficient block building",
+        "Look for pre-formed pairs during inspection",
+        "Don't restrict yourself — use the whole cube"
+      ],
+      "second-block": [
+        "Build the right 1×2×3 block efficiently",
+        "Use only R, U, r, M moves to preserve the first block",
+        "Track your next pair while inserting the current one",
+        "Aim to solve each pair in ≤ 8 moves"
+      ],
+      "block-222": [
+        "Build a 2×2×2 block in any corner — full freedom",
+        "Look for pre-formed pairs or a 1×1×2 block",
+        "Don't lock into one face — use the whole cube",
+        "Aim for ≤ 5 moves for the 2×2×2 block"
+      ],
+      "block-223": [
+        "Extend your 2×2×2 to a 2×2×3 block",
+        "Use the freedom of the unsolved side",
+        "Look for easy pairs to attach to the 2×2×2",
+        "Plan your extension during inspection"
+      ],
+      "lse": [
+        "LSE should take ~2-3 seconds at advanced level",
+        "Use M and U moves only — no cube rotations",
+        "EO → UL/UR placement → M-slice permutation",
+        "Target: EO in < 1s, UL/UR in < 1s, M-slice in < 0.5s"
+      ],
+      "eo-petrus": [
+        "Bad edges are edges that require F or B moves",
+        "4 bad edges is the most common case — drill it",
+        "Use M' U M' patterns to flip edges efficiently",
+        "Aim for EO in < 1.5s with ≤ 7 moves"
+      ]
+    },
+    "review": {
+      "title": "Review",
+      "reason": {
+        "overdue": "Overdue",
+        "due": "Due",
+        "weak": "Weak",
+        "new": "New"
+      },
+      "queue": {
+        "title": "Review Queue",
+        "insights": "Insights",
+        "allCaughtUp": "All caught up! Nothing due for review today.",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items",
+        "startReview": "Start Review ({{count}})"
+      },
+      "session": {
+        "stageRecognition": "Recognize",
+        "stageExecution": "Execute",
+        "stageGrading": "Grade",
+        "gradeAgain": "Again",
+        "gradeAgainHint": "Couldn't recall",
+        "gradeHard": "Hard",
+        "gradeHardHint": "Struggled",
+        "gradeGood": "Good",
+        "gradeGoodHint": "Solid recall",
+        "gradeEasy": "Easy",
+        "gradeEasyHint": "Instant",
+        "doYouRecognize": "Do you recognize this case?",
+        "recognitionHint": "Recall which algorithm solves it. Your answer feeds the recognition metric — a separate signal from execution speed.",
+        "notRecognized": "Not recognized",
+        "recognized": "Recognized",
+        "setupScramble": "Setup scramble",
+        "noSetup": "No setup available for this case",
+        "skipExecution": "Skip execution — go straight to grading",
+        "retention": "Retention",
+        "mastery": "Mastery",
+        "recognition": "Recognition",
+        "algorithm": "Algorithm",
+        "gradePrompt": "Grade how well you remembered it. {{again}} resets the interval, {{good}} grows it at the case's own pace.",
+        "skip": "Skip",
+        "completeTitle": "Review complete!",
+        "noItemsReviewed": "No items were reviewed in this session.",
+        "reviewedSummary_one": "{{count}} case reviewed · {{passed}} passed",
+        "reviewedSummary_other": "{{count}} cases reviewed · {{passed}} passed",
+        "reviewAgain": "Review again",
+        "overdueDays_one": "{{count}} day overdue",
+        "overdueDays_other": "{{count}} days overdue",
+        "announceCorrect": "Correct. {{time}}.",
+        "announceIncorrect": "Incorrect. Next: the grading step.",
+        "announceGraded": "Review graded {{grade}}.",
+        "errorRecognition": "Could not save recognition result. Please try again.",
+        "errorExecution": "Could not save execution result. Please try again.",
+        "errorGrade": "Could not save the review grade. Please try again."
+      }
+    },
+    "insights": {
+      "title": "SRS Insights",
+      "emptyTitle": "No cases in the catalog yet",
+      "emptyBody": "Progress you record through drills, recognition and reviews will show up here.",
+      "statCases": "Cases",
+      "statReviewed": "Reviewed",
+      "statReviews": "Reviews",
+      "statMastery": "Mastery",
+      "statRetention": "Retention",
+      "retentionTitle": "Retention distribution",
+      "avg": "avg {{pct}}",
+      "retentionEmpty": "No cases have been reviewed yet — retention appears after your first graded review.",
+      "intervalTitle": "Interval growth",
+      "avgDaysBetween": "avg days between reviews",
+      "intervalEmpty": "Grade some reviews to see the spacing effect build up.",
+      "statesTitle": "Memory states",
+      "state": {
+        "new": "New",
+        "learning": "Learning",
+        "review": "Review",
+        "relearning": "Relearning"
+      },
+      "dueInTitle": "Due in",
+      "dueSuffix": "≤{{days}}d",
+      "dueNote": "Lapses and relearning cases count toward the nearest horizon.",
+      "loadError": "Failed to load SRS insights"
+    },
+    "calendar": {
+      "schedule": "Schedule",
+      "today": "Today",
+      "weekday": {
+        "sun": "Sunday",
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday"
+      },
+      "weekdayShort": {
+        "sun": "S",
+        "mon": "M",
+        "tue": "T",
+        "wed": "W",
+        "thu": "T",
+        "fri": "F",
+        "sat": "S"
+      },
+      "color": {
+        "blue": "Blue",
+        "emerald": "Green",
+        "amber": "Yellow",
+        "violet": "Purple",
+        "rose": "Pink",
+        "cyan": "Cyan",
+        "orange": "Orange",
+        "pink": "Magenta"
+      },
+      "repeat": {
+        "none": "Once",
+        "daily": "Every day",
+        "weekdays": "Weekdays",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "custom": "Custom…"
+      },
+      "repeatDesc": {
+        "oneTime": "One time",
+        "everyDay": "Every day",
+        "weekdaysRange": "Weekdays (Mon–Fri)",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "custom": "Custom",
+        "weeklyOn": "Weekly on {{days}}"
+      },
+      "taskPanel": "Task Panel",
+      "newTask": "New task",
+      "editTask": "Edit task",
+      "noTasks": "No tasks",
+      "taskCount_one": "{{count}} task",
+      "taskCount_other": "{{count}} tasks",
+      "noTasksForDay": "No tasks for this day.",
+      "addTask": "Add Task",
+      "editTitle": "Edit",
+      "deleteTitle": "Delete",
+      "title": "Title",
+      "required": "required",
+      "titlePlaceholder": "e.g. Practice OLL 21-33",
+      "description": "Description",
+      "optional": "optional",
+      "descriptionPlaceholder": "e.g. Focus on recognition and finger tricks",
+      "startDate": "Start Date",
+      "repeats": "Repeats",
+      "days": "Days",
+      "auto": "auto",
+      "weekdaysOnly": "Weekdays only.",
+      "sameDayEachWeek": "Same day each week.",
+      "colorLabel": "Color",
+      "savedLocally": "Changes saved locally",
+      "willBeAdded": "Task will be added",
+      "enterTitle": "Enter a title to save",
+      "create": "Create",
+      "update": "Update",
+      "tooltipCount_one": "{{date}} — {{count}} task",
+      "tooltipCount_other": "{{date}} — {{count}} tasks"
+    },
+    "method": "Method",
+    "allMethods": "All methods",
+    "backToTraining": "Back to training",
+    "catalog": {
+      "method": {
+        "CFOP": "Cross, F2L, OLL, PLL — the most popular speedsolving method.",
+        "Roux": "Blockbuilding method with CMLL and LSE. Very efficient move count.",
+        "ZZ": "Edge orientation first, then blockbuilding. No cube rotations needed.",
+        "Petrus": "Blockbuilding method: 2x2x2 → 2x2x3 → EO → F2L → LL.",
+        "Advanced 3x3": "Advanced 3×3 algorithm sets from other methods — ELL (CFCE), CLS (MGLS), Summer Variation (ZZ/Petrus), Anti-PLL (1LLL practice).",
+        "Ortega": "Most popular 2×2 method: face → OLL → PBL.",
+        "CLL": "Corners of Last Layer — 42 cases when first layer is solved.",
+        "EG": "Extended CLL: EG-1 (adjacent swap) and EG-2 (diagonal swap) when first face is solved."
+      },
+      "phase": {
+        "3x3x3": {
+          "cross": "Solve the cross efficiently. Fewer moves, faster solutions.",
+          "f2l": "Basic first two layers — 41 algorithmic pairs.",
+          "af2l": "Advanced first two layers — 126 trapped & keyhole cases.",
+          "oll": "Orient last layer — 57 cases to master.",
+          "pll": "Permute last layer — 21 cases for the final step.",
+          "first-block": "Build a 1×2×3 block on the left.",
+          "second-block": "Build the right 1×2×3 block efficiently.",
+          "cmll": "Corners of last layer — 42 cases.",
+          "lse": "Last six edges — EO, UL/UR, M-slice.",
+          "eoline": "Edge Orientation + Line. No rotations needed.",
+          "f2l-zz": "First two layers using only R, U, L moves.",
+          "ll-zz": "OCLL, COLL, ZZLL — last layer for ZZ.",
+          "block-222": "Build the first 2×2×2 block.",
+          "block-223": "Extend to a 2×2×3 block.",
+          "eo-petrus": "Edge Orientation after blocks.",
+          "f2l-petrus": "Finish F2L after EO.",
+          "ll-petrus": "COLL + EPLL for Petrus last layer."
+        },
+        "2x2x2": {
+          "oll": "Orient top face — 7 cases to master.",
+          "pbl": "Permute Both Layers — 6 cases for 2×2.",
+          "cll": "Corners of Last Layer — 42 cases for 2×2.",
+          "eg1": "Bottom layer adjacent swap — 42 cases.",
+          "eg2": "Bottom layer diagonal swap — 42 cases."
+        }
+      },
+      "subset": {
+        "3x3x3": {
+          "F2L": "First Two Layers — algorithmic pairs for each slot.",
+          "Basic F2L": "41 standard F2L cases (easy to advanced pairs).",
+          "Advanced F2L": "126 Advanced F2L cases (BirdF2L patterns: trapped corner, trapped edge, both trapped).",
+          "OLL": "Orientation of Last Layer — 57 cases to orient all last layer pieces.",
+          "PLL": "Permutation of Last Layer — 21 cases to permute the last layer pieces.",
+          "COLL": "Corners of Last Layer — orient + permute corners when edges are oriented.",
+          "Winter Variation": "Orient LL corners while inserting last F2L pair. 27 cases.",
+          "VLS": "Valk Last Slot — orient LL edges while inserting last F2L pair.",
+          "ZBLL": "Zborowski-Bruchem Last Layer — 493 cases solving LL in one alg when edges are oriented.",
+          "CLS": "Corners Last Slot — solve the last slot while orienting the last layer corners. 97 cases.",
+          "Summer Variation": "Orient last layer corners while inserting the last pair with the edge misoriented. 27 cases.",
+          "ELL": "Edges of the Last Layer — 25 cases solving the LL edges when the corners are solved.",
+          "Anti PLL": "Anti-PLL — 22 cases of the PLL algs from the opposite angle, for 2-sided recognition practice.",
+          "CMLL": "Corners of Last Layer (Roux) — 42 cases ignoring M-slice.",
+          "LSE": "Last Six Edges — EO, UL/UR, M-slice finish.",
+          "First Block": "Roux First Block techniques and patterns.",
+          "Second Block": "Roux Second Block techniques and patterns.",
+          "OCLL": "Orient Corners of Last Layer (ZZ) — 7 cases (edges already oriented).",
+          "EOLine": "Edge Orientation + Line placement.",
+          "ZZLL": "ZZ Last Layer — ZBLL subset for ZZ.",
+          "2x2x2 Block": "Building the first 2x2x2 block.",
+          "2x2x3 Block": "Extending to a 2x2x3 block.",
+          "EO": "Edge orientation for Petrus."
+        },
+        "2x2x2": {
+          "OLL": "Orient the last face (7 cases for 2×2).",
+          "PBL": "Permute Both Layers — solve the cube after OLL.",
+          "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
+          "EG": "Extended CLL — 128 cases total.",
+          "EG-1": "Bottom layer has adjacent swap. 42 cases.",
+          "EG-2": "Bottom layer has diagonal swap. 42 cases."
+        }
+      }
+    }
+  },
+  "skillTree": {
+    "title": "Speedcubing Skill Tree",
+    "subtitle": "A complete progression from absolute beginner to world-class elite — mastering every dimension of speedcubing.",
+    "searchPlaceholder": "Search technique...",
+    "completedLabel": "Completed:",
+    "branchLabel": "Branch ({{count}}):",
+    "viewTree": "Tree",
+    "viewCards": "Cards",
+    "viewTreeTitle": "Graph view",
+    "viewCardsTitle": "List / Grid view",
+    "markCompleted": "Mark as completed",
+    "markAccessible": "Mark as accessible",
+    "markUnlocked": "Mark as unlocked",
+    "noNodesFound": "No skill nodes found",
+    "noNodesHint": "Try selecting a different branch or search query.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetView": "Reset view",
+    "canvasHint": "Click an accessible node for full explanations or to mark as completed",
+    "tierLabel": "TIER",
+    "theoryTitle": "Speedcubing Theory & Key Concept",
+    "formulaTitle": "Model Formula / Example Sequence",
+    "prerequisites": "Prerequisites",
+    "drillsTitle": "Recommended Practice Drills",
+    "markIncomplete": "Mark as Incomplete",
+    "lockedHint": "Locked: complete prerequisites to unlock",
+    "practiceSkill": "Practice Skill",
+    "status": {
+      "completed": "Completed",
+      "unlocked": "Accessible",
+      "locked": "Locked"
+    },
+    "tier": {
+      "Beginner": "Beginner",
+      "Novice": "Novice",
+      "Intermediate": "Intermediate",
+      "Advanced": "Advanced",
+      "Expert": "Expert",
+      "Master": "Master",
+      "Elite": "Elite",
+      "Legendary": "Legendary"
+    },
+    "category": {
+      "all": "All skills",
+      "fundamentals": "Fundamentals",
+      "cross": "Cross",
+      "f2l": "F2L",
+      "last-layer": "Last layer",
+      "lookahead": "Lookahead",
+      "finger-tricks": "Finger tricks",
+      "inspection": "Inspection",
+      "color-neutrality": "Color neutrality",
+      "hardware": "Hardware",
+      "psychology": "Psychology",
+      "training": "Training",
+      "roux": "Roux",
+      "zz": "ZZ",
+      "blindfold": "Blindfold",
+      "fmc": "FMC",
+      "theory": "Theory"
+    },
+    "branch": {
+      "fundamentals": {
+        "name": "I. Fundamentals",
+        "subtitle": "Cube anatomy, notation, and first complete solves"
+      },
+      "cross": {
+        "name": "II. Cross",
+        "subtitle": "Cross planning, execution, and advanced cross techniques"
+      },
+      "f2l": {
+        "name": "III. F2L",
+        "subtitle": "Intuitive F2L, algorithmic cases, and advanced pair techniques"
+      },
+      "last-layer": {
+        "name": "IV. Last Layer",
+        "subtitle": "OLL/PLL mastery and advanced last layer algorithm sets"
+      },
+      "lookahead": {
+        "name": "V. Lookahead & Recognition",
+        "subtitle": "Visual tracking, pattern recognition, and subconscious solving"
+      },
+      "finger-tricks": {
+        "name": "VI. Finger Tricks",
+        "subtitle": "Physical execution techniques, ergonomics, and turning optimization"
+      },
+      "inspection": {
+        "name": "VII. Inspection & Planning",
+        "subtitle": "Pre-solve planning, WCA inspection utilization, and strategic thinking"
+      },
+      "color-neutrality": {
+        "name": "VIII. Color Neutrality",
+        "subtitle": "Solving on any cross color for maximum scramble flexibility"
+      },
+      "hardware": {
+        "name": "IX. Hardware & Setup",
+        "subtitle": "Cube maintenance, tuning, selection, and ergonomic health"
+      },
+      "psychology": {
+        "name": "X. Psychology",
+        "subtitle": "Mental preparation, competition strategy, and performance psychology"
+      },
+      "training": {
+        "name": "XI. Training",
+        "subtitle": "Training methodology, session planning, and improvement strategies"
+      },
+      "roux": {
+        "name": "XII. Roux Method",
+        "subtitle": "Roux-specific: block building, CMLL, and LSE mastery"
+      },
+      "zz": {
+        "name": "XIII. ZZ Method",
+        "subtitle": "Edge orientation, ZZ-specific F2L, and last layer variants"
+      },
+      "blindfold": {
+        "name": "XIV. Blindfolded",
+        "subtitle": "3BLD to Multi-BLD: memorization, execution, and advanced techniques"
+      },
+      "fmc": {
+        "name": "XV. FMC",
+        "subtitle": "Fewest Moves Challenge: block building, NISS, insertions, and Domino Reduction"
+      },
+      "theory": {
+        "name": "XVI. Theory & Optimization",
+        "subtitle": "Advanced cube theory, commutators, group theory, and solving innovation"
+      }
+    },
+    "nodes": {
+      "cube-anatomy": {
+        "title": "Cube anatomy",
+        "subtitle": "Identify centers, edges, corners and understand piece movement",
+        "description": "Learn to identify the three piece types (centers, edges, corners), understand that centers are fixed and determine face color, and recognize how layers move.",
+        "theory": "A 3x3 cube has 6 fixed centers, 12 edge pieces with 2 stickers each, and 8 corner pieces with 3 stickers each. Centers define the color of each face. Understanding piece types is fundamental to all solving methods.",
+        "drills": [
+          "Point to all 6 centers and name their colors",
+          "Count all 12 edges and identify their two colors",
+          "Locate all 8 corner pieces"
+        ]
+      },
+      "standard-notation": {
+        "title": "Standard notation",
+        "subtitle": "Read and execute R, L, U, D, F, B moves and their variants",
+        "description": "Master the standard cube notation: clockwise (R), counter-clockwise (R'), and double (R2) turns for all six faces.",
+        "theory": "Notation is the universal language of cubing. A letter alone = 90° clockwise, apostrophe = 90° counter-clockwise, 2 = 180°. Standard grip: white on top, green facing you. This enables reading algorithms and communicating with other cubers.",
+        "exampleFormula": "R U R' U' (Sexy Move) — the most fundamental trigger",
+        "drills": [
+          "Execute R U R' U' 6 times to return to solved state",
+          "Practice each face move looking at notation, not the cube"
+        ]
+      },
+      "first-cross": {
+        "title": "First cross",
+        "subtitle": "Solve the white cross on the bottom face",
+        "description": "Learn to place the four white edge pieces around the white center, matching each edge's side color with its corresponding center.",
+        "theory": "The cross is the foundation of CFOP. Solving it on the bottom (not top) from day one builds good habits. Each edge must match both the bottom center AND its adjacent side center. This typically takes 6-8 moves.",
+        "drills": [
+          "Practice cross on bottom 20 times without timing",
+          "Verify edge colors match both centers after each solve"
+        ]
+      },
+      "first-layer-corners": {
+        "title": "First layer corners",
+        "subtitle": "Insert white corners to complete the first layer",
+        "description": "Place the four white corner pieces in their correct positions, completing the entire white face and first layer.",
+        "theory": "Each corner has white plus two side colors. The corner must be placed between the corresponding side centers. The basic insertion uses R U R' or its mirror L' U' L. Avoid placing corners with white facing sideways incorrectly.",
+        "exampleFormula": "R U R' — white corner insertion from right",
+        "drills": [
+          "Complete first layer from scramble 10 times",
+          "Count how many moves each corner takes"
+        ]
+      },
+      "middle-layer-edges": {
+        "title": "Middle layer edges",
+        "subtitle": "Insert the four edge pieces into the middle layer",
+        "description": "Solve the four edge pieces of the middle layer using the standard left and right insertion algorithms.",
+        "theory": "After the first layer, 4 edges remain in the middle layer. Use U R U' R' U' F' U F (right insert) or U' L' U L U F U' F' (left insert). If an edge is in the wrong slot, use the same algorithm to remove it first.",
+        "exampleFormula": "U R U' R' U' F' U F — right edge insertion",
+        "drills": [
+          "Solve only the middle layer 10 times from a solved first layer",
+          "Practice recognizing edge orientation before inserting"
+        ]
+      },
+      "beginner-last-layer": {
+        "title": "Beginner last layer",
+        "subtitle": "Complete the last layer using the 4-step beginner method",
+        "description": "Solve the yellow face and permute the last layer pieces using the beginner method: orient edges, orient corners, permute corners, permute edges.",
+        "theory": "The beginner last layer uses 4 algorithms total: F R U R' U' F' (edge orientation), R U R' U R U2 R' (Sune for corners), U R U' L' U R' U' L (corner permutation), and R U' R U R U R U' R' U' R2 (edge permutation).",
+        "exampleFormula": "F R U R' U' F' — orient yellow edges to form cross",
+        "drills": [
+          "Execute each of the 4 algorithms 20 times until automatic",
+          "Complete full beginner method solves from scramble"
+        ]
+      },
+      "first-complete-solve": {
+        "title": "First complete solve",
+        "subtitle": "Solve the entire cube from any scramble without assistance",
+        "description": "Complete a full solve from a scrambled cube without looking at any algorithm reference, demonstrating memory of all beginner method steps.",
+        "theory": "The transition from following instructions to independent solving is the first major milestone. It requires recalling all 4-6 algorithms from memory and applying them at the right moment. Most cubers achieve this within their first week.",
+        "drills": [
+          "Complete 5 full solves without any reference",
+          "Time each solve to establish your baseline"
+        ]
+      },
+      "consistent-solving": {
+        "title": "Consistent solving",
+        "subtitle": "Reliably solve the cube in under 2 minutes every attempt",
+        "description": "Achieve consistent sub-2-minute solves with zero DNFs, demonstrating reliable recall of all beginner method steps.",
+        "theory": "Consistency is the hallmark of a real cuber. Being able to solve every time without failure means the algorithms are in muscle memory, not just conscious recall. This builds the foundation for all speed improvement.",
+        "drills": [
+          "Complete 25 consecutive solves with 100% success rate",
+          "Record solve times and check for downward trend"
+        ]
+      },
+      "cross-on-bottom": {
+        "title": "Cross always on bottom",
+        "subtitle": "Solve the cross directly on the bottom face without rotation",
+        "description": "Transition from solving the cross on top (then flipping) to planning and executing it directly on the bottom face.",
+        "theory": "Solving cross on bottom saves 1-2 seconds of cube rotation and lets you immediately see the F2L pieces. It requires mentally tracking pieces you can't see. Start by solving 2 edges on bottom, then complete all 4.",
+        "drills": [
+          "Solve cross on bottom 50 times",
+          "Practice connecting cross edges without looking at the bottom"
+        ]
+      },
+      "cross-efficiency-8": {
+        "title": "Cross in ≤8 moves",
+        "subtitle": "Solve any cross in 8 moves or fewer from any scramble",
+        "description": "Learn to find efficient cross solutions that never exceed 8 moves. The optimal cross for any scramble averages ~5.8 moves.",
+        "theory": "Every cross can be solved in 8 moves or fewer. The key is solving edges relative to each other (not relative to centers) and doing multiple edges in one move. Advanced cross uses D-layer alignment to reduce move count.",
+        "drills": [
+          "Plan cross solutions and count moves — aim for ≤7",
+          "Use cross solver tools to compare your solution with optimal"
+        ]
+      },
+      "pair-preservation": {
+        "title": "Cross pair preservation",
+        "subtitle": "Preserve or position pre-existing F2L pairs while solving the cross",
+        "description": "Learn to track and preserve naturally formed F2L pairs during cross execution so they remain intact for instant F2L insertion.",
+        "theory": "During cross planning, inspect for pre-built or 1-move corner-edge pairs. Adjust your cross solution sequence to avoid separating these pairs, saving 4-5 moves during the first F2L slot without the full overhead of planning a complex XCross.",
+        "drills": [
+          "Scan scrambles for pre-built pairs during inspection",
+          "Execute cross solutions while preserving at least 1 F2L pair 20 times"
+        ]
+      },
+      "blind-cross": {
+        "title": "Blindfold cross",
+        "subtitle": "Plan the entire cross during inspection and execute with eyes closed",
+        "description": "Use inspection time to memorize the complete cross sequence, then execute it without looking at the bottom of the cube.",
+        "theory": "Blind cross execution frees your eyes to look ahead for F2L pairs during cross execution. This is the first step toward lookahead. It requires visualizing all 4 edge paths during inspection and trusting your muscle memory.",
+        "drills": [
+          "Plan the cross, close your eyes, execute, and check",
+          "Start with 2 edges blind, progress to all 4"
+        ]
+      },
+      "cross-planning": {
+        "title": "Cross planning under time",
+        "subtitle": "Plan the full cross solution within the 15-second inspection window",
+        "description": "Consistently plan a complete, efficient cross solution within the standard WCA 15-second inspection period.",
+        "theory": "At this level, you should identify the optimal cross face (if dual CN), plan all 4 edge placements, and rehearse the sequence mentally. Use the CsTimer inspection feature or a partner to enforce the 15s limit during practice.",
+        "drills": [
+          "Set a 15s timer — plan and execute, rate your accuracy",
+          "Practice with scrambles that have 6-7 move optimal crosses"
+        ]
+      },
+      "optimal-cross": {
+        "title": "Optimal cross selection",
+        "subtitle": "Choose the best cross face among multiple options for maximum efficiency",
+        "description": "When solving dual CN or full CN, quickly evaluate cross options on multiple faces and select the most efficient one during inspection.",
+        "theory": "The probability of finding a 4-move or fewer cross jumps from ~6% (single color) to ~29% (full CN). This requires rapidly scanning 2-6 faces during inspection and estimating move counts without fully planning each.",
+        "drills": [
+          "Scan all available cross colors, estimate moves, pick best",
+          "Compare your choice with post-solve analysis of optimal cross"
+        ]
+      },
+      "xcross-basics": {
+        "title": "XCross basics",
+        "subtitle": "Solve the cross and first F2L pair simultaneously in one sequence",
+        "description": "Combine cross edge placement with the first F2L pair insertion, creating a 1x2x2 block during the cross phase. This saves 4-5 moves on average.",
+        "theory": "An XCross leverages pre-built or nearly-built corner-edge pairs near cross edges. During cross planning, identify if any F2L pair pieces are favorably positioned. The combined sequence typically uses 7-9 moves vs 11-13 for separate cross+pair.",
+        "exampleFormula": "Scramble: D2 R' F B2 D2 → XCross: D2 R' U R F B2 D2",
+        "drills": [
+          "Use an XCross scramble generator and solve 25 cases",
+          "Achieve XCross in 9 moves or fewer consistently"
+        ]
+      },
+      "xcross-mastery": {
+        "title": "XCross mastery",
+        "subtitle": "Find and execute XCross opportunities in 50%+ of solves",
+        "description": "Recognize XCross opportunities during inspection in at least half of all scrambles, and execute them fluidly with zero hesitation.",
+        "theory": "XCross mastery requires deep inspection analysis: seeing not just the cross but scanning for favorable corner-edge arrangements. This skill scales with color neutrality — more cross options = more XCross opportunities. Top cubers find XCross in 60-70% of solves.",
+        "drills": [
+          "Practice 100 scrambles — identify XCross possibility in each",
+          "Time the XCross execution separately from the rest of the solve"
+        ]
+      },
+      "cross-plus-two": {
+        "title": "Cross+2 planning",
+        "subtitle": "Plan cross plus tracking of TWO F2L pairs during inspection",
+        "description": "During the 15-second inspection, plan the full cross solution AND predict the landing positions of two F2L pairs for instant continuation.",
+        "theory": "This is an elite-level inspection skill used by the world's best. It requires visualizing 6-8 moves of cross execution and mentally tracking 4 additional pieces simultaneously. The payoff is 2 F2L pairs solved with zero pause after the cross.",
+        "drills": [
+          "Inspect for 15s, execute cross, then immediately identify pair 1 and 2",
+          "Record the number of times you correctly predict both pairs"
+        ]
+      },
+      "intuitive-f2l-basics": {
+        "title": "Intuitive F2L transition",
+        "subtitle": "Replace the beginner corner-then-edge method with paired insertions",
+        "description": "Learn to pair each corner with its corresponding edge and insert them together, dramatically reducing move count vs the beginner method.",
+        "theory": "F2L pairs corners and edges before insertion instead of inserting separately. This reduces the first two layers from ~8 sub-steps to 4 slots. Initially slower, it rapidly becomes faster with practice. Understanding 3 basic cases (paired, separated, corner in slot) covers most situations.",
+        "drills": [
+          "Practice F2L without timing — focus on understanding piece relationships",
+          "Solve only F2L (stop after 2 layers) 25 times"
+        ]
+      },
+      "f2l-case-recognition": {
+        "title": "F2L case recognition",
+        "subtitle": "Instantly identify all 41 standard F2L cases and their solutions",
+        "description": "Recognize every one of the 41 standard F2L cases without hesitation and know the optimal intuitive solution for each.",
+        "theory": "There are 41 unique F2L cases (including mirrors). Each case can be solved intuitively by understanding how to pair pieces. Recognition speed — not execution speed — is the bottleneck for most intermediate cubers in F2L.",
+        "drills": [
+          "Use F2L case trainers (J Perm, SpeedCubeDB) for all 41 cases",
+          "Drill recognition: name the case within 0.5s of seeing it"
+        ]
+      },
+      "algorithmic-f2l": {
+        "title": "Algorithmic F2L",
+        "subtitle": "Learn optimized algorithms for difficult F2L cases",
+        "description": "Replace slow intuitive solutions for tough F2L cases with optimized, ergonomic algorithms that minimize regrips and rotations.",
+        "theory": "Some F2L cases (like corner in slot, edge oriented wrong) benefit from specific algorithms. These are typically shorter and more ergonomic than the intuitive approach. Learning ~10-15 algorithmic F2L cases provides the best return on investment.",
+        "drills": [
+          "Learn 3 algorithmic F2L cases per week until you've covered the hardest 15",
+          "Compare your solution vs the algorithmic one for move count"
+        ]
+      },
+      "back-slot-f2l": {
+        "title": "Back slot insertion",
+        "subtitle": "Insert F2L pairs into back slots without cube rotation",
+        "description": "Solve F2L pairs directly into the back-left and back-right slots without rotating the cube to bring them to the front.",
+        "theory": "Back slot solving eliminates 2-4 unnecessary cube rotations per solve. It requires learning mirror solutions for cases and developing the ability to execute algorithms with pieces in non-front positions. This is a critical step toward rotationless solving.",
+        "drills": [
+          "Practice 25 solves inserting all pairs only into back slots",
+          "Learn the mirror of your favorite front-slot algorithms"
+        ]
+      },
+      "sledgehammer-hedgeslammer": {
+        "title": "Sledgehammer & hedgeslammer",
+        "subtitle": "Use R' F R F' and F R' F' R triggers for pair insertion and edge control",
+        "description": "Master the two most versatile F2L triggers. Sledgehammer (R' F R F') and Hedgeslammer (F R' F' R) for rotationless inserts and edge orientation control.",
+        "theory": "These 4-move triggers are fundamental building blocks. Sledgehammer inserts a pair from above while flipping edge orientation. Hedgeslammer does the mirror. Together they enable rotationless back-slot solving and edge control during the last pair.",
+        "exampleFormula": "R' F R F' (Sledgehammer) — inserts pair + flips 2 edges",
+        "drills": [
+          "Execute each trigger 50 times focusing on fingertrick fluidity",
+          "Identify all F2L cases where these triggers apply"
+        ]
+      },
+      "rotationless-f2l": {
+        "title": "Rotationless F2L",
+        "subtitle": "Solve all four F2L pairs without a single cube rotation",
+        "description": "Complete the entire F2L stage with zero y/y' rotations by using back-slot insertion techniques, triggers, and rotationless algorithms for all cases.",
+        "theory": "Each cube rotation costs ~0.3-0.5s. Eliminating all 4-6 typical rotations saves 1.5-3 seconds. This requires knowing solutions from every angle and using sledgehammer/hedgeslammer, wide moves, and d-moves to avoid reorienting.",
+        "drills": [
+          "Complete 25 solves with a strict 0-rotation rule for F2L",
+          "For each rotation you're tempted to do, find a rotationless alternative"
+        ]
+      },
+      "keyhole-technique": {
+        "title": "Keyhole technique",
+        "subtitle": "Use empty F2L slots to insert pieces more efficiently",
+        "description": "Leverage unsolved F2L slots to directly insert edge pieces in 3 moves using D-layer alignment, bypassing the standard pairing process.",
+        "theory": "When a corner is already solved and the edge is in the top layer, keyhole avoids the 7-8 move standard process. Align the empty slot under the edge's target using D moves, insert in 3 moves, then restore the cross. Ideal when 1-2 corners remain unsolved.",
+        "exampleFormula": "D' (align empty slot) + R U R' + D (restore cross)",
+        "drills": [
+          "Solve 3 edges using only keyhole method",
+          "Identify keyhole opportunities during F2L inspection"
+        ]
+      },
+      "edge-control-f2l": {
+        "title": "Edge orientation control",
+        "subtitle": "Manipulate top-layer edge orientation during final F2L pair insertion",
+        "description": "Choose F2L insertion variants that orient LL edges, avoiding dot OLL cases and guaranteeing favorable orientation for the last layer.",
+        "theory": "By selecting the right insertion for the 4th F2L pair (sledgehammer vs standard vs wide moves), you can orient 0, 2, or 4 LL edges. This guarantees a cross OLL and eliminates the slowest 8 OLL cases (dots).",
+        "exampleFormula": "Instead of R U R', use R' F R F' to flip 2 edges",
+        "drills": [
+          "Complete 50 solves targeting zero dot OLLs via edge control",
+          "For each last slot, identify which insertion gives best edge orientation"
+        ]
+      },
+      "zbls-set": {
+        "title": "ZBLS (last slot edge control)",
+        "subtitle": "Orient all LL edges during final F2L pair insertion regardless of pair state",
+        "description": "Master ZBLS (Zborowski-Bruchem Last Slot) to force all top-layer edges to orient during the last F2L slot, setting up 1-look ZBLL.",
+        "theory": "While basic edge control uses Sledgehammer for simple cases, ZBLS covers all last-slot scenarios (split pair, edge in slot, corner in slot). Orienting edges during the final F2L slot guarantees an oriented LL cross, unlocking 1-look ZBLL every solve.",
+        "drills": [
+          "Learn 10 essential ZBLS cases for common unjoined last-slot setups",
+          "Combine ZBLS practice with ZBLL T/U set execution"
+        ]
+      },
+      "multislotting": {
+        "title": "Multi-Slotting",
+        "subtitle": "Solve two adjacent F2L pairs in one unified sequence",
+        "description": "Combine the insertion of two F2L pairs into a single fluid sequence without intermediate pauses or recognition gaps.",
+        "theory": "Multi-slotting leverages the movement of one pair to set up the pieces of the next pair. A 2-pair multislot typically saves 3-4 moves vs separate solutions. It requires tracking both slot states simultaneously and recognizing dual-pair patterns.",
+        "exampleFormula": "R U2 R' U R U' R' + L' U L (2-pair multislot)",
+        "drills": [
+          "Practice 2-pair prediction: identify what the cube looks like after pair 1",
+          "Learn 5-10 common multislotting patterns"
+        ]
+      },
+      "pseudo-slotting": {
+        "title": "Pseudo-Slotting",
+        "subtitle": "Form F2L pairs relative to a temporarily offset cross alignment",
+        "description": "Solve F2L pairs assuming the D-layer is rotated off-alignment, resolving all pairs simultaneously with a final D or D2 alignment move.",
+        "theory": "Pseudo-slotting unlocks cases that look terrible under standard orientation. By temporarily offsetting the cross alignment (D or D'), 'bad' pairs become easy. At the end, one D/D2 move aligns everything. Used extensively by elite cubers for difficult cases.",
+        "exampleFormula": "D (offset) + U R U' R' + D' (alignment)",
+        "drills": [
+          "Practice pseudo-F2L pair recognition under active D-rotations",
+          "Learn to identify when offsetting would help a difficult case"
+        ]
+      },
+      "two-look-oll": {
+        "title": "2-look OLL",
+        "subtitle": "Orient the last layer in 2 steps: edges then corners (10 algorithms)",
+        "description": "Replace the beginner OLL with the 2-look system: 3 edge orientation cases plus 7 corner orientation cases for a reliable 2-step solution.",
+        "theory": "2-look OLL reduces OLL from 57 to 10 algorithms. Step 1 orients edges (3 cases: line, L-shape, dot). Step 2 orients corners (7 cases: Sune, Anti-Sune, etc.). This is the standard intermediate approach and sufficient for sub-20 solving.",
+        "exampleFormula": "F R U R' U' F' → orient edges (line case)",
+        "drills": [
+          "Learn all 10 algorithms in one week (1-2 per day)",
+          "Use OLL trainer to randomize all 10 cases"
+        ]
+      },
+      "two-look-pll": {
+        "title": "2-look PLL",
+        "subtitle": "Permute the last layer in 2 steps: corners then edges (6 algorithms)",
+        "description": "Replace the beginner PLL with the 2-look system: 2 corner permutation cases plus 4 edge permutation cases.",
+        "theory": "2-look PLL reduces PLL from 21 to 6 algorithms. Step 1 permutes corners (A-perm or E-perm). Step 2 permutes edges (Ua, Ub, H, Z). Combined with 2-look OLL, this gives a 4-step last layer — sufficient for sub-25.",
+        "exampleFormula": "R U R' U' R' F R2 U' R' U' R U R' F' → T-Perm (corner swap)",
+        "drills": [
+          "Learn all 6 algorithms with correct fingertricks",
+          "Practice recognition: identify the PLL case in under 1 second"
+        ]
+      },
+      "full-pll": {
+        "title": "Full PLL",
+        "subtitle": "Learn all 21 PLL algorithms for 1-step last layer permutation",
+        "description": "Memorize and execute all 21 PLL algorithms with consistent sub-2.5s execution each, enabling 1-step permutation of the last layer.",
+        "theory": "Full PLL is the highest-value algorithm set for intermediate cubers. 21 algorithms unlock 1-step PLL. Focus on ergonomic algorithms and fingertricks from day one — bad finger habits are hard to unlearn. Target: sub-2s per PLL.",
+        "exampleFormula": "R U R' U' R' F R2 U' R' U' R U R' F' — T-Perm",
+        "drills": [
+          "PLL Time Attack: execute all 21 PLLs back-to-back, target sub-45s",
+          "Learn 3 new PLLs per day for one week"
+        ]
+      },
+      "two-sided-pll-recog": {
+        "title": "2-Sided PLL Recognition",
+        "subtitle": "Identify any PLL case by seeing only two adjacent faces",
+        "description": "Determine the exact PLL case from only two visible sides, eliminating the need to rotate the cube to see all faces for recognition.",
+        "theory": "This saves ~0.5s per solve by avoiding recognition rotations. Each PLL has unique 2-sided patterns based on color bars, headlights, and opposites. Most cubers learn this naturally after full PLL, but deliberate study accelerates mastery.",
+        "drills": [
+          "Cover two faces and identify the PLL from the visible two",
+          "Use 2-sided PLL recognition trainers (J Perm, SpeedCubeDB)"
+        ]
+      },
+      "auf-prediction": {
+        "title": "AUF Prediction & Execution",
+        "subtitle": "Predict and execute Adjust Upper Face moves during LL recognition and execution",
+        "description": "Anticipate the final U, U', or U2 alignment move during PLL recognition and execute it seamlessly without post-alg hesitation.",
+        "theory": "AUF (Adjust Upper Face) pauses cost 0.2s–0.4s per solve. By tracking key sticker bars during PLL recognition and algorithm execution, elite cubers determine the required AUF move before the algorithm finishes, executing it as part of the last move trigger.",
+        "drills": [
+          "Practice PLL execution ending immediately with predicted AUF",
+          "Drill 2-sided recognition and call out AUF before starting the alg"
+        ]
+      },
+      "full-oll": {
+        "title": "Full OLL",
+        "subtitle": "Learn all 57 OLL algorithms for 1-step last layer orientation",
+        "description": "Memorize and execute all 57 OLL algorithms with consistent sub-1.5s execution, enabling 1-step orientation every solve.",
+        "theory": "57 OLL cases are grouped by shape: dot (8), line (4), L-shape (8), cross (7), P-shape (4), T-shape (2), W-shape (2), square (2), fish (4), bolt (6), awkward (4), and all corners oriented (7). Learn grouped by shape for easier memorization.",
+        "drills": [
+          "Learn OLL in groups of 4-8, starting with the most common shapes",
+          "Use OLL trainer to drill all 57 cases randomized"
+        ]
+      },
+      "oll-recognition-speed": {
+        "title": "OLL recognition speed",
+        "subtitle": "Identify OLL cases in under 0.5 seconds from any angle",
+        "description": "Achieve near-instant OLL recognition by internalizing shape patterns rather than counting oriented pieces or stickers.",
+        "theory": "Fast OLL recognizers see the overall shape (fish, knight move, lightning bolt) instantly. This is developed through high-volume exposure. Top cubers recognize OLL in 0.2-0.3s — faster than conscious thought.",
+        "drills": [
+          "Flash card drills: show OLL for 0.3s and name it",
+          "Recognition-only practice: identify 100 OLLs without executing them"
+        ]
+      },
+      "coll-set": {
+        "title": "COLL set",
+        "subtitle": "Solve corner orientation AND permutation in one algorithm (40 cases)",
+        "description": "When the LL cross is already formed, use COLL to solve corners in one step, leaving only edge PLLs (Ua, Ub, H, Z) or a PLL skip.",
+        "theory": "COLL is 40 algorithms grouped by corner orientation (H, Pi, U, T, L, Sune, Anti-sune). After COLL, only 4 fast edge PLLs remain. COLL is also a prerequisite and stepping stone to ZBLL. PLL skip occurs ~1/6 of the time.",
+        "exampleFormula": "F R U R' U' R U R' U' F' — COLL H case",
+        "drills": [
+          "Learn COLL by orientation group (start with H and Pi — 8 cases)",
+          "Drill recognition by headlight colors (front and side)"
+        ]
+      },
+      "winter-variation": {
+        "title": "Winter variation",
+        "subtitle": "Insert final F2L pair while orienting all LL corners (27 cases)",
+        "description": "When the LL cross is formed and the last F2L pair is joined, use WV to orient corners during insertion, achieving an OLL skip.",
+        "theory": "Winter Variation covers 27 cases where the last F2L pair is joined in the top layer and LL edges are oriented. Executing WV orients corners during insertion, skipping OLL entirely and going straight to PLL.",
+        "exampleFormula": "R U2 R' U' R U' R' — WV Case 1 (corner facing right)",
+        "drills": [
+          "Learn WV grouped by corner orientation (3 main groups)",
+          "Practice recognizing when WV is applicable during last slot"
+        ]
+      },
+      "ollcp-basics": {
+        "title": "OLLCP basics",
+        "subtitle": "Orient LL while permuting corners to force favorable PLL cases",
+        "description": "Use specific OLL variants that also permute corners, leaving only edge PLLs or achieving a PLL skip. Master key OLLCP subsets for common OLL shapes.",
+        "theory": "OLLCP extends OLL by recognizing corner permutation before execution. By choosing an OLL that also permutes corners correctly, you eliminate corner PLLs. Learning OLLCP for the 7 cross-OLL cases is the highest-value starting point.",
+        "drills": [
+          "Learn OLLCP for cross OLL cases first (highest frequency)",
+          "Practice corner permutation recognition before OLL execution"
+        ]
+      },
+      "vls-basics": {
+        "title": "VLS (Valk Last Slot)",
+        "subtitle": "Insert last F2L slot and solve OLL simultaneously regardless of edge state",
+        "description": "A superset of Winter Variation covering cases where LL edges are NOT oriented. Insert the last pair while solving OLL in one step.",
+        "theory": "VLS extends WV to unoriented edge cases. It covers ~216 cases total — typically only a subset is learned. Most useful when the last slot has a joined pair and you want to force OLL completion during insertion.",
+        "exampleFormula": "F R U R' U' F' + R U R' — VLS for specific edge orientation",
+        "drills": [
+          "Start with VLS cases that appear most frequently in your solves",
+          "Use VLS recognition flashcards grouped by edge orientation"
+        ]
+      },
+      "zbll-t-u": {
+        "title": "ZBLL T & U sets",
+        "subtitle": "Learn the T and U sets of ZBLL — 1-look LL when edges are oriented (144 cases)",
+        "description": "Solve the entire last layer in ONE algorithm when edges are oriented. Master the T and U subsets first — the most common and ergonomic ZBLL cases.",
+        "theory": "ZBLL removes the PLL step entirely when LL edges are oriented. T and U sets (72 cases each) are the most common and have the best algorithms. This is where elite cubers invest their algorithm learning time for maximum ROI.",
+        "exampleFormula": "R U2 R' U' R U' R' U2 R U R' U R U2 R' — ZBLL U case",
+        "drills": [
+          "Learn ZBLL T-set first (72 cases) over 2-3 months",
+          "Use ZBLL recognition trainers for Tran-style recognition"
+        ]
+      },
+      "full-zbll": {
+        "title": "Full ZBLL mastery",
+        "subtitle": "Complete 1-step last layer resolution — all 472 ZBLL cases",
+        "description": "Master the complete ZBLL set: all 472 cases across T, U, L, H, Pi, Sune, and Anti-sune groups for 1-look last layer in every edge-oriented scenario.",
+        "theory": "Full ZBLL is the ultimate last layer achievement. 472 cases organized into 7 groups. Combined with ZBLS/edge control to guarantee oriented edges, this enables consistent sub-0.8s last layer. Only a handful of cubers worldwide have truly mastered full ZBLL.",
+        "drills": [
+          "Complete L, H, and Pi sets after T and U (total ~472 cases)",
+          "ZBLL time attack: execute random ZBLL cases at sub-1.2s each"
+        ]
+      },
+      "basic-lookahead": {
+        "title": "Basic lookahead",
+        "subtitle": "Look for the next F2L pair while solving the current one",
+        "description": "Train your eyes to scan for the next corner-edge pair while your hands execute the current insertion, eliminating the pause between F2L slots.",
+        "theory": "Lookahead is the single most important skill for breaking through speed plateaus. The brain has ~0.5-1s of 'free' processing during any F2L insertion — use it to find the next pair. Slow down execution to give your eyes time to look ahead.",
+        "drills": [
+          "Slow-turning practice: solve at 50% speed, focus only on piece tracking",
+          "Metronome practice: turn one move per beat at 60 BPM, never pause"
+        ]
+      },
+      "f2l-lookahead": {
+        "title": "F2L lookahead flow",
+        "subtitle": "Maintain continuous piece awareness through all four F2L slots",
+        "description": "Develop the ability to track multiple F2L pieces simultaneously and seamlessly transition from one slot to the next with zero pause.",
+        "theory": "Top cubers 'know' which pair they will solve next before finishing the current one. This requires training peripheral vision and pattern anticipation. Start by always knowing your NEXT pair before your current pair is inserted.",
+        "drills": [
+          "Pair prediction: before inserting, say aloud which pair you'll solve next",
+          "Solve F2L pairs in any order based on what you see first"
+        ]
+      },
+      "cross-f2l-transition": {
+        "title": "Cross→F2L transition",
+        "subtitle": "Track the first F2L pair during cross execution",
+        "description": "During the final cross moves, locate and begin tracking the first F2L pair so you can start it immediately after cross completion.",
+        "theory": "The cross-to-F2L transition is the most common pause point. If your cross is planned in inspection, your eyes are free during execution to find pair #1. The goal: 0.0s pause between the last cross move and first F2L move.",
+        "drills": [
+          "Practice cross→F2L exclusively: solve cross, then immediately insert pair 1",
+          "Use a metronome at 3 TPS, never pause between cross and F2L"
+        ]
+      },
+      "metronome-pacing": {
+        "title": "Metronome pacing",
+        "subtitle": "Solve at a consistent, externally-paced rhythm to eliminate pauses",
+        "description": "Use a metronome to enforce steady turning speed, training your eyes to track pieces at a fixed pace without rushing or pausing.",
+        "theory": "A metronome at 60-180 BPM forces consistent TPS. Start slow (60 BPM = 1 TPS) and increase gradually. When you can solve at 120 BPM without pauses, your lookahead can handle 2 TPS. This trains your brain to process visual information at speed.",
+        "drills": [
+          "Start at 60 BPM, increase by 10 BPM when you can solve pause-free",
+          "Target: 180 BPM (3 TPS) with zero pauses in F2L"
+        ]
+      },
+      "continuous-lookahead": {
+        "title": "Continuous lookahead",
+        "subtitle": "Maintain unbroken piece tracking from cross through PLL",
+        "description": "Achieve a state where your eyes are always one step ahead of your hands throughout the entire solve, with no visual pauses.",
+        "theory": "Continuous lookahead means your eyes never stop scanning. During F2L pair 3, you're already tracking pair 4. During OLL execution, you're already identifying the PLL case. This flow state is what separates 15-second cubers from 10-second cubers.",
+        "drills": [
+          "Solve at 70% max speed — prioritize smoothness over TPS",
+          "Video record solves and count pause frames between steps"
+        ]
+      },
+      "predictive-tracking": {
+        "title": "Predictive tracking",
+        "subtitle": "Anticipate where pieces will end up after your current moves",
+        "description": "Mentally simulate how your current moves affect piece positions, predicting their final locations before the sequence completes.",
+        "theory": "Predictive tracking eliminates the 'search' phase after each insertion. By understanding how your algorithm moves pieces, you know where to look next before you finish. This requires deep familiarity with how each F2L case affects the cube.",
+        "drills": [
+          "Before inserting a pair, predict exactly where pair 2 pieces will be",
+          "Practice tracking a specific edge through multiple F2L insertions"
+        ]
+      },
+      "zero-pause-flow": {
+        "title": "Zero-pause flow",
+        "subtitle": "Solve with absolutely zero pauses — every move flows into the next",
+        "description": "Enter a flow state where the solve is one continuous motion without any recognition pauses, hesitations, or breaks in rhythm.",
+        "theory": "Zero-pause solving is the hallmark of elite speedcubers. Every move is connected. Recognition, decision, and execution form one seamless loop. This requires all algorithms in muscle memory, all recognition patterns subconscious, and full lookahead mastery.",
+        "drills": [
+          "Record solves and check for ANY frame without a turn",
+          "Target: max 0.3s pause at any point in the solve"
+        ]
+      },
+      "subconscious-recognition": {
+        "title": "Subconscious Recognition",
+        "subtitle": "Recognize cases instantly without conscious thought — pure pattern response",
+        "description": "Process OLL, PLL, and F2L cases at a subconscious level, where your hands begin executing before you consciously 'know' what the case is.",
+        "theory": "At the highest level, recognition bypasses conscious thought. Pattern → algorithm mapping becomes a direct neural pathway. This is achieved through thousands of repetitions. Your hands 'know' the algorithm before your conscious mind names the case.",
+        "drills": [
+          "Speed recognition drills at 2x normal pace",
+          "Practice naming cases while executing them to verify subconscious knowledge"
+        ]
+      },
+      "basic-u-flicks": {
+        "title": "Basic U flicks",
+        "subtitle": "Execute U and U' moves with index finger pushes and pulls",
+        "description": "Learn the fundamental index finger techniques: right index push for U, left index pull for U', replacing whole-hand wrist turns.",
+        "theory": "U flicks are the most common moves in cubing. Right index pushes the UFR corner forward for U. Left index pulls the UBL corner toward you for U'. These are faster and more precise than wrist turns and are the foundation of all fingertricks.",
+        "drills": [
+          "Execute (U U') x 20 focusing on finger movement, not wrist",
+          "Practice trigger R U R' U' repeatedly for 30 seconds"
+        ]
+      },
+      "r-moves-proper": {
+        "title": "R-move technique",
+        "subtitle": "Execute R and R' with proper wrist and finger technique",
+        "description": "Master R moves using the right hand with minimal regripping, and learn the proper grip that allows fluid R and U combination triggers.",
+        "theory": "R is executed by pulling the right layer toward you with the right hand. R' pushes it away. The key is keeping the cube stable with the left hand while the right executes. Learn to hold the cube so R and U moves can flow together without regripping.",
+        "drills": [
+          "Practice R U R' U' trigger 50 times, maintaining grip stability",
+          "Execute all PLL U-perms focusing on R-U flow"
+        ]
+      },
+      "f-move-ergonomics": {
+        "title": "F & F' move ergonomics",
+        "subtitle": "Execute F and F' moves using index finger pinches and thumb flicks without regripping",
+        "description": "Master index finger pinches for F and thumb flicks for F' to execute frontal face turns seamlessly from standard home grip.",
+        "theory": "Wrist-heavy F moves cause regrips and slow down algorithms like T-Perm, Sledgehammer, and OLLs. Pushing F with the right index finger and flicking F' with the right thumb allows rapid execution while keeping hands fixed in home grip.",
+        "drills": [
+          "Execute F R U R' U' F' 30 times using index pinch for F and thumb flick for F'",
+          "Practice T-Perm paying attention to seamless F/F' transitions"
+        ]
+      },
+      "double-flicks-u2": {
+        "title": "Double flicks (U2)",
+        "subtitle": "Execute U2 in one fluid motion using index-middle finger combo",
+        "description": "Master the U2 double flick: right index followed by right middle finger in one seamless motion, achieving U2 in half the time of two separate U moves.",
+        "theory": "The U2 double flick is a core speed technique. Right index pushes, then right middle finger immediately follows through. The key is keeping both fingers close to the U layer and maintaining momentum. Also learn the left-hand mirror for ambidextrous solving.",
+        "drills": [
+          "Execute U2 double flicks 100 times each hand",
+          "Practice algs with many U2s (H-Perm, Z-Perm) at speed"
+        ]
+      },
+      "d-moves-ring": {
+        "title": "D-move ring technique",
+        "subtitle": "Execute D and D' moves with ring fingers for cross and F2L efficiency",
+        "description": "Use ring fingers to execute D-layer moves without regripping, essential for efficient cross execution and keyhole F2L techniques.",
+        "theory": "D moves are critical for cross and keyhole. Right ring finger pushes DFR corner for D, left ring finger pushes DFL for D'. Practice these in cross sequences: a good cross often alternates R, U, and D moves seamlessly.",
+        "drills": [
+          "Execute D and D' with ring fingers 50 times, minimize hand shift",
+          "Practice cross sequences incorporating D moves without pauses"
+        ]
+      },
+      "m-slice-basics": {
+        "title": "M-slice technique",
+        "subtitle": "Execute M, M', and M2 for advanced algs and Roux",
+        "description": "Learn proper M-slice execution: M' with ring/middle finger push from back, M with pull from front, and M2 double flick.",
+        "theory": "M moves follow the L direction: M' goes the same direction as L', M goes with L. For M', push the BD edge forward with your ring or middle finger from behind. M pulls the UF edge toward you. Essential for H-Perm, Z-Perm, and Roux LSE.",
+        "drills": [
+          "Execute H-Perm (M2 U M2 U2 M2 U M2) 25 times focusing on M2 flicks",
+          "Practice M' U and M U' triggers in isolation"
+        ]
+      },
+      "advanced-finger-tricks": {
+        "title": "Advanced finger tricks",
+        "subtitle": "Master wide moves (r,l,f), S-slice, and pinch moves",
+        "description": "Expand your physical vocabulary to include wide turns, S/E-slice moves, and compound techniques that reduce move counts in advanced algorithms.",
+        "theory": "Wide moves (r = R + M') are essential for rotationless OLL. S-slice moves appear in advanced F2L. Pinch moves (thumb+index gripping a layer) enable fast F and B moves. Each new physical technique unlocks faster execution of advanced algorithms.",
+        "drills": [
+          "Practice r U R' U' r' F R F' (wide OLL trigger)",
+          "Learn S-move technique for ZBLL and advanced F2L algorithms"
+        ]
+      },
+      "regrip-minimization": {
+        "title": "Regrip minimization",
+        "subtitle": "Reduce hand repositioning to near-zero throughout the entire solve",
+        "description": "Eliminate unnecessary regrips by choosing algorithms that flow naturally from the ending position of the previous step.",
+        "theory": "Every regrip costs ~0.2-0.3s. A solve with 10 regrips loses 2-3 seconds. Choose algorithms that end in positions compatible with the next step. Use the home grip consistently. Plan algorithm transitions so your hands are always ready.",
+        "drills": [
+          "Record solves and count regrips — target: ≤2 per solve",
+          "Audit your algorithm set: replace algorithms that cause regrips"
+        ]
+      },
+      "peak-tps-execution": {
+        "title": "Peak TPS execution",
+        "subtitle": "Achieve and maintain 10+ TPS on known algorithms with full accuracy",
+        "description": "Push your physical turning speed to elite levels (10-12+ TPS) on algorithms while maintaining lockup-free accuracy and fluid transitions.",
+        "theory": "TPS naturally increases with practice but plateaus without deliberate speed training. Focus on 'burst TPS' during PLL execution and steady-state TPS during F2L. The balance is speed vs lockups — faster is only better if you don't lock up.",
+        "drills": [
+          "PLL Time Attack targeting sub-35s for all 21",
+          "TPS burst drills: execute T-Perm as fast as possible, verify accuracy"
+        ]
+      },
+      "inspection-basics": {
+        "title": "Inspection basics",
+        "subtitle": "Use the 15-second WCA inspection to plan the cross before starting",
+        "description": "Learn to use inspection time productively: locate cross pieces, plan a basic cross solution, and position hands before starting the timer.",
+        "theory": "Inspection is not just 'looking at the cube' — it's active planning. Find all four cross edges, plan their sequence, and rehearse mentally. Even planning 2-3 edges is better than starting blind. Build the habit of using every second of inspection.",
+        "drills": [
+          "Use a 15s countdown — plan what you can, then execute",
+          "Start with planning 2 cross edges, progress to all 4"
+        ]
+      },
+      "cross-planning-inspect": {
+        "title": "Full cross during inspection",
+        "subtitle": "Plan the complete 4-edge cross solution within 15 seconds every solve",
+        "description": "Consistently plan all four cross edge placements during inspection, including move sequence and final positions of cross edges.",
+        "theory": "This is the baseline inspection skill for sub-25 solving. Identify each cross edge's path, calculate the sequence, and visualize the final cross state. The brain can hold 6-8 moves in working memory easily — a full cross plan fits within this limit.",
+        "drills": [
+          "Use unlimited inspection initially, then reduce to 15s",
+          "After solving cross, verify all edges match both centers"
+        ]
+      },
+      "full-inspection-15s": {
+        "title": "15-second inspection mastery",
+        "subtitle": "Maximize every second of inspection: plan cross and spot F2L opportunities",
+        "description": "Structure your 15 seconds: 5s for cross planning, 5s for cross rehearsal, 5s for F2L piece spotting — extracting maximum value from inspection.",
+        "theory": "Elite cubers have a structured inspection routine: (1) locate cross pieces on preferred face, (2) plan sequence, (3) mentally rehearse, (4) identify first F2L pair pieces. This deliberate structure prevents panic and maximizes pre-solve preparation.",
+        "drills": [
+          "Practice with a partner enforcing strict 15s inspection",
+          "After inspection, rate yourself: did you find pair 1 pieces?"
+        ]
+      },
+      "cross-one-inspect": {
+        "title": "Cross+1 inspection",
+        "subtitle": "Plan the cross AND predict the location of the first F2L pair during inspection",
+        "description": "During the 15-second inspection, plan the full cross AND identify or predict where the first F2L pair pieces will end up after cross execution.",
+        "theory": "Cross+1 is the single highest-impact inspection skill for breaking sub-15. By tracking the corner and edge of pair 1 through your cross solution, you eliminate the post-cross pause entirely. This requires visualizing the cube state after cross completion.",
+        "drills": [
+          "Cross+1 drill: execute cross, immediately solve pair 1 without pause",
+          "Track a specific piece through cross — predict its final location"
+        ]
+      },
+      "pair-prediction": {
+        "title": "Multi-pair prediction",
+        "subtitle": "Predict how F2L pairs change during cross and between slots",
+        "description": "During inspection and throughout the solve, mentally track how piece positions evolve with each move, anticipating F2L pairs multiple steps ahead.",
+        "theory": "Multi-pair prediction is the bridge to elite solving. By understanding how cross moves affect F2L pieces, you can spot emerging pairs before they fully form. This requires deep cube awareness — knowing where each tracked piece goes after every move.",
+        "drills": [
+          "After planning cross, predict which corner-edge combinations will be near each other",
+          "Track all 8 F2L pieces through cross execution (name their positions)"
+        ]
+      },
+      "multi-solution-compare": {
+        "title": "Multi-solution comparison",
+        "subtitle": "Evaluate multiple cross/F2L strategies during inspection and pick the best",
+        "description": "In 15 seconds, mentally compare 2-3 cross approaches and select the one with the best F2L follow-up potential, not just the shortest cross.",
+        "theory": "The shortest cross is not always the best. An 8-move cross with perfect F2L setup beats a 5-move cross with terrible follow-up. At the master level, inspection involves strategic choice: which face? XCross possible? Best pair 1 accessibility?",
+        "drills": [
+          "For each scramble, plan 2 different crosses, compare quality",
+          "Time the first 15 moves for each cross choice, compare results"
+        ]
+      },
+      "full-solve-planning": {
+        "title": "Full solve architecture",
+        "subtitle": "Mentally outline the entire solve structure during inspection",
+        "description": "Develop a high-level solve strategy during inspection: cross plan, F2L slot solving order, potential XCross/multislot opportunities, and transition awareness.",
+        "theory": "At the elite level, inspection isn't just about cross+1 — it's about solve architecture. Which slots look easy? Which pair should be last? Is WV applicable? This strategic overview prevents mid-solve indecision and ensures optimal slot ordering.",
+        "drills": [
+          "During inspection, name the order you'll solve F2L slots",
+          "After solve, compare planned vs actual slot order"
+        ]
+      },
+      "single-cross-mastery": {
+        "title": "Single Cross Mastery",
+        "subtitle": "Achieve consistent, efficient solves on one cross color before expanding",
+        "description": "Master your primary cross color (typically white) to the point where cross planning and F2L recognition are automatic and effortless.",
+        "theory": "Before expanding to other colors, your primary color should be deeply ingrained — you should see F2L pairs instantly and plan crosses in seconds. This ensures you have a 'home base' to return to when learning new colors feels frustrating.",
+        "drills": [
+          "Achieve consistent sub-30 solves on white cross before starting CN",
+          "Ensure cross planning on white takes ≤12 seconds in inspection"
+        ]
+      },
+      "dual-color-neutrality": {
+        "title": "Dual Color Neutrality",
+        "subtitle": "Solve on both white and yellow cross with equal proficiency",
+        "description": "Extend your solving ability to the opposite cross color (yellow if you started on white), maintaining the same lookahead and recognition speed.",
+        "theory": "Dual CN (white + yellow) is the most practical step toward full CN. F2L colors are identical (just inverted), so recognition patterns transfer easily. The cross on the second color will be slow at first — expect ~100 solves before comfort.",
+        "drills": [
+          "Complete 100 solves exclusively on yellow cross",
+          "Compare yellow vs white solve times — target: within 10%"
+        ]
+      },
+      "opposite-color-training": {
+        "title": "Opposite Color Training",
+        "subtitle": "Add red/orange and blue/green cross pairs systematically by dedicated practice blocks",
+        "description": "Methodically add new cross colors one pair at a time, building recognition patterns for non-primary colors through dedicated practice blocks.",
+        "theory": "The most effective CN training method: dedicate 1-2 weeks per new color pair (red+orange first, then blue+green). Solve 50+ solves per day on the new color. The CNY method: Color-Neutral-Yellow, alternating new colors with yellow solves to maintain dual CN.",
+        "drills": [
+          "Week 1-2: red cross only (100 solves total)",
+          "Week 3-4: orange, Week 5-6: blue, Week 7-8: green"
+        ]
+      },
+      "full-color-neutrality": {
+        "title": "Full Color Neutrality",
+        "subtitle": "Solve on any of the six faces with zero hesitation or speed penalty",
+        "description": "Achieve complete color neutrality: inspect and choose the best cross among all six faces without any speed difference between colors.",
+        "theory": "Full CN increases the probability of finding a ≤4-move cross from ~6% to ~29%. It requires rewiring F2L recognition to be color-relative rather than color-absolute. At full mastery, you won't remember which color you started on after the solve.",
+        "drills": [
+          "Random cross color sessions: let a die choose your cross color",
+          "Target: all 6 colors within 5% of each other in average time"
+        ]
+      },
+      "subconscious-cn": {
+        "title": "Subconscious Color Neutrality",
+        "subtitle": "Choose the optimal cross color automatically during inspection without conscious deliberation",
+        "description": "Your brain automatically evaluates all six faces during inspection and selects the best option without you consciously 'trying' each color.",
+        "theory": "At this level, CN is fully internalized. Your eyes scan all faces in 2-3 seconds and your brain registers the best option. You no longer see 'colors' — you see relative block positions and cross edge arrangements. This frees cognitive resources for deeper inspection.",
+        "drills": [
+          "Time your color selection: pick the best cross in under 3 seconds",
+          "After solve, try to recall which color you used — if you can't, you've internalized CN"
+        ]
+      },
+      "cube-anatomy-hardware": {
+        "title": "Cube Hardware 101",
+        "subtitle": "Understand cube components: core, screws, springs, pieces, and how they interact",
+        "description": "Learn the physical construction of a speedcube: core mechanism, center pieces with screws/springs, edge pieces with torpedoes, and corner pieces with stalks.",
+        "theory": "A modern speedcube has a spherical core with 6 screws+springs for tensioning, 12 edge pieces with anti-pop torpedoes, and 8 corner pieces. Understanding how these interact helps with setup and maintenance decisions.",
+        "drills": [
+          "Disassemble and reassemble your cube to understand its structure",
+          "Identify all components and their functions"
+        ]
+      },
+      "basic-lubrication": {
+        "title": "Basic Lubrication",
+        "subtitle": "Apply lube correctly to improve speed, smoothness, and cube lifespan",
+        "description": "Learn to clean and lubricate your cube: disassemble, apply lube to tracks and core, reassemble, and break in properly.",
+        "theory": "Lubrication reduces friction between pieces. Thin/fast lubes go on piece tracks for speed. Thick lubes go in the core for stability and control. Apply 2-4 drops, spread evenly, and do 50+ solves to break in. Over-lubing makes cubes gummy.",
+        "drills": [
+          "Complete your first clean+lube cycle following a video guide",
+          "Test cube feel before and after to understand lube effect"
+        ]
+      },
+      "tensioning-basics": {
+        "title": "Tensioning Basics",
+        "subtitle": "Adjust screw tension and spring compression for optimal cube feel",
+        "description": "Understand how screw depth and spring compression affect stability, corner cutting, and speed. Find your personal optimal tension.",
+        "theory": "Tighter screws = more stable but slower, less corner cutting. Looser = faster but more lockups and pops. Spring compression controls resistance. Most modern cubes have dual-adjustment: set screw depth for overall tension, adjust compression for spring feel.",
+        "drills": [
+          "Experiment with 3 tension levels: loose, medium, tight — feel the difference",
+          "Find the tightest setting that still allows 45° corner cutting"
+        ]
+      },
+      "magnet-adjustment": {
+        "title": "Magnet Adjustment",
+        "subtitle": "Configure magnet strength for your turning style and speed",
+        "description": "Adjust or swap magnets to match your turning force. Stronger magnets = more stability and snap, weaker = more fluidity with less resistance.",
+        "theory": "Magnets provide tactile feedback and auto-alignment. Core magnets (corner-to-core) add stability without slowing individual layer turns. Edge-corner magnets help with alignment. Adjustable systems let you fine-tune the magnetic 'click' to your preference.",
+        "drills": [
+          "Try all magnet settings on your adjustable cube",
+          "Note solve times and feel at each setting to find your sweet spot"
+        ]
+      },
+      "cube-selection": {
+        "title": "Cube Selection Strategy",
+        "subtitle": "Choose the right cube for your skill level, style, and goals",
+        "description": "Understand the speedcube market: budget, mid-range, and flagship cubes. Match cube characteristics to your solving style and level.",
+        "theory": "Beginners: any modern magnetic budget cube ($10-20). Intermediate: dual-adjustment cubes ($25-40). Advanced: flagship cubes with core magnets and customization ($40-80). Key factors: turning feel (crunchy vs buttery), size (54-56mm), and weight.",
+        "drills": [
+          "Research the top 5 cubes used in recent WCA competitions",
+          "If possible, try a friend's cube to compare feels"
+        ]
+      },
+      "custom-cube-setup": {
+        "title": "Custom Cube Setup",
+        "subtitle": "Create a personalized cube setup matching your exact preferences",
+        "description": "Combine lube selection, tension optimization, and magnet configuration into a personalized setup that maximizes YOUR turning style.",
+        "theory": "Every cuber's setup is unique. Fast turners prefer tighter tensions with light lube. Precise solvers prefer stronger magnets. The perfect setup is iterative: adjust one variable at a time, test with 50+ solves, then tweak again.",
+        "drills": [
+          "Document your current setup (lube type, tensions, magnet strength)",
+          "Adjust one variable, solve 50 times, record feel and times"
+        ]
+      },
+      "maintenance-optimization": {
+        "title": "Maintenance & Optimization",
+        "subtitle": "Regular cleaning, re-lubrication, and wear monitoring for peak performance",
+        "description": "Establish a maintenance routine: cleaning schedule, lube reapplication timing, spring replacement, and monitoring cube wear over thousands of solves.",
+        "theory": "Cubes degrade gradually: lube dries out, springs weaken, plastic wears. A maintained cube should be cleaned every 500-1000 solves and re-lubed. Springs lose tension after ~10k solves. Regular maintenance prevents gradual speed loss.",
+        "drills": [
+          "Create a maintenance log: track solves since last clean/lube",
+          "Learn to identify when your cube needs lubrication by feel"
+        ]
+      },
+      "nerves-management": {
+        "title": "Nerves Management",
+        "subtitle": "Control competition anxiety and maintain composure under pressure",
+        "description": "Develop techniques to manage nervousness: breathing exercises, positive self-talk, and reframing anxiety as excitement.",
+        "theory": "Competition nerves are universal — even world champions feel them. The difference is how they're managed. Deep breathing (4-7-8 pattern) activates the parasympathetic nervous system. Reframing 'I'm nervous' as 'I'm excited' changes the physiological response.",
+        "drills": [
+          "Practice 4-7-8 breathing before timed solves",
+          "Simulate competition pressure: have someone watch you solve"
+        ]
+      },
+      "pre-solve-routine": {
+        "title": "Pre-Solve Routine",
+        "subtitle": "Develop a consistent ritual before each solve to center focus and trigger flow",
+        "description": "Create a repeatable pre-solve ritual: deep breath, hand warmup, visualization, and intention setting — performed identically every solve.",
+        "theory": "A pre-solve routine is a psychological anchor. It signals your brain 'we're about to solve now' and triggers the optimal mental state. Most elite cubers have a specific sequence: inspect hands, deep breath, pick up cube, start inspection — always the same.",
+        "drills": [
+          "Design a 10-second pre-solve routine and use it for 50 solves",
+          "Evaluate if consistency improved with the routine"
+        ]
+      },
+      "bad-solve-recovery": {
+        "title": "Bad Solve Recovery",
+        "subtitle": "Reset mentally after a poor solve and prevent one bad result from cascading",
+        "description": "Develop the resilience to immediately reset after a bad solve, treating each attempt as independent and preventing negative momentum.",
+        "theory": "The 'reset skill' is crucial in Ao5 format where one bad solve can cascade. Physical reset: put cube down, shake hands out, deep breath. Mental reset: treat the bad solve as data, not failure. The next solve is a fresh opportunity with zero connection to the last.",
+        "drills": [
+          "After a bad solve, time your reset: can you be mentally ready in 10 seconds?",
+          "Practice with deliberate bad scrambles to train reset response"
+        ]
+      },
+      "competition-strategy": {
+        "title": "Competition Strategy",
+        "subtitle": "Plan approach: safe vs risky solves, round management, and pacing",
+        "description": "Develop strategic thinking for WCA competitions: when to play it safe (qualification rounds) and when to push for speed (finals).",
+        "theory": "Competition strategy varies by round. Qualification rounds: prioritize consistency and avoid DNFs — safe crosses, comfortable algorithms. Finals: push limits with aggressive lookahead and faster execution. Know the cut-off times and plan accordingly.",
+        "drills": [
+          "Simulate competition format at home: 5 solves, Ao5 scoring",
+          "Practice 'safe mode' (95% speed) and 'push mode' (100% speed) separately"
+        ]
+      },
+      "focus-techniques": {
+        "title": "Deep Focus Techniques",
+        "subtitle": "Achieve sustained concentration during long practice sessions and competitions",
+        "description": "Train your ability to maintain high-quality focus for extended periods using concentration techniques from sports psychology.",
+        "theory": "Focus is a trainable skill. The Pomodoro technique (25 min focus, 5 min break) works for cubing practice. During competitions, 'tunnel vision' focus — blocking out crowd noise, other competitors, and external stimuli — preserves mental energy between solves.",
+        "drills": [
+          "Practice with deliberate distractions (music, conversation, noise)",
+          "25-minute focused sessions with 5-minute breaks"
+        ]
+      },
+      "flow-state": {
+        "title": "Competition Flow State",
+        "subtitle": "Enter the optimal performance state where solving feels effortless and automatic",
+        "description": "Achieve the flow state during competition: complete absorption in the solve, loss of self-consciousness, and effortless automatic execution.",
+        "theory": "Flow state (Csikszentmihalyi) occurs when challenge perfectly matches skill. In cubing, flow means hands execute while conscious mind observes. Entry conditions: clear goals (the solve), immediate feedback (piece movement), and focused attention.",
+        "drills": [
+          "Practice 'observer mode': let hands solve while you watch passively",
+          "Identify your personal flow triggers (music, silence, specific warmup)"
+        ]
+      },
+      "elite-composure": {
+        "title": "Elite Composure",
+        "subtitle": "Maintain world-class calm, confidence, and mental clarity in any competitive scenario",
+        "description": "Develop the unshakeable mental foundation of a world-class competitor: calm under all conditions, confident without arrogance, focused without tension.",
+        "theory": "Elite composure is built through exposure and reflection. Every competition, every failure, every success is data for mental growth. The goal: perform at your practice level (or better) regardless of stakes, audience, opponent, or prior results.",
+        "drills": [
+          "Compete regularly — composure only develops through real pressure",
+          "After each competition, journal what went well mentally and what to improve"
+        ]
+      },
+      "session-structure": {
+        "title": "Training Session Structure",
+        "subtitle": "Design effective practice sessions with clear goals rather than mindless solving",
+        "description": "Learn to structure practice time: warmup, focused drills, timed solves, cooldown — replacing 'just solving' with deliberate, goal-oriented sessions.",
+        "theory": "Mindless solving is the #1 reason cubers plateau. A structured session: 5min warmup (slow solves), 15min focused drill (your weakest area), 20min timed solves tracking progress, 5min cooldown. Each session has one specific improvement goal.",
+        "drills": [
+          "Plan your next 5 practice sessions with specific goals",
+          "Track what you practiced and whether you improved"
+        ]
+      },
+      "physical-ergonomics": {
+        "title": "Physical Ergonomics & Wrist Care",
+        "subtitle": "Practice hand stretches, posture, and strain prevention for safe high-TPS cubing",
+        "description": "Maintain hand, wrist, and forearm health through regular warming up, stretching, and ergonomic posture to prevent strain injuries like RSI.",
+        "theory": "High-volume speedcubing at 8-12+ TPS puts intense physical strain on finger tendons and wrist flexors. Incorporating 2-minute forearm stretches, wrist rotations, and proper seating posture prevents repetitive strain injuries (RSI) and long-term fatigue.",
+        "drills": [
+          "Perform wrist and finger stretches before every high-volume practice session",
+          "Take 5-minute active rest breaks every 30 minutes of speed solving"
+        ]
+      },
+      "deliberate-practice": {
+        "title": "Deliberate Practice",
+        "subtitle": "Target specific weaknesses with focused drills rather than general solving",
+        "description": "Implement deliberate practice: identify your weakest skill, isolate it, drill it exclusively, and measure improvement before moving on.",
+        "theory": "Deliberate practice (Ericsson) is the science of skill acquisition. Identify your bottleneck (slow cross, poor F2L lookahead, PLL recognition), create isolated practice for that exact skill, drill with immediate feedback, and only move on when measurable improvement occurs.",
+        "drills": [
+          "Identify your #1 weakness using split timing analysis",
+          "Dedicate 3 sessions exclusively to that weakness"
+        ]
+      },
+      "algorithm-drilling": {
+        "title": "Algorithm Drilling System",
+        "subtitle": "Use systematic drilling and spaced repetition to master algorithms permanently",
+        "description": "Apply spaced repetition principles to algorithm learning: drill new algorithms daily at first, then progressively space reviews as mastery increases.",
+        "theory": "Spaced repetition optimizes long-term algorithm retention. New alg: practice 20x immediately, then 10x after 1 hour, 5x next day, then every 3 days until automatic. Use algorithm trainers (J Perm, SpeedCubeDB) that track per-algorithm speed.",
+        "drills": [
+          "Create a spaced repetition schedule for your current algorithm learning set",
+          "Track execution time for each algorithm over 2 weeks"
+        ]
+      },
+      "weakness-analysis": {
+        "title": "Weakness Analysis",
+        "subtitle": "Use split timing and solve reconstruction to identify your exact bottlenecks",
+        "description": "Analyze your solves scientifically: measure time per phase, compare against benchmarks for your target level, and identify the biggest gap.",
+        "theory": "Raw solve times hide the real story. Split analysis reveals: is your cross 3s when it should be 2s? Is F2L recognition 60% of your time? Use CubeForge's analysis tools or CsTimer's multi-phase timing to get per-phase data. Fix your biggest gap first.",
+        "drills": [
+          "Complete 25 solves with phase timing, identify worst phase",
+          "Compare your splits against benchmarks for your target level"
+        ]
+      },
+      "split-analysis": {
+        "title": "Split Analysis & Benchmarking",
+        "subtitle": "Compare your phase splits against target-level benchmarks to guide improvement",
+        "description": "Use standardized split benchmarks (cross, F2L, OLL, PLL times) for each skill level to identify which phase is holding you back.",
+        "theory": "Benchmark splits: Sub-20: Cross≤3s, F2L≤10s, OLL≤3s, PLL≤4s. Sub-15: Cross≤2.5s, F2L≤7.5s, OLL≤2.5s, PLL≤2.5s. Sub-10: Cross≤1.8s, F2L≤5s, OLL≤1.5s, PLL≤1.7s. Compare your splits, focus on the phase furthest from target.",
+        "drills": [
+          "Record splits for 50 solves and create a phase-by-phase average",
+          "Set a target split for each phase based on your next level goal"
+        ]
+      },
+      "smart-training-planning": {
+        "title": "Smart Training Planning",
+        "subtitle": "Create data-driven weekly training plans based on your split analysis",
+        "description": "Design weekly training plans that allocate practice time proportionally to your weaknesses, with built-in progress tracking and plan adjustment.",
+        "theory": "A smart training plan allocates time based on need, not preference. If cross is your weakness (30% above benchmark) and OLL is fine, spend 40% of practice on cross, 30% on F2L, 20% on PLL, 10% on OLL. Re-assess weekly and rebalance.",
+        "drills": [
+          "Create a 4-week training plan based on your current split analysis",
+          "Re-assess splits after 4 weeks and adjust the plan"
+        ]
+      },
+      "periodization": {
+        "title": "Training Periodization",
+        "subtitle": "Structure long-term training in cycles: build, peak, recover, compete",
+        "description": "Apply athletic periodization principles to speedcubing: structured cycles of skill building, speed peaking, tapering, and competition performance.",
+        "theory": "Periodization prevents burnout and maximizes competition performance. Build phase (3-4 weeks): learn new techniques and algorithms. Peak phase (2 weeks): maximize TPS and flow. Taper (1 week pre-comp): reduce volume, maintain quality. Compete: perform, then recover (1 week light practice).",
+        "drills": [
+          "Plan a 6-week periodization cycle leading to a target date",
+          "Track volume, intensity, and performance throughout the cycle"
+        ]
+      },
+      "roux-first-block": {
+        "title": "Roux First Block",
+        "subtitle": "Build a 1x2x3 block on the left side efficiently and intuitively",
+        "description": "Learn to construct the first 1x2x3 block (left side) using intuitive block building, typically in 7-10 moves, without relying on algorithms.",
+        "theory": "The first block is Roux's foundation. Build the 1x2x2 (square) first, then add the remaining 1x1x2 pair. Plan during inspection — identify a 2x2 square opportunity and expand. This builds spatial reasoning that benefits ALL methods.",
+        "drills": [
+          "Practice first block only (stop after FB) 50 times",
+          "Target: first block in ≤10 moves, planned during inspection"
+        ]
+      },
+      "roux-second-block": {
+        "title": "Roux Second Block",
+        "subtitle": "Build the 1x2x3 block on the right side without breaking FB",
+        "description": "Construct the second 1x2x3 block on the right side using only R, r, M, and U moves, preserving the completed first block.",
+        "theory": "After FB, the cube is restricted to R, r, M, and U moves (no L, F, B). This constraint makes SB faster but requires different pair-building techniques. The square-first approach mirrors FB: build a 1x2x2, then add the final pair.",
+        "drills": [
+          "Practice second block starting from a solved first block",
+          "Target: second block in ≤15 moves using only R/r/M/U"
+        ]
+      },
+      "roux-cmll": {
+        "title": "Roux CMLL",
+        "subtitle": "Solve all corners in one algorithm — 42 cases (ignoring M-slice)",
+        "description": "Learn all 42 CMLL algorithms to solve the last layer corners in one step, ignoring the M-slice which is solved in LSE.",
+        "theory": "CMLL solves corners while ignoring the M-slice and U-layer edges. 42 cases (7 orientation groups × 6 permutation cases). Recognition is by top-face color pattern and side stickers. CMLL uses R and U moves primarily — fast and ergonomic.",
+        "drills": [
+          "Learn CMLL grouped by orientation (start H and Pi — 8 cases)",
+          "CMLL time attack: execute all 42 sub-50s"
+        ]
+      },
+      "roux-lse-basics": {
+        "title": "LSE Basics",
+        "subtitle": "Solve Last Six Edges: orientation, UL/UR placement, and final permutation",
+        "description": "Master the LSE phase in 3 sub-steps: edge orientation, UL+UR edge placement, and M-slice permutation.",
+        "theory": "LSE uses only M and U moves. Step 1: orient all 6 edges (recognize bad edges on U/D faces using arrow rule). Step 2: place UL/UR edges on the bottom. Step 3: permute the remaining 4 M-slice edges (4 cases: Ua, Ub, H, Z equivalents).",
+        "drills": [
+          "Practice LSE edge orientation recognition — identify bad edges in under 2s",
+          "Drill the 4 final M-slice permutation cases"
+        ]
+      },
+      "roux-lse-advanced": {
+        "title": "Advanced LSE",
+        "subtitle": "Optimize LSE with advanced techniques: EOLR and efficient UL/UR placement",
+        "description": "Apply EOLR (Edge Orientation + Left/Right placement combined) and other advanced LSE techniques to reduce move count and eliminate pauses.",
+        "theory": "Advanced LSE combines EO and UL/UR placement into fewer moves. EOLR places UL/UR edges while orienting — saving 3-5 moves. Advanced solvers also use misoriented centers and BU recognition for the final permutation.",
+        "drills": [
+          "Learn EOLR for the 6 most common edge orientation patterns",
+          "Practice LSE with BU (back-up) edge recognition"
+        ]
+      },
+      "roux-eolr": {
+        "title": "EOLR Mastery",
+        "subtitle": "Combine edge orientation with LR edge placement in one fluid step",
+        "description": "Full EOLR integration: orient all edges and place UL/UR edges simultaneously, reducing LSE from 3 sub-steps to effectively 2.",
+        "theory": "EOLR is the biggest advancement in Roux LSE. Instead of orient edges → place LR → permute M-slice, EOLR combines the first two. There are ~30 EOLR cases based on misoriented edge count and LR edge positions.",
+        "drills": [
+          "Learn EOLR cases grouped by edge orientation count",
+          "Practice EOLR→4c (M-slice permutation) as one continuous flow"
+        ]
+      },
+      "roux-non-matching": {
+        "title": "Non-Matching Blocks",
+        "subtitle": "Build blocks regardless of center color alignment, resolving at the end",
+        "description": "Use non-matching blocks (NMB) to exploit favorable piece positions even when centers don't align, fixing the offset at the end of the solve.",
+        "theory": "NMB allows building blocks relative to a 'wrong' center, solving pieces that would be difficult with standard alignment. The offset is corrected later in the solve. This technique is especially powerful in Roux and provides flexibility similar to pseudo-slotting in CFOP.",
+        "drills": [
+          "Practice first block with offset centers (e.g., build on red when blue is correct)",
+          "Learn to track the offset and resolve it during LSE"
+        ]
+      },
+      "roux-full-mastery": {
+        "title": "Roux Full Mastery",
+        "subtitle": "Complete Roux proficiency at expert level with sub-10 capability",
+        "description": "Achieve full Roux mastery: efficient blocks (~25 moves), instant CMLL recognition, advanced EOLR, and zero-pause LSE — capable of sub-8 solves.",
+        "theory": "Roux at the highest level rivals CFOP. The method excels in low move count (averaging 45-50 moves vs CFOP's 55-60) and high TPS potential in LSE. Mastery requires ~5000+ dedicated Roux solves and full integration of all advanced techniques.",
+        "drills": [
+          "Complete 1000 Roux solves tracking block efficiency and LSE speed",
+          "Target: first block in ≤7 moves, second block ≤12, CMLL sub-1.5s, LSE sub-2s"
+        ]
+      },
+      "zz-eoline": {
+        "title": "EOLine",
+        "subtitle": "Orient all 12 edges and place DF/DB edges in one step during inspection",
+        "description": "Learn to orient all 12 edges and place the DF and DB edges simultaneously — the signature first step of the ZZ method.",
+        "theory": "EOLine is ZZ's defining step. Count bad edges (edges that can't be solved using only R, L, U, D). An even number of bad edges is orientable. Place DF and DB while fixing bad edges. After EOLine, the cube is solvable using only R, U, and L moves.",
+        "drills": [
+          "Practice counting bad edges — identify all within 5 seconds",
+          "Plan EOLine during inspection — target: 8-10 moves"
+        ]
+      },
+      "zz-eocross": {
+        "title": "EOCross",
+        "subtitle": "Orient edges while solving the full cross (not just the line) for better F2L",
+        "description": "Transition from EOLine to EOCross: orient all edges AND solve the full cross (DF, DB, DL, DR edges) in one step for better lookahead.",
+        "theory": "EOCross is more moves than EOLine but sets up a much better F2L stage. With a full cross solved and all edges oriented, F2L becomes rotationless by definition. Most modern ZZ solvers prefer EOCross for its ergonomic advantages.",
+        "drills": [
+          "Plan EOCross during inspection — target: 12-14 moves",
+          "Compare EOLine vs EOCross solves to find your preference"
+        ]
+      },
+      "zz-f2l": {
+        "title": "ZZ F2L",
+        "subtitle": "Rotationless F2L using only R, U, and L moves with all edges oriented",
+        "description": "Solve F2L pairs using only R, U, L moves — no cube rotations needed since all edges are pre-oriented. Focus on block building efficiency.",
+        "theory": "ZZ F2L's main advantage: ZERO rotations. All pairs are solved in the front 180° hemisphere. Pairs can go into RF, LF, RB, or LB slots with equal ease. This trains rotationless solving skills that transfer directly to CFOP.",
+        "drills": [
+          "Practice ZZ F2L only (stop after F2L) — target: sub-8s",
+          "Compare move count with your CFOP F2L to see efficiency gains"
+        ]
+      },
+      "zz-coll-epll": {
+        "title": "ZZ COLL+EPLL",
+        "subtitle": "Use COLL for corner control and EPLL for fast edge permutation",
+        "description": "Apply COLL (40 cases) to solve corners after F2L, then use EPLL (4 cases: Ua, Ub, H, Z) to finish — the standard expert ZZ last layer.",
+        "theory": "Since ZZ orients all edges in the first step, the LL cross is always formed after F2L. This makes COLL the natural choice: solve corners in one step, leaving only the 4 fast edge PLLs. This is more efficient than standard OLL+PLL.",
+        "drills": [
+          "Combine COLL recognition with EPLL execution into one flow",
+          "Target: COLL+EPLL in under 3.5s total"
+        ]
+      },
+      "zz-zbll": {
+        "title": "ZZ to ZBLL",
+        "subtitle": "Full ZBLL integration — the ultimate ZZ last layer since edges are always oriented",
+        "description": "Leverage ZZ's guaranteed edge orientation to use ZBLL for 1-look last layer — solving OLL and PLL simultaneously in every solve.",
+        "theory": "ZZ + ZBLL is a natural pairing: ZZ guarantees oriented LL edges, which is exactly ZBLL's prerequisite. This means EVERY solve ends in a 1-look last layer. Combined with rotationless F2L, this is one of the most efficient solving systems possible.",
+        "drills": [
+          "Only ZBLL cases applicable (edges already oriented — the full set is usable)",
+          "Practice ZZ specifically with ZBLL for T and U subsets first"
+        ]
+      },
+      "zz-ct": {
+        "title": "ZZ-CT",
+        "subtitle": "ZZ with Corner Twisty — insert last pair solving CP for 2GLL finish",
+        "description": "Apply the ZZ-CT variant: use TSLE (tran-style last edge) during final pair insertion, then 2GLL for 2-gen last layer.",
+        "theory": "ZZ-CT is an alternative to ZBLL. TSLE inserts the last F2L edge while orienting corners (~100 cases). Then 2GLL solves the rest using only R and U moves. This trades ZBLL's algorithm count for a 2-step system with better ergonomics.",
+        "drills": [
+          "Learn TSLE for the most common last-slot edge positions",
+          "Practice 2GLL recognition (2-gen PLL and ZBLL variants)"
+        ]
+      },
+      "zz-full-mastery": {
+        "title": "ZZ Full Mastery",
+        "subtitle": "Complete ZZ proficiency with competition-ready sub-10 capability",
+        "description": "Achieve full ZZ mastery: efficient EOCross, optimized rotationless F2L, and rapid ZBLL or CT last layer — capable of sub-8 solves.",
+        "theory": "ZZ at the elite level combines the best of all worlds: rotationless solving, 1-look last layer, and low move counts. Fewer top solvers use ZZ than CFOP, but those who master it achieve remarkable efficiency. Average move count: 45-50.",
+        "drills": [
+          "Complete 1000 ZZ solves tracking EOCross efficiency and LL speed",
+          "Target: EOCross in ≤12 moves, F2L sub-6s, last layer sub-2s"
+        ]
+      },
+      "bld-old-pochmann": {
+        "title": "Old Pochmann Method",
+        "subtitle": "Solve edges and corners one piece at a time using the classic BLD method",
+        "description": "Learn the Old Pochmann method: use a fixed buffer piece and swap individual edges/corners using T-Perm and Y-Perm — the entry point to blindfolded solving.",
+        "theory": "OP uses a buffer piece (UR for edges, UBR for corners) and swaps it with the target piece using setup moves + T-Perm (edges) or modified Y-Perm (corners). Each piece is solved individually. This method teaches the fundamentals of BLD piece tracing.",
+        "exampleFormula": "T-Perm: R U R' U' R' F R2 U' R' U' R U R' F' — edge swap",
+        "drills": [
+          "Practice T-Perm and Y-Perm until they're automatic with eyes closed",
+          "Trace edge cycles on a solved cube with your eyes open first"
+        ]
+      },
+      "bld-memo-basics": {
+        "title": "BLD Memo Basics",
+        "subtitle": "Learn Speffz letter scheme and basic memorization for edges and corners",
+        "description": "Master the Speffz lettering scheme and create a basic memo system: assign letters to stickers, trace piece cycles, and create memorable words/images.",
+        "theory": "Speffz assigns one letter to each sticker (24 edge stickers = A-X, 24 corner stickers = A-X). Tracing cycles: start at buffer, follow the piece that belongs there, continue until back at buffer. Convert letter pairs into memorable images or words.",
+        "drills": [
+          "Practice tracing edge cycles on a solved cube (no memo needed)",
+          "Create your letter pair image list for all 576 combinations"
+        ]
+      },
+      "bld-m2-op": {
+        "title": "M2 for Edges",
+        "subtitle": "Upgrade edge solving from Old Pochmann to M2 — faster, fewer moves per edge",
+        "description": "Replace Old Pochmann edges with the M2 method: use the DF buffer and M2 move to swap pieces, with special algorithms for M-slice targets.",
+        "theory": "M2 is significantly faster than OP for edges. Each edge is solved with M2 + setup moves (1-3 moves typically). M-slice targets (FU, BD, BU) require special handling. Combined with OP corners, M2/OP is the standard intermediate BLD method.",
+        "drills": [
+          "Practice M2 edge execution without memo until it's fluid",
+          "Learn the special M-slice target algorithms (FU, BD, BU cases)"
+        ]
+      },
+      "bld-letter-pairs": {
+        "title": "Letter Pair Images",
+        "subtitle": "Build a complete letter pair image system for rapid and reliable memorization",
+        "description": "Develop a personal letter pair image system: a unique, vivid image for every two-letter combination (AA, AB, AC... XX) for fast memo encoding.",
+        "theory": "Letter pair images are the standard BLD memo technique. Each pair of letters becomes one mental image (e.g., QK = Quack, MB = Mobile). Images are placed in a memory palace (Roman room) or linked in a story. A good image system enables sub-30s memo.",
+        "drills": [
+          "Create images for all 576 letter pairs over 2-4 weeks",
+          "Practice memo-only: memorize, wait 5 minutes, recall without solving"
+        ]
+      },
+      "bld-audio-loops": {
+        "title": "Audio Loop Memo",
+        "subtitle": "Use rhythmic audio repetition for short-term edge memo during execution",
+        "description": "Apply audio loop memorization for edges: convert letter sequences into rhythmic sounds you repeat internally during corner execution.",
+        "theory": "Audio memo is for short-term recall (edges, executed second). Convert letter string into a rhythmic sound loop (e.g., 'KA-JE-PO-SU-TA' with rhythm). Repeating this internally during corner execution keeps it in phonological working memory. Enables sub-15s edge memo.",
+        "drills": [
+          "Practice converting 6-8 letter strings into audio loops",
+          "Test: memo edges with audio, solve corners OP, recall edges from audio"
+        ]
+      },
+      "bld-3-style": {
+        "title": "3-Style Commutators",
+        "subtitle": "Solve 3 pieces per algorithm using pure commutators — the fastest BLD method",
+        "description": "Transition to full 3-Style: solve 3 edges or 3 corners with one commutator algorithm (8-12 moves), replacing piece-by-piece methods entirely.",
+        "theory": "3-Style uses commutators of the form [A, B] = A B A' B' to cycle 3 pieces. Each cycle solves 2 pieces (buffer + 2 targets) with one algorithm. Full 3-Style requires ~800 algorithms. Most cubers learn a subset of the most common cases.",
+        "exampleFormula": "[R U R', D2] = R U R' D2 R U' R' D2 — corner commutator",
+        "drills": [
+          "Start with 3-Style corners (easier, fewer cases) then progress to edges",
+          "Learn 5 new commutators per week until you've covered the common cases"
+        ]
+      },
+      "bld-multi": {
+        "title": "Multi-BLD",
+        "subtitle": "Solve multiple cubes blindfolded in one attempt — memory palace mastery",
+        "description": "Extend BLD to multiple cubes: memorize and solve 2+ cubes blindfolded consecutively using memory palaces and long-term memo techniques.",
+        "theory": "Multi-BLD scales BLD memo from short-term to long-term memory. Each cube gets its own memory palace location. Review system: memo cubes 1-N, then mentally review all before starting execution. World-class: 50+ cubes blindfolded.",
+        "drills": [
+          "Start with 2 cubes, add 1 per successful attempt",
+          "Build and practice with 5+ memory palace locations"
+        ]
+      },
+      "bld-4bld-5bld": {
+        "title": "BigBLD (4BLD/5BLD)",
+        "subtitle": "Extend BLD to 4x4 and 5x5 cubes with center, wing, and corner systems",
+        "description": "Apply BLD principles to 4x4 and 5x5 cubes: additional piece types (centers, wings, midges), specialized commutators, and expanded memo systems.",
+        "theory": "4BLD/5BLD add centers and wing edges to the standard BLD challenge. Centers require orientation awareness. 4x4 uses U2/r2 methods as a stepping stone from M2/OP. 5x5 adds midges. The memo load scales significantly — 5BLD requires ~100+ targets.",
+        "drills": [
+          "Start 4BLD with U2 centers + r2 wings + OP corners",
+          "Progress to 3-Style for all piece types as you advance"
+        ]
+      },
+      "fmc-blockbuilding": {
+        "title": "FMC Blockbuilding",
+        "subtitle": "Construct efficient 2x2x2 and 2x2x3 blocks as the FMC foundation",
+        "description": "Learn systematic block building for FMC: start with a 2x2x2 block, expand to 2x2x3, then extend to F2L-1 — prioritizing low move counts over speed.",
+        "theory": "FMC block building is fundamentally different from speedsolving: you're optimizing for moves, not time. Start with the easiest 2x2x2 (look for pre-built pairs), expand to 2x2x3, then leave one F2L slot unsolved (F2L-1) to enable better last layer options.",
+        "drills": [
+          "Build 2x2x2 blocks from 10 scrambles, aim for ≤6 moves each",
+          "Expand each to 2x2x3 in ≤8 additional moves"
+        ]
+      },
+      "fmc-pseudo-blocks": {
+        "title": "Pseudo Blocks & Pre-Moves",
+        "subtitle": "Build blocks relative to offset centers using pre-moves for flexibility",
+        "description": "Use pre-moves and pseudo blocks to find shorter block solutions by temporarily ignoring center alignment.",
+        "theory": "A pre-move is applied BEFORE the scramble to shift piece positions. Pseudo blocks are solved relative to an offset center. These techniques dramatically expand the blockbuilding possibilities, often saving 2-4 moves on the 2x2x2 or 2x2x3 phase.",
+        "drills": [
+          "Practice finding 2x2x2 pseudo blocks — compare move count with standard",
+          "Learn to write pre-moves and reverse them at the end of the solution"
+        ]
+      },
+      "fmc-niss": {
+        "title": "NISS Technique",
+        "subtitle": "Normal-Inverse Scramble Switch: find solutions on both scramble directions",
+        "description": "Master NISS: solve on the inverse scramble to find opportunities invisible from the normal direction, switching back and forth for optimal solutions.",
+        "theory": "NISS is arguably the most powerful single technique in FMC. A sequence found on the inverse scramble, when reversed, is a valid sequence on the normal scramble. Switching lets you find continuations for both. Most sub-30 FMC solutions use NISS.",
+        "drills": [
+          "Practice on a scramble: find continuations on both normal and inverse",
+          "Learn to write NISS notation: moves in parentheses are on inverse"
+        ]
+      },
+      "fmc-insertions": {
+        "title": "Insertions (Commutator)",
+        "subtitle": "Insert commutators into a skeleton for move-cancellation optimization",
+        "description": "Build a skeleton (partial solution leaving 3-5 unsolved pieces), then insert commutators at optimal points to solve remaining pieces with maximum cancellation.",
+        "theory": "Instead of solving the last pieces at the end, insert a commutator earlier in the solve where it cancels moves with surrounding sequences. A well-placed insertion can solve 3 corners in 8 moves but cancel 4-6, netting only 2-4 moves. This is the key to sub-28 solves.",
+        "drills": [
+          "Practice building skeletons that leave exactly 3-5 corners",
+          "Use insertion finder tools to compare your insertions with optimal"
+        ]
+      },
+      "fmc-edge-orientation": {
+        "title": "FMC Edge Orientation",
+        "subtitle": "Orient edges early to reduce the cube to a more manageable state",
+        "description": "Apply systematic edge orientation early in the FMC solution to restrict subsequent moves and simplify block building.",
+        "theory": "EO in FMC (similar to ZZ's first step) orients all edges so you only need R, L, U, D moves. This reduces the search space and often leads to shorter continuations. EO-first approaches are the foundation of modern DR-based FMC solving.",
+        "drills": [
+          "Practice identifying misoriented edges on a given scramble",
+          "Solve EO in ≤6 moves and note how it simplifies the next steps"
+        ]
+      },
+      "fmc-domino-reduction": {
+        "title": "Domino Reduction (DR)",
+        "subtitle": "Reduce the cube to a 3-color 'domino' state — the modern standard for elite FMC",
+        "description": "Achieve Domino Reduction: transform the cube into a state solvable using only U, D, R2, L2, F2, B2 moves — the modern standard for elite FMC solving.",
+        "theory": "DR is the dominant technique in modern FMC. The solve is split: (1) reach DR state (typically 10-14 moves), (2) solve from DR (typically 10-14 moves). The DR state limits available moves, making the second phase highly constrained and efficient.",
+        "drills": [
+          "Practice reaching DR from random scrambles — compare move counts",
+          "Study DR solutions from top solvers (Sebastiano Tronto, Wong Chong Wen, Cale Schoon)"
+        ]
+      },
+      "fmc-htr": {
+        "title": "Half-Turn Reduction (HTR)",
+        "subtitle": "Further reduce from DR to a half-turn-only state for the finish",
+        "description": "From a DR state, find an HTR — a further reduced state where only half-turns (R2, L2, U2, D2, F2, B2) are needed to solve the cube.",
+        "theory": "HTR is an advanced extension of DR. From DR, solve corner permutation and some edges to reach a state solvable with only half-turns. The final phase from HTR to solved is extremely constrained, often yielding very short solutions.",
+        "drills": [
+          "From a DR state, practice finding HTR continuations",
+          "Learn HTR triggers and common HTR patterns"
+        ]
+      },
+      "fmc-full-mastery": {
+        "title": "FMC Full Mastery",
+        "subtitle": "Complete FMC proficiency: consistent sub-25 solutions with advanced techniques",
+        "description": "Achieve complete FMC mastery capable of consistent sub-25 (and often sub-23) solutions using DR, HTR, optimized insertions, and NISS.",
+        "theory": "Full FMC mastery combines all techniques: DR/HTR for efficient solves, NISS for expanded search, insertions for final optimization, and the ability to evaluate multiple approaches in 60 minutes. The world's best average under 23 moves in competition.",
+        "drills": [
+          "Complete 25 official FMC attempts (60 min each, no tools)",
+          "Analyze each attempt: where could you have saved moves?"
+        ]
+      },
+      "cube-theory-basics": {
+        "title": "Cube Theory Basics",
+        "subtitle": "Understand parity, permutation parity, and why certain states are impossible",
+        "description": "Learn fundamental cube theory: why a single edge flip or corner twist is impossible, the concept of parity, and how permutation parity constrains cube states.",
+        "theory": "The cube has mathematical invariants: total edge flip parity must be even, total corner twist must be a multiple of 3, and overall permutation parity must be even. Understanding these explains why certain OLL/PLL combinations occur and helps with algorithm design.",
+        "drills": [
+          "Prove to yourself: can you flip exactly one edge? Twist one corner?",
+          "Calculate the number of possible cube states (43 quintillion)"
+        ]
+      },
+      "commutators-theory": {
+        "title": "Commutator Theory",
+        "subtitle": "Understand [A, B] = A B A' B' structure for creating custom algorithms",
+        "description": "Master commutator theory: design your own algorithms using the commutator/conjugate framework. Essential for BLD, FMC, and advanced method development.",
+        "theory": "A commutator [A, B] cycles pieces where A and B's affected areas overlap. Pure commutators affect only the intersection of affected pieces. Conjugates (setup + alg + undo setup) extend this to any position. This is the core concept behind 3-Style BLD and FMC insertions.",
+        "exampleFormula": "[R U R', D2] — the commutator swaps 3 corners",
+        "drills": [
+          "Write 10 different commutators and trace which pieces they affect",
+          "Design a commutator that cycles 3 specific edges of your choice"
+        ]
+      },
+      "group-theory-cube": {
+        "title": "Group Theory & The Cube",
+        "subtitle": "Apply mathematical group theory to understand cube structure and solve optimization",
+        "description": "Study the cube as a mathematical group: generators, subgroups, cosets, and how God's Number (20) was proven using group theory and computer search.",
+        "theory": "The Rubik's cube group has order ~4.3×10^19. Key subgroups: the square group (only half-turns), the 2-gen group (RU). Understanding group structure enables optimal solving. Kociemba's two-phase algorithm exploits the subgroup chain: cube → H-group → solved.",
+        "drills": [
+          "Study the cube group's generators and how they relate to solving methods",
+          "Explore the square group by solving with only half-turns"
+        ]
+      },
+      "optimal-solving-theory": {
+        "title": "Optimal Solving Theory",
+        "subtitle": "Understand Kociemba's two-phase algorithm and how computers find optimal solutions",
+        "description": "Study how optimal solvers work: phase-based reduction, pruning tables, IDA* search, and why finding truly optimal solutions is computationally feasible.",
+        "theory": "Kociemba's algorithm reduces the cube in two phases: (1) to the H-group, (2) from H-group to solved. Pruning tables prune the search tree. This finds solutions ≤20 moves in milliseconds, enabling real-time analysis and scramble verification.",
+        "drills": [
+          "Use a cube solver to analyze the optimal solution for your solves",
+          "Compare your cross solution to the optimal cross from a solver"
+        ]
+      },
+      "algorithm-optimization": {
+        "title": "Algorithm Optimization",
+        "subtitle": "Analyze, compare, and select optimal algs based on speed, ergonomics, and context",
+        "description": "Develop the skill to evaluate algorithms critically: compare alternatives, measure execution speed, assess regrip cost, and select the best option for YOUR hands.",
+        "theory": "An algorithm isn't just about move count — it's about finger trick compatibility, regrip count, transition smoothness from the previous step, and personal ergonomics. Top cubers often know 2-3 alternatives per case and choose based on hand position.",
+        "drills": [
+          "For each PLL, try all 3-4 common algs and pick the fastest for you",
+          "Audit your algorithm set: replace any alg with ≥1s execution time"
+        ]
+      },
+      "method-comparison": {
+        "title": "Method Comparison & Selection",
+        "subtitle": "Understand trade-offs between CFOP, Roux, ZZ, and Petrus for different goals",
+        "description": "Analyze the strengths and weaknesses of major methods: CFOP (algorithmic, high TPS), Roux (intuitive, low moves), ZZ (rotationless, oriented), Petrus (block building).",
+        "theory": "CFOP: highest TPS potential, largest community, most resources. Roux: lowest average move count (~48), intuitive, M-slice heavy. ZZ: rotationless, guaranteed edge orientation, natural ZBLL pairing. Petrus: excellent for FMC, builds spatial awareness.",
+        "drills": [
+          "Complete 25 solves with each method and compare your splits",
+          "Identify which method's strengths align with your natural abilities"
+        ]
+      },
+      "elite-theory": {
+        "title": "Elite Theory & Innovation",
+        "subtitle": "Contribute to cubing knowledge: discover new algs, optimize methods, or develop novel techniques",
+        "description": "Reach the frontier of cubing theory where you can generate novel algorithms, propose method improvements, or contribute new techniques to the community.",
+        "theory": "The cutting edge of cubing theory involves algorithm generation (using computer search with CubeExplorer or ksolve), method hybridization (combining concepts from different methods), and technique innovation. This is where the next generation of world records comes from.",
+        "drills": [
+          "Use CubeExplorer or ksolve to generate optimized algs for a specific case",
+          "Propose and test a method hybridization idea over 100 solves"
+        ]
+      }
+    }
+  },
+  "profile": {
+    "hero": {
+      "defaultName": "Speedcuber",
+      "memberSince": "Member since {{date}}",
+      "edit": "Edit",
+      "avatarAlt": "Profile avatar",
+      "pbTitle": "PB {{puzzle}} is Sub {{threshold}}"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "aria": "Profile sections"
+    },
+    "overview": {
+      "activity": "Activity",
+      "last52Weeks": "last 52 weeks",
+      "noSolvesTitle": "No solves yet",
+      "noSolvesDescription": "Your practice activity will appear here once you complete your first solves.",
+      "recentSolves": "Recent solves",
+      "last5": "last 5"
+    },
+    "stats": {
+      "puzzle": "Puzzle",
+      "pb": "PB",
+      "ao5": "Ao5",
+      "ao12": "Ao12",
+      "solves": "Solves",
+      "noStatsTitle": "No statistics yet",
+      "noStatsDescription": "Solve times per puzzle will show here once you start practicing."
+    },
+    "training": {
+      "today": "today",
+      "unavailable": "Training data unavailable",
+      "preparing": "Preparing training data…",
+      "empty": "Your review queue is empty — practice a few algorithms and your SRS schedule will build itself.",
+      "overdueCount_one": "{{count}} algorithm overdue — review it to keep retention high.",
+      "overdueCount_other": "{{count}} algorithms overdue — review them to keep retention high.",
+      "queueCount_one": "{{count}} algorithm in today's queue.",
+      "queueCount_other": "{{count}} algorithms in today's queue."
+    },
+    "algorithms": {
+      "title": "Algorithm mastery",
+      "eyebrow": "SRS states",
+      "unavailable": "Algorithm data unavailable",
+      "errorLoad": "Failed to load algorithm mastery",
+      "preparing": "Preparing algorithm data…",
+      "emptyCatalog": "The algorithm catalog is empty — open the Algorithms view to start practicing cases (OLL, PLL, F2L…).",
+      "avgMastery": "avg mastery",
+      "reviewed": "Reviewed",
+      "masteryNote": "Mastery reflects your FSRS review state across the whole catalog. Cases in relearning (lapsed) count as learning until they reach a stable review state."
+    },
+    "skills": {
+      "eyebrow": "xp",
+      "complete": "complete",
+      "ofXp": "of {{xp}} XP",
+      "completedCount": "{{count}} of {{total}} skills completed",
+      "byCategory": "By category",
+      "progress": "progress"
+    },
+    "quick": {
+      "title": "Quick actions",
+      "timer": "Start a new solve",
+      "stats": "Full statistics & analysis",
+      "training": "Drills, SRS review, challenges",
+      "algorithms": "Browse and practice algorithms",
+      "skills": "Skill tree progression"
+    },
+    "strip": {
+      "pbSingle": "PB single",
+      "solves": "Solves",
+      "streak": "Streak",
+      "bestIn": "best in {{puzzle}}",
+      "total": "{{count}} total",
+      "day_one": "day",
+      "day_other": "days"
+    },
+    "retry": "Retry",
+    "localNotice": "All data local",
+    "localNoticeAria": "Local data notice"
+  },
+  "reconstructions": {
+    "list": {
+      "errorLoad": "Failed to load reconstructions",
+      "subtitle": "Reconstructed solves from reco.nz and CubeRoot — browse solver profiles, cases and techniques.",
+      "solvesCount_one": "{{count}} solve",
+      "solvesCount_other": "{{count}} solves",
+      "searchPlaceholder": "Search solver, competition, technique…",
+      "allSources": "All sources",
+      "allPuzzles": "All puzzles",
+      "allMethods": "All methods",
+      "methodOther": "Other",
+      "sortFastest": "Fastest",
+      "sortSlowest": "Slowest",
+      "sortNewest": "Newest",
+      "sortOldest": "Oldest",
+      "colSolver": "Solver",
+      "colTime": "Time",
+      "colDate": "Date",
+      "colCompetition": "Competition",
+      "colMethod": "Method",
+      "colTech": "Tech",
+      "emptyTitle": "No reconstructions match",
+      "emptyHint": "Try clearing the search or filters.",
+      "errorHint": "Run {{command}} to generate the assets."
+    },
+    "detail": {
+      "errorLoad": "Failed to load reconstruction",
+      "back": "Reconstructions",
+      "source": "Source",
+      "video": "Video",
+      "scramble": "Scramble",
+      "stm": "{{count}} STM",
+      "solveNum": "solve {{count}}",
+      "reconBy": "recon {{name}}",
+      "stepsTitle": "Steps",
+      "stepsEyebrow": "phases · cases · moves",
+      "movesCount_one": "{{count}} move",
+      "movesCount_other": "{{count}} moves",
+      "colPhase": "Phase",
+      "colCase": "Case",
+      "colMoves": "Moves",
+      "reconTitle": "Reconstruction",
+      "reconEyebrow": "raw solution",
+      "copy": "Copy",
+      "copied": "Copied",
+      "chipStm": "STM",
+      "chipTps": "TPS",
+      "chipCrossStm": "Cross STM",
+      "chipF2l": "F2L",
+      "chipLl": "LL",
+      "chipRotations": "Rotations",
+      "chipAvg": "Avg",
+      "chipCube": "Cube"
+    },
+    "detection": {
+      "title": "Our detection",
+      "eyebrow": "CFOP",
+      "orientation": "Orientation",
+      "up": "up",
+      "front": "front",
+      "cross": "Cross",
+      "f2lPair": "F2L {{count}}",
+      "f2l": "F2L",
+      "noPairSegmentation": "(no pair segmentation)",
+      "auf": "auf {{moves}}",
+      "oll": "OLL",
+      "pll": "PLL",
+      "rotationCount_one": "{{count}} rotation",
+      "rotationCount_other": "{{count}} rotations",
+      "tps": "{{tps}} tps",
+      "xcrossPseudo": "The written cross block never contained a real cross (edges left misordered / partial — fixed inside the F2L pairs)",
+      "xcrossPair": "{{name}} pair solved at cross completion",
+      "xcrossGeneric": "An F2L pair was already solved at cross completion",
+      "apiError": "Our detection failed to analyze this solve (API error). This is a bug — the incoherence path is supposed to be handled internally."
+    }
+  },
+  "widgets": {
+    "category": {
+      "all": "All widgets",
+      "visual": "Visual",
+      "timer": "Timer",
+      "analysis": "Analysis",
+      "training": "Training"
+    },
+    "tag": {
+      "all": "All",
+      "visual": "Visual",
+      "timer": "Timer",
+      "analysis": "Analysis",
+      "training": "Training"
+    },
+    "explorer": {
+      "title": "Widgets",
+      "subtitle": "Discover and toggle optional panels, tools, and visualizers.",
+      "category": "Category:",
+      "categoryPlaceholder": "Category",
+      "searchPlaceholder": "Search widgets...",
+      "noResults": "No widgets found",
+      "noResultsHint": "Try a different category or search term."
+    },
+    "sidebar": {
+      "categories": "Categories"
+    },
+    "card": {
+      "floatingButton": "Floating button",
+      "pinnedToHeader": "Pinned to header",
+      "opensAsPanel": "Opens as panel",
+      "toggle": "Toggle {{name}}"
+    },
+    "dock": {
+      "dockedWidgets": "Docked widgets",
+      "pinned": "{{name}} — pinned"
+    },
+    "wrapper": {
+      "expand": "Expand",
+      "minimize": "Minimize",
+      "expandLabel": "Expand {{label}}",
+      "closeLabel": "Close {{label}}"
+    },
+    "def": {
+      "timesLog": "Times",
+      "timesLogDescription": "Floating solve history with penalties, analysis, and quick actions. Minimizable to a compact pill.",
+      "scramble2d": "Scramble",
+      "scramble2dDescription": "2D cube net showing the current scramble state. csTimer-style layout with WCA-standard colors.",
+      "cubeButton": "3D cube",
+      "cubeButtonDescription": "Floating button to toggle the interactive 3D cube view. Drag to reposition.",
+      "timeDistribution": "Time distribution",
+      "timeDistributionDescription": "Histogram showing the distribution of your solve times. csTimer-style bins with mean and standard deviation. See your consistency at a glance.",
+      "pbProgression": "PB progression",
+      "pbProgressionDescription": "Personal Best timeline showing every PB milestone. Track your improvement journey from first solve to current best.",
+      "solveTimeline": "Solve timeline",
+      "solveTimelineDescription": "Phase breakdown + pauses of the last solve. Shows the same detailed timeline from Insights right on the timer view without navigating away.",
+      "phaseBalance": "Phase balance",
+      "phaseBalanceDescription": "Compare your real CFOP phase distribution with your own recent average, using only comparable solves from the hardened analysis pipeline.",
+      "metronome": "TPS metronome",
+      "metronomeDescription": "High-precision audio metronome with TPS (Turns Per Second) conversion for fluidity & pacing practice.",
+      "notes": "Notes",
+      "notesDescription": "Quick scratchpad, training goals checklist, and speedcubing notes manager for your practice sessions.",
+      "algorithmDb": "Algorithms",
+      "algorithmDbDescription": "Browse speedcubing algorithms by method and subset with 2D/3D visualizations, setup scrambles, and solution breakdown.",
+      "layoutOrganizer": "Layouts",
+      "layoutOrganizerDescription": "Instantly arrange all your floating widgets into a professional layout. Generates dynamic presets based on your active widgets and screen size."
+    },
+    "panel": {
+      "algorithmDb": {
+        "puzzle": "Puzzle",
+        "method": "Method",
+        "submethod": "Submethod",
+        "viewList": "List",
+        "viewAlgorithm": "Algorithm",
+        "allCases": "All cases",
+        "previousCase": "Previous case",
+        "nextCase": "Next case",
+        "copy": "Copy",
+        "copied": "Copied",
+        "noAlgorithm": "No algorithm available",
+        "noCaseSelected": "No case selected",
+        "setup": "Setup:",
+        "triggers": "Triggers:",
+        "alternativeAlgorithms": "Alternative algorithms ({{count}}):",
+        "algShort": "Alg {{number}}",
+        "probability": "Probability:",
+        "difficulty": "Difficulty:"
+      },
+      "layoutOrganizer": {
+        "cascade": "Cascade",
+        "cascadeDesc": "Diagonal waterfall",
+        "grid": "Grid",
+        "gridDesc": "Columns & rows",
+        "split": "Split",
+        "splitDesc": "Two equal columns",
+        "left": "Left column",
+        "leftDesc": "Stacked on the left",
+        "right": "Right column",
+        "rightDesc": "Stacked on the right",
+        "focus": "Focus",
+        "focusDesc": "One prominent, rest aside",
+        "spread": "Spread",
+        "spreadDesc": "Distributed with stagger",
+        "noFloating": "No floating widgets",
+        "dockAll_one": "Dock all {{count}} floating widget",
+        "dockAll_other": "Dock all {{count}} floating widgets",
+        "savePositions": "Save current layout positions",
+        "layoutNamePlaceholder": "Layout name...",
+        "deleteLayout": "Delete layout",
+        "deleteLayoutNamed": "Delete layout {{name}}",
+        "noActive": "No active widgets",
+        "noActiveHint": "Open widgets from the header dock or explorer to see layout presets here.",
+        "presets": "Presets",
+        "activeCount_one": "{{count}} active widget",
+        "activeCount_other": "{{count}} active widgets",
+        "dockAll": "Dock All",
+        "saveLayout": "Save Layout",
+        "saveLayoutButton": "Save",
+        "layoutSaved": "Layout saved!",
+        "customLayouts": "Custom Layouts",
+        "widgetNeeded": "{{name}} needed",
+        "widgetsNeeded": "{{count}} needed",
+        "widgetsCount_one": "{{count}} widget",
+        "widgetsCount_other": "{{count}} widgets"
+      },
+      "metronome": {
+        "stop": "Stop metronome",
+        "start": "Start metronome",
+        "soundMode": "Sound Mode",
+        "tpsTarget": "TPS Target (2 – 15)",
+        "accent": "Accent:",
+        "soundBeep": "Beep",
+        "soundWood": "Wood",
+        "soundSynth": "Synth",
+        "soundBell": "Bell"
+      },
+      "notes": {
+        "scratchpad": "Scratchpad",
+        "goals": "Goals",
+        "notebook": "Notebook",
+        "newNote": "New Practice Note",
+        "scratchpadHint": "Quick session scratchpad:",
+        "scratchpadPlaceholder": "Write quick notes, algorithms to review, or session takeaways...",
+        "goalPlaceholder": "Add goal (e.g., Sub-12 Ao50 in 3x3)...",
+        "titlePlaceholder": "Title...",
+        "contentPlaceholder": "Note content...",
+        "count_one": "{{count}} note",
+        "count_other": "{{count}} notes",
+        "copy": "Copy",
+        "copied": "Copied!",
+        "noGoalsYet": "No goals added yet",
+        "clearCompleted": "Clear completed ({{count}})",
+        "selectOrCreate": "Select or create a note"
+      },
+      "pbProgression": {
+        "staircaseTrend": "Staircase Trend",
+        "milestoneHistory": "Milestone History",
+        "milestones_one": "{{count}} Milestone",
+        "milestones_other": "{{count}} Milestones",
+        "pbs_one": "{{count}} PB",
+        "pbs_other": "{{count}} PBs",
+        "noPbs": "No PBs recorded",
+        "noPbsHint": "Complete solves to track your progression timeline.",
+        "current": "Current",
+        "totalDrop": "Total Drop",
+        "faster": "Faster",
+        "initialPb": "Initial PB",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "daysAgo": "{{count}}d ago"
+      },
+      "phaseBalance": {
+        "balanced": "Balanced",
+        "aboveSelfAvg": "Above self avg",
+        "belowSelfAvg": "Below self avg",
+        "latestComparable": "Latest comparable solve",
+        "recentAverage": "Recent average",
+        "communityUnavailable": "Community reference unavailable for this average",
+        "referenceTooltip": "The educational community reference is only applied to effective averages from 8 to 60 seconds. Outside that range, your self-baseline remains the more honest comparison.",
+        "needFiveTooltip": "Five comparable solves are needed before showing the educational community reference. Your self-baseline is already available.",
+        "baselineSplit": "Self baseline vs reference split",
+        "aboutReference": "About the {{label}} reference",
+        "reference": "reference",
+        "last20Comparable": "last 20 comparable",
+        "referenceTooltipContent": "This is an educational split reference, not a universal statistical norm. {{caveat}}",
+        "legendSolid": "solid = yours",
+        "legendMuted": "muted = reference",
+        "yourAvgMinusRef": "Your average minus reference",
+        "analysed_one": "{{count}} analysed",
+        "analysed_other": "{{count}} analysed",
+        "notEnoughData": "Not enough comparable CFOP data",
+        "comparableSolves": "{{count}} comparable solves",
+        "selfBaselineReady": "self-baseline ready",
+        "needMoreForTrend": "need {{count}} more for trend",
+        "notEnoughDataHint": "Complete analysed CFOP solves that reach a solved state. Incomplete, non-CFOP, and DNF solves stay out of this comparison."
+      },
+      "solveTimeline": {
+        "incompleteAnalysis": "This solve has an incomplete analysis. Re-analyze it to show comparable phases.",
+        "pipelineRunning": "The analysis pipeline is running. Check back shortly.",
+        "manualEntry": "Manual entry. Connect a Smart Cube to get phase analysis.",
+        "noAnalysis": "No analysis yet",
+        "skips": "Skips",
+        "phases_one": "{{count}} phase",
+        "phases_other": "{{count}} phases",
+        "noSolvesYet": "No solves yet",
+        "noSolvesHint": "Complete a solve to see the phase timeline.",
+        "backToLatest": "Back to latest",
+        "timelineUnavailable": "Timeline data unavailable for this solve.",
+        "pauseCount_one": "{{count}} pause · {{time}}",
+        "pauseCount_other": "{{count}} pauses · {{time}}",
+        "movesTotal_one": "{{count}} move · {{time}} total",
+        "movesTotal_other": "{{count}} moves · {{time}} total"
+      },
+      "timeDistribution": {
+        "mean": "Mean {{value}}",
+        "best": "Best {{value}}",
+        "solves_one": "{{count}} solve",
+        "solves_other": "{{count}} solves"
+      },
+      "timesLog": {
+        "clear": "Clear"
+      },
+      "cubeButton": {
+        "open3d": "Open 3D cube view"
+      }
+    }
   }
 }

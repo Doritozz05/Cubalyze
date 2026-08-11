@@ -1,11 +1,14 @@
+import type { ParseKeys } from "i18next";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 
 export interface TourStep {
   id: string;
   /** View to navigate to before measuring the target. */
   view: ViewId;
-  title: string;
-  body: string;
+  /** Localized title (namespace `onboarding`). */
+  titleKey: ParseKeys<"onboarding">;
+  /** Localized body (namespace `onboarding`). */
+  bodyKey: ParseKeys<"onboarding">;
   /** CSS selector of the highlighted element. Absent only on the final step. */
   target?: string;
 }
@@ -18,42 +21,42 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "timer",
     view: "timer",
-    title: "Your timer",
-    body: "Hold space (or tap & hold on touch) and release to start — the 15s WCA inspection is built in. Every solve gets instant phase analysis.",
+    titleKey: "tour.timerTitle",
+    bodyKey: "tour.timerBody",
     target: '[data-onboarding-target="timer"]',
   },
   {
     id: "stats",
     view: "insights",
-    title: "Your stats",
-    body: "Session overview, phase splits, PB progression and 3D replay of any solve live here.",
+    titleKey: "tour.statsTitle",
+    bodyKey: "tour.statsBody",
     target: '[data-onboarding-target="insights"]',
   },
   {
     id: "algorithms",
     view: "algorithms",
-    title: "Algorithms",
-    body: "Browse cases by method — CFOP, Roux, ZZ… Send any case to the trainer with one click.",
+    titleKey: "tour.algorithmsTitle",
+    bodyKey: "tour.algorithmsBody",
     target: '[data-onboarding-target="algorithms"]',
   },
   {
     id: "profile",
     view: "profile",
-    title: "Your identity",
-    body: "Your CubeMark is generated from your anonymous ID. Set your name, handle and avatar here.",
+    titleKey: "tour.profileTitle",
+    bodyKey: "tour.profileBody",
     target: '[data-onboarding-target="profile"]',
   },
   {
     id: "widgets",
     view: "timer",
-    title: "Widgets",
-    body: "Floating tools — times log, scramble visualizer, metronome. Open the explorer and build your own layout.",
+    titleKey: "tour.widgetsTitle",
+    bodyKey: "tour.widgetsBody",
     target: '[data-onboarding-target="widgets-entry"]',
   },
   {
     id: "final",
     view: "timer",
-    title: "You're all set",
-    body: "Make your first solve, or explore Settings for shortcuts, theme and smart cube.",
+    titleKey: "tour.finalTitle",
+    bodyKey: "tour.finalBody",
   },
 ];

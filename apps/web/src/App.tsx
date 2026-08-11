@@ -30,8 +30,9 @@ import "@/index.css";
 // Initialize i18n (react-i18next singleton). Imported here — not in the
 // entry points — so both the PWA (apps/web/src/main.tsx) and the Tauri
 // desktop app (apps/desktop/src/main.tsx, which reuses this App) initialize
-// the same instance before the first render.
-import "./i18n";
+// the same instance before the first render. The default import also
+// powers the toast helpers (i18n.t).
+import i18n from "@/i18n";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.
@@ -247,8 +248,8 @@ export default function App() {
 
   const handleCopy = useCallback(async () => {
     const ok = await copyTextWithFallback(currentScramble);
-    if (ok) toast.success("Scramble copied");
-    else toast.error("Couldn't copy scramble");
+    if (ok) toast.success(i18n.t("timer:scrambleCopied"));
+    else toast.error(i18n.t("timer:couldNotCopyScramble"));
   }, [currentScramble]);
 
   useGlobalShortcuts({
@@ -298,7 +299,7 @@ export default function App() {
   // Penalty update from the timer row: persist + reset the timer engine.
   const handleUpdatePenalty = useCallback(
     (id: string, penalty: Solve["penalty"]) => {
-      updateSolve(id, { penalty }).catch(() => toast.error("Update failed"));
+      updateSolve(id, { penalty }).catch(() => toast.error(i18n.t("timer:updateFailed")));
       resetTimer();
     },
     [updateSolve, resetTimer],

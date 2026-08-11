@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { BarChart3, ChevronLeft, List } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,7 @@ export function InsightsDashboard({
   onDeleteSolve,
   className,
 }: InsightsDashboardProps) {
+  const { t } = useTranslation("insights");
   void sessionId;
 
   // ── Touch regime (<1024px): master-detail pages ─────────────────────
@@ -231,7 +233,7 @@ export function InsightsDashboard({
         {/* Session selector */}
         <div className="flex items-center gap-1.5">
           <span className="text-[0.6rem] uppercase tracking-[0.16em] text-ink-3">
-            Session
+            {t("dashboard.session")}
           </span>
           <Select
             value={selectedSession ?? "all"}
@@ -242,13 +244,13 @@ export function InsightsDashboard({
             <SelectTrigger
               size="sm"
               className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2"
-              aria-label="Filter by session"
+              aria-label={t("dashboard.filterBySession")}
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">
-                All sessions
+                {t("dashboard.allSessions")}
               </SelectItem>
               {sessions.map((s) => (
                 <SelectItem key={s.id} value={s.id} className="text-xs">
@@ -262,7 +264,7 @@ export function InsightsDashboard({
         {/* Cube selector — always specific, never "all" */}
         <div className="flex items-center gap-1.5">
           <span className="text-[0.6rem] uppercase tracking-[0.16em] text-ink-3">
-            Cube
+            {t("dashboard.cube")}
           </span>
           <Select
             value={currentCube}
@@ -271,7 +273,7 @@ export function InsightsDashboard({
             <SelectTrigger
               size="sm"
               className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2"
-              aria-label="Filter by cube type"
+              aria-label={t("dashboard.filterByCube")}
             >
               <SelectValue />
             </SelectTrigger>
@@ -288,7 +290,7 @@ export function InsightsDashboard({
         {/* Loading indicator */}
         {loadingData && (
           <span className="text-[0.6rem] text-ink-3 animate-pulse">
-            Loading...
+            {t("dashboard.loading")}
           </span>
         )}
 
@@ -313,7 +315,7 @@ export function InsightsDashboard({
             )}
           >
             <List className="size-3.5" />
-            Solves
+            {t("dashboard.solves")}
           </button>
           <button
             type="button"
@@ -329,7 +331,7 @@ export function InsightsDashboard({
             )}
           >
             <BarChart3 className="size-3.5" />
-            Stats
+            {t("dashboard.stats")}
           </button>
         </div>
       )}
@@ -398,13 +400,13 @@ export function InsightsDashboard({
                 <button
                   type="button"
                   onClick={handleBackToOverview}
-                  aria-label="Back to solves"
+                  aria-label={t("dashboard.backToSolves")}
                   className="flex h-10 items-center gap-1.5 rounded-lg pr-2 text-sm font-medium text-ink-2 transition-colors hover:text-ink"
                 >
                   <ChevronLeft className="size-5" />
-                  <span>Back</span>
+                  <span>{t("dashboard.back")}</span>
                 </button>
-                <span className="truncate text-xs text-ink-3">Solve details</span>
+                <span className="truncate text-xs text-ink-3">{t("dashboard.solveDetails")}</span>
               </div>
               {/* Scrollable content */}
               <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-safe">

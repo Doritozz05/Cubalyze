@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
@@ -17,6 +18,7 @@ export interface Cube3DPanelProps {
 }
 
 export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DPanelProps) {
+  const { t } = useTranslation("timer");
   const {
     canvasRef,
     containerRef,
@@ -124,7 +126,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 <span className="hidden @sm:inline">Scramble</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Apply scramble to 3D cube</TooltipContent>
+            <TooltipContent side="bottom">{t("applyScramble3d")}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -139,7 +141,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 <span className="hidden @sm:inline">Reset</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Reset cube pieces to solved state</TooltipContent>
+            <TooltipContent side="bottom">{t("reset3d")}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -151,10 +153,10 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 className="h-7 gap-1 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
                 <RefreshCw className="size-3 shrink-0 max-lg:size-4" />
-                <span className="hidden @sm:inline">Calibrate</span>
+                <span className="hidden @sm:inline">{t("calibrate")}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Calibrate gyroscope orientation</TooltipContent>
+            <TooltipContent side="bottom">{t("calibrateGyro")}</TooltipContent>
           </Tooltip>
           {onClose && (
             <Tooltip>
@@ -164,12 +166,12 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                   size="sm"
                   onClick={onClose}
                   className="h-7 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
-                  aria-label="Close 3D view"
+                  aria-label={t("close3d")}
                 >
                   <X className="size-3 shrink-0 max-lg:size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Close 3D view</TooltipContent>
+              <TooltipContent side="bottom">{t("close3d")}</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -195,14 +197,13 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
         {initFailed || contextEvicted ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80 px-4">
             <span className="text-xs text-ink-3/70 text-center select-none">
-              3D view unavailable — too many 3D views are open on this device.
-              Close another 3D view and reopen.
+              {t("viewUnavailable")}
             </span>
           </div>
         ) : !isReady ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80">
             <span className="text-xs text-ink-3/50 animate-pulse select-none">
-              Initializing 3D Cube...
+              {t("init3d")}
             </span>
           </div>
         ) : null}
@@ -211,7 +212,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
             pass through to the canvas; hidden when the panel is too narrow */}
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2 hidden @xs:block">
           {recentMoves.length === 0 ? (
-            <p className="text-center text-[0.7rem] text-ink-3 italic select-none">Waiting for cube...</p>
+            <p className="text-center text-[0.7rem] text-ink-3 italic select-none">{t("waitingForCube")}</p>
           ) : (
             <div className="flex justify-center gap-2 font-mono text-[0.8rem] font-semibold text-ink select-none">
               {recentMoves.map((m, i) => (

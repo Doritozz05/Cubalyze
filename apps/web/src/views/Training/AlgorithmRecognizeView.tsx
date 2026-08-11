@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -96,6 +97,7 @@ export interface AlgorithmRecognizeViewProps {
 export function AlgorithmRecognizeView({
   methodId, phaseId: _phaseId, subsetId, onBack,
 }: AlgorithmRecognizeViewProps) {
+  const { t } = useTranslation("training");
   void _phaseId;
 
   // ── Data ─────────────────────────────────────────────────────────────
@@ -292,7 +294,7 @@ export function AlgorithmRecognizeView({
           </div>
 
           {/* Right: Progress sidebar */}
-          <TouchAside title="Progress" className="flex min-h-0 flex-col gap-3 lg:w-56 lg:shrink-0 overflow-hidden">
+          <TouchAside title={t("recognize.progress")} className="flex min-h-0 flex-col gap-3 lg:w-56 lg:shrink-0 overflow-hidden">
             <RecognizeStatsPanel
               completedCount={seenCaseIds.size}
               totalCount={subsetCases.length}
@@ -320,6 +322,7 @@ function RecognizeHeader({
   completedCount: number; totalCount: number; accuracy: number;
   onBack: () => void;
 }) {
+  const { t } = useTranslation("training");
   return (
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
       {/* Breadcrumb + mode toggle row */}
@@ -327,7 +330,7 @@ function RecognizeHeader({
         <TrainingBreadcrumb onBack={onBack} segments={[
           { label: methodName },
           { label: subsetName },
-          { label: "Recognize", isCurrent: true },
+          { label: t("recognize.title"), isCurrent: true },
         ]} />
 
         {/* Spacer */}
@@ -347,7 +350,7 @@ function RecognizeHeader({
             )}
           >
             <TrendingDown className="size-3" />
-            Weakest
+            {t("recognize.modeWeakest")}
           </button>
           <button
             onClick={() => onModeChange("random")}
@@ -361,7 +364,7 @@ function RecognizeHeader({
             )}
           >
             <Shuffle className="size-3" />
-            Random
+            {t("recognize.modeRandom")}
           </button>
         </div>
 
@@ -404,6 +407,7 @@ function QuizPanel({
   round, currentCase, algorithm, visualizationStyle,
   subsetCases, onSelect, onNext,
 }: QuizPanelProps) {
+  const { t } = useTranslation("training");
   const is3DDiagram =
     currentCase.diagramType === "3d-isometric" ||
     currentCase.diagramType === "3d" ||
@@ -453,7 +457,7 @@ function QuizPanel({
                 <Case3DDiagram caseData={currentCase} algorithm={algorithm} className="w-44 sm:w-52 lg:w-60" />
               ) : (
                 <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 flex items-center justify-center rounded-lg bg-surface-2">
-                  <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>
+                  <span className="text-ink-3/40 text-[0.6rem]">{t("noDiagram")}</span>
                 </div>
               )}
 
@@ -484,7 +488,7 @@ function QuizPanel({
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center"
                 >
-                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Solution</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">{t("recognize.solution")}</span>
                   <p className="nums text-[0.78rem] font-semibold text-ink mt-0.5 leading-relaxed">
                     {algorithm.moves.join(" ")}
                   </p>
@@ -493,7 +497,7 @@ function QuizPanel({
 
               {currentCase.setupScramble && (
                 <div className="text-center">
-                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">Setup</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3/60">{t("recognize.setup")}</span>
                   <p className="nums text-[0.72rem] text-ink-2/80 mt-0.5 leading-relaxed">{currentCase.setupScramble}</p>
                 </div>
               )}
@@ -573,15 +577,15 @@ function QuizPanel({
                   isCorrect ? "text-ready" : "text-hold",
                 )}>
                   {isCorrect
-                    ? "✓ Correct!"
-                    : `✗ It was ${correctCase?.caseNumber ?? "?"}`}
+                    ? t("recognize.correct")
+                    : t("recognize.itWas", { case: correctCase?.caseNumber ?? "?" })}
                 </span>
 
                 <button
                   onClick={onNext}
                   className="inline-flex items-center gap-2 rounded-lg bg-ink px-5 py-2.5 text-[0.75rem] font-semibold text-surface hover:bg-ink/90 transition-colors"
                 >
-                  Next <ChevronRight className="size-4" />
+                  {t("recognize.next")} <ChevronRight className="size-4" />
                 </button>
               </motion.div>
             </div>
@@ -602,16 +606,17 @@ function RecognizeStatsPanel({
   completedCount: number; totalCount: number; accuracy: number;
   correct: number; incorrect: number;
 }) {
+  const { t } = useTranslation("training");
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   return (
     <div className="shrink-0 rounded-xl border border-line bg-surface p-4">
-      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">Progress</h4>
+      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-3">{t("recognize.progress")}</h4>
 
       <div className="flex flex-col gap-3">
         {/* Progress bar */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[0.58rem] text-ink-3">Cases seen</span>
+            <span className="text-[0.58rem] text-ink-3">{t("recognize.casesSeen")}</span>
             <span className="nums text-[0.62rem] font-medium text-ink">{completedCount}/{totalCount}</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
@@ -623,7 +628,7 @@ function RecognizeStatsPanel({
 
         {/* Accuracy */}
         <div className="flex items-center justify-between text-[0.58rem]">
-          <span className="text-ink-3">Accuracy</span>
+          <span className="text-ink-3">{t("drill.accuracy")}</span>
           <span className={cn("nums font-semibold", accuracy >= 80 ? "text-ready" : accuracy >= 50 ? "text-caution" : "text-hold")}>
             {accuracy}%
           </span>
@@ -633,19 +638,19 @@ function RecognizeStatsPanel({
         <div className="flex items-center gap-3 pt-2 border-t border-line">
           <div className="flex-1 text-center">
             <span className="nums text-[0.9rem] font-bold text-ready block">{correct}</span>
-            <span className="text-[0.6rem] text-ink-3">Correct</span>
+            <span className="text-[0.6rem] text-ink-3">{t("verdict.correct")}</span>
           </div>
           <div className="w-px h-6 bg-line" />
           <div className="flex-1 text-center">
             <span className="nums text-[0.9rem] font-bold text-hold block">{incorrect}</span>
-            <span className="text-[0.6rem] text-ink-3">Incorrect</span>
+            <span className="text-[0.6rem] text-ink-3">{t("verdict.incorrect")}</span>
           </div>
         </div>
 
         {/* Tip */}
         <div className="pt-2 border-t border-line flex items-start gap-1.5 text-[0.52rem] text-ink-3/60">
           <Brain className="size-2.5 mt-0.5 shrink-0" />
-          <span>Weakest mode targets cases you struggle with most</span>
+          <span>{t("recognize.weakestModeTip")}</span>
         </div>
       </div>
     </div>

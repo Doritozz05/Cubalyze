@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import {
   X,
   Plus,
@@ -15,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Case3DCanvas } from "./Case3DDiagram";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
@@ -51,6 +54,12 @@ export interface AlgorithmEditorDialogProps {
 type Difficulty = "beginner" | "intermediate" | "advanced";
 
 type CapturedOrientation = OrbitCamera;
+
+const DIFFICULTY_LABEL_KEYS = {
+  beginner: "editor.difficultyBeginner",
+  intermediate: "editor.difficultyIntermediate",
+  advanced: "editor.difficultyAdvanced",
+} as const;
 
 // ─── Diagram variant detection ──────────────────────────────────────────
 
@@ -121,6 +130,8 @@ export function AlgorithmEditorDialog({
   caseData,
   existingAlgorithm,
 }: AlgorithmEditorDialogProps) {
+  const { t } = useTranslation("algorithms");
+
   // ── Form state ───────────────────────────────────────────────────────
   const [notation, setNotation] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty>("intermediate");
@@ -286,7 +297,7 @@ export function AlgorithmEditorDialog({
       onClose();
     } catch (err) {
       console.error("[AlgorithmEditorDialog] Failed to save:", err);
-      toast.error("Failed to save algorithm");
+      toast.error(i18n.t("toast:algorithmSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -333,7 +344,9 @@ export function AlgorithmEditorDialog({
             // Desktop (>=1024px) is unchanged.
             className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-full flex-col border-l border-line bg-canvas shadow-2xl sm:w-105 max-sm:border-l-0"
             aria-label={
-              existingAlgorithm ? "Edit algorithm" : "Add custom algorithm"
+              existingAlgorithm
+                ? t("editor.editAlgorithm")
+                : t("addCustomAlgorithm")
             }
           >
             {/* Header */}
@@ -345,8 +358,8 @@ export function AlgorithmEditorDialog({
                 <div>
                   <span className="block text-sm font-medium text-ink leading-tight">
                     {existingAlgorithm
-                      ? "Edit algorithm"
-                      : "Add custom algorithm"}
+                      ? t("editor.editAlgorithm")
+                      : t("addCustomAlgorithm")}
                   </span>
                   <span className="block text-[0.6rem] text-ink-3">
                     {caseData.caseNumber}
@@ -360,7 +373,7 @@ export function AlgorithmEditorDialog({
               <button
                 onClick={onClose}
                 className="grid size-7 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                aria-label="Close"
+                aria-label={t("close")}
               >
                 <X className="size-4" />
               </button>
@@ -373,10 +386,12 @@ export function AlgorithmEditorDialog({
                 <div className="flex items-center gap-2 mb-3">
                   <Camera className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Orientation preview
+                    {t("editor.orientationPreview")}
                   </span>
                   <span className="ml-auto text-[0.55rem] text-ink-3/50">
-                    {is3D ? "Use the 90° buttons" : "Rotate to match your view"}
+                    {is3D
+                      ? t("editor.use90Buttons")
+                      : t("editor.rotateToMatch")}
                   </span>
                 </div>
 
@@ -422,33 +437,51 @@ export function AlgorithmEditorDialog({
                 {is3D ? (
                   /* 3D: exact ±90° steps + isometric reset */
                   <div className="flex items-center gap-1.5 mt-2.5">
-                    <button
-                      onClick={() => rotate3DBy(-90)}
-                      disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
-                      title="Rotate 90° counter-clockwise"
-                    >
-                      <RotateCcw className="size-3" />
-                      −90°
-                    </button>
-                    <button
-                      onClick={() => rotate3DBy(90)}
-                      disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
-                      title="Rotate 90° clockwise"
-                    >
-                      <RotateCw className="size-3" />
-                      +90°
-                    </button>
-                    <button
-                      onClick={resetIsometric}
-                      disabled={!engineReady}
-                      className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 transition-colors"
-                      title="Reset to isometric view"
-                    >
-                      <Focus className="size-3" />
-                      ISO
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            onClick={() => rotate3DBy(-90)}
+                            disabled={!engineReady}
+                            className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                          >
+                            <RotateCcw className="size-3" />
+                            −90°
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t("editor.rotateCCW")}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            onClick={() => rotate3DBy(90)}
+                            disabled={!engineReady}
+                            className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                          >
+                            <RotateCw className="size-3" />
+                            +90°
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t("editor.rotateCW")}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            onClick={resetIsometric}
+                            disabled={!engineReady}
+                            className="inline-flex items-center gap-1 rounded border border-line px-2.5 py-1 text-[0.6rem] font-medium text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                          >
+                            <Focus className="size-3" />
+                            ISO
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t("editor.resetIsometric")}</TooltipContent>
+                    </Tooltip>
                   </div>
                 ) : (
                   /* 2D: rotation nudge buttons */
@@ -463,7 +496,8 @@ export function AlgorithmEditorDialog({
                       </button>
                     ))}
                     <div className="ml-auto text-[0.6rem] font-mono text-ink-3">
-                      Rotation: <span className="font-semibold text-ink">{rotation2D}°</span>
+                      {t("editor.rotation")}{" "}
+                      <span className="font-semibold text-ink">{rotation2D}°</span>
                     </div>
                   </div>
                 )}
@@ -474,7 +508,7 @@ export function AlgorithmEditorDialog({
                 <div className="flex items-center gap-2 mb-3">
                   <ChevronsUpDown className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Algorithm notation
+                    {t("editor.algorithmNotation")}
                   </span>
                   {parsedMoves.length > 0 && (
                     <span className="ml-auto nums text-[0.6rem] text-ink-3">
@@ -486,20 +520,19 @@ export function AlgorithmEditorDialog({
                 <textarea
                   value={notation}
                   onChange={(e) => setNotation(e.target.value)}
-                  placeholder="e.g. R U R' U' R' F R2 U' R' U' R U R' F'"
+                  placeholder={t("editor.notationPlaceholder")}
                   className="min-h-18 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2.5 font-mono text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                   autoFocus
                 />
                 <p className="mt-1.5 text-[0.58rem] text-ink-3/70">
-                  Use standard cube notation. Wide moves (r, u, f) and slice
-                  moves (M, S, E) are supported.
+                  {t("editor.notationHint")}
                 </p>
               </section>
 
               {/* ── Difficulty ── */}
               <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
                 <span className="block mb-2.5 text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                  Difficulty
+                  {t("editor.difficulty")}
                 </span>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
@@ -515,7 +548,7 @@ export function AlgorithmEditorDialog({
                           : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
                       )}
                     >
-                      {d}
+                      {t(DIFFICULTY_LABEL_KEYS[d])}
                     </button>
                   ))}
                 </div>
@@ -526,16 +559,16 @@ export function AlgorithmEditorDialog({
                 <div className="flex items-center gap-2 mb-3">
                   <GripVertical className="size-3.5 text-ink-3" />
                   <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    Notes
+                    {t("editor.notes")}
                   </span>
                   <span className="ml-auto text-[0.55rem] text-ink-3/50">
-                    optional
+                    {t("editor.optional")}
                   </span>
                 </div>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. use left index push for the F'"
+                  placeholder={t("editor.notesPlaceholder")}
                   className="min-h-13 w-full resize-none rounded-md border border-line bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-3/50 focus:outline-none focus:border-ink-2"
                 />
               </section>
@@ -557,8 +590,8 @@ export function AlgorithmEditorDialog({
             <div className="flex shrink-0 items-center gap-3 border-t border-line bg-canvas px-5 py-3.5 pb-safe max-lg:pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <p className="min-w-0 flex-1 truncate text-[0.6rem] text-ink-3">
                 {canSave
-                  ? `${parsedMoves.length} move${parsedMoves.length !== 1 ? "s" : ""} — ready to save`
-                  : "Enter algorithm notation above"}
+                  ? t("editor.readyToSave", { count: parsedMoves.length })
+                  : t("editor.enterNotation")}
               </p>
               <div className="flex shrink-0 items-center gap-2">
                 <Button
@@ -567,7 +600,7 @@ export function AlgorithmEditorDialog({
                   onClick={onClose}
                   className="h-8 text-xs"
                 >
-                  Cancel
+                  {t("editor.cancel")}
                 </Button>
                 <Button
                   size="sm"
@@ -576,10 +609,10 @@ export function AlgorithmEditorDialog({
                   className="h-8 px-3 text-xs bg-ink text-surface shadow-xs hover:bg-ink/90 focus-visible:ring-ring"
                 >
                   {saving
-                    ? "Saving…"
+                    ? t("editor.saving")
                     : existingAlgorithm
-                      ? "Update"
-                      : "Add algorithm"}
+                      ? t("editor.update")
+                      : t("editor.addAlgorithm")}
                 </Button>
               </div>
             </div>

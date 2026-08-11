@@ -6,6 +6,7 @@ import {
   Pause,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
@@ -41,6 +42,7 @@ export function FloatingPhaseTimeline({
   solves,
   lastAnalysis,
 }: FloatingPhaseTimelineProps) {
+  const { t } = useTranslation("widgets");
   const [selectedIdx, setSelectedIdx] = useState(0);
 
   const { selectedSolve, derived, skippedPhases } = useMemo(() => {
@@ -108,9 +110,15 @@ export function FloatingPhaseTimeline({
     <FloatingWidgetWrapper
       widgetId="solve-timeline"
       icon={Activity}
-      label="Solve timeline"
+      label={t("def.solveTimeline")}
       pillBadge={selectedSolve ? formatTime(selectedSolve.time) : undefined}
-      pillBadge2={timelinePhaseEntries.length > 0 ? `${timelinePhaseEntries.length} phases` : undefined}
+      pillBadge2={
+        timelinePhaseEntries.length > 0
+          ? t("panel.solveTimeline.phases", {
+              count: timelinePhaseEntries.length,
+            })
+          : undefined
+      }
       panelWidth={340}
       panelMaxHeight={360}
       defaultPosition={{ x: 420, y: 72 }}
@@ -139,7 +147,7 @@ export function FloatingPhaseTimeline({
                 onClick={() => setSelectedIdx(0)}
                 className="ml-auto rounded bg-ready-soft px-2 py-1 text-[0.6rem] font-medium uppercase tracking-wide text-ready transition-colors hover:bg-ready-soft/80"
               >
-                Back to latest
+                {t("panel.solveTimeline.backToLatest")}
               </button>
             )}
           </div>
@@ -148,26 +156,28 @@ export function FloatingPhaseTimeline({
         {!selectedSolve ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <Activity className="size-8 text-ink-3/30" />
-            <p className="text-sm text-ink-2">No solves yet</p>
-            <p className="text-xs text-ink-3">Complete a solve to see the phase timeline.</p>
+            <p className="text-sm text-ink-2">{t("panel.solveTimeline.noSolvesYet")}</p>
+            <p className="text-xs text-ink-3">{t("panel.solveTimeline.noSolvesHint")}</p>
           </div>
         ) : !derived ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <Activity className="size-8 text-ink-3/30" />
-            <p className="text-sm text-ink-2">No analysis yet</p>
+            <p className="text-sm text-ink-2">{t("panel.solveTimeline.noAnalysis")}</p>
             <p className="text-xs text-ink-3">
               {selectedSolve.source === "smart"
                 ? selectedSolve.analysis
-                  ? "This solve has an incomplete analysis. Re-analyze it to show comparable phases."
-                  : "The analysis pipeline is running. Check back shortly."
-                : "Manual entry. Connect a Smart Cube to get phase analysis."}
+                  ? t("panel.solveTimeline.incompleteAnalysis")
+                  : t("panel.solveTimeline.pipelineRunning")
+                : t("panel.solveTimeline.manualEntry")}
             </p>
           </div>
         ) : (
           <>
             {skippedPhases.length > 0 && (
               <div className="mb-2 flex items-center gap-1.5 rounded-md border border-line/60 bg-surface-2/50 px-2 py-1.5">
-                <span className="text-[0.56rem] font-medium uppercase tracking-wide text-ink-3">Skips</span>
+                <span className="text-[0.56rem] font-medium uppercase tracking-wide text-ink-3">
+                  {t("panel.solveTimeline.skips")}
+                </span>
                 {skippedPhases.map((phase) => (
                   <PhaseSkipBadge key={phase} phaseName={phase} compact />
                 ))}
@@ -226,7 +236,12 @@ export function FloatingPhaseTimeline({
                                 {formatTime(entry.pauseDurationMs)}
                               </span>
                             </TooltipTrigger>
-                            <TooltipContent side="top">{entry.pauseCount} pause{entry.pauseCount > 1 ? "s" : ""}: {formatTime(entry.pauseDurationMs)}</TooltipContent>
+                            <TooltipContent side="top">
+                              {t("panel.solveTimeline.pauseCount", {
+                                count: entry.pauseCount,
+                                time: formatTime(entry.pauseDurationMs),
+                              })}
+                            </TooltipContent>
                           </Tooltip>
                         )}
                       </div>
@@ -236,14 +251,18 @@ export function FloatingPhaseTimeline({
 
                 <div className="mt-2 flex items-center justify-between text-[0.6rem] text-ink-3">
                   <span>
-                    {selectedSolve.moves?.length ?? 0} moves ·{" "}
-                    {formatTime(totalMs)} total
+                    {t("panel.solveTimeline.movesTotal", {
+                      count: selectedSolve.moves?.length ?? 0,
+                      time: formatTime(totalMs),
+                    })}
                   </span>
                   {pauseCount > 0 && (
                     <span className="flex items-center gap-1">
                       <span className="inline-block size-1.5 rounded-sm" style={{ backgroundColor: PAUSE_COLOR_BY_CATEGORY["mid-phase"] }} />
-                      {pauseCount} pause{pauseCount > 1 ? "s" : ""} ·{" "}
-                      {formatTime(totalPauseMs)}
+                      {t("panel.solveTimeline.pauseCount", {
+                        count: pauseCount,
+                        time: formatTime(totalPauseMs),
+                      })}
                     </span>
                   )}
                 </div>
@@ -252,7 +271,7 @@ export function FloatingPhaseTimeline({
 
             {timelinePhaseEntries.length === 0 && derived && (
               <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
-                <p className="text-xs text-ink-3">Timeline data unavailable for this solve.</p>
+                <p className="text-xs text-ink-3">{t("panel.solveTimeline.timelineUnavailable")}</p>
               </div>
             )}
           </>

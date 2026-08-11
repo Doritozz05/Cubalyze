@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { ArrowDown, ArrowUp, Info, Scale, Minus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { formatTime } from "@/utils/formatTime";
@@ -33,11 +35,17 @@ function deltaLabel(delta: number | undefined): string {
   return `${delta > 0 ? "+" : "−"}${Math.abs(delta * 100).toFixed(1)}%`;
 }
 
-function statusFor(row: PhaseBalanceRow): { label: string; tone: string; icon: typeof ArrowUp } {
+function statusFor(row: PhaseBalanceRow): {
+  labelKey: ParseKeys<"widgets">;
+  tone: string;
+  icon: typeof ArrowUp;
+} {
   const delta = row.latestDelta ?? 0;
-  if (Math.abs(delta) < 0.025) return { label: "Balanced", tone: "text-ink-3", icon: Minus };
-  if (delta > 0) return { label: "Above self avg", tone: "text-caution", icon: ArrowUp };
-  return { label: "Below self avg", tone: "text-ready", icon: ArrowDown };
+  if (Math.abs(delta) < 0.025)
+    return { labelKey: "panel.phaseBalance.balanced", tone: "text-ink-3", icon: Minus };
+  if (delta > 0)
+    return { labelKey: "panel.phaseBalance.aboveSelfAvg", tone: "text-caution", icon: ArrowUp };
+  return { labelKey: "panel.phaseBalance.belowSelfAvg", tone: "text-ready", icon: ArrowDown };
 }
 
 function PhaseBar({
@@ -76,11 +84,12 @@ function PhaseBar({
 }
 
 function LatestBreakdown({ analysis }: { analysis: SolveMetrics }) {
+  const { t } = useTranslation("widgets");
   const segments = getPhaseSegments(analysis);
   return (
     <div className="space-y-1.5">
       <div className="mb-2 flex items-center justify-between text-[0.56rem] uppercase tracking-wider text-ink-3">
-        <span>Latest comparable solve</span>
+        <span>{t("panel.phaseBalance.latestComparable")}</span>
         <span className="nums">{formatTime(analysis.totalTimeMs)}</span>
       </div>
       <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
@@ -109,21 +118,28 @@ function LatestBreakdown({ analysis }: { analysis: SolveMetrics }) {
 }
 
 function BenchmarkDisclosure({ benchmark }: { benchmark: CfopBenchmarkReference }) {
+  const { t } = useTranslation("widgets");
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span
           tabIndex={0}
           className="inline-flex cursor-help items-center gap-1 outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50"
-          aria-label={`About the ${benchmark.label} reference`}
+          aria-label={t("panel.phaseBalance.aboutReference", {
+            label: benchmark.label,
+          })}
         >
           <Info className="size-2.5" />
-          <span>{benchmark.rangeLabel} reference</span>
+          <span>
+            {benchmark.rangeLabel} {t("panel.phaseBalance.reference")}
+          </span>
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-72">
-        <span className="font-medium">{benchmark.source.label}</span> · v{benchmark.version}.
-        This is an educational split reference, not a universal statistical norm. {benchmark.caveat}
+        <span className="font-medium">{benchmark.source.label}</span> · v{benchmark.version}.{" "}
+        {t("panel.phaseBalance.referenceTooltipContent", {
+          caveat: benchmark.caveat,
+        })}
       </TooltipContent>
     </Tooltip>
   );
@@ -138,10 +154,11 @@ function AverageBreakdown({
   benchmark: CfopBenchmarkReference | null;
   hasEnoughForTrend: boolean;
 }) {
+  const { t } = useTranslation("widgets");
   return (
     <div className="space-y-1.5">
       <div className="mb-2 flex items-center justify-between text-[0.56rem] uppercase tracking-wider text-ink-3">
-        <span>Recent average</span>
+        <span>{t("panel.phaseBalance.recentAverage")}</span>
         {benchmark ? (
           <BenchmarkDisclosure benchmark={benchmark} />
         ) : (
@@ -150,15 +167,15 @@ function AverageBreakdown({
               <span
                 tabIndex={0}
                 className="cursor-help outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50"
-                aria-label="Community reference unavailable for this average"
+                aria-label={t("panel.phaseBalance.communityUnavailable")}
               >
-                last 20 comparable
+                {t("panel.phaseBalance.last20Comparable")}
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-64">
               {hasEnoughForTrend
-                ? "The educational community reference is only applied to effective averages from 8 to 60 seconds. Outside that range, your self-baseline remains the more honest comparison."
-                : "Five comparable solves are needed before showing the educational community reference. Your self-baseline is already available."}
+                ? t("panel.phaseBalance.referenceTooltip")
+                : t("panel.phaseBalance.needFiveTooltip")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -166,12 +183,12 @@ function AverageBreakdown({
       {benchmark && (
         <>
           <div className="flex items-center justify-between text-[0.6rem] text-ink-3">
-            <span>Self baseline vs reference split</span>
+            <span>{t("panel.phaseBalance.baselineSplit")}</span>
             <span className="nums">12 · 50 · 16.5 · 21.5%</span>
           </div>
           <div className="flex justify-end gap-3 text-[0.48rem] text-ink-3">
-            <span>solid = yours</span>
-            <span>muted = reference</span>
+            <span>{t("panel.phaseBalance.legendSolid")}</span>
+            <span>{t("panel.phaseBalance.legendMuted")}</span>
           </div>
         </>
       )}
@@ -194,9 +211,18 @@ function AverageBreakdown({
                   </span>
                 )}
                 {row.benchmarkDelta !== undefined && (
-                  <span className="nums w-14 text-right text-ink-3" title="Your average minus reference">
-                    ref {row.benchmarkDelta > 0 ? "+" : ""}{(row.benchmarkDelta * 100).toFixed(1)}%
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        tabIndex={0}
+                        className="nums w-14 text-right text-ink-3 outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50 rounded-sm"
+                      >
+                        ref {row.benchmarkDelta > 0 ? "+" : ""}
+                        {(row.benchmarkDelta * 100).toFixed(1)}%
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t("panel.phaseBalance.yourAvgMinusRef")}</TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>
@@ -224,6 +250,7 @@ function AverageBreakdown({
 }
 
 export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBalanceProps) {
+  const { t } = useTranslation("widgets");
   const data = useMemo(() => buildPhaseBalance(solves, lastAnalysis, 20), [solves, lastAnalysis]);
   const latest = useMemo(() => getLatestComparableAnalysis(solves, lastAnalysis), [solves, lastAnalysis]);
 
@@ -231,8 +258,12 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
     <FloatingWidgetWrapper
       widgetId="phase-balance"
       icon={Scale}
-      label="Phase balance"
-      pillBadge={data.analysedSolves > 0 ? `${data.analysedSolves} analysed` : undefined}
+      label={t("def.phaseBalance")}
+      pillBadge={
+        data.analysedSolves > 0
+          ? t("panel.phaseBalance.analysed", { count: data.analysedSolves })
+          : undefined
+      }
       pillBadge2="CFOP"
       panelWidth={350}
       panelMaxHeight={520}
@@ -242,9 +273,11 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
         {data.analysedSolves === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <Scale className="size-7 text-ink-3/30" />
-            <p className="text-sm font-medium text-ink-2">Not enough comparable CFOP data</p>
+            <p className="text-sm font-medium text-ink-2">
+              {t("panel.phaseBalance.notEnoughData")}
+            </p>
             <p className="max-w-60 text-[0.66rem] leading-relaxed text-ink-3">
-              Complete analysed CFOP solves that reach a solved state. Incomplete, non-CFOP, and DNF solves stay out of this comparison.
+              {t("panel.phaseBalance.notEnoughDataHint")}
             </p>
           </div>
         ) : (
@@ -258,8 +291,14 @@ export function FloatingPhaseBalance({ solves, lastAnalysis }: FloatingPhaseBala
               />
             </div>
             <div className="flex items-center justify-between border-t border-line/60 pt-2 text-[0.56rem] text-ink-3">
-              <span>{data.analysedSolves} comparable solves</span>
-              <span>{data.hasEnoughForTrend ? "self-baseline ready" : `need ${5 - data.analysedSolves} more for trend`}</span>
+              <span>{t("panel.phaseBalance.comparableSolves", { count: data.analysedSolves })}</span>
+              <span>
+                {data.hasEnoughForTrend
+                  ? t("panel.phaseBalance.selfBaselineReady")
+                  : t("panel.phaseBalance.needMoreForTrend", {
+                      count: 5 - data.analysedSolves,
+                    })}
+              </span>
             </div>
           </>
         )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { BookOpen, Layers, Filter, ChevronLeft, ChevronRight, Grid } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import {
   getSeedData,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { PuzzleCategory } from "@/types";
@@ -167,11 +169,12 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
     availableSubsets.find((s) => s.id === effectiveSubsetId)?.name ?? "subset";
 
   const puzzleLabel = PUZZLE_TYPES.find((pt) => pt.value === puzzleType)?.label ?? '3x3';
+  const { t } = useTranslation("widgets");
 
   return (
     <FloatingWidgetWrapper
       widgetId="algorithm-db"
-      label="Algorithms"
+      label={t("def.algorithmDb")}
       icon={BookOpen}
       panelWidth={320}
       defaultPosition={{ x: 380, y: 72 }}
@@ -217,7 +220,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                 }}
               >
                 <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line">
-                  <SelectValue placeholder="Puzzle" />
+                  <SelectValue placeholder={t("panel.algorithmDb.puzzle")} />
                 </SelectTrigger>
                 <SelectContent>
                   {PUZZLE_TYPES.map((pt) => (
@@ -245,7 +248,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                   }}
                 >
                   <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line">
-                    <SelectValue placeholder="Method" />
+                    <SelectValue placeholder={t("panel.algorithmDb.method")} />
                   </SelectTrigger>
                   <SelectContent>
                     {puzzleMethods.map((m) => (
@@ -271,7 +274,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                   }}
                 >
                   <SelectTrigger size="sm" className="w-full h-7 text-xs bg-surface-2 border-line">
-                    <SelectValue placeholder="Submethod" />
+                    <SelectValue placeholder={t("panel.algorithmDb.submethod")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableSubsets.map((s) => (
@@ -299,7 +302,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                   className="h-5 px-1.5 text-[0.62rem] gap-1"
                 >
                   <Grid className="size-2.5" />
-                  <span>List</span>
+                  <span>{t("panel.algorithmDb.viewList")}</span>
                 </Button>
                 {activeCase && (
                   <Button
@@ -309,7 +312,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                     onClick={() => setActiveViewMode("detail")}
                     className="h-5 px-1.5 text-[0.62rem] gap-1"
                   >
-                    <span>Algorithm</span>
+                    <span>{t("panel.algorithmDb.viewAlgorithm")}</span>
                   </Button>
                 )}
               </div>
@@ -362,33 +365,41 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                     className="h-5 px-1.5 text-[0.62rem] text-ink-3 hover:text-ink gap-1"
                   >
                     <ChevronLeft className="size-3" />
-                    <span>All cases</span>
+                    <span>{t("panel.algorithmDb.allCases")}</span>
                   </Button>
 
                   <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handlePrevCase}
-                      className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
-                      title="Previous case"
-                    >
-                      <ChevronLeft className="size-3" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handlePrevCase}
+                          className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
+                        >
+                          <ChevronLeft className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("panel.algorithmDb.previousCase")}</TooltipContent>
+                    </Tooltip>
                     <span className="font-mono text-[0.62rem] font-bold text-ink px-1">
                       {activeCaseIndex + 1}/{subsetCases.length}
                     </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleNextCase}
-                      className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
-                      title="Next case"
-                    >
-                      <ChevronRight className="size-3" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleNextCase}
+                          className="h-5 w-5 p-0 text-ink-3 hover:text-ink"
+                        >
+                          <ChevronRight className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("panel.algorithmDb.nextCase")}</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
 
@@ -401,7 +412,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
                 ) : (
                   <div className="flex flex-col items-center justify-center p-6 bg-surface-2/30 border border-line border-dashed rounded-lg text-center text-ink-3">
                     <BookOpen className="size-6 mb-1 opacity-50" />
-                    <span className="text-xs font-medium">No case selected</span>
+                    <span className="text-xs font-medium">{t("panel.algorithmDb.noCaseSelected")}</span>
                   </div>
                 )}
               </div>

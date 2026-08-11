@@ -2,8 +2,11 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { X, ChevronLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Case3DDiagram } from "./Case3DDiagram";
 import { AlgorithmEditorDialog } from "./AlgorithmEditorDialog";
 import { SortableAlgorithmItem } from "./SortableAlgorithmItem";
@@ -39,11 +42,11 @@ export interface Case3DPanelProps {
 }
 
 const SLOT_LABELS = [
-  { id: 0, key: "FR", name: "Front Right" },
-  { id: 1, key: "FL", name: "Front Left" },
-  { id: 2, key: "BL", name: "Back Left" },
-  { id: 3, key: "BR", name: "Back Right" },
-];
+  { id: 0, key: "FR", nameKey: "slotFR" },
+  { id: 1, key: "FL", nameKey: "slotFL" },
+  { id: 2, key: "BL", nameKey: "slotBL" },
+  { id: 3, key: "BR", nameKey: "slotBR" },
+] as const;
 
 /** F2L slot of an alg from its `notes` (e.g. "Slot: FR"). Null if it has none. */
 function slotOfAlgorithm(alg: Algorithm): string | null {
@@ -60,6 +63,7 @@ export function Case3DPanel({
   variant = "panel",
 }: Case3DPanelProps) {
   // ── Algorithms from hook (seed + custom, ordered) ──────────────────
+  const { t } = useTranslation("algorithms");
   const { algorithms } = useCaseAlgorithms(caseData.id);
 
   // ── Editor state ────────────────────────────────────────────────────
@@ -186,7 +190,7 @@ export function Case3DPanel({
   const handleDeleteAlgorithm = useCallback((alg: Algorithm) => {
     algorithmStore.getState().removeCustomAlgorithm(alg.id);
     setSelectedAlgId((prev) => (prev === alg.id ? null : prev));
-    toast.success("Algorithm removed", {
+    toast.success(i18n.t("toast:algorithmRemoved"), {
       description: `${alg.moves.slice(0, 4).join(" ")}${alg.moves.length > 4 ? " …" : ""}`,
     });
   }, []);
@@ -202,10 +206,10 @@ export function Case3DPanel({
               <button
                 onClick={onClose}
                 className="flex h-10 shrink-0 items-center gap-1 rounded-lg px-2 -ml-2 text-[0.72rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors touch-manipulation"
-                aria-label="Back to cases"
+                aria-label={t("backToCases")}
               >
                 <ChevronLeft className="size-4" />
-                Back
+                {t("back")}
               </button>
             )}
             <span className="nums text-[0.85rem] font-semibold text-ink">
@@ -228,7 +232,7 @@ export function Case3DPanel({
             <button
               onClick={onClose}
               className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-              aria-label="Close"
+              aria-label={t("close")}
             >
               <X className="size-4" />
             </button>
@@ -241,7 +245,7 @@ export function Case3DPanel({
           {isF2L && (
             <div>
               <label className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 block mb-1.5">
-                Slot Orientation
+                {t("slotOrientation")}
               </label>
               <div className="grid grid-cols-4 gap-1 rounded-lg border border-line bg-surface-2/40 p-1">
                 {SLOT_LABELS.map((slot) => (
@@ -255,7 +259,7 @@ export function Case3DPanel({
                         : "text-ink-3 hover:text-ink-2",
                     )}
                   >
-                    {slot.name}
+                    {t(slot.nameKey)}
                   </button>
                 ))}
               </div>
@@ -277,19 +281,26 @@ export function Case3DPanel({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">
-                Algorithms ({filteredAlgorithms.length}
+                {t("algorithmsCount", { count: filteredAlgorithms.length })}
                 {isF2L && filteredAlgorithms.length !== algorithms.length
-                  ? ` / ${algorithms.length} · ${slotKey}`
-                  : ""})
+                  ? t("algorithmsSlotSuffix", {
+                      total: algorithms.length,
+                      slot: slotKey,
+                    })
+                  : ""}
               </h4>
-              <button
-                onClick={handleOpenAddDialog}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
-                title="Add custom algorithm"
-              >
-                <Plus className="size-3" />
-                Add custom
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleOpenAddDialog}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    {t("addCustom")}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("addCustomAlgorithm")}</TooltipContent>
+              </Tooltip>
             </div>
 
             <DndContext
@@ -328,7 +339,7 @@ export function Case3DPanel({
               }
               className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
             >
-              Practice this case
+              {t("practiceCase")}
             </button>
           )}
         </div>
@@ -342,7 +353,7 @@ export function Case3DPanel({
               }
               className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-ink text-[0.8rem] font-semibold text-surface hover:bg-ink/90 transition-colors touch-manipulation"
             >
-              Practice this case
+              {t("practiceCase")}
             </button>
           </div>
         )}

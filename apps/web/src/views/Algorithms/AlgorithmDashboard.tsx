@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -22,6 +23,7 @@ export function AlgorithmDashboard({
   initialSubsetId,
   initialCaseId,
 }: AlgorithmDashboardProps = {}) {
+  const { t } = useTranslation("algorithms");
   const [selectedSubsetId, setSelectedSubsetId] = useState<string | null>(
     () => initialSubsetId ?? SUBSETS.find((s) => s.name === "PLL")?.id ?? null,
   );
@@ -115,11 +117,15 @@ export function AlgorithmDashboard({
                 <div>
                   <h3 className="text-[0.78rem] font-semibold text-ink">
                     {selectedSubsetId
-                      ? `${SUBSETS.find((s) => s.id === selectedSubsetId)?.name ?? "?"} Cases`
-                      : "Select a subset"}
+                      ? t("casesForSubset", {
+                          subset:
+                            SUBSETS.find((s) => s.id === selectedSubsetId)?.name ??
+                            "?",
+                        })
+                      : t("selectSubset")}
                   </h3>
                   <p className="text-[0.62rem] text-ink-3 mt-0.5">
-                    {filteredCases.length} case{filteredCases.length !== 1 ? "s" : ""}
+                    {t("caseCount", { count: filteredCases.length })}
                   </p>
                 </div>
               </div>

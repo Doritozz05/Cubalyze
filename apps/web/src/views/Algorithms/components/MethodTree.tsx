@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
@@ -30,6 +31,8 @@ export const MethodTree = memo(function MethodTree({
   onSelectSubset,
   className,
 }: MethodTreeProps) {
+  const { t } = useTranslation("algorithms");
+
   // Group methods by puzzle type
   const puzzleGroups = useMemo(() => {
     const groups = new Map<PuzzleTypeKey, AlgorithmMethod[]>();
@@ -116,7 +119,7 @@ export const MethodTree = memo(function MethodTree({
       {/* Section label */}
       <div className="px-3 pt-2.5 pb-1.5">
         <span className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-ink-3/50">
-          Methods
+          {t("methods")}
         </span>
       </div>
 

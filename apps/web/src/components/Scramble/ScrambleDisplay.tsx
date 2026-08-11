@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Copy, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export function ScrambleDisplay({
   needsReset = false,
   awaitingSolve = false,
 }: ScrambleDisplayProps) {
+  const { t } = useTranslation("timer");
   const [copied, setCopied] = useState(false);
 
   // Use displayScramble for rendering tokens when available (orientation-adapted),
@@ -62,7 +64,7 @@ export function ScrambleDisplay({
           ) : null}
           {isScrambled ? (
             <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
-              <Check className="size-3" /> Ready
+              <Check className="size-3" /> {t("ready")}
             </span>
           ) : null}
         </div>
@@ -73,14 +75,14 @@ export function ScrambleDisplay({
             size="sm"
             onClick={copy}
             className="h-7 gap-1.5 px-2 text-xs text-ink-2 hover:text-ink"
-            aria-label="Copy scramble"
+            aria-label={t("copyScramble")}
           >
             {copied ? (
               <Check className="size-3.5 text-ready" />
             ) : (
               <Copy className="size-3.5" />
             )}
-            {copied ? "Copied" : "Copy"}
+            {copied ? t("copied") : t("copy")}
           </Button>
           {onRegenerate ? (
             <Button
@@ -88,10 +90,10 @@ export function ScrambleDisplay({
               size="sm"
               onClick={onRegenerate}
               className="h-7 gap-1.5 px-2 text-xs text-ink-2 hover:text-ink"
-              aria-label="New scramble"
+              aria-label={t("newScramble")}
             >
               <RefreshCw className="size-3.5" />
-              New
+              {t("new")}
             </Button>
           ) : null}
         </div>
@@ -100,13 +102,13 @@ export function ScrambleDisplay({
       {awaitingSolve ? (
         <div className="flex flex-col items-center justify-center gap-2 py-4">
           <p className="text-sm text-caution">
-            Solve the cube to apply this scramble
+            {t("solveToApply")}
           </p>
         </div>
       ) : needsReset ? (
         <div className="flex flex-col items-center justify-center gap-2 py-4">
           <p className="text-sm text-caution">
-            Too many mistakes — solve the cube to continue
+            {t("tooManyMistakes")}
           </p>
         </div>
       ) : errorMoves.length > 0 ? (

@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
@@ -16,9 +17,10 @@ const Cube3DPanel = lazy(() =>
 
 /** Minimal placeholder shown while the 3D chunk downloads on first open. */
 function CubePanelFallback() {
+  const { t } = useTranslation("shell");
   return (
     <div className="flex h-full min-h-0 w-full items-center justify-center">
-      <span className="animate-pulse text-xs text-ink-3">Loading 3D cube…</span>
+      <span className="animate-pulse text-xs text-ink-3">{t("loading3dCube")}</span>
     </div>
   );
 }
@@ -85,6 +87,7 @@ export function AppShell(props: AppShellProps) {
   } = props;
 
   const isTouch = useIsTouch();
+  const { t } = useTranslation("shell");
 
   // ── Shell-level UI state (owned here, not in App) ──────────────────────
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
@@ -122,11 +125,13 @@ export function AppShell(props: AppShellProps) {
     if (storageType === "memory" && !storageWarnedRef.current) {
       storageWarnedRef.current = true;
       toast.warning(
-        "Storage is volatile — solves will be lost on reload. Export your data in Settings → Data.",
+        t("storageVolatile"),
         { duration: 8000 },
       );
     }
-  }, [storageType]);
+    // `t` from react-i18next is referentially stable, so this effect still
+    // only fires on storage-type changes.
+  }, [storageType, t]);
 
   const handleOpenCube = useCallback(() => {
     onNavigate("timer");

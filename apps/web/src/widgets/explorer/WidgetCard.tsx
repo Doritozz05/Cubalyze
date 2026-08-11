@@ -6,8 +6,13 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useWidgetStore, widgetStore, NO_DOCK_WIDGETS } from "@/widgets/widgetStore";
-import { CATEGORY_LABEL } from "@/widgets/registry";
 import { WidgetPreview } from "@/widgets/explorer/WidgetPreviews";
+import { useTranslation } from "react-i18next";
+import {
+  CATEGORY_TAG_KEY,
+  WIDGET_DESC_KEY,
+  WIDGET_LABEL_KEY,
+} from "@/widgets/i18n";
 import type { WidgetDefinition } from "@/widgets/types";
 
 export interface WidgetCardProps {
@@ -25,6 +30,7 @@ export interface WidgetCardProps {
  * Enabling a widget pins it to the header dock bar automatically.
  */
 export function WidgetCard({ widget, className }: WidgetCardProps) {
+  const { t } = useTranslation("widgets");
   const status = useWidgetStore((s) => s.instances[widget.id]?.status);
   const active = status !== "inactive";
   const isTouch = useIsTouch();
@@ -91,16 +97,16 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
                 active ? "text-ink" : "text-ink-2",
               )}
             >
-              {widget.name}
+              {t(WIDGET_LABEL_KEY[widget.id])}
             </h4>
           </div>
           <span className="shrink-0 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[0.58rem] uppercase tracking-[0.12em] text-ink-3">
-            {CATEGORY_LABEL[widget.category]}
+            {t(CATEGORY_TAG_KEY[widget.category])}
           </span>
         </div>
 
         <p className="line-clamp-2 text-[0.75rem] leading-5 text-ink-3">
-          {widget.description}
+          {t(WIDGET_DESC_KEY[widget.id])}
         </p>
 
         {/* Author + version + dock hint */}
@@ -124,11 +130,13 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
                     cube-button) are standalone floating buttons and never
                     appear in the header dock. */}
                 {NO_DOCK_WIDGETS.has(widget.id) ? (
-                  <span>Floating button</span>
+                  <span>{t("card.floatingButton")}</span>
                 ) : (
                   <>
-                    <span className="max-lg:hidden">Pinned to header</span>
-                    <span className="lg:hidden">Opens as panel</span>
+                    <span className="max-lg:hidden">
+                      {t("card.pinnedToHeader")}
+                    </span>
+                    <span className="lg:hidden">{t("card.opensAsPanel")}</span>
                   </>
                 )}
               </span>
@@ -153,7 +161,7 @@ export function WidgetCard({ widget, className }: WidgetCardProps) {
           <Switch
             checked={active}
             onCheckedChange={handleToggle}
-            aria-label={`Toggle ${widget.name}`}
+            aria-label={t("card.toggle", { name: t(WIDGET_LABEL_KEY[widget.id]) })}
           />
         </div>
       </div>

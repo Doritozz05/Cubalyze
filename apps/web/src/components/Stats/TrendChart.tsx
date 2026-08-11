@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { formatTime, averageOf } from "@/utils/formatTime";
+import { useTranslation } from "react-i18next";
 import type { Solve } from "@/types";
 
 export interface TrendChartProps {
@@ -39,6 +40,7 @@ export function TrendChart({
   defaultWindow = 5,
   className,
 }: TrendChartProps) {
+  const { t } = useTranslation("insights");
   const [window, setWindow] = useState<5 | 12 | 100>(defaultWindow);
 
   const { data, bestAo, worstAo } = useMemo(() => {
@@ -129,7 +131,7 @@ export function TrendChart({
                   boxShadow: "none",
                 }}
                 itemStyle={{ color: "var(--ink)" }}
-                labelFormatter={(l) => `Solve ${l}`}
+                labelFormatter={(l) => t("overview.solveNumber", { number: l })}
                 formatter={(v) => [formatTime(Number(v)), `Ao${window}`]}
               />
               <Area
@@ -147,7 +149,7 @@ export function TrendChart({
         </div>
       ) : (
         <div className="flex h-18 items-center justify-center text-[0.7rem] text-ink-3">
-          Need at least {window} solves
+          {t("overview.trendNeedData", { count: window })}
         </div>
       )}
     </div>

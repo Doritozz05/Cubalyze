@@ -2,12 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { LayoutGrid, Save, Trash2, Check, Lock, ArrowDownToLine } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { useWidgetStore, widgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
+import { WIDGET_LABEL_KEY } from "@/widgets/i18n";
 import type { WidgetId } from "@/widgets/types";
 import type { CustomLayout } from "@/widgets/widgetStore";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ── Widget size registry ─────────────────────────────────────────────────
 const WIDGET_SIZES: Record<string, { w: number; h: number }> = {
@@ -131,12 +135,34 @@ const LAYOUTS: Array<{ id: string; label: string; description: string; fn: Layou
   { id: "spread",  label: "Spread",       description: "Distributed with stagger",    fn: spread },
 ];
 
+// ── Layout i18n key maps (labels are UI; the LAYOUTS data stays English) ──
+const LAYOUT_LABEL_KEY: Record<string, ParseKeys<"widgets">> = {
+  cascade: "panel.layoutOrganizer.cascade",
+  grid: "panel.layoutOrganizer.grid",
+  split: "panel.layoutOrganizer.split",
+  left: "panel.layoutOrganizer.left",
+  right: "panel.layoutOrganizer.right",
+  focus: "panel.layoutOrganizer.focus",
+  spread: "panel.layoutOrganizer.spread",
+};
+
+const LAYOUT_DESC_KEY: Record<string, ParseKeys<"widgets">> = {
+  cascade: "panel.layoutOrganizer.cascadeDesc",
+  grid: "panel.layoutOrganizer.gridDesc",
+  split: "panel.layoutOrganizer.splitDesc",
+  left: "panel.layoutOrganizer.leftDesc",
+  right: "panel.layoutOrganizer.rightDesc",
+  focus: "panel.layoutOrganizer.focusDesc",
+  spread: "panel.layoutOrganizer.spreadDesc",
+};
+
 // ── SVG miniature preview ────────────────────────────────────────────────
 
 const SVG_W = 140;
 const SVG_H = 80;
 
-function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: string[] }) {
+function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: WidgetId[] }) {
+  const { t } = useTranslation("widgets");
   const area = getArea();
   const scaleX = SVG_W / area.w;
   const scaleY = SVG_H / area.h;
@@ -151,7 +177,6 @@ function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: st
         const sw = Math.max(4, Math.min(r.w * scaleX, SVG_W - sx));
         const sh = Math.max(4, Math.min(r.h * scaleY, SVG_H - sy));
         const hue = (i * 53) % 360;
-        const def = getWidget(id);
         return (
           <g key={id}>
             <rect x={sx} y={sy} width={sw} height={sh} rx={2}
@@ -163,7 +188,7 @@ function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: st
               <text x={sx + sw / 2} y={sy + sh / 2 + 2.5} textAnchor="middle"
                 fontSize={5} fill={`hsl(${hue} 50% 80%)`}
                 style={{ pointerEvents: "none", userSelect: "none" }}>
-                {def?.name?.split(" ")[0] ?? id}
+                {t(WIDGET_LABEL_KEY[id]).split(" ")[0] ?? id}
               </text>
             )}
           </g>
@@ -188,6 +213,7 @@ function customLayoutRects(layout: CustomLayout): Record<string, Rect> {
 const SELF_ID = "layout-organizer";
 
 export function FloatingLayoutOrganizer() {
+  const { t } = useTranslation("widgets");
   const instances = useWidgetStore((s) => s.instances);
   const customLayouts = useWidgetStore((s) => s.customLayouts);
   const [saveInputOpen, setSaveInputOpen] = useState(false);
@@ -261,13 +287,15 @@ export function FloatingLayoutOrganizer() {
   };
 
   return (
-    <FloatingWidgetWrapper widgetId={SELF_ID} icon={LayoutGrid} label="Layouts" panelWidth={300}>
+    <FloatingWidgetWrapper widgetId={SELF_ID} icon={LayoutGrid} label={t("def.layoutOrganizer")} panelWidth={300}>
       {activeCount === 0 && customLayouts.length === 0 ? (
         <div className="flex flex-col items-center gap-2 px-5 py-8 text-center">
           <LayoutGrid className="size-8 text-ink-3/40" />
-          <p className="text-[0.78rem] font-medium text-ink-2">No active widgets</p>
+          <p className="text-[0.78rem] font-medium text-ink-2">
+            {t("panel.layoutOrganizer.noActive")}
+          </p>
           <p className="text-[0.7rem] leading-relaxed text-ink-3">
-            Open widgets from the header dock or explorer to see layout presets here.
+            {t("panel.layoutOrganizer.noActiveHint")}
           </p>
         </div>
       ) : (
@@ -277,26 +305,41 @@ export function FloatingLayoutOrganizer() {
             {/* Header bar + save layout button */}
             <div className="sticky top-0 z-1 flex items-center justify-between border-b border-line bg-surface-2 px-3 py-1.5">
               <p className="text-[0.65rem] text-ink-3">
-                <span className="font-semibold text-ink">{activeCount}</span> active widget{activeCount !== 1 ? "s" : ""}
+                <span className="font-semibold text-ink">{activeCount}</span>{" "}
+                {t("panel.layoutOrganizer.activeCount", { count: activeCount })}
               </p>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={handleDockAll}
-                  disabled={floatingIds.length === 0}
-                  className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
-                  title={floatingIds.length === 0 ? "No floating widgets" : `Dock all ${floatingIds.length} floating widget${floatingIds.length !== 1 ? "s" : ""}`}
-                >
-                  <ArrowDownToLine className="size-2.5" />
-                  Dock All
-                </button>
-                <button
-                  onClick={() => setSaveInputOpen((v) => !v)}
-                  className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-                  title="Save current layout positions"
-                >
-                  <Save className="size-2.5" />
-                  Save Layout
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <button
+                        onClick={handleDockAll}
+                        disabled={floatingIds.length === 0}
+                        className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
+                      >
+                        <ArrowDownToLine className="size-2.5" />
+                        {t("panel.layoutOrganizer.dockAll")}
+                      </button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {floatingIds.length === 0
+                      ? t("panel.layoutOrganizer.noFloating")
+                      : t("panel.layoutOrganizer.dockAll", { count: floatingIds.length })}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setSaveInputOpen((v) => !v)}
+                      className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                    >
+                      <Save className="size-2.5" />
+                      {t("panel.layoutOrganizer.saveLayout")}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t("panel.layoutOrganizer.savePositions")}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -310,7 +353,7 @@ export function FloatingLayoutOrganizer() {
                     if (e.key === "Enter") handleSaveCustom();
                     if (e.key === "Escape") setSaveInputOpen(false);
                   }}
-                  placeholder="Layout name..."
+                  placeholder={t("panel.layoutOrganizer.layoutNamePlaceholder")}
                   className="h-7 flex-1 rounded border border-line bg-surface px-2 text-[0.7rem] text-ink outline-none placeholder:text-ink-3/50 focus:border-ink/40"
                   autoFocus
                 />
@@ -320,7 +363,7 @@ export function FloatingLayoutOrganizer() {
                   className="flex items-center gap-1 rounded bg-ink px-2.5 py-1 text-[0.65rem] font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
                   <Check className="size-3" />
-                  Save
+                  {t("panel.layoutOrganizer.saveLayoutButton")}
                 </button>
               </div>
             )}
@@ -329,7 +372,7 @@ export function FloatingLayoutOrganizer() {
             {savedId && (
               <div className="flex items-center gap-1.5 border-b border-ready/20 bg-ready-soft/30 px-3 py-1.5">
                 <Check className="size-3 text-ready" />
-                <span className="text-[0.65rem] text-ready font-medium">Layout saved!</span>
+                <span className="text-[0.65rem] text-ready font-medium">{t("panel.layoutOrganizer.layoutSaved")}</span>
               </div>
             )}
 
@@ -337,7 +380,9 @@ export function FloatingLayoutOrganizer() {
             {customLayouts.length > 0 && (
               <div className="px-2.5 pt-2 pb-1">
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold">Custom Layouts</p>
+                  <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold">
+                    {t("panel.layoutOrganizer.customLayouts")}
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {customLayouts.map((layout) => {
@@ -352,10 +397,13 @@ export function FloatingLayoutOrganizer() {
                     // Descriptive label when widgets are missing
                     let missingText = "";
                     if (missingIds.length === 1) {
-                      const def = getWidget(missingIds[0]);
-                      missingText = `${def?.name ?? missingIds[0]} needed`;
+                      missingText = t("panel.layoutOrganizer.widgetNeeded", {
+                        name: t(WIDGET_LABEL_KEY[missingIds[0]]),
+                      });
                     } else if (missingIds.length > 1) {
-                      missingText = `${missingIds.length} needed`;
+                      missingText = t("panel.layoutOrganizer.widgetsNeeded", {
+                        count: missingIds.length,
+                      });
                     }
 
                     return (
@@ -390,7 +438,7 @@ export function FloatingLayoutOrganizer() {
                             </p>
                             <p className="text-[0.58rem] text-ink-3 leading-tight mt-0.5">
                               {isFullyActive ? (
-                                <span>{requiredIds.length} widget{requiredIds.length !== 1 ? "s" : ""}</span>
+                                <span>{t("panel.layoutOrganizer.widgetsCount", { count: requiredIds.length })}</span>
                               ) : (
                                 <span className="text-caution font-medium flex items-center gap-0.5">
                                   {missingText}
@@ -399,17 +447,23 @@ export function FloatingLayoutOrganizer() {
                             </p>
                           </div>
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCustom(layout.id);
-                          }}
-                          className="absolute right-1 top-1 grid size-5 place-items-center rounded text-ink-3/50 opacity-0 transition-all hover:bg-surface-2 hover:text-dnf group-hover:opacity-100 z-10"
-                          aria-label={`Delete layout ${layout.name}`}
-                          title="Delete layout"
-                        >
-                          <Trash2 className="size-2.5" />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCustom(layout.id);
+                              }}
+                              className="absolute right-1 top-1 grid size-5 place-items-center rounded text-ink-3/50 opacity-0 transition-all hover:bg-surface-2 hover:text-dnf group-hover:opacity-100 z-10"
+                              aria-label={t("panel.layoutOrganizer.deleteLayoutNamed", {
+                                name: layout.name,
+                              })}
+                            >
+                              <Trash2 className="size-2.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">{t("panel.layoutOrganizer.deleteLayout")}</TooltipContent>
+                        </Tooltip>
                       </div>
                     );
                   })}
@@ -420,7 +474,9 @@ export function FloatingLayoutOrganizer() {
             {/* ── Built-in presets section ─────────────────────────────────── */}
             {activeCount > 0 && (
               <div className="px-2.5 pt-2 pb-1">
-                <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold mb-1.5">Presets</p>
+                <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold mb-1.5">
+                  {t("panel.layoutOrganizer.presets")}
+                </p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {layoutData.map((layout) => (
                     <button
@@ -432,8 +488,12 @@ export function FloatingLayoutOrganizer() {
                         <LayoutPreviewSvg rects={layout.rects} ids={activeIds} />
                       </div>
                       <div>
-                        <p className="text-[0.68rem] font-semibold text-ink leading-tight">{layout.label}</p>
-                        <p className="text-[0.58rem] text-ink-3 leading-tight">{layout.description}</p>
+                        <p className="text-[0.68rem] font-semibold text-ink leading-tight">
+                          {t(LAYOUT_LABEL_KEY[layout.id])}
+                        </p>
+                        <p className="text-[0.58rem] text-ink-3 leading-tight">
+                          {t(LAYOUT_DESC_KEY[layout.id])}
+                        </p>
                       </div>
                     </button>
                   ))}
@@ -452,7 +512,7 @@ export function FloatingLayoutOrganizer() {
                   return (
                     <span key={id} className="flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[0.62rem] text-ink-2">
                       {Icon && <Icon className="size-2.5 shrink-0 text-ink-3" />}
-                      {def?.name ?? id}
+                      {t(WIDGET_LABEL_KEY[id])}
                     </span>
                   );
                 })}

@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ParseKeys } from "i18next";
 import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
@@ -38,15 +39,19 @@ export type ViewId =
  * A nav item that maps to a stage view (ViewId) or triggers a dialog
  * (e.g. "widgets"). Items whose id is not a ViewId are handled as
  * actions in LeftSidebar rather than stage navigation.
+ *
+ * `labelKey` is an i18n key in the `nav` namespace — translate at render
+ * time with `useTranslation("nav")`, never at module scope.
  */
 export interface NavItem {
   id: ViewId | "widgets";
-  label: string;
+  labelKey: ParseKeys<"nav">;
   icon: LucideIcon;
 }
 
 export interface NavGroup {
-  title: string;
+  /** i18n key (nav namespace) for the group heading. */
+  titleKey: ParseKeys<"nav">;
   items: NavItem[];
 }
 
@@ -61,30 +66,30 @@ export interface NavGroup {
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    title: "Main",
+    titleKey: "main",
     items: [
-      { id: "timer", label: "Timer", icon: Timer },
+      { id: "timer", labelKey: "timer", icon: Timer },
     ],
   },
   {
-    title: "Training",
+    titleKey: "training",
     items: [
-      { id: "training", label: "Training", icon: Target },
-      { id: "algorithms", label: "Algorithms", icon: BookOpen },
-      { id: "skill-tree", label: "Skills", icon: Network },
+      { id: "training", labelKey: "training", icon: Target },
+      { id: "algorithms", labelKey: "algorithms", icon: BookOpen },
+      { id: "skill-tree", labelKey: "skills", icon: Network },
     ],
   },
   {
-    title: "Progress",
+    titleKey: "progress",
     items: [
-      { id: "insights", label: "Stats", icon: BarChart3 },
+      { id: "insights", labelKey: "stats", icon: BarChart3 },
     ],
   },
   {
-    title: "Explore",
+    titleKey: "explore",
     items: [
-      { id: "reconstructions", label: "Reconstructions", icon: FileSearch },
-      { id: "widgets", label: "Widgets", icon: Puzzle },
+      { id: "reconstructions", labelKey: "reconstructions", icon: FileSearch },
+      { id: "widgets", labelKey: "widgets", icon: Puzzle },
     ],
   },
 ];

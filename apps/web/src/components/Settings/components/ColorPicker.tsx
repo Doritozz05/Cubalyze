@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import i18n from "@/i18n";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface ColorPickerProps {
   value: string;
@@ -97,27 +99,30 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
               onClick={handleHexSubmit}
               className="rounded-md bg-ink px-2.5 py-1 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
             >
-              OK
+              {i18n.t("common:ok")}
             </button>
           </div>
 
           {/* Preset grid */}
           <div className="grid grid-cols-6 gap-1.5">
             {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => {
-                  onChange(color);
-                  setOpen(false);
-                }}
-                className={cn(
-                  "size-7 rounded-md border-2 transition-all duration-100 hover:scale-110 hover:shadow-md",
-                  value === color ? "border-ink ring-2 ring-ink/20" : "border-line/60",
-                )}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
+              <Tooltip key={color}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(color);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "size-7 rounded-md border-2 transition-all duration-100 hover:scale-110 hover:shadow-md",
+                      value === color ? "border-ink ring-2 ring-ink/20" : "border-line/60",
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top">{color}</TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Bluetooth, BluetoothConnected, Info } from "lucide-react";
 import { GanCubeAdapter } from "@cubeforge/hardware-hal";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -110,6 +112,7 @@ export function CubeConnector({
   hideDialog = false,
 }: CubeConnectorProps) {
   const isTouch = useIsTouch();
+  const { t } = useTranslation("shell");
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen ?? internalOpen;
 
@@ -140,7 +143,7 @@ export function CubeConnector({
 
       setStatus("connected");
       setShowMacInput(false);
-      toast.success("Cube connected!");
+      toast.success(i18n.t("toast:cubeConnected"));
 
       // Request initial facelets just to verify connection
       globalCubeAdapter.requestFacelets().catch(() => {});
@@ -157,19 +160,19 @@ export function CubeConnector({
       const bluetoothMissing = !("bluetooth" in navigator);
 
       if (notSecure) {
-        setErrorMsg("Web Bluetooth requires HTTPS. Open via http://localhost:5173 instead of the LAN IP.");
+        setErrorMsg(t("httpsRequired"));
         setShowMacInput(false);
       } else if (bluetoothMissing || errMsg.includes("globally disabled")) {
-        setErrorMsg("Web Bluetooth is globally disabled in your browser. Open chrome://flags/#enable-web-bluetooth, set to Enabled, and restart your browser.");
+        setErrorMsg(t("bluetoothDisabled"));
         setShowMacInput(false);
       } else if (
         errMsg === "MAC_REQUIRED" ||
         errMsg.includes("requestDevice")
       ) {
-        setErrorMsg("Browser blocks automatic MAC reading.");
+        setErrorMsg(t("macBlockedError"));
         setShowMacInput(true);
       } else {
-        setErrorMsg("Failed to connect: " + errMsg);
+        setErrorMsg(t("connectionFailed", { error: errMsg }));
       }
     }
   };
@@ -178,11 +181,11 @@ export function CubeConnector({
     try {
       await globalCubeAdapter.disconnect();
       setStatus("disconnected");
-      toast.success("Cube disconnected");
+      toast.success(i18n.t("toast:cubeDisconnected"));
       handleOpenChange(false);
     } catch (e) {
       console.error(e);
-      toast.error("Failed to disconnect");
+      toast.error(i18n.t("toast:disconnectFailed"));
     }
   };
 
@@ -200,7 +203,7 @@ export function CubeConnector({
         status === "connected" && "text-phase-blue-500",
         className,
       )}
-      aria-label="Connect smart cube"
+      aria-label={t("connectSmartCube")}
     >
       <div className="flex size-5 shrink-0 items-center justify-center">
         {status === "connected" ? (
@@ -215,7 +218,7 @@ export function CubeConnector({
         transition={SIDEBAR_MOTION.label}
         className="overflow-hidden whitespace-nowrap"
       >
-        Smart Cube
+        {t("smartCube")}
       </motion.span>
     </button>
   );
@@ -232,7 +235,7 @@ export function CubeConnector({
             status === "connected" && "text-phase-blue-500 border-phase-blue-500/20 bg-phase-blue-500/5 hover:bg-phase-blue-500/10 hover:text-phase-blue-600",
             className,
           )}
-          aria-label="Connect smart cube"
+          aria-label={t("connectSmartCube")}
         >
           {status === "connected" ? (
             <BluetoothConnected className="size-4" />
@@ -241,28 +244,36 @@ export function CubeConnector({
           )}
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="bottom">Connect smart cube</TooltipContent>
+      <TooltipContent side="bottom">{t("connectSmartCube")}</TooltipContent>
     </Tooltip>
   );
 
   const trigger = variant === "rail" ? railButton : headerTrigger;
 
+  // Localized status label — resolved at render time so it follows the
+  // active language (the state value itself stays an enum).
+  const statusLabel: Record<typeof status, string> = {
+    disconnected: t("statusDisconnected"),
+    connecting: t("statusConnecting"),
+    connected: t("statusConnected"),
+  };
+
   const innerContent = (
     <div className="flex flex-col gap-4 py-4 max-lg:py-0">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">Status</span>
+        <span className="text-sm font-medium">{t("status")}</span>
         <span className={cn(
-          "text-sm capitalize",
+          "text-sm",
           status === "connected" ? "text-phase-blue-500" : "text-ink-3"
         )}>
-          {status}
+          {statusLabel[status]}
         </span>
       </div>
 
       {errorMsg && (
         <Alert variant="destructive" className="py-2">
           <Info className="size-4" />
-          <AlertTitle>Connection Error</AlertTitle>
+          <AlertTitle>{t("connectionError")}</AlertTitle>
           <AlertDescription className="text-xs mt-1">
             {errorMsg}
           </AlertDescription>
@@ -272,7 +283,7 @@ export function CubeConnector({
       {showMacInput && status !== "connected" && (
         <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2 p-3 text-sm">
           <p className="text-ink-2">
-            Your browser blocks automatic MAC reading. To fix this permanently, copy and paste this in a new tab and enable the flag:
+            {t("macBlocked")}
           </p>
           <div className="relative group">
             <code className="rounded bg-ink/5 p-1.5 pr-8 font-mono text-xs text-ink break-all cursor-text select-all">
@@ -282,21 +293,21 @@ export function CubeConnector({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success("Copied!"); }}
+                  onClick={() => { navigator.clipboard.writeText(instructions); toast.success(i18n.t("toast:copied")); }}
                   className="absolute top-1.5 right-1.5 size-5 flex items-center justify-center rounded hover:bg-ink/10 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="left">Copy</TooltipContent>
+              <TooltipContent side="left">{t("copy")}</TooltipContent>
             </Tooltip>
           </div>
           <div className="space-y-1.5 mt-2">
-            <p className="text-ink-2 text-xs">Or enter the MAC address manually (e.g. AA:BB:CC:DD:EE:FF):</p>
+            <p className="text-ink-2 text-xs">{t("macManualEntry")}</p>
             <Input
               value={manualMac}
               onChange={(e) => setManualMac(e.target.value)}
-              placeholder="MAC address"
+              placeholder={t("macAddress")}
               className="h-8"
             />
           </div>
@@ -309,7 +320,7 @@ export function CubeConnector({
           variant="destructive"
           className="w-full mt-2"
         >
-          Disconnect Cube
+          {t("disconnectCube")}
         </Button>
       ) : (
         <Button
@@ -317,7 +328,7 @@ export function CubeConnector({
           disabled={status === "connecting" || (showMacInput && !manualMac)}
           className="w-full mt-2"
         >
-          {status === "connecting" ? "Connecting..." : "Connect Cube"}
+          {status === "connecting" ? t("connecting") : t("connectCube")}
         </Button>
       )}
     </div>
@@ -330,9 +341,9 @@ export function CubeConnector({
         <Drawer open={open} onOpenChange={handleOpenChange}>
           <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] p-0 pb-safe focus:outline-none">
             <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
-              <DrawerTitle className="text-sm font-semibold text-ink">Connect smart cube</DrawerTitle>
+              <DrawerTitle className="text-sm font-semibold text-ink">{t("connectSmartCube")}</DrawerTitle>
               <DrawerDescription className="text-xs text-ink-3 mt-1">
-                Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
+                {t("connectSmartCubeDescription")}
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-5 overflow-y-auto">
@@ -344,9 +355,9 @@ export function CubeConnector({
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogContent className={`sm:max-w-md bg-surface text-ink border-line ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
             <DialogHeader>
-              <DialogTitle>Connect smart cube</DialogTitle>
+              <DialogTitle>{t("connectSmartCube")}</DialogTitle>
               <DialogDescription>
-                Connect your Bluetooth-enabled speedcube (e.g. GAN Smart Cube) to use it as a timer.
+                {t("connectSmartCubeDescription")}
               </DialogDescription>
             </DialogHeader>
             {innerContent}

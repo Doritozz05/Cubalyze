@@ -36,14 +36,13 @@ export function GeneralSection() {
           <Settings className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] leading-5 text-ink-2">
-          Global application settings and interface options.
+          {t('general.header')}
         </p>
       </div>
 
       {/* Language selector — drives preferencesStore.language; the i18n
           module (src/i18n) follows the store and updates the active locale
-          + <html lang>. UI copy is not migrated yet, so only this row's
-          labels react to the change for now. */}
+          + <html lang>. */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
           <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{t('language')}</h4>
@@ -76,41 +75,41 @@ export function GeneralSection() {
 
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium leading-5 text-ink">Time Precision</h4>
+          <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{t('general.timePrecision')}</h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Choose whether displayed times use centisecond (0.01s) or millisecond (0.001s) accuracy.
+            {t('general.timePrecisionHint')}
           </p>
         </div>
         <div className="mt-0.5 shrink-0">
           <Select value={timePrecision} onValueChange={(val) => setTimePrecision(val as 'centiseconds' | 'milliseconds')}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select precision" />
+              <SelectValue placeholder={t('general.selectPrecision')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="centiseconds">Centiseconds (0.01s)</SelectItem>
-              <SelectItem value="milliseconds">Milliseconds (0.001s)</SelectItem>
+              <SelectItem value="centiseconds">{t('general.centiseconds')}</SelectItem>
+              <SelectItem value="milliseconds">{t('general.milliseconds')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <SettingToggle
-        title="Haptic feedback"
-        description="Subtle vibration feedback on touch devices (tab switches, sheets, timer start/stop, penalties, and PB celebrations). No effect on desktop."
+        title={t('general.haptics')}
+        description={t('general.hapticsHint')}
         checked={haptics}
         onCheckedChange={setHaptics}
       />
 
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium leading-5 text-ink">Onboarding tour</h4>
+          <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{t('general.onboarding')}</h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Replay the first-run tour that walks you through the main tabs.
+            {t('general.onboardingHint')}
           </p>
         </div>
         <div className="mt-0.5 shrink-0">
           <Button variant="outline" size="sm" onClick={replay}>
-            Replay tour
+            {t('general.replayTour')}
           </Button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import type { ParseKeys } from 'i18next';
 import {
   Settings,
   Palette,
@@ -15,91 +16,96 @@ import {
   Heart,
 } from 'lucide-react';
 
+/**
+ * `labelKey` / `descriptionKey` are i18n keys in the `settings` namespace
+ * (see `settings.sections` in `locales/*.json`) — translate at render time
+ * with `useTranslation("settings")`, never at module scope.
+ */
 export interface SettingsSection {
   id: string;
-  label: string;
+  labelKey: ParseKeys<'settings'>;
   icon: LucideIcon;
-  description: string;
+  descriptionKey: ParseKeys<'settings'>;
 }
 
 export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: 'profile',
-    label: 'Profile',
+    labelKey: 'sections.profile.label',
     icon: UserRound,
-    description: 'Your identity, avatar, and declared solving methods.',
+    descriptionKey: 'sections.profile.description',
   },
   {
     id: 'general',
-    label: 'General',
+    labelKey: 'sections.general.label',
     icon: Settings,
-    description: 'Application preferences and behavior.',
+    descriptionKey: 'sections.general.description',
   },
   {
     id: 'appearance',
-    label: 'Appearance',
+    labelKey: 'sections.appearance.label',
     icon: Palette,
-    description: 'Visual display and notation preferences.',
+    descriptionKey: 'sections.appearance.description',
   },
   {
     id: 'smart-cube',
-    label: 'Smart cube',
+    labelKey: 'sections.smartCube.label',
     icon: Cpu,
-    description: 'Bluetooth, gyroscope, and hardware settings.',
+    descriptionKey: 'sections.smartCube.description',
   },
   {
     id: 'timer',
-    label: 'Timer',
+    labelKey: 'sections.timer.label',
     icon: Clock,
-    description: 'Solve start rules and inspection.',
+    descriptionKey: 'sections.timer.description',
   },
   {
     id: 'scramble',
-    label: 'Scramble',
+    labelKey: 'sections.scramble.label',
     icon: Shuffle,
-    description: 'Scramble verification and display options.',
+    descriptionKey: 'sections.scramble.description',
   },
   {
     id: 'analysis',
-    label: 'Analysis',
+    labelKey: 'sections.analysis.label',
     icon: BarChart3,
-    description: 'Solve breakdown, inspection, and metrics.',
+    descriptionKey: 'sections.analysis.description',
   },
   {
     id: 'training',
-    label: 'Training',
+    labelKey: 'sections.training.label',
     icon: GraduationCap,
-    description: 'Drills, targets, and practice routines.',
+    descriptionKey: 'sections.training.description',
   },
   {
     id: 'notifications',
-    label: 'Notifications',
+    labelKey: 'sections.notifications.label',
     icon: Bell,
-    description: 'Alerts, sound, and timer feedback.',
+    descriptionKey: 'sections.notifications.description',
   },
   {
     id: 'shortcuts',
-    label: 'Shortcuts',
+    labelKey: 'sections.shortcuts.label',
     icon: Keyboard,
-    description: 'Keyboard shortcuts for the timer and navigation.',
+    descriptionKey: 'sections.shortcuts.description',
   },
   {
     id: 'data',
-    label: 'Data',
+    labelKey: 'sections.data.label',
     icon: Download,
-    description: 'Export and manage your solve data.',
+    descriptionKey: 'sections.data.description',
   },
   {
     id: 'advanced',
-    label: 'Advanced',
+    labelKey: 'sections.advanced.label',
     icon: Wrench,
-    description: 'Developer tools, data, and debugging.',
+    descriptionKey: 'sections.advanced.description',
   },
   {
     id: 'credits',
-    label: 'Credits',
+    labelKey: 'sections.credits.label',
     icon: Heart,
-    description: 'Data sources, libraries, and community contributions.',
+    descriptionKey: 'sections.credits.description',
   },
 ];
 

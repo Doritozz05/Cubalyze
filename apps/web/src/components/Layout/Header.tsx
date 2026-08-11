@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   History,
@@ -154,6 +155,8 @@ export function Header({
   // Touch regime: the dock collapses into a single "Widgets" button that
   // opens the explorer (desktop uses the LeftSidebar-owned explorer).
   const isTouch = useIsTouch();
+  const { t } = useTranslation("shell");
+  const { t: tCommon } = useTranslation();
   const [widgetsOpen, setWidgetsOpen] = useState(false);
   const [sessionDrawerOpen, setSessionDrawerOpen] = useState(false);
   // Number of widgets currently active — shown as a badge on the touch
@@ -232,8 +235,8 @@ export function Header({
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 {batteryLevel !== null
-                  ? `Smart Cube (${deviceName ?? "Connected"}): ${batteryLevel}% battery`
-                  : `Smart Cube (${deviceName ?? "Connected"})`}
+                  ? t("batteryLevel", { device: deviceName ?? t("connected"), level: batteryLevel })
+                  : t("smartCubeWithDevice", { device: deviceName ?? t("connected") })}
               </TooltipContent>
             </Tooltip>
           )}
@@ -251,12 +254,12 @@ export function Header({
             <button
               type="button"
               onClick={() => setWidgetsOpen(true)}
-              aria-label="Open widgets"
+              aria-label={t("openWidgets")}
               data-onboarding-target="widgets-entry"
               className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
             >
               <Puzzle className="size-3.5" />
-              <span className="nums">Widgets</span>
+              <span className="nums">{tCommon("widgets")}</span>
               {activeWidgetCount > 0 && (
                 <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2">
                   {activeWidgetCount}
@@ -278,12 +281,12 @@ export function Header({
                   size="icon"
                   onClick={onAddManual}
                   className="size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
-                  aria-label="Add manual solve"
+                  aria-label={t("addManualSolve")}
                 >
                   <Plus className="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Add manual solve</TooltipContent>
+              <TooltipContent side="bottom">{t("addManualSolve")}</TooltipContent>
             </Tooltip>
           ) : null}
 
@@ -295,7 +298,7 @@ export function Header({
                   variant="ghost"
                   onClick={() => setSessionDrawerOpen(true)}
                   className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink cursor-pointer"
-                  aria-label="Switch session"
+                  aria-label={t("switchSession")}
                 >
                   <History className="size-3.5 text-ink-3" />
                   <span className="nums font-medium text-ink-3">{sessionCount ?? 0}</span>
@@ -318,11 +321,11 @@ export function Header({
                   <Button
                     variant="ghost"
                     className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
-                    aria-label="Switch session"
+                    aria-label={t("switchSession")}
                   >
                     <History className="size-3.5 text-ink-3" />
                     <span className="nums max-w-28 truncate">
-                      {active?.name ?? "Session"}
+                      {active?.name ?? t("session")}
                     </span>
                     <span className="text-ink-3">·</span>
                     <span className="nums text-ink-3">{sessionCount ?? 0}</span>
@@ -330,7 +333,7 @@ export function Header({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
-                    Sessions
+                    {t("sessions")}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {sessions.map((s) => (
@@ -353,14 +356,14 @@ export function Header({
                           <button
                             onClick={commitRename}
                             className="grid size-6 place-items-center rounded text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
-                            aria-label="Confirm rename"
+                            aria-label={t("confirmRename")}
                           >
                             <Check className="size-3.5" />
                           </button>
                           <button
                             onClick={() => setRenamingId(null)}
                             className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                            aria-label="Cancel rename"
+                            aria-label={t("cancelRename")}
                           >
                             <X className="size-3.5" />
                           </button>
@@ -388,7 +391,7 @@ export function Header({
                                 startRename(s);
                               }}
                               className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-ink transition-colors"
-                              aria-label={`Rename ${s.name}`}
+                              aria-label={t("renameSession", { name: s.name })}
                             >
                               <Pencil className="size-3" />
                             </button>
@@ -398,7 +401,7 @@ export function Header({
                                 setDeleteTarget(s);
                               }}
                               className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-dnf transition-colors"
-                              aria-label={`Delete ${s.name}`}
+                              aria-label={t("deleteSession", { name: s.name })}
                             >
                               <Trash2 className="size-3" />
                             </button>
@@ -410,7 +413,7 @@ export function Header({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onNewSession?.()}>
                     <Plus className="size-3.5" />
-                    New session
+                    {t("newSession")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -427,7 +430,7 @@ export function Header({
               // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`
               // so the chip matches the sibling PB / session chips in dark mode.
               className="w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
-              aria-label="Puzzle category"
+              aria-label={t("puzzleCategory")}
             >
               <SelectValue />
             </SelectTrigger>
@@ -448,7 +451,7 @@ export function Header({
                   <button
                     type="button"
                     onClick={onOpenProfile}
-                    aria-label="Open profile"
+                    aria-label={t("openProfile")}
                     className="grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface transition-colors hover:bg-surface-2 cursor-pointer"
                   >
                     {profile?.avatarKind === "photo" && profile.avatarData ? (
@@ -467,7 +470,7 @@ export function Header({
                     ) : null}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Profile</TooltipContent>
+                <TooltipContent side="bottom">{tCommon("profile")}</TooltipContent>
               </Tooltip>
             </div>
           ) : null}
@@ -493,16 +496,14 @@ export function Header({
         <AlertDialogContent className={`max-w-sm ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base">
-              Delete “{deleteTarget?.name}”?
+              {t("deleteSessionTitle", { name: deleteTarget?.name ?? "" })}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
-              This permanently removes the session and all{" "}
-              {deleteTarget?.solveCount ?? 0} of its solves. This can’t be
-              undone.
+              {t("deleteSessionDescription", { count: deleteTarget?.solveCount ?? 0 })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="max-lg:h-11 h-8 text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="max-lg:h-11 h-8 text-xs">{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="max-lg:h-11 h-8 bg-dnf text-xs text-white hover:bg-dnf/90"
               onClick={() => {
@@ -510,7 +511,7 @@ export function Header({
                 setDeleteTarget(null);
               }}
             >
-              Delete
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { preferencesStore } from "@cubeforge/state";
 
 /**
@@ -99,16 +100,18 @@ export function useReminderScheduler(): void {
         fired.add(key);
         writeFired(fired);
 
+        // Notifications use the language active at fire time (they may be
+        // delivered minutes after the language last changed).
         if (type === "practice") {
           notify(
-            "Time to practice!",
-            "Your daily practice session reminder. A few solves keep the flow alive.",
+            i18n.t("notifications:practiceTitle"),
+            i18n.t("notifications:practiceBody"),
             false,
           );
         } else {
           notify(
-            "Review queue waiting",
-            "Your SRS flashcards are ready — knock out today's algorithm review.",
+            i18n.t("notifications:reviewTitle"),
+            i18n.t("notifications:reviewBody"),
             false,
           );
         }

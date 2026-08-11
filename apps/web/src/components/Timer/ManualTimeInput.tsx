@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Penalty } from "@/types";
 import {
   formatManualPreview,
@@ -30,6 +32,7 @@ export function ManualTimeInput({
   onSubmit,
   className,
 }: ManualTimeInputProps) {
+  const { t } = useTranslation("timer");
   const [input, setInput] = useState("");
   const [penalty, setPenalty] = useState<Penalty>("none");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -102,12 +105,17 @@ export function ManualTimeInput({
 
         {/* Preview of parsed time — absolutely positioned below the input, no layout shift */}
         {preview && (
-          <span
-            className="absolute -bottom-6 left-1/2 max-w-[92%] -translate-x-1/2 truncate nums text-xs text-ink-3 whitespace-nowrap"
-            title={preview}
-          >
-            {preview}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className="absolute -bottom-6 left-1/2 max-w-[92%] -translate-x-1/2 truncate nums text-xs text-ink-3 whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-ink-3/50 rounded-sm"
+              >
+                {preview}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{preview}</TooltipContent>
+          </Tooltip>
         )}
       </div>
 
@@ -130,7 +138,7 @@ export function ManualTimeInput({
                 : "bg-surface-2 text-ink-3 hover:text-ink",
             )}
           >
-            {p === "none" ? "OK" : p}
+            {p === "none" ? t("penaltyNone") : p}
           </button>
         ))}
       </div>

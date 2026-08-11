@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,12 +23,20 @@ import type { StatsFilters, SortOrder, SolveFilterCategory } from "@/hooks/useSt
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-  { value: "best", label: "Fastest" },
-  { value: "worst", label: "Slowest" },
-  { value: "pbDelta", label: "PB gap" },
+const SORT_OPTIONS: {
+  value: SortOrder;
+  labelKey:
+    | "list.sortNewest"
+    | "list.sortOldest"
+    | "list.sortFastest"
+    | "list.sortSlowest"
+    | "list.sortPbGap";
+}[] = [
+  { value: "newest", labelKey: "list.sortNewest" },
+  { value: "oldest", labelKey: "list.sortOldest" },
+  { value: "best", labelKey: "list.sortFastest" },
+  { value: "worst", labelKey: "list.sortSlowest" },
+  { value: "pbDelta", labelKey: "list.sortPbGap" },
 ];
 
 // ─── Sub-components ────────────────────────────────────────────────────────
@@ -106,6 +115,7 @@ export const SolveListPanel = memo(function SolveListPanel({
   reset,
   className,
 }: SolveListPanelProps) {
+  const { t } = useTranslation("insights");
   // ── Virtualized list ──────────────────────────────────────────────────
   // Power users accumulate thousands of solves; virtualize the list so we
   // only mount the ~20 visible rows + overscan instead of the whole array.
@@ -167,12 +177,12 @@ export const SolveListPanel = memo(function SolveListPanel({
       <div className="shrink-0 border-b border-line">
         {/* Title + sort dropdown + count */}
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[0.7rem] font-medium text-ink-2">Solves</span>
+          <span className="text-[0.7rem] font-medium text-ink-2">{t("common.solves")}</span>
           <div className="flex items-center gap-2.5">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 text-[0.62rem] text-ink-3 transition-colors hover:text-ink">
-                  {currentSort.label}
+                  {t(currentSort.labelKey)}
                   <ChevronDown className="size-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -183,7 +193,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                     onClick={() => setFilters({ sort: opt.value })}
                     className="text-xs"
                   >
-                    {opt.label}
+                    {t(opt.labelKey)}
                     {opt.value === filters.sort && (
                       <Check className="ml-auto size-3.5 text-ink-3" />
                     )}
@@ -203,11 +213,11 @@ export const SolveListPanel = memo(function SolveListPanel({
           <div className="px-3 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-[0.55rem] uppercase tracking-[0.16em] text-ink-3/60">
-                Trend
+                {t("list.trend")}
               </span>
               {mean !== null && (
                 <span className="nums text-[0.55rem] text-ink-3/60">
-                  avg {formatTime(mean)}
+                  {t("list.avg", { time: formatTime(mean) })}
                 </span>
               )}
             </div>
@@ -232,7 +242,7 @@ export const SolveListPanel = memo(function SolveListPanel({
               dot="bg-ready"
               onClick={() => toggleFilterCategory("clean")}
             >
-              Clean
+              {t("common.clean")}
             </FilterChip>
             <FilterChip
               active={filters.activeFilter === "+2"}
@@ -265,7 +275,7 @@ export const SolveListPanel = memo(function SolveListPanel({
         <div className="flex items-center gap-2 px-2.5 pb-2.5">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-ink-3" />              <Input
-              placeholder="Search time, scramble, DNF, notes…"
+              placeholder={t("list.searchPlaceholder")}
               value={filters.search}
               onChange={(e) => setFilters({ search: e.target.value })}
               className="h-7 pl-7 pr-2 text-[0.72rem] max-lg:h-9"
@@ -277,7 +287,7 @@ export const SolveListPanel = memo(function SolveListPanel({
               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:h-9 max-lg:px-2.5"
             >
               <X className="size-3" />
-              Reset
+              {t("list.reset")}
             </button>
           )}
         </div>
@@ -286,20 +296,20 @@ export const SolveListPanel = memo(function SolveListPanel({
       {/* ── List (own scroll) ───────────────────────────────────────────── */}
       {showNoSolvesState ? (
         <EmptyState
-          title="No solves yet"
-          description="Complete a solve to start building your session."
+          title={t("overview.emptyTitle")}
+          description={t("list.emptyDescription")}
           className="m-3 flex-1"
         />
       ) : showNoMatchesState ? (
         <EmptyState
-          title="No solves match"
-          description="Try adjusting your filters or search."
+          title={t("list.noMatchTitle")}
+          description={t("list.noMatchDescription")}
           action={
             <button
               onClick={reset}
               className="rounded-md border border-line bg-surface-2 px-3 py-1.5 text-xs text-ink-2 transition-colors hover:text-ink"
             >
-              Reset filters
+              {t("list.resetFilters")}
             </button>
           }
           className="m-3 flex-1"
@@ -341,7 +351,10 @@ export const SolveListPanel = memo(function SolveListPanel({
                       onSelect(isSelected ? null : s.id);
                     }
                   }}
-                  aria-label={`Solve ${solves.length - i}: ${isDnf ? "DNF" : formatTime(eff)}${s.method ? `, ${s.method}` : ""}`}
+                  aria-label={`${t("common.solveAria", {
+                    number: solves.length - i,
+                    time: isDnf ? "DNF" : formatTime(eff),
+                  })}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
                     "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none transition-colors focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ink/30",
                     isSelected ? "bg-surface-2" : "hover:bg-surface-2/60",
@@ -366,7 +379,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                             <TooltipTrigger asChild>
                               <span className="size-1.5 shrink-0 rounded-full bg-ready" />
                             </TooltipTrigger>
-                            <TooltipContent side="right">Session best</TooltipContent>
+                            <TooltipContent side="right">{t("list.sessionBest")}</TooltipContent>
                           </Tooltip>
                         ) : (
                           <span className="size-1.5 shrink-0" />

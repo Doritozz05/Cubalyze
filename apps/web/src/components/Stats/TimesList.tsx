@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, memo, useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { MoreHorizontal, Plus, XCircle, Eraser, Trash2, Activity, RotateCcw, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
@@ -57,6 +58,7 @@ export const TimesList = memo(function TimesList({
   hideHeader,
   className,
 }: TimesListProps) {
+  const { t } = useTranslation("stats");
   const bestTimePerPuzzle = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of solves) {
@@ -77,7 +79,7 @@ export const TimesList = memo(function TimesList({
       {!hideHeader && (
         <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
           <div className="flex items-baseline gap-2">
-            <h3 className="text-sm font-medium text-ink">Solves</h3>
+            <h3 className="text-sm font-medium text-ink">{t("solves")}</h3>
             <span className="nums text-xs text-ink-3">{solves.length}</span>
           </div>
           {solves.length > 0 && onClear ? (
@@ -87,7 +89,7 @@ export const TimesList = memo(function TimesList({
               onClick={onClear}
               className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
             >
-              Clear
+              {t("clear")}
             </Button>
           ) : null}
         </div>
@@ -95,10 +97,8 @@ export const TimesList = memo(function TimesList({
 
       {solves.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
-          <p className="text-sm text-ink-2">No solves yet</p>
-          <p className="text-xs text-ink-3">
-            Hold the timer (or press Space) to start.
-          </p>
+          <p className="text-sm text-ink-2">{t("noSolvesYet")}</p>
+          <p className="text-xs text-ink-3">{t("holdTimerToStart")}</p>
         </div>
       ) : (
         <ScrollArea className="min-h-0 flex-1">
@@ -151,6 +151,7 @@ const SolveRow = memo(function SolveRow({
   onAnalyze?: (solve: Solve) => void;
   onReplay?: (solve: Solve) => void;
 }) {
+  const { t } = useTranslation("stats");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(solve.note ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -196,7 +197,7 @@ const SolveRow = memo(function SolveRow({
             <TooltipTrigger asChild>
               <span className="size-1.5 shrink-0 rounded-full bg-ready" />
             </TooltipTrigger>
-            <TooltipContent side="right">Session best</TooltipContent>
+            <TooltipContent side="right">{t("sessionBest")}</TooltipContent>
           </Tooltip>
         ) : (
           <span className="size-1.5 shrink-0" />
@@ -241,7 +242,7 @@ const SolveRow = memo(function SolveRow({
               e.stopPropagation();
             }}
             className="h-6 w-24 rounded border border-line bg-surface-2/50 px-1.5 text-[0.68rem] text-ink placeholder:text-ink-3/40 focus:outline-none focus:border-ink/30"
-            placeholder="Note..."
+            placeholder={t("notePlaceholder")}
           />
           <button
             onClick={saveNote}
@@ -262,7 +263,6 @@ const SolveRow = memo(function SolveRow({
             <button
               onClick={handleNoteClick}
               className="max-w-25 shrink-0 truncate rounded px-1.5 py-0.5 text-[0.62rem] text-accent bg-accent/10 hover:bg-accent/20 italic transition-colors flex items-center gap-1 cursor-pointer font-medium"
-              title={solve.note}
             >
               <MessageSquare className="size-3 shrink-0" />
               <span className="truncate">{solve.note}</span>
@@ -276,12 +276,12 @@ const SolveRow = memo(function SolveRow({
             <button
               onClick={handleNoteClick}
               className="shrink-0 grid size-7 place-items-center rounded text-ink-3 hover:text-ink transition-colors cursor-pointer"
-              aria-label="Add note"
+              aria-label={t("addNote")}
             >
               <MessageSquare className="size-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top">Add note</TooltipContent>
+          <TooltipContent side="top">{t("addNote")}</TooltipContent>
         </Tooltip>
       )}
 
@@ -293,12 +293,12 @@ const SolveRow = memo(function SolveRow({
               size="icon"
               onClick={() => onAnalyze(solve)}
               className="size-7 text-ink-3 hover:text-ink"
-              aria-label="Analyze solve"
+              aria-label={t("analyzeSolve")}
             >
               <Activity className="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">Analysis</TooltipContent>
+          <TooltipContent side="top">{t("analysis")}</TooltipContent>
         </Tooltip>
       )}
       <DropdownMenu>
@@ -307,7 +307,7 @@ const SolveRow = memo(function SolveRow({
             variant="ghost"
             size="icon"
             className="size-7 text-ink-3 hover:text-ink data-[state=open]:text-ink"
-            aria-label="Solve actions"
+            aria-label={t("solveActions")}
           >
             <MoreHorizontal className="size-4" />
           </Button>
@@ -321,7 +321,7 @@ const SolveRow = memo(function SolveRow({
             }
           >
             <Plus className="size-3.5" />
-            {solve.penalty === "+2" ? "Remove +2" : "Mark +2"}
+            {solve.penalty === "+2" ? t("removePlus2") : t("markPlus2")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
@@ -332,7 +332,7 @@ const SolveRow = memo(function SolveRow({
             }
           >
             <XCircle className="size-3.5" />
-            {solve.penalty === "DNF" ? "Remove DNF" : "Mark DNF"}
+            {solve.penalty === "DNF" ? t("removeDnf") : t("markDnf")}
           </DropdownMenuItem>
           {solve.penalty !== "none" ? (
             <DropdownMenuItem
@@ -341,20 +341,20 @@ const SolveRow = memo(function SolveRow({
               }
             >
               <Eraser className="size-3.5" />
-              Clear penalty
+              {t("clearPenalty")}
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />
           {onAnalyze && (
             <DropdownMenuItem onClick={() => onAnalyze(solve)}>
               <Activity className="size-3.5" />
-              Analysis
+              {t("analysis")}
             </DropdownMenuItem>
           )}
           {onReplay && (
             <DropdownMenuItem onClick={() => onReplay(solve)}>
               <RotateCcw className="size-3.5" />
-              Replay
+              {t("replay")}
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
@@ -363,7 +363,7 @@ const SolveRow = memo(function SolveRow({
             onClick={() => onDelete(solve.id)}
           >
             <Trash2 className="size-3.5" />
-            Delete
+            {t("delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { BarChart3, Layers } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -48,6 +49,7 @@ export interface OverviewPanelProps {
 // (one source of truth shared with SolveListPanel and SolveAnalysisPanel).
 
 export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className }: OverviewPanelProps) {
+  const { t } = useTranslation("insights");
   const stats = useMemo(() => computeStats(solves), [solves]);
 
   const bestSingle = Number.isFinite(stats.best) ? stats.best : null;
@@ -103,8 +105,8 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
     return (
       <EmptyState
         icon={<BarChart3 className="size-7" />}
-        title="No solves yet"
-        description="Complete a few solves to see your session overview, trends, and analysis."
+        title={t("overview.emptyTitle")}
+        description={t("overview.emptyDescription")}
         className={cn("flex-1", className)}
       />
     );
@@ -119,7 +121,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
           <div className="flex items-center gap-2">
             <BarChart3 className="size-3.5 text-ink-3" />
             <span className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-ink-3">
-              Best single
+              {t("overview.bestSingle")}
             </span>
           </div>
           {isPb ? (
@@ -136,7 +138,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
           />
           {pbDelta != null ? (
             <span className="nums text-[0.7rem] text-ink-3">
-              +{formatTime(pbDelta)} off PB
+              {t("overview.offPb", { time: formatTime(pbDelta) })}
             </span>
           ) : null}
         </div>
@@ -144,21 +146,21 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 
       {/* ── Stat tiles ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
-        <MetricTile label="Best" value={statLabel(stats.best)} />
-        <MetricTile label="Worst" value={statLabel(stats.worst)} />
-        <MetricTile label="Mean" value={statLabel(stats.mean)} />
+        <MetricTile label={t("overview.best")} value={statLabel(stats.best)} />
+        <MetricTile label={t("overview.worst")} value={statLabel(stats.worst)} />
+        <MetricTile label={t("overview.mean")} value={statLabel(stats.mean)} />
         <MetricTile label="Ao5" value={statLabel(stats.ao5)} />
         <MetricTile label="Ao12" value={statLabel(stats.ao12)} />
         <MetricTile label="Ao100" value={statLabel(stats.ao100)} />
         <MetricTile
-          label="Solves"
+          label={t("common.solves")}
           value={`${stats.count}`}
-          sub={stats.total !== stats.count ? `${stats.total} total` : undefined}
+          sub={stats.total !== stats.count ? t("overview.totalSolves", { count: stats.total }) : undefined}
         />
         <MetricTile
-          label="Solve time"
+          label={t("overview.solveTime")}
           value={formatDuration(stats.sessionTime)}
-          sub={`${stats.count} solves`}
+          sub={t("overview.solvesCount", { count: stats.count })}
         />
       </div>
 
@@ -167,20 +169,20 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 
       {/* ── Trend (Ao-N rolling) ───────────────────────────────────────── */}
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
-        <SectionHeader title="Trend" eyebrow="Ao-N rolling average" className="mb-3" />
+        <SectionHeader title={t("overview.trend")} eyebrow={t("overview.trendEyebrow")} className="mb-3" />
         <TrendChart solves={solves} defaultWindow={5} />
       </div>
 
       {/* ── TPS over time ──────────────────────────────────────────────── */}
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
         <SectionHeader
-          title="TPS over time"
-          eyebrow={`${solvesWithTpsCount} analysed`}
+          title={t("overview.tpsOverTime")}
+          eyebrow={t("overview.tpsAnalysed", { count: solvesWithTpsCount })}
           className="mb-3"
         />
         {solvesWithTpsCount < 2 ? (
           <div className="flex h-25 items-center justify-center text-[0.7rem] text-ink-3">
-            Need at least 2 solves with TPS data
+            {t("overview.tpsNeedData")}
           </div>
         ) : (
           <div className="h-25 w-full">
@@ -215,7 +217,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                   itemStyle={{ color: "var(--ink)" }}
                   labelFormatter={(_, payload) => {
                     const pt = payload?.[0]?.payload as { solveNumber?: number } | undefined;
-                    return pt?.solveNumber ? `Solve ${pt.solveNumber}` : "";
+                    return pt?.solveNumber ? t("overview.solveNumber", { number: pt.solveNumber }) : "";
                   }}
                   formatter={(v) => [v != null ? `${Number(v).toFixed(2)} TPS` : "—", "TPS"]}
                 />
@@ -237,10 +239,10 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 
       {/* ── Time distribution histogram ────────────────────────────────── */}
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
-        <SectionHeader title="Time distribution" eyebrow="0.5s bins" className="mb-3" />
+        <SectionHeader title={t("overview.timeDistribution")} eyebrow={t("overview.binEyebrow")} className="mb-3" />
         {histogram.length === 0 ? (
           <div className="flex h-20 items-center justify-center text-[0.7rem] text-ink-3">
-            No valid times to display
+            {t("overview.noValidTimes")}
           </div>
         ) : (
           <div className="h-20 w-full">
@@ -265,7 +267,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                   itemStyle={{ color: "var(--ink)" }}
                   formatter={(_, __, entry) => {
                     const bin = entry?.payload as { count?: number; label?: string } | undefined;
-                    return [`${bin?.count ?? 0} solves`, `${bin?.label ?? ""}s`];
+                    return [t("overview.solvesCount", { count: bin?.count ?? 0 }), `${bin?.label ?? ""}s`];
                   }}
                   labelFormatter={() => ""}
                 />
@@ -289,8 +291,8 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
         {/* Activity heatmap */}
         <div className="rounded-lg border border-line bg-surface px-5 py-4">
           <SectionHeader
-            title="Activity"
-            eyebrow={`last ${heatmapWeeks} weeks`}
+            title={t("overview.activity")}
+            eyebrow={t("overview.lastWeeks", { count: heatmapWeeks })}
             className="mb-3"
           />
           <ActivityHeatmap counts={activity} weeks={heatmapWeeks} />
@@ -299,11 +301,11 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
         {/* Phase distribution donut */}
         <div className="rounded-lg border border-line bg-surface px-5 py-4">
           <SectionHeader
-            title="Phase split"
+            title={t("overview.phaseSplit")}
             eyebrow={
               analysedCount > 0
-                ? `avg of ${analysedCount}`
-                : "no analysis"
+                ? t("overview.avgOf", { count: analysedCount })
+                : t("overview.noAnalysis")
             }
             className="mb-3"
           />
@@ -311,7 +313,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
             <div className="flex h-22 items-center justify-center text-center text-[0.7rem] text-ink-3">
               <span className="flex flex-col items-center gap-1.5">
                 <Layers className="size-4 text-ink-3/50" />
-                Complete solves with a Smart Cube
+                {t("overview.phaseSplitEmpty")}
               </span>
             </div>
           ) : (
@@ -355,7 +357,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
                 </ResponsiveContainer>
                 {/* Center text for the donut */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[0.6rem] font-medium uppercase tracking-wider text-ink-3/70">Total</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-wider text-ink-3/70">{t("common.total")}</span>
                 </div>
               </div>
               
@@ -390,6 +392,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 // ─── Penalty mix sub-component ────────────────────────────────────────────
 
 function PenaltyMix({ solves }: { solves: Solve[] }) {
+  const { t } = useTranslation("insights");
   const total = solves.length;
   if (total === 0) return null;
   const dnf = solves.filter((s) => s.penalty === "DNF").length;
@@ -401,7 +404,7 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
 
   return (
     <div className="rounded-lg border border-line bg-surface px-5 py-4">
-      <SectionHeader title="Penalty mix" eyebrow={`${total} solves`} />
+      <SectionHeader title={t("overview.penaltyMix")} eyebrow={t("overview.solvesCount", { count: total })} />
       
       {/* Stacked Bar */}
       <div className="mt-4 mb-3 flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
@@ -413,7 +416,7 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
                 style={{ width: `${pctNum(ok)}%` }}
               />
             </TooltipTrigger>
-            <TooltipContent side="top">Clean: {ok} solves</TooltipContent>
+            <TooltipContent side="top">{t("overview.cleanSolves", { count: ok })}</TooltipContent>
           </UiTooltip>
         )}
         {plus2 > 0 && (
@@ -424,7 +427,7 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
                 style={{ width: `${pctNum(plus2)}%` }}
               />
             </TooltipTrigger>
-            <TooltipContent side="top">+2: {plus2} solves</TooltipContent>
+            <TooltipContent side="top">{t("overview.plus2Solves", { count: plus2 })}</TooltipContent>
           </UiTooltip>
         )}
         {dnf > 0 && (
@@ -435,7 +438,7 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
                 style={{ width: `${pctNum(dnf)}%` }}
               />
             </TooltipTrigger>
-            <TooltipContent side="top">DNF: {dnf} solves</TooltipContent>
+            <TooltipContent side="top">{t("overview.dnfSolves", { count: dnf })}</TooltipContent>
           </UiTooltip>
         )}
       </div>
@@ -444,7 +447,7 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
       <div className="flex items-center gap-5 text-[0.7rem]">
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-ready" />
-          <span className="text-ink-3">Clean</span>
+          <span className="text-ink-3">{t("common.clean")}</span>
           <span className="nums font-medium text-ink">{pctStr(ok)}</span>
         </div>
         <div className="flex items-center gap-2">

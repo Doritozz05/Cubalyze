@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { useSolveSession } from "@/hooks/useSolveSession";
@@ -70,6 +72,8 @@ export function TimerStage(props: TimerStageProps) {
     puzzleFilter,
     isFocused,
   } = props;
+
+  const { t } = useTranslation("timer");
 
   const {
     phase: timerPhase,
@@ -136,20 +140,26 @@ export function TimerStage(props: TimerStageProps) {
               indexLabel={`#${scrambleIndex + 1}`}
               focusModeAction={
                 isManualMode && focusMode ? (
-                  <button
-                    type="button"
-                    onClick={onManualFocusToggle}
-                    className={cn(
-                      "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
-                      manualFocus
-                        ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                        : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
-                    )}
-                    title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
-                  >
-                    <Eye className="size-3.5" />
-                    Focus
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={onManualFocusToggle}
+                        className={cn(
+                          "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
+                          manualFocus
+                            ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
+                            : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
+                        )}
+                      >
+                        <Eye className="size-3.5" />
+                        {t("focus")}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
+                    </TooltipContent>
+                  </Tooltip>
                 ) : undefined
               }
             />
@@ -163,20 +173,26 @@ export function TimerStage(props: TimerStageProps) {
             transition={SIDEBAR_MOTION.panel}
             className="flex w-full justify-end mb-2"
           >
-            <button
-              type="button"
-              onClick={onManualFocusToggle}
-              className={cn(
-                "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
-                manualFocus
-                  ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                  : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
-              )}
-              title={manualFocus ? "Disable Focus Mode" : "Enable Focus Mode"}
-            >
-              <Eye className="size-3.5" />
-              Focus
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onManualFocusToggle}
+                  className={cn(
+                    "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
+                    manualFocus
+                      ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
+                      : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
+                  )}
+                >
+                  <Eye className="size-3.5" />
+                  {t("focus")}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
+              </TooltipContent>
+            </Tooltip>
           </motion.div>
         ) : null}
       </AnimatePresence>

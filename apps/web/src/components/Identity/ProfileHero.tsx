@@ -2,10 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
 import { CountryFlag } from "./CountryFlag";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
 
@@ -41,12 +43,9 @@ export interface ProfileHeroProps {
   className?: string;
 }
 
-/** Empty-state fallback until the user edits their profile. */
-const DEFAULT_DISPLAY_NAME = "Speedcuber";
-
-function formatMemberSince(createdAt: number): string {
+function formatMemberSince(createdAt: number, locale: string): string {
   if (!createdAt) return "—";
-  return new Date(createdAt).toLocaleDateString("en-US", {
+  return new Date(createdAt).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
   });
@@ -65,6 +64,7 @@ export function ProfileHero({
   badges = [],
   className,
 }: ProfileHeroProps) {
+  const { t, i18n } = useTranslation("profile");
   const isTouch = useIsTouch();
   const avatarSize = isTouch ? 80 : 112;
 
@@ -89,11 +89,13 @@ export function ProfileHero({
     );
   }
 
-  const displayName = profile.displayName.trim() || DEFAULT_DISPLAY_NAME;
+  const displayName = profile.displayName.trim() || t("hero.defaultName");
   const handle = profile.handle.trim()
     ? `@${profile.handle}`
     : `@user-${profile.userId.slice(0, 6)}`;
-  const memberSince = `Member since ${formatMemberSince(profile.createdAt)}`;
+  const memberSince = t("hero.memberSince", {
+    date: formatMemberSince(profile.createdAt, i18n.language),
+  });
 
   const chips = [
     { key: "handle", value: handle },
@@ -114,7 +116,7 @@ export function ProfileHero({
       {profile.avatarKind === "photo" && profile.avatarData ? (
         <img
           src={profile.avatarData}
-          alt="Profile avatar"
+          alt={t("hero.avatarAlt")}
           className="shrink-0 rounded-2xl object-cover ring-1 ring-line"
           style={{ width: avatarSize, height: avatarSize }}
         />
@@ -150,34 +152,41 @@ export function ProfileHero({
                     BADGE_COLOR_STYLES[badge.color] ?? DEFAULT_BADGE_STYLE;
                   const rotation = BADGE_ROTATIONS[idx % BADGE_ROTATIONS.length];
                   return (
-                    <span
-                      key={badge.puzzle}
-                      title={`PB ${badge.puzzleLabel} is Sub ${badge.thresholdLabel}`}
-                      style={{
-                        transform: `rotate(${rotation}deg)`,
-                        transformOrigin: "center",
-                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                      }}
-                      className={cn(
-                        "group relative inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
-                        "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
-                        "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
-                      )}
-                    >
+                    <Tooltip key={badge.puzzle}>
+                      <TooltipTrigger asChild>
+                        <span
+                          style={{
+                            transform: `rotate(${rotation}deg)`,
+                            transformOrigin: "center",
+                            transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                          }}
+                          className={cn(
+                            "group relative inline-block p-0 border-none pb-0.75 rounded-[6px] shadow-[0_2px_0_#494a4b] cursor-default select-none",
+                            "hover:rotate-0 hover:scale-105 hover:-translate-y-1 hover:shadow-[0_4px_0_#494a4b]",
+                            "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
+                          )}
+                        >
                       <span
                         className={cn(
                           "absolute inset-0 rounded-[6px] dark:scale-[0.985]",
                           style.bg,
                         )}
                         aria-hidden="true"
-                      />
-                      <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
-                        <span className="nums">Sub {badge.thresholdLabel}</span>
-                        <span className="opacity-75">{badge.puzzleLabel}</span>
-                      </span>
-                    </span>
+                      />                        <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
+                          <span className="nums">Sub {badge.thresholdLabel}</span>
+                          <span className="opacity-75">{badge.puzzleLabel}</span>
+                        </span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {t("hero.pbTitle", {
+                          puzzle: badge.puzzleLabel,
+                          threshold: badge.thresholdLabel,
+                        })}
+                      </TooltipContent>
+                    </Tooltip>
                   );
-                })}
+                  })}
                 {badges.length > 4 && (
                   <span
                     style={{
@@ -208,7 +217,7 @@ export function ProfileHero({
               className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2/50 px-3 py-1.5 text-[0.7rem] font-medium text-ink-2 transition-all duration-150 hover:border-ink/30 hover:bg-surface-2 hover:text-ink cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
             >
               <Pencil className="size-3" />
-              Edit
+              {t("hero.edit")}
             </button>
           ) : null}
         </div>

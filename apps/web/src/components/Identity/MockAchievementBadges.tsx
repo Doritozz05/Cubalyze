@@ -90,7 +90,6 @@ export function CreativeBadgePill({ badge }: { badge: CreativeBadgeItem }) {
       onMouseLeave={() => setShowTooltip(false)}
     >
       <span
-        title={`Achievement: ${badge.title} — Sub ${badge.subText}`}
         style={{
           transform: `rotate(${badge.rotation}deg)`,
           transformOrigin: "center",

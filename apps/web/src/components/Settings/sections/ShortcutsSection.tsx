@@ -2,19 +2,21 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
+import type { ParseKeys } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
 import { Keyboard } from 'lucide-react';
 
 interface ShortcutDef {
   key: 'newScramble' | 'copyScramble' | 'cancelTimer';
-  label: string;
-  description: string;
+  labelKey: ParseKeys<'settings'>;
+  descriptionKey: ParseKeys<'settings'>;
 }
 
 const SHORTCUT_DEFS: ShortcutDef[] = [
-  { key: 'newScramble', label: 'New scramble', description: 'Generate a fresh scramble' },
-  { key: 'copyScramble', label: 'Copy scramble', description: 'Copy scramble to clipboard' },
-  { key: 'cancelTimer', label: 'Cancel timer', description: 'Cancel / reset the timer' },
+  { key: 'newScramble', labelKey: 'shortcuts.newScramble', descriptionKey: 'shortcuts.newScrambleDesc' },
+  { key: 'copyScramble', labelKey: 'shortcuts.copyScramble', descriptionKey: 'shortcuts.copyScrambleDesc' },
+  { key: 'cancelTimer', labelKey: 'shortcuts.cancelTimer', descriptionKey: 'shortcuts.cancelTimerDesc' },
 ];
 
 /**
@@ -24,6 +26,8 @@ const SHORTCUT_DEFS: ShortcutDef[] = [
  * Click to enter capture mode — the next keypress becomes the new binding.
  */
 export function ShortcutsSection() {
+  const { t } = useTranslation('settings');
+
   const shortcuts = useStore(preferencesStore, (s) => s.shortcuts);
   const setShortcut = useStore(preferencesStore, (s) => s.setShortcut);
 
@@ -80,7 +84,7 @@ export function ShortcutsSection() {
           <Keyboard className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] text-ink-2">
-          Customize keyboard shortcuts for the timer. Click a shortcut and press the desired key to rebind.
+          {t('shortcuts.info')}
         </p>
       </div>
 
@@ -92,8 +96,8 @@ export function ShortcutsSection() {
             className="group flex items-center justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm"
           >
             <div className="min-w-0 flex-1">
-              <h4 className="text-[0.85rem] font-medium text-ink">{def.label}</h4>
-              <p className="mt-1 text-[0.72rem] text-ink-3">{def.description}</p>
+              <h4 className="text-[0.85rem] font-medium text-ink">{t(def.labelKey)}</h4>
+              <p className="mt-1 text-[0.72rem] text-ink-3">{t(def.descriptionKey)}</p>
             </div>
             <button
               onClick={() => handleStartCapture(def.key)}
@@ -101,7 +105,7 @@ export function ShortcutsSection() {
             >
               {isCapturing ? (
                 <kbd className="inline-flex items-center gap-1.5 rounded-lg border-2 border-ready bg-ready/10 px-3 py-2 text-[0.78rem] font-mono font-medium text-ready animate-pulse shadow-sm shadow-ready/20">
-                  Press key...
+                  {t('shortcuts.pressKey')}
                 </kbd>
               ) : (
                 <kbd className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2/50 px-3 py-2 text-[0.78rem] font-mono font-medium text-ink shadow-sm transition-all group-hover/shortcut:border-ink/20 group-hover/shortcut:bg-surface-2 cursor-pointer">
@@ -114,7 +118,7 @@ export function ShortcutsSection() {
       })}
 
       <p className="text-[0.65rem] text-ink-3">
-        Shortcuts are disabled when an input field is focused. The spacebar is reserved for the timer and cannot be rebound.
+        {t('shortcuts.footer')}
       </p>
     </div>
   );

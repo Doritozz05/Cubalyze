@@ -2,6 +2,7 @@
 
 import { Clock, Mic, MicOff, Cpu, Headphones, Bluetooth, Keyboard } from 'lucide-react';
 import { useStore } from 'zustand';
+import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
 import { SettingToggle } from '../components/SettingToggle';
 import {
@@ -26,6 +27,7 @@ import {
  *   - Hardware Timer         : Stackmat (audio jack) or GAN Timer (Bluetooth).
  */
 export function TimerSection() {
+  const { t } = useTranslation('settings');
   const inspection = useStore(preferencesStore, (s) => s.inspection);
   const setInspection = useStore(preferencesStore, (s) => s.setInspection);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
@@ -54,10 +56,7 @@ export function TimerSection() {
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Clock className="size-4 text-ink-2" />
         </div>
-        <p className="text-[0.82rem] leading-5 text-ink-2">
-          Configure how a solve should begin. These settings also apply
-          when no Smart Cube is connected.
-        </p>
+        <p className="text-[0.82rem] leading-5 text-ink-2">{t('timer.header')}</p>
       </div>
 
       {/* ── Input Mode: Timer vs Manual ──────────────────────────── */}
@@ -65,28 +64,28 @@ export function TimerSection() {
         <div className="min-w-0 flex-1">
           <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <Keyboard className="size-3.5 text-ink-2" />
-            Manual time entry
+            {t('timer.manualEntry')}
           </h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Replace the timer with a text input to type times directly (like csTimer). Integers are centiseconds: "10" → 0.10s, "1450" → 14.50s. Also accepts "1:23.45", "DNF", "15.50+" (+2) and several times separated by commas. Inspection and hold-to-start are bypassed.
+            {t('timer.manualEntryHint')}
           </p>
         </div>
         <div className="mt-0.5 shrink-0">
           <Select value={inputMode} onValueChange={(v) => setInputMode(v as 'timer' | 'manual')}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Input mode" />
+              <SelectValue placeholder={t('timer.inputModePlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="timer">
                 <div className="flex items-center gap-2">
                   <Clock className="size-3.5" />
-                  <span>Timer (default)</span>
+                  <span>{t('timer.timerDefault')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="manual">
                 <div className="flex items-center gap-2">
                   <Keyboard className="size-3.5" />
-                  <span>Manual entry</span>
+                  <span>{t('timer.manualEntryOption')}</span>
                 </div>
               </SelectItem>
             </SelectContent>
@@ -96,8 +95,8 @@ export function TimerSection() {
 
       {/* ── Click to start/stop ───────────────────────────────────── */}
       <SettingToggle
-        title="Click to start/stop"
-        description="Allow clicking the timer area to start and stop the timer with the mouse, just like the spacebar. When off, only the spacebar controls the timer."
+        title={t('timer.clickToStart')}
+        description={t('timer.clickToStartHint')}
         checked={clickToStart}
         onCheckedChange={setClickToStart}
       />
@@ -106,10 +105,10 @@ export function TimerSection() {
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
           <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
-            Spacebar hold duration
+            {t('timer.holdDuration')}
           </h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Amount of time required holding the spacebar down before the timer turns green and is ready to start.
+            {t('timer.holdDurationHint')}
           </p>
         </div>
         <div className="mt-0.5 shrink-0">
@@ -118,13 +117,13 @@ export function TimerSection() {
             onValueChange={(val) => setSpacebarHoldDelay(Number(val))}
           >
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Select hold time" />
+              <SelectValue placeholder={t('timer.selectHoldTime')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">0 ms (Instant)</SelectItem>
-              <SelectItem value="300">300 ms (Standard)</SelectItem>
-              <SelectItem value="550">550 ms (WCA style)</SelectItem>
-              <SelectItem value="1000">1000 ms (1 second)</SelectItem>
+              <SelectItem value="0">{t('timer.holdInstant')}</SelectItem>
+              <SelectItem value="300">{t('timer.holdStandard')}</SelectItem>
+              <SelectItem value="550">{t('timer.holdWca')}</SelectItem>
+              <SelectItem value="1000">{t('timer.holdSecond')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -135,43 +134,43 @@ export function TimerSection() {
         <div className="min-w-0 flex-1">
           <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <Cpu className="size-3.5 text-ink-2" />
-            Hardware timer
+            {t('timer.hardwareTimer')}
           </h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            Use an external physical timer (Stackmat via audio jack or GAN Smart Timer via Bluetooth) instead of the space bar.
+            {t('timer.hardwareTimerHint')}
           </p>
           {hardwareTimer === 'stackmat' && (
             <p className="mt-1.5 text-[0.62rem] text-caution/70">
-              Connect Stackmat via audio cable. Requires a USB sound card for best results. Enable microphone access when prompted.
+              {t('timer.stackmatHint')}
             </p>
           )}
           {hardwareTimer === 'gan' && (
             <p className="mt-1.5 text-[0.62rem] text-caution/70">
-              Connect GAN Smart Timer via Bluetooth. Make sure the timer is powered on and in pairing mode.
+              {t('timer.ganHint')}
             </p>
           )}
         </div>
         <div className="mt-0.5 shrink-0">
           <Select value={hardwareTimer} onValueChange={(v) => setHardwareTimer(v as 'none' | 'stackmat' | 'gan')}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Select timer" />
+              <SelectValue placeholder={t('timer.selectTimer')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">
                 <div className="flex items-center gap-2">
-                  <span>None (keyboard)</span>
+                  <span>{t('timer.noneKeyboard')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="stackmat">
                 <div className="flex items-center gap-2">
                   <Headphones className="size-3.5" />
-                  <span>Stackmat</span>
+                  <span>{t('timer.stackmat')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="gan">
                 <div className="flex items-center gap-2">
                   <Bluetooth className="size-3.5" />
-                  <span>GAN Timer</span>
+                  <span>{t('timer.gan')}</span>
                 </div>
               </SelectItem>
             </SelectContent>
@@ -180,15 +179,15 @@ export function TimerSection() {
       </div>
 
       <SettingToggle
-        title="Inspection"
-        description="Show the 15-second WCA inspection countdown before the timer starts. Recommended for competition-style practice."
+        title={t('timer.inspection')}
+        description={t('timer.inspectionHint')}
         checked={inspection}
         onCheckedChange={setInspection}
       />
 
       <SettingToggle
-        title="Inspection audio cues"
-        description="Play official voice alerts ('8 seconds' and '12 seconds') during the WCA inspection countdown."
+        title={t('timer.audioCues')}
+        description={t('timer.audioCuesHint')}
         checked={audioCues}
         onCheckedChange={setAudioCues}
       />
@@ -203,27 +202,26 @@ export function TimerSection() {
               ) : (
                 <MicOff className="size-3.5 text-ink-2" />
               )}
-              Voice
+              {t('timer.voice')}
             </h4>
             <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              Choose between male and female voice for the inspection alerts.
-              Uses the official WCA audio clips.
+              {t('timer.voiceHint')}
             </p>
           </div>
           <div className="mt-0.5 shrink-0">
             <Select value={voiceType} onValueChange={setVoiceType}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Select voice" />
+                <SelectValue placeholder={t('timer.selectVoice')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="male">
                   <div className="flex items-center gap-2">
-                    <span>Male</span>
+                    <span>{t('timer.male')}</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="female">
                   <div className="flex items-center gap-2">
-                    <span>Female</span>
+                    <span>{t('timer.female')}</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -233,22 +231,22 @@ export function TimerSection() {
       )}
 
       <SettingToggle
-        title="PB delta"
-        description="Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best."
+        title={t('timer.pbDelta')}
+        description={t('timer.pbDeltaHint')}
         checked={showPbDelta}
         onCheckedChange={setShowPbDelta}
       />
 
       <SettingToggle
-        title="Session stats"
-        description="Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Turn it off for a cleaner timer screen."
+        title={t('timer.sessionStats')}
+        description={t('timer.sessionStatsHint')}
         checked={showSessionStats}
         onCheckedChange={setShowSessionStats}
       />
 
       <SettingToggle
-        title="Focus mode"
-        description="Hide all UI elements (scramble, stats, sidebar) when the timer is ready and running to eliminate distractions."
+        title={t('timer.focusMode')}
+        description={t('timer.focusModeHint')}
         checked={focusMode}
         onCheckedChange={setFocusMode}
       />

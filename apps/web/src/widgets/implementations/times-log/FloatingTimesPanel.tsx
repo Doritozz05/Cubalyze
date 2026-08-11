@@ -2,6 +2,7 @@
 
 import { ListOrdered } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import { useTranslation } from "react-i18next";
 import { TimesList } from "@/components/Stats/TimesList";
 import type { Solve } from "@/types";
 
@@ -33,6 +34,7 @@ export function FloatingTimesPanel({
   onAnalyze,
   onReplay,
 }: FloatingTimesPanelProps) {
+  const { t } = useTranslation("widgets");
   const headerActions =
     solves.length > 0 && onClear ? (
       <button
@@ -43,7 +45,7 @@ export function FloatingTimesPanel({
         }}
         className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
       >
-        Clear
+        {t("panel.timesLog.clear")}
       </button>
     ) : null;
 
@@ -51,7 +53,7 @@ export function FloatingTimesPanel({
     <FloatingWidgetWrapper
       widgetId="times-log"
       icon={ListOrdered}
-      label="Times"
+      label={t("def.timesLog")}
       pillBadge={`${solves.length}`}
       panelWidth={PANEL_WIDTH}
       defaultPosition={{ x: 24, y: 72 }}

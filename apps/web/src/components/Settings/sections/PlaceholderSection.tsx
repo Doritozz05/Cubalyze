@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { SettingsSection } from '../settings.constants';
 
@@ -18,6 +19,7 @@ export function PlaceholderSection({
   section,
   className,
 }: PlaceholderSectionProps) {
+  const { t } = useTranslation('settings');
   const Icon = section.icon;
 
   return (
@@ -29,7 +31,7 @@ export function PlaceholderSection({
 
         <div className="text-center">
           <p className="mx-auto max-w-xs text-[0.82rem] leading-relaxed text-ink-3">
-            This section is ready for configuration. Check back soon for new options.
+            {t('placeholder.ready')}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
@@ -25,12 +26,14 @@ export const CaseGrid = memo(function CaseGrid({
   visualizationStyle,
   className,
 }: CaseGridProps) {
+  const { t } = useTranslation("algorithms");
+
   if (cases.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-        <span className="text-ink-3/40 text-[0.8rem]">No cases in this subset</span>
+        <span className="text-ink-3/40 text-[0.8rem]">{t("noCasesInSubset")}</span>
         <span className="text-ink-3/30 text-[0.65rem]">
-          Select a subset from the left panel
+          {t("selectSubsetFromLeft")}
         </span>
       </div>
     );
@@ -75,6 +78,7 @@ function CaseCard({
 }) {
   // Reactive subscription: re-renders when custom algorithms or ordering
   // change, so the grid reflects saved orientations without a reload.
+  const { t } = useTranslation("algorithms");
   const { algorithms } = useCaseAlgorithms(caseData.id);
   const algorithm = algorithms[0] ?? null;
 
@@ -118,7 +122,7 @@ function CaseCard({
           <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44 max-lg:max-w-36" />
         ) : (
           <div className="w-36 h-36 flex items-center justify-center rounded-lg bg-surface-2">
-            <span className="text-ink-3/40 text-[0.65rem]">No diagram</span>
+            <span className="text-ink-3/40 text-[0.65rem]">{t("noDiagram")}</span>
           </div>
         )}
       </div>

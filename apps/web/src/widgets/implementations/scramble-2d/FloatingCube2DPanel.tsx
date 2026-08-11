@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Shuffle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import {
   CubeState,
@@ -146,6 +147,7 @@ export interface FloatingCube2DPanelProps {
  *   • 3×3: all move types → uses CubeState + 54-char facelets (original behavior)
  */
 export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanelProps) {
+  const { t } = useTranslation("widgets");
   const displayFacelets = useMemo(() => {
     if (scramble && scramble.trim()) {
       try {
@@ -179,7 +181,7 @@ export function FloatingCube2DPanel({ scramble, className }: FloatingCube2DPanel
     <FloatingWidgetWrapper
       widgetId="scramble-2d"
       icon={Shuffle}
-      label="Scramble"
+      label={t("def.scramble2d")}
       defaultPosition={{ x: 24, y: 440 }}
       className={className}
     >

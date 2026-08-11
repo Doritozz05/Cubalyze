@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { hintFor, type HintContext } from './hintFor';
+import i18n from '@/i18n';
 import type { TimerState } from '@/types';
 
 describe('hintFor', () => {
+  // The hint text is localized — pin the active language to English so the
+  // assertions below compare against the canonical strings.
+  beforeAll(async () => {
+    await i18n.changeLanguage('en');
+  });
+
   const allPhases: TimerState[] = [
     'idle',
     'inspection',

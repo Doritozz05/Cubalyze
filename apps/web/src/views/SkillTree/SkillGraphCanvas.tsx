@@ -100,10 +100,12 @@ import {
   Dna,
   Lightbulb,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
-import type { SkillNode } from "./skillTreeData";
+import { TIER_KEY, type SkillNode } from "./skillTreeData";
 
 interface SkillGraphCanvasProps {
   nodes: SkillNode[];
@@ -145,6 +147,7 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
   onSelectNode,
   onToggleComplete,
 }: SkillNodeItemProps) {
+  const { t } = useTranslation("skillTree");
   const isCompleted = node.status === "completed";
   const isUnlocked = node.status === "unlocked";
   const isLocked = node.status === "locked";
@@ -183,20 +186,26 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
 
         {/* Status / Toggle Badge */}
         {!isLocked && onToggleComplete ? (
-          <button
-            type="button"
-            onClick={handleToggle}
-            title={isCompleted ? "Mark as accessible" : "Mark as completed"}
-            aria-label={isCompleted ? "Mark as accessible" : "Mark as completed"}
-            className={cn(
-              "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
-              isCompleted
-                ? "border-ink bg-ink text-surface shadow-sm"
-                : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink hover:bg-surface-2",
-            )}
-          >
-            <Check className={cn("size-3.5 stroke-[2.5]", isCompleted ? "opacity-100" : "opacity-40")} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleToggle}
+                aria-label={t(isCompleted ? "markAccessible" : "markCompleted")}
+                className={cn(
+                  "absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full border transition-all active:scale-95 shadow-xs touch-manipulation cursor-pointer",
+                  isCompleted
+                    ? "border-ink bg-ink text-surface shadow-sm"
+                    : "border-line bg-surface text-ink-3 hover:border-ink hover:text-ink hover:bg-surface-2",
+                )}
+              >
+                <Check className={cn("size-3.5 stroke-[2.5]", isCompleted ? "opacity-100" : "opacity-40")} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {t(isCompleted ? "markAccessible" : "markCompleted")}
+            </TooltipContent>
+          </Tooltip>
         ) : isCompleted ? (
           <div className="absolute -top-1 -right-1 z-20 flex size-5.5 items-center justify-center rounded-full border border-ink bg-ink text-surface shadow-xs">
             <Check className="size-3 stroke-[2.5]" />
@@ -220,10 +229,10 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
               : "text-ink-3",
           )}
         >
-          {node.title}
+          {t(node.titleKey)}
         </h4>
         <span className="text-[0.62rem] uppercase tracking-wider font-semibold text-ink-3 block">
-          {node.tier}
+          {t(TIER_KEY[node.tier])}
         </span>
       </div>
     </div>
@@ -237,6 +246,7 @@ export function SkillGraphCanvas({
   onSelectNode,
   onToggleComplete,
 }: SkillGraphCanvasProps) {
+  const { t } = useTranslation("skillTree");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 50, y: 50 });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -602,34 +612,46 @@ export function SkillGraphCanvas({
 
       {/* Floating Viewport Controls */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono max-lg:top-auto max-lg:bottom-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
-          onClick={handleZoomIn}
-          title="Zoom in"
-        >
-          <ZoomIn className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
-          onClick={handleZoomOut}
-          title="Zoom out"
-        >
-          <ZoomOut className="w-3.5 h-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+              onClick={handleZoomIn}
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("zoomIn")}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+              onClick={handleZoomOut}
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("zoomOut")}</TooltipContent>
+        </Tooltip>
         <div className="w-px h-4 bg-line" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
-          onClick={resetView}
-          title="Reset view"
-        >
-          <Maximize2 className="w-3.5 h-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-ink-3 hover:text-ink max-lg:h-9 max-lg:w-9 cursor-pointer"
+              onClick={resetView}
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("resetView")}</TooltipContent>
+        </Tooltip>
         <span className="px-2 text-[0.62rem] text-ink-3 font-semibold">
           {Math.round(zoom * 100)}%
         </span>
@@ -704,7 +726,7 @@ export function SkillGraphCanvas({
       {/* Footer Info Legend */}
       <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
         <Info className="w-3.5 h-3.5 text-ink shrink-0" />
-        <span>Click an accessible node for full explanations or to mark as completed</span>
+        <span>{t("canvasHint")}</span>
       </div>
     </div>
   );

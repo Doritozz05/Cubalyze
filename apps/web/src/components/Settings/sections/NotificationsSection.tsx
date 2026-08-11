@@ -2,6 +2,7 @@
 
 import { Bell, BellOff, Volume2, CalendarClock, Repeat } from "lucide-react";
 import { useStore } from "zustand";
+import { useTranslation } from "react-i18next";
 import { preferencesStore } from "@cubeforge/state";
 import { SettingToggle } from "../components/SettingToggle";
 import { Slider } from "@/components/ui/slider";
@@ -43,6 +44,8 @@ function TimeInput({
  *   - Daily SRS review-queue reminder.
  */
 export function NotificationsSection() {
+  const { t } = useTranslation("settings");
+
   const notificationsEnabled = useStore(preferencesStore, (s) => s.notificationsEnabled);
   const setNotificationsEnabled = useStore(preferencesStore, (s) => s.setNotificationsEnabled);
   const soundsEnabled = useStore(preferencesStore, (s) => s.soundsEnabled);
@@ -74,14 +77,14 @@ export function NotificationsSection() {
           <MasterIcon className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] leading-5 text-ink-2">
-          Control every alert, sound and daily reminder the app can send.
+          {t("notifications.info")}
         </p>
       </div>
 
       {/* ── Master switch ─────────────────────────────────────────────── */}
       <SettingToggle
-        title="Notifications"
-        description="Master switch. When off, every notification below is suppressed — no sounds, no banners, no daily reminders."
+        title={t("notifications.master")}
+        description={t("notifications.masterHint")}
         checked={notificationsEnabled}
         onCheckedChange={setNotificationsEnabled}
       />
@@ -89,8 +92,8 @@ export function NotificationsSection() {
       <div className={cn("flex flex-col gap-5", !notificationsEnabled && "pointer-events-none opacity-45")}>
         {/* ── Sounds ─────────────────────────────────────────────────── */}
         <SettingToggle
-          title="Sounds"
-          description="Play sound effects — inspection voice cues ('8 seconds' / '12 seconds') and the PB victory fanfare."
+          title={t("notifications.sounds")}
+          description={t("notifications.soundsHint")}
           checked={soundsEnabled}
           onCheckedChange={setSoundsEnabled}
         />
@@ -99,10 +102,10 @@ export function NotificationsSection() {
           <div className="min-w-0 flex-1">
             <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <Volume2 className="size-3.5 text-ink-2" />
-              Volume
+              {t("notifications.volume")}
             </h4>
             <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              Master volume for inspection voice cues and the PB fanfare (0–100%).
+              {t("notifications.volumeHint")}
             </p>
           </div>
           <div className="mt-1 flex w-48 shrink-0 items-center gap-3">
@@ -121,15 +124,15 @@ export function NotificationsSection() {
         </div>
 
         <SettingToggle
-          title="PB victory sound"
-          description="Play a subtle victory fanfare when achieving a new Personal Best (Single, Ao5, Ao12)."
+          title={t("notifications.pbVictorySound")}
+          description={t("notifications.pbVictorySoundHint")}
           checked={pbCelebrationAudio}
           onCheckedChange={setPbCelebrationAudio}
         />
 
         <SettingToggle
-          title="PB celebration banner"
-          description="Display a minimalist floating banner upon setting a new Personal Best."
+          title={t("notifications.pbBanner")}
+          description={t("notifications.pbBannerHint")}
           checked={pbCelebrationAnimation}
           onCheckedChange={setPbCelebrationAnimation}
         />
@@ -139,18 +142,17 @@ export function NotificationsSection() {
           <div className="min-w-0 flex-1">
             <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <CalendarClock className="size-3.5 text-ink-2" />
-              Daily practice reminder
+              {t("notifications.practiceReminder")}
             </h4>
             <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              Get a gentle nudge at a set time each day to practice. Shows a browser
-              notification (if allowed) and an in-app toast.
+              {t("notifications.practiceReminderHint")}
             </p>
           </div>
           <div className="flex h-5 shrink-0 items-center gap-3">
             {practiceReminders && (
               <TimeInput
                 id="practice-reminder-time"
-                label="Practice reminder time"
+                label={t("notifications.practiceTime")}
                 value={practiceReminderTime}
                 onChange={setPracticeReminderTime}
               />
@@ -158,7 +160,7 @@ export function NotificationsSection() {
             <Switch
               checked={practiceReminders}
               onCheckedChange={setPracticeReminders}
-              aria-label="Daily practice reminder"
+              aria-label={t("notifications.practiceReminder")}
             />
           </div>
         </div>
@@ -168,18 +170,17 @@ export function NotificationsSection() {
           <div className="min-w-0 flex-1">
             <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
               <Repeat className="size-3.5 text-ink-2" />
-              Daily review reminder
+              {t("notifications.reviewReminder")}
             </h4>
             <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              Remind yourself to clear the SRS review queue (OLL/PLL/F2L flashcards)
-              at a set time each day.
+              {t("notifications.reviewReminderHint")}
             </p>
           </div>
           <div className="flex h-5 shrink-0 items-center gap-3">
             {reviewReminders && (
               <TimeInput
                 id="review-reminder-time"
-                label="Review reminder time"
+                label={t("notifications.reviewTime")}
                 value={reviewReminderTime}
                 onChange={setReviewReminderTime}
               />
@@ -187,7 +188,7 @@ export function NotificationsSection() {
             <Switch
               checked={reviewReminders}
               onCheckedChange={setReviewReminders}
-              aria-label="Daily review reminder"
+              aria-label={t("notifications.reviewReminder")}
             />
           </div>
         </div>

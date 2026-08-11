@@ -2,7 +2,9 @@
 
 import { motion, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { WIDGET_CATEGORIES } from "@/widgets/registry";
+import { CATEGORY_LABEL_KEY } from "@/widgets/i18n";
 import type { WidgetCategory, WidgetCategoryId } from "@/widgets/types";
 
 export const EXPLORER_SIDEBAR_WIDTH = 200;
@@ -16,13 +18,14 @@ export function WidgetExplorerSidebar({
   activeCategory,
   onSelectCategory,
 }: WidgetExplorerSidebarProps) {
+  const { t } = useTranslation("widgets");
   return (
     <nav
       className="flex h-full shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas px-2 py-3"
       style={{ width: EXPLORER_SIDEBAR_WIDTH }}
     >
       <p className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 select-none">
-        Categories
+        {t("sidebar.categories")}
       </p>
 
       <LayoutGroup>
@@ -48,6 +51,7 @@ function CategoryItem({
   isActive: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation("widgets");
   return (
     <button
       onClick={onSelect}
@@ -65,7 +69,9 @@ function CategoryItem({
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
         />
       )}
-      <span className="relative z-10 truncate">{category.label}</span>
+      <span className="relative z-10 truncate">
+        {t(CATEGORY_LABEL_KEY[category.id])}
+      </span>
     </button>
   );
 }

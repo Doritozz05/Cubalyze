@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import type { PuzzleCategory } from "@/types";
 import { generateScrambleFor, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 
@@ -37,13 +38,13 @@ export function useScrambleState() {
     }
     setCurrentScramble(generateScrambleFor(newPuzzle));
     setScrambleIndex(0);
-    toast.success(`Switched to ${newPuzzle}`);
+    toast.success(i18n.t("toast:puzzleSwitched", { puzzle: newPuzzle }));
   }, []);
 
   const handleRegenerate = useCallback(() => {
     setCurrentScramble(generateScrambleFor(puzzle));
     setScrambleIndex((i) => i + 1);
-    toast.success("New scramble");
+    toast.success(i18n.t("toast:newScramble"));
   }, [puzzle]);
 
   /** Replace the scramble without bumping the toast (used after session ops). */

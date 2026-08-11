@@ -16,9 +16,11 @@ import {
   RotateCcw,
   Lock,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { cn } from "@/lib/utils";
 import { TOUCH_FULL_BLEED } from "@/lib/touch";
-import type { SkillNode } from "./skillTreeData";
+import { CATEGORY_KEY, NODE_BY_ID, STATUS_KEY, TIER_KEY, type SkillNode } from "./skillTreeData";
 
 interface SkillNodeModalProps {
   node: SkillNode | null;
@@ -35,27 +37,36 @@ export function SkillNodeModal({
   onStartDrill,
   onToggleComplete,
 }: SkillNodeModalProps) {
+  const { t, i18n } = useTranslation("skillTree");
   if (!node) return null;
 
   const isCompleted = node.status === "completed";
   const isLocked = node.status === "locked";
 
-  const statusBadges: Record<SkillNode["status"], { label: string; style: string }> = {
+  const statusBadges: Record<SkillNode["status"], { labelKey: ParseKeys<"skillTree">; style: string }> = {
     completed: {
-      label: "Completed",
+      labelKey: STATUS_KEY.completed,
       style: "bg-ink text-surface font-bold border-ink",
     },
     unlocked: {
-      label: "Accessible",
+      labelKey: STATUS_KEY.unlocked,
       style: "bg-surface-2 text-ink border-line font-semibold",
     },
     locked: {
-      label: "Locked",
+      labelKey: STATUS_KEY.locked,
       style: "bg-surface-2 text-ink-3 border-line",
     },
   };
 
   const badge = statusBadges[node.status];
+  const formulaKey = node.exampleFormulaKey;
+  // Drills come back as an array via returnObjects (same pattern as training tips):
+  // the key is relative, so the global `i18n.t` needs the explicit namespace prefix.
+  const drillsRaw = (i18n.t as (key: string, options?: object) => unknown)(`skillTree:${node.drillsKey}`, {
+    returnObjects: true,
+    defaultValue: [],
+  });
+  const drillList: string[] = Array.isArray(drillsRaw) ? (drillsRaw as string[]) : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,7 +78,8 @@ export function SkillNodeModal({
         <DialogHeader className="space-y-1 text-left pr-8">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold tracking-wider text-ink-3 uppercase">
-              {node.category.toUpperCase()} • TIER {node.tier.toUpperCase()}
+              {t(CATEGORY_KEY[node.category]).toUpperCase()} • {t("tierLabel")}{" "}
+              {t(TIER_KEY[node.tier]).toUpperCase()}
             </span>
             <span
               className={cn(
@@ -75,41 +87,41 @@ export function SkillNodeModal({
                 badge.style
               )}
             >
-              {badge.label}
+              {t(badge.labelKey)}
             </span>
           </div>
 
           <DialogTitle className="text-xl font-bold text-ink tracking-tight flex items-center justify-between">
-            <span>{node.title}</span>
+            <span>{t(node.titleKey)}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-ink-3">
-            {node.subtitle}
+            {t(node.subtitleKey)}
           </DialogDescription>
         </DialogHeader>
 
         {/* Speedcubing Theory Explanation */}
         <div className="space-y-1.5">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-ink" /> Speedcubing Theory & Key Concept
+            <BookOpen className="w-3.5 h-3.5 text-ink" /> {t("theoryTitle")}
           </h4>
           <p className="text-xs text-ink/90 leading-relaxed bg-surface-2/30 p-3 rounded-lg border border-line/60">
-            {node.theory}
+            {t(node.theoryKey)}
           </p>
         </div>
 
         {/* Full Description */}
         <div className="text-xs text-ink-3 leading-relaxed px-1">
-          {node.description}
+          {t(node.descriptionKey)}
         </div>
 
         {/* Model Formula / Insertion */}
-        {node.exampleFormula && (
+        {formulaKey && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 flex items-center gap-1.5">
-              <Code2 className="w-3.5 h-3.5 text-ink" /> Model Formula / Example Sequence
+              <Code2 className="w-3.5 h-3.5 text-ink" /> {t("formulaTitle")}
             </h4>
             <div className="p-3 bg-surface border border-line rounded-lg font-mono text-xs text-ink font-semibold text-center tracking-wide select-all shadow-inner">
-              {node.exampleFormula}
+              {t(formulaKey)}
             </div>
           </div>
         )}
@@ -118,29 +130,32 @@ export function SkillNodeModal({
         {node.prerequisites.length > 0 && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
-              Prerequisites
+              {t("prerequisites")}
             </h4>
             <div className="flex flex-wrap gap-2">
-              {node.prerequisites.map((req) => (
-                <span
-                  key={req}
-                  className="px-2.5 py-1 text-xs bg-surface-2/40 border border-line rounded-md text-ink-3 flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-ink" /> {req}
-                </span>
-              ))}
+              {node.prerequisites.map((req) => {
+                const prereqNode = NODE_BY_ID.get(req);
+                return (
+                  <span
+                    key={req}
+                    className="px-2.5 py-1 text-xs bg-surface-2/40 border border-line rounded-md text-ink-3 flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-ink" /> {prereqNode ? t(prereqNode.titleKey) : req}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Recommended Drills */}
-        {node.recommendedDrills.length > 0 && (
+        {drillList.length > 0 && (
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-ink" /> Recommended Practice Drills
+              <Target className="w-3.5 h-3.5 text-ink" /> {t("drillsTitle")}
             </h4>
             <ul className="space-y-1.5">
-              {node.recommendedDrills.map((drill) => (
+              {drillList.map((drill) => (
                 <li
                   key={drill}
                   className="text-xs text-ink/90 flex items-center gap-2 p-2.5 rounded-lg bg-surface/60 border border-line/60"
@@ -170,17 +185,17 @@ export function SkillNodeModal({
             >
               {isCompleted ? (
                 <>
-                  <RotateCcw className="w-3.5 h-3.5" /> Mark as Incomplete
+                  <RotateCcw className="w-3.5 h-3.5" /> {t("markIncomplete")}
                 </>
               ) : (
                 <>
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" /> Mark as Completed
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" /> {t("markCompleted")}
                 </>
               )}
             </Button>
           ) : (
             <span className="text-xs text-ink-3 italic flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5" /> Locked: complete prerequisites to unlock
+              <Lock className="w-3.5 h-3.5" /> {t("lockedHint")}
             </span>
           )}
 
@@ -191,7 +206,7 @@ export function SkillNodeModal({
               onClick={() => onOpenChange(false)}
               className="text-xs"
             >
-              Close
+              {i18n.t("common:close")}
             </Button>
             <Button
               size="sm"
@@ -202,7 +217,7 @@ export function SkillNodeModal({
                 onOpenChange(false);
               }}
             >
-              Practice Skill
+              {t("practiceSkill")}
             </Button>
           </div>
         </div>

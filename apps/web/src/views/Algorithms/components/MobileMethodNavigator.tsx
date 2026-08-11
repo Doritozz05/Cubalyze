@@ -10,6 +10,7 @@ import {
   FolderTree,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { TouchPanel } from "@/components/TouchPanel";
 import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmSubset } from "@cubeforge/algorithm-db";
@@ -69,15 +70,19 @@ function buildTree(): NavNode[] {
 }
 
 /** Breadcrumb path labels for a given subset id, e.g. "3×3 › CFOP › PLL". */
-function pathLabelFor(tree: NavNode[], subsetId: string | null): string {
-  if (!subsetId) return "Select a method";
+function pathLabelFor(
+  tree: NavNode[],
+  subsetId: string | null,
+  selectMethodLabel: string,
+): string {
+  if (!subsetId) return selectMethodLabel;
   for (const puzzle of tree) {
     for (const method of puzzle.children ?? []) {
       const found = findIn(method.children ?? [], subsetId, [puzzle.label, method.label]);
       if (found) return found.join(" › ");
     }
   }
-  return "Select a method";
+  return selectMethodLabel;
 }
 
 function findIn(
@@ -133,6 +138,7 @@ export function MobileMethodNavigator({
   onSelectSubset,
   className,
 }: MobileMethodNavigatorProps) {
+  const { t } = useTranslation("algorithms");
   const tree = useMemo(buildTree, []);
   const leaves = useMemo(() => flattenLeaves(tree), [tree]);
 
@@ -146,8 +152,8 @@ export function MobileMethodNavigator({
     path.length === 0 ? tree : (path[path.length - 1].children ?? []);
 
   const barLabel = useMemo(
-    () => pathLabelFor(tree, selectedSubsetId),
-    [tree, selectedSubsetId],
+    () => pathLabelFor(tree, selectedSubsetId, t("selectMethod")),
+    [tree, selectedSubsetId, t],
   );
 
   const handleOpen = useCallback(() => {
@@ -197,7 +203,7 @@ export function MobileMethodNavigator({
         <ChevronDown className="size-4 shrink-0 text-ink-3" />
       </button>
 
-      <TouchPanel open={open} onOpenChange={setOpen} title="Method">
+      <TouchPanel open={open} onOpenChange={setOpen} title={t("method")}>
         {/* Instant search — jump straight to any subset */}
         <div className="relative mb-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
@@ -205,7 +211,7 @@ export function MobileMethodNavigator({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search subsets…"
+            placeholder={t("searchSubsets")}
             className="h-11 w-full rounded-xl border border-line bg-canvas pl-9 pr-3 text-[0.8rem] text-ink outline-none transition-colors placeholder:text-ink-3/60 focus:border-ink-2 touch-manipulation"
           />
         </div>
@@ -215,7 +221,7 @@ export function MobileMethodNavigator({
           <div className="flex flex-col">
             {filteredLeaves.length === 0 ? (
               <p className="py-6 text-center text-[0.72rem] text-ink-3">
-                No subsets match “{query.trim()}”
+                {t("noSubsetsMatch", { query: query.trim() })}
               </p>
             ) : (
               filteredLeaves.map((leaf) => {
@@ -255,7 +261,7 @@ export function MobileMethodNavigator({
                 <button
                   type="button"
                   onClick={() => setPath((p) => p.slice(0, -1))}
-                  aria-label="Back"
+                  aria-label={t("back")}
                   className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink touch-manipulation"
                 >
                   <ChevronLeft className="size-4" />

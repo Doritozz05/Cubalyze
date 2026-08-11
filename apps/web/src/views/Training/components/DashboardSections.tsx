@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubeforge/algorithm-db";
@@ -9,8 +11,84 @@ import { ReviewQueueSection } from "./";
 import { TrainingCalendar } from "../TrainingCalendar";
 import type { PuzzleCategory } from "@/types";
 import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubeforge/training";
-import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel, MASTERY_LEVEL_LABELS } from "@cubeforge/training";
+import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel } from "@cubeforge/training";
 import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+
+/**
+ * Localized descriptions for the training catalog (tanda 13 sweep).
+ * The catalog data in packages (methodRegistry / training catalog) stays EN
+ * as the canonical source; these maps localize it at the render point.
+ * Keys are "<puzzleType>:<name-or-id>" for phases/subsets (ids/names repeat
+ * across 3x3 and 2x2) and the method name for methods. Unknown entries fall
+ * back to the catalog description.
+ */
+const METHOD_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
+  CFOP: "catalog.method.CFOP",
+  Roux: "catalog.method.Roux",
+  ZZ: "catalog.method.ZZ",
+  Petrus: "catalog.method.Petrus",
+  "Advanced 3x3": "catalog.method.Advanced 3x3",
+  Ortega: "catalog.method.Ortega",
+  CLL: "catalog.method.CLL",
+  EG: "catalog.method.EG",
+};
+
+const PHASE_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
+  "3x3x3:cross": "catalog.phase.3x3x3.cross",
+  "3x3x3:f2l": "catalog.phase.3x3x3.f2l",
+  "3x3x3:af2l": "catalog.phase.3x3x3.af2l",
+  "3x3x3:oll": "catalog.phase.3x3x3.oll",
+  "3x3x3:pll": "catalog.phase.3x3x3.pll",
+  "3x3x3:first-block": "catalog.phase.3x3x3.first-block",
+  "3x3x3:second-block": "catalog.phase.3x3x3.second-block",
+  "3x3x3:cmll": "catalog.phase.3x3x3.cmll",
+  "3x3x3:lse": "catalog.phase.3x3x3.lse",
+  "3x3x3:eoline": "catalog.phase.3x3x3.eoline",
+  "3x3x3:f2l-zz": "catalog.phase.3x3x3.f2l-zz",
+  "3x3x3:ll-zz": "catalog.phase.3x3x3.ll-zz",
+  "3x3x3:block-222": "catalog.phase.3x3x3.block-222",
+  "3x3x3:block-223": "catalog.phase.3x3x3.block-223",
+  "3x3x3:eo-petrus": "catalog.phase.3x3x3.eo-petrus",
+  "3x3x3:f2l-petrus": "catalog.phase.3x3x3.f2l-petrus",
+  "3x3x3:ll-petrus": "catalog.phase.3x3x3.ll-petrus",
+  "2x2x2:oll": "catalog.phase.2x2x2.oll",
+  "2x2x2:pbl": "catalog.phase.2x2x2.pbl",
+  "2x2x2:cll": "catalog.phase.2x2x2.cll",
+  "2x2x2:eg1": "catalog.phase.2x2x2.eg1",
+  "2x2x2:eg2": "catalog.phase.2x2x2.eg2",
+};
+
+const SUBSET_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
+  "3x3x3:F2L": "catalog.subset.3x3x3.F2L",
+  "3x3x3:Basic F2L": "catalog.subset.3x3x3.Basic F2L",
+  "3x3x3:Advanced F2L": "catalog.subset.3x3x3.Advanced F2L",
+  "3x3x3:OLL": "catalog.subset.3x3x3.OLL",
+  "3x3x3:PLL": "catalog.subset.3x3x3.PLL",
+  "3x3x3:COLL": "catalog.subset.3x3x3.COLL",
+  "3x3x3:Winter Variation": "catalog.subset.3x3x3.Winter Variation",
+  "3x3x3:VLS": "catalog.subset.3x3x3.VLS",
+  "3x3x3:ZBLL": "catalog.subset.3x3x3.ZBLL",
+  "3x3x3:CLS": "catalog.subset.3x3x3.CLS",
+  "3x3x3:Summer Variation": "catalog.subset.3x3x3.Summer Variation",
+  "3x3x3:ELL": "catalog.subset.3x3x3.ELL",
+  "3x3x3:Anti PLL": "catalog.subset.3x3x3.Anti PLL",
+  "3x3x3:CMLL": "catalog.subset.3x3x3.CMLL",
+  "3x3x3:LSE": "catalog.subset.3x3x3.LSE",
+  "3x3x3:First Block": "catalog.subset.3x3x3.First Block",
+  "3x3x3:Second Block": "catalog.subset.3x3x3.Second Block",
+  "3x3x3:OCLL": "catalog.subset.3x3x3.OCLL",
+  "3x3x3:EOLine": "catalog.subset.3x3x3.EOLine",
+  "3x3x3:ZZLL": "catalog.subset.3x3x3.ZZLL",
+  "3x3x3:2x2x2 Block": "catalog.subset.3x3x3.2x2x2 Block",
+  "3x3x3:2x2x3 Block": "catalog.subset.3x3x3.2x2x3 Block",
+  "3x3x3:EO": "catalog.subset.3x3x3.EO",
+  "2x2x2:OLL": "catalog.subset.2x2x2.OLL",
+  "2x2x2:PBL": "catalog.subset.2x2x2.PBL",
+  "2x2x2:CLL": "catalog.subset.2x2x2.CLL",
+  "2x2x2:EG": "catalog.subset.2x2x2.EG",
+  "2x2x2:EG-1": "catalog.subset.2x2x2.EG-1",
+  "2x2x2:EG-2": "catalog.subset.2x2x2.EG-2",
+};
 import {
   Select,
   SelectContent,
@@ -105,10 +183,6 @@ const PHASE_DOT: Record<string, string> = {
   "f2l-petrus": "bg-phase-emerald", "ll-petrus": "bg-phase-amber",
 };
 
-export function masteryLabel(pct: number): string {
-  return MASTERY_LEVEL_LABELS[masteryLevel(pct)];
-}
-
 /* ──────────────────────────────────────────────────────────────────────────
    Flat Dashboard (Fase 6)
    ─────────────────────────────────────────────────────────────────────── */
@@ -151,7 +225,9 @@ export function FlatDashboard({
   dueCount: number;
   dbReady: boolean;
 }) {
+  const { t } = useTranslation("training");
   const method = METHODS.find((m) => m.id === activeMethodId);
+  const methodDescKey = method ? METHOD_DESC_KEY[method.name] : undefined;
   const phases = method ? getPhasesForMethod(method.name) : [];
   const mastery = method ? (methodMasteries[method.name] ?? 0) : 0;
 
@@ -210,10 +286,10 @@ export function FlatDashboard({
         {/* Header row: Dropdown puzzle selector + SRS badge */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-3">Puzzle</span>
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-3">{t("puzzle")}</span>
             <Select value={selectedPuzzle} onValueChange={(val) => onSelectPuzzle(val as PuzzleCategory)}>
               <SelectTrigger className="h-8 w-36 gap-2 rounded-lg border-line bg-surface px-2.5 text-[0.7rem] font-semibold text-ink shadow-xs">
-                <SelectValue placeholder="Select puzzle" />
+                <SelectValue placeholder={t("selectPuzzle")} />
               </SelectTrigger>
               <SelectContent>
                 {PUZZLE_CATEGORIES.map((p) => {
@@ -241,7 +317,7 @@ export function FlatDashboard({
           {dueCount > 0 && (
             <span className="nums shrink-0 inline-flex items-center gap-1.5 rounded-full bg-caution px-2.5 py-0.5 text-[0.6rem] font-semibold text-surface ml-auto">
               <span className="size-1.5 rounded-full bg-surface shrink-0" />
-              {dueCount} due for review
+              {t("dueForReview", { count: dueCount })}
             </span>
           )}
         </div>
@@ -283,7 +359,7 @@ export function FlatDashboard({
 
       {!method ? (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-[0.72rem] text-ink-3">Select a method above to see exercises</p>
+          <p className="text-[0.72rem] text-ink-3">{t("selectMethodEmpty")}</p>
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-6 overflow-y-auto min-h-0 pb-4">
@@ -296,7 +372,7 @@ export function FlatDashboard({
                 </div>
                 <div>
                   <h2 className="text-[0.82rem] font-semibold text-ink">{method.name}</h2>
-                  <p className="text-[0.62rem] text-ink-3">{method.description}</p>
+                  <p className="text-[0.62rem] text-ink-3">{methodDescKey ? t(methodDescKey) : method.description}</p>
                 </div>
               </div>
               {phases.length > 0 && (
@@ -304,7 +380,7 @@ export function FlatDashboard({
                   onClick={() => onFullSolve(method.id)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
                 >
-                  <Target className="size-3" />Full Solve
+                  <Target className="size-3" />{t("fullSolve.title")}
                 </button>
               )}
             </div>
@@ -319,7 +395,7 @@ export function FlatDashboard({
                   />
                 </div>
                 <span className="nums text-[0.68rem] font-medium text-ink">{mastery}%</span>
-                <span className="text-[0.58rem] text-ink-3">{masteryLabel(mastery)}</span>
+                <span className="text-[0.58rem] text-ink-3">{t(`mastery.${masteryLevel(mastery)}`)}</span>
               </div>
             </div>
           </section>
@@ -329,12 +405,13 @@ export function FlatDashboard({
               the only practice surface. */}
           {phases.length > 0 && (
             <section className="shrink-0">
-              <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">Exercises</h2>
+              <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 mb-3">{t("exercises")}</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {phases.map((phase) => (
                   <ExerciseCard
                     key={phase.id}
                     phase={phase}
+                    puzzleType={method.puzzleType}
                     onDrill={() => {
                       const sid = findSubsetId(method.id, phase.id);
                       if (sid) onDrill(method.id, phase.id, sid);
@@ -366,8 +443,8 @@ export function FlatDashboard({
           {subsetCards.length > 0 && (
             <section className="shrink-0">
               <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3">Algorithm Sets</h2>
-                <span className="text-[0.58rem] text-ink-3/60">drill or recognize each set</span>
+                <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3">{t("algorithmSets")}</h2>
+                <span className="text-[0.58rem] text-ink-3/60">{t("drillOrRecognizeEachSet")}</span>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {subsetCards.map(({ subset, caseCount }) => (
@@ -375,6 +452,7 @@ export function FlatDashboard({
                     key={subset.id}
                     subset={subset}
                     caseCount={caseCount}
+                    puzzleType={method.puzzleType}
                     onDrill={() => onDrill(method.id, "", subset.id)}
                     onRecognize={() => onRecognize(method.id, "", subset.id)}
                   />
@@ -389,7 +467,7 @@ export function FlatDashboard({
               <section className="lg:col-span-1 rounded-xl border border-line bg-surface p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="size-3.5 text-ink-2" />
-                  <h2 className="text-[0.7rem] font-semibold text-ink">Quick Summary</h2>
+                  <h2 className="text-[0.7rem] font-semibold text-ink">{t("quickSummary")}</h2>
                 </div>
                 <div className="space-y-2.5">
                   {phases.slice(0, 5).map((phase) => {
@@ -438,15 +516,19 @@ export function FlatDashboard({
 export function SubsetCard({
   subset,
   caseCount,
+  puzzleType,
   onDrill,
   onRecognize,
 }: {
   subset: AlgorithmSubset;
   caseCount: number;
+  puzzleType: string;
   onDrill: () => void;
   onRecognize: () => void;
 }) {
+  const { t } = useTranslation("training");
   const disabled = caseCount <= 0;
+  const descKey = SUBSET_DESC_KEY[`${puzzleType}:${subset.name}`];
   return (
     <motion.div
       whileTap={disabled ? undefined : { scale: 0.98 }}
@@ -464,25 +546,25 @@ export function SubsetCard({
         <div className="min-w-0 flex-1">
           <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{subset.name}</span>
           <span className="nums text-[0.6rem] text-ink-3">
-            {disabled ? "coming soon" : `${caseCount} case${caseCount !== 1 ? "s" : ""}`}
+            {disabled ? t("comingSoon") : t("caseCount", { count: caseCount })}
           </span>
         </div>
       </div>
-      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{subset.description}</p>
+      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{descKey ? t(descKey) : subset.description}</p>
       <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:pt-2">
         <button
           onClick={onDrill}
           disabled={disabled}
           className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
         >
-          Drill
+          {t("drill.title")}
         </button>
         <button
           onClick={onRecognize}
           disabled={disabled}
           className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-surface-2 disabled:hover:text-ink-2"
         >
-          Recognize
+          {t("recognize.title")}
         </button>
       </div>
     </motion.div>
@@ -495,6 +577,7 @@ export function SubsetCard({
 
 export function ExerciseCard({
   phase,
+  puzzleType,
   onDrill,
   onRecognize,
   onPracticeMode,
@@ -502,14 +585,17 @@ export function ExerciseCard({
   phaseModes,
 }: {
   phase: PhaseDef;
+  puzzleType: string;
   onDrill: () => void;
   onRecognize: () => void;
   onPracticeMode: (modeId: string) => void;
   onStats: () => void;
   phaseModes: PhaseModeDef[] | null;
 }) {
+  const { t } = useTranslation("training");
   const dotColor = PHASE_DOT[phase.id] ?? "bg-ink-3";
   const Icon = phase.icon;
+  const descKey = PHASE_DESC_KEY[`${puzzleType}:${phase.id}`];
 
   return (
     <motion.div
@@ -525,21 +611,21 @@ export function ExerciseCard({
             <span className="block text-[0.78rem] font-semibold text-ink leading-tight">{phase.name}</span>
             <span className={cn("size-1.5 shrink-0 rounded-full", dotColor)} />
           </div>
-          <span className="nums text-[0.6rem] text-ink-3">{phase.hasAlgorithms ? "Algorithmic" : "Intuitive"}</span>
+          <span className="nums text-[0.6rem] text-ink-3">{phase.hasAlgorithms ? t("algorithmic") : t("intuitive")}</span>
         </div>
       </div>
-      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{phase.description}</p>
+      <p className="text-[0.65rem] text-ink-2 leading-relaxed line-clamp-2">{descKey ? t(descKey) : phase.description}</p>
       <div className="flex gap-1 pt-1 border-t border-line mt-auto flex-wrap max-lg:grid max-lg:grid-cols-3 max-lg:gap-1.5 max-lg:pt-2">
         {phase.hasAlgorithms ? (
           <>
             <button onClick={onDrill} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Drill
+              {t("drill.title")}
             </button>
             <button onClick={onRecognize} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Recognize
+              {t("recognize.title")}
             </button>
             <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Stats
+              {t("stats")}
             </button>
           </>
         ) : phaseModes && phaseModes.length > 0 ? (
@@ -549,19 +635,18 @@ export function ExerciseCard({
                 key={pm.id}
                 onClick={() => onPracticeMode(pm.id)}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:justify-center max-lg:py-2.5 max-lg:text-[0.68rem]"
-                title={pm.label}
               >
                 <pm.icon className="size-3" />
                 {pm.label}
               </button>
             ))}
             <button onClick={onStats} className="rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer ml-auto max-lg:ml-0 max-lg:py-2.5 max-lg:text-[0.7rem]">
-              Stats
+              {t("stats")}
             </button>
           </>
         ) : (
           <button onClick={onStats} className="rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors bg-surface-2 text-ink-2 hover:bg-line hover:text-ink cursor-pointer max-lg:col-span-3 max-lg:py-2.5 max-lg:text-[0.7rem]">
-            Stats
+            {t("stats")}
           </button>
         )}
       </div>

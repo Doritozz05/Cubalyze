@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
@@ -88,6 +89,8 @@ export function LeftSidebar({
   // Touch regime (mobile + tablet <1024px) renders the Sheet variant.
   // Desktop (>=1024px) keeps the hover-to-expand rail untouched.
   const isTouch = useIsTouch();
+  const { t } = useTranslation("nav");
+  const { t: tCommon } = useTranslation();
   const { resolvedTheme } = useTheme();
   const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const [mounted, setMounted] = useState(false);
@@ -229,14 +232,14 @@ export function LeftSidebar({
       <LayoutGroup>
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           {NAV_GROUPS.map((group) => (
-            <div key={group.title} className="mb-1">
-              <SidebarGroupTitle label={group.title} labelVisible={labelVisible} />
+            <div key={group.titleKey} className="mb-1">
+              <SidebarGroupTitle label={t(group.titleKey)} labelVisible={labelVisible} />
               <div className="space-y-1">
                 {group.items.map((item) => (
                   <SidebarNavItem
                     key={item.id}
                     icon={item.icon}
-                    label={item.label}
+                    label={t(item.labelKey)}
                     labelVisible={labelVisible}
                     isActive={activeView === item.id}
                     onClick={() => handleNavItemClick(item.id)}
@@ -287,13 +290,13 @@ export function LeftSidebar({
           />
           <SidebarFooterItem
             icon={Settings}
-            label="Settings"
+            label={tCommon("settings")}
             labelVisible={labelVisible}
             onClick={() => setSettingsOpen(true)}
           />
           <SidebarFooterItem
             icon={mounted && isDark ? Sun : Moon}
-            label={mounted && isDark ? "Light mode" : "Dark mode"}
+            label={mounted && isDark ? tCommon("lightMode") : tCommon("darkMode")}
             labelVisible={labelVisible}
             onClick={() => setStoreTheme(isDark ? "light" : "dark")}
           />
@@ -310,7 +313,7 @@ export function LeftSidebar({
         <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
           <SheetContent side="left" className="w-56 p-0">
             <SheetHeader className="sr-only">
-              <SheetTitle>Navigation</SheetTitle>
+              <SheetTitle>{t("title")}</SheetTitle>
             </SheetHeader>
             <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
               {sidebarContent}
@@ -503,6 +506,7 @@ function SidebarProfileItem({
   isActive?: boolean;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation();
   const hasPhoto = profile?.avatarKind === "photo" && !!profile.avatarData;
   const avatar = hasPhoto ? (
     <img
@@ -521,7 +525,7 @@ function SidebarProfileItem({
     <UserRound className="size-4" />
   );
 
-  const label = profile?.displayName?.trim() || "Profile";
+  const label = profile?.displayName?.trim() || t("profile");
 
   return (
     <button

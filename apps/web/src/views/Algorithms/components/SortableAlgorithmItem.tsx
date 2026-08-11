@@ -1,7 +1,9 @@
 "use client";
 
 import { Pencil, Trash2, Sparkles, GripVertical, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Algorithm } from "@cubeforge/algorithm-db";
@@ -32,6 +34,7 @@ export function SortableAlgorithmItem({
   onDelete,
 }: SortableAlgorithmItemProps) {
   const isCustom = alg.isCustom === true;
+  const { t } = useTranslation("algorithms");
 
   const {
     attributes,
@@ -67,7 +70,7 @@ export function SortableAlgorithmItem({
         {...attributes}
         {...listeners}
         className="shrink-0 grid place-items-center self-start mt-0.5 text-ink-3/30 hover:text-ink-2 transition-colors cursor-grab active:cursor-grabbing touch-none max-lg:size-9 max-lg:mt-0 max-lg:rounded-md max-lg:hover:bg-surface-2"
-        aria-label="Drag to reorder"
+        aria-label={t("dragToReorder")}
         onClick={(e) => e.stopPropagation()}
       >
         <GripVertical className="size-3.5 max-lg:size-4" />
@@ -93,7 +96,7 @@ export function SortableAlgorithmItem({
           {isCustom && (
             <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2">
               <Sparkles className="size-2" />
-              custom
+              {t("custom")}
             </span>
           )}
 
@@ -104,28 +107,36 @@ export function SortableAlgorithmItem({
           {isCustom && (
             // Touch: edit/delete always visible (no hover-only) + larger targets.
             <span className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity max-lg:opacity-100 max-lg:gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                className="grid size-4 place-items-center rounded text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors max-lg:size-9"
-                title="Edit algorithm"
-                aria-label="Edit algorithm"
-              >
-                <Pencil className="size-2.5 max-lg:size-3.5" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="grid size-4 place-items-center rounded text-ink-3 hover:text-dnf hover:bg-dnf/5 transition-colors max-lg:size-9"
-                title="Delete algorithm"
-                aria-label="Delete algorithm"
-              >
-                <Trash2 className="size-2.5 max-lg:size-3.5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                    className="grid size-4 place-items-center rounded text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors max-lg:size-9"
+                    aria-label={t("editAlgorithm")}
+                  >
+                    <Pencil className="size-2.5 max-lg:size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("editAlgorithm")}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                    className="grid size-4 place-items-center rounded text-ink-3 hover:text-dnf hover:bg-dnf/5 transition-colors max-lg:size-9"
+                    aria-label={t("deleteAlgorithm")}
+                  >
+                    <Trash2 className="size-2.5 max-lg:size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{t("deleteAlgorithm")}</TooltipContent>
+              </Tooltip>
             </span>
           )}
         </div>
@@ -138,7 +149,7 @@ export function SortableAlgorithmItem({
       {isPrimary && (
         <div className="absolute top-2 right-2">
           <span className="inline-flex items-center gap-0.5 rounded-full bg-ink px-1.5 py-0.5 text-[0.6rem] font-semibold text-surface leading-none">
-            primary
+            {t("primary")}
           </span>
         </div>
       )}
@@ -157,6 +168,7 @@ export function AlgorithmSourceLink({
   alg: Algorithm;
   subsetId: string;
 }) {
+  const { t } = useTranslation("algorithms");
   const sourceUrl =
     alg.attributionUrl ||
     (alg.source?.startsWith("http")
@@ -175,7 +187,7 @@ export function AlgorithmSourceLink({
     return (
       <span className="flex items-center gap-1">
         <ExternalLink className="size-2.5" />
-        {alg.source ?? "Unknown source"}
+        {alg.source ?? t("unknownSource")}
       </span>
     );
   }
@@ -189,7 +201,7 @@ export function AlgorithmSourceLink({
       onClick={(e) => e.stopPropagation()}
     >
       <ExternalLink className="size-2.5" />
-      {alg.source ?? "Source"}
+      {alg.source ?? t("source")}
     </a>
   );
 }

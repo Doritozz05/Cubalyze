@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { ChevronDown, ChevronUp, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 import { useDraggable, type SnapRect } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { dockZoneState } from "@/widgets/dock/dockZoneState";
@@ -80,6 +81,7 @@ export function FloatingWidgetWrapper({
   className,
   defaultPosition = { x: 100, y: 100 },
 }: FloatingWidgetWrapperProps) {
+  const { t } = useTranslation("widgets");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -313,7 +315,7 @@ export function FloatingWidgetWrapper({
                 e.stopPropagation();
                 toggleMinimized();
               }}
-              aria-label={`Expand ${label}`}
+              aria-label={t("wrapper.expandLabel", { label })}
               className="grid size-6 shrink-0 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
             >
               <ChevronUp className="size-3.5" />
@@ -325,7 +327,7 @@ export function FloatingWidgetWrapper({
                 e.stopPropagation();
                 closeWidget();
               }}
-              aria-label={`Close ${label}`}
+              aria-label={t("wrapper.closeLabel", { label })}
               className="grid size-6 shrink-0 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
             >
               <X className="size-3.5" />
@@ -405,7 +407,7 @@ export function FloatingWidgetWrapper({
                   e.stopPropagation();
                   toggleMinimized();
                 }}
-                aria-label="Minimize"
+                aria-label={t("wrapper.minimize")}
                 className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
               >
                 <ChevronDown className="size-3.5" />
@@ -417,8 +419,8 @@ export function FloatingWidgetWrapper({
                   e.stopPropagation();
                   closeWidget();
                 }}
-                aria-label={`Close ${label}`}
-                className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
+              aria-label={t("wrapper.closeLabel", { label })}
+              className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
               >
                 <X className="size-3.5" />
               </button>
@@ -541,7 +543,7 @@ export function FloatingWidgetWrapper({
                 toggleMinimized();
               }}
               className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-              aria-label={minimized ? "Expand" : "Minimize"}
+              aria-label={minimized ? t("wrapper.expand") : t("wrapper.minimize")}
             >
               <ChevronDown
                 className={cn(

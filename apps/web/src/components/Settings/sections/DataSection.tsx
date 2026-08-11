@@ -4,6 +4,9 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
+import type { ParseKeys } from 'i18next';
 import { useStorageStatusStore } from '@/stores/storageStatus';
 import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
@@ -31,7 +34,17 @@ export interface DataSectionProps {
  * - JSON export (full metadata)
  * - Import from csTimer / CubeForge / generic CSV with preview
  */
+const FORMAT_NAME_KEY: Record<string, ParseKeys<'settings'>> = {
+  cstimer: 'data.formatNameCstimer',
+  'cstimer-json': 'data.formatNameCstimer',
+  twistytimer: 'data.formatNameTwisty',
+  'cubeforge-csv': 'data.formatNameCubeforgeCsv',
+  'cubeforge-json': 'data.formatNameCubeforgeJson',
+  generic: 'data.formatNameGeneric',
+};
+
 export const DataSection = memo(function DataSection({ solves, sessionName, onImportSolves, onExportAllJSON }: DataSectionProps) {
+  const { t } = useTranslation('settings');
   const [importOpen, setImportOpen] = useState(false);
   const [importState, setImportState] = useState<'idle' | 'preview' | 'importing' | 'done' | 'error'>('idle');
   // 'category': legacy flow — user picks 2x2/3x3/etc and ALL solves are forced
@@ -86,7 +99,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       const preview = previewImport(content);
 
       if (preview.rowCount === 0 && preview.errorCount > 0) {
-        setImportError('Could not parse any solves from this file. Check the format and try again.');
+        setImportError(t('data.parseError'));
         setImportState('error');
         return;
       }
@@ -96,9 +109,15 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       setImportState('preview');
       setImportError(null);
     } catch (e) {
-      setImportError('Failed to read file: ' + (e instanceof Error ? e.message : String(e)));
+      setImportError(
+        t('data.readError', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
       setImportState('error');
     }
+    // t is stable across renders — only the resolved value changes with locale.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileChange = useCallback(
@@ -142,9 +161,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
         // Full-fidelity path: CubeForge JSON — keep the per-solve puzzleType
         // (and everything else) exactly as exported. Never force a category.
         if (importPreview.format !== 'cubeforge-json') {
-          setImportError(
-            'This file is not a CubeForge JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.',
-          );
+          setImportError(t('data.notJsonError'));
           setImportState('error');
           return;
         }
@@ -166,10 +183,14 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       });
       setImportState('done');
     } catch (e) {
-      setImportError('Import failed: ' + (e instanceof Error ? e.message : String(e)));
+      setImportError(
+        t('data.importError', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
       setImportState('error');
     }
-  }, [importPreview, onImportSolves, importCategory, importMode]);
+  }, [importPreview, onImportSolves, importCategory, importMode, t]);
 
   // ── Export handlers ──────────────────────────────────────────────────
   const handleExportCSV = () => {
@@ -190,7 +211,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     if (!onExportAllJSON || exportingAll) return;
     setExportingAll(true);
     onExportAllJSON()
-      .catch(() => toast.error("Couldn't export all sessions. Try again."))
+      .catch(() => toast.error(i18n.t('toast:exportSessionsFailed')))
       .finally(() => setExportingAll(false));
   }, [onExportAllJSON, exportingAll]);
 
@@ -200,7 +221,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     setExportingExcel(true);
     exportSolvesToXLSX(solves, sessionName ?? 'session')
       .catch(() => {
-        toast.error("Couldn't create the Excel file. Try again.");
+        toast.error(i18n.t('toast:excelExportFailed'));
       })
       .finally(() => setExportingExcel(false));
   };
@@ -214,11 +235,9 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
               <AlertTriangle className="size-4 text-dnf" />
             </div>
             <div className="min-w-0">
-              <p className="text-[0.82rem] font-medium text-ink">Volatile storage detected</p>
+              <p className="text-[0.82rem] font-medium text-ink">{t('data.volatileTitle')}</p>
               <p className="mt-1 text-[0.72rem] text-ink-2 leading-relaxed">
-                This browser could not open persistent storage (OPFS), so the app is running in-memory.
-                <strong> All solves and progress will be lost when you close or reload the page.</strong>{' '}
-                Export your data now and consider using a supported browser (Chrome/Edge/Firefox) or the desktop app.
+                {t('data.volatileHint')}
               </p>
             </div>
           </div>
@@ -228,9 +247,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
             <Download className="size-4 text-ink-2" />
           </div>
-          <p className="text-[0.82rem] text-ink-2">
-            Export your solve data to standard formats or import from csTimer, Twisty Timer, and other cubing apps.
-          </p>
+          <p className="text-[0.82rem] text-ink-2">{t('data.header')}</p>
         </div>
 
         {/* ── Import ─────────────────────────────────────────────────── */}
@@ -238,10 +255,10 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <Upload className="size-4 text-ink-2" />
-              <h4 className="text-[0.85rem] font-medium text-ink">Import solves</h4>
+              <h4 className="text-[0.85rem] font-medium text-ink">{t('data.importSolves')}</h4>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
-              Import from csTimer, Twisty Timer, CubeDesk, or any CSV file.
+              {t('data.importHint')}
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -250,15 +267,17 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
               disabled={!onImportSolves}
               className="rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
             >
-              Import data
+              {t('data.importData')}
             </button>
             <button
               onClick={() => { setImportOpen(true); setImportState('idle'); setImportCategory(null); setImportMode('json'); }}
               disabled={!onImportSolves}
               className="rounded-lg border border-phase-indigo/25 bg-phase-indigo/5 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-phase-indigo/10 hover:border-phase-indigo/40 cursor-pointer"
-              title="Restores a CubeForge JSON export exactly — per-solve puzzle type and all metadata preserved."
             >
-              Import CubeForge JSON <span className="text-phase-indigo text-[0.7rem] font-normal">(no data loss)</span>
+              {t('data.importJson')}{' '}
+              <span className="text-phase-indigo text-[0.7rem] font-normal">
+                {t('data.noDataLoss')}
+              </span>
             </button>
           </div>
         </div>
@@ -268,13 +287,13 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="size-4 text-ink-2" />
-              <h4 className="text-[0.85rem] font-medium text-ink">CubeForge CSV</h4>
+              <h4 className="text-[0.85rem] font-medium text-ink">{t('data.csvTitle')}</h4>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
-              Standard spreadsheet format. Times in seconds, ISO dates. Good for Excel / Google Sheets.
+              {t('data.csvHint')}
             </p>
             {isEmpty && (
-              <p className="mt-1 text-[0.62rem] text-ink-3/60">No solves to export yet.</p>
+              <p className="mt-1 text-[0.62rem] text-ink-3/60">{t('data.noSolves')}</p>
             )}
           </div>
           <button
@@ -282,7 +301,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             disabled={isEmpty}
             className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Export CSV
+            {t('data.exportCsv')}
           </button>
         </div>
 
@@ -291,14 +310,16 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <Brain className="size-4 text-ink-2" />
-              <h4 className="text-[0.85rem] font-medium text-ink">csTimer format</h4>
-              <span className="rounded-full border border-caution/30 bg-caution/10 px-2 py-0.5 text-[0.58rem] font-medium text-caution">Recommended</span>
+              <h4 className="text-[0.85rem] font-medium text-ink">{t('data.cstimerTitle')}</h4>
+              <span className="rounded-full border border-caution/30 bg-caution/10 px-2 py-0.5 text-[0.58rem] font-medium text-caution">
+                {t('data.recommended')}
+              </span>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
-              Semicolon-delimited format natively importable by csTimer, Twisty Timer, and most cubing apps. Times in milliseconds, epoch dates.
+              {t('data.cstimerHint')}
             </p>
             {isEmpty && (
-              <p className="mt-1 text-[0.62rem] text-ink-3/60">No solves to export yet.</p>
+              <p className="mt-1 text-[0.62rem] text-ink-3/60">{t('data.noSolves')}</p>
             )}
           </div>
           <button
@@ -306,7 +327,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             disabled={isEmpty}
             className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Export csTimer
+            {t('data.exportCstimer')}
           </button>
         </div>
 
@@ -315,12 +336,13 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <FileJson className="size-4 text-ink-2" />
-              <h4 className="text-[0.85rem] font-medium text-ink">Export all sessions (JSON)</h4>
-              <span className="rounded-full border border-phase-indigo/30 bg-phase-indigo/10 px-2 py-0.5 text-[0.58rem] font-medium text-phase-indigo">No data loss</span>
+              <h4 className="text-[0.85rem] font-medium text-ink">{t('data.exportAllTitle')}</h4>
+              <span className="rounded-full border border-phase-indigo/30 bg-phase-indigo/10 px-2 py-0.5 text-[0.58rem] font-medium text-phase-indigo">
+                {t('data.noDataLossBadge')}
+              </span>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
-              Exports <strong className="text-ink-2">every session</strong> with all metadata per solve (including puzzle type and smart/manual source).
-              Re-import with “Import CubeForge JSON (no data loss)” to restore all solves into your current session with nothing lost per solve.
+              {t('data.exportAllHint')}
             </p>
           </div>
           <button
@@ -328,7 +350,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             disabled={!onExportAllJSON || exportingAll}
             className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {exportingAll ? 'Exporting…' : 'Export all'}
+            {exportingAll ? t('data.exporting') : t('data.exportAll')}
           </button>
         </div>
 
@@ -337,13 +359,13 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="size-4 text-ink-2" />
-              <h4 className="text-[0.85rem] font-medium text-ink">Excel export</h4>
+              <h4 className="text-[0.85rem] font-medium text-ink">{t('data.excelTitle')}</h4>
             </div>
             <p className="mt-1.5 text-[0.72rem] text-ink-3">
-              Real .xlsx workbook with columns pre-sized for analysis in Excel / Google Sheets. Includes a summary sheet.
+              {t('data.excelHint')}
             </p>
             {isEmpty && (
-              <p className="mt-1 text-[0.62rem] text-ink-3/60">No solves to export yet.</p>
+              <p className="mt-1 text-[0.62rem] text-ink-3/60">{t('data.noSolves')}</p>
             )}
           </div>
           <button
@@ -351,13 +373,13 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
             disabled={isEmpty || exportingExcel}
             className="shrink-0 rounded-lg border border-line bg-surface-2/50 max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {exportingExcel ? 'Exporting…' : 'Export Excel'}
+            {exportingExcel ? t('data.exporting') : t('data.exportExcel')}
           </button>
         </div>
 
         <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
           <span className="text-[0.65rem] text-ink-2 leading-relaxed">
-            Exports include time, penalty, scramble, method, date, and notes. Use <strong>csTimer format</strong> for maximum compatibility — it works with csTimer, Twisty Timer, CubeDesk, and most cubing apps.
+            {t('data.footer')}
           </span>
         </div>
       </div>
@@ -366,7 +388,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       <Dialog open={importOpen} onOpenChange={(open) => { if (!open) { setImportOpen(false); if (importState === 'done') window.location.reload(); } }}>
         <DialogContent className={`sm:max-w-lg overflow-hidden p-0 gap-0 ${TOUCH_FULL_BLEED} max-lg:pb-safe`} showCloseButton={false}>
           <DialogHeader className="sr-only">
-            <DialogTitle>Import solves</DialogTitle>
+            <DialogTitle>{t('data.importSolves')}</DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col max-h-[75vh]">
@@ -377,7 +399,15 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                   {importState === 'done' ? <Check className="size-3.5" /> : importState === 'importing' ? <Spinner size="xs" /> : <Upload className="size-3.5" />}
                 </div>
                 <span className="text-sm font-medium text-ink">
-                  {importState === 'idle' ? 'Import solves' : importState === 'preview' ? 'Preview import' : importState === 'importing' ? 'Importing...' : importState === 'done' ? 'Import complete' : 'Import failed'}
+                  {importState === 'idle'
+                    ? t('data.importSolves')
+                    : importState === 'preview'
+                      ? t('data.previewImport')
+                      : importState === 'importing'
+                        ? t('data.importing')
+                        : importState === 'done'
+                          ? t('data.importComplete')
+                          : t('data.importFailed')}
                 </span>
               </div>
               <button
@@ -399,11 +429,13 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         <Check className="mt-0.5 size-4 shrink-0 text-phase-indigo" />
                         <div>
                           <p className="text-[0.72rem] font-medium text-ink flex items-center gap-2">
-                            CubeForge JSON <span className="rounded-full border border-phase-indigo/30 bg-phase-indigo/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-phase-indigo">no data loss</span>
+                            {t('data.importJson')}{' '}
+                            <span className="rounded-full border border-phase-indigo/30 bg-phase-indigo/10 px-1.5 py-0.5 text-[0.58rem] font-medium text-phase-indigo">
+                              {t('data.noDataLossBadge')}
+                            </span>
                           </p>
                           <p className="mt-0.5 text-[0.62rem] text-ink-3 leading-relaxed">
-                            Every solve keeps its original puzzle type (2x2, 3x3, …), method, notes, source and timestamp —
-                            exactly as exported. No category selection needed.
+                            {t('data.jsonBadgeNote')}
                           </p>
                         </div>
                       </div>
@@ -412,7 +444,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         className="flex w-fit items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink cursor-pointer"
                       >
                         <ArrowLeft className="size-3" />
-                        Use category import instead
+                        {t('data.useCategoryImport')}
                       </button>
 
                       <div
@@ -432,10 +464,10 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         </div>
                         <div className="text-center">
                           <p className="text-[0.78rem] font-medium text-ink">
-                            Drop your CubeForge JSON here or click to browse
+                            {t('data.dropJson')}
                           </p>
                           <p className="mt-1 text-[0.65rem] text-ink-3">
-                            Files exported with “Export all sessions (JSON)”
+                            {t('data.dropJsonHint')}
                           </p>
                         </div>
                         <input
@@ -455,8 +487,8 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                           <Grid3x3 className="size-4 text-ink-2" />
                         </div>
                         <div>
-                          <p className="text-[0.8rem] font-medium text-ink">Choose the puzzle category</p>
-                          <p className="text-[0.62rem] text-ink-3">Solves will be saved into this category.</p>
+                          <p className="text-[0.8rem] font-medium text-ink">{t('data.chooseCategory')}</p>
+                          <p className="text-[0.62rem] text-ink-3">{t('data.chooseCategoryHint')}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -478,7 +510,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         <div className="flex min-w-0 items-center gap-2">
                           <Grid3x3 className="size-3.5 shrink-0 text-ink-2" />
                           <p className="truncate text-[0.7rem] text-ink">
-                            Importing into <strong className="text-ink font-semibold">{importCategory}</strong>
+                            {t('data.importingInto', { category: importCategory })}
                           </p>
                         </div>
                         <button
@@ -486,7 +518,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                           className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink cursor-pointer"
                         >
                           <ArrowLeft className="size-3" />
-                          Change
+                          {t('data.change')}
                         </button>
                       </div>
 
@@ -507,10 +539,10 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         </div>
                         <div className="text-center">
                           <p className="text-[0.78rem] font-medium text-ink">
-                            Drop your file here or click to browse
+                            {t('data.dropFile')}
                           </p>
                           <p className="mt-1 text-[0.65rem] text-ink-3">
-                            csTimer CSV, CubeForge CSV/JSON, Twisty Timer, or any CSV
+                            {t('data.dropFileHint')}
                           </p>
                         </div>
                         <input
@@ -525,11 +557,14 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                       <div className="flex items-center gap-3 rounded-lg border border-line/30 bg-surface-2/30 p-3">
                         <FileText className="size-3.5 text-ink-3/50 shrink-0" />
                         <div className="text-[0.62rem] text-ink-3 leading-relaxed">
-                          <strong>csTimer format:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;333&quot;;&quot;Normal&quot;;&quot;12217&quot;;&quot;1620000000&quot;;&quot;R U R'&quot;;&quot;0&quot;;&quot;&quot;</code>
+                          <strong>{t('data.formatCstimer')}</strong>{' '}
+                          <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;333&quot;;&quot;Normal&quot;;&quot;12217&quot;;&quot;1620000000&quot;;&quot;R U R'&quot;;&quot;0&quot;;&quot;&quot;</code>
                           <br />
-                          <strong>Newer csTimer:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">No.;Time;Comment;Scramble;Date;P.1</code>
+                          <strong>{t('data.formatNewerCstimer')}</strong>{' '}
+                          <code className="text-[0.58rem] bg-ink/5 px-1 rounded">No.;Time;Comment;Scramble;Date;P.1</code>
                           <br />
-                          <strong>Twisty Timer:</strong> <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;54.03&quot;;&quot;R U R'&quot;;&quot;2025-01-08T19:50:06+01:00&quot;</code>
+                          <strong>{t('data.formatTwisty')}</strong>{' '}
+                          <code className="text-[0.58rem] bg-ink/5 px-1 rounded">&quot;54.03&quot;;&quot;R U R'&quot;;&quot;2025-01-08T19:50:06+01:00&quot;</code>
                         </div>
                       </div>
                     </>
@@ -543,11 +578,19 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                     <Check className="size-4 text-ink-2 shrink-0" />
                     <div>
                       <p className="text-[0.72rem] font-medium text-ink">
-                        Detected: {importPreview.format === 'cstimer' || importPreview.format === 'cstimer-json' ? 'csTimer' : importPreview.format === 'twistytimer' ? 'Twisty Timer' : importPreview.format === 'cubeforge-csv' ? 'CubeForge CSV' : importPreview.format === 'cubeforge-json' ? 'CubeForge JSON' : 'Generic CSV'}
-                        {importCategory && <span className="text-ink-2"> · into <strong>{importCategory}</strong></span>}
+                        {t('data.detected', {
+                          format: t(FORMAT_NAME_KEY[importPreview.format]),
+                        })}
+                        {importCategory && (
+                          <span className="text-ink-2">
+                            {t('data.into', { category: importCategory })}
+                          </span>
+                        )}
                       </p>
                       <p className="text-[0.62rem] text-ink-3 mt-0.5">
-                        {importPreview.rowCount} solve{importPreview.rowCount !== 1 ? 's' : ''} found{importPreview.errorCount > 0 ? ` · ${importPreview.errorCount} error${importPreview.errorCount !== 1 ? 's' : ''}` : ''}
+                        {t('data.solvesFound', { count: importPreview.rowCount })}
+                        {importPreview.errorCount > 0 &&
+                          t('data.errorsFound', { count: importPreview.errorCount })}
                       </p>
                     </div>
                   </div>
@@ -558,11 +601,11 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                       <table className="w-full text-left text-[0.65rem]">
                         <thead>
                           <tr className="border-b border-line bg-surface-2">
-                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Time</th>
-                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Penalty</th>
-                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Scramble</th>
-                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Date</th>
-                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">Note</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">{t('data.colTime')}</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">{t('data.colPenalty')}</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">{t('data.colScramble')}</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">{t('data.colDate')}</th>
+                            <th className="px-3 py-2 font-medium text-ink-2 whitespace-nowrap">{t('data.colNote')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -591,7 +634,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                       onClick={() => { setImportState('idle'); setImportPreview(null); }}
                       className="rounded-md border border-line px-3 py-1.5 text-[0.68rem] text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                     >
-                      Cancel
+                      {t('data.cancel')}
                     </button>
                     <button
                       onClick={() => void handleConfirmImport()}
@@ -599,15 +642,18 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                       className="rounded-md bg-ink px-4 py-1.5 text-[0.68rem] font-medium text-surface hover:bg-ink/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       {importMode === 'json'
-                        ? `Import ${importPreview.rowCount} solves (no data loss)`
-                        : `Import ${importPreview.rowCount} solves${importCategory ? ` into ${importCategory}` : ''}`}
+                        ? t('data.importCountJson', { count: importPreview.rowCount })
+                        : t('data.importCountInto', {
+                            count: importPreview.rowCount,
+                            category: importCategory ?? '',
+                          })}
                     </button>
                   </div>
                 </div>
               )}
 
               {importState === 'importing' && (
-                <Spinner variant="centered" size="md" label="Importing solves..." />
+                <Spinner variant="centered" size="md" label={t('data.importingLabel')} />
               )}
 
               {importState === 'done' && importResult && (
@@ -617,11 +663,11 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                   </div>
                   <div className="text-center">
                     <p className="text-[0.85rem] font-semibold text-ink">
-                      {importResult.imported} solve{importResult.imported !== 1 ? 's' : ''} imported
+                      {t('data.importedCount', { count: importResult.imported })}
                     </p>
                     {importResult.errors > 0 && (
                       <p className="text-[0.65rem] text-ink-3 mt-1">
-                        {importResult.errors} line{importResult.errors !== 1 ? 's' : ''} skipped due to errors
+                        {t('data.skippedCount', { count: importResult.errors })}
                       </p>
                     )}
                   </div>
@@ -629,7 +675,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                     onClick={() => setImportOpen(false)}
                     className="rounded-lg border border-line px-4 py-2 text-[0.72rem] font-medium text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                   >
-                    Done
+                    {t('data.done')}
                   </button>
                 </div>
               )}
@@ -640,14 +686,14 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                     <AlertTriangle className="size-6 text-dnf" />
                   </div>
                   <div className="text-center max-w-xs">
-                    <p className="text-[0.82rem] font-semibold text-ink">Import failed</p>
+                    <p className="text-[0.82rem] font-semibold text-ink">{t('data.importFailed')}</p>
                     <p className="text-[0.65rem] text-ink-3 mt-1">{importError}</p>
                   </div>
                   <button
                     onClick={() => { setImportState('idle'); setImportError(null); }}
                     className="rounded-lg border border-line px-4 py-2 text-[0.72rem] font-medium text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                   >
-                    Try again
+                    {t('data.tryAgain')}
                   </button>
                 </div>
               )}

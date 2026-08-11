@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -51,6 +52,7 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
   weeks = 12,
   className,
 }: ActivityHeatmapProps) {
+  const { t } = useTranslation("insights");
   const { grid, max } = useMemo(() => {
     const total = weeks * 7;
     const slice = counts.slice(-total);
@@ -82,7 +84,9 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
                     />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-[0.55rem]">
-                    {count > 0 ? `${count} solve${count > 1 ? "s" : ""}` : "No solves"}
+                    {count > 0
+                      ? t("common.solvesCount", { count })
+                      : t("common.noSolves")}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -91,13 +95,13 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
         ))}
       </div>
       <div className="flex items-center justify-between text-[0.58rem] text-ink-3">
-        <span>Less</span>
+        <span>{t("analysis.activityLess")}</span>
         <div className="flex items-center gap-[3px]">
           {INTENSITY_BG.map((bg, i) => (
             <div key={`${bg}-${i}`} className={cn("size-[10px] rounded-[2px]", bg)} />
           ))}
         </div>
-        <span>More</span>
+        <span>{t("analysis.activityMore")}</span>
       </div>
     </div>
   );

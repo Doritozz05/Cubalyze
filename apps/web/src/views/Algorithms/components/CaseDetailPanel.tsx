@@ -2,6 +2,8 @@
 
 import { memo, useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import {
   X,
   ChevronLeft,
@@ -9,6 +11,7 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DPanel } from "./Case3DPanel";
@@ -63,6 +66,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   variant = "panel",
 }: CaseDetailPanelProps) {
   // ── Algorithms from hook (seed + custom, ordered) ──────────────────
+  const { t } = useTranslation("algorithms");
   const { algorithms, primaryAlgorithm } = useCaseAlgorithms(caseData.id);
 
   // ── Algorithm editor state ──────────────────────────────────────────
@@ -135,7 +139,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
   const handleDeleteAlgorithm = useCallback((alg: Algorithm) => {
     algorithmStore.getState().removeCustomAlgorithm(alg.id);
     setSelectedAlgId((prev) => (prev === alg.id ? null : prev));
-    toast.success("Algorithm removed", {
+    toast.success(i18n.t("toast:algorithmRemoved"), {
       description: `${alg.moves.slice(0, 4).join(" ")}${alg.moves.length > 4 ? " …" : ""}`,
     });
   }, []);
@@ -165,10 +169,10 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
               <button
                 onClick={onClose}
                 className="flex h-10 shrink-0 items-center gap-1 rounded-lg px-2 -ml-2 text-[0.72rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors touch-manipulation"
-                aria-label="Back to cases"
+                aria-label={t("backToCases")}
               >
                 <ChevronLeft className="size-4" />
-                Back
+                {t("back")}
               </button>
             )}
             <span className="nums text-[0.85rem] font-semibold text-ink">
@@ -191,7 +195,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
             <button
               onClick={onClose}
               className="rounded p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-              aria-label="Close"
+              aria-label={t("close")}
             >
               <X className="size-4" />
             </button>
@@ -235,7 +239,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
           {caseData.recognitionPatterns.length > 0 && (
             <div>
               <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2">
-                Recognition
+                {t("recognition")}
               </h4>
               <ul className="space-y-1.5">
                 {caseData.recognitionPatterns.map((pattern, i) => (
@@ -255,7 +259,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
           {caseData.probability && (
             <div>
               <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-1">
-                Probability
+                {t("probability")}
               </h4>
               <p className="text-[0.72rem] text-ink-2">
                 {caseData.probability}
@@ -267,16 +271,20 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">
-                Algorithms ({algorithms.length})
+                {t("algorithmsCount", { count: algorithms.length })}
               </h4>
-              <button
-                onClick={handleOpenAddDialog}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
-                title="Add custom algorithm"
-              >
-                <Plus className="size-3" />
-                Add custom
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleOpenAddDialog}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium text-ink-2 hover:text-ink hover:bg-surface-2 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    {t("addCustom")}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("addCustomAlgorithm")}</TooltipContent>
+              </Tooltip>
             </div>
 
             <DndContext
@@ -316,7 +324,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
               className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-[0.72rem] font-semibold text-surface hover:bg-ink/90 transition-colors w-full justify-center"
             >
               <Play className="size-3.5" />
-              Practice this case
+              {t("practiceCase")}
             </button>
           )}
 
@@ -346,7 +354,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
               className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-ink text-[0.8rem] font-semibold text-surface hover:bg-ink/90 transition-colors touch-manipulation"
             >
               <Play className="size-4" />
-              Practice this case
+              {t("practiceCase")}
             </button>
           </div>
         )}

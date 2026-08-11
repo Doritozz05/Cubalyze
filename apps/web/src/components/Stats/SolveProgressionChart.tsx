@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime, averageOf } from "@/utils/formatTime";
+import { useTranslation } from "react-i18next";
 import type { Solve } from "@/types";
 
 // ─── Data point ─────────────────────────────────────────────────────────────
@@ -115,6 +116,7 @@ export interface SolveProgressionChartProps {
  *  5. PB dots, plus best Ao5 / Ao12 marker dots
  */
 export function SolveProgressionChart({ solves, className }: SolveProgressionChartProps) {
+  const { t } = useTranslation("insights");
   const { data, hasEnoughForAo5, hasEnoughForAo12, hasPbHistory, maxY, yTicks } =
     useMemo(() => {
       // DNF solves are excluded entirely: they don't count as points for the
@@ -197,7 +199,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-ink-3">
-            Solve progression
+            {t("overview.solveProgression")}
           </span>
         </div>
         <div className="flex items-center gap-3 text-[0.6rem] text-ink-3">
@@ -355,6 +357,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ScatterTooltip({ active, payload }: any) {
+  const { t } = useTranslation("insights");
   if (!active || !payload || payload.length === 0) return null;
 
   const point = payload[0]?.payload as SolveProgressionPoint | undefined;
@@ -363,7 +366,7 @@ function ScatterTooltip({ active, payload }: any) {
   return (
     <div className="rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg">
       <div className="flex items-baseline gap-2 text-[0.6rem] text-ink-3">
-        Solve #{point.solveIndex}
+        {t("overview.solveNumber", { number: point.solveIndex })}
         {point.isPb && (
           <span className="rounded bg-chart-pb/15 px-1 py-0.5 text-[0.6rem] font-medium uppercase text-chart-pb">
             PB

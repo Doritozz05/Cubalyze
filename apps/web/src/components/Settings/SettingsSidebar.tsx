@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, LayoutGroup } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { SETTINGS_SECTIONS, type SettingsSection, SIDEBAR_WIDTH } from './settings.constants';
 
@@ -19,13 +20,14 @@ export function SettingsSidebar({
   activeSection,
   onSelectSection,
 }: SettingsSidebarProps) {
+  const { t } = useTranslation('settings');
   return (
     <nav
       className="flex h-full max-lg:hidden shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas px-2 py-3"
       style={{ width: SIDEBAR_WIDTH }}
     >
       <p className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 select-none">
-        Preferences
+        {t('preferences')}
       </p>
 
       <LayoutGroup>
@@ -51,6 +53,7 @@ function SettingsSidebarItem({
   isActive: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation('settings');
   const Icon = section.icon;
 
   return (
@@ -78,7 +81,7 @@ function SettingsSidebarItem({
         )}
       />
 
-      <span className="relative z-10 truncate">{section.label}</span>
+      <span className="relative z-10 truncate">{t(section.labelKey)}</span>
     </button>
   );
 }

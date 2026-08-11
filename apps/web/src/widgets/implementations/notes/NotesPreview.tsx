@@ -1,8 +1,10 @@
 "use client";
 
 import { useNotesStore } from "./notesStore";
+import { useTranslation } from "react-i18next";
 
 export function NotesPreview() {
+  const { t } = useTranslation("widgets");
   const scratchpad = useNotesStore((s) => s.scratchpad);
   const todos = useNotesStore((s) => s.todos);
 
@@ -36,7 +38,7 @@ export function NotesPreview() {
 
       {/* Footer count indicator */}
       <div className="flex items-center justify-between text-[6.5px] font-mono text-ink-3 pt-0.5 border-t border-line/60">
-        <span>Scratchpad</span>
+        <span>{t("panel.notes.scratchpad")}</span>
         <span className="text-ink font-semibold">{todos.filter((t) => t.completed).length}/{todos.length}</span>
       </div>
     </div>

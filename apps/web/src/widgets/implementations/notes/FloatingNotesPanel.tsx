@@ -13,6 +13,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNotesStore } from "./notesStore";
@@ -23,6 +24,7 @@ export interface FloatingNotesPanelProps {
 }
 
 export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps) {
+  const { t } = useTranslation("widgets");
   const [activeTab, setActiveTab] = useState<"scratchpad" | "todos" | "notes">("scratchpad");
 
   const scratchpad = useNotesStore((s) => s.scratchpad);
@@ -56,7 +58,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
   };
 
   const handleCreateNote = () => {
-    const created = addNote(newNoteTitle.trim() || "New Practice Note");
+    const created = addNote(newNoteTitle.trim() || t("panel.notes.newNote"));
     setNewNoteTitle("");
     setSelectedNoteId(created.id);
   };
@@ -72,12 +74,12 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
   return (
     <FloatingWidgetWrapper
       widgetId="notes"
-      label="Notes"
+      label={t("def.notes")}
       icon={Notebook}
       defaultPosition={{ x: 880, y: 440 }}
       headerActions={
         <div className="flex items-center gap-1 rounded bg-surface-2 border border-line px-1.5 py-0.5 text-[0.62rem] text-ink-3 font-mono">
-          <span>{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
+          <span>{t("panel.notes.count", { count: notes.length })}</span>
         </div>
       }
     >
@@ -95,7 +97,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
               )}
             >
               <FileText className="size-3.5" />
-              <span>Scratchpad</span>
+              <span>{t("panel.notes.scratchpad")}</span>
             </button>
 
             <button
@@ -108,7 +110,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
               )}
             >
               <CheckSquare className="size-3.5" />
-              <span>Goals</span>
+              <span>{t("panel.notes.goals")}</span>
               {todos.length > 0 && (
                 <span className="rounded-full bg-surface-2 border border-line px-1.5 text-[0.62rem] text-ink-3 font-mono">
                   {completedCount}/{todos.length}
@@ -126,7 +128,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
               )}
             >
               <Notebook className="size-3.5" />
-              <span>Notebook</span>
+              <span>{t("panel.notes.notebook")}</span>
             </button>
           </div>
         </div>
@@ -137,7 +139,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
           {activeTab === "scratchpad" && (
             <div className="flex size-full flex-col space-y-2 min-h-0">
               <div className="flex items-center justify-between text-[0.68rem] text-ink-3 shrink-0">
-                <span>Quick session scratchpad:</span>
+                <span>{t("panel.notes.scratchpadHint")}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -145,14 +147,14 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                   className="h-6 px-1.5 text-[0.62rem] text-ink-2 hover:text-ink"
                 >
                   {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-                  <span>{copied ? "Copied!" : "Copy"}</span>
+                  <span>{copied ? t("panel.notes.copied") : t("panel.notes.copy")}</span>
                 </Button>
               </div>
 
               <textarea
                 value={scratchpad}
                 onChange={(e) => setScratchpad(e.target.value)}
-                placeholder="Write quick notes, algorithms to review, or session takeaways..."
+                placeholder={t("panel.notes.scratchpadPlaceholder")}
                 className="flex-1 w-full min-h-0 resize-none rounded-lg bg-surface border border-line p-2.5 font-mono text-[0.68rem] text-ink placeholder:text-ink-3/50 focus:border-ink/40 focus:outline-none"
               />
             </div>
@@ -167,7 +169,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                   type="text"
                   value={newTodoText}
                   onChange={(e) => setNewTodoText(e.target.value)}
-                  placeholder="Add goal (e.g., Sub-12 Ao50 in 3x3)..."
+                  placeholder={t("panel.notes.goalPlaceholder")}
                   className="h-8 flex-1 text-[0.68rem]"
                 />
                 <Button type="submit" size="sm" className="h-8 px-3">
@@ -180,7 +182,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                 {todos.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-ink-3">
                     <ListTodo className="size-6 mb-1 opacity-40" />
-                    <p className="text-[0.68rem]">No goals added yet</p>
+                    <p className="text-[0.68rem]">{t("panel.notes.noGoalsYet")}</p>
                   </div>
                 ) : (
                   todos.map((todo) => (
@@ -223,7 +225,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                     onClick={clearCompletedTodos}
                     className="text-[0.62rem] text-ink-3 hover:text-ink transition-colors"
                   >
-                    Clear completed ({completedCount})
+                    {t("panel.notes.clearCompleted", { count: completedCount })}
                   </button>
                 </div>
               )}
@@ -240,7 +242,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                     type="text"
                     value={newNoteTitle}
                     onChange={(e) => setNewNoteTitle(e.target.value)}
-                    placeholder="Title..."
+                    placeholder={t("panel.notes.titlePlaceholder")}
                     className="h-7 text-[0.62rem] px-1.5"
                   />
                   <Button onClick={handleCreateNote} size="sm" className="h-7 w-7 p-0 shrink-0">
@@ -309,13 +311,13 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                     <textarea
                       value={selectedNote.content}
                       onChange={(e) => updateNote(selectedNote.id, { content: e.target.value })}
-                      placeholder="Note content..."
+                      placeholder={t("panel.notes.contentPlaceholder")}
                       className="flex-1 w-full min-h-0 resize-none bg-transparent p-1 font-mono text-[0.68rem] text-ink placeholder:text-ink-3/40 focus:outline-none"
                     />
                   </>
                 ) : (
                   <div className="flex h-full items-center justify-center text-ink-3 text-[0.68rem]">
-                    Select or create a note
+                    {t("panel.notes.selectOrCreate")}
                   </div>
                 )}
               </div>

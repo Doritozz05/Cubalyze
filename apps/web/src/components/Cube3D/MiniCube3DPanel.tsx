@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, Shuffle } from "lucide-react";
@@ -26,6 +27,7 @@ export interface MiniCube3DPanelProps {
  * headless tracker.
  */
 export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramble }: MiniCube3DPanelProps) {
+  const { t } = useTranslation("timer");
   const { canvasRef, containerRef, isReady, initFailed, contextEvicted, recentMoves, calibrate, reset, applyScramble } =
     useCube3D({ maxRecentMoves: 8, scramble, connectSmartCube: true });
 
@@ -56,7 +58,7 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Apply scramble to 3D cube
+              {t("applyScramble3d")}
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -73,7 +75,7 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Reset cube pieces to solved state
+              {t("reset3d")}
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -86,11 +88,11 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
                 className="h-6 gap-1 px-1.5 text-[0.6rem] text-ink-3 hover:text-ink"
               >
                 <RefreshCw className="size-3" />
-                Calibrate
+                {t("calibrate")}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Calibrate gyroscope (white top, green front)
+              {t("calibrateHint")}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -111,13 +113,13 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
         {initFailed || contextEvicted ? (
           <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
             <span className="text-[0.58rem] text-ink-3/70 text-center">
-              3D unavailable — too many 3D views open
+              {t("viewUnavailableShort")}
             </span>
           </div>
         ) : !isReady ? (
           <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
             <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
-              Initializing...
+              {t("init3dShort")}
             </span>
           </div>
         ) : null}
@@ -126,7 +128,7 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
         <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-2 py-1.5">
           {recentMoves.length === 0 ? (
             <p className="text-center text-[0.55rem] text-ink-3/50 italic">
-              Waiting...
+              {t("waitingShort")}
             </p>
           ) : (
             <div className="flex justify-center gap-1.5 font-mono text-[0.65rem] font-semibold text-ink">

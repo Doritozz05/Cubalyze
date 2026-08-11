@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 
 /**
@@ -15,7 +16,7 @@ export interface TrainingBreadcrumbProps {
   onBack: () => void;
   /** Breadcrumb path segments, from method to current view */
   segments: BreadcrumbSegment[];
-  /** Custom label for the back button. Defaults to "Back" */
+  /** Custom label for the back button. Defaults to the localized "Back". */
   backLabel?: string;
 }
 
@@ -31,8 +32,12 @@ export interface TrainingBreadcrumbProps {
 export function TrainingBreadcrumb({
   onBack,
   segments,
-  backLabel = "Back",
+  backLabel,
 }: TrainingBreadcrumbProps) {
+  // Subscribe to language changes so the default label re-renders; the
+  // cross-namespace key must go through the global `i18n.t` (ParseKeys with
+  // a bound namespace rejects "common:back").
+  const { i18n } = useTranslation("training");
   return (
     <div className="flex items-center gap-3">
       <button
@@ -41,7 +46,7 @@ export function TrainingBreadcrumb({
         className="inline-flex items-center gap-1.5 text-[0.68rem] text-ink-3 hover:text-ink transition-colors shrink-0 max-lg:h-10 max-lg:px-2 max-lg:-ml-2 max-lg:rounded-lg max-lg:hover:bg-surface-2"
       >
         <ArrowLeft className="size-3 max-lg:size-4" />
-        {backLabel}
+        {backLabel ?? i18n.t("common:back")}
       </button>
       {segments.map((seg, i) => (
         <span key={i} className="flex items-center gap-3">

@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { announce } from "@/lib/announce";
@@ -32,10 +33,12 @@ import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
 import { generateRandomSetup, EXERCISE_IDS } from "@cubeforge/training";
 import type { SRSGrade } from "@cubeforge/training";
+import type { ParseKeys } from "i18next";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { useTrainingSession } from "@/hooks/useTrainingSession";
 import {
   STAGES,
+  GRADES,
   isStageBefore,
   Shell,
   RecognitionStep,
@@ -55,9 +58,12 @@ import {
    Config
    ─────────────────────────────────────────────────────────────────────── */
 
+// Values are ParseKeys-compatible; the dynamic `current.reason` needs a cast at the call site.
 const REASON_LABEL: Record<string, string> = {
-  overdue: "Overdue", review: "Due", weak: "Weak", new: "New",
+  overdue: "review.reason.overdue", review: "review.reason.due", weak: "review.reason.weak", new: "review.reason.new",
 };
+
+const reasonLabel = (reason: string) => (REASON_LABEL[reason] ?? reason) as ParseKeys<"training">;
 
 const REASON_DOT: Record<string, string> = {
   overdue: "bg-caution", review: "bg-phase-blue", weak: "bg-phase-violet", new: "bg-phase-emerald",
@@ -77,6 +83,7 @@ export interface SRSReviewViewProps {
 }
 
 export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
+  const { t } = useTranslation("training");
   const { ready, loading, error, session, startSession, recordAttempt, grade, skip, updateAttemptReviewGrade } = useSRSQueue();
   const [started, setStarted] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
@@ -200,7 +207,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       setStage("execution");
     } catch (err) {
       console.error("[SRSReview] recognition:", err);
-      setPersistenceError("Could not save recognition result. Please try again.");
+      setPersistenceError(t("review.session.errorRecognition"));
     }
   };
 
@@ -229,7 +236,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       );
     } catch (err) {
       console.error("[SRSReview] recognition miss:", err);
-      setPersistenceError("Could not save recognition result. Please try again.");
+      setPersistenceError(t("review.session.errorRecognition"));
     }
   };
 
@@ -251,10 +258,14 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       });
       reset();
       setStage("grading");
-      announce(correct ? `Correct. ${formatTime(stoppedTime)}.` : "Incorrect. Next: the grading step.");
+      announce(
+        correct
+          ? t("review.session.announceCorrect", { time: formatTime(stoppedTime) })
+          : t("review.session.announceIncorrect"),
+      );
     } catch (err) {
       console.error("[SRSReview] execution:", err);
-      setPersistenceError("Could not save execution result. Please try again.");
+      setPersistenceError(t("review.session.errorExecution"));
     }
   };
 
@@ -262,7 +273,8 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
     setPersistenceError(null);
     try {
       await grade(nextGrade);
-      announce(`Review graded ${nextGrade}.`);
+      const gradeKey = GRADES.find((g) => g.grade === nextGrade)?.labelKey ?? "review.session.gradeAgain";
+      announce(t("review.session.announceGraded", { grade: t(gradeKey) }));
       // Tag the attempt that produced this review with the FSRS grade so
       // attempt history and the SRS schedule stay linked. Best-effort: the
       // grade already saved, so a tag failure must not read as a failed grade.
@@ -273,7 +285,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       }
     } catch (err) {
       console.error("[SRSReview] grade:", err);
-      setPersistenceError("Could not save the review grade. Please try again.");
+      setPersistenceError(t("review.session.errorGrade"));
     }
   };
 
@@ -302,7 +314,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <p className="text-[0.7rem] text-hold">{error}</p>
           <button onClick={onBack} className="rounded-md bg-surface-2 px-3 py-1.5 text-[0.65rem] text-ink">
-            Back to training
+            {t("backToTraining")}
           </button>
         </div>
       </Shell>
@@ -365,7 +377,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
                     : "text-ink-3",
               )}
             >
-              {s.label}
+              {t(s.labelKey)}
             </span>
           </div>
         ))}
@@ -399,9 +411,11 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
               )}
               <p className="text-[0.6rem] text-ink-3 mt-0.5">
                 {methodName(current.methodId)} ·{" "}
-                <span className="capitalize">{REASON_LABEL[current.reason] ?? current.reason}</span>
+                <span className="capitalize">{t(reasonLabel(current.reason))}</span>
                 {current.overdueDays >= 1 && (
-                  <span className="text-caution"> · {Math.floor(current.overdueDays)}d overdue</span>
+                  <span className="text-caution">
+                    {" "}· {t("review.session.overdueDays", { count: Math.floor(current.overdueDays) })}
+                  </span>
                 )}
               </p>
             </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import type { Profile } from "@cubeforge/database";
@@ -264,6 +266,7 @@ export function MainLayout({
   // Pin global DMZ grabbing hand cursor while resizing
   const isResizing = isResizingWidth || isResizingHeight;
   useGlobalDragCursor(isResizing);
+  const { t } = useTranslation("shell");
 
   return (
     <div
@@ -353,48 +356,56 @@ export function MainLayout({
             >
               {/* Drag handle on left border (Desktop only: width resize) */}
               {rightVisible && !isTouch && (
-                <div
-                  onPointerDown={handleWidthResizeStart}
-                  onPointerMove={handleWidthResizeMove}
-                  onPointerUp={handleWidthResizeEnd}
-                  onPointerCancel={handleWidthResizeEnd}
-                  onDoubleClick={handleWidthResizeReset}
-                  className={cn(
-                    "absolute left-0 top-0 bottom-0 z-20 w-3 -ml-1.5 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
-                    isResizingWidth && "cursor-grabbing"
-                  )}
-                  title="Drag to resize width (Double-click to reset)"
-                >
-                  <div
-                    className={cn(
-                      "h-10 w-1 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:w-1.5",
-                      isResizingWidth && "bg-ink w-1.5 h-16"
-                    )}
-                  />
-                </div>
+                <Tooltip delayDuration={500}>
+                  <TooltipTrigger asChild>
+                    <div
+                      onPointerDown={handleWidthResizeStart}
+                      onPointerMove={handleWidthResizeMove}
+                      onPointerUp={handleWidthResizeEnd}
+                      onPointerCancel={handleWidthResizeEnd}
+                      onDoubleClick={handleWidthResizeReset}
+                      className={cn(
+                        "absolute left-0 top-0 bottom-0 z-20 w-3 -ml-1.5 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
+                        isResizingWidth && "cursor-grabbing"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "h-10 w-1 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:w-1.5",
+                          isResizingWidth && "bg-ink w-1.5 h-16"
+                        )}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">{t("resizeWidth")}</TooltipContent>
+                </Tooltip>
               )}
 
               {/* Drag handle on top border (Touch/Mobile only: height resize & shrink/close) */}
               {rightVisible && isTouch && (
-                <div
-                  onPointerDown={handleHeightResizeStart}
-                  onPointerMove={handleHeightResizeMove}
-                  onPointerUp={handleHeightResizeEnd}
-                  onPointerCancel={handleHeightResizeEnd}
-                  onDoubleClick={handleHeightResizeReset}
-                  className={cn(
-                    "absolute top-0 left-0 right-0 z-20 h-6 -mt-3 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
-                    isResizingHeight && "cursor-grabbing"
-                  )}
-                  title="Drag to resize or close (Double-click to reset)"
-                >
-                  <div
-                    className={cn(
-                      "h-1.5 w-12 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:h-2",
-                      isResizingHeight && "bg-ink h-2 w-16"
-                    )}
-                  />
-                </div>
+                <Tooltip delayDuration={500}>
+                  <TooltipTrigger asChild>
+                    <div
+                      onPointerDown={handleHeightResizeStart}
+                      onPointerMove={handleHeightResizeMove}
+                      onPointerUp={handleHeightResizeEnd}
+                      onPointerCancel={handleHeightResizeEnd}
+                      onDoubleClick={handleHeightResizeReset}
+                      className={cn(
+                        "absolute top-0 left-0 right-0 z-20 h-6 -mt-3 cursor-grab active:cursor-grabbing touch-none select-none flex items-center justify-center group",
+                        isResizingHeight && "cursor-grabbing"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "h-1.5 w-12 rounded-full transition-all duration-150 bg-line-2 group-hover:bg-ink-2 group-hover:h-2",
+                          isResizingHeight && "bg-ink h-2 w-16"
+                        )}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{t("resizeHeight")}</TooltipContent>
+                </Tooltip>
               )}
 
               <div className={cn("h-full min-h-0 w-full overflow-hidden", INNER_PADDING)}>

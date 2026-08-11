@@ -4,7 +4,13 @@
  * Only `{ code, name }` pairs are stored — the UI renders a vector flag
  * (bundled SVG, via `country-flag-icons`) with the full name in a tooltip.
  * An empty country value means "not set" and renders no badge.
+ *
+ * Localization: `countryName()` resolves the display name with
+ * `Intl.DisplayNames` in the active i18n language (tanda 13), so the 253 EN
+ * names below act only as a fallback for codes the platform can't resolve.
  */
+
+import i18n from "@/i18n";
 
 export interface Country {
   code: string;
@@ -269,9 +275,35 @@ const COUNTRY_MAP: Record<string, Country> = Object.fromEntries(
   COUNTRIES.map((c) => [c.code, c]),
 );
 
-/** Country display name for a code (falls back to the code itself). */
+/** `Intl.DisplayNames` availability (guarded for very old engines / non-DOM). */
+const hasDisplayNames =
+  typeof Intl !== "undefined" && "DisplayNames" in Intl;
+
+/** Memoized `Intl.DisplayNames` per language — 253 countries for free. */
+const regionNamesCache = new Map<string, Intl.DisplayNames>();
+
+function regionNamesFor(lng: string): Intl.DisplayNames {
+  let names = regionNamesCache.get(lng);
+  if (!names) {
+    names = new Intl.DisplayNames([lng], { type: "region" });
+    regionNamesCache.set(lng, names);
+  }
+  return names;
+}
+
+/**
+ * Country display name for a code, localized to the active i18n language
+ * (`Intl.DisplayNames`). Falls back to the bundled EN name and then to the
+ * code itself when the platform can't resolve it (e.g. non-standard codes).
+ */
 export function countryName(code: string): string {
-  return COUNTRY_MAP[code]?.name ?? '';
+  const fallback = COUNTRY_MAP[code]?.name ?? code;
+  if (!code || !hasDisplayNames) return fallback;
+  try {
+    return regionNamesFor(i18n.language).of(code) || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 /** True when the code exists in the country list. */

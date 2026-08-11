@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import confetti from "canvas-confetti";
 import { Trophy, X, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -31,18 +32,26 @@ export function PbCelebrationBanner({
   onClose,
   className,
 }: PbCelebrationBannerProps) {
+  const { t } = useTranslation("timer");
   const [visible, setVisible] = useState(true);
 
   // Announce the new PB to screen readers (the banner itself is visual/transient).
   useAnnounce(
     types.length > 0
-      ? `New personal best. ${
-          types.includes("Single") && singleTime != null ? `Single ${formatTime(singleTime)}.` : ""
-        } ${
-          types.includes("Ao5") && ao5Time != null ? `Average of 5 ${formatTime(ao5Time)}.` : ""
-        } ${
-          types.includes("Ao12") && ao12Time != null ? `Average of 12 ${formatTime(ao12Time)}.` : ""
-        }`
+      ? [
+          t("pbAnnounce"),
+          types.includes("Single") && singleTime != null
+            ? t("pbAnnounceSingle", { time: formatTime(singleTime) })
+            : "",
+          types.includes("Ao5") && ao5Time != null
+            ? t("pbAnnounceAo5", { time: formatTime(ao5Time) })
+            : "",
+          types.includes("Ao12") && ao12Time != null
+            ? t("pbAnnounceAo12", { time: formatTime(ao12Time) })
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
       : null,
   );
 
@@ -115,7 +124,7 @@ export function PbCelebrationBanner({
             <Trophy className="size-3.5 text-ink-3" />
           </div>
           <span className="text-xs font-semibold text-ink tracking-tight">
-            New Personal Best
+            {t("newPersonalBest")}
           </span>
         </div>
 
@@ -129,7 +138,7 @@ export function PbCelebrationBanner({
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
           className="rounded-md p-1 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
-          aria-label="Close celebration banner"
+          aria-label={t("closeCelebration")}
         >
           <X className="size-3.5" />
         </button>

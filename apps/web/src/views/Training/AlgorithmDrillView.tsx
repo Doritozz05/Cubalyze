@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +21,7 @@ import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
@@ -66,17 +68,26 @@ function calculateTps(moves: string[], ms: number): string {
   return ((moves.length / (ms / 1000))).toFixed(1);
 }
 
-const DRILL_MODES: { id: DrillMode; label: string; description: string }[] = [
-  { id: "single", label: "Single", description: "Practice one case repeatedly" },
-  { id: "random", label: "Random", description: "Random cases from the subset" },
-  { id: "sequential", label: "Sequential", description: "All cases in order" },
-  { id: "weakness", label: "Weakness", description: "Prioritize your worst cases" },
-];
+const DRILL_MODE_IDS = ["single", "random", "sequential", "weakness"] as const;
 
-/** Face letter → color name for orientation indicator (WCA standard). */
-const FACE_COLOR_NAMES: Record<string, string> = {
-  U: 'White', R: 'Red', F: 'Green', D: 'Yellow', L: 'Orange', B: 'Blue',
-};
+/** Drill mode id → i18n keys (labels + tooltip descriptions). */
+const DRILL_MODE_KEYS = {
+  single: { label: "drill.modes.single.label", description: "drill.modes.single.description" },
+  random: { label: "drill.modes.random.label", description: "drill.modes.random.description" },
+  sequential: { label: "drill.modes.sequential.label", description: "drill.modes.sequential.description" },
+  weakness: { label: "drill.modes.weakness.label", description: "drill.modes.weakness.description" },
+} as const;
+
+/** Face letter → i18n key for the orientation indicator color name (WCA). */
+const FACE_COLOR_KEYS = {
+  U: "drill.faceColors.U",
+  R: "drill.faceColors.R",
+  F: "drill.faceColors.F",
+  D: "drill.faceColors.D",
+  L: "drill.faceColors.L",
+  B: "drill.faceColors.B",
+} as const;
+type FaceKey = keyof typeof FACE_COLOR_KEYS;
 
 /* ──────────────────────────────────────────────────────────────────────────
    Main Component
@@ -93,6 +104,7 @@ export interface AlgorithmDrillViewProps {
 export function AlgorithmDrillView({
   methodId, phaseId: _phaseId, subsetId, onBack, preselectedCaseId,
 }: AlgorithmDrillViewProps) {
+  const { t } = useTranslation("training");
   void _phaseId; // reserved for future: stores attempts with phase context
   // ── Data ─────────────────────────────────────────────────────────────
   const { cases: allCases } = useMemo(() => getSeedData(), []);
@@ -359,8 +371,8 @@ export function AlgorithmDrillView({
   const displaySetup = remapScramble(currentSetup);
 
   // ── Orientation indicator: which color is on U (top) and F (front) ────
-  const topColor = FACE_COLOR_NAMES[orientation.faceMap['U']] ?? '?';
-  const frontColor = FACE_COLOR_NAMES[orientation.faceMap['F']] ?? '?';
+  const topColor = t(FACE_COLOR_KEYS[orientation.faceMap['U'] as FaceKey] ?? "drill.faceColors.U");
+  const frontColor = t(FACE_COLOR_KEYS[orientation.faceMap['F'] as FaceKey] ?? "drill.faceColors.F");
 
   // ── Algorithm text ────────────────────────────────────────────────────
   const algoText = defaultAlgorithm?.moves.join(" ") ?? "";
@@ -376,7 +388,6 @@ export function AlgorithmDrillView({
           drillMode={drillMode}
           onModeChange={handleModeChange}
           masteredCount={masteredCount}
-          totalCount={subsetCases.length}
           onBack={onBack}
           smartCubeConnected={drillSmartCube.smartCubeConnected}
         />
@@ -436,7 +447,7 @@ export function AlgorithmDrillView({
                   <Case3DDiagram caseData={selectedCase} className="w-28 sm:w-36" />
                 ) : (
                   <div className="w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center rounded-lg bg-surface-2">
-                    <span className="text-ink-3/40 text-[0.6rem]">No diagram</span>
+                    <span className="text-ink-3/40 text-[0.6rem]">{t("noDiagram")}</span>
                   </div>
                 )}
               </div>
@@ -456,7 +467,7 @@ export function AlgorithmDrillView({
                     awaitingSolve={hasSmartCube ? drillSmartCube.validation.awaitingSolve : false}
                   />
                 ) : (
-                  <p className="nums text-[0.85rem] text-ink-3/40 italic px-1">Select a case to generate setup</p>
+                  <p className="nums text-[0.85rem] text-ink-3/40 italic px-1">{t("drill.selectCaseToGenerateSetup")}</p>
                 )}
               </div>
             </div>
@@ -465,31 +476,37 @@ export function AlgorithmDrillView({
             <div className="shrink-0 rounded-xl border border-line/60 bg-surface-2/40 p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3">Algorithm</span>
+                  <span className="text-[0.6rem] font-medium uppercase tracking-[0.12em] text-ink-3">{t("drill.algorithm")}</span>
                   {showAlgorithm && (
                     <span className="nums text-[0.65rem] text-ink-2/80 truncate max-w-75">
-                      {algoText || "No algorithm available"}
+                      {algoText || t("drill.noAlgorithm")}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-1.5 text-[0.58rem] text-ink-3 cursor-pointer select-none">
                     <input type="checkbox" checked={revealIfFail} onChange={(e) => setRevealIfFail(e.target.checked)} className="size-3 rounded border-line accent-ink" />
-                    Reveal if fail
+                    {t("drill.revealIfFail")}
                   </label>
-                  <button
-                    onClick={() => setShowAlgorithm((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-3 hover:text-ink hover:bg-line"
-                    title={showAlgorithm ? "Hide algorithm" : "Show algorithm"}
-                  >
-                    {showAlgorithm ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
-                    {showAlgorithm ? "Hide" : "Show"}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setShowAlgorithm((v) => !v)}
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors bg-surface-2 text-ink-3 hover:text-ink hover:bg-line"
+                      >
+                        {showAlgorithm ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                        {showAlgorithm ? t("drill.hide") : t("drill.show")}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {showAlgorithm ? t("drill.hideAlgorithm") : t("drill.showAlgorithm")}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               {!showAlgorithm && (
                 <p className="text-[0.6rem] text-ink-3/40 italic flex items-center gap-1.5 mt-1">
-                  <Lock className="size-3" /> Algorithm hidden — reveal after attempting
+                  <Lock className="size-3" /> {t("drill.algorithmHidden")}
                 </p>
               )}
             </div>
@@ -524,7 +541,7 @@ export function AlgorithmDrillView({
           </div>
 
           {/* Right: Sidebar */}
-          <TouchAside title="Cases & Stats" className="flex min-h-0 flex-col gap-4 lg:w-80 lg:shrink-0 overflow-hidden">
+          <TouchAside title={t("drill.casesAndStats")} className="flex min-h-0 flex-col gap-4 lg:w-80 lg:shrink-0 overflow-hidden">
             {/* Mini 3D Cube Panel — only when smart cube is connected */}
             {hasSmartCube && (
               <MiniCube3DPanel className="shrink-0" />
@@ -558,35 +575,44 @@ export function AlgorithmDrillView({
    ─────────────────────────────────────────────────────────────────────── */
 
 function DrillHeader({
-  methodName, subsetName, drillMode, onModeChange, masteredCount, totalCount, onBack, smartCubeConnected,
+  methodName, subsetName, drillMode, onModeChange, masteredCount, onBack, smartCubeConnected,
 }: {
   methodName: string; subsetName: string; drillMode: DrillMode; onModeChange: (m: DrillMode) => void;
-  masteredCount: number; totalCount: number; onBack: () => void; smartCubeConnected: boolean;
+  masteredCount: number; onBack: () => void; smartCubeConnected: boolean;
 }) {
+  const { t } = useTranslation("training");
   return (
     <header className="flex flex-col gap-2.5 shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
       <div className="flex items-center gap-3">
         <TrainingBreadcrumb onBack={onBack} segments={[
           { label: methodName },
           { label: subsetName },
-          { label: "Drill", isCurrent: true },
+          { label: t("drill.title"), isCurrent: true },
         ]} />
-        <span className="nums text-[0.62rem] text-ink-3 ml-auto">{masteredCount}/{totalCount} mastered</span>
+        <span className="nums text-[0.62rem] text-ink-3 ml-auto">{t("drill.masteredCount", { count: masteredCount })}</span>
         {smartCubeConnected && (
           <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[0.6rem] font-semibold bg-phase-blue text-white">
-            Smart Cube
+            {t("practice.smartCube")}
           </span>
         )}
       </div>
       <div className="flex gap-1">
-        {DRILL_MODES.map((mode) => (
-          <button key={mode.id} onClick={() => onModeChange(mode.id)}
-            className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:min-w-16 max-lg:px-3.5",
-              drillMode === mode.id ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")} title={mode.description}>
-            {mode.label}
-            {drillMode === mode.id && <motion.div layoutId="drill-mode-active" className="absolute inset-0 rounded-md bg-ink -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
-          </button>
-        ))}
+        {DRILL_MODE_IDS.map((id) => {
+          const keys = DRILL_MODE_KEYS[id];
+          return (
+            <Tooltip key={id}>
+              <TooltipTrigger asChild>
+                <button onClick={() => onModeChange(id)}
+                  className={cn("relative rounded-md px-3 py-1.5 text-[0.68rem] font-medium transition-colors max-lg:h-10 max-lg:min-w-16 max-lg:px-3.5",
+                    drillMode === id ? "bg-ink text-surface" : "text-ink-3 hover:text-ink hover:bg-surface-2")}>
+                  {t(keys.label)}
+                  {drillMode === id && <motion.div layoutId="drill-mode-active" className="absolute inset-0 rounded-md bg-ink -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{t(keys.description)}</TooltipContent>
+            </Tooltip>
+          );
+        })}
       </div>
     </header>
   );
@@ -601,11 +627,12 @@ type ProgressHelper = (id: string) => { mastery: number; bestTimeMs: number; att
 function CaseSelectorPanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
   cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="p-3 flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between mb-2 px-1 shrink-0">
-        <h4 className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-ink-3">Select Case</h4>
-        <span className="nums text-[0.62rem] text-ink-3/70 font-medium">{cases.length} cases</span>
+        <h4 className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-ink-3">{t("drill.selectCase")}</h4>
+        <span className="nums text-[0.62rem] text-ink-3/70 font-medium">{t("drill.casesCount", { count: cases.length })}</span>
       </div>
       <div className="grid grid-cols-2 gap-2 overflow-y-auto p-1 min-h-0 flex-1">
         {cases.map((c) => {
@@ -637,6 +664,7 @@ function CaseSelectorPanel({ cases, selectedCaseId, onSelectCase, getProgress }:
 function RandomModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
   cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
+  const { t } = useTranslation("training");
   const selected = cases.find((c) => c.id === selectedCaseId);
   const progress = selected ? getProgress(selected.id) : null;
   return (
@@ -644,19 +672,21 @@ function RandomModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
       <Shuffle className="size-8 text-ink-3/40" />
       <div className="text-center">
         <p className="text-[0.72rem] font-medium text-ink">{selected?.caseNumber ?? "—"}</p>
-        <p className="text-[0.62rem] text-ink-3">{selected?.name ?? "No case"}</p>
+        <p className="text-[0.62rem] text-ink-3">{selected?.name ?? t("drill.noCase")}</p>
       </div>
       {progress && (
         <div className="flex items-center gap-3 text-[0.62rem] text-ink-3">
-          <span>Mastery: {progress.mastery}%</span><span>Best: {formatTime(progress.bestTimeMs)}</span>
+          <span>{t("drill.masteryLabel", { pct: progress.mastery })}</span><span>{t("drill.bestLabel", { time: formatTime(progress.bestTimeMs) })}</span>
         </div>
       )}
       <button onClick={() => { const idx = Math.floor(Math.random() * cases.length); onSelectCase(cases[idx].id); }}
         className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-4 py-2 text-[0.7rem] font-medium text-ink hover:border-ink/15 hover:bg-surface-2 transition-colors">
-        <SkipForward className="size-3.5" />Next Random Case
+        <SkipForward className="size-3.5" />{t("drill.nextRandomCase")}
       </button>
       <p className="text-[0.58rem] text-ink-3/60 text-center max-w-50">
-        A random case from the {cases.length} {cases.length === 21 ? "PLL" : ""} cases will be selected each time.
+        {/* name carries the trailing space so the ES/EN strings ("…{{count}} {{name}}casos…")
+            render without a double space when name is empty. */}
+        {t("drill.randomCaseHint", { count: cases.length, name: cases.length === 21 ? "PLL " : "" })}
       </p>
     </div>
   );
@@ -665,12 +695,13 @@ function RandomModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
 function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase, getProgress }: {
   cases: AlgorithmCase[]; currentIndex: number; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="p-3 flex flex-col h-full min-h-0">
-      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1 shrink-0">Progress</h4>
+      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1 shrink-0">{t("recognize.progress")}</h4>
       <div className="mb-3 px-1 shrink-0">
         <div className="flex items-center justify-between text-[0.55rem] text-ink-3 mb-1">
-          <span>Case {currentIndex + 1} of {cases.length}</span>
+          <span>{t("drill.caseOf", { current: currentIndex + 1, total: cases.length })}</span>
           <span>{Math.round(((currentIndex + 1) / cases.length) * 100)}%</span>
         </div>
         <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
@@ -704,10 +735,11 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
 function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }: {
   cases: AlgorithmCase[]; selectedCaseId: string | null; onSelectCase: (id: string) => void; getProgress: ProgressHelper;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="p-3 flex flex-col h-full min-h-0">
-      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1 shrink-0">Weakest Cases First</h4>
-      <p className="text-[0.58rem] text-ink-3/60 px-1 mb-2 shrink-0">Prioritized by lowest mastery. Practice your weakest cases to improve overall consistency.</p>
+      <h4 className="text-[0.62rem] font-medium uppercase tracking-[0.12em] text-ink-3 mb-2 px-1 shrink-0">{t("drill.weakestCasesFirst")}</h4>
+      <p className="text-[0.58rem] text-ink-3/60 px-1 mb-2 shrink-0">{t("drill.weakestHint")}</p>
       <div className="space-y-1 overflow-y-auto p-1 min-h-0 flex-1">
         {cases.slice(0, 10).map((c, idx) => {
           const progress = getProgress(c.id);
@@ -734,14 +766,15 @@ function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }:
 function SessionStatsPanel({ totalAttempts, correctCount, streak, avgTime }: {
   totalAttempts: number; correctCount: number; streak: number; avgTime: number;
 }) {
+  const { t } = useTranslation("training");
   const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
   return (
     <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
       <div className="grid grid-cols-2 gap-2">
-        <StatChip icon={Target} label="Accuracy" value={`${accuracy}%`} />
-        <StatChip icon={Flame} label="Streak" value={`${streak}`} />
-        <StatChip icon={Clock} label="Avg time" value={avgTime > 0 ? formatTime(avgTime) : "--"} />
-        <StatChip icon={RotateCcw} label="Attempts" value={`${totalAttempts}`} />
+        <StatChip icon={Target} label={t("drill.accuracy")} value={`${accuracy}%`} />
+        <StatChip icon={Flame} label={t("practice.streak")} value={`${streak}`} />
+        <StatChip icon={Clock} label={t("drill.avgTime")} value={avgTime > 0 ? formatTime(avgTime) : "--"} />
+        <StatChip icon={RotateCcw} label={t("practice.attempts")} value={`${totalAttempts}`} />
       </div>
     </div>
   );

@@ -68,6 +68,13 @@ function applyHtmlLang(lng: string) {
   }
 }
 
+/** Keep the tab title localized (tanda 13; EN static `<title>` is the SEO base). */
+function applyDocumentTitle() {
+  if (typeof document !== "undefined") {
+    document.title = i18n.t("common:appTitle");
+  }
+}
+
 void i18n
   .use(initReactI18next)
   .init({
@@ -83,12 +90,14 @@ void i18n
     react: { useSuspense: false }, // resources are bundled — no Suspense needed
   });
 
-// Initial <html lang> (init does not fire `languageChanged` for the first lng).
+// Initial <html lang> + tab title (init does not fire `languageChanged` for the first lng).
 applyHtmlLang(i18n.language);
+applyDocumentTitle();
 
-// Keep <html lang> in sync on any runtime language change.
+// Keep <html lang> + tab title in sync on any runtime language change.
 i18n.on("languageChanged", (lng) => {
   applyHtmlLang(lng);
+  applyDocumentTitle();
 });
 
 // The store drives i18n: the Settings → General selector calls

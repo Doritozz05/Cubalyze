@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { preferencesStore } from "@cubeforge/state";
 import type { Penalty, PuzzleCategory, SolveMethod } from "@/types";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
@@ -42,7 +43,7 @@ export function useManualSolves(deps: ManualSolvesDeps) {
           : penalty === "+2"
             ? `${(time / 1000).toFixed(2)}s+2`
             : `${(time / 1000).toFixed(2)}s`;
-      toast.success(`Logged: ${label}`);
+      toast.success(i18n.t("toast:solveLogged", { label }));
       resetScramble();
     },
     [addSolve, currentScramble, puzzle, resetScramble, methodPref, scrambleDisplay],

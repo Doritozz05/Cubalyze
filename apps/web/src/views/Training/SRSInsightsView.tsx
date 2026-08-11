@@ -15,11 +15,13 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import type { SRSInsights } from "@cubeforge/training";
+import type { ParseKeys } from "i18next";
 import { TrainingBreadcrumb } from "./components";
 import {
   Select,
@@ -41,11 +43,11 @@ import {
 
 /* ── metadata ─────────────────────────────────────────────────────────── */
 
-const STATE_META: { key: keyof SRSInsights["stateCounts"]; label: string; bar: string }[] = [
-  { key: "new", label: "New", bar: "bg-ink-3" },
-  { key: "learning", label: "Learning", bar: "bg-phase-blue" },
-  { key: "review", label: "Review", bar: "bg-phase-emerald" },
-  { key: "relearning", label: "Relearning", bar: "bg-caution" },
+const STATE_META: { key: keyof SRSInsights["stateCounts"]; labelKey: ParseKeys<"training">; bar: string }[] = [
+  { key: "new", labelKey: "insights.state.new", bar: "bg-ink-3" },
+  { key: "learning", labelKey: "insights.state.learning", bar: "bg-phase-blue" },
+  { key: "review", labelKey: "insights.state.review", bar: "bg-phase-emerald" },
+  { key: "relearning", labelKey: "insights.state.relearning", bar: "bg-caution" },
 ];
 
 const BUCKET_BAR: Record<string, string> = {
@@ -81,6 +83,7 @@ export interface SRSInsightsViewProps {
 }
 
 export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
+  const { t, i18n } = useTranslation("training");
   const { ready, getSRSInsights } = useTrainingProgress();
   const [filter, setFilter] = useState<string>(methodId ?? "all");
   const [insights, setInsights] = useState<SRSInsights | null>(null);
@@ -98,7 +101,7 @@ export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load SRS insights");
+          setError(err instanceof Error ? err.message : t("insights.loadError"));
         }
       })
       .finally(() => {
@@ -107,6 +110,8 @@ export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
     return () => {
       cancelled = true;
     };
+    // t only supplies the fallback error string — no need to reload on change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, getSRSInsights, filter]);
 
   return (
@@ -114,7 +119,7 @@ export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         <TrainingBreadcrumb
           onBack={onBack}
-          segments={[{ label: "Training" }, { label: "SRS Insights", isCurrent: true }]}
+          segments={[{ label: i18n.t("nav:training") }, { label: t("insights.title"), isCurrent: true }]}
         />
 
         {!ready || loading ? (
@@ -126,7 +131,7 @@ export function SRSInsightsView({ methodId, onBack }: SRSInsightsViewProps) {
               onClick={onBack}
               className="rounded-md bg-surface-2 px-3 py-1.5 text-[0.65rem] text-ink"
             >
-              Back to training
+              {t("backToTraining")}
             </button>
           </div>
         ) : insights ? (
@@ -154,18 +159,19 @@ function InsightsBody({
   const maxState = Math.max(1, ...STATE_META.map((s) => insights.stateCounts[s.key]));
   const maxInterval = Math.max(1, ...insights.intervalGrowth.map((g) => g.avgIntervalDays));
   const maxDue = Math.max(1, ...insights.dueProjection.map((d) => d.count));
+  const { t } = useTranslation("training");
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
       {/* Method filter */}
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[0.58rem] text-ink-3">Method</span>
+        <span className="text-[0.58rem] text-ink-3">{t("method")}</span>
         <Select value={filter} onValueChange={onFilter}>
           <SelectTrigger className="h-7 w-40 rounded-md border-line bg-surface px-2 text-[0.65rem] font-medium text-ink">
-            <SelectValue placeholder="All methods" />
+            <SelectValue placeholder={t("allMethods")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all" className="text-[0.68rem]">All methods</SelectItem>
+            <SelectItem value="all" className="text-[0.68rem]">{t("allMethods")}</SelectItem>
             {METHODS.map((m) => (
               <SelectItem key={m.id} value={m.id} className="text-[0.68rem]">{m.name}</SelectItem>
             ))}
@@ -176,22 +182,22 @@ function InsightsBody({
       {insights.totalCases === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-line bg-surface p-10 text-center">
           <BarChart3 className="size-6 text-ink-3/50" />
-          <p className="text-[0.7rem] font-medium text-ink">No cases in the catalog yet</p>
+          <p className="text-[0.7rem] font-medium text-ink">{t("insights.emptyTitle")}</p>
           <p className="text-[0.62rem] text-ink-3">
-            Progress you record through drills, recognition and reviews will show up here.
+            {t("insights.emptyBody")}
           </p>
         </div>
       ) : (
         <>
           {/* Headline stats */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            <StatTile icon={BookOpen} label="Cases" value={String(insights.totalCases)} />
-            <StatTile icon={Brain} label="Reviewed" value={String(insights.reviewed)} />
-            <StatTile icon={Repeat2} label="Reviews" value={String(insights.totalReviews)} />
-            <StatTile icon={Target} label="Mastery" value={`${insights.avgMastery}%`} />
+            <StatTile icon={BookOpen} label={t("insights.statCases")} value={String(insights.totalCases)} />
+            <StatTile icon={Brain} label={t("insights.statReviewed")} value={String(insights.reviewed)} />
+            <StatTile icon={Repeat2} label={t("insights.statReviews")} value={String(insights.totalReviews)} />
+            <StatTile icon={Target} label={t("insights.statMastery")} value={`${insights.avgMastery}%`} />
             <StatTile
               icon={TrendingUp}
-              label="Retention"
+              label={t("insights.statRetention")}
               value={pct(insights.retention.average)}
               tone={retentionTone(insights.retention.average)}
             />
@@ -201,14 +207,14 @@ function InsightsBody({
           <section className="rounded-xl border border-line bg-surface p-4">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="size-3.5 text-ink-2" />
-              <h2 className="text-[0.72rem] font-semibold text-ink">Retention distribution</h2>
+              <h2 className="text-[0.72rem] font-semibold text-ink">{t("insights.retentionTitle")}</h2>
               <span className="nums text-[0.6rem] text-ink-3 ml-auto">
-                avg {pct(insights.retention.average)}
+                {t("insights.avg", { pct: pct(insights.retention.average) })}
               </span>
             </div>
             {insights.retention.buckets.length === 0 ? (
               <p className="text-[0.62rem] text-ink-3">
-                No cases have been reviewed yet — retention appears after your first graded review.
+                {t("insights.retentionEmpty")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -234,12 +240,12 @@ function InsightsBody({
           <section className="rounded-xl border border-line bg-surface p-4">
             <div className="flex items-center gap-2 mb-3">
               <BarChart3 className="size-3.5 text-ink-2" />
-              <h2 className="text-[0.72rem] font-semibold text-ink">Interval growth</h2>
-              <span className="text-[0.58rem] text-ink-3 ml-auto">avg days between reviews</span>
+              <h2 className="text-[0.72rem] font-semibold text-ink">{t("insights.intervalTitle")}</h2>
+              <span className="text-[0.58rem] text-ink-3 ml-auto">{t("insights.avgDaysBetween")}</span>
             </div>
             {insights.intervalGrowth.length === 0 ? (
               <p className="text-[0.62rem] text-ink-3">
-                Grade some reviews to see the spacing effect build up.
+                {t("insights.intervalEmpty")}
               </p>
             ) : (
               <div className="flex items-end gap-1.5 overflow-x-auto pb-1 min-h-28">
@@ -265,12 +271,12 @@ function InsightsBody({
             <section className="rounded-xl border border-line bg-surface p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Brain className="size-3.5 text-ink-2" />
-                <h2 className="text-[0.72rem] font-semibold text-ink">Memory states</h2>
+                <h2 className="text-[0.72rem] font-semibold text-ink">{t("insights.statesTitle")}</h2>
               </div>
               <div className="space-y-2">
                 {STATE_META.map((s) => (
                   <div key={s.key} className="flex items-center gap-2.5">
-                    <span className="w-16 shrink-0 text-[0.6rem] text-ink-2">{s.label}</span>
+                    <span className="w-16 shrink-0 text-[0.6rem] text-ink-2">{t(s.labelKey)}</span>
                     <div className="h-2 flex-1 rounded-full bg-surface-2 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
@@ -290,7 +296,7 @@ function InsightsBody({
             <section className="rounded-xl border border-line bg-surface p-4">
               <div className="flex items-center gap-2 mb-3">
                 <CalendarClock className="size-3.5 text-ink-2" />
-                <h2 className="text-[0.72rem] font-semibold text-ink">Due in</h2>
+                <h2 className="text-[0.72rem] font-semibold text-ink">{t("insights.dueInTitle")}</h2>
               </div>
               <div className="flex items-end gap-2">
                 {insights.dueProjection.map((d) => (
@@ -303,12 +309,12 @@ function InsightsBody({
                       )}
                       style={{ height: `${(d.count / maxDue) * 48 + 4}px` }}
                     />
-                    <span className="text-[0.55rem] text-ink-3">≤{d.withinDays}d</span>
+                    <span className="text-[0.55rem] text-ink-3">{t("insights.dueSuffix", { days: d.withinDays })}</span>
                   </div>
                 ))}
               </div>
               <p className="text-[0.58rem] text-ink-3 mt-3">
-                Lapses and relearning cases count toward the nearest horizon.
+                {t("insights.dueNote")}
               </p>
             </section>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { History, Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -45,6 +46,8 @@ export function MobileSessionSheet({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
+  const { t } = useTranslation("shell");
+  const { t: tCommon } = useTranslation();
 
   const startRename = (s: SessionMeta) => {
     setRenamingId(s.id);
@@ -65,7 +68,7 @@ export function MobileSessionSheet({
           <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
             <DrawerTitle className="text-sm font-semibold text-ink flex items-center gap-2">
               <History className="size-4 text-ink-3" />
-              <span>Sessions</span>
+              <span>{t("sessions")}</span>
             </DrawerTitle>
           </DrawerHeader>
 
@@ -94,7 +97,7 @@ export function MobileSessionSheet({
                       type="button"
                       onClick={commitRename}
                       className="grid size-9 place-items-center rounded-lg bg-surface border border-line text-ink-2 hover:text-ink cursor-pointer"
-                      aria-label="Confirm rename"
+                      aria-label={t("confirmRename")}
                     >
                       <Check className="size-4" />
                     </button>
@@ -102,7 +105,7 @@ export function MobileSessionSheet({
                       type="button"
                       onClick={() => setRenamingId(null)}
                       className="grid size-9 place-items-center rounded-lg bg-surface border border-line text-ink-3 hover:text-ink cursor-pointer"
-                      aria-label="Cancel rename"
+                      aria-label={t("cancelRename")}
                     >
                       <X className="size-4" />
                     </button>
@@ -119,7 +122,7 @@ export function MobileSessionSheet({
                     >
                       <span className="text-sm font-medium text-ink truncate">{s.name}</span>
                       <span className="text-xs text-ink-3 font-mono bg-surface px-2 py-0.5 rounded-full border border-line/50 shrink-0">
-                        {s.solveCount} solves
+                        {t("solveCount", { count: s.solveCount })}
                       </span>
                     </button>
 
@@ -131,7 +134,7 @@ export function MobileSessionSheet({
                           startRename(s);
                         }}
                         className="grid size-8 place-items-center rounded-lg hover:bg-surface text-ink-3 hover:text-ink transition-colors cursor-pointer"
-                        aria-label={`Rename ${s.name}`}
+                        aria-label={t("renameSession", { name: s.name })}
                       >
                         <Pencil className="size-3.5" />
                       </button>
@@ -142,7 +145,7 @@ export function MobileSessionSheet({
                           setDeleteTarget(s);
                         }}
                         className="grid size-8 place-items-center rounded-lg hover:bg-surface text-ink-3 hover:text-dnf transition-colors cursor-pointer"
-                        aria-label={`Delete ${s.name}`}
+                        aria-label={t("deleteSession", { name: s.name })}
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -161,7 +164,7 @@ export function MobileSessionSheet({
               className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-3 text-xs font-semibold text-ink hover:bg-surface-2 transition-all cursor-pointer"
             >
               <Plus className="size-4" />
-              <span>New session</span>
+              <span>{t("newSession")}</span>
             </button>
           </div>
         </DrawerContent>
@@ -174,13 +177,13 @@ export function MobileSessionSheet({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete session?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteSessionMobileTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? All solves inside this session will be permanently deleted.
+              {t("deleteSessionMobileDescription", { name: deleteTarget?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deleteTarget) onDeleteSession?.(deleteTarget.id);
@@ -188,7 +191,7 @@ export function MobileSessionSheet({
               }}
               className="bg-dnf text-surface hover:bg-dnf/90"
             >
-              Delete
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

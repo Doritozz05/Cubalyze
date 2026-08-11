@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { StatChip } from "./";
 import { formatTime } from "@/hooks/usePracticeSession";
@@ -35,15 +36,16 @@ export function CrossStatsPanel({
   stats: CrossStats;
   avgTimeMs: number;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
       <div className="grid grid-cols-2 gap-2">
-        <StatChip icon={Flame} label="Attempts" value={`${stats.total}`} />
-        <StatChip icon={Target} label="Accuracy" value={`${stats.accuracy}%`} />
-        <StatChip icon={Crosshair} label="Best" value={stats.bestMoves > 0 ? `${stats.bestMoves}` : "--"} />
-        <StatChip icon={Clock} label="Avg moves" value={stats.avgMoves > 0 ? `${stats.avgMoves}` : "--"} />
-        <StatChip icon={Clock} label="Avg time" value={avgTimeMs > 0 ? formatTime(avgTimeMs) : "--"} />
-        <StatChip icon={Gauge} label="Efficiency" value={stats.efficiency > 0 ? `${stats.efficiency}%` : "--"} />
+        <StatChip icon={Flame} label={t("practice.attempts")} value={`${stats.total}`} />
+        <StatChip icon={Target} label={t("drill.accuracy")} value={`${stats.accuracy}%`} />
+        <StatChip icon={Crosshair} label={t("practice.best")} value={stats.bestMoves > 0 ? `${stats.bestMoves}` : "--"} />
+        <StatChip icon={Clock} label={t("crossTrainer.avgMoves")} value={stats.avgMoves > 0 ? `${stats.avgMoves}` : "--"} />
+        <StatChip icon={Clock} label={t("drill.avgTime")} value={avgTimeMs > 0 ? formatTime(avgTimeMs) : "--"} />
+        <StatChip icon={Gauge} label={t("statsView.efficiency")} value={stats.efficiency > 0 ? `${stats.efficiency}%` : "--"} />
       </div>
     </div>
   );
@@ -54,37 +56,25 @@ export function CrossStatsPanel({
    ─────────────────────────────────────────────────────────────────────── */
 
 export function CrossTipsPanel() {
+  const { t, i18n } = useTranslation("training");
+  const tipsRaw = (i18n.t as (key: string, options?: object) => unknown)(
+    "training:crossTrainer.tips",
+    { returnObjects: true, defaultValue: [] },
+  );
+  const tips: string[] = Array.isArray(tipsRaw) ? (tipsRaw as string[]) : [];
   return (
     <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
       <div className="flex items-center gap-2 mb-2">
         <Lightbulb className="size-3.5 text-caution" />
-        <h4 className="text-[0.62rem] font-medium text-ink-2">Tips</h4>
+        <h4 className="text-[0.62rem] font-medium text-ink-2">{t("practice.tips")}</h4>
       </div>
       <ul className="space-y-2 text-[0.58rem] text-ink-3/80">
-        <li className="flex gap-2">
-          <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-          Plan your entire cross during inspection — no move counting
-          during execution.
-        </li>
-        <li className="flex gap-2">
-          <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-          World-class crosses are ≤ 6 moves. The theoretical max is 8.
-        </li>
-        <li className="flex gap-2">
-          <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-          Use the replay to study the optimal path and spot missed
-          efficiencies.
-        </li>
-        <li className="flex gap-2">
-          <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-          Toggle the cross highlight to track the 4 target edges
-          visually.
-        </li>
-        <li className="flex gap-2">
-          <span className="text-caution/60 shrink-0 mt-0.5">•</span>
-          Color-neutral (CN) mode finds the best face for each scramble
-          — saves ~0.5s per solve.
-        </li>
+        {tips.map((tip, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="text-caution/60 shrink-0 mt-0.5">•</span>
+            {tip}
+          </li>
+        ))}
       </ul>
     </div>
   );
@@ -107,39 +97,40 @@ export function CrossScrambleInfoPanel({
   lastUserMoves: number | undefined;
   streak: number;
 }) {
+  const { t } = useTranslation("training");
   return (
     <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
       <div className="flex items-center gap-2 mb-2">
         <Crosshair className="size-3.5 text-phase-blue" />
         <h4 className="text-[0.62rem] font-medium text-ink-2">
-          Current scramble
+          {t("crossTrainer.currentScramble")}
         </h4>
       </div>
       <div className="space-y-1 text-[0.6rem]">
         <div className="flex justify-between">
-          <span className="text-ink-3">Mode</span>
+          <span className="text-ink-3">{t("crossTrainer.mode")}</span>
           <span className="nums font-medium text-ink">
-            {cnMode ? "Color-neutral" : `${face} fixed`}
+            {cnMode ? t("crossTrainer.colorNeutral") : t("crossTrainer.faceFixed", { face })}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-ink-3">Solved face</span>
+          <span className="text-ink-3">{t("crossTrainer.solvedFace")}</span>
           <span className="nums font-medium text-ink">{face}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-ink-3">Optimal depth</span>
+          <span className="text-ink-3">{t("crossTrainer.optimalDepth")}</span>
           <span className="nums font-medium text-ink">
             {optimalDepth}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-ink-3">Your last</span>
+          <span className="text-ink-3">{t("crossTrainer.yourLast")}</span>
           <span className="nums font-medium text-ink">
             {lastUserMoves ?? "--"}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-ink-3">Streak</span>
+          <span className="text-ink-3">{t("practice.streak")}</span>
           <span className="nums font-medium text-ink">
             {streak}
           </span>
@@ -154,10 +145,11 @@ export function CrossScrambleInfoPanel({
    ─────────────────────────────────────────────────────────────────────── */
 
 export function RecentAttemptsList({ attempts }: { attempts: CrossAttemptView[] }) {
+  const { t } = useTranslation("training");
   if (attempts.length === 0) {
     return (
       <p className="text-[0.58rem] text-ink-3/40 italic text-center py-4">
-        No attempts yet. Time your cross and enter your move count above.
+        {t("crossTrainer.noAttempts")}
       </p>
     );
   }

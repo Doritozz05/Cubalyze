@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -138,6 +139,7 @@ export function OnboardingTour({
   onBack,
   onSkip,
 }: OnboardingTourProps) {
+  const { t } = useTranslation("onboarding");
   const isTouch = useIsTouch();
   const step = TOUR_STEPS[currentStep];
   const [rect, setRect] = useState<SpotlightRect | null>(null);
@@ -345,6 +347,8 @@ export function OnboardingTour({
 
   if (!step) return null;
 
+  const title = t(step.titleKey);
+  const body = t(step.bodyKey);
   const { style, arrowSide, arrowOffset } = computePlacement(rect, isTouch, vw, vh);
   const titleId = `onboarding-title-${step.id}`;
   const bodyId = `onboarding-body-${step.id}`;
@@ -373,8 +377,8 @@ export function OnboardingTour({
         onClick={(e) => e.stopPropagation()}
       >
         <TourTooltip
-          title={step.title}
-          body={step.body}
+          title={title}
+          body={body}
           stepIndex={currentStep}
           totalSteps={TOUR_STEPS.length}
           isFirst={currentStep === 0}
@@ -391,7 +395,11 @@ export function OnboardingTour({
       </div>
 
       <span aria-live="polite" className="sr-only">
-        Step {currentStep + 1} of {TOUR_STEPS.length}: {step.title}
+        {t("srStepOf", {
+          current: currentStep + 1,
+          total: TOUR_STEPS.length,
+          title,
+        })}
       </span>
     </motion.div>
   );

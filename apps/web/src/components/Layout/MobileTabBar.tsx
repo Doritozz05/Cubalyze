@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Timer, Target, BookOpen, BarChart3, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
+import type { ParseKeys } from "i18next";
 import type { ViewId } from "./sidebar.constants";
 
 /**
@@ -27,15 +29,16 @@ interface MobileTabBarProps {
 
 type TabItem = {
   id: ViewId;
-  label: string;
+  /** i18n key in the `nav` namespace — translate at render time. */
+  labelKey: ParseKeys<"nav">;
   icon: React.ElementType;
 };
 
 const MAIN_TABS: TabItem[] = [
-  { id: "training", label: "Training", icon: Target },
-  { id: "algorithms", label: "Algorithms", icon: BookOpen },
-  { id: "timer", label: "Timer", icon: Timer },
-  { id: "insights", label: "Stats", icon: BarChart3 },
+  { id: "training", labelKey: "training", icon: Target },
+  { id: "algorithms", labelKey: "algorithms", icon: BookOpen },
+  { id: "timer", labelKey: "timer", icon: Timer },
+  { id: "insights", labelKey: "stats", icon: BarChart3 },
 ];
 
 export function MobileTabBar({
@@ -45,6 +48,8 @@ export function MobileTabBar({
   mobileMoreOpen = false,
   className,
 }: MobileTabBarProps) {
+  const { t } = useTranslation("nav");
+
   // Determine which of the 5 slots (0..4) is active
   const activeIndex = useMemo(() => {
     if (mobileMoreOpen) return 4;
@@ -54,7 +59,7 @@ export function MobileTabBar({
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label={t("primary")}
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-xl pb-safe shadow-[0_-2px_12px_rgba(0,0,0,0.04)] select-none lg:hidden",
         className,
@@ -75,14 +80,14 @@ export function MobileTabBar({
                 onNavigate(tab.id);
               }}
               aria-current={isActive ? "page" : undefined}
-              aria-label={tab.label}
+              aria-label={t(tab.labelKey)}
               className={cn(
                 "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[0.6rem] font-medium transition-all select-none min-h-11 touch-manipulation outline-none cursor-pointer active:scale-95",
                 isActive ? "text-primary font-semibold" : "text-ink-3 hover:text-ink-2",
               )}
             >
               <Icon className={cn("size-5 transition-transform", isActive && "scale-105")} />
-              <span className="leading-none">{tab.label}</span>
+              <span className="leading-none">{t(tab.labelKey)}</span>
             </button>
           );
         })}
@@ -95,7 +100,7 @@ export function MobileTabBar({
             e.currentTarget.blur();
             onOpenMore?.();
           }}
-          aria-label="More options"
+          aria-label={t("moreOptions")}
           aria-current={activeIndex === 4 ? "page" : undefined}
           className={cn(
             "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[0.6rem] font-medium transition-all select-none min-h-11 touch-manipulation outline-none cursor-pointer active:scale-95",
@@ -103,7 +108,7 @@ export function MobileTabBar({
           )}
         >
           <Menu className={cn("size-5 transition-transform", activeIndex === 4 && "scale-105")} />
-          <span className="leading-none">More</span>
+          <span className="leading-none">{t("more")}</span>
         </button>
       </div>
     </nav>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { METHODS } from "@cubeforge/algorithm-db";
 import { EXERCISE_IDS } from "@cubeforge/training";
@@ -8,6 +9,7 @@ import type { PhaseStatsRecord } from "@cubeforge/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCrossScramble } from "@/hooks/useCrossScramble";
 import { useDrillTimer } from "@/hooks/useDrillTimer";
@@ -457,6 +459,9 @@ export function CrossTrainerView({
     return { accuracy, avgMoves, bestMoves, streak, total: valid.length, efficiency };
   }, [allAttempts]);
 
+  const { t } = useTranslation("training");
+  const modeLabel = cnMode ? t("crossTrainer.cn") : t("crossTrainer.faceCross", { face: cross.face });
+
   const totalMs = cross.replayMoves.length * 600;
   const hasReplay = cross.replayMoves.length > 0;
   const moveDiff =
@@ -471,7 +476,7 @@ export function CrossTrainerView({
             onBack={onBack}
             segments={[
               { label: method?.name ?? "?" },
-              { label: `${phaseName} · Trainer`, isCurrent: true },
+              { label: `${phaseName} · ${t("crossTrainer.trainer")}`, isCurrent: true },
             ]}
           />
           <span
@@ -480,16 +485,16 @@ export function CrossTrainerView({
               cnMode ? "bg-phase-purple" : "bg-phase-blue",
             )}
           >
-            {cnMode ? "CN" : `${cross.face}-cross`} · {cross.optimalDepth} opt
+            {modeLabel} · {cross.optimalDepth} {t("crossTrainer.opt")}
           </span>
           <span className="nums text-[0.62rem] text-ink-3 ml-auto">
-            {stats.total} attempts
+            {t("practice.attemptsCount", { count: stats.total })}
           </span>
         </header>
 
         {/* Depth + face + CN selector */}
         <div className="shrink-0 flex flex-wrap items-center gap-2 px-4 sm:px-6 lg:px-8">
-          <span className="text-[0.62rem] text-ink-3 mr-1">Depth:</span>
+          <span className="text-[0.62rem] text-ink-3 mr-1">{t("crossTrainer.depth")}</span>
           {DEPTHS.map((d) => (
             <button
               key={d}
@@ -510,7 +515,7 @@ export function CrossTrainerView({
             </button>
           ))}
           <span className="mx-1 h-4 w-px bg-line" />
-          <span className="text-[0.62rem] text-ink-3 mr-1">Face:</span>
+          <span className="text-[0.62rem] text-ink-3 mr-1">{t("crossTrainer.face")}</span>
           {FACES.map((f) => (
             <button
               key={f}
@@ -528,19 +533,23 @@ export function CrossTrainerView({
               {f}
             </button>
           ))}
-          <button
-            onClick={handleCnToggle}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.62rem] font-medium transition-colors",
-              cnMode
-                ? "bg-phase-purple text-white font-semibold"
-                : "text-ink-3 hover:text-ink hover:bg-surface-2",
-            )}
-            title="Color-neutral: picks the best cross face automatically"
-          >
-            <Palette className="size-3" />
-            CN
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleCnToggle}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.62rem] font-medium transition-colors",
+                  cnMode
+                    ? "bg-phase-purple text-white font-semibold"
+                    : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                )}
+              >
+                <Palette className="size-3" />
+                {t("crossTrainer.cn")}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{t("crossTrainer.colorNeutralTitle")}</TooltipContent>
+          </Tooltip>
           <span className="flex-1" />
           <button
             onClick={handleNewScramble}
@@ -548,7 +557,7 @@ export function CrossTrainerView({
             className="inline-flex items-center gap-1.5 rounded-md bg-surface-2 px-3 py-1.5 text-[0.62rem] font-medium text-ink-2 hover:bg-line hover:text-ink transition-colors disabled:opacity-50"
           >
             <Shuffle className="size-3" />
-            New scramble
+            {t("crossTrainer.newScramble")}
           </button>
         </div>
 
@@ -558,7 +567,7 @@ export function CrossTrainerView({
           <div className="flex min-h-0 flex-1 flex-col gap-4 min-w-0">
             <div className="shrink-0 rounded-xl border border-line bg-surface p-4">
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3/60 block mb-1">
-                Scramble · {cnMode ? "CN" : `${cross.face}-cross`} depth {cross.optimalDepth}
+                {t("crossTrainer.scrambleTitle", { mode: modeLabel, depth: cross.optimalDepth })}
               </span>
               <ScrambleDisplay
                 scramble={cross.scramble}
@@ -571,39 +580,43 @@ export function CrossTrainerView({
             <div className="flex-1 min-h-0 rounded-xl border border-line bg-surface relative overflow-hidden flex flex-col">
               <div className="flex items-center justify-between border-b border-line px-3 py-2 shrink-0">
                 <h4 className="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-3">
-                  Cube
+                  {t("crossTrainer.cube")}
                 </h4>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setStickeringOn((v) => !v)}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors",
-                      stickeringOn
-                        ? "bg-phase-blue-500/10 text-phase-blue"
-                        : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                    )}
-                    title="Toggle cross-piece highlight"
-                  >
-                    {stickeringOn ? (
-                      <Eye className="size-3" />
-                    ) : (
-                      <EyeOff className="size-3" />
-                    )}
-                    Cross
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setStickeringOn((v) => !v)}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-medium transition-colors",
+                          stickeringOn
+                            ? "bg-phase-blue-500/10 text-phase-blue"
+                            : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                        )}
+                      >
+                        {stickeringOn ? (
+                          <Eye className="size-3" />
+                        ) : (
+                          <EyeOff className="size-3" />
+                        )}
+                        {t("crossTrainer.cross")}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">{t("crossTrainer.toggleHighlight")}</TooltipContent>
+                  </Tooltip>
                   <button
                     onClick={calibrate}
                     disabled={!isReady}
                     className="rounded-md px-2 py-1 text-[0.6rem] text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors disabled:opacity-30"
                   >
-                    Calibrate
+                    {t("crossTrainer.calibrate")}
                   </button>
                   <button
                     onClick={reset}
                     disabled={!isReady}
                     className="rounded-md px-2 py-1 text-[0.6rem] text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors disabled:opacity-30"
                   >
-                    Reset
+                    {t("crossTrainer.reset")}
                   </button>
                 </div>
               </div>
@@ -618,19 +631,19 @@ export function CrossTrainerView({
                 {initFailed || contextEvicted ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
                     <span className="text-[0.58rem] text-ink-3/70 text-center">
-                      3D unavailable — too many 3D views open
+                      {t("crossTrainer.tooMany3DViews")}
                     </span>
                   </div>
                 ) : !isReady ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
                     <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
-                      Initializing 3D...
+                      {t("crossTrainer.initializing3D")}
                     </span>
                   </div>
                 ) : null}
                 {stickeringOn && isReady && replayState === "idle" && (
                   <div className="absolute bottom-2 left-2 rounded bg-background/85 px-2 py-1 text-[0.55rem] text-ink-3">
-                    Cross edges highlighted
+                    {t("crossTrainer.crossEdgesHighlighted")}
                   </div>
                 )}
               </div>
@@ -643,11 +656,11 @@ export function CrossTrainerView({
             <div className="shrink-0 rounded-xl border border-line bg-surface p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="size-4 text-ink-2" />
-                <span className="text-[0.7rem] font-semibold text-ink">Cross timer</span>
+                <span className="text-[0.7rem] font-semibold text-ink">{t("crossTrainer.crossTimer")}</span>
                 <span className="flex-1" />
                 <span className="text-[0.6rem] text-ink-3">
-                  {timerPhase === "running" && "Solving… press space to stop"}
-                  {timerPhase === "stopped" && stoppedTime > 0 ? `Stopped · ${formatTime(stoppedTime)}` : timerPhase === "stopped" ? "Stopped" : "Press & hold space, release to start"}
+                  {timerPhase === "running" && t("crossTrainer.solvingPressSpace")}
+                  {timerPhase === "stopped" && stoppedTime > 0 ? t("crossTrainer.stoppedTime", { time: formatTime(stoppedTime) }) : timerPhase === "stopped" ? t("crossTrainer.stopped") : t("crossTrainer.pressAndHold")}
                 </span>
               </div>
               <TimerContainer
@@ -666,7 +679,7 @@ export function CrossTrainerView({
               <div className="flex items-center gap-2 mb-2">
                 <Layers className="size-4 text-ink-2" />
                 <span className="text-[0.7rem] font-semibold text-ink">
-                  Optimal solution · {cross.optimalDepth} moves
+                  {t("crossTrainer.optimalSolutionTitle", { count: cross.optimalDepth })}
                 </span>
                 <span className="flex-1" />
                 <button
@@ -678,7 +691,7 @@ export function CrossTrainerView({
                   ) : (
                     <Eye className="size-3" />
                   )}
-                  {showOptimal ? "Hide" : "Reveal"}
+                  {showOptimal ? t("drill.hide") : t("crossTrainer.reveal")}
                 </button>
               </div>
               {showOptimal ? (
@@ -687,7 +700,7 @@ export function CrossTrainerView({
                 </p>
               ) : (
                 <p className="text-[0.6rem] text-ink-3/50 italic">
-                  Solve first, then reveal to compare. Use replay to see it in 3D.
+                  {t("crossTrainer.solveFirstHint")}
                 </p>
               )}
             </div>
@@ -696,10 +709,13 @@ export function CrossTrainerView({
             <div className="shrink-0 rounded-xl border border-line bg-surface p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[0.62rem] font-medium text-ink-2">
-                  Optimal replay
+                  {t("crossTrainer.optimalReplay")}
                 </span>
                 <span className="nums text-[0.6rem] text-ink-3">
-                  Move {Math.max(0, currentMoveIdx + 1)}/{cross.replayMoves.length}
+                  {t("crossTrainer.moveCounter", {
+                    current: Math.max(0, currentMoveIdx + 1),
+                    total: cross.replayMoves.length,
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -707,7 +723,7 @@ export function CrossTrainerView({
                   onClick={handleRestart}
                   disabled={!hasReplay}
                   className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                  aria-label="Restart replay"
+                  aria-label={t("crossTrainer.restartReplay")}
                 >
                   <RotateCcw className="size-3.5" />
                 </button>
@@ -715,7 +731,7 @@ export function CrossTrainerView({
                   onClick={handleStepBackward}
                   disabled={!hasReplay}
                   className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                  aria-label="Step backward"
+                  aria-label={t("crossTrainer.stepBackward")}
                 >
                   <SkipBack className="size-3.5" />
                 </button>
@@ -728,7 +744,7 @@ export function CrossTrainerView({
                       ? "bg-ink text-background hover:bg-ink/80"
                       : "bg-phase-blue-500 text-white hover:bg-phase-blue-600",
                   )}
-                  aria-label={replayState === "playing" ? "Pause" : "Play"}
+                  aria-label={replayState === "playing" ? t("crossTrainer.pause") : t("crossTrainer.play")}
                 >
                   {replayState === "playing" ? (
                     <Pause className="size-4" />
@@ -740,7 +756,7 @@ export function CrossTrainerView({
                   onClick={handleStepForward}
                   disabled={!hasReplay || currentMoveIdx >= cross.replayMoves.length - 1}
                   className="grid size-8 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
-                  aria-label="Step forward"
+                  aria-label={t("crossTrainer.stepForward")}
                 >
                   <SkipForward className="size-3.5" />
                 </button>
@@ -779,13 +795,11 @@ export function CrossTrainerView({
               <div className="flex items-center gap-2">
                 <Crosshair className="size-4 text-ink-2" />
                 <span className="text-[0.7rem] font-semibold text-ink">
-                  Your move count
+                  {t("crossTrainer.yourMoveCount")}
                 </span>
               </div>
               <p className="text-[0.6rem] text-ink-3">
-                Time your cross with the spacebar, then enter how many moves you
-                used. The trainer compares against the optimal {cross.optimalDepth}
-                (within {EFFICIENCY_TOLERANCE} moves counts as correct).
+                {t("crossTrainer.moveCountInstruction", { optimal: cross.optimalDepth, tolerance: EFFICIENCY_TOLERANCE })}
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -807,24 +821,32 @@ export function CrossTrainerView({
                       moveDiff <= EFFICIENCY_TOLERANCE ? "text-ready" : "text-hold",
                     )}>
                     {moveDiff === 0
-                      ? "Optimal! 🎯"
+                      ? t("crossTrainer.optimal")
                       : moveDiff < 0
-                        ? `${Math.abs(moveDiff)} under optimal 🎯`
+                        ? t("crossTrainer.underOptimal", { count: Math.abs(moveDiff) })
                         : moveDiff <= EFFICIENCY_TOLERANCE
-                          ? `${moveDiff} over optimal (ok)`
-                          : `${moveDiff} over optimal`}
+                          ? t("crossTrainer.overOptimalOk", { count: moveDiff })
+                          : t("crossTrainer.overOptimal", { count: moveDiff })}
                   </span>
                 )}
                 <span className="flex-1" />
-                <button
-                  onClick={handleSubmitMoves}
-                  disabled={userMoves === null || timerPhase !== "stopped"}
-                  title={timerPhase !== "stopped" ? "Stop the timer first (press space to start, space to stop)" : undefined}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors disabled:opacity-30"
-                >
-                  <Target className="size-3" />
-                  Submit
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <button
+                        onClick={handleSubmitMoves}
+                        disabled={userMoves === null || timerPhase !== "stopped"}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      >
+                        <Target className="size-3" />
+                        {t("crossTrainer.submit")}
+                      </button>
+                    </span>
+                  </TooltipTrigger>
+                  {timerPhase !== "stopped" ? (
+                    <TooltipContent side="top">{t("crossTrainer.stopTimerFirst")}</TooltipContent>
+                  ) : null}
+                </Tooltip>
               </div>
 
               {/* Recent attempts list */}
@@ -835,7 +857,7 @@ export function CrossTrainerView({
           </div>
 
           {/* Column 3: Stats + tips */}
-          <TouchAside title="Stats">
+          <TouchAside title={t("stats")}>
             <CrossStatsPanel stats={stats} avgTimeMs={dbPhaseStats?.avgTimeMs ?? 0} />
             <CrossTipsPanel />
             <CrossScrambleInfoPanel
