@@ -2,11 +2,13 @@
 
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
+import { useTranslation } from 'react-i18next';
 import { SettingToggle } from '../components/SettingToggle';
 
 import { Shuffle } from 'lucide-react';
 
 export function ScrambleSection() {
+  const { t } = useTranslation('settings');
   const scrambleFollowsCube = useStore(
     preferencesStore,
     (s) => s.scrambleFollowsCube,
@@ -41,29 +43,29 @@ export function ScrambleSection() {
           <Shuffle className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] leading-5 text-ink-2">
-          Configure how scramble sequences are generated, displayed, verified, and aligned with your cube.
+          {t('scramble.header')}
         </p>
       </div>
 
       <SettingToggle
-        title="Show scramble display"
-        description="Display the scramble sequence on the main timer screen and save the scramble with your solves."
+        title={t('scramble.showScramble')}
+        description={t('scramble.showScrambleHint')}
         checked={scrambleDisplay}
         onCheckedChange={setScrambleDisplay}
       />
 
       {scrambleDisplay && (
         <SettingToggle
-          title="Scramble verification"
-          description="When a Smart Cube is paired, require the scramble sequence to be physically applied before the solve can start. Prevents accidental starts while mixing."
+          title={t('scramble.verification')}
+          description={t('scramble.verificationHint')}
           checked={scrambleVerification}
           onCheckedChange={setScrambleVerification}
         />
       )}
 
       <SettingToggle
-        title="Rotate scramble with cube"
-        description="The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
+        title={t('scramble.rotateWithCube')}
+        description={t('scramble.rotateWithCubeHint')}
         checked={scrambleFollowsCube}
         onCheckedChange={setScrambleFollowsCube}
       />

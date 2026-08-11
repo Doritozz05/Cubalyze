@@ -2,18 +2,21 @@
 
 import { BarChart3, Check } from 'lucide-react';
 import { useStore } from 'zustand';
+import { useTranslation } from 'react-i18next';
+import type { ParseKeys } from 'i18next';
 import { preferencesStore } from '@cubeforge/state';
 import { SettingToggle } from '../components/SettingToggle';
 import type { SolveMethod } from '@/types';
 
-const METHODS: { id: SolveMethod; label: string; desc: string }[] = [
-  { id: 'CFOP', label: 'CFOP', desc: 'Cross, F2L, OLL, PLL — the most popular method.' },
-  { id: 'Roux', label: 'Roux', desc: 'Blockbuilding with CMLL and LSE — no rotations.' },
-  { id: 'ZZ', label: 'ZZ', desc: 'Edge orientation first, then rotationless F2L + LL.' },
-  { id: 'Petrus', label: 'Petrus', desc: 'Blockbuilding with early edge orientation.' },
+const METHODS: { id: SolveMethod; label: string; descKey: ParseKeys<'settings'> }[] = [
+  { id: 'CFOP', label: 'CFOP', descKey: 'analysis.methodCfop' },
+  { id: 'Roux', label: 'Roux', descKey: 'analysis.methodRoux' },
+  { id: 'ZZ', label: 'ZZ', descKey: 'analysis.methodZz' },
+  { id: 'Petrus', label: 'Petrus', descKey: 'analysis.methodPetrus' },
 ];
 
 export function AnalysisSection() {
+  const { t } = useTranslation('settings');
   const method = useStore(preferencesStore, (s) => s.method);
   const setMethod = useStore(preferencesStore, (s) => s.setMethod);
   const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
@@ -26,21 +29,20 @@ export function AnalysisSection() {
           <BarChart3 className="size-4 text-ink-2" />
         </div>
         <p className="text-[0.82rem] leading-5 text-ink-2">
-          Select your solving method. Phase detection and metrics will adapt
-          automatically. Analysis runs when a Smart Cube is connected.
+          {t('analysis.header')}
         </p>
       </div>
 
       <SettingToggle
-        title="Best & Worst Possible Average (BPA / WPA)"
-        description="Show theoretical Best Possible Average (BPA) and Worst Possible Average (WPA) bounds in active stats when 1 solve remains in Ao5/Ao12."
+        title={t('analysis.bpaWpa')}
+        description={t('analysis.bpaWpaHint')}
         checked={showBpaWpa}
         onCheckedChange={setShowBpaWpa}
       />
 
       <div className="space-y-3">
         <h3 className="text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-3">
-          Solving Method
+          {t('analysis.solvingMethod')}
         </h3>
         <div className="flex flex-col gap-1.5">
           {METHODS.map((m) => {
@@ -65,7 +67,7 @@ export function AnalysisSection() {
                     {m.label}
                   </span>
                   <p className="mt-0.5 text-[0.72rem] text-ink-3 leading-5">
-                    {m.desc}
+                    {t(m.descKey)}
                   </p>
                 </div>
                 {isActive && (

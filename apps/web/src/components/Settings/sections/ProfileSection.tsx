@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import i18n from "@/i18n";
+import { useTranslation } from "react-i18next";
 import { Spinner } from "@/components/ui/spinner";
 import {
   UserRound,
@@ -54,6 +55,7 @@ const MAX_BIO = 280;
  * bio length, method list). Export downloads the profile as JSON.
  */
 export function ProfileSection() {
+  const { t } = useTranslation("settings");
   const { profile, loading, updateProfile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -197,7 +199,7 @@ export function ProfileSection() {
           {isPhoto && profile.avatarData ? (
             <img
               src={profile.avatarData}
-              alt="Profile avatar"
+              alt={t("profile.avatarAlt")}
               className="size-24 shrink-0 rounded-2xl object-cover ring-1 ring-line"
             />
           ) : (
@@ -209,7 +211,7 @@ export function ProfileSection() {
           )}
           <div className="min-w-0 sm:hidden">
             <p className="truncate text-sm font-semibold text-ink">
-              {displayName.trim() || "Speedcuber"}
+              {displayName.trim() || t("profile.defaultName")}
             </p>
             <p className="text-xs text-ink-3">
               {handle.trim() ? `@${handle}` : `@user-${profile.userId.slice(0, 6)}`}
@@ -220,8 +222,8 @@ export function ProfileSection() {
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="text-[0.72rem] leading-relaxed text-ink-3">
             {isPhoto
-              ? "You uploaded a photo. Your CubeMark is kept — you can always switch back."
-              : "This is your CubeMark — a procedural identity generated from your user ID. It never changes when you rename yourself."}
+              ? t("profile.photoInfo")
+              : t("profile.identiconInfo")}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -236,12 +238,16 @@ export function ProfileSection() {
               ) : (
                 <Camera className="size-3.5" />
               )}
-              {uploadingAvatar ? "Processing…" : isPhoto ? "Change photo" : "Upload photo"}
+              {uploadingAvatar
+                ? t("profile.processing")
+                : isPhoto
+                  ? t("profile.changePhoto")
+                  : t("profile.uploadPhoto")}
             </Button>
             {isPhoto && (
               <Button type="button" variant="ghost" size="sm" onClick={resetIdenticon}>
                 <RotateCcw className="size-3.5" />
-                Reset identicon
+                {t("profile.resetIdenticon")}
               </Button>
             )}
           </div>
@@ -260,19 +266,19 @@ export function ProfileSection() {
 
       {/* ── Display name ─────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-display-name">Display name</Label>
+        <Label htmlFor="profile-display-name">{t("profile.displayName")}</Label>
         <Input
           id="profile-display-name"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Speedcuber"
+          placeholder={t("profile.defaultName")}
           maxLength={40}
         />
       </div>
 
       {/* ── Handle ───────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-handle">Handle</Label>
+        <Label htmlFor="profile-handle">{t("profile.handle")}</Label>
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-3">
             @
@@ -292,17 +298,14 @@ export function ProfileSection() {
             {errors.handle}
           </p>
         ) : (
-          <p className="text-[0.65rem] text-ink-3">
-            Used to identify you across the platform. Leave empty to keep your
-            generated one.
-          </p>
+          <p className="text-[0.65rem] text-ink-3">{t("profile.handleHint")}</p>
         )}
       </div>
 
       {/* ── Bio ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="profile-bio">Bio</Label>
+          <Label htmlFor="profile-bio">{t("profile.bio")}</Label>
           <span
             className={cn(
               "text-[0.6rem]",
@@ -316,7 +319,7 @@ export function ProfileSection() {
           id="profile-bio"
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          placeholder="What kind of cuber are you?"
+          placeholder={t("profile.bioPlaceholder")}
           rows={3}
           maxLength={MAX_BIO + 40}
           aria-invalid={Boolean(errors.bio)}
@@ -331,25 +334,25 @@ export function ProfileSection() {
 
       {/* ── Country ──────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-country">Country</Label>
+        <Label htmlFor="profile-country">{t("profile.country")}</Label>
         {/* Radix Select forbids empty-string item values, so the "unset"
             option uses a 'none' sentinel mapped to '' on save. */}
         <Select value={country || "none"} onValueChange={(v) => setCountry(v === "none" ? "" : v)}>
           <SelectTrigger id="profile-country" className="w-full">
-            <SelectValue placeholder="Select a country">
+            <SelectValue placeholder={t("profile.selectCountry")}>
               {country ? (
                 <span className="flex items-center gap-2">
                   <CountryFlag country={country} withTooltip={false} />
                   {countryName(country)}
                 </span>
               ) : (
-                "Select a country"
+                t("profile.selectCountry")
               )}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-[50vh]">
             <SelectItem value="none">
-              <span className="text-ink-3">Not set</span>
+              <span className="text-ink-3">{t("profile.notSet")}</span>
             </SelectItem>
             {COUNTRIES.map((c) => (
               <SelectItem key={c.code} value={c.code}>
@@ -361,9 +364,7 @@ export function ProfileSection() {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[0.65rem] text-ink-3">
-          Shown next to your name and in your profile header.
-        </p>
+        <p className="text-[0.65rem] text-ink-3">{t("profile.countryHint")}</p>
       </div>
 
       {/* ── Main puzzle ──────────────────────────────────────────────── */}
@@ -372,7 +373,7 @@ export function ProfileSection() {
           id="profile-main-puzzle-label"
           className="text-sm font-medium leading-none text-ink"
         >
-          Main puzzle
+          {t("profile.mainPuzzle")}
         </span>
         <div className="flex flex-wrap gap-2">
           {PUZZLE_OPTIONS.map((p) => (
@@ -400,7 +401,7 @@ export function ProfileSection() {
           id="profile-methods-label"
           className="text-sm font-medium leading-none text-ink"
         >
-          Declared methods
+          {t("profile.declaredMethods")}
         </span>
         <div className="flex flex-wrap gap-2">
           {METHOD_NAMES.map((name) => {
@@ -430,20 +431,18 @@ export function ProfileSection() {
       <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-line pt-4">
         <Button type="button" size="sm" onClick={() => void handleSave()} disabled={saving}>
           {saving ? <Spinner size="xs" /> : <Check className="size-3.5" />}
-          {saving ? "Saving…" : "Save profile"}
+          {saving ? t("profile.saving") : t("profile.saveProfile")}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={handleExport}>
           <Download className="size-3.5" />
-          Export profile (JSON)
+          {t("profile.exportProfile")}
         </Button>
       </div>
 
       <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
         <UserRound className="mt-0.5 size-3.5 shrink-0 text-ink-3" />
         <span className="text-[0.65rem] leading-relaxed text-ink-3">
-          Your identity is stored locally on this device. The CubeMark is your
-          visual fingerprint — the photo is an overlay you can remove at any
-          time.
+          {t("profile.identityNote")}
         </span>
       </div>
     </div>

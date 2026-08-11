@@ -8,7 +8,7 @@ de UI que cubre, su namespace, dificultad y consideraciones especiales.
 **Estado**: infraestructura ✅ · Tanda 1 (estructura de navegación) ✅ · Tanda
 2 (shell completo) ✅ · Tanda 3 (Timer + stats de sesión) ✅ · Tanda 4
 (feedback global: toasts + notificaciones + TTS) ✅ · Tanda 5 (Insights) ✅ ·
-Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ — todo en `feat/spanish-translation` · resto pendiente.
+Tanda 6 (Algorithms) ✅ · Tanda 7A (Training dashboard + práctica básica) ✅ · Tanda 7B (Training drills y fases) ✅ · Tanda 7C (SRS y calendario) ✅ · Tanda 8 (Skill Tree COMPLETA: 8A infra + chrome, 8B ramas 1-4, 8C ramas 5-9, 8D ramas 10-13, 8E ramas 14-16) ✅ · Tanda 9 (Profile) ✅ · Tanda 10 (Reconstructions) ✅ · Tanda 11 (Widgets) ✅ · Tanda 12A (Settings: General/Appearance/Timer) ✅ · Tanda 12B (Settings: Profile/Data/Scramble/Analysis) ✅ — todo en `feat/spanish-translation` · 12C pendiente.
 
 ---
 
@@ -698,7 +698,31 @@ packages/ui/src/components/  breadcrumb · carousel · dialog · pagination · s
   hints, inspección, voz, PB delta, session stats, focus mode). Hallazgos del
   review aplicados: comentario obsoleto de GeneralSection corregido, skins
   traducidos (antes datos EN). Validado: tsc 0, eslint 0, paridad 104/104.
-- **12B/12C pendientes**.
+- **12B (Profile + Data + Scramble + Analysis) hecha** ✅ — sub-namespaces
+  `profile.*`/`data.*`/`scramble.*`/`analysis.*` (217 hojas de settings en
+  total). `ProfileSection` (avatar, display name, bio, país, métodos — datos
+  de usuario NO traducidos), `DataSection` (export/import JSON/CSV/cstimer
+  con 7 pares de plurales `_one/_other` con concordancia ES: solvesFound,
+  errorsFound, importCountJson, importCountInto, importedCount, skippedCount),
+  `ScrambleSection` (verificación, display), `AnalysisSection` (método vía
+  `METHODS` con `descKey: ParseKeys<'settings'>` — labels CFOP/Roux/ZZ/Petrus
+  son nombres propios, BPA/WPA). Review verificado: scoping correcto (los 4
+  con `useTranslation('settings')` y claves relativas), cross-namespace solo
+  vía `i18n.t("toast:...")` global en ProfileSection, estados como datos.
+  Validado: tsc web+desktop 0, eslint 0, vitest 6/6, paridad 217/217, 0
+  strings residuales.
+- **12C pendiente** (Notifications + Shortcuts + SmartCube + Advanced +
+  Credits + atoms).
+
+### Tanda 12C — Notifications + Shortcuts + SmartCube + Advanced + Credits + atoms (~1.450 l)
+- **Zonas**: `NotificationsSection` (sonidos, volumen, recordatorios),
+  `ShortcutsSection` (atajos de teclado), `SmartCubeSection` (Bluetooth, GAN,
+  toasts ya traducidos en tanda 4), `AdvancedSection` (debug, reset),
+  `CreditsSection` (textos largos de agradecimientos), `PlaceholderSection`,
+  `ColorPicker`, `SettingToggle`.
+- **Namespace**: `settings` (sub-namespaces `notifications.*`,
+  `shortcuts.*`, `smartCube.*`, `advanced.*`, `credits.*`).
+- **Dificultad**: media; `CreditsSection` tiene textos largos.
 
 ### Tanda 13 — Datos y superficies no-React
 - **Zonas**:
