@@ -58,6 +58,7 @@ export const TimesList = memo(function TimesList({
   hideHeader,
   className,
 }: TimesListProps) {
+  const { t } = useTranslation("stats");
   const bestTimePerPuzzle = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of solves) {
@@ -78,7 +79,7 @@ export const TimesList = memo(function TimesList({
       {!hideHeader && (
         <div className="flex items-center justify-between border-b border-line px-1 pb-2.5">
           <div className="flex items-baseline gap-2">
-            <h3 className="text-sm font-medium text-ink">Solves</h3>
+            <h3 className="text-sm font-medium text-ink">{t("solves")}</h3>
             <span className="nums text-xs text-ink-3">{solves.length}</span>
           </div>
           {solves.length > 0 && onClear ? (
@@ -88,7 +89,7 @@ export const TimesList = memo(function TimesList({
               onClick={onClear}
               className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
             >
-              Clear
+              {t("clear")}
             </Button>
           ) : null}
         </div>
@@ -96,10 +97,8 @@ export const TimesList = memo(function TimesList({
 
       {solves.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">
-          <p className="text-sm text-ink-2">No solves yet</p>
-          <p className="text-xs text-ink-3">
-            Hold the timer (or press Space) to start.
-          </p>
+          <p className="text-sm text-ink-2">{t("noSolvesYet")}</p>
+          <p className="text-xs text-ink-3">{t("holdTimerToStart")}</p>
         </div>
       ) : (
         <ScrollArea className="min-h-0 flex-1">

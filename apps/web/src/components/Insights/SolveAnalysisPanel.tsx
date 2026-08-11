@@ -577,7 +577,10 @@ function TimelineSection({
               preserveAspectRatio="none"
               className="overflow-visible pointer-events-none"
               role="img"
-              aria-label={`Solve timeline: ${segments.length} segments over ${formatTime(totalMs)}`}
+              aria-label={t("analysis.timelineAria", {
+                count: segments.length,
+                time: formatTime(totalMs),
+              })}
             >
               <defs>
                 <linearGradient id="timeline-tps-fill" x1="0" y1="0" x2="0" y2="1">
@@ -1530,7 +1533,7 @@ function RotEfficiencySection({ metrics }: { metrics: SolveMetrics }) {
         <div className="mt-3 overflow-hidden rounded-lg border border-line/60">
           <div className="px-3 py-2 border-b border-line/50">
             <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
-              Rotations by phase
+              {t("analysis.rotationsByPhase")}
             </span>
           </div>
           {Object.entries(rotation.byPhase).map(([phase, count]) => (
