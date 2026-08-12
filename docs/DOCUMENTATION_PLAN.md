@@ -174,16 +174,25 @@ implementaciones.
 ### Fase 3 — Componentes, hooks, servicios y stores (web)
 **Objetivo:** cubrir el resto de la app web.
 
-- [ ] Componentes: Layout, Timer, Stats, Settings, Scramble, Stage, Insights,
-      Hardware, Identity, Onboarding, Cube3D, ContextMenu → ficha por componente
-      en `docs/02-architecture/` o `docs/16-user/` según corresponda.
-- [ ] Services (p.ej. persistencia, sincronización) y stores (estado global):
-      qué guardan, cómo fluye el estado → actualizar/crear doc en `docs/02-architecture/`.
-- [ ] Hooks y utils (incl. keybinds).
-- [ ] i18n: estructura de locales, sistema de "tandas" (ya documentado en parte por
-      los commits — formalizar en `docs/16-user/` o `docs/08-standards/`).
+- [x] Componentes (2026-08-12) → `docs/02-architecture/web/Components.md`: 12
+      grupos con fichas (Layout, Timer, Stage, Stats, Settings, Insights,
+      Scramble, Hardware, Identity, Onboarding, Cube3D, ContextMenu).
+- [x] Stores/estado (2026-08-12) → `docs/02-architecture/web/State_and_Stores.md`:
+      los 6 stores de `@cubeforge/state` (prefs, timer, session, connection,
+      orientation, algorithm) + stores locales (virtualScramble, storageStatus)
+      + flujo de datos típico.
+- [x] Hooks/services/lib (2026-08-12) →
+      `docs/02-architecture/web/Hooks_Services_and_Lib.md`: ~40 hooks por área
+      (flujo del solve, cubo 3D, training/SRS, perfil, UI), 3 servicios
+      (orientationTracking, Case3DRenderAdapter, Global3DSnapshotService) y lib
+      (announce → ADR-020, keybinds, touch).
+- [x] i18n: cubierto por **ADR-025** (Fase 1) + `apps/web/src/i18n/README.md`
+      (playbook de tandas) — sin doc adicional necesario.
+      **Evaluación ADR/TDD**: no se crean nuevos — el estado es ADR-009, el timer
+      tiene TDD core/0004, a11y ADR-020, i18n ADR-025; el pipeline de análisis se
+      documenta en Fase 4 (analysis-engine).
 
-**Criterio de cierre:** fichas de componentes/servicios/stores y doc de i18n.
+**Criterio de cierre:** fichas de componentes/servicios/stores y doc de i18n. ✅ Completado 2026-08-12.
 
 ### Fase 4 — Paquetes (en 6 sub-fases)
 **Objetivo:** documentar cada paquete: propósito, API pública, dependencias,

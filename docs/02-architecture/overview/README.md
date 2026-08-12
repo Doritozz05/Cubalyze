@@ -12,4 +12,6 @@ se relacionan y por qué. El punto de entrada es
 - `diagrams/` — diagramas de la arquitectura (ver README de esa carpeta).
 - `../Widgets_System.md` — arquitectura del sistema de widgets (SDK, dock,
   store) con fichas por implementación en `../widgets/`.
+- `../web/` — arquitectura de la app web: estado/stores, componentes, hooks,
+  servicios y lib.
 - `../validation/` — auditorías de que la arquitectura coincide con el código.
