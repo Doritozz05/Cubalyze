@@ -86,8 +86,9 @@ describe("resolveDragMove — swipe direction (no live tracking)", () => {
     expect(resolveDragMove({ dx: -30, dy: 0, ...R(1, 1) })).toEqual({ face: "U", direction: 1 });
   });
 
-  it("middle row right → E, bottom row right → D, bottom row left → D'", () => {
+  it("middle row right → E / left → E', bottom row right → D / left → D'", () => {
     expect(resolveDragMove({ dx: 30, dy: 0, ...R(0, 0) })).toEqual({ face: "E", direction: 1 });
+    expect(resolveDragMove({ dx: -30, dy: 0, ...R(0, 0) })).toEqual({ face: "E", direction: -1 });
     expect(resolveDragMove({ dx: 30, dy: 0, ...R(1, -1) })).toEqual({ face: "D", direction: 1 });
     expect(resolveDragMove({ dx: -30, dy: 0, ...R(1, -1) })).toEqual({ face: "D", direction: -1 });
   });

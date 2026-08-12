@@ -2,7 +2,6 @@
 
 import { useCallback, useRef } from "react";
 import type { Cube3DEngine, CubeLayerPick } from "@cubeforge/cube-3d-engine";
-import type { CubeFace } from "@cubeforge/types";
 import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
 import { resolveDragMove } from "@/utils/cubeDragLayer";
 
@@ -78,13 +77,8 @@ export interface UseCubeTurnControlsResult {
 
 type DragMode = "idle" | "turn" | "background";
 
-/** The move resolved once a face drag passes the dead zone. */
-interface ResolvedMove {
-  /** WCA label of the layer being turned (R/M/L/U/E/D). */
-  face: CubeFace;
-  /** WCA direction: +1 = as written, −1 = primed. */
-  direction: 1 | -1;
-}
+/** The move resolved once a face drag passes the dead zone (see resolveDragMove). */
+type ResolvedMove = NonNullable<ReturnType<typeof resolveDragMove>>;
 
 /** Mutable state of the single active pointer gesture. */
 interface DragState {
@@ -230,23 +224,16 @@ export function useCubeTurnControls({
    * The direction is computed directly from the dominant screen delta (no
    * live tracking) — see {@link resolveDragMove}.
    */
-  const resolveTurn = useCallback(
-    (drag: DragState): ResolvedMove | null => {
-      const pick = drag.startPick;
-      if (!pick) return null;
-      const dx = drag.lastX - drag.startX;
-      const dy = drag.lastY - drag.startY;
-      const resolved = resolveDragMove({
-        dx,
-        dy,
-        cubieX: pick.cubiePosition.x,
-        cubieY: pick.cubiePosition.y,
-      });
-      if (!resolved) return null;
-      return { face: resolved.face, direction: resolved.direction };
-    },
-    [],
-  );
+  const resolveTurn = useCallback((drag: DragState): ResolvedMove | null => {
+    const pick = drag.startPick;
+    if (!pick) return null;
+    return resolveDragMove({
+      dx: drag.lastX - drag.startX,
+      dy: drag.lastY - drag.startY,
+      cubieX: pick.cubiePosition.x,
+      cubieY: pick.cubiePosition.y,
+    });
+  }, []);
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -333,8 +320,9 @@ export function useCubeTurnControls({
       if (wasTurn && allowCommit) {
         // A drag that already fired its move needs nothing more here. A lift
         // WITHOUT crossing the dead zone is a TAP → deterministic clockwise
-        // turn of the tapped face (re-armed gestures never tap).
-        if (!drag.committed && !drag.rearmed && !drag.move && drag.totalDist < minSwipeDistance) {
+        // turn of the tapped face (re-armed gestures never tap). `move` is
+        // only ever set together with `committed`, so that check is enough.
+        if (!drag.committed && !drag.rearmed && drag.totalDist < minSwipeDistance) {
           const face = drag.startPick!.face;
           onActionRef.current?.({ kind: "turn", face, direction: 1 });
         }
