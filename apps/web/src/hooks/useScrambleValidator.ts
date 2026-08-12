@@ -1,8 +1,40 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { Observable } from 'rxjs';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
 import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS } from '@cubeforge/math-core';
 import { orientationStore } from '@cubeforge/state';
+
+/**
+ * The minimal adapter surface the scramble validator consumes. The real
+ * Smart Cube (globalCubeAdapter) satisfies it, and the virtual cube drives
+ * an equivalent adapter so the EXACT same validation logic powers both the
+ * physical timer and the Cube tab.
+ */
+export interface ScrambleValidationAdapter {
+  isConnected: boolean;
+  moves$: Observable<CubeMoveEvent>;
+  facelets$?: Observable<string> | null;
+  onFacelets?: ((facelets: string) => void) | null;
+  requestFacelets?: () => Promise<void>;
+  /**
+   * Optional re-seed signal: the validator restarts from a FRESH state for
+   * the CURRENT scramble text (the same mechanism as the scramble-change
+   * effect). The virtual cube emits this when its Scramble button applies
+   * the scramble that is already on screen — the text does NOT change, so
+   * the scramble-change effect would never re-seed on its own.
+   */
+  reset$?: Observable<void> | null;
+  /**
+   * Optional full-notation token stream: ONE token per user action ("R",
+   * "M'", "r", …). The virtual cube emits wide moves here as a single
+   * token so the validator compares one action against one scramble token
+   * (feeding the slice half as a second face event would pile phantom
+   * errors onto face-only scrambles). moves$ events stay the single-layer
+   * feed for face/slice turns.
+   */
+  tokens$?: Observable<string> | null;
+}
 
 export type ScrambleMoveState = 'pending' | 'correct' | 'incorrect';
 
@@ -125,11 +157,11 @@ function freshValidatorState(): ValidatorState {
   };
 }
 
-function scheduleFacelets(s: ValidatorState): void {
+function scheduleFacelets(s: ValidatorState, adapter: ScrambleValidationAdapter): void {
   clearTimeout(s.requestFaceletsTimeout);
   s.requestFaceletsTimeout = setTimeout(() => {
-    if (globalCubeAdapter.isConnected) {
-      globalCubeAdapter.requestFacelets().catch(() => {});
+    if (adapter.isConnected) {
+      adapter.requestFacelets?.().catch(() => {});
     }
   }, 400);
 }
@@ -180,6 +212,7 @@ const EMPTY_VALIDATION: ScrambleValidationResult = {
 export function useScrambleValidator(
   scramble: string,
   enabled: boolean = true,
+  adapter: ScrambleValidationAdapter = globalCubeAdapter,
 ): ScrambleValidationResult {
   const stateRef = useRef<ValidatorState>(freshValidatorState());
 
@@ -224,12 +257,21 @@ export function useScrambleValidator(
       s.scrambleCompleted = true;
     }
 
-    const errorMoves = s.activeErrorMoves;
+    // Fresh copy — consumers (e.g. the Cube tab's displayErrorMoves memo)
+    // depend on the errorMoves REFERENCE to re-render. activeErrorMoves is
+    // mutated in place, so the same reference would keep the error display
+    // stale: errors only appeared after a grip change (a cube rotation)
+    // recomputed the memo. A copy re-renders the moment an error lands.
+    const errorMoves = [...s.activeErrorMoves];
 
     // Compute display-notation error moves using current orientation
     const orientation = orientationStore.getState().orientation;
     const displayErrorMoves = errorMoves.map((notation) => {
       const face = notation[0] as CubeFace;
+      // Wide moves (lowercase "r") have no face in the orientation map — pass
+      // through unchanged (the Cube tab remaps errorMoves itself). Without
+      // this guard toDisplayNotation would build "undefined'" strings.
+      if (!'URFDLB'.includes(face)) return notation;
       const dir: CubeMoveDirection =
         notation.endsWith("'") ? -1 : notation.endsWith('2') ? 2 : 1;
       const raw: CubeMoveEvent = { face, direction: dir, cubeTimestamp: 0, hostTimestamp: 0 };
@@ -249,6 +291,11 @@ export function useScrambleValidator(
     });
   }, [enabled]);
 
+  // Latest scramble for the reset$ handler (the subscription effect below
+  // must not re-subscribe on every scramble change).
+  const scrambleRef = useRef(scramble);
+  scrambleRef.current = scramble;
+
   // Recompute expected state whenever the scramble text changes.
   useEffect(() => {
     if (!enabled) {
@@ -261,13 +308,12 @@ export function useScrambleValidator(
     ref.expectedFacelets = expectedFacelets;
     stateRef.current = ref;
     updateUI();
-    scheduleFacelets(ref);
-  }, [scramble, updateUI, enabled]);
+    scheduleFacelets(ref, adapter);
+  }, [scramble, updateUI, enabled, adapter]);
 
-  // Subscribe to the Smart Cube while validation is enabled.
+  // Subscribe to the move/facelet stream while validation is enabled.
   useEffect(() => {
     if (!enabled) return;
-    const adapter = globalCubeAdapter;
     if (!adapter.moves$) return;
 
     let faceletCleanup: (() => void) | undefined;
@@ -372,13 +418,28 @@ export function useScrambleValidator(
       }
     }
 
-    const moveSub = adapter.moves$.subscribe((ev: CubeMoveEvent) => {
+    // Optional re-seed: the adapter (virtual cube) can force a FRESH
+    // validator state for the same scramble text — used when its Scramble
+    // button applies the scramble already on screen (the text doesn't
+    // change, so the scramble-change effect above never fires).
+    const resetSub = adapter.reset$?.subscribe(() => {
+      const { moves, expectedFacelets } = computeExpected(scrambleRef.current);
+      const ref = freshValidatorState();
+      ref.moves = moves;
+      ref.expectedFacelets = expectedFacelets;
+      stateRef.current = ref;
+      updateUI();
+      scheduleFacelets(ref, adapter);
+    });
+
+    // Shared validation core: one token = one user action. The moves$
+    // stream derives the token from a face event; the optional tokens$
+    // stream (virtual cube wide moves) delivers the token directly.
+    function processToken(notation: string): void {
       const s = stateRef.current;
       if (!s.initialCheckDone && !s.awaitingSolve) {
         s.initialCheckDone = true;
       }
-
-      const notation = MoveTransformer.moveToNotation(ev.face, ev.direction);
 
       if (s.needsReset) {
         // ── STICKY needsReset — 100% DETERMINISTIC ─────────────
@@ -412,7 +473,7 @@ export function useScrambleValidator(
         // a trigger either — only facelets can confirm solved.
         s.actualMoves.push(notation);
         try { s.currentState.applySequence(notation); } catch { /* skip */ }
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
         updateUI();
         return;
       }
@@ -426,7 +487,7 @@ export function useScrambleValidator(
       if (s.scrambleCompleted && !s.needsReset) return;
 
       if (s.awaitingSolve) {
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
         return;
       }
 
@@ -446,7 +507,7 @@ export function useScrambleValidator(
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-          scheduleFacelets(s);
+          scheduleFacelets(s, adapter);
           updateUI();
           return;
         }
@@ -471,13 +532,43 @@ export function useScrambleValidator(
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-          scheduleFacelets(s);
+          scheduleFacelets(s, adapter);
         }
         updateUI();
         return;
       }
 
       try { s.currentState.applySequence(notation); } catch { return; }
+
+      // ── Error recovery: inverse-move detection (stack-based) ──────
+      // When the user is in an error state and performs the INVERSE of
+      // the last active error movement, pop from the stack instead of
+      // pushing a new error. This is the deterministic undo path — it
+      // handles `currentIndex === 0` (where matchedBackward can never
+      // find a match because `i < 0` is empty) and multi-step undo
+      // (R → B → B′ → R′).
+      //
+      // MUST run BEFORE the math-solved guard below: undoing the last
+      // error always lands the validator's state back on a valid point
+      // (the solved start when the mistake was at index 0), and the
+      // guard would SILENTLY swallow that legitimate undo — the error
+      // would stay stuck in the UI with no recovery. (Reported on the
+      // virtual cube after a rotation; the physical timer only masked
+      // it via the 400 ms facelet round-trip.)
+      if (
+        s.isError &&
+        s.activeErrorMoves.length > 0 &&
+        isInverse(notation, s.activeErrorMoves[s.activeErrorMoves.length - 1])
+      ) {
+        s.activeErrorMoves.pop();
+        s.consecutiveErrors = Math.max(0, s.consecutiveErrors - 1);
+        if (s.activeErrorMoves.length === 0) {
+          s.isError = false;
+          s.consecutiveErrors = 0;
+        }
+        updateUI();
+        return;
+      }
 
       // DO NOT trust math state to decide whether the cube is solved.
       // currentState.isSolved() can drift from the real cube if BLE
@@ -489,9 +580,10 @@ export function useScrambleValidator(
       // rely on handleFacelets to fire resetRef when the next facelets
       // event confirms solved. This prevents a math-drift false-positive
       // from polluting the error stack or triggering a spurious
-      // needsReset escalation.
+      // needsReset escalation. (Legitimate undos never reach this guard
+      // — the inverse-detection above returns first.)
       if (s.isError && s.currentState.isSolved()) {
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
         return;
       }
 
@@ -504,7 +596,7 @@ export function useScrambleValidator(
       // Otherwise, when the expected token is a double move (e.g. D2) but the
       // user is on a different face trying to undo (R'), the double-move handler
       // intercepts the move as a "wrong face" error and appends it — the inverse
-      // detection code (below) is never reached, and the error stack grows
+      // detection code (above) is never reached, and the error stack grows
       // instead of shrinking. Bug scenario: D ✓ R ✓ R (mistake) R' (no undo).
       if (expectedToken && isDoubleMove(expectedToken) && !s.isError) {
         const baseFace = baseFaceOfDouble(expectedToken);
@@ -514,7 +606,7 @@ export function useScrambleValidator(
           s.consecutiveErrors++;
           s.activeErrorMoves.push(notation);
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-          scheduleFacelets(s);
+          scheduleFacelets(s, adapter);
           updateUI();
           return;
         }
@@ -524,28 +616,6 @@ export function useScrambleValidator(
         s.isError = false;
         s.consecutiveErrors = 0;
         s.activeErrorMoves = [];
-        updateUI();
-        return;
-      }
-
-      // ── Error recovery: inverse-move detection (stack-based) ──────
-      // When the user is in an error state and performs the INVERSE of
-      // the last active error movement, pop from the stack instead of
-      // pushing a new error. This is the deterministic undo path — it
-      // handles `currentIndex === 0` (where matchedBackward can never
-      // find a match because `i < 0` is empty) and multi-step undo
-      // (R → B → B′ → R′).
-      if (
-        s.isError &&
-        s.activeErrorMoves.length > 0 &&
-        isInverse(notation, s.activeErrorMoves[s.activeErrorMoves.length - 1])
-      ) {
-        s.activeErrorMoves.pop();
-        s.consecutiveErrors = Math.max(0, s.consecutiveErrors - 1);
-        if (s.activeErrorMoves.length === 0) {
-          s.isError = false;
-          s.consecutiveErrors = 0;
-        }
         updateUI();
         return;
       }
@@ -580,24 +650,33 @@ export function useScrambleValidator(
         s.consecutiveErrors++;
         s.activeErrorMoves.push(notation);
         if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
       } else {
         // Already in error and the move is not an inverse — new error.
         s.consecutiveErrors++;
         s.activeErrorMoves.push(notation);
         if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
       }
 
       updateUI();
+    }
+
+    const moveSub = adapter.moves$.subscribe((ev: CubeMoveEvent) => {
+      processToken(MoveTransformer.moveToNotation(ev.face, ev.direction));
+    });
+    const tokenSub = adapter.tokens$?.subscribe((notation: string) => {
+      processToken(notation);
     });
 
     return () => {
       moveSub.unsubscribe();
+      tokenSub?.unsubscribe();
+      resetSub?.unsubscribe();
       faceletCleanup?.();
       clearTimeout(stateRef.current.requestFaceletsTimeout);
     };
-  }, [updateUI, enabled]);
+  }, [updateUI, enabled, adapter]);
 
   return uiState;
 }

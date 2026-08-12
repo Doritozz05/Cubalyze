@@ -125,4 +125,16 @@ export const WidgetRegistry = {
   ids(): WidgetId[] {
     return Array.from(registry.keys());
   },
+
+  /**
+   * TEST-ONLY: clears every registration and listener so tests start from a
+   * pristine registry. The module-level singleton otherwise leaks state
+   * across tests within a file (a resolved lazy widget makes later
+   * `ensure()` calls return synchronously WITHOUT notifying). Never call
+   * from production code.
+   */
+  resetForTests(): void {
+    registry.clear();
+    listeners.clear();
+  },
 };

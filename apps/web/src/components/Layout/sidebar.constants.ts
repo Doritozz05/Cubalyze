@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch, Box } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -33,7 +33,8 @@ export type ViewId =
   | "training"
   | "skill-tree"
   | "profile"
-  | "reconstructions";
+  | "reconstructions"
+  | "cube";
 
 /**
  * A nav item that maps to a stage view (ViewId) or triggers a dialog
@@ -70,6 +71,7 @@ export const NAV_GROUPS: NavGroup[] = [
     titleKey: "main",
     items: [
       { id: "timer", labelKey: "timer", icon: Timer },
+      { id: "cube", labelKey: "virtual", icon: Box },
     ],
   },
   {

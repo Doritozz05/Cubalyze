@@ -50,6 +50,7 @@ const VIEW_PATH: Record<ViewId, string> = {
   "skill-tree": "/skill-tree",
   profile: "/profile",
   reconstructions: "/reconstructions",
+  cube: "/cube",
 };
 
 function pathForView(view: ViewId): string {
@@ -153,7 +154,9 @@ export default function App() {
   // keyboard (training views + onboarding tour must never arm the timer).
   const keyboardDisabledRef = useRef(false);
   useEffect(() => {
-    keyboardDisabledRef.current = activeView === "training" || tourActive;
+    // The cube simulator owns the keyboard while open (csTimer-layout moves);
+    // training views and the tour must also never arm the practice timer.
+    keyboardDisabledRef.current = activeView === "training" || activeView === "cube" || tourActive;
   }, [activeView, tourActive]);
 
   // ── PB Celebration banner state ────────────────────────────────────────
@@ -258,7 +261,10 @@ export default function App() {
     onCancel: handleTimerCancel,
     timerStateRef,
     // The tour owns the keyboard while active (ESC skips, Space is swallowed).
-    enabled: !tourActive,
+    // The cube simulator also owns the keyboard — its csTimer layout uses N (x')
+    // and C (u'), which would otherwise collide with the global New/Copy
+    // scramble shortcuts.
+    enabled: !tourActive && activeView !== "cube",
     solveCount: solves.length,
   });
 

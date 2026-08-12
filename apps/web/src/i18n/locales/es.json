@@ -25,6 +25,7 @@
     "progress": "Progreso",
     "explore": "Explorar",
     "timer": "Cronómetro",
+    "virtual": "Virtual",
     "algorithms": "Algoritmos",
     "skills": "Habilidades",
     "stats": "Estadísticas",
@@ -33,6 +34,33 @@
     "more": "Más",
     "moreOptions": "Más opciones",
     "primary": "Principal"
+  },
+  "cube": {
+    "timerAria": "Tiempo de la resolución",
+    "reset": "Reiniciar",
+    "help": "Controles",
+    "helpShort": "Teclado y gestos",
+    "gestureHint": "Desliza una cara para girar la capa · arrastra el fondo para rotar el cubo 90° · pellizca para hacer zoom",
+    "initializing": "Inicializando cubo 3D…",
+    "unavailable": "Vista 3D no disponible: hay demasiadas vistas 3D abiertas en este dispositivo. Cierra otra vista 3D y vuelve a abrir.",
+    "scramble": "Mezclar",
+    "scrambleTooltip": "Mezclar el cubo al instante",
+    "keys": {
+      "title": "Controles",
+      "subtitle": "Diseño de csTimer: tus índices descansan en U (F = U', J = U). En el sentido horario y antihorario son teclas separadas. El cubo empieza resuelto y realizas el scramble tú mismo (o usas el botón Mezclar); la velocidad de giro cambia la animación de cada movimiento.",
+      "gestures": "Gestos",
+      "gestureSwipe": "Arrastra una cara — la capa gira con la animación a tu velocidad de giro y aterriza exactamente en 90°, sin seguir el puntero. El gesto se lee como si la cara tocada te mirara: en la frontal, los arrastres verticales giran columnas R/M/L y los horizontales filas U/E/D; en la superior, los horizontales giran F/S/B; en las laterales, los verticales giran F/S/B",
+      "gestureOrbit": "Arrastra el fondo — una rotación de 90° por arrastre, con la cámara fija en isométrica",
+      "gestureTap": "Toca una cara — giro en el sentido horario",
+      "gesturePinch": "Dos dedos — pellizca para hacer zoom",
+      "speed": "Velocidad de giro",
+      "speedSlow": "Lenta",
+      "speedNormal": "Normal",
+      "speedFast": "Rápida",
+      "speedInstant": "Instantánea",
+      "close": "Cerrar",
+      "footer": "Alt/Ctrl están reservados para atajos globales. El diseño coincide con csTimer para que tu memoria muscular se mantenga."
+    }
   },
   "settings": {
     "title": "Ajustes",

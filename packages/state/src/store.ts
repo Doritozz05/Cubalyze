@@ -89,6 +89,14 @@ export interface PreferencesState {
   };
   setCustomStickerColors: (colors: Partial<{ U: string; D: string; F: string; B: string; R: string; L: string }>) => void;
 
+  /**
+   * Virtual-cube turn animation speed. 'instant' disables the animation
+   * entirely (moves snap). Applies to keyboard, drag and background
+   * rotations — the scramble is always applied instantly.
+   */
+  cubeTurnSpeed: "slow" | "normal" | "fast" | "instant";
+  setCubeTurnSpeed: (value: "slow" | "normal" | "fast" | "instant") => void;
+
   /** Hardware timer type: none, stackmat (audio), or gan (Bluetooth). */
   hardwareTimer: 'none' | 'stackmat' | 'gan';
   setHardwareTimer: (value: 'none' | 'stackmat' | 'gan') => void;
@@ -201,6 +209,7 @@ const DEFAULT_VALUES = {
     R: '#eb4242',
     L: '#ff801f',
   },
+  cubeTurnSpeed: 'normal' as const,
   hardwareTimer: 'none' as const,
   shortcuts: {
     newScramble: 'n',
@@ -249,6 +258,7 @@ export const createPreferencesStore = () => {
           set((state) => ({
             customStickerColors: { ...state.customStickerColors, ...colors },
           })),
+        setCubeTurnSpeed: (cubeTurnSpeed) => set({ cubeTurnSpeed }),
         setHardwareTimer: (hardwareTimer) => set({ hardwareTimer }),
         setShortcut: (key, value) =>
           set((state) => ({
@@ -293,6 +303,7 @@ export const createPreferencesStore = () => {
           pbCelebrationAnimation: state.pbCelebrationAnimation,
           hardwareTimer: state.hardwareTimer,
           customStickerColors: state.customStickerColors,
+          cubeTurnSpeed: state.cubeTurnSpeed,
           shortcuts: state.shortcuts,
           spacebarHoldDelay: state.spacebarHoldDelay,
           showBpaWpa: state.showBpaWpa,

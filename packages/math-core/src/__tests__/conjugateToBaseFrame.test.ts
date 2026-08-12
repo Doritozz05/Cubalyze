@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CubeState } from '../CubeState';
-import { conjugateToBaseFrame, conjugatePhaseStream } from '../notation/conjugateToBaseFrame';
+import {
+  conjugatePhaseStream,
+  conjugateToBaseFrame,
+  conjugateTokenThroughGrip,
+} from '../notation/conjugateToBaseFrame';
 import { tokenize } from '../notation/moveNotation';
 import { OrientationTable } from '../orientation/OrientationTable';
 import { MoveTransformer } from '../orientation/MoveTransformer';
@@ -157,6 +161,45 @@ describe('conjugateToBaseFrame', () => {
     );
     s.applySequence(conjugated.join(' '));
     expect(s.isSolved()).toBe(true);
+  });
+});
+
+describe('conjugateTokenThroughGrip', () => {
+  const yGrip = OrientationTable.rotationEntryFor('y')!;
+  const xPrimeGrip = OrientationTable.rotationEntryFor("x'")!;
+
+  it('is a no-op at the identity grip', () => {
+    expect(conjugateTokenThroughGrip('R', OrientationTable.IDENTITY)).toBe('R');
+    expect(conjugateTokenThroughGrip("F'", OrientationTable.IDENTITY)).toBe("F'");
+    expect(conjugateTokenThroughGrip('M', OrientationTable.IDENTITY)).toBe('M');
+    expect(conjugateTokenThroughGrip('r', OrientationTable.IDENTITY)).toBe('r');
+  });
+
+  it('rewrites a single face move through an existing grip', () => {
+    // After y, the R face sits at the FRONT position: a drag that turns the
+    // front layer is the original R move — exactly what the scramble
+    // validator needs to see.
+    expect(conjugateTokenThroughGrip('F', yGrip)).toBe('R');
+    expect(conjugateTokenThroughGrip("F'", yGrip)).toBe("R'");
+    expect(conjugateTokenThroughGrip('R', yGrip)).toBe('B');
+    expect(conjugateTokenThroughGrip('L', yGrip)).toBe('F');
+    expect(conjugateTokenThroughGrip('B', yGrip)).toBe('L');
+    expect(conjugateTokenThroughGrip('U', yGrip)).toBe('U');
+    expect(conjugateTokenThroughGrip('D', yGrip)).toBe('D');
+  });
+
+  it('rewrites a single slice move through an existing grip', () => {
+    // x' grip (faceMap {U:B, D:F, F:U, B:D, L:L, R:R}): solver M keeps the
+    // L side → physical M; solver S → E' (matches conjugateToBaseFrame).
+    expect(conjugateTokenThroughGrip('M', xPrimeGrip)).toBe('M');
+    expect(conjugateTokenThroughGrip('S', xPrimeGrip)).toBe("E'");
+    expect(conjugateTokenThroughGrip("S'", xPrimeGrip)).toBe('E');
+    expect(conjugateTokenThroughGrip('S2', xPrimeGrip)).toBe('E2');
+  });
+
+  it('passes rotations through unchanged', () => {
+    expect(conjugateTokenThroughGrip('y', yGrip)).toBe('y');
+    expect(conjugateTokenThroughGrip("x'", yGrip)).toBe("x'");
   });
 });
 

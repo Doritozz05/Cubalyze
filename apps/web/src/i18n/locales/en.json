@@ -25,6 +25,7 @@
     "progress": "Progress",
     "explore": "Explore",
     "timer": "Timer",
+    "virtual": "Virtual",
     "algorithms": "Algorithms",
     "skills": "Skills",
     "stats": "Stats",
@@ -33,6 +34,33 @@
     "more": "More",
     "moreOptions": "More options",
     "primary": "Primary"
+  },
+  "cube": {
+    "timerAria": "Solve time",
+    "reset": "Reset",
+    "help": "Controls",
+    "helpShort": "Keyboard & gestures",
+    "gestureHint": "Swipe a face to turn the layer · drag the background to rotate the cube 90° · pinch to zoom",
+    "initializing": "Initializing 3D cube…",
+    "unavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
+    "scramble": "Scramble",
+    "scrambleTooltip": "Scramble the cube instantly",
+    "keys": {
+      "title": "Controls",
+      "subtitle": "The csTimer layout: your index fingers rest on U (F = U', J = U). Clockwise and counterclockwise are separate keys. The cube starts solved and you perform the scramble yourself (or use the Scramble button); the turn speed changes each move's animation.",
+      "gestures": "Gestures",
+      "gestureSwipe": "Drag a face — the layer turns with an animated move at your turn speed and lands at exactly 90°, without following the pointer. The drag is read as if the grabbed face faced you: on the front face vertical drags turn columns R/M/L and horizontal drags rows U/E/D; on the top face horizontal drags turn F/S/B; on the side faces vertical drags turn F/S/B",
+      "gestureOrbit": "Drag the background — one 90° rotation per drag, with the camera locked isometric",
+      "gestureTap": "Tap a face — clockwise turn",
+      "gesturePinch": "Two fingers — pinch to zoom",
+      "speed": "Turn speed",
+      "speedSlow": "Slow",
+      "speedNormal": "Normal",
+      "speedFast": "Fast",
+      "speedInstant": "Instant",
+      "close": "Close",
+      "footer": "Alt/Ctrl are reserved for global shortcuts. The layout matches csTimer so your muscle memory carries over."
+    }
   },
   "settings": {
     "title": "Settings",

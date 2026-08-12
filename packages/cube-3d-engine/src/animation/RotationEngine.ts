@@ -17,6 +17,13 @@ export interface RotationTaskConfig {
 
 class PivotTask {
   public inUse = false;
+  /**
+   * 'animate' — a timed layer rotation (rotations, scrambles, keyboard).
+   * 'live'    — a free-form twist whose angle is driven externally frame by
+   *             frame (`setTwistAngle`); used by the drag-to-turn touch model
+   *             so the layer follows the finger before snapping.
+   */
+  public mode: 'animate' | 'live' = 'animate';
   public pivot = new Group();
   
   public startQuat = new Quaternion();
@@ -128,18 +135,115 @@ export class RotationEngine {
       // 2. Find a free slot in the pool
       let task = this.pool.find(t => !t.inUse);
       if (!task) {
-        // Fallback extremely rare: if pool is full, snap the oldest
-        const oldest = this.pool.reduce((prev, curr) => (prev.startTime < curr.startTime ? prev : curr));
+        // Fallback extremely rare: if pool is full, snap the oldest timed
+        // task. NEVER a live twist (its startTime is 0, which would make it
+        // the "oldest" — snapping it would silently cancel an active drag).
+        const candidates = this.pool.filter((t) => t.mode !== 'live');
+        const oldest = (candidates.length > 0 ? candidates : this.pool).reduce((prev, curr) =>
+          prev.startTime <= curr.startTime ? prev : curr,
+        );
         this.snapTask(oldest);
         task = oldest;
       }
 
       // 3. Configure the task
       task.inUse = true;
+      task.mode = 'animate';
       task.config = { axis, layerValues, angleInDegrees, durationMs: safeDuration, elapsedMs: safeElapsed, easingStrategy, resolve };
       task.startTime = 0; // will be calculated in next update()
 
       this.preparePivot(task, targetCubies);
+    });
+  }
+
+  /**
+   * Start a free-form layer twist (drag-to-turn).
+   *
+   * Detaches the target layer onto its own pivot and hands the angle to the
+   * caller via {@link setTwistAngle}, so the layer can follow the pointer in
+   * real time. No logical state changes while twisting — the move only lands
+   * when the twist is finished ({@link finishTwist} with a 90° target) or is
+   * abandoned ({@link finishTwist} with 0 → spring back).
+   *
+   * Colliding timed rotations are snapped first (same invariant as
+   * {@link rotateLayers}), so a keyboard move on the same layer can never
+   * double-rotate on top of a live drag.
+   *
+   * @returns `false` when a live twist is already active or no pivot slot is
+   *   free (the caller should fall back to orbit mode instead of fighting
+   *   over the cubies).
+   */
+  public beginTwist(axis: RotationAxis, layerValues: number[]): boolean {
+    if (this.pool.some((t) => t.inUse && t.mode === 'live')) return false;
+
+    // 1. Snap any timed rotation that shares a piece with this layer.
+    let collision = true;
+    while (collision) {
+      collision = false;
+      const currentTargetCubies = this.getTargetCubies(axis, layerValues);
+      for (const runningTask of this.pool) {
+        if (!runningTask.inUse || runningTask.mode === 'live') continue;
+        const runningCubies = this.getTargetCubies(runningTask.config.axis, runningTask.config.layerValues);
+        if (currentTargetCubies.some((c) => runningCubies.includes(c))) {
+          this.snapTask(runningTask);
+          collision = true;
+          break;
+        }
+      }
+    }
+
+    // 2. Claim a free pivot for the live drag.
+    const targetCubies = this.getTargetCubies(axis, layerValues);
+    const task = this.pool.find((t) => !t.inUse);
+    if (!task) return false;
+
+    task.inUse = true;
+    task.mode = 'live';
+    task.config = { axis, layerValues, angleInDegrees: 0, durationMs: 0 };
+    task.startTime = 0;
+    this.preparePivot(task, targetCubies);
+    return true;
+  }
+
+  /**
+   * Drive the active live twist to an absolute angle (degrees, engine
+   * convention: positive = positive rotation around the task axis). No-op
+   * when no live twist is active or the angle is not finite.
+   */
+  public setTwistAngle(angleInDegrees: number): void {
+    const task = this.pool.find((t) => t.inUse && t.mode === 'live');
+    if (!task) return;
+    if (!Number.isFinite(angleInDegrees)) return;
+    task.pivot.quaternion.setFromAxisAngle(
+      task.rotationAxisVec,
+      MathUtils.degToRad(angleInDegrees),
+    );
+    task.pivot.updateMatrixWorld(true);
+  }
+
+  /**
+   * Finish the active live twist by animating from its current angle to
+   * `targetAngleInDegrees` (0 = spring back, ±90 = commit a turn), then
+   * applying the matching logical update (round(target / 90) quarter turns).
+   * Resolves when the animation completes or immediately when no live twist
+   * is active.
+   */
+  public finishTwist(targetAngleInDegrees: number, durationMs: number): Promise<void> {
+    return new Promise((resolve) => {
+      const task = this.pool.find((t) => t.inUse && t.mode === 'live');
+      if (!task) {
+        resolve();
+        return;
+      }
+      const safeTarget = Number.isFinite(targetAngleInDegrees) ? targetAngleInDegrees : 0;
+      const safeDuration = Number.isFinite(durationMs) && durationMs >= 0 ? durationMs : 0;
+
+      task.mode = 'animate';
+      task.config = { ...task.config, angleInDegrees: safeTarget, durationMs: safeDuration, resolve };
+      task.startQuat.copy(task.pivot.quaternion);
+      task.rotationOffset.setFromAxisAngle(task.rotationAxisVec, MathUtils.degToRad(safeTarget));
+      task.endQuat.copy(task.rotationOffset);
+      task.startTime = 0; // will be calculated in next update()
     });
   }
 
@@ -169,9 +273,17 @@ export class RotationEngine {
     return this.pool.some((t) => t.inUse);
   }
 
+  /** True while a free-form drag twist is active (before it commits/cancels). */
+  public isLiveTwistActive(): boolean {
+    return this.pool.some((t) => t.inUse && t.mode === 'live');
+  }
+
   public update(timeNowMs: number): void {
     for (const task of this.pool) {
       if (!task.inUse) continue;
+      // Live twists are driven externally via setTwistAngle — never advance
+      // them with time-based interpolation.
+      if (task.mode === 'live') continue;
 
       if (!task.startTime) {
         // Time-Warp (Dead Reckoning): 

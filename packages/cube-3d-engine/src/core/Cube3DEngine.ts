@@ -1,4 +1,4 @@
-import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3, Group } from 'three';
+import { Quaternion, Mesh, MeshBasicMaterial, Material, Vector3, Group, Object3D, Raycaster, Vector2 } from 'three';
 import { SceneManager } from './SceneManager';
 import { CubeMeshFactory, type CubeStyleOptions } from './CubeMeshFactory';
 import { CubeModel } from './CubeModel';
@@ -7,6 +7,7 @@ import { parseScrambleMoves, scrambleMoveDurationMs } from '../animation/Scrambl
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
 import { OrientationTable, type PhaseMask } from '@cubeforge/math-core';
+import { resolveLayerHit, rotateVectorByQuaternion, type CubeLayerPick } from './layerPick';
 import type { CubeOrientation, RotationEvent, CubeFace } from '@cubeforge/types';
 import type { Subscription } from 'rxjs';
 
@@ -170,6 +171,11 @@ export class Cube3DEngine {
     return !this.isRunning || (this.sceneManager?.isContextEvicted() ?? false);
   }
 
+  /** True when any layer rotation is in-flight (animated or live-twist). */
+  public isAnimating(): boolean {
+    return this.rotationEngine?.isAnimating() ?? false;
+  }
+
   public requestRender(): void {
     if (!this.isRunning) return;
     if (this.sceneManager?.isContextEvicted()) return;
@@ -205,6 +211,59 @@ export class Cube3DEngine {
       elapsedMs,
       easingStrategy as 'bounce' | 'smooth' | 'fast' | 'linear' | undefined,
     );
+  }
+
+  /**
+   * Start a free-form layer twist (drag-to-turn touch model).
+   *
+   * Detaches the layer onto a pivot and lets the caller drive its angle in
+   * real time with {@link setLayerTwistAngle}, so the slice follows the
+   * finger. Finish with {@link finishLayerTwist} (commit ±90°) or
+   * {@link cancelLayerTwist} (spring back). No logical state changes while
+   * twisting — the move only lands on commit.
+   *
+   * @returns `false` when a twist is already active or no pivot is free
+   *   (callers should fall back to orbit mode).
+   */
+  public beginLayerTwist(axis: RotationAxis, layerValues: number[]): boolean {
+    if (!this.rotationEngine) return false;
+    const ok = this.rotationEngine.beginTwist(axis, layerValues);
+    if (ok) this.requestRender();
+    return ok;
+  }
+
+  /** Drive the active layer twist to an absolute angle (degrees). */
+  public setLayerTwistAngle(angleDegrees: number): void {
+    if (!this.rotationEngine) return;
+    this.rotationEngine.setTwistAngle(angleDegrees);
+    this.requestRender();
+  }
+
+  /**
+   * Commit the active layer twist: animate from its current angle to
+   * `targetAngleDegrees` (±90 = complete turn, 0 = spring back) and apply
+   * the matching logical update. Resolves when the animation completes.
+   */
+  public finishLayerTwist(targetAngleDegrees: number, durationMs: number): Promise<void> {
+    if (!this.rotationEngine) return Promise.resolve();
+    this.requestRender();
+    return this.rotationEngine.finishTwist(targetAngleDegrees, durationMs);
+  }
+
+  /** Spring the active layer twist back to 0° (cancel the drag). */
+  public cancelLayerTwist(durationMs: number): Promise<void> {
+    if (!this.rotationEngine) return Promise.resolve();
+    this.requestRender();
+    return this.rotationEngine.finishTwist(0, durationMs);
+  }
+
+  /**
+   * True while a free-form drag twist is active (layer following the finger
+   * but not yet committed/cancelled). Lets the caller skip a commit when a
+   * keyboard collision already cancelled the twist mid-drag.
+   */
+  public isLayerTwistActive(): boolean {
+    return this.rotationEngine?.isLiveTwistActive() ?? false;
   }
 
   public resetCube(): void {
@@ -394,6 +453,90 @@ export class Cube3DEngine {
   public resetGyroCalibration(): void {
     if (!this.gyroFusion) return;
     this.gyroFusion.resetCalibration();
+  }
+
+  /**
+   * Raycast the cube surface and resolve which layer would be turned by a
+   * pointer at the given NDC coordinates.
+   *
+   * Used by the virtual-cube touch controls (swipe a face to turn it). The
+   * ray is fired from the orbit camera through the canvas pixel; the first
+   * hit is walked up to its owning cubie, then {@link resolveLayerHit}
+   * derives the layer (axis + layerValue + WCA face) in the cube frame.
+   *
+   * @param ndcX  Pointer X in normalized device coords [−1, 1] (left→right).
+   * @param ndcY  Pointer Y in normalized device coords [−1, 1] (bottom→top).
+   * @returns The resolved layer pick (with the world-space hit point) or
+   *   `null` when the pointer misses the cube (e.g. background / evicted).
+   */
+  public pickLayer(ndcX: number, ndcY: number): CubeLayerPick | null {
+    if (!this.model || !this.sceneManager) return null;
+    if (!this.isRunning || this.sceneManager.isContextEvicted()) return null;
+    if (!Number.isFinite(ndcX) || !Number.isFinite(ndcY)) return null;
+
+    // Ensure world matrices are current before raycasting (the dirty-flag
+    // loop may be paused while the scene is static).
+    this.model.root.updateMatrixWorld(true);
+
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.sceneManager.camera);
+
+    const cubieGroups = this.model.getAllCubies();
+    const hits = raycaster.intersectObjects(cubieGroups, true);
+    if (hits.length === 0) return null;
+
+    const hit = hits[0];
+    if (!hit.face) return null;
+
+    // Walk up from the hit mesh (sticker / core) to its cubie Group.
+    let obj: Object3D | null = hit.object;
+    while (obj && !cubieGroups.includes(obj as Group)) {
+      obj = obj.parent;
+    }
+    if (!obj) return null;
+    const cubie = obj as Group;
+
+    // Resolve the cubie's CURRENT grid position from the logical state (the
+    // authoritative integer coordinates — immune to float drift). Used by the
+    // drag-to-turn resolver to derive moves from sticker geometry.
+    const cubieIndex = cubieGroups.indexOf(cubie);
+    const logical = cubieIndex >= 0 ? this.model.getLogicalState()[cubieIndex] : undefined;
+    const cubiePosition = logical
+      ? { x: logical.gridX, y: logical.gridY, z: logical.gridZ }
+      : {
+          x: Math.round(cubie.position.x),
+          y: Math.round(cubie.position.y),
+          z: Math.round(cubie.position.z),
+        };
+
+    // The raycast's `hit.face.normal` is the STICKER's geometry normal (+Z
+    // for every sticker panel — they all use the same flat ShapeGeometry).
+    // Sticker meshes carry their own rotation (CubeMeshFactory orients each
+    // face's panel: e.g. the U sticker is rotated -90° around X), so the
+    // cubie-local face axis is `geometryNormal × stickerQuaternion`. Without
+    // this step every sticker on the cube would resolve to the F face.
+    const resolved = resolveLayerHit({
+      meshLocalNormal: rotateVectorByQuaternion(
+        {
+          x: hit.face.normal.x,
+          y: hit.face.normal.y,
+          z: hit.face.normal.z,
+        },
+        {
+          x: hit.object.quaternion.x,
+          y: hit.object.quaternion.y,
+          z: hit.object.quaternion.z,
+          w: hit.object.quaternion.w,
+        },
+      ),
+      cubieQuaternion: cubie.quaternion,
+    });
+
+    return {
+      ...resolved,
+      worldPoint: { x: hit.point.x, y: hit.point.y, z: hit.point.z },
+      cubiePosition,
+    };
   }
 
   public setIsometricView(): void {
