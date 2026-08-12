@@ -164,7 +164,7 @@ export function FloatingPhaseTimeline({
             <Activity className="size-8 text-ink-3/30" />
             <p className="text-sm text-ink-2">{t("panel.solveTimeline.noAnalysis")}</p>
             <p className="text-xs text-ink-3">
-              {selectedSolve.source === "smart"
+              {selectedSolve.source === "smart" || selectedSolve.source === "virtual"
                 ? selectedSolve.analysis
                   ? t("panel.solveTimeline.incompleteAnalysis")
                   : t("panel.solveTimeline.pipelineRunning")

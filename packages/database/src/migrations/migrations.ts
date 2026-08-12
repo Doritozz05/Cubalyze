@@ -581,4 +581,51 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE profiles ADD COLUMN country TEXT NOT NULL DEFAULT '';
     `,
   },
+  {
+    id: '025_add_virtual_source',
+    description: 'Extend the solves.source CHECK to include "virtual" (Cube tab simulator solves) — SQLite cannot ALTER a CHECK, so the table is rebuilt with data preserved',
+    sql: `
+      -- Drop the old solves indexes first (they are renamed along with the
+      -- table by ALTER TABLE RENAME and would otherwise shadow the fresh
+      -- ones we recreate below).
+      DROP INDEX IF EXISTS idx_solves_session_id;
+      DROP INDEX IF EXISTS idx_solves_timestamp;
+      DROP INDEX IF EXISTS idx_solves_is_demo;
+
+      ALTER TABLE solves RENAME TO solves_source_check_legacy;
+
+      CREATE TABLE IF NOT EXISTS solves (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        time_ms INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        scramble TEXT NOT NULL DEFAULT '',
+        penalty TEXT NOT NULL DEFAULT 'none' CHECK (penalty IN ('none', '+2', 'dnf', 'DNF')),
+        method TEXT,
+        source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('smart', 'manual', 'virtual')),
+        note TEXT,
+        moves TEXT NOT NULL DEFAULT '[]',
+        orientation_timeline TEXT,
+        analysis_engine_version TEXT,
+        analysis TEXT,
+        puzzle_type TEXT NOT NULL DEFAULT '3x3x3',
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+
+      -- Preserve every existing solve (identical column list, same order as
+      -- the INSERT statement in solves.repository.ts).
+      INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at)
+        SELECT id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at
+        FROM solves_source_check_legacy;
+
+      DROP TABLE IF EXISTS solves_source_check_legacy;
+
+      CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
+      CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
+    `,
+  },
 ];

@@ -87,7 +87,7 @@ export default function App() {
     fetchSessionSolves,
   } = usePersistentSession();
 
-  const { puzzle, scrambleIndex, currentScramble, handlePuzzleChange, handleRegenerate, resetScramble } =
+  const { puzzle, scrambleIndex, currentScramble, handlePuzzleChange, handleRegenerate, resetScramble, forcePuzzle } =
     useScrambleState();
 
   // Single source of truth for what the main stage shows. The URL is the
@@ -158,6 +158,15 @@ export default function App() {
     // training views and the tour must also never arm the practice timer.
     keyboardDisabledRef.current = activeView === "training" || activeView === "cube" || tourActive;
   }, [activeView, tourActive]);
+
+  // ── Cube tab is 3×3-only today: entering it forces the puzzle selector to
+  //    3×3 and locks it (Header disables the Select). TODO(virtual-puzzles):
+  //    lift the lock once the simulator supports 2×2/4×4/… (see
+  //    useVirtualCubeSession).
+  const puzzleLocked = activeView === "cube";
+  useEffect(() => {
+    if (puzzleLocked && puzzle !== "3x3") forcePuzzle("3x3");
+  }, [puzzleLocked, puzzle, forcePuzzle]);
 
   // ── PB Celebration banner state ────────────────────────────────────────
   const [activePbMilestone, setActivePbMilestone] = useState<PbMilestoneResult | null>(null);
@@ -343,6 +352,8 @@ export default function App() {
       onManualFocusToggle={toggleManualFocus}
       activePbMilestone={activePbMilestone}
       onDismissPbBanner={handleDismissPbBanner}
+      puzzleLocked={puzzleLocked}
+      onVirtualSolveComplete={handleComplete}
       fetchSessionSolves={fetchSessionSolves}
       onUpdateSolve={handleUpdate}
       onDeleteSolve={handleDelete}

@@ -118,6 +118,8 @@ export interface HeaderProps {
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
+  /** Lock the puzzle selector (Cube tab is 3×3-only today). */
+  puzzleLocked?: boolean;
   className?: string;
 }
 
@@ -142,6 +144,7 @@ export function Header({
   profile,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
+  puzzleLocked,
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
@@ -427,6 +430,9 @@ export function Header({
           }}>
             <SelectTrigger
               size="sm"
+              // Locked while the Cube tab is active (3×3-only simulator): the
+              // value is forced to 3×3 and the dropdown is disabled.
+              disabled={puzzleLocked}
               // Explicit dark variants beat the Radix primitive's `dark:bg-input/30`
               // so the chip matches the sibling PB / session chips in dark mode.
               className="w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"

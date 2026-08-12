@@ -4,10 +4,26 @@ import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve, SolveMethod, SolveSource } from "@/types";
 import type { TimerState } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubeforge/types";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
 import type { Profile } from "@cubeforge/database";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { useSolveSession } from "@/hooks/useSolveSession";
+import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
+
+/**
+ * End-of-solve pipeline entry for the virtual cube simulator — the SAME
+ * useSolveCompletion.handleComplete used by the real timer, with per-call
+ * overrides (source "virtual", the simulator's own scramble + next-scramble).
+ */
+export type VirtualSolveComplete = (
+  time: number,
+  penalty: Penalty,
+  moves: CubeMoveEvent[],
+  orientations: (CubeOrientation | undefined)[],
+  orientationTimeline: OrientationTimeline | undefined,
+  overrides?: SolveCompletionOverrides,
+) => void;
 
 export type ImportInputs = Array<{
   time: number;
@@ -33,6 +49,11 @@ export interface AppShellProps {
   displayScramble: string;
   scrambleIndex: number;
   onPuzzleChange: (puzzle: PuzzleCategory) => void;
+  /** True while the Cube tab is active — the simulator is 3×3-only today,
+   *  so the header puzzle selector is forced to 3×3 and disabled. */
+  puzzleLocked?: boolean;
+  /** End-of-solve pipeline for the virtual cube simulator (source "virtual"). */
+  onVirtualSolveComplete?: VirtualSolveComplete;
   onRegenerate: () => void;
   onCopy: () => void;
   onSwitchSession: (id: string) => void;

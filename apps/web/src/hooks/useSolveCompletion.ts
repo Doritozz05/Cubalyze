@@ -22,6 +22,16 @@ import { hapticCelebrate } from "@/utils/haptics";
 import { isDev } from "@/utils/env";
 import type { UsePersistentSessionResult } from "@/hooks/usePersistentSession";
 
+/** Per-call overrides for {@link UseSolveCompletionResult.handleComplete} —
+ *  used by the virtual cube simulator, which owns its own scramble + next-
+ *  scramble lifecycle and must force `source: "virtual"`. */
+export interface SolveCompletionOverrides {
+  source?: SolveSource;
+  scramble?: string;
+  puzzleType?: string;
+  onNextScramble?: () => void;
+}
+
 export interface SolveCompletionDeps {
   addSolve: UsePersistentSessionResult["addSolve"];
   updateSolve: UsePersistentSessionResult["updateSolve"];
@@ -83,10 +93,24 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       rawMoves: CubeMoveEvent[],
       _rawOrientations: (CubeOrientation | undefined)[],
       rawOrientationTimeline: OrientationTimeline | undefined,
+      /**
+       * Per-call overrides (used by the virtual cube simulator, which owns
+       * its own scramble + next-scramble lifecycle):
+       *   - source: force the recorded SolveSource (e.g. "virtual"). Defaults
+       *     to smart/manual from `smartCubeConnectedRef`.
+       *   - scramble: the scramble this solve solved (defaults to the live
+       *     timer's `currentScramble`).
+       *   - puzzleType: puzzle type string (defaults to the app puzzle).
+       *   - onNextScramble: replaces the default next-scramble callback
+       *     (defaults to the live timer's).
+       */
+      overrides?: SolveCompletionOverrides,
     ) => {
       // These locals are captured by this solve's background job before the
       // next scramble is generated, so the analysis uses the correct input.
-      const capturedScramble = currentScramble;
+      const capturedScramble = overrides?.scramble ?? currentScramble;
+      const capturedPuzzleType = overrides?.puzzleType ?? puzzleCategoryToType(puzzle);
+      const capturedNextScramble = overrides?.onNextScramble ?? onNextScramble;
       const capturedMethod = methodPref;
       const solveId = uuidv4();
       const completionToken = ++completionTokenRef.current;
@@ -95,13 +119,16 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       // solve-stop time (synced by an effect in App). We use a ref instead
       // of the state variable directly because `handleComplete` is declared
       // before `useSolveSession` provides it (it's passed as `onSolve`).
-      const capturedSource: SolveSource = smartCubeConnectedRef.current ? "smart" : "manual";
+      // The virtual cube passes an explicit `source` override instead.
+      const capturedSource: SolveSource =
+        overrides?.source ??
+        (smartCubeConnectedRef.current ? "smart" : "manual");
 
       const pbResult = detectPbMilestones(
         solvesRef.current,
         time,
         penalty,
-        puzzleCategoryToType(puzzle),
+        capturedPuzzleType,
       );
       if (pbResult.types.length > 0) {
         hapticCelebrate();
@@ -130,7 +157,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         source: capturedSource,
         moves: rawMoves,
         orientationTimeline: rawOrientationTimeline,
-        puzzleType: puzzleCategoryToType(puzzle),
+        puzzleType: capturedPuzzleType,
       });
       savePromise
         .then((returnedId) => {
@@ -140,7 +167,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
             return;
           }
           latestSavedTokenRef.current = Math.max(latestSavedTokenRef.current, completionToken);
-          onNextScramble();
+          capturedNextScramble();
 
           // Analysis is intentionally independent from the save continuation.
           // It waits for this exact insert, then patches this exact solve.

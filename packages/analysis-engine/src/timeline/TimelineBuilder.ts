@@ -170,11 +170,24 @@ export class TimelineBuilder {
         // by a wide's slice would only materialize BETWEEN entries, invisible
         // to phase detection, and the detected cross drifts to a coincidental
         // late completion (the "cross detected at 16 vs written 11" bug).
+        //
+        // Greedy slice consumption is the TEXT route's contract: there,
+        // standalone slices (M/E/S that are not a wide's half) have no
+        // timeline entry and the next face token re-aligns the walk. The
+        // VIRTUAL route keeps ONE event per action (wides stay whole with
+        // `wide: true`), so a standalone slice right after a wide IS its own
+        // entry — consuming it greedily here would swallow the next move and
+        // leave the timeline desynced. Wide events therefore consume exactly
+        // ONE slice (their own half); the walk re-aligns on the next entry.
+        const sliceLimit = move.wide === true ? 1 : Number.POSITIVE_INFINITY;
+        let slicesConsumed = 0;
         while (
           tokenCursor < stateTokens.length &&
-          SLICE_TOKEN_RE.test(stateTokens[tokenCursor])
+          SLICE_TOKEN_RE.test(stateTokens[tokenCursor]) &&
+          slicesConsumed < sliceLimit
         ) {
           state.applySequence(stateTokens[tokenCursor++]);
+          slicesConsumed++;
         }
         if (!matched) {
           // Defensive (cannot happen by construction — `moves` is derived from

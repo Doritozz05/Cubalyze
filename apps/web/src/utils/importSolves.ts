@@ -839,7 +839,10 @@ function toImportedSolve(s: CubeForgeExport["solves"][number]): ImportedSolve {
     method: s.method && isSolveMethod(s.method) ? (s.method as SolveMethod) : undefined,
     note: s.note,
     puzzleType: s.puzzleType ?? inferPuzzleType(s.scramble ?? ""),
-    source: s.source === "smart" || s.source === "manual" ? s.source : undefined,
+    source:
+      s.source === "smart" || s.source === "manual" || s.source === "virtual"
+        ? s.source
+        : undefined,
   };
 }
 

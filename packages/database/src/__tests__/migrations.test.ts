@@ -144,4 +144,20 @@ describe('MIGRATIONS — schema migrations module', () => {
       }
     }
   });
+
+  it('migration 025 accepts the virtual source and preserves existing rows', () => {
+    const m = MIGRATIONS.find((x) => x.id === '025_add_virtual_source');
+    expect(m).toBeDefined();
+    // The recreated table's CHECK must allow 'virtual' (the whole point).
+    expect(m!.sql).toMatch(/source\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'manual'\s+CHECK\s+\(source\s+IN\s+\(\s*'smart'\s*,\s*'manual'\s*,\s*'virtual'\s*\)\)/i);
+    // Data preservation: rename → recreate → copy back → drop legacy.
+    expect(m!.sql).toMatch(/ALTER\s+TABLE\s+solves\s+RENAME\s+TO/i);
+    expect(m!.sql).toMatch(/INSERT\s+INTO\s+solves/i);
+    expect(m!.sql).toMatch(/SELECT\s+id,\s*session_id/i);
+    expect(m!.sql).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+solves_source_check_legacy/i);
+    // Recreate the indexes on the fresh table.
+    expect(m!.sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+idx_solves_session_id/i);
+    expect(m!.sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+idx_solves_timestamp/i);
+    expect(m!.sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+idx_solves_is_demo/i);
+  });
 });

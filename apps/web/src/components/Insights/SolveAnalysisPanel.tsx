@@ -155,10 +155,16 @@ export function SolveAnalysisPanel({
                 "rounded border px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide",
                 solve.source === "smart"
                   ? "border-phase-emerald/30 bg-phase-emerald/10 text-phase-emerald"
-                  : "border-line bg-surface-2 text-ink-2",
+                  : solve.source === "virtual"
+                    ? "border-phase-violet/30 bg-phase-violet/10 text-phase-violet"
+                    : "border-line bg-surface-2 text-ink-2",
               )}
             >
-              {solve.source === "smart" ? t("analysis.smartCube") : t("analysis.manual")}
+              {solve.source === "smart"
+                ? t("analysis.smartCube")
+                : solve.source === "virtual"
+                  ? t("analysis.virtualCube")
+                  : t("analysis.manual")}
             </span>
           </div>
         </div>
@@ -294,7 +300,9 @@ export function SolveAnalysisPanel({
           description={
             solve.source === "smart"
               ? t("analysis.noAnalysisSmart")
-              : t("analysis.noAnalysisManual")
+              : solve.source === "virtual"
+                ? t("analysis.noAnalysisVirtual")
+                : t("analysis.noAnalysisManual")
           }
           className="py-12"
         />
