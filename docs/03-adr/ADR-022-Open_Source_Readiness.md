@@ -3,8 +3,8 @@ status: "Accepted"
 owner: "Architecture Lead"
 reviewers: "TBD"
 created: "2026-07-12"
-last_updated: "2026-07-12"
-version: "1.0.0"
+last_updated: "2026-08-12"
+version: "1.1.0"
 depends_on: "DEC-20"
 tags: "oss, open-source, governance, community"
 document_type: "ADR"
@@ -16,7 +16,7 @@ document_type: "ADR"
 Este RFC propone la formalizaciÃ³n inmediata de las prÃ¡cticas estÃ¡ndar de cÃ³digo abierto (OSS) en el repositorio de CubeForge. Esto incluye la adiciÃ³n de guÃ­as de contribuciÃ³n explÃ­citas, un cÃ³digo de conducta, plantillas de Issues/Pull Requests, y el uso estricto de Conventional Commits para asegurar que el proyecto estÃ© listo para atraer talento de la comunidad desde su inicio.
 
 ## Motivation
-CubeForge serÃ¡ liberado bajo GPLv3. Un repositorio Open Source sin guÃ­as claras genera fricciÃ³n: los contribuyentes no saben cÃ³mo reportar errores correctamente, cÃ³mo configurar su entorno local ni cuÃ¡les son las expectativas de estilo de cÃ³digo. Sentar estas bases en la "DÃ­a 1" incrementa radicalmente la posibilidad de recibir contribuciones Ãºtiles (Pull Requests) y mitiga la carga de mantenimiento del equipo nÃºcleo.
+CubeForge se libera bajo licencia **MIT** (ver ADR-010; la menciÃ³n original a GPLv3 en este ADR era un error factual). Un repositorio Open Source sin guÃ­as claras genera fricciÃ³n: los contribuyentes no saben cÃ³mo reportar errores correctamente, cÃ³mo configurar su entorno local ni cuÃ¡les son las expectativas de estilo de cÃ³digo. Sentar estas bases en la "DÃ­a 1" incrementa radicalmente la posibilidad de recibir contribuciones Ãºtiles (Pull Requests) y mitiga la carga de mantenimiento del equipo nÃºcleo.
 
 ## Proposed Solution
 *   **CONTRIBUTING.md:** Un documento detallado sobre cÃ³mo clonar, instalar dependencias (usando `pnpm`), levantar la PWA y ejecutar los tests.
@@ -31,6 +31,10 @@ CubeForge serÃ¡ liberado bajo GPLv3. Un repositorio Open Source sin guÃ­as c
 ## Drawbacks
 *   **Burocracia temprana:** Exigir Conventional Commits y Pull Requests perfectos puede asustar a contribuyentes casuales que solo querÃ­an arreglar un typo (aunque herramientas como Husky automatizan parte del dolor).
 *   **Tiempo de mantenimiento:** Mantener las Issues y guiar a desarrolladores junior toma tiempo que compite con el desarrollo del producto.
+
+## Implementation Status (2026-08-12)
+
+Implementado: Conventional Commits + Husky + commitlint + `czg` activos (`.husky/`, `commitlint.config.mjs`), `CODE_OF_CONDUCT.md` y `SECURITY.md` presentes. La guÃ­a de contribuciÃ³n vive en `docs/15-contributing/CONTRIBUTING.md`. Pendiente si se desea: plantillas de Issues/PRs en `.github/`.
 
 ## Alternatives
 *   **Modo "Catedral" cerrado:** Desarrollar en privado y liberar el cÃ³digo sin guÃ­as "tal cual" (Dump). Rechazado, destruye el potencial de la comunidad de speedcubing que es altamente tÃ©cnica.

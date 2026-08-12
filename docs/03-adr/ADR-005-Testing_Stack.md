@@ -46,6 +46,10 @@ Se elige esta opción porque Vitest se integra sin configuración adicional en p
 * La sintaxis de Playwright difiere de Cypress, requiriendo un proceso de adaptación para desarrolladores acostumbrados al encadenamiento de Cypress.
 * Los tests de E2E vivirán en un paquete separado (`apps/e2e`) para evitar contaminación de dependencias.
 
+## Implementation Status (2026-08-12)
+
+Vitest implementado (unit/integración en paquetes y web). **Playwright pendiente**: no existe `playwright.config.*` ni suite E2E; el `apps/e2e` mencionado en Negative Consequences no se ha creado.
+
 ## Pros and Cons of the Options
 
 ### Opción 1: Vitest + Playwright

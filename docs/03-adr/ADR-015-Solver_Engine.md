@@ -3,8 +3,8 @@ status: "Accepted"
 owner: "Architecture Lead"
 reviewers: "TBD"
 created: "2026-07-12"
-last_updated: "2026-07-12"
-version: "1.0.0"
+last_updated: "2026-08-12"
+version: "1.1.0"
 depends_on: "DEC-07, DEC-09"
 tags: "solver, wasm, kociemba, min2phase"
 document_type: "ADR"
@@ -35,6 +35,10 @@ La generaciÃ³n de scrambles oficiales de la WCA (World Cube Association) exige
 ## Alternatives
 *   **Solver en Backend (API):** Generar los scrambles en el servidor. Rechazado porque rompe el offline-first y aÃ±ade latencia de red.
 *   **Solver en JS Puro:** Usar la versiÃ³n en Javascript. Funciona, pero es significativamente mÃ¡s lento e impacta el consumo de baterÃ­a en mÃ³viles.
+
+## Implementation Status (2026-08-12)
+
+Implementado con el paquete npm **`min2phase.js`** (puerto JavaScript de min2phase), **no** compilado a WASM: `packages/solver-engine/src/Min2PhaseSolver.ts` importa `min2phase` y expone `solve()`. El paquete incluye además `RandomStateGenerator`, `PhaseSolver`, `CrossScrambleGenerator` y `TwoByTwoScrambler`. La compilación a WASM queda como optimización futura.
 
 ## Unresolved Questions
 *   Â¿Descargaremos el mÃ³dulo ya empaquetado en NPM (como `cubejs`) o crearemos un binding custom en Rust+WASM para mejor integraciÃ³n en nuestro monorepo?

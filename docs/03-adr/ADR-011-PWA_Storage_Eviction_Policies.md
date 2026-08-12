@@ -30,6 +30,10 @@ Chosen option: **Opción 2: SQLite WASM sobre OPFS, uso de `navigator.storage.pe
 2. **Mitigación de Eviction:** Se invocará a la API `navigator.storage.persist()` para pedir formalmente al navegador que marque los datos como críticos y evite su borrado automático.
 3. **Resiliencia (Cloud Sync):** Pese a lo anterior, el borrado de cookies/historial manual destruirá los datos OPFS. Por tanto, el estado "Offline" se respaldará periódicamente a Supabase (aprovechando ADR-007).
 
+### Implementation Status (2026-08-12)
+
+SQLite WASM sobre OPFS implementado en `packages/database` (worker + client). **`navigator.storage.persist()` no invocado** (solo `estimate()` en Settings/AdvancedSection). La sincronización a Supabase (punto 3 de la decisión) sigue pendiente (ver ADR-019).
+
 ### Positive Consequences
 *   Consultas SQL completas y veloces en el navegador.
 *   Datos persistentes y respaldados.

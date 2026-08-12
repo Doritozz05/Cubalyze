@@ -29,6 +29,10 @@ CubeForge funcionarÃ¡ offline. Un usuario puede hacer 500 *solves* en un aviÃ
 *   CRDTs (Conflict-free Replicated Data Types): Para configuraciones simples (como cambiar el tema oscuro/claro), se puede usar un modelo LWW (Last Writer Wins) basado en `client_timestamp`.
 *   Auth: IntegraciÃ³n directa de Supabase Auth (Magic Links, OAuth de GitHub/Google).
 
+## Implementation Status (2026-08-12)
+
+**No implementado.** No hay proyecto ni carpeta `supabase/`; `apps/api` está vacío. La sincronización en la nube sigue pendiente.
+
 ## Drawbacks
 *   **Complejidad en el Cliente:** Obliga al cliente local (SQLite) a tener dos estados: "estado derivado de los eventos locales" y "lista de eventos pendientes de enviar".
 *   **Consumo de Espacio DB:** Guardar todos los eventos inmutables consume mÃ¡s espacio en Postgres que simples sobreescrituras. Eventualmente se requiere implementar un proceso de "Snapshotting" o poda.

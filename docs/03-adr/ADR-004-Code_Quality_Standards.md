@@ -3,8 +3,8 @@ status: "Accepted"
 owner: "Architecture Lead"
 reviewers: "Principal Architect"
 created: "2026-07-12"
-last_updated: "2026-07-12"
-version: "1.0.0"
+last_updated: "2026-08-12"
+version: "1.1.0"
 related_rfc: "RFC-004-Code_Quality_Standards"
 tags: "tooling, linters"
 document_type: "ADR"
@@ -29,7 +29,7 @@ Con el crecimiento de CubeForge en un ecosistema de monorepo gestionado por Turb
 ## Decision Outcome
 
 Chosen option: **Opción 1: ESLint (Flat Config) + Prettier**.
-Se elige esta opción debido a la madurez actual del ecosistema de ESLint/Prettier, especialmente en su soporte robusto para plugins específicos de React y Three.js, necesarios para nuestro motor 3D. Se ha decidido no utilizar Husky ni Conventional Commits para priorizar la agilidad y evitar fricciones en el flujo de desarrollo local.
+Se elige esta opción debido a la madurez actual del ecosistema de ESLint/Prettier, especialmente en su soporte robusto para plugins específicos de React y Three.js, necesarios para nuestro motor 3D. *(Nota 2026-08-12: la clÃ¡usula original de no usar Husky ni Conventional Commits quedÃ³ **superada por ADR-022** — el repo usa `husky`, `commitlint` y `czg`.)*
 
 ### Positive Consequences
 

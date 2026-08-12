@@ -46,6 +46,10 @@ Se elige esta opción porque GitHub Actions se integra nativamente en el entorno
 * Dependencia directa y "vendor lock-in" parcial con el ecosistema de GitHub Actions.
 * Configuración inicial compleja para sincronizar el caché de Turborepo en los runners de GitHub Actions.
 
+## Implementation Status (2026-08-12)
+
+GitHub Actions (`ci.yml`, `quality-gates.yml`) y Changesets configurados. **Turbo Remote Caching pendiente**: `turbo.json` no define `remoteCache`. Sin publicación a NPM hasta la fecha (0 releases).
+
 ## Pros and Cons of the Options
 
 ### Opción 1: GitHub Actions + Turborepo + Changesets
