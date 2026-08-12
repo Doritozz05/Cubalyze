@@ -7,6 +7,7 @@ import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
 import { WidgetHost } from "@/widgets/explorer";
 import { CubeButtonGate } from "@/widgets/implementations/cube-button/CubeButtonGate";
+import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
 import { OnboardingTour } from "@/components/Onboarding/OnboardingTour";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve, SolveMethod } from "@/types";
@@ -96,6 +97,12 @@ export function StageOverlays(props: StageOverlaysProps) {
     onTourSkip,
   } = props;
 
+  // The Cube tab (virtual cube simulator) owns its own scramble lifecycle —
+  // while it's active, the floating widgets (scramble-2d in particular) must
+  // render ITS scramble, not the real timer's `currentScramble`.
+  const cubeScramble = useVirtualScrambleStore((s) => s.scramble);
+  const widgetScramble = activeView === "cube" ? cubeScramble : scramble;
+
   return (
     <>
       {/* Bottom tab bar — touch regime only (mobile + tablet <1024px). */}
@@ -132,8 +139,14 @@ export function StageOverlays(props: StageOverlaysProps) {
           Visualizer, Time Distribution, PB Progression, Solve Timeline,
           Metronome, Notes, etc.) driven by the Widget Store. The 3D cube
           button is rendered separately below as a circular floating button
-          (not through WidgetHost/dock system). */}
-      {activeView === "timer" && !isFocused && !tourActive && (
+          (not through WidgetHost/dock system).
+
+          Mounted on the timer AND the Cube (virtual) tab: the dock pills in
+          the header launch the same widgets everywhere. While the Cube tab
+          is active, `widgetScramble` is the simulator's own scramble (the
+          virtual cube owns its scramble lifecycle; the real timer's is
+          unrelated). */}
+      {!isFocused && !tourActive && (activeView === "timer" || activeView === "cube") && (
         <WidgetHost
           solves={solves}
           onUpdate={onUpdate}
@@ -141,7 +154,7 @@ export function StageOverlays(props: StageOverlaysProps) {
           onClear={onClear}
           onAnalyze={onAnalyze}
           onReplay={onReplay}
-          scramble={scramble}
+          scramble={widgetScramble}
           smartCubeConnected={smartCubeConnected}
           cubePanelOpen={cubePanelOpen}
           onOpenCube={onOpenCube}

@@ -41,6 +41,7 @@ import {
   type OrientationEntry,
 } from "@cubeforge/math-core";
 import { preferencesStore } from "@cubeforge/state";
+import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
 
 /** The simulator currently supports 3×3 (architecture ready for more puzzles). */
 const CUBE_ORDER = 3;
@@ -210,7 +211,15 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
   // does with the physical cube's gyroscope.
   const scrambleFollowsCube = useStore(preferencesStore, (s) => s.scrambleFollowsCube);
 
-  const [scramble, setScramble] = useState(() => generateScrambleFor("3x3"));
+  const [scramble, setScramble] = useState(() => {
+    const initial = generateScrambleFor("3x3");
+    // Publish to the widget host immediately so the scramble-2d widget never
+    // flashes a solved cube on first visit to the Cube tab (the store write
+    // inside the lazy view's render happens before StageOverlays' next
+    // read via its subscription).
+    useVirtualScrambleStore.getState().setScramble(initial);
+    return initial;
+  });
   const [showHelp, setShowHelp] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
@@ -269,6 +278,13 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
   const resetCamera = useCallback(() => {
     engineRef.current?.setIsometricView();
   }, [engineRef]);
+
+  // Share the current scramble with the floating widgets while the Cube view
+  // is active — each view owns an independent scramble lifecycle, so the
+  // host reads THIS value (not the real timer's) on the Cube tab.
+  useEffect(() => {
+    useVirtualScrambleStore.getState().setScramble(scramble);
+  }, [scramble]);
 
   // The one-time gesture hint disappears by itself a few seconds after the
   // cube is ready (and immediately on the first drag).
