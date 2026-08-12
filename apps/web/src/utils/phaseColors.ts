@@ -1,5 +1,5 @@
 /**
- * @file Single source of truth for phase + pause colors across Insights.
+ * Single source of truth for phase + pause colors across Insights.
  *
  * Color mappings are now in the headless @cubeforge/analysis-engine package.
  * This file re-exports them for backward compatibility with existing UI code.

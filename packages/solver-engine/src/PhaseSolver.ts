@@ -369,7 +369,7 @@ export class PhaseSolver {
   /**
    * Invert a phase solution into a scramble (i.e. the move sequence that,
    * applied to a solved cube, produces a state whose optimal `mask` solve
-   * is the original solution). Used by {@link CrossScrambleGenerator}.
+   * is the original solution). Used by `CrossScrambleGenerator`.
    *
    * Group-theoretic guarantee: if `solution` is an OPTIMAL solve of a
    * partial goal (e.g. cross), then `invert(solution)` applied to a solved

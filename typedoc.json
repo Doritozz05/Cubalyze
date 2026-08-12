@@ -14,5 +14,12 @@
   // (p.ej. @types/react 18.3.1 con componentes de lucide-react). La API
   // reference extrae JSDoc + signaturas; no es un gate de typecheck.
   "skipErrorChecking": true,
+  // useFormContext (react-hook-form) se menciona en form.tsx y no está en la
+  // doc; se mapea a su página oficial en vez de emitir warning.
+  "externalSymbolLinkMappings": {
+    "react-hook-form": {
+      "useFormContext": "https://react-hook-form.com/docs/useformcontext"
+    }
+  },
   "hideGenerator": true
 }

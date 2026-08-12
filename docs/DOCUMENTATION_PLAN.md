@@ -33,9 +33,9 @@ desactualizados. Cubrir:
 
 ### Lo que falta o está vacío
 - READMEs placeholder en `docs/02-architecture/diagrams/`, `overview/`, `validation/`.
-- Secciones con solo README (al inicio): `07-database`, `09-testing`, `10-security`,
-  `12-sdk`, `13-plugins`, `14-ai`, `17-releases`, `18-archive` (algunas pobladas
-  después: `06-api` → Fase 4, `11-devops` → Fase 6, `16-user` → Fase 1).
+- Secciones con solo README (al inicio): `07-database`, `09-testing`, `10-security`,      `12-sdk`, `13-plugins`, `14-ai`, `18-archive` (algunas pobladas después:
+      `06-api` → Fase 4, `11-devops` → Fase 6, `16-user` → Fase 1,
+      `17-releases` → Fase 8).
 - No hay API reference (TypeDoc no instalado). No hay CHANGELOG.md (changesets
   configurado pero sin uso). No hay tags git → nunca ha habido release.
 
@@ -274,9 +274,18 @@ placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 **Criterio de cierre:** `docs:api` configurado y generando; auditoría documentada. ✅ Completado 2026-08-12.
 
 ### Fase 8 — Changelog y releases (changesets)
-- [ ] Configurar changesets para generar `CHANGELOG.md`.
-- [ ] Crear `docs/17-releases/` con el proceso de release.
-- [ ] Decidir con el usuario el primer release (versionado 0.0.0 hoy, sin tags).
+- [x] Configurar changesets para generar `CHANGELOG.md` (2026-08-12): añadido
+      `prettier-plugin-tailwindcss` a devDeps de raíz (faltaba y rompía
+      `changeset version` y `pnpm format` — bug latente).
+- [x] Crear `docs/17-releases/` (2026-08-12): `README.md` + `RELEASE_PROCESS.md`
+      (SemVer, flujo changesets, tag, canales web/NPM, primer release).
+- [x] **Primer release preparado** (2026-08-12): primer changeset con bumps
+      `minor` para los 15 paquetes con fuentes → `changeset version` aplicado:
+      versiones `0.1.0 → 0.2.0`, `CHANGELOG.md` generados por paquete (+patch
+      en las apps). Pendiente de decisión del usuario: tag `v0.2.0` al mergear
+      y apertura a NPM (solo `cube-3d-engine` es público hoy).
+
+**Criterio de cierre:** proceso documentado + primer release preparado. ✅ Completado 2026-08-12.
 
 ### Fase 9 — Cierre y validación
 - [ ] Revisión cruzada: cada sección del índice `docs/` con contenido verificado.

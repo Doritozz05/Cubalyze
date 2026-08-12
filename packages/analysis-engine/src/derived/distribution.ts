@@ -1,5 +1,5 @@
 /**
- * @file Distribution visualization data — histograms, sparklines, activity heatmaps.
+ * Distribution visualization data — histograms, sparklines, activity heatmaps.
  *
  * Pure functions that transform solve lists into chart-ready data arrays.
  * Framework-agnostic, zero UI dependencies.

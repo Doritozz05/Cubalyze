@@ -705,7 +705,7 @@ export class Cube3DEngine {
    *
    * NOTE: Prior to the stickering-system unification, this method cloned the
    * sticker material but never applied `grayColor` (a no-op bug). It now grays
-   * correctly via the shared {@link grayCubieGroup} helper. No callers relied
+   * correctly via the shared `grayCubieGroup` helper. No callers relied
    * on the old no-op behavior.
    *
    * Call `clearLayerGray()` before re-syncing facelets to restore

@@ -1,5 +1,5 @@
 /**
- * @file Phase and pause color mappings — single source of truth.
+ * Phase and pause color mappings — single source of truth.
  *
  * Phase colors are **semantic** (keyed by phase NAME), not positional.
  * Pause colors are by **category** (purple family).

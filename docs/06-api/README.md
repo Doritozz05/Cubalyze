@@ -36,23 +36,22 @@
 - **Tipos residuales:** corre con `skipErrorChecking` — documenta pese a
   errores de tipos preexistentes del repo (no es un gate de typecheck).
 
-### Auditoría de JSDoc (2026-08-12) — mejoras propuestas, no aplicadas
+### Auditoría de JSDoc (2026-08-12) — corregida, 0 warnings
 
-La generación avisa de 8 problemas menores (cosméticos, no bloquean):
+La primera generación avisó de 8 problemas menores (cosméticos); **corregidos
+el mismo día** (Fase 8):
 
-1. **Tag `@file` desconocido** en 8 archivos de `apps/web/src/utils` (p.ej.
-   `insights.ts`, `phaseColors.ts`): TypeDoc no lo reconoce → el primer párrafo
-   del archivo no se renderiza. Cambiar `@file` por `@module` o una descripción
-   normal.
-2. **4 links `{@link}` rotos** (se renderizan sin href): `CrossScrambleGenerator`
-   (solver-engine, no exportado del barrel), `useCalendarTasks`
-   (`hooks/useSkillProgress.ts:60` — no importado en el archivo),
-   `UseSolveCompletionResult.handleComplete` (`hooks/useSolveCompletion.ts:25`),
-   `useFormContext` (ui/form, externo react-hook-form). Arreglar el nombre/import
-   en el comentario.
+1. **Tag `@file` desconocido** en 8 archivos (5 de `analysis-engine/src/derived`,
+   `math-core/src/methods/cfop/slotDetection.ts`, `apps/web/src/utils/insights.ts`
+   y `phaseColors.ts`): se eliminó el tag, dejando la descripción como primer
+   párrafo del módulo.
+2. **4 links `{@link}` rotos**: `CrossScrambleGenerator` (PhaseSolver.ts),
+   `useCalendarTasks` (useSkillProgress.ts), `UseSolveCompletionResult.handleComplete`
+   (useSolveCompletion.ts) y `grayCubieGroup` (Cube3DEngine.ts) → texto plano
+   entre backticks. El link externo `useFormContext` (react-hook-form) se
+   resolvió con `externalSymbolLinkMappings` en `typedoc.json`.
 
-Ambas mejoras tocan fuentes (no `docs/`) y son opcionales; quedan como
-propuesta para una pasada futura de limpieza de JSDoc.
+Estado: `pnpm docs:api` genera con **0 warnings**.
 
 ## Relación con otras docs
 

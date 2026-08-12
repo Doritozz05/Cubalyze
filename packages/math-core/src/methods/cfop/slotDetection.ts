@@ -430,7 +430,7 @@ export function bestFrameRotationSequence(
 }
 
 /**
- * @file F2L slot completion detection.
+ * F2L slot completion detection.
  *
  * A slot is "complete" when its corner and edge are both home, oriented.
  * Because pieces are anchored to positions (not colors), a slot check only
