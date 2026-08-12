@@ -47,6 +47,23 @@ export function useScrambleState() {
     toast.success(i18n.t("toast:newScramble"));
   }, [puzzle]);
 
+  /**
+   * Force the puzzle WITHOUT the toast (used by the Cube tab, which is 3×3
+   * only today — the simulator locks the selector while it is active).
+   */
+  const forcePuzzle = useCallback((target: PuzzleCategory) => {
+    setPuzzle(target);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cubeforge_puzzle", target);
+      } catch (e) {
+        console.warn("[App] Failed to save puzzle to localStorage", e);
+      }
+    }
+    setCurrentScramble(generateScrambleFor(target));
+    setScrambleIndex(0);
+  }, []);
+
   /** Replace the scramble without bumping the toast (used after session ops). */
   const resetScramble = useCallback(
     (target?: PuzzleCategory) => {
@@ -63,5 +80,6 @@ export function useScrambleState() {
     handlePuzzleChange,
     handleRegenerate,
     resetScramble,
+    forcePuzzle,
   };
 }

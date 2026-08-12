@@ -2,7 +2,10 @@ import { z } from 'zod';
 import type { CubeMoveEvent } from '@cubeforge/types';
 
 export const CubeMoveEventSchema = z.object({
-  face: z.enum(['U', 'D', 'R', 'L', 'F', 'B']),
+  // Slice faces (M/E/S) appear on virtual-cube solves: wide moves are
+  // expanded into their face + slice halves (r → "R M'"), matching what
+  // per-layer smart-cube sensors report. See @cubeforge/types CubeFace.
+  face: z.enum(['U', 'D', 'R', 'L', 'F', 'B', 'M', 'E', 'S']),
   direction: z.union([z.literal(1), z.literal(-1), z.literal(2)]),
   cubeTimestamp: z.number(),
   hostTimestamp: z.number(),
@@ -17,8 +20,10 @@ export const SolveSchema = z.object({
   scramble: z.string(),
   penalty: z.enum(['none', '+2', 'dnf', 'DNF']).default('none'),
   method: z.string().optional(),
-  /** How the solve was recorded: "smart" (cube hardware) or "manual". */
-  source: z.enum(['smart', 'manual']).default('manual'),
+  /** How the solve was recorded: "smart" (cube hardware), "manual", or
+   *  "virtual" (the Cube tab simulator — full move + orientation data,
+   *  same analysis pipeline as smart-cube solves). */
+  source: z.enum(['smart', 'manual', 'virtual']).default('manual'),
   note: z.string().nullable().optional(),
   moves: z.array(CubeMoveEventSchema).default([]),
   /**

@@ -137,15 +137,16 @@ export const SolveListPanel = memo(function SolveListPanel({
   // Chip counts (from the full unfiltered set so they don't change when
   // you toggle a penalty chip).
   const chipCounts = useMemo(() => {
-    let clean = 0, plus2 = 0, dnf = 0, smart = 0;
+    let clean = 0, plus2 = 0, dnf = 0, smart = 0, virtual = 0;
     for (const s of allSolves) {
       const pen = normalizePenalty(s.penalty);
       if (pen === "none") clean++;
       else if (pen === "+2") plus2++;
       else if (pen === "DNF") dnf++;
       if (s.source === "smart") smart++;
+      if (s.source === "virtual") virtual++;
     }
-    return { clean, plus2, dnf, smart };
+    return { clean, plus2, dnf, smart, virtual };
   }, [allSolves]);
 
   const isFiltered =
@@ -267,6 +268,14 @@ export const SolveListPanel = memo(function SolveListPanel({
               onClick={() => toggleFilterCategory("smart")}
             >
               Smart
+            </FilterChip>
+            <FilterChip
+              active={filters.activeFilter === "virtual"}
+              count={chipCounts.virtual}
+              dot="bg-phase-violet"
+              onClick={() => toggleFilterCategory("virtual")}
+            >
+              Virtual
             </FilterChip>
           </div>
         )}

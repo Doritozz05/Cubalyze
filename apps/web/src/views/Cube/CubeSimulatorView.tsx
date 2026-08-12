@@ -11,7 +11,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCubeTurnControls } from "@/hooks/useCubeTurnControls";
-import { useVirtualCubeSession } from "@/hooks/useVirtualCubeSession";
 import {
   CUBE_KEYMAP,
   actionToMoves,
@@ -19,10 +18,21 @@ import {
   actionToValidatorEvents,
   type CubeKeyAction,
 } from "@/lib/keybinds/cubeKeybinds";
-import type { CubeFace } from "@cubeforge/types";
+import type {
+  CubeFace,
+  CubeMoveEvent,
+  CubeOrientation,
+  OrientationTimeline,
+} from "@cubeforge/types";
+import type { Penalty } from "@/types";
 import { scrambleMoveDurationMs } from "@cubeforge/cube-3d-engine";
 import { generateScrambleFor } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
+import {
+  useVirtualCubeSession,
+  type VirtualSolveHandler,
+} from "@/hooks/useVirtualCubeSession";
+import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
 import {
   CubeState,
   FaceletStringConverter,
@@ -46,6 +56,23 @@ const CUBE_ORDER = 3;
  * frame.
  */
 const SOLVED_CANONICAL = FaceletStringConverter.toFaceletString(new CubeState());
+
+/**
+ * End-of-solve pipeline prop (wired by App via the same useSolveCompletion
+ * the real timer uses — with `source: "virtual"` overrides). Solves are
+ * saved with full moves + orientation timeline so the deep analysis
+ * pipeline and replay work identically to smart-cube solves.
+ */
+export interface CubeSimulatorViewProps {
+  onVirtualSolveComplete?: (
+    time: number,
+    penalty: Penalty,
+    moves: CubeMoveEvent[],
+    orientations: (CubeOrientation | undefined)[],
+    orientationTimeline: OrientationTimeline | undefined,
+    overrides?: SolveCompletionOverrides,
+  ) => void;
+}
 
 type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
 
@@ -160,7 +187,9 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
  * Whole-cube rotations never start/stop it, and reset/regenerate return to
  * IDLE without starting anything (inspection is the next step).
  */
-export const CubeSimulatorView = memo(function CubeSimulatorView() {
+export const CubeSimulatorView = memo(function CubeSimulatorView({
+  onVirtualSolveComplete,
+}: CubeSimulatorViewProps) {
   const { t } = useTranslation("cube");
 
   const {
@@ -202,6 +231,12 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   // One-time init once the engine is ready (initial solved facelets + camera).
   const didInitRef = useRef(false);
 
+  // The session's onSolve reads through this ref (set by an effect below,
+  // after handleRegenerate exists) so the completion pipeline — which needs
+  // this view's scramble + next-scramble lifecycle — is never in a temporal
+  // dead zone, and the session hook itself stays stable.
+  const virtualSolveRef = useRef<VirtualSolveHandler>(() => {});
+
   const {
     phase,
     time,
@@ -212,7 +247,14 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     pushFacelets,
     resetScramble,
     reset: resetSession,
-  } = useVirtualCubeSession(scramble);
+  } = useVirtualCubeSession(scramble, {
+    // The virtual cube's whole-cube rotations ARE the orientation source:
+    // reading the view's grip at each move gives exact per-move
+    // orientations — the equivalent of a smart cube's gyroscope.
+    gripRef,
+    onSolve: (time, penalty, moves, orientations, orientationTimeline) =>
+      virtualSolveRef.current(time, penalty, moves, orientations, orientationTimeline),
+  });
 
   /** Push the CubeState to the 3D engine (instant facelet sync — used for
    *  scramble apply and reset, whose frames are always canonical). */
@@ -321,9 +363,20 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
       // front face validates as the original R move. Wide moves stay ONE
       // token ("r" → conjugated "b") so the validator counts a single
       // deviation instead of a phantom error for the slice half.
+      //
+      // Wides and slices also carry `displayNotation` — the SOLVER-frame
+      // token the user performed ("r", "M'"), which can differ from the
+      // cube-frame conjugate ("b", "S'") under a rotated grip. The replay
+      // shows that label verbatim and animates a wide's layers together.
+      const displayNotation =
+        action.kind === "wide" ||
+        (action.kind === "turn" &&
+          (action.face === "M" || action.face === "E" || action.face === "S"))
+          ? actionToNotation(action)
+          : undefined;
       for (const ev of actionToValidatorEvents(action, gripRef.current)) {
-        if (ev.kind === "face") notifyTurn(ev.face, ev.direction);
-        else notifyTurnToken(ev.notation);
+        if (ev.kind === "face") notifyTurn(ev.face, ev.direction, displayNotation);
+        else notifyTurnToken(ev.notation, displayNotation);
       }
 
       // Solved up to rotation → the session stops the running timer (and the
@@ -444,20 +497,48 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     }
   }, [resetCube, resetSession, resetScramble, scramble, syncState, notifyTurn]);
 
-  // ── Solve complete → next scramble (parity with the real timer, which
-  //    advances to a fresh scramble after every solve). The cube restarts
-  //    solved with a brand-new scramble; the session resets the clock when
-  //    the scramble text changes. A short delay keeps the final time
-  //    visible before the next scramble appears.
+  // ── Solve complete → save (pipeline) → next scramble ─────────────────────
+  // Parity with the real timer: every solve is persisted with source
+  // "virtual", full moves + orientation timeline, then the SAME deep
+  // analysis pipeline patches it (phases, TPS, rotations, …). The next
+  // scramble fires AFTER the save resolves (delayed 1200ms so the final
+  // time stays visible). Fallback: when no pipeline is wired (e.g. a test
+  // harness), regenerate on a timer as before.
   const lastTimeRef = useRef<number | null>(null);
   useEffect(() => {
+    virtualSolveRef.current = (
+      time,
+      penalty,
+      moves,
+      orientations,
+      orientationTimeline,
+    ) => {
+      onVirtualSolveComplete?.(
+        time,
+        penalty,
+        moves,
+        orientations,
+        orientationTimeline,
+        {
+          // Tag the solve so stats can filter it: manual / smart / virtual.
+          source: "virtual",
+          // The virtual cube owns its scramble (3×3-only today).
+          scramble,
+          puzzleType: "3x3x3",
+          onNextScramble: () => setTimeout(handleRegenerate, 1200),
+        },
+      );
+    };
+  });
+  useEffect(() => {
+    if (onVirtualSolveComplete) return; // the pipeline drives regeneration
     const prev = lastTimeRef.current;
     lastTimeRef.current = lastTime;
     if (lastTime !== null && prev === null) {
       const t = setTimeout(handleRegenerate, 1200);
       return () => clearTimeout(t);
     }
-  }, [lastTime, handleRegenerate]);
+  }, [lastTime, handleRegenerate, onVirtualSolveComplete]);
 
   /**
    * Reset: cube back to SOLVED (undoes every move including whole-cube

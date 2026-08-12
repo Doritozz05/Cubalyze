@@ -74,6 +74,8 @@ export interface MainLayoutProps {
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
+  /** Lock the puzzle selector to its current value (Cube tab: 3×3 only). */
+  puzzleLocked?: boolean;
   className?: string;
 }
 
@@ -103,6 +105,7 @@ export function MainLayout({
   hideHeader,
   puzzle,
   onPuzzleChange,
+  puzzleLocked,
   className,
 }: MainLayoutProps) {
   // Defer useIsTouch to post-mount to avoid SSR/hydration flash.
@@ -313,6 +316,7 @@ export function MainLayout({
               profile={profile}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
+              puzzleLocked={puzzleLocked}
             />
           )}
         </AnimatePresence>

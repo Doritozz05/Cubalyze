@@ -13,13 +13,22 @@ import type { ScrambleValidationAdapter } from "@/hooks/useScrambleValidator";
  */
 export interface VirtualCubeAdapter extends ScrambleValidationAdapter {
   /** Push a completed turn (already mirrored into the CubeState/engine). */
-  pushMove(face: CubeFace, direction: 1 | -1): void;
+  pushMove(face: CubeFace, direction: 1 | -1, displayNotation?: string): void;
   /**
    * Push a completed action as ONE full-notation token ("r" for a wide
    * move). Emitted on {@link tokens$} — the validator compares one user
    * action against one scramble token.
    */
-  pushToken(notation: string): void;
+  pushToken(notation: string, displayNotation?: string): void;
+  /**
+   * The solver-frame notation for the most recent token pushed via
+   * {@link pushToken} — what the user actually performed on the rotated
+   * view (e.g. "r"), as opposed to the cube-frame conjugated token the
+   * validator receives ("b" under a y grip). Emitted BEFORE the token so
+   * the session collector can pair them. Used to persist `displayNotation`
+   * on the wide event so the replay shows the solver's own move.
+   */
+  tokenDisplay$?: import("rxjs").Observable<string>;
   /** Push an absolute facelet snapshot (solved on mount/reset, solved when
    *  the solve completes). */
   pushFacelets(facelets: string): void;
@@ -37,6 +46,7 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
   const faceletsSubject = new Subject<string>();
   const resetSubject = new Subject<void>();
   const tokensSubject = new Subject<string>();
+  const tokenDisplaySubject = new Subject<string>();
 
   return {
     // The virtual cube is always "connected": the validator + auto-arm
@@ -46,18 +56,24 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
     facelets$: faceletsSubject.asObservable(),
     reset$: resetSubject.asObservable(),
     tokens$: tokensSubject.asObservable(),
+    tokenDisplay$: tokenDisplaySubject.asObservable(),
     // Facelets are pushed directly by the view (no hardware round-trip).
     requestFacelets: async () => {},
 
-    pushMove(face, direction) {
+    pushMove(face, direction, displayNotation) {
       movesSubject.next({
         face,
         direction,
+        displayNotation,
         cubeTimestamp: 0,
         hostTimestamp: performance.now(),
       });
     },
-    pushToken(notation) {
+    pushToken(notation, displayNotation) {
+      // Emit the display label FIRST so the session's collector (subscribed
+      // to both streams) can pair the solver-frame notation with the token
+      // that follows synchronously.
+      tokenDisplaySubject.next(displayNotation ?? notation);
       tokensSubject.next(notation);
     },
     pushFacelets(facelets) {

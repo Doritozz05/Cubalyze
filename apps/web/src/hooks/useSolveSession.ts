@@ -29,6 +29,7 @@ import {
   type BleAuditEntry,
 } from "@/hooks/solveSessionDebug";
 import type {
+  CubeFace,
   CubeMoveDirection,
   CubeMoveEvent,
   CubeOrientation,
@@ -40,6 +41,7 @@ import {
   compactCubeMoves,
   compactOrientationTimeline,
   CubeState,
+  expandWideMoves,
   FaceletStringConverter,
   MoveTransformer,
   SOLVED_FACELETS,
@@ -97,6 +99,28 @@ export interface UseSolveSessionResult {
 // via `?cfop_debug=1` / localStorage, or automatic on localhost dev).
 
 /**
+ * Derive the exact face+slice state tokens from recorded moves: wide events
+ * expand to their halves ("b" → "B S'"), plain faces and slices pass
+ * through. This is what the TimelineBuilder walks so every entry's state is
+ * EXACT even for wide moves — the recorded event itself stays ONE `wide:
+ * true` event (replay animates both layers together), while the state gets
+ * the full move.
+ */
+function stateTokensFromMoves(moves: CubeMoveEvent[]): string[] {
+  const tokens: string[] = [];
+  for (const m of moves) {
+    if (m.wide === true) {
+      const face = m.face as CubeFace;
+      const suffix = m.direction === 2 ? "2" : m.direction === -1 ? "'" : "";
+      tokens.push(...expandWideMoves(`${face.toLowerCase()}${suffix}`));
+    } else {
+      tokens.push(MoveTransformer.moveToNotation(m.face, m.direction));
+    }
+  }
+  return tokens;
+}
+
+/**
  * Runs the analysis pipeline on collected moves after a solve.
  *
  * Intentionally async so it never blocks the main thread during the
@@ -132,12 +156,20 @@ async function runAnalysis(
     // identical states. Color-neutral detection is always on (any cross
     // face is recognized); P2 frame recovery is a no-op for physical
     // solves (a solved cube ends canonically solved).
+    //
+    // `stateTokens` drives EXACT states for wide moves: the recorded wide
+    // event is ONE `wide: true` move (replay + UI label "r"), and this
+    // expanded token stream gives the TimelineBuilder the face+slice halves
+    // to apply, so the state is exact and phase detection sees the real
+    // cube. Plain solves derive to the same tokens the moves already carry
+    // (no behavior change).
     const { timeline, metrics } = await analyzeSolve({
       moves: compacted.moves,
       method,
       scramble,
       orientations: compacted.orientations,
       solveTimeMs,
+      stateTokens: stateTokensFromMoves(compacted.moves),
     });
 
     // End-of-solve diagnostic. Gated behind URL/localStorage flag

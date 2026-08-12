@@ -37,15 +37,26 @@ export function compactCubeMoves(
     const current = moves[i];
 
     // Look ahead: if next move is same face + same direction, merge into X2.
+    // Only merge when BOTH halves agree on wide-ness (two identical wide
+    // quarter-turns r + r → r2 stay a wide; a wide + plain face never merge
+    // — they are different physical moves). The merged event preserves the
+    // wide flag and the display label so the replay keeps animating both
+    // layers together and labels it "r2".
     if (
       i + 1 < moves.length &&
       moves[i + 1].face === current.face &&
-      moves[i + 1].direction === current.direction
+      moves[i + 1].direction === current.direction &&
+      moves[i + 1].wide === current.wide
     ) {
       const next = moves[i + 1];
       compactedMoves.push({
         face: current.face,
         direction: 2 as CubeMoveDirection,
+        wide: current.wide === true ? true : undefined,
+        // A doubled wide keeps its display label ("r" + "r" → "r2").
+        displayNotation: current.wide
+          ? mergeWideDisplayNotation(current.displayNotation)
+          : undefined,
         hostTimestamp: next.hostTimestamp,
         cubeTimestamp: next.cubeTimestamp,
       });
@@ -59,4 +70,15 @@ export function compactCubeMoves(
   }
 
   return { moves: compactedMoves, orientations: compactedOrientations };
+}
+
+/**
+ * A doubled wide's display label: "r" + "r" → "r2" ("r'" + "r'" also →
+ * "r2", since two CCW quarter-turns are a 180° turn; "r2" passes through).
+ */
+function mergeWideDisplayNotation(label: string | undefined): string | undefined {
+  if (!label) return label;
+  if (label.endsWith("2")) return label;
+  if (label.endsWith("'")) return `${label.slice(0, -1)}2`;
+  return `${label}2`;
 }

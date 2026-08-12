@@ -9,6 +9,7 @@ import { effectiveTime, normalizePenalty } from "@/types";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { SolveMetrics } from "@cubeforge/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
+import type { VirtualSolveComplete } from "@/components/Layout/appShell.types";
 
 // Heavy views are code-split: each loads its own chunk only when the user
 // visits it, keeping the initial bundle (timer + shell) small. The timer
@@ -68,6 +69,8 @@ export interface MainStageProps {
   onDeleteSolve: (id: string) => void;
   puzzle: PuzzleCategory;
   onPuzzleChange: (puzzle: PuzzleCategory) => void;
+  /** End-of-solve pipeline for the virtual cube simulator (source "virtual"). */
+  onVirtualSolveComplete?: VirtualSolveComplete;
   onNavigate: (view: ViewId) => void;
   /** Opens Settings pre-selected to the profile section. */
   onOpenSettings: () => void;
@@ -95,6 +98,7 @@ export function MainStage(props: MainStageProps) {
     onDeleteSolve,
     puzzle,
     onPuzzleChange,
+    onVirtualSolveComplete,
     onNavigate,
     onOpenSettings,
     onSwitchSession,
@@ -195,7 +199,7 @@ export function MainStage(props: MainStageProps) {
   if (activeView === "cube") {
     return (
       <Suspense fallback={<ViewFallback />}>
-        <CubeSimulatorView />
+        <CubeSimulatorView onVirtualSolveComplete={onVirtualSolveComplete} />
       </Suspense>
     );
   }

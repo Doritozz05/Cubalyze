@@ -51,6 +51,8 @@ export function AppShell(props: AppShellProps) {
     displayScramble,
     scrambleIndex,
     onPuzzleChange,
+    puzzleLocked,
+    onVirtualSolveComplete,
     onRegenerate,
     onCopy,
     onSwitchSession,
@@ -194,6 +196,7 @@ export function AppShell(props: AppShellProps) {
           onDeleteSession={onDeleteSession}
           puzzle={puzzle}
           onPuzzleChange={onPuzzleChange}
+          puzzleLocked={puzzleLocked}
           cube3DActive={cubePanelOpen}
           cube3DReady={cube3DReady}
           onCloseCube={handleCloseCube}
@@ -246,6 +249,7 @@ export function AppShell(props: AppShellProps) {
               onDeleteSolve={onDeleteSolve}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
+              onVirtualSolveComplete={onVirtualSolveComplete}
               onNavigate={onNavigate}
               onOpenSettings={handleOpenSettingsProfile}
               onSwitchSession={onSwitchSession}

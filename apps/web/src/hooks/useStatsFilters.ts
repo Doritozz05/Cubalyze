@@ -14,7 +14,12 @@ export type SortOrder =
   | "worst"
   | "pbDelta";
 
-export type SolveFilterCategory = "clean" | "+2" | "DNF" | "smart" | null;
+export type SolveFilterCategory =
+  | "clean"
+  | "+2" | "DNF"
+  | "smart"
+  | "virtual"
+  | null;
 
 export interface StatsFilters {
   dateFrom: number | null;
@@ -85,6 +90,8 @@ export function useStatsFilters(
       if (filters.activeFilter === "DNF" && normalizedPen !== "DNF")
         return false;
       if (filters.activeFilter === "smart" && s.source !== "smart")
+        return false;
+      if (filters.activeFilter === "virtual" && s.source !== "virtual")
         return false;
       if (
         s.method &&

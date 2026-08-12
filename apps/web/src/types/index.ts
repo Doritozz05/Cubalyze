@@ -10,8 +10,11 @@ export type Penalty = "none" | "+2" | "DNF";
 /** Solving method identifier. */
 export type SolveMethod = 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
 
-/** How the solve was recorded. */
-export type SolveSource = "smart" | "manual";
+/** How the solve was recorded: smart cube hardware, manual entry, or the
+ *  virtual cube simulator (Cube tab). Virtual solves carry full move +
+ *  orientation data — same shape as smart-cube solves — so they run the
+ *  same analysis pipeline and replay. */
+export type SolveSource = "smart" | "manual" | "virtual";
 
 /** A single recorded solve. */
 export interface Solve {
