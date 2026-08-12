@@ -15,6 +15,8 @@ import {
   BatteryMedium,
   BatteryFull,
   BatteryWarning,
+  Clock,
+  User,
 } from "lucide-react";
 // `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
@@ -138,6 +140,59 @@ function ManualSolveIconButton({ onAddManual }: { onAddManual?: () => void }) {
       <TooltipContent side="bottom">{t("addManualSolve")}</TooltipContent>
     </Tooltip>
   );
+}
+
+// ── Dock area sub-components (clock, profile, spacer, separator) ─────
+
+/** Live clock pill — updates every minute, shows HH:MM. */
+function ClockPill() {
+  const [time, setTime] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const hours = time.getHours().toString().padStart(2, "0");
+  const minutes = time.getMinutes().toString().padStart(2, "0");
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex h-8 cursor-default items-center gap-1.5 rounded-full border border-line/70 bg-surface/80 px-2.5 text-xs text-ink select-none">
+          <Clock className="size-3.5 text-ink-3" />
+          <span className="nums font-medium text-ink">{hours}:{minutes}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{time.toLocaleDateString()}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Profile pill — quick access to user profile. */
+function ProfilePill() {
+  const { t } = useTranslation();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("common.profile")}
+          className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <User className="size-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{t("common.profile")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Dock spacer — empty horizontal space between groups. */
+function DockSpacerPill() {
+  return <span aria-hidden className="w-3 shrink-0" />;
+}
+
+/** Dock separator — thin vertical line between groups. */
+function DockSeparatorPill() {
+  return <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line/80" />;
 }
 
 /** Desktop session switcher — a tray item that opens the flyout (rename/delete). */
@@ -452,6 +507,11 @@ export function Header({
         variant="tray"
       />
     );
+    // Phase 4: system/layout pieces
+    all["clock"] = <ClockPill />;
+    all["profile"] = <ProfilePill />;
+    all["spacer"] = <DockSpacerPill />;
+    all["separator"] = <DockSeparatorPill />;
     return all;
   }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, puzzle, puzzleLocked, onPuzzleChange]);
 

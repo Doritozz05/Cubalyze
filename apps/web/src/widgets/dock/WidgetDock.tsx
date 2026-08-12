@@ -514,6 +514,54 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       const area = getDockArea(areaId);
       if (!area) return null;
       const Icon = area.icon;
+
+      // Separator: render as a vertical line
+      if (areaId === "separator") {
+        return (
+          <Reorder.Item
+            key={areaId}
+            value={areaId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            className="relative flex items-center cursor-grab touch-none"
+          >
+            <div className="mx-1 h-5 w-px shrink-0 bg-line/80" />
+            <button
+              onClick={() => widgetStore.getState().removeDockArea(areaId)}
+              className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
+              aria-label={tDock("removePiece")}
+            >
+              <X className="size-2.5" />
+            </button>
+          </Reorder.Item>
+        );
+      }
+
+      // Spacer: render as empty space with dashed border in edit mode
+      if (areaId === "spacer") {
+        return (
+          <Reorder.Item
+            key={areaId}
+            value={areaId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            className="relative flex items-center cursor-grab touch-none"
+          >
+            <div className="w-6 shrink-0 rounded border border-dashed border-ink-3/30" />
+            <button
+              onClick={() => widgetStore.getState().removeDockArea(areaId)}
+              className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
+              aria-label={tDock("removePiece")}
+            >
+              <X className="size-2.5" />
+            </button>
+          </Reorder.Item>
+        );
+      }
+
+      // Default: icon circle
       return (
         <Reorder.Item
           key={areaId}

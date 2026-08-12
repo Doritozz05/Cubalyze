@@ -37,9 +37,9 @@ export interface DockExplorerProps {
 
 const KIND_CATEGORIES: { id: DockAreaDef["category"] | "all"; label: string }[] = [
   { id: "all", label: "explorer.allKinds" },
-  { id: "core", label: "explorer.kindWidget" },
-  { id: "system", label: "explorer.kindClock" },
-  { id: "layout", label: "explorer.kindSpacer" },
+  { id: "core", label: "kind.core" },
+  { id: "system", label: "kind.system" },
+  { id: "layout", label: "kind.layout" },
 ];
 
 /**
