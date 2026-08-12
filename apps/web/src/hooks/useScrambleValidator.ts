@@ -1,8 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { Observable } from 'rxjs';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
 import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS } from '@cubeforge/math-core';
 import { orientationStore } from '@cubeforge/state';
+
+/**
+ * The minimal adapter surface the scramble validator consumes. The real
+ * Smart Cube (globalCubeAdapter) satisfies it, and the virtual cube drives
+ * an equivalent adapter so the EXACT same validation logic powers both the
+ * physical timer and the Cube tab.
+ */
+export interface ScrambleValidationAdapter {
+  isConnected: boolean;
+  moves$: Observable<CubeMoveEvent>;
+  facelets$?: Observable<string> | null;
+  onFacelets?: ((facelets: string) => void) | null;
+  requestFacelets?: () => Promise<void>;
+}
 
 export type ScrambleMoveState = 'pending' | 'correct' | 'incorrect';
 
@@ -125,11 +140,11 @@ function freshValidatorState(): ValidatorState {
   };
 }
 
-function scheduleFacelets(s: ValidatorState): void {
+function scheduleFacelets(s: ValidatorState, adapter: ScrambleValidationAdapter): void {
   clearTimeout(s.requestFaceletsTimeout);
   s.requestFaceletsTimeout = setTimeout(() => {
-    if (globalCubeAdapter.isConnected) {
-      globalCubeAdapter.requestFacelets().catch(() => {});
+    if (adapter.isConnected) {
+      adapter.requestFacelets?.().catch(() => {});
     }
   }, 400);
 }
@@ -180,6 +195,7 @@ const EMPTY_VALIDATION: ScrambleValidationResult = {
 export function useScrambleValidator(
   scramble: string,
   enabled: boolean = true,
+  adapter: ScrambleValidationAdapter = globalCubeAdapter,
 ): ScrambleValidationResult {
   const stateRef = useRef<ValidatorState>(freshValidatorState());
 
@@ -261,13 +277,12 @@ export function useScrambleValidator(
     ref.expectedFacelets = expectedFacelets;
     stateRef.current = ref;
     updateUI();
-    scheduleFacelets(ref);
-  }, [scramble, updateUI, enabled]);
+    scheduleFacelets(ref, adapter);
+  }, [scramble, updateUI, enabled, adapter]);
 
-  // Subscribe to the Smart Cube while validation is enabled.
+  // Subscribe to the move/facelet stream while validation is enabled.
   useEffect(() => {
     if (!enabled) return;
-    const adapter = globalCubeAdapter;
     if (!adapter.moves$) return;
 
     let faceletCleanup: (() => void) | undefined;
@@ -412,7 +427,7 @@ export function useScrambleValidator(
         // a trigger either — only facelets can confirm solved.
         s.actualMoves.push(notation);
         try { s.currentState.applySequence(notation); } catch { /* skip */ }
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
         updateUI();
         return;
       }
@@ -426,7 +441,7 @@ export function useScrambleValidator(
       if (s.scrambleCompleted && !s.needsReset) return;
 
       if (s.awaitingSolve) {
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
         return;
       }
 
@@ -446,7 +461,7 @@ export function useScrambleValidator(
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-          scheduleFacelets(s);
+          scheduleFacelets(s, adapter);
           updateUI();
           return;
         }
@@ -471,7 +486,7 @@ export function useScrambleValidator(
           s.pendingHalfFace = null;
           s.pendingHalfTokenIndex = -1;
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-          scheduleFacelets(s);
+          scheduleFacelets(s, adapter);
         }
         updateUI();
         return;
@@ -491,7 +506,7 @@ export function useScrambleValidator(
       // from polluting the error stack or triggering a spurious
       // needsReset escalation.
       if (s.isError && s.currentState.isSolved()) {
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
         return;
       }
 
@@ -514,7 +529,7 @@ export function useScrambleValidator(
           s.consecutiveErrors++;
           s.activeErrorMoves.push(notation);
           if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-          scheduleFacelets(s);
+          scheduleFacelets(s, adapter);
           updateUI();
           return;
         }
@@ -580,13 +595,13 @@ export function useScrambleValidator(
         s.consecutiveErrors++;
         s.activeErrorMoves.push(notation);
         if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
       } else {
         // Already in error and the move is not an inverse — new error.
         s.consecutiveErrors++;
         s.activeErrorMoves.push(notation);
         if (s.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) s.needsReset = true;
-        scheduleFacelets(s);
+        scheduleFacelets(s, adapter);
       }
 
       updateUI();
@@ -597,7 +612,7 @@ export function useScrambleValidator(
       faceletCleanup?.();
       clearTimeout(stateRef.current.requestFaceletsTimeout);
     };
-  }, [updateUI, enabled]);
+  }, [updateUI, enabled, adapter]);
 
   return uiState;
 }

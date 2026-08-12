@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, HelpCircle, RefreshCcw, RotateCcw, X } from "lucide-react";
+import { Check, HelpCircle, RotateCcw, Shuffle, X } from "lucide-react";
 import { useStore } from "zustand";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,24 +11,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { useCube3D } from "@/hooks/useCube3D";
 import { useCubeTurnControls } from "@/hooks/useCubeTurnControls";
+import { useVirtualCubeSession } from "@/hooks/useVirtualCubeSession";
 import {
   CUBE_KEYMAP,
+  actionToFaceEvents,
   actionToMoves,
   actionToNotation,
   type CubeKeyAction,
 } from "@/lib/keybinds/cubeKeybinds";
+import type { CubeFace } from "@cubeforge/types";
 import { scrambleMoveDurationMs } from "@cubeforge/cube-3d-engine";
 import { generateScrambleFor } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
-import { hapticStart, hapticStop } from "@/utils/haptics";
 import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
 import { preferencesStore } from "@cubeforge/state";
 
 /** The simulator currently supports 3×3 (architecture ready for more puzzles). */
 const CUBE_ORDER = 3;
-
-/** Solve phases of the simulator timer. */
-type SimPhase = "idle" | "running" | "solved";
 
 type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
 
@@ -129,12 +128,19 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
  *     front column → F). Dragging the background rotates the whole cube in
  *     discrete 90° steps while the camera stays locked on the isometric
  *     view.
- *   • The scramble is applied INSTANTLY (no animation); the per-move turn
- *     speed is user-configurable, and 'instant' disables move animations too.
+ *   • The scramble starts SOLVED and is PERFORMED by the user (or applied
+ *     instantly with the Scramble button) — exactly like the real timer with
+ *     a smart cube: the per-move scramble validator shows progress, errors
+ *     and the "too many mistakes" reset; the per-move turn speed is
+ *     user-configurable, and 'instant' disables move animations too.
  *
- * Timer: starts on the first real move (rotations never start/stop it),
- * stops when the cube is solved up to a whole-cube rotation, and Enter on a
- * solved cube starts the next solve with a fresh scramble.
+ * Timer (professional system — the SAME TimerEngine state machine as the
+ * real timer, driven by the virtual cube instead of BLE): the timer CANNOT
+ * start before the cube is scrambled. The validator auto-arms the moment the
+ * scramble is completed or applied; the FIRST turn then starts the clock,
+ * and it stops when the cube is solved up to a whole-cube rotation.
+ * Whole-cube rotations never start/stop it, and reset/regenerate return to
+ * IDLE without starting anything (inspection is the next step).
  */
 export const CubeSimulatorView = memo(function CubeSimulatorView() {
   const { t } = useTranslation("cube");
@@ -154,42 +160,26 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   const setCubeTurnSpeed = useStore(preferencesStore, (s) => s.setCubeTurnSpeed);
 
   const [scramble, setScramble] = useState(() => generateScrambleFor("3x3"));
-  const [phase, setPhase] = useState<SimPhase>("idle");
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [finalMs, setFinalMs] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
 
   const stateRef = useRef<CubeState | null>(null);
   if (stateRef.current === null) stateRef.current = new CubeState();
-  const phaseRef = useRef<SimPhase>("idle");
-  phaseRef.current = phase;
-  const startRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-  const didApplyRef = useRef(false);
+  // One-time init once the engine is ready (initial solved facelets + camera).
+  const didInitRef = useRef(false);
+  // A scramble waiting to be applied INSTANTLY by the Scramble button (the
+  // validator re-seeds on the scramble change, hence the effect below).
+  const pendingInstantRef = useRef<string | null>(null);
 
-  // ── Timer ticker (rAF while running) ────────────────────────────────────
-  useEffect(() => {
-    if (phase !== "running") return;
-    const tick = () => {
-      setElapsedMs(performance.now() - startRef.current);
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    };
-  }, [phase]);
-
-  // Safety: never leave a pending rAF after unmount.
-  useEffect(
-    () => () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    },
-    [],
-  );
+  const {
+    phase,
+    time,
+    validation,
+    notifyTurn,
+    pushFacelets,
+    reset: resetSession,
+  } = useVirtualCubeSession(scramble);
 
   /** Push the CubeState to the 3D engine (instant facelet sync — used for
    *  scramble apply and reset, whose frames are always canonical). */
@@ -211,88 +201,39 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     engineRef.current?.setIsometricView();
   }, [isReady, engineRef]);
 
-  /**
-   * Start a new solve: reset the cube to solved, apply the scramble
-   * INSTANTLY (no animation — like virtual-cube.net), and put the timer back
-   * to idle at 0.00.
-   */
-  const startSolve = useCallback(
-    (scrambleStr: string) => {
-      setScramble(scrambleStr);
-      const state = new CubeState();
-      try {
-        state.applySequence(scrambleStr);
-      } catch {
-        // Unsupported token — leave the fresh cube solved rather than crash.
-      }
-      stateRef.current = state;
-
-      const engine = engineRef.current;
-      if (engine) {
-        engine.resetCube();
-        resetCamera();
-        syncState();
-      }
-      setPhase("idle");
-      setElapsedMs(0);
-      setFinalMs(0);
-    },
-    [engineRef, resetCamera, syncState],
-  );
-
-  // ── Auto-scramble: generate on mount, apply instantly once ready ────────
+  // Mount: once ready, tell the validator we start from a solved cube (its
+  // facelet handler seeds startedFromSolved — same as a freshly connected
+  // smart cube reporting solved facelets).
   useEffect(() => {
-    if (!isReady || didApplyRef.current) return;
-    didApplyRef.current = true;
-    startSolve(scramble);
-  }, [isReady, scramble, startSolve]);
+    if (!isReady || didInitRef.current) return;
+    didInitRef.current = true;
+    if (stateRef.current) {
+      pushFacelets(FaceletStringConverter.toFaceletString(stateRef.current));
+    }
+  }, [isReady, pushFacelets]);
 
   /**
-   * Mirror a move into the CubeState and drive the timer. The visual was
-   * ALREADY animated by the caller (keyboard → rotateLayers, drag → the
-   * resolved action through the same pipeline), so this never touches the
-   * renderer — state and visuals stay in lockstep by construction.
+   * Reset the cube to SOLVED (visual + logical CubeState) and lock the
+   * isometric camera. Used by regenerate/reset/scramble-now.
    */
-  const commitMove = useCallback((action: CubeKeyAction) => {
-    const state = stateRef.current;
-    if (!state) return;
-
-    const notation = actionToNotation(action);
-    try {
-      state.applySequence(notation);
-    } catch {
-      return; // unknown token — ignore
-    }
-
-    // Whole-cube rotations never start or stop the clock (csTimer behaviour).
-    if (action.kind === "rotate") return;
-
-    const solved = state.isSolvedUpToRotation();
-    if (solved) {
-      // Freeze the exact final time (not the last rAF tick).
-      if (phaseRef.current === "running") {
-        setFinalMs(performance.now() - startRef.current);
-        hapticStop();
-      }
-      setPhase("solved");
-    } else if (phaseRef.current !== "running") {
-      // First move — or a move after a finished solve — starts the clock.
-      startRef.current = performance.now();
-      setElapsedMs(0);
-      setPhase("running");
-      hapticStart();
-    }
-  }, []);
+  const resetCube = useCallback(() => {
+    stateRef.current = new CubeState();
+    engineRef.current?.resetCube();
+    resetCamera();
+  }, [engineRef, resetCamera]);
 
   /**
-   * Single move pipeline (keyboard, drag and background rotations): animate
-   * the move on the engine with the configured turn speed (0ms = instant),
-   * then mirror it into the CubeState.
+   * Single move pipeline (keyboard + drag): animate the move on the engine
+   * at the configured turn speed (0ms = instant), mirror it into the
+   * CubeState, feed the validator + timer gate, and push a solved facelet
+   * the moment the cube is solved (the session stops the running clock).
    */
   const applyAction = useCallback(
     (action: CubeKeyAction) => {
       const engine = engineRef.current;
-      if (!engine) return;
+      const state = stateRef.current;
+      if (!engine || !state) return;
+
       const baseMs = TURN_SPEED_BASE_MS[cubeTurnSpeed];
       const moves = actionToMoves(action, CUBE_ORDER);
       for (const mv of moves) {
@@ -307,9 +248,32 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
           "smooth",
         );
       }
-      commitMove(action);
+
+      const notation = actionToNotation(action);
+      try {
+        state.applySequence(notation);
+      } catch {
+        return; // unknown token — ignore
+      }
+
+      // Whole-cube rotations are viewing aids (x/y/z): they rotate every
+      // layer so the centers turn with the cube, but they are NOT moves —
+      // they never touch the validator or the timer.
+      if (action.kind === "rotate") return;
+
+      // Feed the SAME scramble validator the real timer uses (turn/wide
+      // decompose into the layers that actually turned).
+      for (const ev of actionToFaceEvents(action)) {
+        notifyTurn(ev.face, ev.direction);
+      }
+
+      // Solved up to rotation → the session stops the running timer (and the
+      // validator resets its sticky error state on a solved cube).
+      if (state.isSolvedUpToRotation()) {
+        pushFacelets(FaceletStringConverter.toFaceletString(state));
+      }
     },
-    [commitMove, cubeTurnSpeed, engineRef],
+    [cubeTurnSpeed, engineRef, notifyTurn, pushFacelets],
   );
 
   const { performAction, pointerHandlers } = useCubeTurnControls({
@@ -333,18 +297,6 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         setShowHelp(false);
         return;
       }
-      // Solved cube → Enter starts the next solve (new scramble, instant).
-      if (e.code === "Enter") {
-        if (phaseRef.current === "solved") {
-          e.preventDefault();
-          startSolve(generateScrambleFor("3x3"));
-        }
-        return;
-      }
-      // Holding a key past the solving move fires repeated keydowns — those
-      // would un-solve the finished cube and restart the timer from zero.
-      // Block repeats once solved; deliberate single moves still work.
-      if (phaseRef.current === "solved" && e.repeat) return;
 
       const action: CubeKeyAction | undefined = CUBE_KEYMAP[e.code];
       if (!action) return;
@@ -353,67 +305,102 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [performAction, startSolve]);
-
-  const handleRegenerate = useCallback(() => {
-    startSolve(generateScrambleFor("3x3"));
-  }, [startSolve]);
+  }, [performAction]);
 
   /**
-   * Replay: re-apply the CURRENT scramble (cube → solved → scrambled again,
-   * instant) and reset the timer to idle, keeping the same sequence on
-   * screen so the solve can be redone.
+   * New scramble: fresh sequence + cube back to SOLVED (the user performs
+   * the new scramble themselves, like the real timer). The session resets
+   * the clock when the scramble text changes.
    */
-  const handleReplayScramble = useCallback(() => {
-    startSolve(scramble);
-  }, [scramble, startSolve]);
+  const handleRegenerate = useCallback(() => {
+    setScramble(generateScrambleFor("3x3"));
+    resetCube();
+  }, [resetCube]);
+
+  /**
+   * Scramble NOW (the 3D widget's scramble button, moved into this view):
+   * generate a fresh scramble and apply it INSTANTLY — no need to perform it
+   * by hand. The validator consumes the applied moves (its state is
+   * re-seeded by the scramble change, hence the effect below), so the cube
+   * is immediately verified → armed → the first turn starts the timer.
+   */
+  const handleScrambleNow = useCallback(() => {
+    const next = generateScrambleFor("3x3");
+    pendingInstantRef.current = next;
+    setScramble(next);
+  }, []);
+
+  // Apply the pending instant scramble once the validator has re-seeded on
+  // the new scramble text (effects run after render, so it is fresh here).
+  useEffect(() => {
+    const target = pendingInstantRef.current;
+    if (!target || target !== scramble) return;
+    pendingInstantRef.current = null;
+
+    // Cube → solved → scrambled (instant, like virtual-cube.net).
+    const state = new CubeState();
+    try {
+      state.applySequence(target);
+    } catch {
+      // Unsupported token — leave the cube solved rather than crash.
+    }
+    stateRef.current = state;
+    engineRef.current?.resetCube();
+    resetCamera();
+    syncState();
+
+    // Feed every scramble move to the validator (R2 = two quarter turns) so
+    // it verifies the scramble exactly as if the user had performed it.
+    for (const token of target.trim().split(/\s+/)) {
+      const face = token[0] as CubeFace;
+      const direction: 1 | -1 = token.includes("'") ? -1 : 1;
+      notifyTurn(face, direction);
+      if (token.includes("2")) notifyTurn(face, direction);
+    }
+  }, [scramble, engineRef, resetCamera, syncState, notifyTurn]);
 
   /**
    * Reset: cube back to SOLVED (undoes every move including whole-cube
    * rotations x/y/z) + camera back to isometric + timer back to idle. The
-   * scramble stays on screen so the solve can be redone.
+   * scramble stays on screen so the user can redo it. The solved facelet
+   * clears the validator's sticky "too many mistakes" state — the timer
+   * does NOT start again until the scramble is performed.
    */
   const handleReset = useCallback(() => {
-    const engine = engineRef.current;
-    stateRef.current = new CubeState();
-    engine?.resetCube();
-    resetCamera();
-    setPhase("idle");
-    setElapsedMs(0);
-    setFinalMs(0);
-  }, [engineRef, resetCamera]);
+    resetCube();
+    resetSession();
+    if (stateRef.current) {
+      pushFacelets(FaceletStringConverter.toFaceletString(stateRef.current));
+    }
+  }, [pushFacelets, resetCube, resetSession]);
 
-  // ── Timer display ───────────────────────────────────────────────────────
-  const displayMs = phase === "running" ? elapsedMs : phase === "solved" ? finalMs : 0;
+  // ── Timer display (session-driven: 0 while idle, live while running,
+  //    frozen at the final time once stopped). ─────────────────────────────
   const formattedTime = useMemo(
-    () => formatTime(displayMs, timePrecision),
-    [displayMs, timePrecision],
+    () => formatTime(time, timePrecision),
+    [time, timePrecision],
   );
 
   const unavailable = initFailed || contextEvicted;
 
   return (
     <div className="relative flex h-full w-full min-h-0 flex-col">
-      {/* Top bar: scramble display + replay button (timer + canvas controls overlay) */}
-      <div className="flex shrink-0 items-start gap-4 px-4 pt-3 sm:px-6">
+      {/* Top bar: scramble display with per-move validation (same component
+          as the real timer — the widget-style scramble text) */}
+      <div className="flex shrink-0 items-start px-4 pt-3 sm:px-6">
         <div className="min-w-0 flex-1">
-          <ScrambleDisplay scramble={scramble} onRegenerate={handleRegenerate} />
+          <ScrambleDisplay
+            scramble={scramble}
+            states={validation.states}
+            currentIndex={validation.currentIndex}
+            errorMoves={validation.displayErrorMoves}
+            pendingHalfDouble={validation.pendingHalfDouble}
+            isScrambled={validation.isScrambled}
+            needsReset={validation.needsReset}
+            awaitingSolve={validation.awaitingSolve}
+            onRegenerate={handleRegenerate}
+          />
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReplayScramble}
-              disabled={!isReady}
-              className="h-7 px-2 text-ink-2 hover:text-ink"
-              aria-label={t("replayScramble")}
-            >
-              <RefreshCcw className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">{t("replayScramble")}</TooltipContent>
-        </Tooltip>
       </div>
 
       {/* Canvas */}
@@ -447,7 +434,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
           }}
         />
 
-        {/* Timer overlay — right-center of the canvas (csTimer-style position) */}
+        {/* Timer overlay — right-center of the canvas (csTimer-style position).
+            Phase-driven status, like the real timer: idle → perform the
+            scramble; ready_for_move → armed (first move starts); running →
+            live time; stopped → frozen final time. */}
         <div className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 sm:right-5">
           <div className="flex flex-col items-end rounded-xl border border-line/60 bg-background/70 px-3.5 py-2.5 shadow-lg backdrop-blur-md">
             <span
@@ -455,16 +445,16 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
               aria-label={t("timerAria")}
               className={cn(
                 "nums font-mono text-2xl leading-none font-semibold tracking-tight tabular-nums transition-colors sm:text-3xl",
-                phase === "solved"
-                  ? "text-ready"
-                  : phase === "running"
-                    ? "text-ink"
+                phase === "running" || phase === "stopped"
+                  ? "text-ink"
+                  : phase === "ready_for_move"
+                    ? "text-ready"
                     : "text-ink-3",
               )}
             >
               {formattedTime}
             </span>
-            {phase === "solved" ? (
+            {phase === "stopped" ? (
               <motion.span
                 initial={{ opacity: 0, y: 2 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -473,14 +463,49 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
                 className="mt-1.5 flex items-center gap-1 text-[0.62rem] font-medium text-ink-3"
               >
                 <Check className="size-3 text-ready" />
-                {t("nextSolveHint")}
+                {t("solved")}
+              </motion.span>
+            ) : phase === "ready_for_move" ? (
+              <motion.span
+                initial={{ opacity: 0, y: 2 }}
+                animate={{ opacity: 1, y: 0 }}
+                role="status"
+                className="mt-1.5 text-[0.62rem] font-medium text-ready"
+              >
+                {t("readyHint")}
+              </motion.span>
+            ) : phase === "idle" && !validation.needsReset ? (
+              <motion.span
+                initial={{ opacity: 0, y: 2 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-1.5 text-[0.62rem] font-medium text-ink-3"
+              >
+                {t("scrambleHint")}
               </motion.span>
             ) : null}
           </div>
         </div>
 
-        {/* Controls — bottom-right floating cluster */}
+        {/* Controls — bottom-right floating cluster: Scramble (the 3D
+            widget's scramble button), Reset, Help */}
         <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 sm:bottom-5 sm:right-5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleScrambleNow}
+                disabled={!isReady}
+                className="h-8 gap-1 px-2 text-ink-3 hover:text-ink"
+                aria-label={t("scramble")}
+              >
+                <Shuffle className="size-4" />
+                <span className="hidden text-xs sm:inline">{t("scramble")}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{t("scrambleTooltip")}</TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

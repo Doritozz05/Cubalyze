@@ -165,6 +165,34 @@ export function actionToMoves(action: CubeKeyAction, order: number = 3): CubeEng
   }
 }
 
+/**
+ * Decompose a key action into validator-style face events (one per layer
+ * that actually turned). Wide moves expand to their face+slice pair so the
+ * virtual-cube validator sees the SAME layers the engine rotated — matching
+ * math-core's `expandWideMoves` (r = R M', u = U E', l = L M, d = D E).
+ * Whole-cube rotations emit nothing (they are not moves).
+ */
+export function actionToFaceEvents(action: CubeKeyAction): { face: CubeFace; direction: 1 | -1 }[] {
+  switch (action.kind) {
+    case "turn":
+      return [{ face: action.face, direction: action.direction }];
+    case "wide": {
+      const slice = WIDE_SLICE[action.face];
+      // The slice primes (r = R M', u = U E') mean R/U wide moves turn the
+      // slice OPPOSITE to the face; L/D keep the same direction.
+      const sliceDirection = (action.face === "R" || action.face === "U"
+        ? (action.direction * -1) as 1 | -1
+        : action.direction) as 1 | -1;
+      return [
+        { face: action.face, direction: action.direction },
+        { face: slice, direction: sliceDirection },
+      ];
+    }
+    case "rotate":
+      return [];
+  }
+}
+
 /** Human-readable move notation for a key action ("R", "U'", "M", "r", "x"). */
 export function actionToNotation(action: CubeKeyAction): string {
   switch (action.kind) {

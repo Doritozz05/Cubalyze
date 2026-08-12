@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CubeModel, CubeMeshFactory, RotationEngine } from "@cubeforge/cube-3d-engine";
 import { CubeState, FaceletStringConverter, parseFaceletsToCubies } from "@cubeforge/math-core";
-import { CUBE_KEYMAP, actionToMoves, actionToNotation } from "./cubeKeybinds";
+import { CUBE_KEYMAP, actionToFaceEvents, actionToMoves, actionToNotation } from "./cubeKeybinds";
 
 const notationFor = (code: string) => actionToNotation(CUBE_KEYMAP[code]);
 
@@ -146,6 +146,42 @@ describe("CUBE_KEYMAP ↔ math-core determinism", () => {
       state.applySequence(inverseMove(notation));
       expect(state.isSolved(), `${code} → ${notation} + ${inverseMove(notation)}`).toBe(true);
     }
+  });
+});
+
+describe("actionToFaceEvents — validator feed", () => {
+  it("emits a single face event for face turns (M included)", () => {
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyJ)).toEqual([{ face: "U", direction: 1 }]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyK)).toEqual([{ face: "R", direction: -1 }]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.Digit5)).toEqual([{ face: "M", direction: 1 }]);
+  });
+
+  it("expands wide moves to their face+slice pair (r = R M', l = L M, u = U E', d = D E)", () => {
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyU)).toEqual([
+      { face: "R", direction: 1 },
+      { face: "M", direction: -1 },
+    ]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyM)).toEqual([
+      { face: "R", direction: -1 },
+      { face: "M", direction: 1 },
+    ]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyV)).toEqual([
+      { face: "L", direction: 1 },
+      { face: "M", direction: 1 },
+    ]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.Comma)).toEqual([
+      { face: "U", direction: 1 },
+      { face: "E", direction: -1 },
+    ]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyZ)).toEqual([
+      { face: "D", direction: 1 },
+      { face: "E", direction: 1 },
+    ]);
+  });
+
+  it("emits nothing for whole-cube rotations (they are not moves)", () => {
+    expect(actionToFaceEvents(CUBE_KEYMAP.KeyT)).toEqual([]);
+    expect(actionToFaceEvents(CUBE_KEYMAP.Semicolon)).toEqual([]);
   });
 });
 

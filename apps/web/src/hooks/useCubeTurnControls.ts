@@ -31,11 +31,10 @@ import { resolveDragMove } from "@/utils/cubeDragLayer";
  *     top face front row → F, down on the right face front column → F (up →
  *     F'), up on the front face right column → R, ...). The move is
  *     committed the moment the drag crosses `minSwipeDistance` (14 px); any
- *     further pointer travel is ignored.
- *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
- *   • DRAG ON THE BACKGROUND → the CUBE rotates in discrete 90° steps (y for
- *     left/right swipes, x for up/down swipes) exactly like the x/y keys —
- *     the camera stays locked on the isometric view.
+ *     further pointer travel is ignored.   *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
+   *   • DRAG ON THE BACKGROUND → the CUBE rotates exactly ONE 90° step per
+   *     drag (y for left/right swipes, x for up/down swipes) — the camera
+   *     stays locked on the isometric view.
  *   • 2 fingers → pinch zoom (lifting one finger re-arms the remaining one
  *     as a normal drag).
  *   • Keyboard (csTimer layout) → animated face turns via `performAction`
@@ -56,8 +55,8 @@ export interface UseCubeTurnControlsOptions {
    *  responsive. */
   minSwipeDistance?: number;
   /**
-   * Background-drag distance (px) per 90° cube rotation step. Default 70 —
-   * mirroring virtual-cube's discrete swipe rotation.
+   * Background-drag distance (px) that fires the single 90° cube rotation
+   * allowed per drag. Default 70.
    */
   rotateStepDistance?: number;
   /**
@@ -289,11 +288,15 @@ export function useCubeTurnControls({
         return;
       }
 
-      // Background: rotate the CUBE in discrete 90° steps (camera locked on
-      // the isometric view) — the same x/y rotations as the arrow keys.
+      // Background: rotate the CUBE exactly ONE 90° step per drag (camera
+      // locked on the isometric view) — the same x/y rotations as the arrow
+      // keys. Any further pointer travel in this gesture is ignored, so one
+      // drag never produces several rotations.
+      if (drag.committed) return;
       drag.swipeX += dx;
       drag.swipeY += dy;
       if (Math.abs(drag.swipeX) >= rotateStepDistance || Math.abs(drag.swipeY) >= rotateStepDistance) {
+        drag.committed = true;
         if (Math.abs(drag.swipeX) >= Math.abs(drag.swipeY)) {
           // Swipe right = y' (front face turns right), swipe left = y.
           const direction = drag.swipeX > 0 ? -1 : 1;
@@ -303,8 +306,6 @@ export function useCubeTurnControls({
           const direction = drag.swipeY > 0 ? -1 : 1;
           onActionRef.current?.({ kind: "rotate", axis: "x", direction });
         }
-        drag.swipeX = 0;
-        drag.swipeY = 0;
       }
     },
     [engineRef, minSwipeDistance, resolveTurn, rotateStepDistance],
