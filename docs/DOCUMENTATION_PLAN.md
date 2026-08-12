@@ -254,11 +254,24 @@ placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 **Criterio de cierre:** plombería documentada en `docs/11-devops/` + ADR de CI. ✅ Completado 2026-08-12.
 
 ### Fase 7 — API reference (TypeDoc)
-- [ ] Instalar/Configurar TypeDoc + script `docs:api`.
-- [ ] Generar la API reference desde el JSDoc existente (~2.600 bloques en 454
-      archivos) → `docs/api/` (ignorada en git, se regenera).
-- [ ] Auditar calidad del JSDoc (genéricos, sin `@param`/`@returns`) y proponer
-      mejoras puntuales donde valga la pena.
+- [x] Instalar/Configurar TypeDoc + script `docs:api` (2026-08-12). TypeDoc
+      `0.28.20` + TypeScript raíz `^5.9.3` (devDeps de root); `typedoc.json`
+      (estrategia expand sobre `packages/*/src` + `apps/web/src`),
+      `tsconfig.typedoc.json` (paths `@cubeforge/*` → src, `@/` → web,
+      `@/components/ui/*` → kit UI; sin strict para espejar la web) y
+      `typedoc-env.d.ts` (declara `*.css` e `import.meta.env` sin vite/client).
+- [x] Generar la API reference (2026-08-12): `pnpm docs:api` → `docs/api/`
+      (ignorada en git, se regenera). ~2.060 páginas HTML / 30 MB; JSDoc
+      renderizado verificado (ej. `ProgressTracker`). Corre con
+      `skipErrorChecking` (documenta pese a errores de tipos preexistentes —
+      el typecheck real de web falla 287 errores sin build de dist).
+- [x] Auditar calidad del JSDoc (2026-08-12): 8 warnings — tag `@file`
+      desconocido en 8 utils de web + 4 links `{@link}` rotos (CrossScrambleGenerator,
+      useCalendarTasks, UseSolveCompletionResult.handleComplete, useFormContext).
+      Mejoras propuestas (cosméticas, tocan fuentes) documentadas en
+      `docs/06-api/README.md` — no aplicadas.
+
+**Criterio de cierre:** `docs:api` configurado y generando; auditoría documentada. ✅ Completado 2026-08-12.
 
 ### Fase 8 — Changelog y releases (changesets)
 - [ ] Configurar changesets para generar `CHANGELOG.md`.

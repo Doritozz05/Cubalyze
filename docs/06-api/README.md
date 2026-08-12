@@ -22,6 +22,38 @@
 - Los paquetes marcados como **planeado** no tienen fuentes todavía
   (`echo "no sources"` en su script de typecheck).
 
+## API reference generada (TypeDoc) — `pnpm docs:api`
+
+> Configurada el 2026-08-12 (Fase 7 del plan). **Se regenera, no se edita:**
+> la salida vive en `docs/api/`, ignorada en git.
+
+- **Comando:** `pnpm docs:api` (o `pnpm --filter` no — es script de raíz).
+- **Configuración:** `typedoc.json` + `tsconfig.typedoc.json` + `typedoc-env.d.ts`
+  en la raíz. Cubre los **15 paquetes con fuentes** y **todo `apps/web/src`**
+  (estrategia `expand`: un módulo por archivo). ~2.000 páginas HTML.
+- **Resolución:** los `@cubeforge/*` apuntan a sus barrels de `src/` (sin
+  necesitar build de `dist/`); `@/` → web, `@/components/ui/*` → kit UI.
+- **Tipos residuales:** corre con `skipErrorChecking` — documenta pese a
+  errores de tipos preexistentes del repo (no es un gate de typecheck).
+
+### Auditoría de JSDoc (2026-08-12) — mejoras propuestas, no aplicadas
+
+La generación avisa de 8 problemas menores (cosméticos, no bloquean):
+
+1. **Tag `@file` desconocido** en 8 archivos de `apps/web/src/utils` (p.ej.
+   `insights.ts`, `phaseColors.ts`): TypeDoc no lo reconoce → el primer párrafo
+   del archivo no se renderiza. Cambiar `@file` por `@module` o una descripción
+   normal.
+2. **4 links `{@link}` rotos** (se renderizan sin href): `CrossScrambleGenerator`
+   (solver-engine, no exportado del barrel), `useCalendarTasks`
+   (`hooks/useSkillProgress.ts:60` — no importado en el archivo),
+   `UseSolveCompletionResult.handleComplete` (`hooks/useSolveCompletion.ts:25`),
+   `useFormContext` (ui/form, externo react-hook-form). Arreglar el nombre/import
+   en el comentario.
+
+Ambas mejoras tocan fuentes (no `docs/`) y son opcionales; quedan como
+propuesta para una pasada futura de limpieza de JSDoc.
+
 ## Relación con otras docs
 
 - Estado (Zustand): [`../02-architecture/web/State_and_Stores.md`](../02-architecture/web/State_and_Stores.md).

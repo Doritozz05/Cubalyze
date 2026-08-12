@@ -1,0 +1,18 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "CubeForge API Reference",
+  "entryPointStrategy": "expand",
+  "entryPoints": ["packages/*/src", "apps/web/src"],
+  "tsconfig": "./tsconfig.typedoc.json",
+  "out": "docs/api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "exclude": ["**/node_modules/**", "**/__tests__/**", "**/*.test.ts", "**/*.spec.ts"],
+  // Documenta pese a errores de tipos residuales preexistentes en el repo
+  // (p.ej. @types/react 18.3.1 con componentes de lucide-react). La API
+  // reference extrae JSDoc + signaturas; no es un gate de typecheck.
+  "skipErrorChecking": true,
+  "hideGenerator": true
+}
