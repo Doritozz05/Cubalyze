@@ -668,6 +668,7 @@
       "profileSubtitle": "Your identity & progress",
       "skillsSubtitle": "Interactive skill tree graph",
       "reconstructionsSubtitle": "Solve database & replays",
+      "virtualSubtitle": "3D cube simulator",
       "smartCubeSubtitle": "Connect bluetooth cube",
       "themeSubtitle": "Switch color theme"
     }
