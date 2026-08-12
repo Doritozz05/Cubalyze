@@ -150,16 +150,13 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
             suppressClickRef.current = false;
             return;
           }
-          // macOS semantics: the pill STAYS in the dock while the widget is
-          // open — clicking a running pill focuses it, a minimized one is
-          // restored, and a plain docked pill launches the panel.
+          // Toggle semantics: clicking a docked pill launches the widget
+          // (floating, pill stays with the running dot); clicking the running
+          // pill again closes its panel and docks it back — the dot
+          // disappears and the pill stays pinned (status → docked).
           const st = widgetStore.getState().instances[widgetId]?.status;
-          if (st === "floating") {
-            widgetStore.getState().focusWidget(widgetId);
-          } else if (st === "minimized") {
-            const store = widgetStore.getState();
-            store.setStatus(widgetId, "floating");
-            store.focusWidget(widgetId);
+          if (st === "floating" || st === "minimized") {
+            widgetStore.getState().setStatus(widgetId, "docked");
           } else {
             launchWidget(widgetId);
           }
