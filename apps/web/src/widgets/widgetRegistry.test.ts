@@ -5,10 +5,18 @@
 // widget resolves — via WidgetRegistry.ensure() — to a registration whose
 // component/preview/mapProps are all real functions (a non-function preview
 // used to crash the explorer with "Element type is invalid ... got: <div />").
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { WidgetRegistry } from "@/widgets/WidgetRegistry";
 import { BUILT_IN_WIDGETS, getWidget } from "@/widgets/registry";
+
+// The registry is a module-level singleton: without a reset, the first test
+// (which resolves every built-in) leaks resolved state into the following
+// tests — making "pre-ensure is lazy" and "ensure() notifies subscribers"
+// order-dependent. Start every test from a pristine registry.
+beforeEach(() => {
+  WidgetRegistry.resetForTests();
+});
 
 describe("lazy widget registry integrity", () => {
   it(
