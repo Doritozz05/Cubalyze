@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch, Orbit } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch, Boxes } from "lucide-react";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -71,7 +71,7 @@ export const NAV_GROUPS: NavGroup[] = [
     titleKey: "main",
     items: [
       { id: "timer", labelKey: "timer", icon: Timer },
-      { id: "cube", labelKey: "cube", icon: Orbit },
+      { id: "cube", labelKey: "virtual", icon: Boxes },
     ],
   },
   {

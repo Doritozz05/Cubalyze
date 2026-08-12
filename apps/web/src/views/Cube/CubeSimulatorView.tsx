@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, HelpCircle, RotateCcw, Shuffle, X } from "lucide-react";
+import { HelpCircle, RotateCcw, Shuffle, X } from "lucide-react";
 import { useStore } from "zustand";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,13 @@ import type { CubeFace } from "@cubeforge/types";
 import { scrambleMoveDurationMs } from "@cubeforge/cube-3d-engine";
 import { generateScrambleFor } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
-import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import {
+  CubeState,
+  FaceletStringConverter,
+  MoveTransformer,
+  OrientationTable,
+  type OrientationEntry,
+} from "@cubeforge/math-core";
 import { preferencesStore } from "@cubeforge/state";
 
 /** The simulator currently supports 3×3 (architecture ready for more puzzles). */
@@ -158,11 +164,20 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
   const setCubeTurnSpeed = useStore(preferencesStore, (s) => s.setCubeTurnSpeed);
+  // "Rotate scramble with cube" (Settings → Scramble): remap the scramble
+  // notation to the virtual cube's current orientation, like the real timer
+  // does with the physical cube's gyroscope.
+  const scrambleFollowsCube = useStore(preferencesStore, (s) => s.scrambleFollowsCube);
 
   const [scramble, setScramble] = useState(() => generateScrambleFor("3x3"));
   const [showHelp, setShowHelp] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
+  // The virtual cube's accumulated whole-cube rotation (x/y/z) — the
+  // equivalent of the physical cube's gyro orientation. Composed with
+  // OrientationTable (the same verified math the timer's dynamic notation
+  // uses) and applied via MoveTransformer.remapScrambleString.
+  const [grip, setGrip] = useState<OrientationEntry>(OrientationTable.IDENTITY);
 
   const stateRef = useRef<CubeState | null>(null);
   if (stateRef.current === null) stateRef.current = new CubeState();
@@ -195,6 +210,14 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     engineRef.current?.setIsometricView();
   }, [engineRef]);
 
+  // The one-time gesture hint disappears by itself a few seconds after the
+  // cube is ready (and immediately on the first drag).
+  useEffect(() => {
+    if (!isReady || !hintVisible) return;
+    const timer = setTimeout(() => setHintVisible(false), 4500);
+    return () => clearTimeout(timer);
+  }, [isReady, hintVisible]);
+
   // Lock the initial camera to the isometric view once the engine is ready.
   useEffect(() => {
     if (!isReady) return;
@@ -220,6 +243,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     stateRef.current = new CubeState();
     engineRef.current?.resetCube();
     resetCamera();
+    setGrip(OrientationTable.IDENTITY);
   }, [engineRef, resetCamera]);
 
   /**
@@ -258,8 +282,15 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
       // Whole-cube rotations are viewing aids (x/y/z): they rotate every
       // layer so the centers turn with the cube, but they are NOT moves —
-      // they never touch the validator or the timer.
-      if (action.kind === "rotate") return;
+      // they never touch the validator or the timer. They DO advance the
+      // display grip so the "rotate scramble with cube" setting follows.
+      if (action.kind === "rotate") {
+        const rotation = OrientationTable.rotationEntryFor(notation);
+        if (rotation) {
+          setGrip((prev) => OrientationTable.compose(rotation, prev));
+        }
+        return;
+      }
 
       // Feed the SAME scramble validator the real timer uses (turn/wide
       // decompose into the layers that actually turned).
@@ -274,6 +305,24 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
       }
     },
     [cubeTurnSpeed, engineRef, notifyTurn, pushFacelets],
+  );
+
+  // Orientation-adapted scramble (Settings → Scramble → "Rotate scramble
+  // with cube"): each token is remapped to the face currently at that
+  // position, exactly like the real timer's displayScramble.
+  const displayScramble = useMemo(
+    () =>
+      scrambleFollowsCube
+        ? MoveTransformer.remapScrambleString(scramble, grip)
+        : scramble,
+    [scramble, grip, scrambleFollowsCube],
+  );
+  const displayErrorMoves = useMemo(
+    () =>
+      scrambleFollowsCube
+        ? validation.displayErrorMoves.map((m) => MoveTransformer.remapScrambleString(m, grip))
+        : validation.displayErrorMoves,
+    [validation.displayErrorMoves, grip, scrambleFollowsCube],
   );
 
   const { performAction, pointerHandlers } = useCubeTurnControls({
@@ -391,9 +440,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         <div className="min-w-0 flex-1">
           <ScrambleDisplay
             scramble={scramble}
+            displayScramble={displayScramble}
             states={validation.states}
             currentIndex={validation.currentIndex}
-            errorMoves={validation.displayErrorMoves}
+            errorMoves={displayErrorMoves}
             pendingHalfDouble={validation.pendingHalfDouble}
             isScrambled={validation.isScrambled}
             needsReset={validation.needsReset}
@@ -434,10 +484,8 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
           }}
         />
 
-        {/* Timer overlay — right-center of the canvas (csTimer-style position).
-            Phase-driven status, like the real timer: idle → perform the
-            scramble; ready_for_move → armed (first move starts); running →
-            live time; stopped → frozen final time. */}
+        {/* Timer overlay — right-center of the canvas (csTimer-style
+            position). Clean: just the time, no status captions. */}
         <div className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 sm:right-5">
           <div className="flex flex-col items-end rounded-xl border border-line/60 bg-background/70 px-3.5 py-2.5 shadow-lg backdrop-blur-md">
             <span
@@ -454,35 +502,6 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
             >
               {formattedTime}
             </span>
-            {phase === "stopped" ? (
-              <motion.span
-                initial={{ opacity: 0, y: 2 }}
-                animate={{ opacity: 1, y: 0 }}
-                role="status"
-                aria-live="polite"
-                className="mt-1.5 flex items-center gap-1 text-[0.62rem] font-medium text-ink-3"
-              >
-                <Check className="size-3 text-ready" />
-                {t("solved")}
-              </motion.span>
-            ) : phase === "ready_for_move" ? (
-              <motion.span
-                initial={{ opacity: 0, y: 2 }}
-                animate={{ opacity: 1, y: 0 }}
-                role="status"
-                className="mt-1.5 text-[0.62rem] font-medium text-ready"
-              >
-                {t("readyHint")}
-              </motion.span>
-            ) : phase === "idle" && !validation.needsReset ? (
-              <motion.span
-                initial={{ opacity: 0, y: 2 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-1.5 text-[0.62rem] font-medium text-ink-3"
-              >
-                {t("scrambleHint")}
-              </motion.span>
-            ) : null}
           </div>
         </div>
 
@@ -517,6 +536,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
                 aria-label={t("reset")}
               >
                 <RotateCcw className="size-4" />
+                <span className="hidden text-xs sm:inline">{t("reset")}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">{t("reset")}</TooltipContent>

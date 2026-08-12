@@ -88,13 +88,29 @@ export function useVirtualCubeSession(
 
   // ── Auto-arm: the moment the scramble is verified, the NEXT turn starts
   //    the timer (mirrors useSolveSession — including the STOPPED → reset
-  //    step for post-solve regenerations; COOLDOWN blocks reset(), but by
-  //    the time the scramble completes the 500ms cooldown has expired).
+  //    step for post-solve regenerations). The virtual scramble button can
+  //    verify a scramble INSTANTLY, even inside the 500ms post-solve
+  //    cooldown where reset() is blocked — so COOLDOWN defers the
+  //    reset+arm until the engine transitions to STOPPED.
   const wasScrambledRef = useRef(false);
   useEffect(() => {
     const justScrambled = validation.isScrambled && !wasScrambledRef.current;
     wasScrambledRef.current = validation.isScrambled;
     if (!justScrambled) return;
+
+    if (engine.getState() === EngineState.COOLDOWN) {
+      const sub = engine.state$.subscribe((st) => {
+        if (st !== EngineState.STOPPED) return;
+        sub.unsubscribe();
+        // Guard: the scramble may have changed while we waited — only arm if
+        // the current scramble is still the verified one.
+        if (!wasScrambledRef.current) return;
+        if (engine.getState() === EngineState.STOPPED) engine.reset();
+        if (engine.getState() === EngineState.IDLE) engine.arm();
+      });
+      return () => sub.unsubscribe();
+    }
+
     if (engine.getState() === EngineState.STOPPED) {
       engine.reset();
     }
