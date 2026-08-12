@@ -5,6 +5,11 @@ import { useStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { WidgetId, WidgetInstanceState, WidgetStatus } from "./types";
 import { BUILT_IN_WIDGETS, getWidget } from "./registry";
+import {
+  DOCK_AREAS,
+  DEFAULT_DOCK_AREA_ORDER,
+  areaBaseId,
+} from "./dock/dockAreasRegistry";
 
 // ── Custom Layout ────────────────────────────────────────────────────────
 
@@ -24,6 +29,18 @@ export interface WidgetStoreState {
   instances: Record<WidgetId, WidgetInstanceState>;
   /** Ordered list of docked widget IDs (first = leftmost in dock). */
   dockOrder: WidgetId[];
+  /**
+   * Generic ordered list of dock items — widget IDs, system piece IDs
+   * ("clock", "profile"), or spacers ("spacer-N").  The dock renders from
+   * this array.  On first migration it is seeded from `dockOrder`.
+   */
+  dockItems: string[];
+  /**
+   * Ordered list of dock area IDs ("widgets", "manual-solve", "session",
+   * "puzzle", "clock", "profile", "spacer-N"). Determines which modular
+   * sections appear in the dock bar and in what order.
+   */
+  dockAreaOrder: string[];
   /** Saved custom layouts. */
   customLayouts: CustomLayout[];
 }
@@ -38,8 +55,20 @@ export interface WidgetStoreActions {
   /** Set the widget's panel width for accurate snap calculations. */
   setSize: (id: WidgetId, panelWidth: number) => void;
   setInstances: (instances: Record<WidgetId, WidgetInstanceState>) => void;
-  /** Reorder docked widgets. */
+  /** Reorder docked widgets (legacy — prefer setDockItems). */
   setDockOrder: (order: WidgetId[]) => void;
+  /** Replace the full generic dock item list. */
+  setDockItems: (items: string[]) => void;
+  /** Insert a dock item (widget, system piece, or spacer) at an index. */
+  addDockItem: (id: string, index?: number) => void;
+  /** Remove the first occurrence of a dock item by id. */
+  removeDockItem: (id: string) => void;
+  /** Replace the full dock area order. */
+  setDockAreaOrder: (order: string[]) => void;
+  /** Add a dock area at an index (or append). */
+  addDockArea: (id: string, index?: number) => void;
+  /** Remove a dock area by id. */
+  removeDockArea: (id: string) => void;
   /** Dock a widget at a specific insertion index (-1 = append to end). */
   dockAt: (id: WidgetId, index: number) => void;
   /** Bring a widget to the top of the z-stack (like clicking a window in a desktop OS). */
@@ -185,12 +214,53 @@ export function migratePersistedWidgetState(
   // Drop the obsolete `customWidgets` key (URL-import removed for local-first
   // security) so it never leaks back into persisted state.
   const { customWidgets: _staleCustomWidgets, ...rest } = raw;
+  const dockItems = Array.isArray(raw.dockItems)
+    ? (raw.dockItems as string[])
+    : combinedOrder;
+  const rawDockAreaOrder = Array.isArray(raw.dockAreaOrder)
+    ? (raw.dockAreaOrder as string[])
+    : DEFAULT_DOCK_AREA_ORDER;
+  const dockAreaOrder = uniquifyDockAreas(rawDockAreaOrder);
   return {
     ...rest,
     instances: cleanedInstances,
     dockOrder: combinedOrder,
+    dockItems,
+    dockAreaOrder,
     customLayouts: (raw.customLayouts as CustomLayout[]) ?? [],
   };
+}
+
+/**
+ * First free per-instance suffix for a repeatable dock area ("spacer-0", …).
+ * Counting existing instances would REUSE an id after a middle instance is
+ * removed (remove "spacer-1" → count drops to 2 → next add yields "spacer-2",
+ * colliding with the surviving one). Always picks the lowest unused index so
+ * instance ids stay unique and edit-mode reorder keeps stable identities.
+ */
+export function nextFreeDockAreaInstanceId(
+  order: string[],
+  base: string,
+): string {
+  let i = 0;
+  while (order.includes(`${base}-${i}`)) i++;
+  return `${base}-${i}`;
+}
+
+/**
+ * Give every repeatable area a unique per-instance id ("spacer-0",
+ * "spacer-1", …) so the dock can hold several of them without duplicate
+ * identities (legacy persisted orders may carry bare ids).
+ */
+function uniquifyDockAreas(order: string[]): string[] {
+  const counts = new Map<string, number>();
+  return order.map((id) => {
+    const base = areaBaseId(id);
+    if (DOCK_AREAS.find((a) => a.id === base)?.repeatable !== true) return base;
+    const n = counts.get(base) ?? 0;
+    counts.set(base, n + 1);
+    return `${base}-${n}`;
+  });
 }
 
 // ── Store ────────────────────────────────────────────────────────────────
@@ -200,6 +270,8 @@ export const widgetStore = createStore<WidgetStore>()(
     (set, get) => ({
       instances: buildDefaultInstances(),
       dockOrder: BUILT_IN_WIDGETS.map((w) => w.id),
+      dockItems: BUILT_IN_WIDGETS.map((w) => w.id),
+      dockAreaOrder: DEFAULT_DOCK_AREA_ORDER,
       customLayouts: [],
 
       // ── Toggle: inactive ↔ docked ───────────────────────────────────
@@ -244,16 +316,16 @@ export const widgetStore = createStore<WidgetStore>()(
           // Clamp: no-dock widgets can never be floating/minimized
           const clamped = clampStatus(id, status);
 
-          const wasDocked = instance.status === "docked";
           const willBeDocked = clamped === "docked";
 
-          // When transitioning into docked (e.g. floating → docked), move the
-          // widget to the end of the dock order. Otherwise keep dockOrder intact
-          // (including the case where it leaves docked → floating/minimized:
-          // we keep it in dockOrder so the pill can reappear if it docks again).
+          // Only widgets MISSING from dockOrder get appended when docked —
+          // e.g. an inactive widget docking for the first time. Active widgets
+          // (docked/floating/minimized) already have a pill in the dock with a
+          // stable position, so floating → docked keeps their spot instead of
+          // jumping to the end of the bar.
           const dockOrder =
-            willBeDocked && !wasDocked
-              ? [...s.dockOrder.filter((i) => i !== id), id]
+            willBeDocked && !s.dockOrder.includes(id)
+              ? [...s.dockOrder, id]
               : s.dockOrder;
 
           return {
@@ -320,6 +392,64 @@ export const widgetStore = createStore<WidgetStore>()(
         }),
 
       setDockOrder: (order) => set({ dockOrder: order }),
+
+      setDockItems: (items) => set({ dockItems: items }),
+
+      addDockItem: (id, index) =>
+        set((s) => {
+          if (s.dockItems.includes(id)) return s;
+          const items = [...s.dockItems];
+          if (index !== undefined && index >= 0 && index <= items.length) {
+            items.splice(index, 0, id);
+          } else {
+            items.push(id);
+          }
+          return { dockItems: items };
+        }),
+
+      removeDockItem: (id) =>
+        set((s) => {
+          const idx = s.dockItems.indexOf(id);
+          if (idx === -1) return s;
+          const items = [...s.dockItems];
+          items.splice(idx, 1);
+          return { dockItems: items };
+        }),
+
+      setDockAreaOrder: (order) => set({ dockAreaOrder: order }),
+
+      addDockArea: (id, index) =>
+        set((s) => {
+          // Repeatable areas (spacer, separator) get a unique instance id
+          // ("spacer-0", "spacer-1", …) — everything else is single-instance.
+          const def = DOCK_AREAS.find((a) => a.id === id);
+          const repeatable = def?.repeatable === true;
+          if (
+            !repeatable &&
+            s.dockAreaOrder.some((x) => areaBaseId(x) === id)
+          ) {
+            return s;
+          }
+          const order = [...s.dockAreaOrder];
+          const instanceId = repeatable
+            ? nextFreeDockAreaInstanceId(order, id)
+            : id;
+          if (index !== undefined && index >= 0 && index <= order.length) {
+            order.splice(index, 0, instanceId);
+          } else {
+            order.push(instanceId);
+          }
+          return { dockAreaOrder: order };
+        }),
+
+      removeDockArea: (id) =>
+        set((s) => {
+          const idx = s.dockAreaOrder.indexOf(id);
+          if (idx === -1) return s;
+          const order = [...s.dockAreaOrder];
+          order.splice(idx, 1);
+          return { dockAreaOrder: order };
+        }),
 
       // ── Dock at specific index ────────────────────────────────────
       dockAt: (id, index) =>
@@ -416,7 +546,9 @@ export const widgetStore = createStore<WidgetStore>()(
       name: "cubeforge:widgets",
       // v6: custom widgets (URL-import) removed — migrate drops orphaned
       // instances so existing users get them cleaned on next load.
-      version: 6,
+      // v8: repeatable dock areas (spacer/separator) get unique instance ids
+      // ("separator-0", …) so framer can reorder several of them smoothly.
+      version: 8,
       migrate: (persisted, oldVersion) =>
         migratePersistedWidgetState(persisted, oldVersion),
       partialize: (state) => ({
@@ -428,6 +560,8 @@ export const widgetStore = createStore<WidgetStore>()(
           ]),
         ),
         dockOrder: state.dockOrder,
+        dockItems: state.dockItems,
+        dockAreaOrder: state.dockAreaOrder,
         customLayouts: state.customLayouts,
       }),
     },

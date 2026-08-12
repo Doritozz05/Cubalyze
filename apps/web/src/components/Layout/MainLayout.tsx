@@ -9,7 +9,6 @@ import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
-import type { Profile } from "@cubeforge/database";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { PuzzleCategory } from "@/types";
 
@@ -38,12 +37,8 @@ export interface MainLayoutProps {
   leftSidebar?: React.ReactNode;
   /** Open the manual solve entry sheet (the "+" button in the header). */
   onAddManual?: () => void;
-  /** Navigate to the Profile view (header avatar chip). */
+  /** Open the user's profile view (dock profile pill). */
   onOpenProfile?: () => void;
-  /** Stable identity seed for the header CubeMark chip (user_id). */
-  profileSeed?: string;
-  /** User profile object containing custom avatar photo data if set. */
-  profile?: Profile | null;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (shows the split). */
@@ -87,9 +82,6 @@ export function MainLayout({
   main,
   leftSidebar,
   onAddManual,
-  onOpenProfile,
-  profileSeed,
-  profile,
   cube3D,
   cube3DActive,
   cube3DReady,
@@ -101,6 +93,7 @@ export function MainLayout({
   onNewSession,
   onRenameSession,
   onDeleteSession,
+  onOpenProfile,
   isFocused,
   hideHeader,
   puzzle,
@@ -312,8 +305,6 @@ export function MainLayout({
               onDeleteSession={onDeleteSession}
               onAddManual={onAddManual}
               onOpenProfile={onOpenProfile}
-              profileSeed={profileSeed}
-              profile={profile}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               puzzleLocked={puzzleLocked}

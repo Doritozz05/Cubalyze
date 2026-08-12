@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useCallback, useEffect, useLayoutEffect, useState, useMemo } from "react";
+import { useRef, useCallback, useLayoutEffect, useState, useMemo, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
@@ -11,38 +12,76 @@ import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useTranslation } from "react-i18next";
 import { WIDGET_LABEL_KEY } from "@/widgets/i18n";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { ReactNode } from "react";
 import type { WidgetId } from "@/widgets/types";
+import { useIsDockEditing, dockEditStore } from "@/widgets/dock/dockEditStore";
+import { DockExplorer } from "@/widgets/dock/DockExplorer";
+import { getDockArea, areaBaseId } from "@/widgets/dock/dockAreasRegistry";
+
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
 
-/** Width (px) of the invisible drop-zone spacer rendered while dragging over the dock. */
-const GHOST_WIDTH = 48;
+/** Horizontal pitch of one icon-only pill (size-8 + gap-0.5). */
+const PILL_PITCH = 34;
+
+/** Launch a widget as a floating panel at a smart position. */
+function launchWidget(widgetId: WidgetId) {
+  const store = widgetStore.getState();
+  const inst = store.instances[widgetId];
+  if (!inst) return;
+
+  store.setStatus(widgetId, "floating");
+
+  // Compute a smart launch position if the stored position is unreasonable
+  const pos = inst.position;
+  const panelW = inst.panelWidth ?? 340;
+  const isReasonable =
+    pos &&
+    pos.x >= 72 &&
+    pos.y >= 60 &&
+    pos.x + panelW < window.innerWidth - 16 &&
+    pos.y < window.innerHeight - 60;
+
+  if (!isReasonable) {
+    const floatingCount = Object.values(store.instances).filter(
+      (i) => i.status === "floating" || i.status === "minimized",
+    ).length;
+    store.setPosition(widgetId, {
+      x: Math.max(72, Math.round((window.innerWidth - panelW) / 2)),
+      y: 72 + floatingCount * 30,
+    });
+  }
+}
 
 // ── Dock pill ────────────────────────────────────────────────────────────
 
 /**
- * A single docked widget pill in the header dock bar.
+ * A single docked widget in the glass bar — flat icon-only (macOS style):
+ * the label floats above the pill on hover and the icon magnifies.
  *
  * - **Click**: launches the widget as a floating panel at a smart position.
- * - **Drag (any direction)**: the pill instantly "lifts out" of the dock — the
+ * - **Drag (any direction)**: the pill instantly "lifts out" of the bar — the
  *   real pill fades out with no transition and a portaled clone follows the
- *   cursor, so it's NEVER clipped by the dock's overflow container. Dragging
- *   down past the commit threshold undocks to a free-floating minimized pill.
+ *   cursor. Dragging down past the commit threshold undocks to a
+ *   free-floating minimized pill.
  */
-function DockPill({
-  widgetId,
-  onPillRef,
-}: {
-  widgetId: WidgetId;
-  onPillRef?: (id: string, el: HTMLElement | null) => void;
-}) {
+function DockPill({ widgetId }: { widgetId: WidgetId }) {
   const { t } = useTranslation("widgets");
   const definition = getWidget(widgetId);
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
-  const isDocked = status === "docked";
+  // macOS-style running indicator: the widget is open as a floating panel
+  // (or minimized), so its pill gets the small "active" dot.
+  const isRunning = status === "floating" || status === "minimized";
 
   const [isDragging, setIsDragging] = useState(false);
   const [isCommitted, setIsCommitted] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Set on drag start and only cleared by the post-drag click event (or a
   // safety timeout) — prevents the click that fires after a drag from
@@ -65,7 +104,9 @@ function DockPill({
   useGlobalDragCursor(isDragging);
   const reduceMotion = useReducedMotion();
 
-  if (!definition || !isDocked) return null;
+  // The dock shows every ACTIVE widget (docked, floating or minimized) —
+  // macOS-style: launching keeps the pill, the running dot marks it.
+  if (!definition || status === "inactive" || !status) return null;
 
   const Icon = definition.icon;
 
@@ -77,34 +118,6 @@ function DockPill({
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   };
 
-  const handleClick = () => {
-    const store = widgetStore.getState();
-    const inst = store.instances[widgetId];
-    if (!inst) return;
-
-    store.setStatus(widgetId, "floating");
-
-    // Compute a smart launch position if the stored position is unreasonable
-    const pos = inst.position;
-    const panelW = inst.panelWidth ?? 340;
-    const isReasonable =
-      pos &&
-      pos.x >= 72 &&
-      pos.y >= 60 &&
-      pos.x + panelW < window.innerWidth - 16 &&
-      pos.y < window.innerHeight - 60;
-
-    if (!isReasonable) {
-      const floatingCount = Object.values(store.instances).filter(
-        (i) => i.status === "floating" || i.status === "minimized",
-      ).length;
-      store.setPosition(widgetId, {
-        x: Math.max(72, Math.round((window.innerWidth - panelW) / 2)),
-        y: 72 + floatingCount * 30,
-      });
-    }
-  };
-
   return (
     <>
       <Reorder.Item
@@ -112,12 +125,13 @@ function DockPill({
         value={widgetId}
         drag
         layout={reduceMotion ? undefined : true}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
         ref={(el: HTMLElement | null) => {
           itemRef.current = el;
-          onPillRef?.(widgetId, el);
         }}
         initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
-        animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
+        animate={{ opacity: isDragging ? 0 : 1 }}
         exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
         transition={
           reduceMotion
@@ -126,8 +140,8 @@ function DockPill({
                 type: "spring",
                 stiffness: 400,
                 damping: 30,
-                // Hide the real pill INSTANTLY on lift (no clipped fade inside the
-                // overflow container); fade it back smoothly when it snaps back.
+                // Hide the real pill INSTANTLY on lift (no clipped fade); fade
+                // it back smoothly when it snaps back.
                 opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
               }
         }
@@ -136,7 +150,16 @@ function DockPill({
             suppressClickRef.current = false;
             return;
           }
-          handleClick();
+          // Toggle semantics: clicking a docked pill launches the widget
+          // (floating, pill stays with the running dot); clicking the running
+          // pill again closes its panel and docks it back — the dot
+          // disappears and the pill stays pinned (status → docked).
+          const st = widgetStore.getState().instances[widgetId]?.status;
+          if (st === "floating" || st === "minimized") {
+            widgetStore.getState().setStatus(widgetId, "docked");
+          } else {
+            launchWidget(widgetId);
+          }
         }}
         onDragStart={(_e, info) => {
           suppressClickRef.current = true;
@@ -183,26 +206,56 @@ function DockPill({
             suppressClickRef.current = false;
           }, 0);
         }}
+        style={{ zIndex: isHovered ? 30 : undefined }}
         className={cn(
-          "relative flex h-8 shrink-0 touch-none select-none items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200",
-          "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hover:border-ink/20",
-          "cursor-grab active:cursor-grabbing",
+          "relative grid size-8 shrink-0 touch-none select-none cursor-grab place-items-center rounded-full",
+          "text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink active:cursor-grabbing",
         )}
-        aria-label={t("dock.pinned", { name: t(WIDGET_LABEL_KEY[widgetId]) })}
+        aria-label={t(isRunning ? "dock.running" : "dock.pinned", {
+          name: t(WIDGET_LABEL_KEY[widgetId]),
+        })}
       >
-        <Icon className="size-3.5 shrink-0" />
-        <span className="truncate max-w-28">{t(WIDGET_LABEL_KEY[widgetId])}</span>
+        {/* Magnified icon (macOS-style) — the label floats above on hover. */}
+        <motion.span
+          animate={{ scale: isHovered ? 1.35 : 1 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 22 }
+          }
+          className="grid place-items-center"
+        >
+          <Icon className="size-4" />
+        </motion.span>
+        {/* Running indicator (macOS-style active dot) — only when the
+            widget is ALSO open as a floating panel or minimized. */}
+        {isRunning && (
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink-3"
+          />
+        )}
+        {isHovered && (
+          <motion.span
+            initial={{ opacity: 0, y: -3 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 26 }
+            }
+            className="pointer-events-none absolute top-9 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-0.5 text-[0.65rem] font-medium text-canvas"
+          >
+            {t(WIDGET_LABEL_KEY[widgetId])}
+          </motion.span>
+        )}
       </Reorder.Item>
 
-      {/* Lifted clone — portaled to <body> so the dock's overflow NEVER clips
-          it. Rendered always (for zero-latency lift) but only visible while
-          dragging; positioned imperatively via transform for 60fps tracking. */}
+      {/* Lifted clone — portaled to <body> so it's NEVER clipped. Rendered
+          always (for zero-latency lift) but only visible while dragging;
+          positioned imperatively via transform for 60fps tracking. */}
       {createPortal(
         <div
           ref={ghostRef}
           aria-hidden
           className={cn(
-            "pointer-events-none fixed left-0 top-0 z-60 flex h-8 items-center gap-1.5 rounded-md border border-ink/20 bg-surface px-2.5 text-xs font-medium text-ink shadow-xl",
+            "pointer-events-none fixed left-0 top-0 z-60 grid size-8 place-items-center rounded-full bg-surface text-ink shadow-xl",
             isDragging
               ? "opacity-100"
               : isCommitted
@@ -210,8 +263,7 @@ function DockPill({
                 : "opacity-0 transition-opacity duration-150",
           )}
         >
-          <Icon className="size-3.5 shrink-0" />
-          <span className="truncate max-w-28">{t(WIDGET_LABEL_KEY[widgetId])}</span>
+          <Icon className="size-4" />
         </div>,
         document.body,
       )}
@@ -219,48 +271,96 @@ function DockPill({
   );
 }
 
-// ── Widget Dock ──────────────────────────────────────────────────────────
+// ── Overflow chevron (Windows-style) ─────────────────────────────────────
 
 /**
- * The widget dock — rendered in the header center area.
- *
- * Shows all widgets with `status === 'docked'` as compact pills.
- * Click to launch, drag down to undock. When dragging a floating widget over
- * the dock, a gap spacer is rendered at the target drop position.
+ * Subtle chevron shown when the bar can't fit every widget. Opens a flyout
+ * listing the hidden widgets (still docked — just not visible); clicking one
+ * launches it as a floating panel, exactly like clicking its pill would.
  */
-export function WidgetDock() {
+const OverflowMenu = forwardRef<HTMLButtonElement, { ids: WidgetId[] }>(
+  function OverflowMenu({ ids }, ref) {
+    const { t } = useTranslation("widgets");
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            ref={ref}
+            type="button"
+            aria-label={t("dock.moreHidden", { count: ids.length })}
+            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink"
+          >
+            <ChevronUp className="size-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          {ids.map((id) => {
+            const def = getWidget(id);
+            if (!def) return null;
+            const Icon = def.icon;
+            return (
+              <DropdownMenuItem
+                key={id}
+                className="gap-2"
+                onClick={() => launchWidget(id)}
+              >
+                <Icon className="size-3.5 shrink-0 text-ink-2" />
+                <span className="truncate">{t(WIDGET_LABEL_KEY[id])}</span>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  },
+);
+
+// ── Widget Dock (the unified glass bar) ─────────────────────────────────
+
+/**
+ * One centered glass bar — a macOS dock crossed with the Windows taskbar.
+ * Widgets are flat, icon-only pills (labels float up on hover, icons magnify).
+ * When the bar can't fit every widget, the leftover pills collapse into a
+ * subtle chevron flyout — nothing ever scrolls or gets clipped.
+ *
+ * `trailing` areas (session, puzzle, clock, profile, spacer, separator…)
+ * render inside the same bar, interleaved with the widget pills in
+ * `dockAreaOrder` order — Windows-tray style.
+ *
+ * While a floating widget is dragged near the dock, the bar temporarily
+ * expands to show every pill (plus the drop-zone ghost) for precise docking.
+ */
+export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, ReactNode> }) {
   const { t } = useTranslation("widgets");
+  const { t: tDock } = useTranslation("dock");
   const reduceMotion = useReducedMotion();
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
   const dropX = useDropX();
   const draggingWidgetId = useDraggingWidgetId();
+  const isEditing = useIsDockEditing();
+  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+  const [explorerOpen, setExplorerOpen] = useState(false);
 
-  // ── Pill refs for position calculation ─────────────────────────────────
-  const pillRefs = useRef<Map<string, HTMLElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const widgetsGroupRef = useRef<HTMLDivElement>(null);
 
-  const onPillRef = useCallback((id: string, el: HTMLElement | null) => {
-    if (el) pillRefs.current.set(id, el);
-    else pillRefs.current.delete(id);
-  }, []);
-
-  // ── Ghost index for dock-from-floating pill shifting ────────────────────
-  const [ghostIndex, setGhostIndex] = useState(-1);
-  const GHOST_ID = "__dock_ghost__";
-
-  // Filter to docked widgets (exclude special widgets like cube-button)
+  // The dock lists every ACTIVE widget (docked, floating or minimized) —
+  // launching a widget keeps its pill in the bar and marks it "running"
+  // with a dot (macOS/Windows dock behavior). Only truly inactive widgets
+  // (excluded special widgets like cube-button) are left out.
   const orderedDocked = dockOrder.filter((id) => {
     if (EXCLUDED_FROM_DOCK.has(id)) return false;
     const inst = instances[id];
-    return inst && inst.status === "docked";
+    return inst && inst.status !== "inactive";
   });
   const orderedSet = new Set(orderedDocked);
   const extraDocked = Object.entries(instances)
     .filter(
       ([id, inst]) =>
-        inst?.status === "docked" &&
+        inst?.status !== "inactive" &&
         !orderedSet.has(id) &&
         !EXCLUDED_FROM_DOCK.has(id),
     )
@@ -275,114 +375,94 @@ export function WidgetDock() {
     [dockOrder, instances],
   );
 
-  // ── Edge fades for horizontal overflow ──────────────────────────────────
-  // When the dock overflows its centered area, fade the pills at the visible
-  // edges to hint there's more content in that direction.
-  const [scrollEdges, setScrollEdges] = useState({ left: false, right: false });
+  // ── Fit (no scroll, no clipping) ─────────────────────────────────────────
+  // Icon-only pills have a fixed pitch, so overflow is plain arithmetic:
+  // count how many fit next to the trailing controls; the rest go into the
+  // chevron flyout. While a floating widget is being dragged near the dock,
+  // expand to show everything for precise dropping.
+  const [hiddenCount, setHiddenCount] = useState(0);
 
-  // Shared "at right edge" tracker — updated by updateScrollEdges (called from
-  // onScroll and ResizeObserver) so it always reflects the user's LAST scroll
-  // position, not just the state at the previous count change.
-  const atRightRef = useRef(false);
-
-  const updateScrollEdges = useCallback(() => {
+  const recompute = useCallback(() => {
     const el = containerRef.current;
-    if (!el) return;
-    const atLeft = el.scrollLeft <= 2;
-    const atRight = el.scrollLeft >= el.scrollWidth - el.clientWidth - 2;
-    atRightRef.current = atRight;
-    setScrollEdges((prev) =>
-      prev.left === !atLeft && prev.right === !atRight
-        ? prev
-        : { left: !atLeft, right: !atRight },
-    );
-  }, []);
-
-  const edgeMask =
-    scrollEdges.left || scrollEdges.right
-      ? `linear-gradient(to right, ${
-          scrollEdges.left ? "transparent" : "black"
-        } 0, black 12px, black calc(100% - 12px), ${
-          scrollEdges.right ? "transparent" : "black"
-        } 100%)`
-      : undefined;
-
-  // ── Auto-reveal: when a new widget docks, scroll so it becomes visible ──
-  // Only auto-scroll to the right edge if the user was ALREADY looking at the
-  // end of the dock (where new pills appear). If they were scrolled elsewhere
-  // (e.g. they just dropped a widget mid-dock), keep their position instead
-  // of yanking the viewport away from the pill they just placed.
-  //
-  // Declared BEFORE the ResizeObserver effect so it reads atRightRef from the
-  // user's last scroll (pre-add) rather than the post-add geometry.
-  const prevDockedCountRef = useRef(dockedIds.length);
-  useLayoutEffect(() => {
-    const prevCount = prevDockedCountRef.current;
-    prevDockedCountRef.current = dockedIds.length;
-    const el = containerRef.current;
-    const grew = dockedIds.length > prevCount;
-    if (!el || !grew || el.scrollWidth <= el.clientWidth + 1) return;
-    if (atRightRef.current) {
-      el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+    const parent = el?.parentElement;
+    if (!el || !parent) return;
+    if (isDockZoneActive) {
+      setHiddenCount((prev) => (prev === 0 ? prev : 0));
+      return;
     }
-  }, [dockedIds.length]);
+    const n = dockedIds.length;
+    if (n === 0) {
+      setHiddenCount((prev) => (prev === 0 ? prev : 0));
+      return;
+    }
+    const available = parent.clientWidth;
+    const gap = 2; // gap-0.5
+    // Sum the widths of every non-widget area (session, puzzle, clock,
+    // profile, spacer, separator…) — they're interleaved with the pills now.
+    let areasW = 0;
+    let areaCount = 0;
+    if (rowRef.current) {
+      rowRef.current.querySelectorAll("[data-area-id]").forEach((a) => {
+        areasW += a.getBoundingClientRect().width;
+        areaCount += 1;
+      });
+    }
+    // Reserve the flex gaps between the blocks (widgets group + areas).
+    const children = areaCount + (dockAreaOrder.includes("widgets") ? 1 : 0);
+    const widgetsSpace =
+      available - areasW - Math.max(0, children - 1) * gap;
+    let fit = Math.floor(widgetsSpace / PILL_PITCH);
+    if (fit < n) {
+      // Reserve the chevron's own slot only when something will be hidden.
+      fit = Math.max(0, Math.floor((widgetsSpace - (32 + gap)) / PILL_PITCH));
+    }
+    const next = Math.max(0, n - fit);
+    setHiddenCount((prev) => (prev === next ? prev : next));
+  }, [dockedIds, isDockZoneActive, dockAreaOrder]);
 
-  // Keep fades in sync with pill changes and window resizes.
   useLayoutEffect(() => {
-    updateScrollEdges();
+    recompute();
     const el = containerRef.current;
+    const parent = el?.parentElement;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(updateScrollEdges);
+    const ro = new ResizeObserver(recompute);
     ro.observe(el);
-    return () => ro.disconnect();
-  }, [updateScrollEdges, dockedIds, isDockZoneActive]);
-
-  // ── Mouse-wheel horizontal scroll ───────────────────────────────────────
-  // The dock scrolls horizontally, but a plain mouse wheel emits vertical
-  // deltas (and the scrollbar is hidden), so cut-off pills are unreachable.
-  // When the dock overflows, translate the wheel into horizontal scrolling.
-  // When it fits, let the wheel scroll the page as usual.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      const overflow = el.scrollWidth > el.clientWidth + 1;
-      if (!overflow) return;
-      e.preventDefault();
-      // Normalize line-mode deltas (some mice/trackpads report ±1-3 per notch)
-      // to pixel distances so the dock scrolls at a comfortable speed.
-      const factor = e.deltaMode === 1 ? 16 : 1;
-      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY)
-        ? e.deltaX * factor
-        : e.deltaY * factor;
-      el.scrollLeft += dx;
+    if (parent) ro.observe(parent);
+    let cancelled = false;
+    // Re-measure once webfonts settle (tray labels depend on the font).
+    document.fonts?.ready?.then(() => {
+      if (!cancelled) recompute();
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      ro.disconnect();
     };
+  }, [recompute]);
 
-    el.addEventListener("wheel", onWheel, { passive: false });
-  }, [dockedIds.length, isDockZoneActive]);
+  const isExpanded = isDockZoneActive;
+  const renderedIds = useMemo(() => {
+    if (isExpanded || hiddenCount === 0) return dockedIds;
+    return dockedIds.slice(0, dockedIds.length - hiddenCount);
+  }, [dockedIds, isExpanded, hiddenCount]);
+  const overflowIds =
+    isExpanded || hiddenCount === 0 ? [] : dockedIds.slice(-hiddenCount);
 
-  // ── Ghost position from CONTAINER (stable — ghost doesn't create feedback) ─
-  // Using the container width as reference (not pill positions that shift with
-  // the ghost) breaks the feedback loop that plagued the grey-spacer approach.
-  // With a horizontally scrollable dock, offset by scrollLeft and measure the
-  // full content width (minus the 48px ghost spacer) so the drop index still
-  // lands under the cursor.
+  // ── Drop index for dock-from-floating drops ───────────────────────────
+  const [ghostIndex, setGhostIndex] = useState(-1);
+
   useLayoutEffect(() => {
     if (!isDockZoneActive || dockedIds.length === 0 || !draggingWidgetId) {
       setGhostIndex(-1);
       dockZoneState.setDropIndex(-1);
       return;
     }
-
-    const container = containerRef.current;
-    if (!container) return;
-
-    // NOTE: isDockZoneActive is guaranteed true here (early return above), so
-    // scrollWidth includes the ghost spacer — subtract it for stable mapping.
-    const rect = container.getBoundingClientRect();
-    const contentX = dropX - rect.left + container.scrollLeft;
-    const contentWidth = Math.max(container.scrollWidth - GHOST_WIDTH, 1);
+    // Map the pointer onto the WIDGETS GROUP (not the whole bar) — other
+    // areas (clock, profile…) sit beside the pills and don't take slots.
+    const row = widgetsGroupRef.current;
+    if (!row) return;
+    const rect = row.getBoundingClientRect();
+    const contentX = dropX - rect.left;
+    const contentWidth = Math.max(row.scrollWidth - PILL_PITCH, 1);
     const proportion = Math.max(0, Math.min(1, contentX / contentWidth));
     const idx = Math.round(proportion * dockedIds.length);
 
@@ -390,13 +470,22 @@ export function WidgetDock() {
     dockZoneState.setDropIndex(idx);
   }, [dropX, isDockZoneActive, dockedIds, draggingWidgetId]);
 
-  // ── Display list: insert invisible ghost at calculated index ──────────
+  // ── Display list: the dragged widget ITSELF joins the dock while its
+  //    drag is over the bar — treated as if it were ALREADY docked (the
+  //    user's suggested approach): its real pill sits in the flow at the
+  //    insertion index and the other pills part around it via framer layout
+  //    FLIP, exactly like a dock-to-dock reorder. No invisible spacer, no
+  //    compacting — nothing to mount or re-layout, so the bar never shows a
+  //    missing icon even for one frame. If the drag leaves the bar, the pill
+  //    simply exits the flow and the widget stays floating.
   const displayIds = useMemo(() => {
-    if (!isDockZoneActive || ghostIndex < 0 || !draggingWidgetId) return dockedIds;
-    const ids = [...dockedIds];
-    ids.splice(Math.min(ghostIndex, ids.length), 0, GHOST_ID);
+    if (!isDockZoneActive || !draggingWidgetId) return renderedIds;
+    const ids = [...renderedIds];
+    if (ids.includes(draggingWidgetId)) return ids;
+    const idx = ghostIndex >= 0 ? Math.min(ghostIndex, ids.length) : ids.length;
+    ids.splice(idx, 0, draggingWidgetId);
     return ids;
-  }, [dockedIds, isDockZoneActive, ghostIndex, draggingWidgetId]);
+  }, [renderedIds, isDockZoneActive, ghostIndex, draggingWidgetId]);
 
   const handleReorder = (newOrder: WidgetId[]) => {
     const current = widgetStore.getState().dockOrder;
@@ -405,44 +494,229 @@ export function WidgetDock() {
     widgetStore.getState().setDockOrder([...newOrder, ...invisible]);
   };
 
-  if (dockedIds.length === 0 && !isDockZoneActive) return null;
+  // ── Edit mode: render each dock area for reordering ──────────────────
+  // The dock is composed of modular areas (widgets zone, ＋, session,
+  // puzzle, clock, profile, spacer). In edit mode each area is draggable
+  // to reorder; adding/removing pieces happens in the DockExplorer (＋).
+  // Every entry in dockAreaOrder is a unique instance id (repeatables are
+  // stored as "spacer-0", "spacer-1", …), so framer Reorder gets stable
+  // identities and dragging stays as smooth as the widget pills.
+  const handleAreaReorder = useCallback((newOrder: string[]) => {
+    // dockAreaOrder is the single source of truth — the widgets zone can
+    // sit anywhere the user drags it.
+    widgetStore.getState().setDockAreaOrder(newOrder);
+  }, []);
 
-  return (
+  const editModeAreas = useMemo(() => {
+    if (!isEditing) return [];
+    return dockAreaOrder.map((areaId) => {
+      // Widgets zone: render a compact preview of the widget pills.
+      // Draggable like every other area — it can sit anywhere in the bar.
+      if (areaId === "widgets") {
+        return (
+          <Reorder.Item
+            key={areaId}
+            value={areaId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            className="relative flex h-8 items-center gap-0.5"
+          >
+            <div className="flex items-center gap-0.5 rounded-full border border-line/50 bg-surface-2/50 px-1.5 py-0.5">
+              {dockedIds.slice(0, 5).map((wid) => {
+                const def = getWidget(wid);
+                const Icon = def?.icon;
+                return Icon ? (
+                  <div key={wid} className="grid size-6 place-items-center rounded-full text-ink-3">
+                    <Icon className="size-3" />
+                  </div>
+                ) : null;
+              })}
+              {dockedIds.length > 5 && (
+                <span className="text-[0.6rem] text-ink-3">+{dockedIds.length - 5}</span>
+              )}
+            </div>
+          </Reorder.Item>
+        );
+      }
+      // Other areas: render from the area definition (match on the base id
+      // so suffixed repeatable instances like "separator-1" resolve too)
+      const baseId = areaBaseId(areaId);
+      const area = getDockArea(baseId);
+      if (!area) return null;
+      const Icon = area.icon;
+
+      // Separator: render as a vertical line
+      if (baseId === "separator") {
+        return (
+          <Reorder.Item
+            key={areaId}
+            value={areaId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            className="relative flex h-8 items-center cursor-grab touch-none"
+          >
+            <div className="mx-1 h-5 w-px shrink-0 bg-line/80" />
+          </Reorder.Item>
+        );
+      }
+
+      // Spacer: render as empty space with dashed border in edit mode
+      if (baseId === "spacer") {
+        return (
+          <Reorder.Item
+            key={areaId}
+            value={areaId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            className="relative flex h-8 items-center cursor-grab touch-none"
+          >
+            <div className="w-6 shrink-0 rounded border border-dashed border-ink-3/30" />
+          </Reorder.Item>
+        );
+      }
+
+      // Default: icon circle
+      return (
+        <Reorder.Item
+          key={areaId}
+          value={areaId}
+          drag
+          layout={reduceMotion ? undefined : true}
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+          className="relative h-8 cursor-grab touch-none"
+        >
+          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
+            <Icon className="size-4" />
+          </div>
+        </Reorder.Item>
+      );
+    });
+  }, [isEditing, dockAreaOrder, dockedIds, reduceMotion]);
+
+  const renderNormal = () => (
+    <div ref={rowRef} className="flex min-w-0 items-center gap-0.5">
+      {/* Render areas in dockAreaOrder — the widgets zone can sit anywhere. */}
+      {dockAreaOrder.map((areaId) => {
+        if (areaId === "widgets") {
+          return (
+            <div
+              key={areaId}
+              ref={widgetsGroupRef}
+              className="flex min-w-0 items-center gap-0.5"
+            >
+              <Reorder.Group
+                as="div"
+                axis="x"
+                values={renderedIds}
+                onReorder={handleReorder}
+                className="flex items-center gap-0.5"
+              >
+                <AnimatePresence mode="popLayout">
+                  {displayIds.map((id) => {
+                    if (id === draggingWidgetId && isDockZoneActive) {
+                      const def = getWidget(id);
+                      const Icon = def?.icon;
+                      return (
+                        <motion.div
+                          key={id}
+                          layout={reduceMotion ? undefined : true}
+                          transition={
+                            reduceMotion
+                              ? { duration: 0 }
+                              : { type: "spring", stiffness: 400, damping: 30 }
+                          }
+                          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
+                          className="relative grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink opacity-0"
+                          aria-hidden
+                        >
+                          {Icon ? <Icon className="size-4" /> : null}
+                        </motion.div>
+                      );
+                    }
+                    return <DockPill key={id} widgetId={id} />;
+                  })}
+                </AnimatePresence>
+              </Reorder.Group>
+
+              {overflowIds.length > 0 && <OverflowMenu ids={overflowIds} />}
+            </div>
+          );
+        }
+        const node = trailingAreas?.[areaBaseId(areaId)];
+        if (!node) return null;
+        return (
+          <div key={areaId} data-area-id={areaBaseId(areaId)}>
+            {node}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderEditMode = () => (
+    <>
+      <Reorder.Group
+        as="div"
+        axis="x"
+        values={dockAreaOrder}
+        onReorder={handleAreaReorder}
+        className="list-none flex h-full items-center gap-1"
+      >
+        {editModeAreas}
+      </Reorder.Group>
+      {/* ＋ button to open DockExplorer */}
+      <button
+        onClick={() => setExplorerOpen(true)}
+        className="grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-ink-3/40 text-ink-3 transition-colors hover:border-ink-2 hover:text-ink"
+        aria-label={tDock("addPiece")}
+      >
+        <Plus className="size-4" />
+      </button>
+
+      {/* Done button */}
+      <button
+        onClick={() => dockEditStore.stopEditing()}
+        className="ml-2 shrink-0 rounded-full bg-ink px-3 py-1.5 text-[0.72rem] font-medium text-canvas transition-colors hover:bg-ink-2"
+      >
+        {tDock("doneEditing")}
+      </button>
+
+      <DockExplorer open={explorerOpen} onOpenChange={setExplorerOpen} />
+    </>
+  );  return (
     <div
       ref={containerRef}
       role="toolbar"
       aria-label={t("dock.dockedWidgets")}
-      onScroll={updateScrollEdges}
-      className="flex min-w-0 flex-1 items-center overflow-x-auto px-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
-      style={{ maskImage: edgeMask, WebkitMaskImage: edgeMask }}
+      data-context-zone="dock"
     >
-      <Reorder.Group
-        as="div"
-        axis="x"
-        values={dockedIds}
-        onReorder={handleReorder}
-        className="mx-auto flex items-center gap-1.5"
+      {/* Edit mode backdrop — portaled to <body> so it escapes the header's
+          z-20 stacking context: it dims + blurs the ENTIRE web, including the
+          z-50 sidebar and the floating widgets. It shares the sidebar's z-50
+          but sits later in the DOM (ties go to the later sibling), and any
+          dialog/sheet opened afterwards portals above it. The header itself is
+          raised to z-60 while editing (see Header) so the dock bar stays crisp
+          on top. Clicking anywhere closes edit mode. */}
+      {isEditing &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 bg-canvas/40 backdrop-blur-sm"
+            onClick={() => dockEditStore.stopEditing()}
+          />,
+          document.body,
+        )}
+      <div
+        className={cn(
+          "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
+          isExpanded && "z-40 w-max",
+          isEditing && "z-[60] overflow-hidden",
+        )}
       >
-        <AnimatePresence mode="popLayout">
-          {displayIds.map((id) => {
-            if (id === GHOST_ID) {
-              return (
-                <motion.div
-                  key={GHOST_ID}
-                  layout={reduceMotion ? undefined : true}
-                  initial={reduceMotion ? false : { opacity: 0, width: 0 }}
-                  animate={{ opacity: 0, width: GHOST_WIDTH }}
-                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, width: 0 }}
-                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
-                  className="h-8 shrink-0"
-                  aria-hidden
-                />
-              );
-            }
-            return <DockPill key={id} widgetId={id} onPillRef={onPillRef} />;
-          })}
-        </AnimatePresence>
-      </Reorder.Group>
+        {isEditing ? renderEditMode() : renderNormal()}
+      </div>
     </div>
   );
 }

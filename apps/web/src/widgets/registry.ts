@@ -13,7 +13,7 @@ import { notesDefinition } from "./implementations/notes/definition";
 import { algorithmDbDefinition } from "./implementations/algorithm-db/definition";
 import { layoutOrganizerDefinition } from "./implementations/layout-organizer/definition";
 
-export type { WidgetCategory, WidgetCategoryId } from "./types";
+export type { WidgetCategory } from "./types";
 
 /** Available widget categories for the explorer sidebar. */
 export const WIDGET_CATEGORIES: WidgetCategory[] = [

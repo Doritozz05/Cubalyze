@@ -306,7 +306,3 @@ export function countryName(code: string): string {
   }
 }
 
-/** True when the code exists in the country list. */
-export function isValidCountry(code: string): boolean {
-  return code in COUNTRY_MAP;
-}

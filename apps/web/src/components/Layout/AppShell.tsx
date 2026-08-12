@@ -25,6 +25,9 @@ function CubePanelFallback() {
   );
 }
 import { ThemeProvider } from "@/components/theme-provider";
+import { ContextMenu } from "@/components/ContextMenu/ContextMenu";
+import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
+import { RefreshCw, Copy, Plus, Puzzle, Settings, LayoutGrid } from "lucide-react";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -139,6 +142,57 @@ export function AppShell(props: AppShellProps) {
     // only fires on storage-type changes.
   }, [storageType, t]);
 
+  // ── Generic context menu items (set once, refs keep them current) ──
+  const onRegenerateRef = useRef(onRegenerate);
+  onRegenerateRef.current = onRegenerate;
+  const onCopyRef = useRef(onCopy);
+  onCopyRef.current = onCopy;
+  const manualOpenRef = useRef(setManualOpen);
+  manualOpenRef.current = setManualOpen;
+  const widgetExplorerRef = useRef(setWidgetExplorerOpen);
+  widgetExplorerRef.current = setWidgetExplorerOpen;
+  const settingsRef = useRef(setSettingsOpen);
+  settingsRef.current = setSettingsOpen;
+
+  // ── Global context menu: right-click anywhere opens the menu ────────
+  // Generic items are always shown. Zone-specific items (e.g. "Editar dock"
+  // when right-clicking on the dock) are merged based on data-context-zone.
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      e.preventDefault();
+      // Walk up from target to find a data-context-zone (up to document)
+      let zone: string | null = null;
+      let el = e.target as HTMLElement | null;
+      while (el && el !== document.documentElement) {
+        const z = el.getAttribute("data-context-zone");
+        if (z) { zone = z; break; }
+        el = el.parentElement;
+      }
+      const items: ContextMenuItem[] = [
+        { id: "new-scramble", label: "newScramble", icon: RefreshCw, onClick: () => onRegenerateRef.current() },
+        { id: "copy-scramble", label: "copyScramble", icon: Copy, onClick: () => onCopyRef.current() },
+        { id: "add-manual", label: "addManualSolve", icon: Plus, onClick: () => manualOpenRef.current(true) },
+        { id: "open-widgets", label: "openWidgets", icon: Puzzle, onClick: () => widgetExplorerRef.current(true), separatorBefore: true },
+        { id: "settings", label: "settings", icon: Settings, onClick: () => settingsRef.current(true) },
+      ];
+      // Zone-specific items
+      if (zone === "dock") {
+        items.splice(0, 0, {
+          id: "edit-dock",
+          label: "editDock",
+          icon: LayoutGrid,
+          onClick: () => {
+            import("@/widgets/dock/dockEditStore").then((m) => m.dockEditStore.startEditing());
+          },
+          separatorBefore: false,
+        });
+      }
+      contextMenuStore.open(e.clientX, e.clientY, items);
+    };
+    document.addEventListener("contextmenu", handler);
+    return () => document.removeEventListener("contextmenu", handler);
+  }, []);
+
   const handleOpenCube = useCallback(() => {
     onNavigate("timer");
     setCube3DReady(true);
@@ -236,8 +290,6 @@ export function AppShell(props: AppShellProps) {
           isFocused={isFocused}
           onAddManual={() => setManualOpen(true)}
           onOpenProfile={onOpenProfile}
-          profileSeed={profileSeed ?? undefined}
-          profile={profile}
           main={
             <MainStage
               activeView={activeView}
@@ -293,6 +345,9 @@ export function AppShell(props: AppShellProps) {
           onTourSkip={onTourSkip}
         />
       </ThemeProvider>
+
+      {/* Global context menu — resolves i18n keys internally */}
+      <ContextMenu />
     </div>
   );
 }

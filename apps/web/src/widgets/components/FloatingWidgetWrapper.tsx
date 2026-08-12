@@ -36,6 +36,15 @@ export interface FloatingWidgetWrapperProps {
 const DOCK_THRESHOLD = 30;
 
 /**
+ * Leave hysteresis (px from top): once near the dock, the pill only expands
+ * back after the drag passes this line. Without it, natural vertical jitter
+ * while dragging horizontally near the boundary flips near/not-near every few
+ * frames, re-anchoring the element and visibly vibrating it. Drops inside the
+ * band still dock (see handlePositionChange), so no pill gets left behind.
+ */
+const DOCK_LEAVE = 45;
+
+/**
  * Proportional scale applied to floating widgets in the touch regime: the
  * whole panel (fonts, content, spacing) is shrunk so widgets read as small
  * glanceable mini-panels instead of full-width sheets (user feedback:
@@ -190,7 +199,10 @@ export function FloatingWidgetWrapper({
       // IMPORTANT: Read dropIndex BEFORE calling dockZoneState.leave(),
       // because leave() clears _dropIndex when _nearIds becomes empty.
       const index = dockZoneState.dropIndex;
-      const shouldDock = pos.y < DOCK_THRESHOLD;
+      // Drop anywhere inside the hysteresis band (DOCK_LEAVE), not just the
+      // enter threshold — otherwise a release between the two lines would
+      // leave the widget stuck as a pill (still "near" but not docked).
+      const shouldDock = pos.y < DOCK_LEAVE;
 
       dockZoneState.leave(widgetId);
 
@@ -217,7 +229,11 @@ export function FloatingWidgetWrapper({
 
         // ── Throttled dock zone state: only update React state when the
         //    threshold is actually crossed, not on every frame.
-        const nearDock = pos.y < DOCK_THRESHOLD;
+        //    Hysteresis: enter under DOCK_THRESHOLD, but don't flip back out
+        //    until the drag passes DOCK_LEAVE.
+        const nearDock = isNearDockRef.current
+          ? pos.y < DOCK_LEAVE
+          : pos.y < DOCK_THRESHOLD;
         if (nearDock !== isNearDockRef.current) {
           isNearDockRef.current = nearDock;
           setIsNearDock(nearDock);
@@ -234,6 +250,14 @@ export function FloatingWidgetWrapper({
     ),
     snapThreshold: 8,
     snapTargets,
+    // While near the dock the panel collapses into a dock pill: keep it
+    // CENTERED on the cursor (whatever the original grab point) instead of
+    // sitting offset from the mouse at the old panel's top-left corner.
+    anchor: useCallback(
+      (elW: number, elH: number) =>
+        isNearDock ? { x: elW / 2, y: elH / 2 } : null,
+      [isNearDock],
+    ),
   });
 
   // ── Focus handler ─────────────────────────────────────────────────────
@@ -471,9 +495,13 @@ export function FloatingWidgetWrapper({
       }}
       onPointerDown={handleFocus}
       className={cn(
-        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface shadow-xl transition-[width,border-radius,box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
+        // NOTE: width/border-radius are deliberately NOT transitioned — the
+        // near-dock collapse (340px panel → 32px pill) must be INSTANT. An
+        // animated morph looks like a giant circle under the cursor, and the
+        // re-anchor reads offsetWidth mid-animation → the pill jumps/vibrates.
+        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface shadow-xl transition-[box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
         isNearDock
-          ? "h-8 rounded-md px-2.5 text-xs font-medium cursor-grabbing"
+          ? "size-8 rounded-full border-0 p-0 cursor-grabbing"
           : minimized
             ? "rounded-lg cursor-grab"
             : "rounded-xl",
@@ -493,27 +521,24 @@ export function FloatingWidgetWrapper({
         className={cn(
           "flex items-center justify-between shrink-0 transition-colors duration-200 select-none h-9 px-3 gap-2 border-b border-line/60",
           isNearDock
-            ? "h-8 px-2.5 border-b-0 cursor-grabbing"
+            ? "size-8 justify-center gap-0 border-b-0 cursor-grabbing"
             : drag.isDragging
               ? "cursor-grabbing"
               : "cursor-grab",
         )}
       >
-        <div className="flex items-center gap-2 min-w-0 shrink whitespace-nowrap">
-          <Icon
-            className={cn(
-              "shrink-0 text-ink-3 transition-transform duration-200",
-              isNearDock ? "size-3.5" : "size-4",
-            )}
-          />
-          <span
-            className={cn(
-              "font-medium text-ink truncate text-xs",
-              isNearDock && "max-w-28",
-            )}
-          >
-            {label}
-          </span>
+        <div
+          className={cn(
+            "flex items-center gap-2 min-w-0 shrink whitespace-nowrap",
+            isNearDock && "gap-0",
+          )}
+        >
+          <Icon className="shrink-0 text-ink-3 size-4" />
+          {!isNearDock && (
+            <span className="font-medium text-ink truncate text-xs">
+              {label}
+            </span>
+          )}
           {pillBadge && !isNearDock && (
             <span className="nums text-[0.65rem] text-ink-3 shrink-0">
               {pillBadge}

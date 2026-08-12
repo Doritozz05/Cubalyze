@@ -161,7 +161,9 @@
       "faceR": "Right (Red)",
       "faceL": "Left (Orange)",
       "showHeader": "Show header",
-      "showHeaderHint": "Hide the top bar for a cleaner, distraction-free view. Note: the session switcher lives in the header — when hidden, switch sessions from the Insights dropdown."
+      "showHeaderHint": "Hide the top bar for a cleaner, distraction-free view. Note: the session switcher lives in the header — when hidden, switch sessions from the Insights dropdown.",
+      "editDock": "Edit dock…",
+      "editDockHint": "Customize the dock bar: add, remove or reorder widgets, clock, profile, spacers and more."
     },
     "timer": {
       "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",
@@ -3283,7 +3285,9 @@
     },
     "dock": {
       "dockedWidgets": "Docked widgets",
-      "pinned": "{{name}} — pinned"
+      "pinned": "{{name}} — pinned",
+      "running": "{{name}} — active",
+      "moreHidden": "Hidden widgets ({{count}})"
     },
     "wrapper": {
       "expand": "Expand",
@@ -3474,5 +3478,67 @@
         "open3d": "Open 3D cube view"
       }
     }
+  },
+  "dock": {
+    "clock": "Clock",
+    "profile": "Profile",
+    "battery": "Battery",
+    "spacer": "Spacer",
+    "separator": "Separator",
+    "widgetsArea": "Widgets",
+    "manualSolve": "Add solve",
+    "sessionArea": "Session",
+    "puzzleArea": "Puzzle",
+    "editDock": "Edit dock…",
+    "addPiece": "Add piece",
+    "doneEditing": "Done",
+    "removePiece": "Remove from dock",
+    "addItem": "Add {{name}}",
+    "removeItem": "Remove {{name}}",
+    "explorer": {
+      "title": "Dock pieces",
+      "subtitle": "Add widgets, clock, profile, spacers and more to your dock bar.",
+      "allKinds": "All pieces",
+      "kindWidget": "Widgets",
+      "kindClock": "Clock",
+      "kindProfile": "Profile",
+      "kindSpacer": "Spacers",
+      "kind": "Kind",
+      "kindPlaceholder": "Select kind",
+      "categories": "Categories",
+      "searchPlaceholder": "Search pieces…",
+      "noResults": "No pieces found",
+      "noResultsHint": "Try a different search term."
+    },
+    "kind": {
+      "widget": "Widget",
+      "clock": "System",
+      "profile": "System",
+      "spacer": "Layout",
+      "separator": "Layout",
+      "core": "Core",
+      "system": "System",
+      "layout": "Layout"
+    },
+    "desc": {
+      "widget": "A floating widget you can toggle on and off.",
+      "clock": "Shows the current time in the dock bar.",
+      "profile": "Quick access to your profile.",
+      "battery": "Smart cube battery status.",
+      "spacer": "Empty space between groups of items.",
+      "separator": "Vertical line divider between groups.",
+      "widgetsArea": "The widget zone — shows docked widget pills.",
+      "manualSolve": "Quick-add button for manual solve entry.",
+      "sessionArea": "Session switcher with name and solve count.",
+      "puzzleArea": "Puzzle category selector (3x3, 2x2, etc.)"
+    }
+  },
+  "contextMenu": {
+    "newScramble": "New scramble",
+    "copyScramble": "Copy scramble",
+    "addManualSolve": "Add manual solve…",
+    "openWidgets": "Open widgets…",
+    "settings": "Settings…",
+    "editDock": "Edit dock…"
   }
 }

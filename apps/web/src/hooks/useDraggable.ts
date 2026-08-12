@@ -45,6 +45,14 @@ interface UseDraggableOptions {
    * Viewport edges are always included automatically.
    */
   snapTargets?: SnapRect[];
+  /**
+   * Re-anchor the element mid-drag. When provided and returning a point, that
+   * point (relative to the element's CURRENT top-left) stays under the pointer
+   * instead of the original grab offset — e.g. centering a dock pill on the
+   * cursor when the dragged panel shrinks to dock size. Return null for the
+   * default grab-offset behavior.
+   */
+  anchor?: (elW: number, elH: number) => { x: number; y: number } | null;
 }
 
 interface DragState {
@@ -152,6 +160,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
     onDrag,
     snapThreshold = 8,
     snapTargets,
+    anchor,
   } = options;
 
   /** Clamp to viewport minus element size so the element stays on-screen. */
@@ -200,9 +209,27 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   //    No dependency array = runs after every render. The `isDragging`
   //    guard inside ensures it's a no-op when not dragging.
   useLayoutEffect(() => {
-    if (isDragging) {
+    if (isDragging && dragState.current) {
       const el = elementRef.current;
-      if (el) {
+      if (!el) return;
+      const grab = anchorRef.current?.(el.offsetWidth, el.offsetHeight);
+      if (grab) {
+        // The element changed size mid-drag (e.g. a panel collapsing into a
+        // dock pill): keep the SAME pointer under the cursor, but move the
+        // element so the pointer now sits at the new anchor point (e.g. the
+        // pill's center) instead of the stale grab offset — otherwise the
+        // shrunk pill would appear offset from the mouse.
+        const pos = currentDragPos.current;
+        const maxX = Math.max(0, window.innerWidth - el.offsetWidth);
+        const maxY = Math.max(0, window.innerHeight - el.offsetHeight);
+        const next = {
+          x: Math.max(0, Math.min(maxX, pos.x + lastAnchorRef.current.x - grab.x)),
+          y: Math.max(0, Math.min(maxY, pos.y + lastAnchorRef.current.y - grab.y)),
+        };
+        currentDragPos.current = next;
+        lastAnchorRef.current = { x: grab.x, y: grab.y };
+        el.style.transform = `translate3d(${next.x}px, ${next.y}px, 0)`;
+      } else {
         const pos = currentDragPos.current;
         el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
       }
@@ -222,6 +249,11 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   snapTargetsRef.current = snapTargets;
   const snapThresholdRef = useRef(snapThreshold);
   snapThresholdRef.current = snapThreshold;
+  const anchorRef = useRef(anchor);
+  anchorRef.current = anchor;
+  // Where the pointer currently sits within the element (grab offset or a
+  // custom anchor) — updated on every move so the safeguard can re-anchor.
+  const lastAnchorRef = useRef({ x: 0, y: 0 });
 
   /** Current position during drag. Updated on every pointer move, read by RAF. */
   const currentDragPos = useRef(position);
@@ -311,20 +343,36 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       const elW = el.offsetWidth;
       const elH = el.offsetHeight;
 
+      // Pointer's current viewport position (fixed offset from its start).
+      const pointerX = state.startX + dx;
+      const pointerY = state.startY + dy;
+
+      // Where the pointer sits within the element: the original grab offset,
+      // or a custom anchor (e.g. the center of a shrunk dock pill).
+      const grab = anchorRef.current?.(elW, elH);
+      const anchored = grab !== null && grab !== undefined;
+      const anchorX = grab ? grab.x : state.startX - state.origX;
+      const anchorY = grab ? grab.y : state.startY - state.origY;
+      lastAnchorRef.current = { x: anchorX, y: anchorY };
+
       // Clamp to viewport
       const maxX = Math.max(0, window.innerWidth - elW);
       const maxY = Math.max(0, window.innerHeight - elH);
-      const rawX = Math.max(0, Math.min(maxX, state.origX + dx));
-      const rawY = Math.max(0, Math.min(maxY, state.origY + dy));
+      const rawX = Math.max(0, Math.min(maxX, pointerX - anchorX));
+      const rawY = Math.max(0, Math.min(maxY, pointerY - anchorY));
 
-      // Apply soft snap
-      const snapped = applySnap(
-        { x: rawX, y: rawY },
-        elW,
-        elH,
-        snapThresholdRef.current,
-        snapTargetsRef.current ?? [],
-      );
+      // Apply soft snap — but NOT while the element is anchored (e.g. shrunk
+      // into a dock pill centered on the cursor): snapping there would fight
+      // the cursor centering and make the pill jump/vibrate.
+      const snapped = anchored
+        ? { x: rawX, y: rawY }
+        : applySnap(
+            { x: rawX, y: rawY },
+            elW,
+            elH,
+            snapThresholdRef.current,
+            snapTargetsRef.current ?? [],
+          );
       const finalX = Math.max(0, Math.min(maxX, snapped.x));
       const finalY = Math.max(0, Math.min(maxY, snapped.y));
 

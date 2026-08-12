@@ -161,7 +161,9 @@
       "faceR": "Derecha (Rojo)",
       "faceL": "Izquierda (Naranja)",
       "showHeader": "Mostrar cabecera",
-      "showHeaderHint": "Oculta la barra superior para una vista más limpia y sin distracciones. Nota: el selector de sesión vive en la cabecera; si está oculta, cambia de sesión desde el selector de Insights."
+      "showHeaderHint": "Oculta la barra superior para una vista más limpia y sin distracciones. Nota: el selector de sesión vive en la cabecera; si está oculta, cambia de sesión desde el selector de Insights.",
+      "editDock": "Editar dock…",
+      "editDockHint": "Personaliza la barra del dock: añade, quita o reordena widgets, reloj, perfil, espaciadores y más."
     },
     "timer": {
       "header": "Configura cómo debe comenzar una resolución. Estos ajustes también se aplican cuando no hay un Smart Cube conectado.",
@@ -3283,7 +3285,9 @@
     },
     "dock": {
       "dockedWidgets": "Widgets acoplados",
-      "pinned": "{{name}} — fijado"
+      "pinned": "{{name}} — fijado",
+      "running": "{{name}} — activo",
+      "moreHidden": "Widgets ocultos ({{count}})"
     },
     "wrapper": {
       "expand": "Expandir",
@@ -3474,5 +3478,67 @@
         "open3d": "Abrir vista 3D del cubo"
       }
     }
+  },
+  "dock": {
+    "clock": "Reloj",
+    "profile": "Perfil",
+    "battery": "Batería",
+    "spacer": "Espaciador",
+    "separator": "Separador",
+    "widgetsArea": "Widgets",
+    "manualSolve": "Añadir solve",
+    "sessionArea": "Sesión",
+    "puzzleArea": "Puzzle",
+    "editDock": "Editar dock…",
+    "addPiece": "Añadir pieza",
+    "doneEditing": "Listo",
+    "removePiece": "Quitar del dock",
+    "addItem": "Añadir {{name}}",
+    "removeItem": "Quitar {{name}}",
+    "explorer": {
+      "title": "Piezas del dock",
+      "subtitle": "Añade widgets, reloj, perfil, espaciadores y más a tu barra del dock.",
+      "allKinds": "Todas las piezas",
+      "kindWidget": "Widgets",
+      "kindClock": "Reloj",
+      "kindProfile": "Perfil",
+      "kindSpacer": "Espaciadores",
+      "kind": "Tipo",
+      "kindPlaceholder": "Seleccionar tipo",
+      "categories": "Categorías",
+      "searchPlaceholder": "Buscar piezas…",
+      "noResults": "No se encontraron piezas",
+      "noResultsHint": "Prueba con otro término de búsqueda."
+    },
+    "kind": {
+      "widget": "Widget",
+      "clock": "Sistema",
+      "profile": "Sistema",
+      "spacer": "Diseño",
+      "separator": "Diseño",
+      "core": "Esencial",
+      "system": "Sistema",
+      "layout": "Diseño"
+    },
+    "desc": {
+      "widget": "Un widget flotante que puedes activar y desactivar.",
+      "clock": "Muestra la hora actual en la barra del dock.",
+      "profile": "Acceso rápido a tu perfil.",
+      "battery": "Estado de la batería del smart cube.",
+      "spacer": "Espacio vacío entre grupos de elementos.",
+      "separator": "Línea vertical divisora entre grupos.",
+      "widgetsArea": "Zona de widgets — muestra las pills de los widgets acoplados.",
+      "manualSolve": "Botón de acceso rápido para añadir solve manual.",
+      "sessionArea": "Cambiador de sesión con nombre y contador.",
+      "puzzleArea": "Selector de categoría de puzzle (3x3, 2x2, etc.)"
+    }
+  },
+  "contextMenu": {
+    "newScramble": "Nuevo scramble",
+    "copyScramble": "Copiar scramble",
+    "addManualSolve": "Añadir solve manual…",
+    "openWidgets": "Abrir widgets…",
+    "settings": "Ajustes…",
+    "editDock": "Editar dock…"
   }
 }
