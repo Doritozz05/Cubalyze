@@ -316,16 +316,16 @@ export const widgetStore = createStore<WidgetStore>()(
           // Clamp: no-dock widgets can never be floating/minimized
           const clamped = clampStatus(id, status);
 
-          const wasDocked = instance.status === "docked";
           const willBeDocked = clamped === "docked";
 
-          // When transitioning into docked (e.g. floating → docked), move the
-          // widget to the end of the dock order. Otherwise keep dockOrder intact
-          // (including the case where it leaves docked → floating/minimized:
-          // we keep it in dockOrder so the pill can reappear if it docks again).
+          // Only widgets MISSING from dockOrder get appended when docked —
+          // e.g. an inactive widget docking for the first time. Active widgets
+          // (docked/floating/minimized) already have a pill in the dock with a
+          // stable position, so floating → docked keeps their spot instead of
+          // jumping to the end of the bar.
           const dockOrder =
-            willBeDocked && !wasDocked
-              ? [...s.dockOrder.filter((i) => i !== id), id]
+            willBeDocked && !s.dockOrder.includes(id)
+              ? [...s.dockOrder, id]
               : s.dockOrder;
 
           return {
