@@ -45,6 +45,7 @@ verificó cada ADR contra el código real y actualizó los que discrepaban.
 | [ADR-025](ADR-025-i18n_Strategy.md) | i18n (i18next, typed keys, ES/EN) | Implementado |
 | [ADR-026](ADR-026-Widget_SDK_Host_Architecture.md) | Widget SDK & Host Architecture | Implementado |
 | [ADR-027](ADR-027-Desktop_App_Strategy.md) | Desktop App (Tauri mono-shell + overrides) | Implementado |
+| [ADR-028](ADR-028-CI_Quality_Gates.md) | CI & Quality Gates (2 workflows) | Implementado |
 
 ## Scalability Governance
 Para prevenir bloat de carpetas, los ADR futuros pueden colocarse en subdirectorios por

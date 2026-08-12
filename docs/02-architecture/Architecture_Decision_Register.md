@@ -36,6 +36,7 @@
 | **DEC-26** | i18n (i18next + typed keys, ES/EN) | Core App | ADR Created | Gate 1 | High | DEC-07, DEC-08 | Low | None | Sin RFC (retroactivo) | Creado (ADR-025) | Implementado (13 tandas completadas) | Architecture Lead |
 | **DEC-27** | Widget SDK & Host Architecture | Core App | ADR Created | Gate 1 | High | DEC-16, DEC-17 | Medium | None | Sin RFC (retroactivo) | Creado (ADR-026) | Implementado (sistema de widgets, built-in-only) | Architecture Lead |
 | **DEC-28** | Desktop App Strategy (Tauri mono-shell) | Platform | ADR Created | Gate 1 | Medium | DEC-22, DEC-08 | Low | None | Sin RFC (retroactivo) | Creado (ADR-027) | Implementado (apps/desktop, overrides DB+BLE; backend diferido) | Architecture Lead |
+| **DEC-29** | CI & Quality Gates structure | Ops | ADR Created | Gate 1 | High | DEC-04, DEC-05, DEC-06 | Low | None | Sin RFC (retroactivo) | Creado (ADR-028) | Implementado (ci.yml + quality-gates.yml; benchmarks off en CI) | Ops Lead |
 
 ---
 

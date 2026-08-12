@@ -26,15 +26,16 @@ desactualizados. Cubrir:
 - `docs/00-product/`: PRD, Auditoria de producto (4 md).
 - `docs/02-architecture/`: 13 md — incluye `System_Architecture_Overview.md`,
   `Architecture_Decision_Register.md`, investigación (Bluetooth, PWA storage, legal).
-- `docs/03-adr/`: **27 archivos** — ADR-001 → ADR-027 + README. Con frontmatter,
+- `docs/03-adr/`: **28 archivos** — ADR-001 → ADR-028 + README. Con frontmatter,
   estado y relación RFC. (Posibles ADRs incompletos o desactualizados: revisar.)
 - `docs/04-rfc/`: 24 archivos — RFC-001 → RFC-023 + README.
 - `docs/05-tdd/`: 9 md. `docs/08-standards/`: 12 md.
 
 ### Lo que falta o está vacío
 - READMEs placeholder en `docs/02-architecture/diagrams/`, `overview/`, `validation/`.
-- Secciones con solo README: `06-api`, `07-database`, `09-testing`, `10-security`,
-  `11-devops`, `12-sdk`, `13-plugins`, `14-ai`, `16-user`, `17-releases`, `18-archive`.
+- Secciones con solo README (al inicio): `07-database`, `09-testing`, `10-security`,
+  `12-sdk`, `13-plugins`, `14-ai`, `17-releases`, `18-archive` (algunas pobladas
+  después: `06-api` → Fase 4, `11-devops` → Fase 6, `16-user` → Fase 1).
 - No hay API reference (TypeDoc no instalado). No hay CHANGELOG.md (changesets
   configurado pero sin uso). No hay tags git → nunca ha habido release.
 
@@ -234,11 +235,23 @@ placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 **Criterio de cierre:** doc de apps/desktop + decisión de apps/api documentada. ✅ Completado 2026-08-12.
 
 ### Fase 6 — Integración y plombería
-- [ ] turbo.json (monorepo), vercel.json (deploy), CI (`ci.yml`, `quality-gates.yml`),
-      commitlint/husky/changesets → doc en `docs/11-devops/`.
-- [ ] PWA/boot, build, scripts de raíz.
+- [x] **Plombería** (2026-08-12) → `docs/11-devops/` (README índice + 4 docs):
+      `Monorepo_and_Build.md` (turbo, pnpm, scripts, tsconfig, vitest, knip,
+      lint-lines), `CI_and_Quality_Gates.md` (ci.yml + quality-gates.yml,
+      umbrales, lo que NO está gateado), `Deploy_and_Hosting.md` (vercel.json,
+      COI/CSP, PWA), `Releases_and_Conventions.md` (czg/commitlint/husky,
+      changesets, estado 0 releases).
+      **ADR-028** (CI & Quality Gates, 2026-08-12): dos workflows, umbrales
+      (0 errores, >80% coverage en 5 paquetes core, property-based), benchmarks
+      off en CI, commitlint no bloqueante — registrado retroactivamente.
+      DEC-29 en el registro. Sin TDD nuevo: los gates referencian TDDs existentes
+      (TDD-0006 líneas) y ADR-004/005/006/023.
+- [ ] PWA/boot, build, scripts de raíz (parcial: cubierto en `Monorepo_and_Build.md`
+      y `Deploy_and_Hosting.md`; el boot de la web ya está en Fase 3).
 - [ ] Actualizar `docs/02-architecture/overview/System_Architecture_Overview.md`
-      con todo lo aprendido (diagrama de dependencias real).
+      con todo lo aprendido (diagrama de dependencias real). → Fase 9.
+
+**Criterio de cierre:** plombería documentada en `docs/11-devops/` + ADR de CI. ✅ Completado 2026-08-12.
 
 ### Fase 7 — API reference (TypeDoc)
 - [ ] Instalar/Configurar TypeDoc + script `docs:api`.
