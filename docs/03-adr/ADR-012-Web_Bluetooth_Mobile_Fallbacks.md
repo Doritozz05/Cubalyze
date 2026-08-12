@@ -3,8 +3,8 @@ status: "Accepted"
 owner: "Architecture Lead"
 reviewers: "Principal Architect"
 created: "2026-07-12"
-last_updated: "2026-07-12"
-version: "1.0.0"
+last_updated: "2026-08-12"
+version: "1.1.0"
 related_rfc: "RFC-012-Web_Bluetooth_Mobile_Fallbacks"
 tags: "hardware, bluetooth, ios, capacitor, pwa"
 document_type: "ADR"
@@ -24,8 +24,9 @@ La conexión a Smart Cubes vía Bluetooth es clave para CubeForge. Mientras en e
 *   **Opción 2:** Envolver la SPA con Capacitor.js y usar un plugin BLE nativo para iOS.
 
 ## Decision Outcome
-Chosen option: **Opción 2: Capacitor.js + Hardware Abstraction Layer (HAL)**.
-El proyecto empleará el mismo código base para todas las plataformas. Se creará una abstracción (HAL). Cuando CubeForge se ejecute en el navegador, usará Web Bluetooth. Cuando detecte que corre dentro de Capacitor (compilado para iOS App Store), delegará la conexión Bluetooth a plugins de Capacitor (como `@capacitor-community/bluetooth-le`).
+Chosen option: **Hardware Abstraction Layer (HAL) + Tauri para escritorio** (Capacitor para iOS diferido).
+
+> **Estado de implementación (2026-08-12):** la app de escritorio `apps/desktop` está implementada con **Tauri** (plugins `@tauri-apps/api`, `plugin-sql`, `plugin-updater`), no con Capacitor como planteaba la decisión original. Los adaptadores `GanCubeAdapterTauri.ts` y `GanTimerAdapterTauri.ts` extienden la interfaz del HAL (`@cubeforge/hardware-hal`) para el entorno Tauri; en navegador (web/PWA) se usa Web Bluetooth nativo. El wrapper móvil (Capacitor para iOS App Store) sigue diferido (DEC-22, bloqueado hasta Milestone 2+).
 
 ### Positive Consequences
 *   Permite lanzar CubeForge en la App Store de Apple sin reescribir la UI o el Core matemático.

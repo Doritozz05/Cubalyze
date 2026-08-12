@@ -1,6 +1,6 @@
 {
   "name": "@cubeforge/gan-protocol",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "GAN Smart Cube and Smart Timer Protocol Parser and Decrypter",
@@ -39,4 +39,3 @@
     "vitest": "^3.0.5"
   }
 }
-

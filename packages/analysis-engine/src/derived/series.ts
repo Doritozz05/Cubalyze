@@ -1,5 +1,5 @@
 /**
- * @file Time-series data derivation — TPS trends and phase distributions.
+ * Time-series data derivation — TPS trends and phase distributions.
  *
  * Pure functions for chart-ready series data. Framework-agnostic.
  */

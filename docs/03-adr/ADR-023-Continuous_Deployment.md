@@ -29,6 +29,10 @@ Tras asegurar la integraciÃ³n continua (CI, RFC-006) y decidir la infraestruct
     2. Al hacer merge, GitHub Actions ejecuta `supabase link` y `supabase db push` contra la instancia `Production`.
 *   **InvalidaciÃ³n de PWA:** Para forzar a los clientes a actualizar la aplicaciÃ³n offline instalada en sus dispositivos, se implementarÃ¡ un flujo en el Service Worker (ej. `vite-plugin-pwa`) que detecte nuevas versiones del `index.html` en Vercel y proponga un modal "Update Available" a los usuarios conectados.
 
+## Implementation Status (2026-08-12)
+
+**Parcialmente implementado.** El deploy de la PWA en Vercel existe (integración GitHub + `vercel.json`). El pipeline de migraciones Supabase **no implementado**; no hay tags git (0 releases hasta la fecha).
+
 ## Drawbacks
 *   **Migraciones Destructivas:** Ejecutar `db push` automÃ¡ticamente en producciÃ³n es riesgoso si un script contiene comandos de borrado (`DROP TABLE`). RequerirÃ¡ polÃ­ticas muy estrictas en el Code Review.
 *   **Despliegue AsÃ­ncrono:** Vercel despliega el front, pero GitHub Actions despliega la DB. PodrÃ­a haber una ventana de milisegundos a segundos donde el front antiguo habla con una DB nueva o viceversa, causando errores 500 esporÃ¡dicos.

@@ -3,8 +3,8 @@ status: "Accepted"
 owner: "Architecture Lead"
 reviewers: "TBD"
 created: "2026-07-12"
-last_updated: "2026-07-12"
-version: "1.0.0"
+last_updated: "2026-08-12"
+version: "1.1.0"
 depends_on: "DEC-06, DEC-07"
 tags: "plugins, architecture, esm, extensibility"
 document_type: "ADR"
@@ -35,6 +35,10 @@ CubeForge crecerÃ¡ orgÃ¡nicamente. Si incluimos la lÃ³gica de Megaminx, Py
 ## Alternatives
 *   **Module Federation (Webpack/Rspack):** Permite inyectar cÃ³digo verdaderamente remoto en runtime sin re-deploy de la app. Es muy potente, pero overkill para esta etapa inicial (y Vite prefiere configuraciones mÃ¡s estÃ¡ticas mediante ESM estÃ¡ndar).
 *   **MonolÃ­tico Fuerte:** Sin plugins. Rechazado, no escala con la visiÃ³n de la plataforma.
+
+## Implementation Status (2026-08-12)
+
+El sistema de extensibilidad se materializó como **sistema de widgets** dentro de `apps/web/src/widgets/` — dock, explorer y 11 implementaciones (algorithm-db, cube-button, layout-organizer, metronome, notes, pb-progression, phase-balance, scramble-2d, solve-timeline, time-distribution, times-log) — en lugar de paquetes separados `packages/plugins/*`. Se mantiene la carga perezosa con importaciones dinámicas. La "Tienda de Plugins" y la inyección remota (Module Federation) siguen sin implementar.
 
 ## Unresolved Questions
 *   Â¿DeberÃ¡n los plugins tener acceso directo a la instancia global de SQLite (OPFS) para crear sus propias tablas de telemetrÃ­a/estadÃ­sticas, o deberÃ¡n usar una API limitada (wrapper) expuesta por el Core?

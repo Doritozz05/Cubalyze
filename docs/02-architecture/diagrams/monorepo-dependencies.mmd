@@ -1,0 +1,87 @@
+---
+title: CubeForge — Dependencias reales del monorepo (2026-08-12)
+---
+%% Verificado contra imports reales (grep de "@cubeforge/*" en src).
+%% Los edges solo de tests (p.ej. math-core → hardware-hal en fuzzing.test.ts)
+%% no se representan: no son dependencias de producción.
+
+flowchart LR
+    subgraph Apps["Apps"]
+        web["apps/web (React PWA)"]
+        desktop["apps/desktop (Tauri shell)"]
+    end
+
+    subgraph Data["Datos y estado"]
+        database["@cubeforge/database<br/>(SQLite WASM/OPFS + repos)"]
+        state["@cubeforge/state<br/>(Zustand, 6 stores)"]
+        models["@cubeforge/models<br/>(schemas zod)"]
+        statistics["@cubeforge/statistics"]
+    end
+
+    subgraph Domain["Dominio"]
+        training["@cubeforge/training<br/>(SRS/FSRS-4)"]
+        analysis["@cubeforge/analysis-engine<br/>(pipeline versionado)"]
+        algodb["@cubeforge/algorithm-db<br/>(catálogo + seed)"]
+        hal["@cubeforge/hardware-hal<br/>(HAL + adaptadores)"]
+        timer["@cubeforge/timer-engine"]
+        gan["@cubeforge/gan-protocol<br/>(BLE cifrado)"]
+    end
+
+    subgraph Core["Núcleo"]
+        mathcore["@cubeforge/math-core"]
+        solver["@cubeforge/solver-engine<br/>(min2phase)"]
+        cube3d["@cubeforge/cube-3d-engine<br/>(Three.js)"]
+        types["@cubeforge/types"]
+    end
+
+    subgraph UI["UI"]
+        ui["@cubeforge/ui (kit Radix)"]
+        identicon["@cubeforge/identicon (CubeMark)"]
+    end
+
+    %% Núcleo
+    mathcore --> types
+    solver --> mathcore
+    cube3d --> mathcore
+    cube3d --> types
+
+    %% Dominio
+    algodb --> mathcore
+    algodb --> solver
+    gan --> types
+    hal --> gan
+    hal --> types
+    analysis --> mathcore
+    analysis --> solver
+    analysis --> types
+    training --> algodb
+    training --> mathcore
+    training --> solver
+    training --> timer
+
+    %% Datos
+    database --> algodb
+    database --> models
+    database --> types
+    state --> algodb
+    state --> types
+    models --> algodb
+    models --> types
+
+    %% Apps
+    web --> algodb
+    web --> analysis
+    web --> cube3d
+    web --> database
+    web --> hal
+    web --> identicon
+    web --> mathcore
+    web --> solver
+    web --> state
+    web --> statistics
+    web --> timer
+    web --> training
+    web --> types
+    web -. "alias @/components/ui" .-> ui
+    desktop --> web
+    desktop --> gan

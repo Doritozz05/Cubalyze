@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Cubeforge — TypeDoc (API reference). No se usa para builds ni CI.",
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+    "jsx": "react-jsx",
+
+    // No strict global: la web compila sin strict (tsconfig.app.json no lo
+    // activa) y con strict se disparan TS7006 (implicit any) en su código.
+    // Para extraer JSDoc/signaturas el resultado es equivalente y más fiel.
+    "strict": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+
+    // Sin @types automáticos: la web usa import.meta.env y *.css que se
+    // declaran en typedoc-env.d.ts (no dependemos de vite/client, que no está
+    // enlazado en la raíz del workspace).
+    "types": [],
+
+    "paths": {
+      // Alias de la web (apps/web/src) y del kit UI compartido.
+      "@/*": ["./apps/web/src/*"],
+      "@/components/ui/*": ["./packages/ui/src/components/*"],
+      // Todos los @cubeforge/* → su barrel de src (sin necesitar build de dist).
+      "@cubeforge/algorithm-db": ["./packages/algorithm-db/src/index.ts"],
+      "@cubeforge/analysis-engine": ["./packages/analysis-engine/src/index.ts"],
+      "@cubeforge/cube-3d-engine": ["./packages/cube-3d-engine/src/index.ts"],
+      "@cubeforge/database": ["./packages/database/src/index.ts"],
+      "@cubeforge/gan-protocol": ["./packages/gan-protocol/src/index.ts"],
+      "@cubeforge/hardware-hal": ["./packages/hardware-hal/src/index.ts"],
+      "@cubeforge/identicon": ["./packages/identicon/src/index.ts"],
+      "@cubeforge/math-core": ["./packages/math-core/src/index.ts"],
+      "@cubeforge/models": ["./packages/models/src/index.ts"],
+      "@cubeforge/solver-engine": ["./packages/solver-engine/src/index.ts"],
+      "@cubeforge/state": ["./packages/state/src/index.ts"],
+      "@cubeforge/statistics": ["./packages/statistics/src/index.ts"],
+      "@cubeforge/timer-engine": ["./packages/timer-engine/src/index.ts"],
+      "@cubeforge/training": ["./packages/training/src/index.ts"],
+      "@cubeforge/types": ["./packages/types/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "apps/web/src/**/*.ts",
+    "apps/web/src/**/*.tsx",
+    "typedoc-env.d.ts"
+  ]
+}

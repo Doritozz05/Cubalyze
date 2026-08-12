@@ -57,7 +57,7 @@ export interface UseSkillProgressResult {
 /**
  * Skill-tree completion backed by SQLite (single source of truth).
  *
- * Same guarantees as {@link useCalendarTasks}: instant paint from the legacy
+ * Same guarantees as `useCalendarTasks`: instant paint from the legacy
  * localStorage cache, one-time flag-guarded migration, DB wins after init, and
  * cache always kept in sync — EXCEPT that the brand-new-user default set is
  * presentational only and is never written to localStorage or the DB.

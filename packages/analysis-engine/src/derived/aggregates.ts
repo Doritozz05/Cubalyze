@@ -1,5 +1,5 @@
 /**
- * @file Aggregate statistics — averages over sessions.
+ * Aggregate statistics — averages over sessions.
  *
  * Pure functions. Framework-agnostic, zero UI dependencies.
  */

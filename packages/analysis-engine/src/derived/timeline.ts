@@ -1,5 +1,5 @@
 /**
- * @file Timeline visualization data derivation.
+ * Timeline visualization data derivation.
  *
  * Transforms raw solve data (moves, phase metrics, pause details) into
  * the shapes consumed by timeline visualization components (move ticks,

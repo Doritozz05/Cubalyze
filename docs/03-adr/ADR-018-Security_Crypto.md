@@ -3,8 +3,8 @@ status: "Accepted"
 owner: "Architecture Lead"
 reviewers: "TBD"
 created: "2026-07-12"
-last_updated: "2026-07-12"
-version: "1.0.0"
+last_updated: "2026-08-12"
+version: "1.1.0"
 depends_on: "DEC-09, DEC-18"
 tags: "security, cryptography, offline-first"
 document_type: "ADR"
@@ -35,6 +35,10 @@ En una PWA offline-first, la fuente de la verdad para un tiempo de resoluciÃ³n
 ## Alternatives
 *   **ValidaciÃ³n Backend-only:** Imposible bajo el modelo offline-first, donde los tiempos se generan sin conexiÃ³n de red y se pueden acumular.
 *   **OfuscaciÃ³n simple:** Esconder el cÃ³digo. InÃºtil contra devtools modernas.
+
+## Implementation Status (2026-08-12)
+
+**No implementado.** No hay uso de Web Crypto (`crypto.subtle`) en el código actual. La decisión queda registrada como diseño para cuando exista sincronización en la nube (ADR-019).
 
 ## Unresolved Questions
 *   Â¿Manejaremos un sistema de atestaciÃ³n criptogrÃ¡fica rotativa para incrementar la seguridad en caso de un leak de la clave en cliente, o un solo par de llaves vinculadas al token JWT de Supabase serÃ¡ suficiente?

@@ -22,7 +22,7 @@ import { hapticCelebrate } from "@/utils/haptics";
 import { isDev } from "@/utils/env";
 import type { UsePersistentSessionResult } from "@/hooks/usePersistentSession";
 
-/** Per-call overrides for {@link UseSolveCompletionResult.handleComplete} —
+/** Per-call overrides for the hook's `handleComplete` —
  *  used by the virtual cube simulator, which owns its own scramble + next-
  *  scramble lifecycle and must force `source: "virtual"`. */
 export interface SolveCompletionOverrides {

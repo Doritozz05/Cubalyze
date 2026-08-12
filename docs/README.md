@@ -50,7 +50,20 @@ This documentation is strictly governed. Refer to the [Architecture & Documentat
 
 ## AI-First Development
 
-This repository is optimized for AI-assisted development. All AI agents must abide by the rules defined in [`14-ai/AGENTS.md`](./14-ai/AGENTS.md). The documentation structure is designed for deterministic navigation, minimal context switching, and low hallucination risk.
+This repository is optimized for AI-assisted development. All AI agents must abide by the rules defined in [`08-standards/AI_Development_Standards.md`](./08-standards/AI_Development_Standards.md) and the operating manual [`14-ai/AGENTS.md`](./14-ai/AGENTS.md). The documentation structure is designed for deterministic navigation, minimal context switching, and low hallucination risk.
+
+## Estado de las secciones (2026-08-12)
+
+| Sección | Estado |
+|---|---|
+| 00-product, 01-roadmap, 02-architecture, 03-adr, 04-rfc, 05-tdd, 08-standards, 15-contributing | ✅ pobladas |
+| 06-api (Fase 4), 11-devops (Fase 6), 16-user (Fases 1), 17-releases (Fase 8) | ✅ pobladas en 2026-08-12 |
+| 07-database, 09-testing, 10-security | 🟡 READMEs de entrada con punteros (el contenido vive en ADRs/06-api/11-devops) |
+| 12-sdk, 13-plugins | 🔴 vacías por diseño — aún no hay SDK público ni plugins de terceros |
+| 14-ai | ✅ `AGENTS.md` (manual de agentes) + `opencode.json` |
+| 18-archive | ✅ inventario de planes archivados |
+
+La **API reference** generada (TypeDoc) vive en `docs/api/` (gitignored; regenerar con `pnpm docs:api`).
 
 ## The Bootstrap Guide
 

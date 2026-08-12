@@ -1,10 +1,61 @@
-# 06 Api
+# API — Paquetes del monorepo
 
-## Purpose
-This directory serves as the authoritative location for 06 Api documentation within the CubeForge ecosystem.
+> Documentado el 2026-08-12 (Fase 4 del plan de documentación). API pública y
+> dependencias verificadas contra el código real de `packages/`.
 
-## Contents
-This folder contains all artifacts related to 06 Api.
+## Índice por sub-fase
 
-## Governance
-Please refer to [Architecture & Documentation Standards](../08-standards/Architecture_and_Documentation_Standards.md) for rules regarding documents in this folder.
+| Doc | Paquetes |
+| --- | --- |
+| [Core](./core.md) | `math-core`, `solver-engine`, `algorithm-db`, `models`, `types` |
+| [3D](./3d.md) | `cube-3d-engine` |
+| [Datos y estado](./data.md) | `database`, `state`, `sync-engine` (planeado) |
+| [Hardware](./hardware.md) | `hardware-hal`, `gan-protocol`, `timer-engine` |
+| [IA y análisis](./analysis.md) | `analysis-engine`, `statistics`, `training`, `ai-core` (planeado) |
+| [UI y utilidades](./ui.md) | `ui`, `identicon`, `config-eslint`, `config-typescript` |
+
+## Convenciones
+
+- **Layering** (ADR-003): los paquetes (`packages/`) son librerías de dominio;
+  jamás dependen de una app. Las apps (`apps/`) son consumidores.
+- **Sin backend** (ADR-007/019 pendiente): toda la lógica es cliente.
+- Los paquetes marcados como **planeado** no tienen fuentes todavía
+  (`echo "no sources"` en su script de typecheck).
+
+## API reference generada (TypeDoc) — `pnpm docs:api`
+
+> Configurada el 2026-08-12 (Fase 7 del plan). **Se regenera, no se edita:**
+> la salida vive en `docs/api/`, ignorada en git.
+
+- **Comando:** `pnpm docs:api` (o `pnpm --filter` no — es script de raíz).
+- **Configuración:** `typedoc.json` + `tsconfig.typedoc.json` + `typedoc-env.d.ts`
+  en la raíz. Cubre los **15 paquetes con fuentes** y **todo `apps/web/src`**
+  (estrategia `expand`: un módulo por archivo). ~2.000 páginas HTML.
+- **Resolución:** los `@cubeforge/*` apuntan a sus barrels de `src/` (sin
+  necesitar build de `dist/`); `@/` → web, `@/components/ui/*` → kit UI.
+- **Tipos residuales:** corre con `skipErrorChecking` — documenta pese a
+  errores de tipos preexistentes del repo (no es un gate de typecheck).
+
+### Auditoría de JSDoc (2026-08-12) — corregida, 0 warnings
+
+La primera generación avisó de 8 problemas menores (cosméticos); **corregidos
+el mismo día** (Fase 8):
+
+1. **Tag `@file` desconocido** en 8 archivos (5 de `analysis-engine/src/derived`,
+   `math-core/src/methods/cfop/slotDetection.ts`, `apps/web/src/utils/insights.ts`
+   y `phaseColors.ts`): se eliminó el tag, dejando la descripción como primer
+   párrafo del módulo.
+2. **4 links `{@link}` rotos**: `CrossScrambleGenerator` (PhaseSolver.ts),
+   `useCalendarTasks` (useSkillProgress.ts), `UseSolveCompletionResult.handleComplete`
+   (useSolveCompletion.ts) y `grayCubieGroup` (Cube3DEngine.ts) → texto plano
+   entre backticks. El link externo `useFormContext` (react-hook-form) se
+   resolvió con `externalSymbolLinkMappings` en `typedoc.json`.
+
+Estado: `pnpm docs:api` genera con **0 warnings**.
+
+## Relación con otras docs
+
+- Estado (Zustand): [`../02-architecture/web/State_and_Stores.md`](../02-architecture/web/State_and_Stores.md).
+- Training/FSRS: [TDD-0001](../../05-tdd/training/0001-srs-training-system.md) y
+  ADR-024. Widgets: [`../02-architecture/Widgets_System.md`](../02-architecture/Widgets_System.md).
+- Motor 3D: [TDD-0006](../../05-tdd/TDD-0006-3D-Engine.md).

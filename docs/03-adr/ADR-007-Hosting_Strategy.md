@@ -52,6 +52,10 @@ Como CubeForge delega el esfuerzo computacional al navegador (motor 3D y WASM) y
 * Limitaciones de escalado abrupto: Si la aplicación se vuelve masivamente viral, el salto del Free Tier de Supabase al de pago (Pro) conlleva un coste fijo de ~$25/mes, y las bases de Vercel Pro son de ~$20/mes por usuario.
 * Dependencia estricta del proveedor (Vendor Lock-in moderado), aunque menor en Supabase al estar basado 100% en Postgres Open Source.
 
+## Implementation Status (2026-08-12)
+
+**Vercel implementado** (`vercel.json` + integración de deploy). **Supabase no implementado**: no existe proyecto, carpeta `supabase/` ni backend (`apps/api` vacío).
+
 ## Pros and Cons of the Options
 
 ### Opción 1: Vercel + Supabase

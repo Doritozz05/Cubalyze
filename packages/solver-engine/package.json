@@ -1,6 +1,6 @@
 {
   "name": "@cubeforge/solver-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "CubeForge Solver Engine — scramble generation and optimal solving via min2phase WASM",
