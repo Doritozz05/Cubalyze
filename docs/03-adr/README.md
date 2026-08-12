@@ -9,7 +9,7 @@ This directory contains the finalized, immutable architectural decisions for the
 - If a technology is explicitly mandated by the PRD (e.g., Web Bluetooth, min2phase), an ADR can be created directly without an RFC.
 
 ## Status
-24 ADRs finalizados (ADR-001 → ADR-024). El registro central de ciclo de vida está en
+25 ADRs finalizados (ADR-001 → ADR-025). El registro central de ciclo de vida está en
 [`../02-architecture/Architecture_Decision_Register.md`](../02-architecture/Architecture_Decision_Register.md).
 La auditoría de drift (2026-08-12, `../02-architecture/validation/ADR_Drift_Audit_2026-08-12.md`)
 verificó cada ADR contra el código real y actualizó los que discrepaban.
@@ -42,6 +42,7 @@ verificó cada ADR contra el código real y actualizó los que discrepaban.
 | [ADR-022](ADR-022-Open_Source_Readiness.md) | OSS (MIT, commits convencionales) | Implementado |
 | [ADR-023](ADR-023-Continuous_Deployment.md) | CD Vercel + migraciones | Parcial (solo Vercel) |
 | [ADR-024](ADR-024-Training_SRS_System.md) | Sistema de Training + SRS/FSRS | Implementado |
+| [ADR-025](ADR-025-i18n_Strategy.md) | i18n (i18next, typed keys, ES/EN) | Implementado |
 
 ## Scalability Governance
 Para prevenir bloat de carpetas, los ADR futuros pueden colocarse en subdirectorios por

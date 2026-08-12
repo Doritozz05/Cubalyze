@@ -33,6 +33,7 @@
 | **DEC-23** | Hosting Strategy (Vercel+Supabase) | Ops | ADR Created | Gate 1 | Very High | DEC-07 | Low | None | Aprobado (RFC-007) | Creado (ADR-007) | Configurar proyectos Vercel y Supabase | Architecture Lead |
 | **DEC-24** | Continuous Deployment (Vercel+Supabase) | Ops | ADR Created | Gate 1 | Very High | DEC-15, DEC-23 | Medium | None | Aprobado (RFC-023) | Creado (ADR-023) | Parcial (Vercel OK; migraciones Supabase pendientes) | Ops Lead |
 | **DEC-25** | Training System (FSRS-4 SRS) | Core App | ADR Created | Gate 1 | High | DEC-07, DEC-09, DEC-13 | Medium | None | Sin RFC (retroactivo) | Creado (ADR-024) | Implementado (vista Training + @cubeforge/training) | Architecture Lead |
+| **DEC-26** | i18n (i18next + typed keys, ES/EN) | Core App | ADR Created | Gate 1 | High | DEC-07, DEC-08 | Low | None | Sin RFC (retroactivo) | Creado (ADR-025) | Implementado (13 tandas completadas) | Architecture Lead |
 
 ---
 

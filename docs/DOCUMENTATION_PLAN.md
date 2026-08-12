@@ -131,6 +131,18 @@ Reconstructions (4) → Cube (1) → Profile (1)**:
       archivo por archivo de las 25 archivos + sub-vistas y componentes) +
       **ADR-024** (sistema Training/SRS FSRS) + **TDD-0001**
       (`docs/05-tdd/training/0001-srs-training-system.md`) + DEC-25 en el registro.
+- [x] **Algorithms** (2026-08-12) → `docs/16-user/Algorithms_View.md` (inventario
+      por archivo; sin ADR/TDD nuevos: el catálogo está cubierto por ADR-003/017).
+- [x] **SkillTree** (2026-08-12) → `docs/16-user/SkillTree_View.md` (dataset +
+      layout determinista + persistencia skill_progress).
+- [x] **Reconstructions** (2026-08-12) → `docs/16-user/Reconstructions_View.md`
+      (análisis headless diferido a Fase 4 del paquete analysis-engine).
+- [x] **Cube** (2026-08-12) → `docs/16-user/Cube_View.md` (simulador 3×3; motor ya
+      tiene TDD-0006).
+- [x] **Profile** (2026-08-12) → `docs/16-user/Profile_View.md` (identidad + datos
+      reales de Stats/Training/Algorithms/Skills).
+- [x] **ADR-025** (i18n, 2026-08-12): estrategia de internacionalización registrada
+      retroactivamente (transversal a todas las vistas); DEC-26 en el registro.
 
 - [ ] Leer la vista completa (componentes, stores, servicios que usa).
 - [ ] Documentar en `docs/16-user/` (o sección correspondiente): qué hace la tab,
@@ -138,7 +150,7 @@ Reconstructions (4) → Cube (1) → Profile (1)**:
 - [ ] Verificar ADR relacionados (p.ej. Training → ADR-015 solver, ADR-020 accesibilidad).
 - [ ] Anotar en `docs/02-architecture/overview/` las dependencias con packages.
 
-**Criterio de cierre:** 6 docs de vistas (una por tab), verificables contra el código.
+**Criterio de cierre:** 6 docs de vistas (una por tab), verificables contra el código. ✅ Completado 2026-08-12.
 
 ### Fase 2 — Widgets
 **Objetivo:** documentar el sistema de widgets (dock + explorer) y las 10
