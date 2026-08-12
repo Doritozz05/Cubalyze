@@ -198,16 +198,23 @@ implementaciones.
 **Objetivo:** documentar cada paquete: propósito, API pública, dependencias,
 cómo se consume desde la web/desktop. Destino: `docs/06-api/` + notas de arquitectura.
 
-- [ ] **4.1 Core**: math-core, solver-engine, algorithm-db, models, types.
-- [ ] **4.2 3D**: cube-3d-engine.
-- [ ] **4.3 Datos/estado**: database, state, sync-engine (placeholder → documentar
-      como planeado).
-- [ ] **4.4 Hardware**: hardware-hal, gan-protocol, timer-engine (+ adapters desktop).
-- [ ] **4.5 IA/análisis**: analysis-engine, statistics, training, ai-core (placeholder).
-- [ ] **4.6 UI/utilidades**: ui, identicon, config-eslint, config-typescript.
+- [x] **4.1 Core** (2026-08-12) → `docs/06-api/core.md`: math-core, solver-engine,
+      algorithm-db (catálogo + seed), models, types.
+- [x] **4.2 3D** (2026-08-12) → `docs/06-api/3d.md`: cube-3d-engine (Three.js puro,
+      TDD-0006).
+- [x] **4.3 Datos/estado** (2026-08-12) → `docs/06-api/data.md`: database
+      (SQLite WASM/OPFS + repos + migraciones), state, sync-engine (planeado).
+- [x] **4.4 Hardware** (2026-08-12) → `docs/06-api/hardware.md`: hardware-hal,
+      gan-protocol (BLE cifrado), timer-engine (TDD core/0004).
+- [x] **4.5 IA/análisis** (2026-08-12) → `docs/06-api/analysis.md`: analysis-engine
+      (pipeline versionado), statistics (puras), training (TDD-0001), ai-core
+      (planeado).
+- [x] **4.6 UI/utilidades** (2026-08-12) → `docs/06-api/ui.md`: ui (kit Radix),
+      identicon (CubeMark), config-eslint, config-typescript.
+      Índice: `docs/06-api/README.md`. Placeholders marcados como planeado.
 
 **Criterio de cierre:** una página por paquete con API y dependencias reales;
-placeholders marcados como "planeado".
+placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 
 ### Fase 5 — apps/desktop y apps/api
 - [ ] apps/desktop (Tauri): adapters GanCube/GanTimer, database-override,
