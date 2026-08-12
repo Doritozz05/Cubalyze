@@ -3286,6 +3286,7 @@
     "dock": {
       "dockedWidgets": "Widgets acoplados",
       "pinned": "{{name}} — fijado",
+      "running": "{{name}} — activo",
       "moreHidden": "Widgets ocultos ({{count}})"
     },
     "wrapper": {

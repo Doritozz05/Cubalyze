@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { BUILT_IN_WIDGETS } from "./registry";
-import { migratePersistedWidgetState } from "./widgetStore";
+import {
+  migratePersistedWidgetState,
+  nextFreeDockAreaInstanceId,
+} from "./widgetStore";
 
 describe("widget persistence migration", () => {
   it("injects new built-ins without reordering an existing v4 dock", () => {
@@ -80,5 +83,29 @@ describe("widget persistence migration", () => {
     expect(dockOrder).toContain("times-log");
     // …while the stale key never leaks into migrated state.
     expect(migrated.customWidgets).toBeUndefined();
+  });
+});
+
+describe("nextFreeDockAreaInstanceId — repeatable area instance ids", () => {
+  it("never reuses an id after a middle instance is removed", () => {
+    // 3 spacers; remove the middle one, then add again.
+    const order = ["widgets", "spacer-0", "spacer-1", "spacer-2", "clock"];
+    order.splice(order.indexOf("spacer-1"), 1);
+    const next = nextFreeDockAreaInstanceId(order, "spacer");
+    expect(next).toBe("spacer-1");
+    expect(order.includes(next)).toBe(false);
+  });
+
+  it("fills the lowest free index deterministically", () => {
+    expect(nextFreeDockAreaInstanceId(["widgets"], "spacer")).toBe("spacer-0");
+    expect(
+      nextFreeDockAreaInstanceId(["widgets", "spacer-0", "spacer-2"], "spacer"),
+    ).toBe("spacer-1");
+    expect(
+      nextFreeDockAreaInstanceId(
+        ["widgets", "spacer-0", "spacer-1"],
+        "spacer",
+      ),
+    ).toBe("spacer-2");
   });
 });

@@ -232,6 +232,22 @@ export function migratePersistedWidgetState(
 }
 
 /**
+ * First free per-instance suffix for a repeatable dock area ("spacer-0", …).
+ * Counting existing instances would REUSE an id after a middle instance is
+ * removed (remove "spacer-1" → count drops to 2 → next add yields "spacer-2",
+ * colliding with the surviving one). Always picks the lowest unused index so
+ * instance ids stay unique and edit-mode reorder keeps stable identities.
+ */
+export function nextFreeDockAreaInstanceId(
+  order: string[],
+  base: string,
+): string {
+  let i = 0;
+  while (order.includes(`${base}-${i}`)) i++;
+  return `${base}-${i}`;
+}
+
+/**
  * Give every repeatable area a unique per-instance id ("spacer-0",
  * "spacer-1", …) so the dock can hold several of them without duplicate
  * identities (legacy persisted orders may carry bare ids).
@@ -416,7 +432,7 @@ export const widgetStore = createStore<WidgetStore>()(
           }
           const order = [...s.dockAreaOrder];
           const instanceId = repeatable
-            ? `${id}-${order.filter((x) => areaBaseId(x) === id).length}`
+            ? nextFreeDockAreaInstanceId(order, id)
             : id;
           if (index !== undefined && index >= 0 && index <= order.length) {
             order.splice(index, 0, instanceId);

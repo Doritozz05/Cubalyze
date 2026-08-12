@@ -3286,6 +3286,7 @@
     "dock": {
       "dockedWidgets": "Docked widgets",
       "pinned": "{{name}} — pinned",
+      "running": "{{name}} — active",
       "moreHidden": "Hidden widgets ({{count}})"
     },
     "wrapper": {

@@ -72,7 +72,8 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
       list = list.filter(
         (item) =>
           t(item.labelKey).toLowerCase().includes(q) ||
-          item.category.toLowerCase().includes(q),
+          // Match the TRANSLATED category too ("sistema" finds system pieces).
+          t(`kind.${item.category}`).toLowerCase().includes(q),
       );
     }
     return list;

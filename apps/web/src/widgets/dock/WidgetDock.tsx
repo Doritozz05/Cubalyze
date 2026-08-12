@@ -75,7 +75,9 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
   const { t } = useTranslation("widgets");
   const definition = getWidget(widgetId);
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
-  const isDocked = status === "docked";
+  // macOS-style running indicator: the widget is open as a floating panel
+  // (or minimized), so its pill gets the small "active" dot.
+  const isRunning = status === "floating" || status === "minimized";
 
   const [isDragging, setIsDragging] = useState(false);
   const [isCommitted, setIsCommitted] = useState(false);
@@ -102,7 +104,9 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
   useGlobalDragCursor(isDragging);
   const reduceMotion = useReducedMotion();
 
-  if (!definition || !isDocked) return null;
+  // The dock shows every ACTIVE widget (docked, floating or minimized) —
+  // macOS-style: launching keeps the pill, the running dot marks it.
+  if (!definition || status === "inactive" || !status) return null;
 
   const Icon = definition.icon;
 
@@ -146,7 +150,19 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
             suppressClickRef.current = false;
             return;
           }
-          launchWidget(widgetId);
+          // macOS semantics: the pill STAYS in the dock while the widget is
+          // open — clicking a running pill focuses it, a minimized one is
+          // restored, and a plain docked pill launches the panel.
+          const st = widgetStore.getState().instances[widgetId]?.status;
+          if (st === "floating") {
+            widgetStore.getState().focusWidget(widgetId);
+          } else if (st === "minimized") {
+            const store = widgetStore.getState();
+            store.setStatus(widgetId, "floating");
+            store.focusWidget(widgetId);
+          } else {
+            launchWidget(widgetId);
+          }
         }}
         onDragStart={(_e, info) => {
           suppressClickRef.current = true;
@@ -198,7 +214,9 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
           "relative grid size-8 shrink-0 touch-none select-none cursor-grab place-items-center rounded-full",
           "text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink active:cursor-grabbing",
         )}
-        aria-label={t("dock.pinned", { name: t(WIDGET_LABEL_KEY[widgetId]) })}
+        aria-label={t(isRunning ? "dock.running" : "dock.pinned", {
+          name: t(WIDGET_LABEL_KEY[widgetId]),
+        })}
       >
         {/* Magnified icon (macOS-style) — the label floats above on hover. */}
         <motion.span
@@ -210,6 +228,14 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
         >
           <Icon className="size-4" />
         </motion.span>
+        {/* Running indicator (macOS-style active dot) — only when the
+            widget is ALSO open as a floating panel or minimized. */}
+        {isRunning && (
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink-3"
+          />
+        )}
         {isHovered && (
           <motion.span
             initial={{ opacity: 0, y: -3 }}
@@ -324,17 +350,20 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   const rowRef = useRef<HTMLDivElement>(null);
   const widgetsGroupRef = useRef<HTMLDivElement>(null);
 
-  // Filter to docked widgets (exclude special widgets like cube-button)
+  // The dock lists every ACTIVE widget (docked, floating or minimized) —
+  // launching a widget keeps its pill in the bar and marks it "running"
+  // with a dot (macOS/Windows dock behavior). Only truly inactive widgets
+  // (excluded special widgets like cube-button) are left out.
   const orderedDocked = dockOrder.filter((id) => {
     if (EXCLUDED_FROM_DOCK.has(id)) return false;
     const inst = instances[id];
-    return inst && inst.status === "docked";
+    return inst && inst.status !== "inactive";
   });
   const orderedSet = new Set(orderedDocked);
   const extraDocked = Object.entries(instances)
     .filter(
       ([id, inst]) =>
-        inst?.status === "docked" &&
+        inst?.status !== "inactive" &&
         !orderedSet.has(id) &&
         !EXCLUDED_FROM_DOCK.has(id),
     )
