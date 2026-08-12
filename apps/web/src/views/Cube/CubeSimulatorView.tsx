@@ -491,8 +491,16 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   return (
     <div className="relative flex h-full w-full min-h-0 flex-col">
       {/* Top bar: scramble display with per-move validation (same component
-          as the real timer — the widget-style scramble text) */}
-      <div className="flex shrink-0 items-start px-4 pt-3 sm:px-6">
+          as the real timer — the widget-style scramble text).
+
+          FIXED HEIGHT — the canvas below is flex-1, so any change in the
+          scramble's wrapped row count (different scramble lengths, error
+          moves, "too many mistakes") used to resize the canvas, and the 3D
+          engine's FOV-fit then rescales the cube — the whole panel jumped.
+          Reserving 3 rows on touch / 2 on desktop keeps the canvas (and the
+          cube) pixel-stable; the content is top-aligned, so short scrambles
+          leave clean space below. */}
+      <div className="flex h-32 shrink-0 items-start overflow-hidden px-4 pt-3 sm:px-6 lg:h-24">
         <div className="min-w-0 flex-1">
           <ScrambleDisplay
             scramble={scramble}
