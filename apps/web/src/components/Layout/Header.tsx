@@ -27,6 +27,7 @@ import {
 } from "@/widgets/dock/pieces";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { useWidgetStore } from "@/widgets/widgetStore";
+import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,8 @@ export interface HeaderProps {
   onDeleteSession?: (id: string) => void;
   /** Open the manual solve entry sheet (the "+" button). */
   onAddManual?: () => void;
+  /** Open the user's profile view (dock profile pill). */
+  onOpenProfile?: () => void;
   /** Currently selected puzzle category. */
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
@@ -136,6 +139,7 @@ export function Header({
   onRenameSession,
   onDeleteSession,
   onAddManual,
+  onOpenProfile,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
   puzzleLocked,
@@ -193,18 +197,21 @@ export function Header({
     );
     // Phase 4: system/layout pieces
     all["clock"] = <ClockPiece />;
-    all["profile"] = <ProfilePiece />;
+    all["profile"] = <ProfilePiece onOpenProfile={onOpenProfile} />;
     all["spacer"] = <SpacerPiece />;
     all["separator"] = <SeparatorPiece />;
     return all;
-  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, puzzle, puzzleLocked, onPuzzleChange]);
+  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, puzzle, puzzleLocked, onPuzzleChange]);
 
-  // Filter to only areas that exist in dockAreaOrder (so removed areas don't render)
+  // Filter to only areas that exist in dockAreaOrder (so removed areas don't
+  // render). Repeatable instances are suffixed ("separator-0"), so look up
+  // by base id; the dock renders one trailing piece per instance.
   const orderedTrailingAreas = useMemo(() => {
     const result: Record<string, ReactNode> = {};
     for (const id of dockAreaOrder) {
       if (id === "widgets") continue; // widgets area is the left side, not trailing
-      if (trailingAreas[id]) result[id] = trailingAreas[id];
+      const base = areaBaseId(id);
+      if (trailingAreas[base]) result[base] = trailingAreas[base];
     }
     return result;
   }, [dockAreaOrder, trailingAreas]);

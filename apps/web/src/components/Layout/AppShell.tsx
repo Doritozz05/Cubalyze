@@ -289,6 +289,7 @@ export function AppShell(props: AppShellProps) {
           }
           isFocused={isFocused}
           onAddManual={() => setManualOpen(true)}
+          onOpenProfile={onOpenProfile}
           main={
             <MainStage
               activeView={activeView}

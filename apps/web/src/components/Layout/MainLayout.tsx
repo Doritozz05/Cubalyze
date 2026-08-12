@@ -37,6 +37,8 @@ export interface MainLayoutProps {
   leftSidebar?: React.ReactNode;
   /** Open the manual solve entry sheet (the "+" button in the header). */
   onAddManual?: () => void;
+  /** Open the user's profile view (dock profile pill). */
+  onOpenProfile?: () => void;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (shows the split). */
@@ -91,6 +93,7 @@ export function MainLayout({
   onNewSession,
   onRenameSession,
   onDeleteSession,
+  onOpenProfile,
   isFocused,
   hideHeader,
   puzzle,
@@ -301,6 +304,7 @@ export function MainLayout({
               onRenameSession={onRenameSession}
               onDeleteSession={onDeleteSession}
               onAddManual={onAddManual}
+              onOpenProfile={onOpenProfile}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               puzzleLocked={puzzleLocked}

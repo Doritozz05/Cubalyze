@@ -53,10 +53,20 @@ export const DOCK_AREAS: DockAreaDef[] = [
 /** Default order of areas in the dock. */
 export const DEFAULT_DOCK_AREA_ORDER = [
   "widgets",
+  "separator-0",
   "manual-solve",
   "session",
   "puzzle",
 ];
+
+/**
+ * Strip the per-instance suffix from a repeatable area id so it can be
+ * looked up in DOCK_AREAS ("spacer-2" → "spacer"). Non-repeatable ids pass
+ * through unchanged.
+ */
+export function areaBaseId(id: string): string {
+  return id.replace(/-\d+$/, "");
+}
 
 /** Look up a dock area definition by id. */
 export function getDockArea(id: string): DockAreaDef | undefined {

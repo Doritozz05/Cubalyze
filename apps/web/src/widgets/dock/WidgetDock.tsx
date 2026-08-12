@@ -3,7 +3,7 @@
 import { useRef, useCallback, useLayoutEffect, useState, useMemo, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { ChevronUp, Plus, X } from "lucide-react";
+import { ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
@@ -22,7 +22,7 @@ import type { ReactNode } from "react";
 import type { WidgetId } from "@/widgets/types";
 import { useIsDockEditing, dockEditStore } from "@/widgets/dock/dockEditStore";
 import { DockExplorer } from "@/widgets/dock/DockExplorer";
-import { getDockArea } from "@/widgets/dock/dockAreasRegistry";
+import { getDockArea, areaBaseId } from "@/widgets/dock/dockAreasRegistry";
 
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
@@ -300,8 +300,9 @@ const OverflowMenu = forwardRef<HTMLButtonElement, { ids: WidgetId[] }>(
  * When the bar can't fit every widget, the leftover pills collapse into a
  * subtle chevron flyout — nothing ever scrolls or gets clipped.
  *
- * `trailing` renders after a separator: header controls (session, puzzle,
- * quick actions) live inside the same bar, Windows-tray style.
+ * `trailing` areas (session, puzzle, clock, profile, spacer, separator…)
+ * render inside the same bar, interleaved with the widget pills in
+ * `dockAreaOrder` order — Windows-tray style.
  *
  * While a floating widget is dragged near the dock, the bar temporarily
  * expands to show every pill (plus the drop-zone ghost) for precise docking.
@@ -316,11 +317,12 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   const dropX = useDropX();
   const draggingWidgetId = useDraggingWidgetId();
   const isEditing = useIsDockEditing();
+  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
   const [explorerOpen, setExplorerOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
-  const trailingRef = useRef<HTMLDivElement>(null);
+  const widgetsGroupRef = useRef<HTMLDivElement>(null);
 
   // Filter to docked widgets (exclude special widgets like cube-button)
   const orderedDocked = dockOrder.filter((id) => {
@@ -368,13 +370,21 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       return;
     }
     const available = parent.clientWidth;
-    const trailingW = trailingRef.current?.offsetWidth ?? 0;
     const gap = 2; // gap-0.5
-    // A separator sits between the widgets and the tray controls — only when
-    // there are widgets to separate (the "+" stands alone otherwise).
-    const dividerW = n > 0 && trailingW > 0 ? 9 : 0; // h-5 w-px + mx-1
+    // Sum the widths of every non-widget area (session, puzzle, clock,
+    // profile, spacer, separator…) — they're interleaved with the pills now.
+    let areasW = 0;
+    let areaCount = 0;
+    if (rowRef.current) {
+      rowRef.current.querySelectorAll("[data-area-id]").forEach((a) => {
+        areasW += a.getBoundingClientRect().width;
+        areaCount += 1;
+      });
+    }
+    // Reserve the flex gaps between the blocks (widgets group + areas).
+    const children = areaCount + (dockAreaOrder.includes("widgets") ? 1 : 0);
     const widgetsSpace =
-      available - trailingW - (trailingW > 0 ? gap : 0) - dividerW;
+      available - areasW - Math.max(0, children - 1) * gap;
     let fit = Math.floor(widgetsSpace / PILL_PITCH);
     if (fit < n) {
       // Reserve the chevron's own slot only when something will be hidden.
@@ -382,7 +392,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
     }
     const next = Math.max(0, n - fit);
     setHiddenCount((prev) => (prev === next ? prev : next));
-  }, [dockedIds, isDockZoneActive]);
+  }, [dockedIds, isDockZoneActive, dockAreaOrder]);
 
   useLayoutEffect(() => {
     recompute();
@@ -420,12 +430,10 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       dockZoneState.setDropIndex(-1);
       return;
     }
-    const row = rowRef.current;
+    // Map the pointer onto the WIDGETS GROUP (not the whole bar) — other
+    // areas (clock, profile…) sit beside the pills and don't take slots.
+    const row = widgetsGroupRef.current;
     if (!row) return;
-    // Map the pointer onto the ROW (not the bar). scrollWidth is
-    // position-independent, so the index stays stable while the bar is
-    // centered — no feedback loop. The dragged widget's clone occupies one
-    // pill pitch, so subtract it to get the span of the existing pills.
     const rect = row.getBoundingClientRect();
     const contentX = dropX - rect.left;
     const contentWidth = Math.max(row.scrollWidth - PILL_PITCH, 1);
@@ -460,27 +468,30 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
     widgetStore.getState().setDockOrder([...newOrder, ...invisible]);
   };
 
-  // ── Edit mode: render each dock area with × overlay ───────────────
+  // ── Edit mode: render each dock area for reordering ──────────────────
   // The dock is composed of modular areas (widgets zone, ＋, session,
-  // puzzle, clock, profile, spacer). In edit mode, each area gets a
-  // × button to remove it and the ＋ opens the DockExplorer.
-  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+  // puzzle, clock, profile, spacer). In edit mode each area is draggable
+  // to reorder; adding/removing pieces happens in the DockExplorer (＋).
+  // Every entry in dockAreaOrder is a unique instance id (repeatables are
+  // stored as "spacer-0", "spacer-1", …), so framer Reorder gets stable
+  // identities and dragging stays as smooth as the widget pills.
   const handleAreaReorder = useCallback((newOrder: string[]) => {
-    // Ensure "widgets" always stays at position 0 — it's the core area
-    const withoutWidgets = newOrder.filter((id) => id !== "widgets");
-    widgetStore.getState().setDockAreaOrder(["widgets", ...withoutWidgets]);
+    // dockAreaOrder is the single source of truth — the widgets zone can
+    // sit anywhere the user drags it.
+    widgetStore.getState().setDockAreaOrder(newOrder);
   }, []);
 
   const editModeAreas = useMemo(() => {
     if (!isEditing) return [];
     return dockAreaOrder.map((areaId) => {
       // Widgets zone: render a compact preview of the widget pills.
-      // NOT draggable — it's always the core leftmost area.
+      // Draggable like every other area — it can sit anywhere in the bar.
       if (areaId === "widgets") {
         return (
           <Reorder.Item
             key={areaId}
             value={areaId}
+            drag
             layout={reduceMotion ? undefined : true}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
             className="relative flex h-8 items-center gap-0.5"
@@ -499,26 +510,18 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
                 <span className="text-[0.6rem] text-ink-3">+{dockedIds.length - 5}</span>
               )}
             </div>
-            <button
-              onClick={() => {
-                /* widgets zone can't be removed — it's the core */
-              }}
-              className="absolute -right-1.5 -top-0.5 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110 opacity-50 cursor-not-allowed"
-              aria-label={tDock("removePiece")}
-              disabled
-            >
-              <X className="size-2.5" />
-            </button>
           </Reorder.Item>
         );
       }
-      // Other areas: render from the area definition
-      const area = getDockArea(areaId);
+      // Other areas: render from the area definition (match on the base id
+      // so suffixed repeatable instances like "separator-1" resolve too)
+      const baseId = areaBaseId(areaId);
+      const area = getDockArea(baseId);
       if (!area) return null;
       const Icon = area.icon;
 
       // Separator: render as a vertical line
-      if (areaId === "separator") {
+      if (baseId === "separator") {
         return (
           <Reorder.Item
             key={areaId}
@@ -529,19 +532,12 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             className="relative flex h-8 items-center cursor-grab touch-none"
           >
             <div className="mx-1 h-5 w-px shrink-0 bg-line/80" />
-            <button
-              onClick={() => widgetStore.getState().removeDockArea(areaId)}
-              className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
-              aria-label={tDock("removePiece")}
-            >
-              <X className="size-2.5" />
-            </button>
           </Reorder.Item>
         );
       }
 
       // Spacer: render as empty space with dashed border in edit mode
-      if (areaId === "spacer") {
+      if (baseId === "spacer") {
         return (
           <Reorder.Item
             key={areaId}
@@ -552,12 +548,6 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             className="relative flex h-8 items-center cursor-grab touch-none"
           >
             <div className="w-6 shrink-0 rounded border border-dashed border-ink-3/30" />
-            <button
-              onClick={() => widgetStore.getState().removeDockArea(areaId)}className="absolute -right-1.5 -top-0.5 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
-            aria-label={tDock("removePiece")}
-          >
-              <X className="size-2.5" />
-            </button>
           </Reorder.Item>
         );
       }
@@ -575,72 +565,69 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
           <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
             <Icon className="size-4" />
           </div>
-          <button
-            onClick={() => {
-              widgetStore.getState().removeDockArea(areaId);
-            }}
-            className="absolute -right-1.5 -top-0.5 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
-            aria-label={tDock("removePiece")}
-          >
-              <X className="size-2.5" />
-          </button>
         </Reorder.Item>
       );
     });
-  }, [isEditing, dockAreaOrder, dockedIds, reduceMotion, tDock]);
+  }, [isEditing, dockAreaOrder, dockedIds, reduceMotion]);
 
   const renderNormal = () => (
-    <>
-      <div ref={rowRef} className="flex min-w-0 items-center gap-0.5">
-        <Reorder.Group
-          as="div"
-          axis="x"
-          values={renderedIds}
-          onReorder={handleReorder}
-          className="flex items-center gap-0.5"
-        >
-          <AnimatePresence mode="popLayout">
-            {displayIds.map((id) => {
-              if (id === draggingWidgetId && isDockZoneActive) {
-                const def = getWidget(id);
-                const Icon = def?.icon;
-                return (
-                  <motion.div
-                    key={id}
-                    layout={reduceMotion ? undefined : true}
-                    transition={
-                      reduceMotion
-                        ? { duration: 0 }
-                        : { type: "spring", stiffness: 400, damping: 30 }
+    <div ref={rowRef} className="flex min-w-0 items-center gap-0.5">
+      {/* Render areas in dockAreaOrder — the widgets zone can sit anywhere. */}
+      {dockAreaOrder.map((areaId) => {
+        if (areaId === "widgets") {
+          return (
+            <div
+              key={areaId}
+              ref={widgetsGroupRef}
+              className="flex min-w-0 items-center gap-0.5"
+            >
+              <Reorder.Group
+                as="div"
+                axis="x"
+                values={renderedIds}
+                onReorder={handleReorder}
+                className="flex items-center gap-0.5"
+              >
+                <AnimatePresence mode="popLayout">
+                  {displayIds.map((id) => {
+                    if (id === draggingWidgetId && isDockZoneActive) {
+                      const def = getWidget(id);
+                      const Icon = def?.icon;
+                      return (
+                        <motion.div
+                          key={id}
+                          layout={reduceMotion ? undefined : true}
+                          transition={
+                            reduceMotion
+                              ? { duration: 0 }
+                              : { type: "spring", stiffness: 400, damping: 30 }
+                          }
+                          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
+                          className="relative grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink opacity-0"
+                          aria-hidden
+                        >
+                          {Icon ? <Icon className="size-4" /> : null}
+                        </motion.div>
+                      );
                     }
-                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
-                    className="relative grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink opacity-0"
-                    aria-hidden
-                  >
-                    {Icon ? <Icon className="size-4" /> : null}
-                  </motion.div>
-                );
-              }
-              return <DockPill key={id} widgetId={id} />;
-            })}
-          </AnimatePresence>
-        </Reorder.Group>
+                    return <DockPill key={id} widgetId={id} />;
+                  })}
+                </AnimatePresence>
+              </Reorder.Group>
 
-        {overflowIds.length > 0 && <OverflowMenu ids={overflowIds} />}
-      </div>
-
-      {dockedIds.length > 0 && trailingAreas && Object.keys(trailingAreas).length > 0 && (
-        <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line/80" />
-      )}
-
-      {trailingAreas && (
-        <div ref={trailingRef} className="flex min-w-0 items-center gap-0.5">
-          {Object.entries(trailingAreas).map(([id, node]) => (
-            <div key={id} data-area-id={id}>{node}</div>
-          ))}
-        </div>
-      )}
-    </>
+              {overflowIds.length > 0 && <OverflowMenu ids={overflowIds} />}
+            </div>
+          );
+        }
+        const node = trailingAreas?.[areaBaseId(areaId)];
+        if (!node) return null;
+        return (
+          <div key={areaId} data-area-id={areaBaseId(areaId)}>
+            {node}
+          </div>
+        );
+      })}
+    </div>
   );
 
   const renderEditMode = () => (
@@ -650,7 +637,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
         axis="x"
         values={dockAreaOrder}
         onReorder={handleAreaReorder}
-        className="flex h-full items-center gap-1"
+        className="list-none flex h-full items-center gap-1"
       >
         {editModeAreas}
       </Reorder.Group>

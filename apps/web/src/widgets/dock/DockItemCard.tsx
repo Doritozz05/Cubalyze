@@ -2,10 +2,12 @@
 
 import { useCallback, useMemo } from "react";
 import { Plus, Minus, Lock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { useTranslation } from "react-i18next";
 import type { DockAreaDef } from "@/widgets/dock/dockAreasRegistry";
+import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
 
 export interface DockItemCardProps {
   item: DockAreaDef;
@@ -25,9 +27,10 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
 
   const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
 
-  // Count how many instances of this area exist in the dock
+  // Count how many instances of this area exist in the dock (repeatable
+  // areas store instance ids like "spacer-0", "spacer-1" — match by base).
   const count = useMemo(
-    () => dockAreaOrder.filter((id) => id === item.id).length,
+    () => dockAreaOrder.filter((id) => areaBaseId(id) === item.id).length,
     [dockAreaOrder, item.id],
   );
 
@@ -42,9 +45,12 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
 
   const handleRemove = useCallback(() => {
     const store = widgetStore.getState();
-    // Remove the last occurrence
+    // Remove the last instance of this area
     const order = [...store.dockAreaOrder];
-    const lastIdx = order.lastIndexOf(item.id);
+    let lastIdx = -1;
+    order.forEach((id, i) => {
+      if (areaBaseId(id) === item.id) lastIdx = i;
+    });
     if (lastIdx >= 0) {
       order.splice(lastIdx, 1);
       store.setDockAreaOrder(order);
@@ -56,7 +62,9 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
     const store = widgetStore.getState();
     if (inDock) {
       // Remove all instances
-      store.setDockAreaOrder(store.dockAreaOrder.filter((id) => id !== item.id));
+      store.setDockAreaOrder(
+        store.dockAreaOrder.filter((id) => areaBaseId(id) !== item.id),
+      );
     } else {
       store.addDockArea(item.id);
     }
@@ -158,27 +166,19 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
             </button>
           </div>
         ) : (
-          /* Professional toggle switch for non-repeatable items */
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggle();
-            }}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200",
-              inDock ? "bg-ink" : "bg-line",
-            )}
-            role="switch"
-            aria-checked={inDock}
-            aria-label={`${inDock ? "Remove" : "Add"} ${t(item.labelKey)}`}
+          /* Shared switch (same one the WidgetExplorer uses) */
+          <div
+            className="flex h-5 items-center"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
           >
-            <span
-              className={cn(
-                "inline-block size-3.5 rounded-full bg-canvas shadow-xs transition-transform duration-200",
-                inDock ? "translate-x-4" : "translate-x-0.5",
-              )}
+            <Switch
+              checked={inDock}
+              onCheckedChange={handleToggle}
+              aria-label={`${inDock ? "Remove" : "Add"} ${t(item.labelKey)}`}
             />
-          </button>
+          </div>
         )}
       </div>
     </div>

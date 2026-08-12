@@ -5,6 +5,11 @@ import { useStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { WidgetId, WidgetInstanceState, WidgetStatus } from "./types";
 import { BUILT_IN_WIDGETS, getWidget } from "./registry";
+import {
+  DOCK_AREAS,
+  DEFAULT_DOCK_AREA_ORDER,
+  areaBaseId,
+} from "./dock/dockAreasRegistry";
 
 // ── Custom Layout ────────────────────────────────────────────────────────
 
@@ -212,9 +217,10 @@ export function migratePersistedWidgetState(
   const dockItems = Array.isArray(raw.dockItems)
     ? (raw.dockItems as string[])
     : combinedOrder;
-  const dockAreaOrder = Array.isArray(raw.dockAreaOrder)
+  const rawDockAreaOrder = Array.isArray(raw.dockAreaOrder)
     ? (raw.dockAreaOrder as string[])
-    : ["widgets", "manual-solve", "session", "puzzle"];
+    : DEFAULT_DOCK_AREA_ORDER;
+  const dockAreaOrder = uniquifyDockAreas(rawDockAreaOrder);
   return {
     ...rest,
     instances: cleanedInstances,
@@ -225,6 +231,22 @@ export function migratePersistedWidgetState(
   };
 }
 
+/**
+ * Give every repeatable area a unique per-instance id ("spacer-0",
+ * "spacer-1", …) so the dock can hold several of them without duplicate
+ * identities (legacy persisted orders may carry bare ids).
+ */
+function uniquifyDockAreas(order: string[]): string[] {
+  const counts = new Map<string, number>();
+  return order.map((id) => {
+    const base = areaBaseId(id);
+    if (DOCK_AREAS.find((a) => a.id === base)?.repeatable !== true) return base;
+    const n = counts.get(base) ?? 0;
+    counts.set(base, n + 1);
+    return `${base}-${n}`;
+  });
+}
+
 // ── Store ────────────────────────────────────────────────────────────────
 
 export const widgetStore = createStore<WidgetStore>()(
@@ -233,7 +255,7 @@ export const widgetStore = createStore<WidgetStore>()(
       instances: buildDefaultInstances(),
       dockOrder: BUILT_IN_WIDGETS.map((w) => w.id),
       dockItems: BUILT_IN_WIDGETS.map((w) => w.id),
-      dockAreaOrder: ["widgets", "manual-solve", "session", "puzzle"],
+      dockAreaOrder: DEFAULT_DOCK_AREA_ORDER,
       customLayouts: [],
 
       // ── Toggle: inactive ↔ docked ───────────────────────────────────
@@ -382,12 +404,24 @@ export const widgetStore = createStore<WidgetStore>()(
 
       addDockArea: (id, index) =>
         set((s) => {
-          if (s.dockAreaOrder.includes(id)) return s;
+          // Repeatable areas (spacer, separator) get a unique instance id
+          // ("spacer-0", "spacer-1", …) — everything else is single-instance.
+          const def = DOCK_AREAS.find((a) => a.id === id);
+          const repeatable = def?.repeatable === true;
+          if (
+            !repeatable &&
+            s.dockAreaOrder.some((x) => areaBaseId(x) === id)
+          ) {
+            return s;
+          }
           const order = [...s.dockAreaOrder];
+          const instanceId = repeatable
+            ? `${id}-${order.filter((x) => areaBaseId(x) === id).length}`
+            : id;
           if (index !== undefined && index >= 0 && index <= order.length) {
-            order.splice(index, 0, id);
+            order.splice(index, 0, instanceId);
           } else {
-            order.push(id);
+            order.push(instanceId);
           }
           return { dockAreaOrder: order };
         }),
@@ -496,7 +530,9 @@ export const widgetStore = createStore<WidgetStore>()(
       name: "cubeforge:widgets",
       // v6: custom widgets (URL-import) removed — migrate drops orphaned
       // instances so existing users get them cleaned on next load.
-      version: 7,
+      // v8: repeatable dock areas (spacer/separator) get unique instance ids
+      // ("separator-0", …) so framer can reorder several of them smoothly.
+      version: 8,
       migrate: (persisted, oldVersion) =>
         migratePersistedWidgetState(persisted, oldVersion),
       partialize: (state) => ({
