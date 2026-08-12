@@ -1,35 +1,35 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import {
-  FACE_ROTATION_MAP,
-  layerTwistAngleDelta,
-  type Cube3DEngine,
-  type CubeLayerPick,
-} from "@cubeforge/cube-3d-engine";
+import type { Cube3DEngine, CubeLayerPick } from "@cubeforge/cube-3d-engine";
 import type { CubeFace } from "@cubeforge/types";
 import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
-import { resolveDragLayer } from "@/utils/cubeDragLayer";
+import { resolveDragMove } from "@/utils/cubeDragLayer";
 
 /**
  * Touch + keyboard controls for the virtual-cube view.
  *
- * Gesture model (the csTimer / virtual-cube interaction — "grab the layer
- * you want to turn and move it"):
+ * Gesture model (the virtual-cube interaction — "swipe the layer you want to
+ * turn"): a face drag does NOT track the mouse/finger live. Once the swipe
+ * passes the dead zone it resolves a definite move and fires it through the
+ * same `onAction` pipeline as the keyboard, so the engine plays the turn
+ * animation at the configured turn speed and the layer lands at exactly ±90°,
+ * ignoring the mouse from then on (virtual-cube style — no 1:1 tracking).
  *
- *   • 1 finger drag ON a cube face → the LAYER under the finger follows it
- *     LIVE (arc-length tracking), and on release it SNAPS 90° (animated)
- *     when the twist is at least `commitThresholdDeg`, otherwise it springs
- *     back. The layer is resolved in PURE SCREEN SPACE (camera-independent,
- *     csTimer-style): the drag direction picks the axis, the grabbed cubie's
- *     grid position picks the layer:
+ *   • 1 finger drag ON a cube face → the LAYER under the finger turns, with
+ *     the direction read from the swipe in PURE SCREEN SPACE
+ *     (camera-independent, csTimer-style): the drag axis picks the turn axis,
+ *     the grabbed cubie's grid position picks the layer, and the dominant
+ *     screen delta picks the direction:
  *       - |dy| > |dx| (vertical drag) → the COLUMN layer at the sticker
- *         (x-axis → R/M/L by the sticker's x position)
+ *         (x-axis → R/M/L by the sticker's x position); the stickers follow
+ *         the finger — right column UP turns R (down R'), middle column UP
+ *         turns M' (down M), left column DOWN turns L (up L').
  *       - |dx| > |dy| (horizontal drag) → the ROW layer at the sticker
- *         (y-axis → U/E/D by the sticker's y position)
- *     So dragging the right column up turns R, the middle column turns M,
- *     the bottom row right turns D, a right-swipe on the U face turns U,
- *     and a right-swipe on D turns D — always the layer you grabbed.
+ *         (y-axis → U/E/D by the sticker's y position): a right-swipe on the
+ *         U face turns U', on the middle row turns E, on the bottom row D.
+ *     The move is committed the moment the drag crosses `minSwipeDistance`
+ *     (6 px); any further pointer travel is ignored.
  *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
  *   • DRAG ON THE BACKGROUND → the CUBE rotates in discrete 90° steps (y for
  *     left/right swipes, x for up/down swipes) exactly like the x/y keys —
@@ -38,47 +38,30 @@ import { resolveDragLayer } from "@/utils/cubeDragLayer";
  *     as a normal drag).
  *   • Keyboard (csTimer layout) → animated face turns via `performAction`
  *
- * The drag math (`pickLayer` + `layerTwistAngleDelta`) lives in the engine
- * package and is fully unit-tested there. The move is committed through
- * `onTurnCommitted` ONLY after the snap animation completes, so the logical
- * state (CubeState) always lands exactly on the finished visual — no desync,
- * deterministic by construction.
+ * The layer/direction resolution lives in `resolveDragMove` (apps/web) and
+ * is fully unit-tested; the animation is the SAME `applyAction` pipeline the
+ * keyboard uses, so the visual and the logical CubeState stay in lockstep
+ * (the view mirrors the action after firing it).
  *
- * Pointer-cancel (scroll / OS gesture) never commits — nothing is turned and
- * the logical state is untouched.
+ * Pointer-cancel (scroll / OS gesture) before the dead zone never fires a
+ * move — nothing is turned and the logical state is untouched.
  */
 export interface UseCubeTurnControlsOptions {
   /** Ref to the live Cube3DEngine instance (from useCube3D). */
   engineRef: React.RefObject<Cube3DEngine | null>;
-  /** Min pointer travel (px) before a face drag starts live-twisting. Default 6. */
+  /** Min pointer travel (px) before a face drag fires its move. Default 6. */
   minSwipeDistance?: number;
-  /**
-   * Twist angle (degrees) at which a released drag COMMITS a 90° turn
-   * instead of springing back. Default 40.
-   */
-  commitThresholdDeg?: number;
   /**
    * Background-drag distance (px) per 90° cube rotation step. Default 70 —
    * mirroring virtual-cube's discrete swipe rotation.
    */
   rotateStepDistance?: number;
   /**
-   * Duration (ms) of the snap animation when a drag COMMITS a 90° turn.
-   * Default 90. The view can wire this to its turn-speed preference so the
-   * snap matches the keyboard animation speed.
-   */
-  snapDurationMs?: number;
-  /**
-   * Called by `performAction` (keyboard path). The view animates the move on
-   * the engine AND mirrors it into the logical state.
+   * Called by `performAction` (keyboard path) AND by every resolved face
+   * drag. The view animates the move on the engine with the configured turn
+   * speed and mirrors it into the logical state — one single move pipeline.
    */
   onAction?: (action: CubeKeyAction) => void;
-  /**
-   * Called when a DRAG commits a turn, after the engine's snap animation has
-   * already finished — the view only mirrors the move into the logical state
-   * (never re-animates).
-   */
-  onTurnCommitted?: (action: CubeKeyAction) => void;
 }
 
 export interface UseCubeTurnControlsResult {
@@ -95,23 +78,12 @@ export interface UseCubeTurnControlsResult {
 
 type DragMode = "idle" | "turn" | "background";
 
-interface Vec3 {
-  x: number;
-  y: number;
-  z: number;
-}
-
-/** The live-twist layer resolved once a drag is underway. */
-interface ResolvedTwist {
-  /** Engine turn axis ('x' → R/M/L columns, 'y' → U/E/D rows). */
-  axis: "x" | "y";
-  /** Layer value along the axis (−1 | 0 | 1) — from the grabbed cubie. */
-  layerValue: number;
-  /** WCA label of the layer being turned. */
+/** The move resolved once a face drag passes the dead zone. */
+interface ResolvedMove {
+  /** WCA label of the layer being turned (R/M/L/U/E/D). */
   face: CubeFace;
-  /** Grab point (possibly nudged off the axis) for the arc-length tracking. */
-  worldPoint: Vec3;
-  axisVector: Vec3;
+  /** WCA direction: +1 = as written, −1 = primed. */
+  direction: 1 | -1;
 }
 
 /** Mutable state of the single active pointer gesture. */
@@ -125,12 +97,11 @@ interface DragState {
   totalDist: number;
   /** Sticker pressed at pointer-down (the drag's geometric origin). */
   startPick: CubeLayerPick | null;
-  /** Resolved live-twist layer (set once the drag passes the dead zone). */
-  twist: ResolvedTwist | null;
-  /** Live twist angle in engine degrees, clamped to ±90. */
-  angleDeg: number;
-  /** True while the commit/spring-back animation is running. */
-  snapping: boolean;
+  /** Resolved drag move (set once the drag passes the dead zone). */
+  move: ResolvedMove | null;
+  /** True once the move has been fired — the gesture is consumed and any
+   *  further pointer travel is ignored (no live tracking). */
+  committed: boolean;
   /**
    * True when this gesture was RE-ARMED from a pinch's remaining finger
    * (see finishPointer). Re-armed gestures are drag-only: lifting without
@@ -142,42 +113,14 @@ interface DragState {
   swipeY: number;
 }
 
-/** World-units-per-pixel at the cube's depth (camera orbits the origin). */
-function worldPerPixelAtCube(canvas: HTMLCanvasElement, engine: Cube3DEngine): number {
-  const cam = engine.sceneManager.camera;
-  const rect = canvas.getBoundingClientRect();
-  if (rect.height <= 0) return 0.01;
-  const verticalHalfFovTan = Math.tan((cam.fov * Math.PI) / 360);
-  return (2 * verticalHalfFovTan * cam.position.length()) / rect.height;
-}
-
-const X_AXIS: Vec3 = { x: 1, y: 0, z: 0 };
-const Y_AXIS: Vec3 = { x: 0, y: 1, z: 0 };
-
-/** Cross product of a rotation axis and a point → tangent direction. */
-const tangent = (a: Vec3, p: Vec3): Vec3 => ({
-  x: a.y * p.z - a.z * p.y,
-  y: a.z * p.x - a.x * p.z,
-  z: a.x * p.y - a.y * p.x,
-});
-
-const dot = (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z;
-
-const len = (v: Vec3): number => Math.hypot(v.x, v.y, v.z);
-
 export function useCubeTurnControls({
   engineRef,
   minSwipeDistance = 6,
-  commitThresholdDeg = 40,
   rotateStepDistance = 70,
-  snapDurationMs = 90,
   onAction,
-  onTurnCommitted,
 }: UseCubeTurnControlsOptions): UseCubeTurnControlsResult {
   const onActionRef = useRef(onAction);
   onActionRef.current = onAction;
-  const onTurnCommittedRef = useRef(onTurnCommitted);
-  onTurnCommittedRef.current = onTurnCommitted;
 
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchDistRef = useRef(0);
@@ -189,9 +132,8 @@ export function useCubeTurnControls({
     lastY: 0,
     totalDist: 0,
     startPick: null,
-    twist: null,
-    angleDeg: 0,
-    snapping: false,
+    move: null,
+    committed: false,
     rearmed: false,
     swipeX: 0,
     swipeY: 0,
@@ -237,9 +179,8 @@ export function useCubeTurnControls({
           lastY: e.clientY,
           totalDist: 0,
           startPick: pick,
-          twist: null,
-          angleDeg: 0,
-          snapping: false,
+          move: null,
+          committed: false,
           rearmed: false,
           swipeX: 0,
           swipeY: 0,
@@ -247,11 +188,9 @@ export function useCubeTurnControls({
         // Arm the camera inertia (no-op for turn mode; kills stale glides).
         engine?.setCameraDragActive(true);
       } else if (pointers.current.size === 2) {
-        // A second finger lands: abort any in-flight twist (spring back) and
-        // switch the gesture to pinch zoom.
-        if (dragRef.current.mode === "turn" && dragRef.current.twist && !dragRef.current.snapping) {
-          void engine?.cancelLayerTwist(60);
-        }
+        // A second finger lands: switch the gesture to pinch zoom. Any drag
+        // move was already fired on dead-zone crossing — the pinch simply
+        // supersedes whatever gesture state was left over.
         // Keep the camera-inertia state machine armed (same as 1-finger drags)
         // so a later 2→1 re-arm / release doesn't leave a stale glide.
         engine?.setCameraDragActive(true);
@@ -263,9 +202,8 @@ export function useCubeTurnControls({
           lastY: 0,
           totalDist: 0,
           startPick: null,
-          twist: null,
-          angleDeg: 0,
-          snapping: false,
+          move: null,
+          committed: false,
           rearmed: false,
           swipeX: 0,
           swipeY: 0,
@@ -277,68 +215,37 @@ export function useCubeTurnControls({
   );
 
   /**
-   * Resolve WHICH layer the drag is turning, once (when the pointer first
-   * travels past `minSwipeDistance`). Rule (csTimer-style, PURE SCREEN
-   * SPACE — no camera projection, so it cannot be fooled by the view angle):
+   * Resolve WHICH move the drag fires, once (when the pointer first travels
+   * past `minSwipeDistance`). Rule (csTimer-style, PURE SCREEN SPACE — no
+   * camera projection, so it cannot be fooled by the view angle):
    *
    *   • |dy| > |dx| (vertical drag) → the COLUMN layer at the grabbed
-   *     sticker: x-axis, R/M/L by the cubie's x grid position.
+   *     sticker: x-axis, R/M/L by the cubie's x grid position. The stickers
+   *     of the dragged column follow the finger: right column UP = R,
+   *     middle column DOWN = M, left column DOWN = L.
    *   • |dx| > |dy| (horizontal drag) → the ROW layer at the grabbed
-   *     sticker: y-axis, U/E/D by the cubie's y grid position.
+   *     sticker: y-axis, U/E/D by the cubie's y grid position. A right-swipe
+   *     on U turns U', on the bottom row D.
    *
-   * So dragging the right column turns R, the middle column M, the bottom
-   * row D, a right-swipe on U turns U — the layer you grab always turns.
-   * The live-twist arc-length tracking (layerTwistAngleDelta) then makes it
-   * follow the finger in the dragged direction.
+   * The direction is computed directly from the dominant screen delta (no
+   * live tracking) — see {@link resolveDragMove}.
    */
-  const resolveTwist = useCallback(
-    (drag: DragState): ResolvedTwist | null => {
-      const engine = engineRef.current;
+  const resolveTurn = useCallback(
+    (drag: DragState): ResolvedMove | null => {
       const pick = drag.startPick;
-      if (!engine || !pick) return null;
-
+      if (!pick) return null;
       const dx = drag.lastX - drag.startX;
       const dy = drag.lastY - drag.startY;
-      const resolved = resolveDragLayer({
+      const resolved = resolveDragMove({
         dx,
         dy,
         cubieX: pick.cubiePosition.x,
         cubieY: pick.cubiePosition.y,
       });
       if (!resolved) return null;
-      const { axis, layerValue, face } = resolved;
-
-      const axisVector = axis === "x" ? X_AXIS : Y_AXIS;
-      const cam = engine.sceneManager.camera;
-      cam.updateMatrixWorld(true);
-      const m = cam.matrixWorld.elements;
-      const p = pick.worldPoint;
-      let grabPoint = p;
-      // Center grabs sit ON the rotation axis (tangent ≈ 0 → dead zone).
-      // Give the drag a stable virtual grab point at the face edge by
-      // projecting the camera-right direction onto the plane ⊥ axis, so the
-      // layer still follows the finger wherever the user touches.
-      if (len(tangent(axisVector, p)) < 0.25) {
-        const camRight: Vec3 = { x: m[0], y: m[1], z: m[2] };
-        const along = dot(camRight, axisVector);
-        const proj: Vec3 = {
-          x: camRight.x - along * axisVector.x,
-          y: camRight.y - along * axisVector.y,
-          z: camRight.z - along * axisVector.z,
-        };
-        const plen = len(proj);
-        if (plen > 1e-4) {
-          grabPoint = { x: p.x + proj.x / plen, y: p.y + proj.y / plen, z: p.z + proj.z / plen };
-        }
-      }
-
-      // A twist only starts if the engine grants a free pivot; otherwise the
-      // gesture stays inert (a previous move is still snapping).
-      const ok = engine.beginLayerTwist(axis, [layerValue]);
-      if (!ok) return null;
-      return { axis, layerValue, face, worldPoint: grabPoint, axisVector };
+      return { face: resolved.face, direction: resolved.direction };
     },
-    [engineRef],
+    [],
   );
 
   const handlePointerMove = useCallback(
@@ -367,38 +274,23 @@ export function useCubeTurnControls({
       drag.lastY = e.clientY;
 
       if (drag.mode === "turn") {
-        if (drag.snapping) return;
+        if (drag.committed) return;
         drag.totalDist += Math.hypot(dx, dy);
-        const canvas = e.target as HTMLCanvasElement;
 
-        // Resolve the layer once, after the dead zone. While a previous move
+        // Resolve the move once, after the dead zone. While a previous move
         // is still animating, cubies sit on a pivot group mid-rotation —
         // pickLayer() would return corrupted state, so wait for it to settle.
-        if (!drag.twist) {
+        if (!drag.move) {
           if (drag.totalDist < minSwipeDistance) return;
           if (engine.isAnimating()) return;
-          drag.twist = resolveTwist(drag);
-          if (!drag.twist) return;
-          drag.angleDeg = 0;
+          drag.move = resolveTurn(drag);
+          if (!drag.move) return;
+          drag.committed = true;
+          // ── Fire the move: animated at the configured turn speed by the
+          //    view (the same pipeline as the keyboard) — the layer lands at
+          //    exactly ±90° and the mouse is ignored from here on. ──
+          onActionRef.current?.({ kind: "turn", face: drag.move.face, direction: drag.move.direction });
         }
-
-        // ── Live twist: the layer follows the finger, frame by frame ────
-        const cam = engine.sceneManager.camera;
-        const m = cam.matrixWorld.elements;
-        const worldPerPx = worldPerPixelAtCube(canvas, engine);
-        const worldDrag: Vec3 = {
-          x: (dx * m[0] + dy * m[4]) * worldPerPx,
-          y: (dx * m[1] + dy * m[5]) * worldPerPx,
-          z: (dx * m[2] + dy * m[6]) * worldPerPx,
-        };
-        const delta = layerTwistAngleDelta({
-          axisVector: drag.twist.axisVector,
-          worldPoint: drag.twist.worldPoint,
-          worldDrag,
-        });
-        const next = Math.max(-90, Math.min(90, drag.angleDeg + delta));
-        drag.angleDeg = next;
-        engine.setLayerTwistAngle(next);
         return;
       }
 
@@ -420,7 +312,7 @@ export function useCubeTurnControls({
         drag.swipeY = 0;
       }
     },
-    [engineRef, minSwipeDistance, resolveTwist, rotateStepDistance],
+    [engineRef, minSwipeDistance, resolveTurn, rotateStepDistance],
   );
 
   const finishPointer = useCallback(
@@ -438,38 +330,16 @@ export function useCubeTurnControls({
         // pointer capture may already be lost
       }
 
-      if (wasTurn && engine) {
-        if (allowCommit) {
-          if (drag.twist && engine.isLayerTwistActive()) {
-            // Release with a twist: commit past the threshold, else spring back.
-            drag.snapping = true;
-            const abs = Math.abs(drag.angleDeg);
-            if (abs >= commitThresholdDeg) {
-              const target = Math.sign(drag.angleDeg) * 90;
-              void engine.finishLayerTwist(target, snapDurationMs).then(() => {
-                // Map the finished engine angle back to a cube-notation
-                // direction (angle = direction × angleSign × 90) — same
-                // convention as the smart-cube move path, so the committed
-                // state is exact.
-                const angleSign = FACE_ROTATION_MAP[drag.twist!.face].angleSign;
-                const direction = Math.round(target / (90 * angleSign)) as 1 | -1;
-                onTurnCommittedRef.current?.({ kind: "turn", face: drag.twist!.face, direction });
-              });
-            } else {
-              void engine.cancelLayerTwist(90);
-            }
-          } else if (!drag.rearmed && !drag.twist) {
-            // Tap (no real drag) → deterministic clockwise turn of the face.
-            if (drag.totalDist < minSwipeDistance) {
-              const face = drag.startPick!.face;
-              onActionRef.current?.({ kind: "turn", face, direction: 1 });
-            }
-          }
-        } else if (drag.twist && engine.isLayerTwistActive()) {
-          // Pointer-cancel (scroll / OS gesture): spring back, never commit.
-          void engine.cancelLayerTwist(60);
+      if (wasTurn && allowCommit) {
+        // A drag that already fired its move needs nothing more here. A lift
+        // WITHOUT crossing the dead zone is a TAP → deterministic clockwise
+        // turn of the tapped face (re-armed gestures never tap).
+        if (!drag.committed && !drag.rearmed && !drag.move && drag.totalDist < minSwipeDistance) {
+          const face = drag.startPick!.face;
+          onActionRef.current?.({ kind: "turn", face, direction: 1 });
         }
       }
+      // Pointer-cancel before the dead zone: nothing was fired, nothing to undo.
 
       // Only finalize the gesture state if it is STILL the active one — a new
       // pointerdown during an animation replaces dragRef.current, and we must
@@ -483,9 +353,8 @@ export function useCubeTurnControls({
         lastY: 0,
         totalDist: 0,
         startPick: null,
-        twist: null,
-        angleDeg: 0,
-        snapping: false,
+        move: null,
+        committed: false,
         rearmed: false,
         swipeX: 0,
         swipeY: 0,
@@ -513,16 +382,15 @@ export function useCubeTurnControls({
           lastY: remaining.y,
           totalDist: 0,
           startPick: pick,
-          twist: null,
-          angleDeg: 0,
-          snapping: false,
+          move: null,
+          committed: false,
           rearmed: true,
           swipeX: 0,
           swipeY: 0,
         };
       }
     },
-    [commitThresholdDeg, engineRef, minSwipeDistance, snapDurationMs],
+    [engineRef, minSwipeDistance],
   );
 
   return {

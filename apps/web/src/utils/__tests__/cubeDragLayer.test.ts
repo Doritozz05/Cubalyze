@@ -1,17 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { resolveDragLayer } from "../cubeDragLayer";
+import { resolveDragLayer, resolveDragMove } from "../cubeDragLayer";
 
 /**
- * Virtual-cube drag model (csTimer): the layer under the finger follows it.
- * Vertical drags turn the column at the sticker (R/M/L), horizontal drags the
- * row (U/E/D). These tests pin every gesture the user reported:
+ * Virtual-cube drag model: the layer under the finger turns, with the
+ * direction read from the swipe in pure screen space. Vertical drags turn the
+ * column at the sticker (R/M/L), horizontal drags the row (U/E/D). These
+ * tests pin every gesture the user reported:
  *
- *   - drag the right column up → R
- *   - drag the middle column up → M
- *   - drag the bottom row right → D
- *   - right-swipe on the U face → U
+ *   - drag the right column UP → R (down → R')
+ *   - drag the middle column UP → M' (down → M)  — M mirrors L, not R
+ *   - drag the left column DOWN → L (up → L')
+ *   - right-swipe on the U face → U' (left → U), bottom row → D, middle → E
  *   - the R layer must NEVER resolve to F (regression: the old camera-tangent
- *     scoring fell back to the F face for center-ish grabs).
+ *     scoring fell back to the F face for center-ish grabs)
  */
 describe("resolveDragLayer — screen-space csTimer model", () => {
   const R = (x: number, y: number) => ({ cubieX: x, cubieY: y });
@@ -56,14 +57,50 @@ describe("resolveDragLayer — screen-space csTimer model", () => {
     expect(resolveDragLayer({ dx: 0, dy: 0, ...R(1, 0) })).toBeNull();
     expect(resolveDragLayer({ dx: NaN, dy: 0, ...R(1, 0) })).toBeNull();
   });
+});
 
-  it("direction of the turn follows the finger (arc-length tracking sign)", () => {
-    // The layer resolution is axis+layer only; the ±90° snap direction is
-    // driven by the live-twist angle (engine-tested). These just sanity-check
-    // that the resolved axis/layer is consistent for both drag directions.
-    const up = resolveDragLayer({ dx: 0, dy: -30, ...R(1, 1) });
-    const down = resolveDragLayer({ dx: 0, dy: 30, ...R(1, 1) });
-    expect(up).toEqual(down); // same layer either way — direction comes from the finger
-    expect(up?.face).toBe("R");
+describe("resolveDragMove — swipe direction (no live tracking)", () => {
+  const R = (x: number, y: number) => ({ cubieX: x, cubieY: y });
+
+  it("right column: UP → R, DOWN → R'", () => {
+    expect(resolveDragMove({ dx: 0, dy: -30, ...R(1, 1) })).toEqual({ face: "R", direction: 1 });
+    expect(resolveDragMove({ dx: 0, dy: 30, ...R(1, 0) })).toEqual({ face: "R", direction: -1 });
+    // Any sticker row on the column gets the same direction.
+    for (const y of [-1, 0, 1]) {
+      expect(resolveDragMove({ dx: 0, dy: -30, ...R(1, y) })).toEqual({ face: "R", direction: 1 });
+    }
+  });
+
+  it("middle column: UP → M', DOWN → M (M mirrors L, not R)", () => {
+    expect(resolveDragMove({ dx: 0, dy: -30, ...R(0, 1) })).toEqual({ face: "M", direction: -1 });
+    expect(resolveDragMove({ dx: 0, dy: 30, ...R(0, 0) })).toEqual({ face: "M", direction: 1 });
+  });
+
+  it("left column: DOWN → L, UP → L'", () => {
+    expect(resolveDragMove({ dx: 0, dy: 30, ...R(-1, 0) })).toEqual({ face: "L", direction: 1 });
+    expect(resolveDragMove({ dx: 0, dy: -30, ...R(-1, 1) })).toEqual({ face: "L", direction: -1 });
+  });
+
+  it("U face: right-swipe → U', left-swipe → U", () => {
+    expect(resolveDragMove({ dx: 30, dy: 0, ...R(0, 1) })).toEqual({ face: "U", direction: -1 });
+    expect(resolveDragMove({ dx: -30, dy: 0, ...R(1, 1) })).toEqual({ face: "U", direction: 1 });
+  });
+
+  it("middle row right → E, bottom row right → D, bottom row left → D'", () => {
+    expect(resolveDragMove({ dx: 30, dy: 0, ...R(0, 0) })).toEqual({ face: "E", direction: 1 });
+    expect(resolveDragMove({ dx: 30, dy: 0, ...R(1, -1) })).toEqual({ face: "D", direction: 1 });
+    expect(resolveDragMove({ dx: -30, dy: 0, ...R(1, -1) })).toEqual({ face: "D", direction: -1 });
+  });
+
+  it("slightly diagonal drags keep the dominant axis and direction", () => {
+    // Mostly vertical → column move, direction from dy.
+    expect(resolveDragMove({ dx: 4, dy: -30, ...R(1, 0) })).toEqual({ face: "R", direction: 1 });
+    // Mostly horizontal → row move, direction from dx.
+    expect(resolveDragMove({ dx: 30, dy: -4, ...R(0, 1) })).toEqual({ face: "U", direction: -1 });
+  });
+
+  it("no movement → null", () => {
+    expect(resolveDragMove({ dx: 0, dy: 0, ...R(1, 0) })).toBeNull();
+    expect(resolveDragMove({ dx: NaN, dy: 0, ...R(1, 0) })).toBeNull();
   });
 });

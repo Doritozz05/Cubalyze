@@ -116,13 +116,15 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
  *   • A math-core {@link CubeState} mirrors every move for LOGIC (solved
  *     detection, timer). It is never serialized to facelets in the hot path,
  *     so rotated frames never desync the centers.
- *   • Drag (csTimer live-twist model): the LAYER under the finger follows it
- *     live and snaps 90° on release (past the halfway point). Vertical drags
- *     turn the column at the sticker (R/M/L), horizontal drags the row
- *     (U/E/D) — grabbing the right column up turns R, the middle column M,
- *     a right-swipe on U turns U, on D turns D. Dragging the background
- *     rotates the whole cube in discrete 90° steps while the camera stays
- *     locked on the isometric view.
+ *   • Drag (virtual-cube model — NO live mouse tracking): a face swipe
+ *     resolves the layer at the sticker and fires the move through the SAME
+ *     pipeline as the keyboard, so the engine animates it at the configured
+ *     turn speed and the layer lands at exactly ±90° ignoring the mouse.
+ *     Vertical drags turn the column at the sticker (R/M/L), horizontal
+ *     drags the row (U/E/D): right column up turns R, middle column up M',
+ *     bottom row right D, a right-swipe on U turns U'. Dragging the
+ *     background rotates the whole cube in discrete 90° steps while the
+ *     camera stays locked on the isometric view.
  *   • The scramble is applied INSTANTLY (no animation); the per-move turn
  *     speed is user-configurable, and 'instant' disables move animations too.
  *
@@ -308,11 +310,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   const { performAction, pointerHandlers } = useCubeTurnControls({
     engineRef,
-    // Drag snap duration follows the same turn-speed preference as the
-    // keyboard path (0 = instant, so the live twist lands without a snap).
-    snapDurationMs: TURN_SPEED_BASE_MS[cubeTurnSpeed],
-    onAction: applyAction, // keyboard path: animate the move, then commit
-    onTurnCommitted: commitMove, // touch path: the snap already animated
+    // Face drags fire through the SAME pipeline as the keyboard: the engine
+    // animates the turn at the configured speed (0 = instant) and then the
+    // CubeState is mirrored — there is no live mouse tracking.
+    onAction: applyAction,
   });
 
   // ── csTimer-layout keyboard binding (only while this view is mounted) ───
