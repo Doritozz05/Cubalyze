@@ -679,10 +679,11 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       aria-label={t("dock.dockedWidgets")}
       data-context-zone="dock"
     >
-      {/* Edit mode backdrop — dims the rest of the web; click closes edit mode */}
+      {/* Edit mode backdrop — dims the ENTIRE web (z-55 beats sidebar z-50);
+          click closes edit mode. backdrop-blur-sm blurs everything behind it. */}
       {isEditing && (
         <div
-          className="fixed inset-0 z-30 bg-canvas/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[55] bg-canvas/40 backdrop-blur-sm"
           onClick={() => dockEditStore.stopEditing()}
         />
       )}
@@ -690,7 +691,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
         className={cn(
           "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
           isExpanded && "z-40 w-max",
-          isEditing && "z-40",
+          isEditing && "z-[60]",
         )}
       >
         {isEditing ? renderEditMode() : renderNormal()}

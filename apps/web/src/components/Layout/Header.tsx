@@ -3,63 +3,36 @@
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Plus,
-  History,
-  Pencil,
-  Trash2,
-  Check,
-  X,
   Puzzle,
   Battery,
   BatteryLow,
   BatteryMedium,
   BatteryFull,
   BatteryWarning,
-  Clock,
-  User,
 } from "lucide-react";
-// `Plus` is reused below for the manual-solve button.
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
+import {
+  ClockPiece,
+  ProfilePiece,
+  SpacerPiece,
+  SeparatorPiece,
+  ManualSolvePiece,
+  SessionPiece,
+  PuzzlePiece,
+} from "@/widgets/dock/pieces";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
-import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 
 /**
  * Sleek Lucide Battery icon component changing icon state & vibrant color based on charge percentage.
@@ -118,295 +91,6 @@ function BatteryStatusChip() {
           : t("smartCubeWithDevice", { device: deviceName ?? t("connected") })}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-/** Flat "+" tray button inside the dock that opens the manual solve sheet. */
-function ManualSolveIconButton({ onAddManual }: { onAddManual?: () => void }) {
-  const { t } = useTranslation("shell");
-  if (!onAddManual) return null;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onAddManual}
-          aria-label={t("addManualSolve")}
-          className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-        >
-          <Plus className="size-4" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{t("addManualSolve")}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-// ── Dock area sub-components (clock, profile, spacer, separator) ─────
-
-/** Live clock pill — updates every minute, shows HH:MM. */
-function ClockPill() {
-  const [time, setTime] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  const hours = time.getHours().toString().padStart(2, "0");
-  const minutes = time.getMinutes().toString().padStart(2, "0");
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex h-8 cursor-default items-center gap-1.5 rounded-full border border-line/70 bg-surface/80 px-2.5 text-xs text-ink select-none">
-          <Clock className="size-3.5 text-ink-3" />
-          <span className="nums font-medium text-ink">{hours}:{minutes}</span>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{time.toLocaleDateString()}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-/** Profile pill — quick access to user profile. */
-function ProfilePill() {
-  const { t } = useTranslation();
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={t("common.profile")}
-          className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-        >
-          <User className="size-4" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{t("common.profile")}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-/** Dock spacer — empty horizontal space between groups. */
-function DockSpacerPill() {
-  return <span aria-hidden className="w-3 shrink-0" />;
-}
-
-/** Dock separator — thin vertical line between groups. */
-function DockSeparatorPill() {
-  return <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line/80" />;
-}
-
-/** Desktop session switcher — a tray item that opens the flyout (rename/delete). */
-function SessionMenu({
-  sessions,
-  activeSessionId,
-  sessionCount,
-  onSwitchSession,
-  onNewSession,
-  onRenameSession,
-  onDeleteSession,
-}: {
-  sessions: SessionMeta[];
-  activeSessionId?: string | null;
-  sessionCount?: number;
-  onSwitchSession?: (id: string) => void;
-  onNewSession?: () => void;
-  onRenameSession?: (id: string, name: string) => void;
-  onDeleteSession?: (id: string) => void;
-}) {
-  const { t } = useTranslation("shell");
-  const { t: tCommon } = useTranslation();
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null);
-  const active = sessions.find((s) => s.id === activeSessionId) ?? null;
-
-  const startRename = (s: SessionMeta) => {
-    setRenamingId(s.id);
-    setRenameValue(s.name);
-  };
-
-  const commitRename = () => {
-    if (renamingId && renameValue.trim()) {
-      onRenameSession?.(renamingId, renameValue.trim());
-    }
-    setRenamingId(null);
-  };
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-8 gap-1.5 rounded-full px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
-            aria-label={t("switchSession")}
-          >
-            <History className="size-3.5 text-ink-3" />
-            <span className="nums max-w-28 truncate">
-              {active?.name ?? t("session")}
-            </span>
-            <span className="text-ink-3">·</span>
-            <span className="nums text-ink-3">{sessionCount ?? 0}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
-            {t("sessions")}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {sessions.map((s) => (
-            <div
-              key={s.id}
-              className="group/sess flex items-center"
-            >
-              {renamingId === s.id ? (
-                <div className="flex flex-1 items-center gap-1 px-2 py-1">
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commitRename();
-                      if (e.key === "Escape") setRenamingId(null);
-                    }}
-                    className="nums h-7 min-w-0 flex-1 rounded-sm border border-line bg-surface px-1.5 text-xs text-ink outline-none focus:border-ink-2"
-                  />
-                  <button
-                    onClick={commitRename}
-                    className="grid size-6 place-items-center rounded text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
-                    aria-label={t("confirmRename")}
-                  >
-                    <Check className="size-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setRenamingId(null)}
-                    className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
-                    aria-label={t("cancelRename")}
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <button
-                    onClick={() => onSwitchSession?.(s.id)}
-                    className={cn(
-                      "flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors hover:bg-surface-2",
-                      s.id === activeSessionId && "bg-surface-2",
-                    )}
-                  >
-                    <span className="nums min-w-0 flex-1 truncate text-ink">
-                      {s.name}
-                    </span>
-                    <span className="nums shrink-0 text-[0.65rem] text-ink-3">
-                      {s.solveCount}
-                    </span>
-                  </button>
-                  <div className="flex shrink-0 items-center gap-0.5 pr-1 text-ink-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startRename(s);
-                      }}
-                      className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-ink transition-colors"
-                      aria-label={t("renameSession", { name: s.name })}
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteTarget(s);
-                      }}
-                      className="grid size-6 place-items-center rounded hover:bg-surface-2 hover:text-dnf transition-colors"
-                      aria-label={t("deleteSession", { name: s.name })}
-                    >
-                      <Trash2 className="size-3" />
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onNewSession?.()}>
-            <Plus className="size-3.5" />
-            {t("newSession")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Delete-session confirmation */}
-      <AlertDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <AlertDialogContent className={`max-w-sm ${TOUCH_FULL_BLEED} max-lg:max-h-[85vh] max-lg:overflow-y-auto`}>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base">
-              {t("deleteSessionTitle", { name: deleteTarget?.name ?? "" })}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
-              {t("deleteSessionDescription", { count: deleteTarget?.solveCount ?? 0 })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="max-lg:h-11 h-8 text-xs">{tCommon("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="max-lg:h-11 h-8 bg-dnf text-xs text-white hover:bg-dnf/90"
-              onClick={() => {
-                if (deleteTarget) onDeleteSession?.(deleteTarget.id);
-                setDeleteTarget(null);
-              }}
-            >
-              {tCommon("delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-}
-
-/** Puzzle category selector — flat "tray" item in the desktop dock, bordered chip on touch. */
-function PuzzleSelect({
-  puzzle,
-  onPuzzleChange,
-  puzzleLocked,
-  variant,
-}: {
-  puzzle: PuzzleCategory;
-  onPuzzleChange?: (puzzle: PuzzleCategory) => void;
-  puzzleLocked?: boolean;
-  variant: "tray" | "chip";
-}) {
-  const { t } = useTranslation("shell");
-  return (
-    <Select value={puzzle} onValueChange={(v) => onPuzzleChange?.(v as PuzzleCategory)}>
-      <SelectTrigger
-        size="sm"
-        // Locked while the Cube tab is active (3×3-only simulator): the
-        // value is forced to 3×3 and the dropdown is disabled.
-        disabled={puzzleLocked}
-        className={
-          variant === "tray"
-            ? "h-8 justify-center gap-1.5 rounded-full border-transparent bg-transparent px-2.5 py-0 text-xs font-medium text-ink-2 shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
-            : "w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
-        }
-        aria-label={t("puzzleCategory")}
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {PUZZLE_CATEGORIES.map((c) => (
-          <SelectItem key={c} value={c} className="text-xs">
-            {c}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }
 
@@ -481,11 +165,11 @@ export function Header({
   // sequence, and edit mode can reorder/remove/add them.
   const trailingAreas = useMemo(() => {
     const all: Record<string, ReactNode> = {
-      "manual-solve": <ManualSolveIconButton onAddManual={onAddManual} />,
+      "manual-solve": <ManualSolvePiece onAddManual={onAddManual} />,
     };
     if (sessions && sessions.length > 0) {
       all["session"] = (
-        <SessionMenu
+        <SessionPiece
           sessions={sessions}
           activeSessionId={activeSessionId}
           sessionCount={sessionCount}
@@ -497,7 +181,7 @@ export function Header({
       );
     }
     all["puzzle"] = (
-      <PuzzleSelect
+      <PuzzlePiece
         puzzle={puzzle}
         onPuzzleChange={(p) => {
           setPuzzle(p);
@@ -508,10 +192,10 @@ export function Header({
       />
     );
     // Phase 4: system/layout pieces
-    all["clock"] = <ClockPill />;
-    all["profile"] = <ProfilePill />;
-    all["spacer"] = <DockSpacerPill />;
-    all["separator"] = <DockSeparatorPill />;
+    all["clock"] = <ClockPiece />;
+    all["profile"] = <ProfilePiece />;
+    all["spacer"] = <SpacerPiece />;
+    all["separator"] = <SeparatorPiece />;
     return all;
   }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, puzzle, puzzleLocked, onPuzzleChange]);
 
@@ -584,7 +268,7 @@ export function Header({
         </div>
 
         <div className="flex min-w-0 items-center justify-end gap-2">
-          <ManualSolveIconButton onAddManual={onAddManual} />
+          <ManualSolvePiece onAddManual={onAddManual} />
 
           {sessions && sessions.length > 0 ? (
             <>
@@ -594,7 +278,6 @@ export function Header({
                 className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink cursor-pointer"
                 aria-label={t("switchSession")}
               >
-                <History className="size-3.5 text-ink-3" />
                 <span className="nums font-medium text-ink-3">{sessionCount ?? 0}</span>
               </Button>
 
@@ -611,7 +294,7 @@ export function Header({
             </>
           ) : null}
 
-          <PuzzleSelect
+          <PuzzlePiece
             puzzle={puzzle}
             onPuzzleChange={(p) => {
               setPuzzle(p);
