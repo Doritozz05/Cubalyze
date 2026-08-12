@@ -10,3 +10,6 @@ se relacionan y por qué. El punto de entrada es
 - `research/` — informes de investigación previos a decisiones (Bluetooth, PWA
   storage, auditoría legal).
 - `diagrams/` — diagramas de la arquitectura (ver README de esa carpeta).
+- `../Widgets_System.md` — arquitectura del sistema de widgets (SDK, dock,
+  store) con fichas por implementación en `../widgets/`.
+- `../validation/` — auditorías de que la arquitectura coincide con el código.

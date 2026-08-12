@@ -156,14 +156,18 @@ Reconstructions (4) → Cube (1) → Profile (1)**:
 **Objetivo:** documentar el sistema de widgets (dock + explorer) y las 10
 implementaciones.
 
-- [ ] Documentar la **arquitectura del sistema** en `docs/02-architecture/`:
-      cómo se registran, cómo se renderizan, el layout-organizer, el dock.
-      (Ver si merece ADR nuevo — el sistema de widgets/dock no aparece en ADR-001..023.)
-- [ ] Por cada implementación (algorithm-db, cube-button, layout-organizer, metronome,
-      notes, pb-progression, phase-balance, scramble-2d, solve-timeline,
-      time-distribution): doc breve (qué hace, props/estado, dónde se usa).
+- [x] Documentar la **arquitectura del sistema** (2026-08-12) →
+      `docs/02-architecture/Widgets_System.md`: SDK (WidgetPlugin/HostAPI),
+      ciclo de vida, registry lazy, store (persist v8, banda z-25..49, layouts),
+      dock (áreas + pieces + running indicators), explorer/host.
+      **Evaluación ADR**: no se crea ADR nuevo — ADR-017 ya cubre la decisión de
+      extensibilidad (actualizado en Fase 0); el SDK/dock son detalles documentados
+      aquí. Nota: widgets de terceros (custom/community) sí merecerían ADR.
+- [x] Fichas de las **11 implementaciones** (2026-08-12, incluye `times-log` que
+      faltaba en el plan) → `docs/02-architecture/widgets/*.md` (README índice
+      + 11 fichas con props/estado y dónde se usa).
 
-**Criterio de cierre:** doc de arquitectura de widgets + 10 fichas de implementación.
+**Criterio de cierre:** doc de arquitectura de widgets + 11 fichas de implementación. ✅ Completado 2026-08-12.
 
 ### Fase 3 — Componentes, hooks, servicios y stores (web)
 **Objetivo:** cubrir el resto de la app web.
