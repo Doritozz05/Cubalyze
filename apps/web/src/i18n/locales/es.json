@@ -3283,7 +3283,8 @@
     },
     "dock": {
       "dockedWidgets": "Widgets acoplados",
-      "pinned": "{{name}} — fijado"
+      "pinned": "{{name}} — fijado",
+      "moreHidden": "Widgets ocultos ({{count}})"
     },
     "wrapper": {
       "expand": "Expandir",

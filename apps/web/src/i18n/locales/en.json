@@ -3283,7 +3283,8 @@
     },
     "dock": {
       "dockedWidgets": "Docked widgets",
-      "pinned": "{{name}} — pinned"
+      "pinned": "{{name}} — pinned",
+      "moreHidden": "Hidden widgets ({{count}})"
     },
     "wrapper": {
       "expand": "Expand",
