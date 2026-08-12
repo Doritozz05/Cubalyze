@@ -31,10 +31,11 @@ import { resolveDragMove } from "@/utils/cubeDragLayer";
  *     top face front row → F, down on the right face front column → F (up →
  *     F'), up on the front face right column → R, ...). The move is
  *     committed the moment the drag crosses `minSwipeDistance` (14 px); any
- *     further pointer travel is ignored.   *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
-   *   • DRAG ON THE BACKGROUND → the CUBE rotates exactly ONE 90° step per
-   *     drag (y for left/right swipes, x for up/down swipes) — the camera
-   *     stays locked on the isometric view.
+ *     further pointer travel is ignored.
+ *   • Single click / TAP on a cube face → ignored (no action fired). Moves only resolve on drag.
+ *   • DRAG ON THE BACKGROUND → the CUBE rotates exactly ONE 90° step per
+ *     drag (y for left/right swipes, x for up/down swipes) — the camera
+ *     stays locked on the isometric view.
  *   • 2 fingers → pinch zoom (lifting one finger re-arms the remaining one
  *     as a normal drag).
  *   • Keyboard (csTimer layout) → animated face turns via `performAction`
@@ -312,11 +313,10 @@ export function useCubeTurnControls({
   );
 
   const finishPointer = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>, allowCommit = true) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = e.target as HTMLCanvasElement;
       const engine = engineRef.current;
       const drag = dragRef.current;
-      const wasTurn = drag.mode === "turn" && !!drag.startPick;
 
       pointers.current.delete(e.pointerId);
 
@@ -325,18 +325,6 @@ export function useCubeTurnControls({
       } catch {
         // pointer capture may already be lost
       }
-
-      if (wasTurn && allowCommit) {
-        // A drag that already fired its move needs nothing more here. A lift
-        // WITHOUT crossing the dead zone is a TAP → deterministic clockwise
-        // turn of the tapped face (re-armed gestures never tap). `move` is
-        // only ever set together with `committed`, so that check is enough.
-        if (!drag.committed && !drag.rearmed && drag.totalDist < minSwipeDistance) {
-          const face = drag.startPick!.face;
-          onActionRef.current?.({ kind: "turn", face, direction: 1 });
-        }
-      }
-      // Pointer-cancel before the dead zone: nothing was fired, nothing to undo.
 
       // Only finalize the gesture state if it is STILL the active one — a new
       // pointerdown during an animation replaces dragRef.current, and we must
@@ -387,7 +375,7 @@ export function useCubeTurnControls({
         };
       }
     },
-    [engineRef, minSwipeDistance],
+    [engineRef],
   );
 
   return {
@@ -396,8 +384,7 @@ export function useCubeTurnControls({
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,
       onPointerUp: finishPointer,
-      // A cancelled pointer (scroll / OS gesture) must never commit.
-      onPointerCancel: (e) => finishPointer(e, false),
+      onPointerCancel: finishPointer,
     },
   };
 }
