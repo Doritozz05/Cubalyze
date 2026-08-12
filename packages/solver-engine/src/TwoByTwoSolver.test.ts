@@ -178,6 +178,82 @@ describe('TwoByTwoSolver', { timeout: 30000 }, () => {
     expect(solved).toBeGreaterThanOrEqual(90);
   });
 
+  // ── solveDetailedExact (TNoodle generateExactly, exact length) ───────
+
+  it('solveDetailedExact returns a solution of EXACTLY the requested length', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    for (let i = 0; i < 30; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailedExact(state, 11);
+      expect(result, 'no exact-11 solution found for random state').not.toBeNull();
+      expect(result!.moveCount).toBe(11);
+      expect(result!.moves.length).toBe(11);
+    }
+  });
+
+  it('solveDetailedExact solution actually solves the state', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    for (let i = 0; i < 30; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailedExact(state, 11);
+      expect(result).not.toBeNull();
+      const check = state.clone();
+      check.applySequence(result!.notation);
+      expect(check.isSolved(), `"${result!.notation}" does not solve the state`).toBe(true);
+    }
+  });
+
+  it('solveDetailedExact solution has no consecutive same-face moves', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    for (let i = 0; i < 30; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailedExact(state, 11);
+      expect(result).not.toBeNull();
+      const faces = result!.notation.split(' ').map(t => t[0]);
+      for (let j = 1; j < faces.length; j++) {
+        expect(faces[j], `consecutive same face in "${result!.notation}"`).not.toBe(faces[j - 1]);
+      }
+    }
+  });
+
+  it('solveDetailedExact returns null for target length below optimal depth', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    const state = new Cube2x2State();
+    state.applySequence("U");
+    // A single U is depth 1; an exact solution of length 0 or length 1 with
+    // no consecutive same-face moves... length 1 exists, length 0 does not.
+    expect(solver.solveDetailedExact(state, 0)).toBeNull();
+    const one = solver.solveDetailedExact(state, 1);
+    expect(one).not.toBeNull();
+    expect(one!.moveCount).toBe(1);
+  });
+
+  it('solveDetailedExact supports other exact lengths (e.g. 9, 10, 12)', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    for (const length of [9, 10, 12]) {
+      let found = 0;
+      for (let i = 0; i < 20; i++) {
+        const state = TwoByTwoScrambler.generateRandomState();
+        const result = solver.solveDetailedExact(state, length);
+        if (result) {
+          expect(result.moveCount).toBe(length);
+          const check = state.clone();
+          check.applySequence(result.notation);
+          expect(check.isSolved()).toBe(true);
+          found++;
+        }
+      }
+      // For lengths ≥ 9 nearly all random states (depth ≤ 9) admit an
+      // exact-length solution; be lenient but require some successes.
+      expect(found).toBeGreaterThan(0);
+    }
+  });
+
   // ── Performance benchmarks ─────────────────────────────────────────
 
   it('single solve completes within 1ms (exact heuristic)', () => {
