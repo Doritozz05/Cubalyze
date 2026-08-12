@@ -30,7 +30,7 @@ import { resolveDragMove } from "@/utils/cubeDragLayer";
  *     The direction makes the stickers follow the finger (right-swipe on the
  *     top face front row → F, down on the right face front column → F (up →
  *     F'), up on the front face right column → R, ...). The move is
- *     committed the moment the drag crosses `minSwipeDistance` (6 px); any
+ *     committed the moment the drag crosses `minSwipeDistance` (14 px); any
  *     further pointer travel is ignored.
  *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
  *   • DRAG ON THE BACKGROUND → the CUBE rotates in discrete 90° steps (y for
@@ -51,7 +51,9 @@ import { resolveDragMove } from "@/utils/cubeDragLayer";
 export interface UseCubeTurnControlsOptions {
   /** Ref to the live Cube3DEngine instance (from useCube3D). */
   engineRef: React.RefObject<Cube3DEngine | null>;
-  /** Min pointer travel (px) before a face drag fires its move. Default 6. */
+  /** Min pointer travel (px) before a face drag fires its move. Default 14 —
+   *  big enough to avoid accidental micro-drags, small enough to stay
+   *  responsive. */
   minSwipeDistance?: number;
   /**
    * Background-drag distance (px) per 90° cube rotation step. Default 70 —
@@ -112,7 +114,7 @@ interface DragState {
 
 export function useCubeTurnControls({
   engineRef,
-  minSwipeDistance = 6,
+  minSwipeDistance = 14,
   rotateStepDistance = 70,
   onAction,
 }: UseCubeTurnControlsOptions): UseCubeTurnControlsResult {
