@@ -9,6 +9,7 @@ import {
 } from "@cubeforge/cube-3d-engine";
 import type { CubeFace } from "@cubeforge/types";
 import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
+import { resolveDragLayer } from "@/utils/cubeDragLayer";
 
 /**
  * Touch + keyboard controls for the virtual-cube view.
@@ -19,11 +20,13 @@ import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
  *   • 1 finger drag ON a cube face → the LAYER under the finger follows it
  *     LIVE (arc-length tracking), and on release it SNAPS 90° (animated)
  *     when the twist is at least `commitThresholdDeg`, otherwise it springs
- *     back. The layer is resolved from the drag direction + the grabbed
- *     cubie's position:
- *       - vertical drag → the column layer at the sticker (R/M/L)
- *       - horizontal drag → the row layer at the sticker (U/E/D)
- *       - grabbing the exact face center (no tangent) → the face itself
+ *     back. The layer is resolved in PURE SCREEN SPACE (camera-independent,
+ *     csTimer-style): the drag direction picks the axis, the grabbed cubie's
+ *     grid position picks the layer:
+ *       - |dy| > |dx| (vertical drag) → the COLUMN layer at the sticker
+ *         (x-axis → R/M/L by the sticker's x position)
+ *       - |dx| > |dy| (horizontal drag) → the ROW layer at the sticker
+ *         (y-axis → U/E/D by the sticker's y position)
  *     So dragging the right column up turns R, the middle column turns M,
  *     the bottom row right turns D, a right-swipe on the U face turns U,
  *     and a right-swipe on D turns D — always the layer you grabbed.
@@ -100,8 +103,8 @@ interface Vec3 {
 
 /** The live-twist layer resolved once a drag is underway. */
 interface ResolvedTwist {
-  /** Engine turn axis ('x' → R/M/L, 'y' → U/E/D, 'z' → F/B/S). */
-  axis: "x" | "y" | "z";
+  /** Engine turn axis ('x' → R/M/L columns, 'y' → U/E/D rows). */
+  axis: "x" | "y";
   /** Layer value along the axis (−1 | 0 | 1) — from the grabbed cubie. */
   layerValue: number;
   /** WCA label of the layer being turned. */
@@ -148,26 +151,8 @@ function worldPerPixelAtCube(canvas: HTMLCanvasElement, engine: Cube3DEngine): n
   return (2 * verticalHalfFovTan * cam.position.length()) / rect.height;
 }
 
-/** WCA face for a layer (axis, value) pair. */
-const FACE_BY_LAYER: Record<string, CubeFace> = {
-  "x1": "R",
-  "x0": "M",
-  "x-1": "L",
-  "y1": "U",
-  "y0": "E",
-  "y-1": "D",
-};
-
 const X_AXIS: Vec3 = { x: 1, y: 0, z: 0 };
 const Y_AXIS: Vec3 = { x: 0, y: 1, z: 0 };
-const Z_AXIS: Vec3 = { x: 0, y: 0, z: 1 };
-
-/**
- * Below this score, neither the x- nor the y-rotation tangents align with
- * the drag — the grab is essentially at the face center (on the axis), so
- * the only natural turn from there is the face itself.
- */
-const CENTER_GRAB_SCORE = 0.15;
 
 /** Cross product of a rotation axis and a point → tangent direction. */
 const tangent = (a: Vec3, p: Vec3): Vec3 => ({
@@ -293,66 +278,41 @@ export function useCubeTurnControls({
 
   /**
    * Resolve WHICH layer the drag is turning, once (when the pointer first
-   * travels past `minSwipeDistance`). Rule (csTimer-style):
+   * travels past `minSwipeDistance`). Rule (csTimer-style, PURE SCREEN
+   * SPACE — no camera projection, so it cannot be fooled by the view angle):
    *
-   *   • vertical drag → the COLUMN layer at the grabbed sticker (R/M/L by gx)
-   *   • horizontal drag → the ROW layer at the grabbed sticker (U/E/D by gy)
-   *   • no clear direction at the exact face center → the face itself
+   *   • |dy| > |dx| (vertical drag) → the COLUMN layer at the grabbed
+   *     sticker: x-axis, R/M/L by the cubie's x grid position.
+   *   • |dx| > |dy| (horizontal drag) → the ROW layer at the grabbed
+   *     sticker: y-axis, U/E/D by the cubie's y grid position.
    *
-   * The chosen axis wins by whichever rotation best follows the drag (largest
-   * |tangent · drag|), which is camera-aware. The layer value comes from the
-   * cubie's grid position, so dragging the right column turns R, the middle
-   * column turns M, the bottom row turns D, etc.
+   * So dragging the right column turns R, the middle column M, the bottom
+   * row D, a right-swipe on U turns U — the layer you grab always turns.
+   * The live-twist arc-length tracking (layerTwistAngleDelta) then makes it
+   * follow the finger in the dragged direction.
    */
   const resolveTwist = useCallback(
-    (canvas: HTMLCanvasElement, drag: DragState): ResolvedTwist | null => {
+    (drag: DragState): ResolvedTwist | null => {
       const engine = engineRef.current;
       const pick = drag.startPick;
       if (!engine || !pick) return null;
 
+      const dx = drag.lastX - drag.startX;
+      const dy = drag.lastY - drag.startY;
+      const resolved = resolveDragLayer({
+        dx,
+        dy,
+        cubieX: pick.cubiePosition.x,
+        cubieY: pick.cubiePosition.y,
+      });
+      if (!resolved) return null;
+      const { axis, layerValue, face } = resolved;
+
+      const axisVector = axis === "x" ? X_AXIS : Y_AXIS;
       const cam = engine.sceneManager.camera;
       cam.updateMatrixWorld(true);
       const m = cam.matrixWorld.elements;
-      const worldPerPx = worldPerPixelAtCube(canvas, engine);
-      const dx = drag.lastX - drag.startX;
-      const dy = drag.lastY - drag.startY;
-      if (Math.hypot(dx, dy) < 1e-3) return null;
-      // Screen drag → world units at the cube's depth (camera basis).
-      const worldDrag: Vec3 = {
-        x: (dx * m[0] + dy * m[4]) * worldPerPx,
-        y: (dx * m[1] + dy * m[5]) * worldPerPx,
-        z: (dx * m[2] + dy * m[6]) * worldPerPx,
-      };
-
       const p = pick.worldPoint;
-      const tX = tangent(X_AXIS, p);
-      const tY = tangent(Y_AXIS, p);
-      const lenX = len(tX);
-      const lenY = len(tY);
-      const scoreX = lenX > 1e-6 ? Math.abs(dot(tX, worldDrag)) / lenX : 0;
-      const scoreY = lenY > 1e-6 ? Math.abs(dot(tY, worldDrag)) / lenY : 0;
-
-      let axis: "x" | "y" | "z";
-      let layerValue: number;
-      let face: CubeFace | undefined;
-      // No clear rotation at the exact face center (grabbed ON the axis):
-      // fall back to the face itself, the only natural turn from there.
-      if (scoreX < CENTER_GRAB_SCORE && scoreY < CENTER_GRAB_SCORE) {
-        axis = pick.axis;
-        layerValue = pick.layerValue;
-        face = pick.face;
-      } else if (scoreX >= scoreY) {
-        axis = "x";
-        layerValue = pick.cubiePosition.x;
-        face = FACE_BY_LAYER[`x${layerValue}`];
-      } else {
-        axis = "y";
-        layerValue = pick.cubiePosition.y;
-        face = FACE_BY_LAYER[`y${layerValue}`];
-      }
-      if (!face) return null;
-
-      const axisVector = axis === "x" ? X_AXIS : axis === "y" ? Y_AXIS : Z_AXIS;
       let grabPoint = p;
       // Center grabs sit ON the rotation axis (tangent ≈ 0 → dead zone).
       // Give the drag a stable virtual grab point at the face edge by
@@ -417,7 +377,7 @@ export function useCubeTurnControls({
         if (!drag.twist) {
           if (drag.totalDist < minSwipeDistance) return;
           if (engine.isAnimating()) return;
-          drag.twist = resolveTwist(canvas, drag);
+          drag.twist = resolveTwist(drag);
           if (!drag.twist) return;
           drag.angleDeg = 0;
         }
