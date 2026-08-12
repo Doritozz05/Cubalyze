@@ -3,7 +3,7 @@
 import { useRef, useCallback, useLayoutEffect, useState, useMemo, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { ChevronUp } from "lucide-react";
+import { ChevronUp, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
@@ -20,6 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { ReactNode } from "react";
 import type { WidgetId } from "@/widgets/types";
+import { useIsDockEditing, dockEditStore } from "@/widgets/dock/dockEditStore";
+import { DockExplorer } from "@/widgets/dock/DockExplorer";
+import { getDockArea } from "@/widgets/dock/dockAreasRegistry";
+
 
 const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
 
@@ -302,14 +306,17 @@ const OverflowMenu = forwardRef<HTMLButtonElement, { ids: WidgetId[] }>(
  * While a floating widget is dragged near the dock, the bar temporarily
  * expands to show every pill (plus the drop-zone ghost) for precise docking.
  */
-export function WidgetDock({ trailing }: { trailing?: ReactNode }) {
+export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, ReactNode> }) {
   const { t } = useTranslation("widgets");
+  const { t: tDock } = useTranslation("dock");
   const reduceMotion = useReducedMotion();
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
   const dropX = useDropX();
   const draggingWidgetId = useDraggingWidgetId();
+  const isEditing = useIsDockEditing();
+  const [explorerOpen, setExplorerOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -453,20 +460,70 @@ export function WidgetDock({ trailing }: { trailing?: ReactNode }) {
     widgetStore.getState().setDockOrder([...newOrder, ...invisible]);
   };
 
-  if (dockedIds.length === 0 && !isDockZoneActive && !trailing) return null;
+  // ── Edit mode: render each dock area with × overlay ───────────────
+  // The dock is composed of modular areas (widgets zone, ＋, session,
+  // puzzle, clock, profile, spacer). In edit mode, each area gets a
+  // × button to remove it and the ＋ opens the DockExplorer.
+  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+  const editModeAreas = useMemo(() => {
+    if (!isEditing) return [];
+    return dockAreaOrder.map((areaId) => {
+      // Widgets zone: render a compact preview of the widget pills
+      if (areaId === "widgets") {
+        return (
+          <div key={areaId} className="relative flex items-center gap-0.5">
+            <div className="flex items-center gap-0.5 rounded-full border border-line/50 bg-surface-2/50 px-1.5 py-0.5">
+              {dockedIds.slice(0, 5).map((wid) => {
+                const def = getWidget(wid);
+                const Icon = def?.icon;
+                return Icon ? (
+                  <div key={wid} className="grid size-6 place-items-center rounded-full text-ink-3">
+                    <Icon className="size-3" />
+                  </div>
+                ) : null;
+              })}
+              {dockedIds.length > 5 && (
+                <span className="text-[0.6rem] text-ink-3">+{dockedIds.length - 5}</span>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                /* widgets zone can't be removed — it's the core */
+              }}
+              className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110 opacity-50 cursor-not-allowed"
+              aria-label={tDock("removePiece")}
+              disabled
+            >
+              <X className="size-2.5" />
+            </button>
+          </div>
+        );
+      }
+      // Other areas: render from the area definition
+      const area = getDockArea(areaId);
+      if (!area) return null;
+      const Icon = area.icon;
+      return (
+        <div key={areaId} className="relative">
+          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
+            <Icon className="size-4" />
+          </div>
+          <button
+            onClick={() => {
+              widgetStore.getState().removeDockArea(areaId);
+            }}
+            className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
+            aria-label={tDock("removePiece")}
+          >
+            <X className="size-2.5" />
+          </button>
+        </div>
+      );
+    });
+  }, [isEditing, dockAreaOrder, dockedIds, tDock]);
 
-  return (
-    <div
-      ref={containerRef}
-      role="toolbar"
-      aria-label={t("dock.dockedWidgets")}
-      className={cn(
-        "relative flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
-        // While dropping a floating widget, expand: the bar grows to fit and
-        // lifts above the header's side controls.
-        isExpanded && "z-10 w-max",
-      )}
-    >
+  const renderNormal = () => (
+    <>
       <div ref={rowRef} className="flex min-w-0 items-center gap-0.5">
         <Reorder.Group
           as="div"
@@ -478,8 +535,6 @@ export function WidgetDock({ trailing }: { trailing?: ReactNode }) {
           <AnimatePresence mode="popLayout">
             {displayIds.map((id) => {
               if (id === draggingWidgetId && isDockZoneActive) {
-                // The dragged widget rendered as a real dock pill (no drag
-                // handlers — its position is driven by the external drag).
                 const def = getWidget(id);
                 const Icon = def?.icon;
                 return (
@@ -507,17 +562,67 @@ export function WidgetDock({ trailing }: { trailing?: ReactNode }) {
         {overflowIds.length > 0 && <OverflowMenu ids={overflowIds} />}
       </div>
 
-      {/* Separator between the widget group and the tray controls — only
-          rendered when there are widgets (the "+" stands alone otherwise). */}
-      {dockedIds.length > 0 && trailing && (
+      {dockedIds.length > 0 && trailingAreas && Object.keys(trailingAreas).length > 0 && (
         <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line/80" />
       )}
 
-      {trailing && (
+      {trailingAreas && (
         <div ref={trailingRef} className="flex min-w-0 items-center gap-0.5">
-          {trailing}
+          {Object.entries(trailingAreas).map(([id, node]) => (
+            <div key={id} data-area-id={id}>{node}</div>
+          ))}
         </div>
       )}
+    </>
+  );
+
+  const renderEditMode = () => (
+    <>
+      <div className="flex items-center gap-1">
+        {editModeAreas}
+        {/* ＋ button to open DockExplorer */}
+        <button
+          onClick={() => setExplorerOpen(true)}
+          className="grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-ink-3/40 text-ink-3 transition-colors hover:border-ink-2 hover:text-ink"
+          aria-label={tDock("addPiece")}
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+
+      {/* Done button */}
+      <button
+        onClick={() => dockEditStore.stopEditing()}
+        className="ml-2 shrink-0 rounded-full bg-ink px-3 py-1.5 text-[0.72rem] font-medium text-canvas transition-colors hover:bg-ink-2"
+      >
+        {tDock("doneEditing")}
+      </button>
+
+      <DockExplorer open={explorerOpen} onOpenChange={setExplorerOpen} />
+    </>
+  );  return (
+    <div
+      ref={containerRef}
+      role="toolbar"
+      aria-label={t("dock.dockedWidgets")}
+      data-context-zone="dock"
+    >
+      {/* Edit mode backdrop — dims the rest of the web; click closes edit mode */}
+      {isEditing && (
+        <div
+          className="fixed inset-0 z-30 bg-canvas/40 backdrop-blur-sm"
+          onClick={() => dockEditStore.stopEditing()}
+        />
+      )}
+      <div
+        className={cn(
+          "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
+          isExpanded && "z-40 w-max",
+          isEditing && "z-40",
+        )}
+      >
+        {isEditing ? renderEditMode() : renderNormal()}
+      </div>
     </div>
   );
 }

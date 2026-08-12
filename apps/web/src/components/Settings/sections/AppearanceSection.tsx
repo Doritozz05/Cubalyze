@@ -8,8 +8,9 @@ import { preferencesStore } from '@cubeforge/state';
 import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
-import { Palette, Sun, Moon, Monitor } from 'lucide-react';
+import { Palette, Sun, Moon, Monitor, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { dockEditStore } from '@/widgets/dock/dockEditStore';
 import type { ParseKeys } from 'i18next';
 
 import {
@@ -109,6 +110,24 @@ export function AppearanceSection() {
         checked={showHeader}
         onCheckedChange={setShowHeader}
       />
+
+      {/* Edit dock */}
+      <button
+        onClick={() => {
+          dockEditStore.startEditing();
+        }}
+        className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-5 text-left transition-shadow duration-200 hover:shadow-sm"
+      >
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2">
+          <LayoutGrid className="size-4 text-ink-2" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.editDock')}</h4>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            {t('appearance.editDockHint')}
+          </p>
+        </div>
+      </button>
 
       {/* Skin selector */}
       <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">

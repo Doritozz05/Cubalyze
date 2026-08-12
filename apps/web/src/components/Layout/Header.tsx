@@ -455,11 +455,10 @@ export function Header({
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
           <WidgetDock
-            trailing={
-              <>
-                <ManualSolveIconButton onAddManual={onAddManual} />
-                <DockDivider />
-                {sessions && sessions.length > 0 ? (
+            trailingAreas={{
+              "manual-solve": <ManualSolveIconButton onAddManual={onAddManual} />,
+              ...(sessions && sessions.length > 0 ? {
+                "session": (
                   <SessionMenu
                     sessions={sessions}
                     activeSessionId={activeSessionId}
@@ -469,8 +468,9 @@ export function Header({
                     onRenameSession={onRenameSession}
                     onDeleteSession={onDeleteSession}
                   />
-                ) : null}
-                <DockDivider />
+                ),
+              } : {}),
+              "puzzle": (
                 <PuzzleSelect
                   puzzle={puzzle}
                   onPuzzleChange={(p) => {
@@ -480,8 +480,8 @@ export function Header({
                   puzzleLocked={puzzleLocked}
                   variant="tray"
                 />
-              </>
-            }
+              ),
+            }}
           />
         </div>
       </div>
