@@ -14,6 +14,7 @@ import {
 } from "@cubeforge/math-core";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
+import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
 import {
   Play,
   Pause,
@@ -371,6 +372,12 @@ export function ReplaySection({
               onReplayPosition?.(pos, idx);
             }
           };
+          // Randomized turn click on every applied replay move (fired by the
+          // tick loop and step-forward; seeks never fire onMove, so fast-
+          // forwarding stays silent).
+          engine.onMove = () => cubeTurnSounds.play();
+          // Warm up the sample pool so the first move clicks immediately.
+          cubeTurnSounds.preload();
           engine.onComplete = () => {
             if (!cancelled) {
               setReplayState("complete");
