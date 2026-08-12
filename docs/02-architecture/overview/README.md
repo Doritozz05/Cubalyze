@@ -14,4 +14,6 @@ se relacionan y por qué. El punto de entrada es
   store) con fichas por implementación en `../widgets/`.
 - `../web/` — arquitectura de la app web: estado/stores, componentes, hooks,
   servicios y lib.
+- `../Desktop_App.md` — la app de escritorio Tauri (puente BLE, overrides de
+  base de datos y hardware, decisión de `apps/api` vacío).
 - `../validation/` — auditorías de que la arquitectura coincide con el código.

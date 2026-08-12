@@ -26,7 +26,7 @@ desactualizados. Cubrir:
 - `docs/00-product/`: PRD, Auditoria de producto (4 md).
 - `docs/02-architecture/`: 13 md — incluye `System_Architecture_Overview.md`,
   `Architecture_Decision_Register.md`, investigación (Bluetooth, PWA storage, legal).
-- `docs/03-adr/`: **24 archivos** — ADR-001 → ADR-023 + README. Con frontmatter,
+- `docs/03-adr/`: **27 archivos** — ADR-001 → ADR-027 + README. Con frontmatter,
   estado y relación RFC. (Posibles ADRs incompletos o desactualizados: revisar.)
 - `docs/04-rfc/`: 24 archivos — RFC-001 → RFC-023 + README.
 - `docs/05-tdd/`: 9 md. `docs/08-standards/`: 12 md.
@@ -50,9 +50,9 @@ desactualizados. Cubrir:
 - **apps/web** (PWA, ~707 archivos TS/TSX):
   - Vistas (tabs): `Training` (25), `Algorithms` (11), `SkillTree` (5),
     `Reconstructions` (4), `Cube` (1), `Profile` (1).
-  - Widgets: `dock`, `explorer`, 10 implementaciones (algorithm-db, cube-button,
+  - Widgets: `dock`, `explorer`, 11 implementaciones (algorithm-db, cube-button,
     layout-organizer, metronome, notes, pb-progression, phase-balance, scramble-2d,
-    solve-timeline, time-distribution).
+    solve-timeline, time-distribution, times-log).
   - Componentes: Layout, Timer, Stats, Settings, Scramble, Stage, Insights,
     Hardware, Identity, Onboarding, Cube3D, ContextMenu.
   - Más: services, stores, hooks, i18n (varios locales), boot, lib/keybinds.
@@ -217,10 +217,21 @@ cómo se consume desde la web/desktop. Destino: `docs/06-api/` + notas de arquit
 placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 
 ### Fase 5 — apps/desktop y apps/api
-- [ ] apps/desktop (Tauri): adapters GanCube/GanTimer, database-override,
-      hardware-hal-override → doc en `docs/02-architecture/` (diferencia desktop vs web).
-- [ ] apps/api: vacío → documentar la decisión (¿por qué no hay API aún? preguntar
-      al usuario / reflejar en ADR si existe la decisión).
+- [x] apps/desktop (Tauri) (2026-08-12) → `docs/02-architecture/Desktop_App.md`:
+      arquitectura mono-shell (App de apps/web reutilizada), overrides de Vite
+      (`database-override.ts` → tauri-plugin-sql nativo, `hardware-hal-override.ts`
+      → adaptadores Tauri), puente BLE Rust↔TS (9 comandos, 5 eventos, estrategias
+      de conexión 1→2→3), auto-scan, tabla desktop vs web.
+      **ADR-027** (Desktop App Strategy, 2026-08-12): mono-shell + overrides +
+      BLE Rust + BD nativa — registrado retroactivamente. DEC-28 en el registro.
+      **TDD frontend/0002** (`docs/05-tdd/frontend/0002-desktop-tauri-bridge.md`):
+      contrato del puente, adaptadores, máquinas de estado, CRC timer, override BD.
+- [x] apps/api (2026-08-12): decisión documentada — `apps/api` queda como scaffold
+      vacío y el backend se **difiere** (sección "Decisión: Aplazamiento del
+      backend" en ADR-019 + §5 de `Desktop_App.md`); disparador: cuando el sync
+      en la nube sea prioridad → ciclo RFC → ADR → TDD.
+
+**Criterio de cierre:** doc de apps/desktop + decisión de apps/api documentada. ✅ Completado 2026-08-12.
 
 ### Fase 6 — Integración y plombería
 - [ ] turbo.json (monorepo), vercel.json (deploy), CI (`ci.yml`, `quality-gates.yml`),

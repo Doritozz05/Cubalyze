@@ -33,6 +33,24 @@ CubeForge funcionarÃ¡ offline. Un usuario puede hacer 500 *solves* en un aviÃ
 
 **No implementado.** No hay proyecto ni carpeta `supabase/`; `apps/api` está vacío. La sincronización en la nube sigue pendiente.
 
+## Decision: Aplazamiento del backend (2026-08-12)
+
+Se documenta **explícitamente** la decisión de mantener `apps/api` como scaffold
+vacío y diferir la implementación de este ADR:
+
+*   **Por qué no hay API aún:** la arquitectura es **local-first** — timer,
+    análisis, training/SRS, widgets y perfil funcionan 100% offline sobre
+    SQLite local. El backend solo aportaría *sync* en la nube, que no es
+    prioridad actual (el paquete `sync-engine` está marcado como planeado).
+*   **Estado del scaffold:** `apps/api` contiene únicamente `package.json`
+    (`@cubeforge/api`). `vercel.json` despliega solo la web
+    (`turbo run build --filter=web`). 0 releases, 0 tags git.
+*   **Disparador:** cuando el sync en la nube sea una prioridad (multi-dispositivo
+    o backup), el ciclo de gobernanza se activa de nuevo: RFC → ADR → TDD antes
+    de codificar (ver `docs/02-architecture/Architecture_Lifecycle.md`).
+*   **Referencias:** [Desktop_App.md §5](../02-architecture/Desktop_App.md),
+    [ADR-027](ADR-027-Desktop_App_Strategy.md), auditoría de drift de Fase 0.
+
 ## Drawbacks
 *   **Complejidad en el Cliente:** Obliga al cliente local (SQLite) a tener dos estados: "estado derivado de los eventos locales" y "lista de eventos pendientes de enviar".
 *   **Consumo de Espacio DB:** Guardar todos los eventos inmutables consume mÃ¡s espacio en Postgres que simples sobreescrituras. Eventualmente se requiere implementar un proceso de "Snapshotting" o poda.
