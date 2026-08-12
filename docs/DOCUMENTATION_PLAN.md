@@ -310,8 +310,9 @@ placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 
 ### Pendientes abiertos (no bloqueantes, para una futura iteración)
 - [ ] Reconstruir la línea de tiempo de features desde git log + `01-roadmap`
-      (ícono de Fase 0 que quedó abierto).
-- [ ] Crear `14-ai/AGENTS.md` (el índice raíz ya lo referencia sin existir).
+      (ítem de Fase 0 que quedó abierto).
+- [x] Crear `14-ai/AGENTS.md` (2026-08-12) — manual operativo de agentes;
+      referencias actualizadas en `docs/README.md` y `14-ai/README.md`.
 - [ ] Diagrama ER de las tablas v2 de SQLite.
 - [ ] Tests unitarios Rust del CRC del timer (TDD frontend/0002).
 

@@ -4,11 +4,13 @@
 
 ## Contenido
 
-- `opencode.json` — configuración del agente opencode.
-- **`AGENTS.md`**: pendiente de crear. El README raíz (`docs/README.md`) lo
-  referenciaba; mientras no exista, las reglas para agentes son
-  [`08-standards/AI_Development_Standards.md`](../08-standards/AI_Development_Standards.md)
-  y el plan [`DOCUMENTATION_PLAN.md`](../DOCUMENTATION_PLAN.md).
+- `AGENTS.md` — **manual operativo para asistentes de IA** (orden de lectura,
+  reglas no negociables, ciclo de vida, Definition of Done). Creado el
+  2026-08-12 (cierre de la Fase 9).
+- `opencode.json` — configuración del agente opencode (índices de docs).
+- Las reglas de alto nivel viven en
+  [`08-standards/AI_Development_Standards.md`](../08-standards/AI_Development_Standards.md),
+  que delega en este `AGENTS.md` como manual autoritativo.
 
 ## Relacionado
 
