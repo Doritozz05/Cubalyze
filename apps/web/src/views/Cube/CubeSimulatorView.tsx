@@ -120,11 +120,15 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
  *     resolves the layer at the sticker and fires the move through the SAME
  *     pipeline as the keyboard, so the engine animates it at the configured
  *     turn speed and the layer lands at exactly ±90° ignoring the mouse.
- *     Vertical drags turn the column at the sticker (R/M/L), horizontal
- *     drags the row (U/E/D): right column up turns R, middle column up M',
- *     bottom row right D, a right-swipe on U turns U'. Dragging the
- *     background rotates the whole cube in discrete 90° steps while the
- *     camera stays locked on the isometric view.
+ *     The gesture is read in the GRABBED FACE's own orientation: on the
+ *     front face vertical drags turn columns R/M/L and horizontal drags rows
+ *     U/E/D; on the top face horizontal drags turn F/S/B by the sticker's
+ *     front-back row; on the side faces vertical drags turn F/S/B by the
+ *     sticker's front-back column (right column up on the front face → R,
+ *     right-swipe on the top face front row → F, down on the right face
+ *     front column → F). Dragging the background rotates the whole cube in
+ *     discrete 90° steps while the camera stays locked on the isometric
+ *     view.
  *   • The scramble is applied INSTANTLY (no animation); the per-move turn
  *     speed is user-configurable, and 'instant' disables move animations too.
  *

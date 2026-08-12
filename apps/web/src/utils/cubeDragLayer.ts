@@ -1,7 +1,16 @@
-import { FACE_ROTATION_MAP } from "@cubeforge/cube-3d-engine";
+import { FACE_ROTATION_MAP, layerTwistAngleDelta } from "@cubeforge/cube-3d-engine";
 import type { CubeFace } from "@cubeforge/types";
 
-/** WCA face for a layer (axis, value) pair. */
+/** A 3D vector (structural — matches the engine's Vec3Like). */
+interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+type TurnAxis = "x" | "y" | "z";
+
+/** WCA face for a (axis, layer value) pair — includes the slices. */
 const FACE_BY_LAYER: Record<string, CubeFace> = {
   "x1": "R",
   "x0": "M",
@@ -9,75 +18,121 @@ const FACE_BY_LAYER: Record<string, CubeFace> = {
   "y1": "U",
   "y0": "E",
   "y-1": "D",
+  "z1": "F",
+  "z0": "S",
+  "z-1": "B",
+};
+
+/** Outward normal axis of each sticker face (slices are never picked). */
+const FACE_NORMAL: Record<CubeFace, TurnAxis> = {
+  R: "x",
+  L: "x",
+  U: "y",
+  D: "y",
+  F: "z",
+  B: "z",
+  M: "x",
+  E: "y",
+  S: "z",
+};
+
+/** The two in-plane axes of a face, given its outward normal axis. */
+const PLANE_AXES: Record<TurnAxis, [TurnAxis, TurnAxis]> = {
+  x: ["y", "z"],
+  y: ["x", "z"],
+  z: ["x", "y"],
+};
+
+const AXIS_VECTOR: Record<TurnAxis, Vec3> = {
+  x: { x: 1, y: 0, z: 0 },
+  y: { x: 0, y: 1, z: 0 },
+  z: { x: 0, y: 0, z: 1 },
 };
 
 /**
- * Resolve the layer a face drag turns, from the pointer movement in PURE
- * SCREEN SPACE (csTimer model — camera-independent, so it cannot be fooled
- * by the isometric view angle):
+ * Resolve the move for a face drag — the virtual-cube interaction.
  *
- *   • |dy| > |dx| (vertical drag) → the COLUMN layer at the grabbed sticker:
- *     x-axis, R/M/L by the cubie's x grid position.
- *   • |dx| > |dy| (horizontal drag) → the ROW layer at the grabbed sticker:
- *     y-axis, U/E/D by the cubie's y grid position.
+ * The gesture is interpreted in the GRABBED FACE's own orientation, as if
+ * that face were rotated to face you (the front-face rule generalized to
+ * every face):
  *
- * "Dragging the right column up turns R, the middle column M, the bottom
- * row right D, a right-swipe on the U face U" — the layer you grab always
- * turns, exactly like csTimer's virtual cube.
- */
-export function resolveDragLayer(input: {
-  /** Pointer travel in screen px since the drag started (+x = right, +y = down). */
-  dx: number;
-  dy: number;
-  /** Grabbed cubie's current grid position (R=+x/L=-x, U=+y/D=-y). */
-  cubieX: number;
-  cubieY: number;
-}): { axis: "x" | "y"; layerValue: number; face: CubeFace } | null {
-  const { dx, dy, cubieX, cubieY } = input;
-  if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
-  if (Math.hypot(dx, dy) < 1e-3) return null;
-
-  const horizontal = Math.abs(dx) > Math.abs(dy);
-  const axis: "x" | "y" = horizontal ? "y" : "x";
-  const layerValue = horizontal ? cubieY : cubieX;
-  const face = FACE_BY_LAYER[`${axis}${layerValue}`];
-  if (!face) return null;
-  return { axis, layerValue, face };
-}
-
-/**
- * Resolve the FULL drag move: the layer (see {@link resolveDragLayer}) plus
- * its WCA direction (+1 = the move as written, −1 = primed).
+ *   • the drag is projected to world space and read against the face's two
+ *     IN-PLANE axes (the face's outward normal is known exactly from the
+ *     pick, so this is camera-robust): the dominant axis is the drag axis
+ *     and the OTHER in-plane axis is the turn axis.
+ *   • the layer is the sticker's row/column on that turn axis (R/M/L for x,
+ *     U/E/D for y, F/S/B for z), so:
+ *       - front face: vertical → columns R/M/L, horizontal → rows U/E/D
+ *         (unchanged — the interaction you liked);
+ *       - top/bottom face: horizontal drag → F/S/B by front-back row
+ *         (front row → F, middle → S, back → B), front-back drag → R/M/L;
+ *       - side faces: vertical drag → F/S/B by front-back column (front
+ *         column → F, middle → S, back → B), front-back drag → U/E/D.
+ *   • the direction makes the grabbed stickers follow the finger: the drag
+ *     is signed against the rotation tangent t = turnAxis × grabPoint (the
+ *     engine's arc-length math), and `direction = sign / angleSign` composes
+ *     with the move pipeline exactly like the smart-cube path
+ *     (angle = direction × angleSign × 90).
  *
- * The direction is decided in PURE SCREEN SPACE from the dominant drag axis
- * and the move's own angle sign, so it is camera-independent and cannot be
- * fooled by the isometric view:
+ * So right-swipe on the top face's front row turns F (left → F'), DOWN-swipe
+ * on the right face's front column turns F (up → F'), up-swipe on the front
+ * face's right column turns R (down → R'), a right-swipe on the front face's
+ * top row turns U' — always the layer under the sticker you grabbed.
  *
- *   direction = sign(dominant screen delta) / angleSign(face)
- *
- * This is the physical "the stickers of the dragged layer follow the finger"
- * rule, verified against the simulator's real gestures: dragging the right
- * column UP turns R (and down turns R'), the middle column UP turns M'
- * (down turns M — M is the mirror of L, not R), the left column DOWN turns
- * L, a right-swipe on the U face turns U' (left turns U), right on the
- * bottom row turns D. The horizontal moves keep their previously-validated
- * behaviour; the verticals are corrected (they used to commit inverted).
+ * IMPORTANT sign detail: screen Y grows DOWNWARD while `cameraUp` is the
+ * world direction of screen-TOP, so the world drag is `dx·cameraRight −
+ * dy·cameraUp`. Using `+dy·cameraUp` (as a naive port would) inverts every
+ * vertical gesture — that was the original "R up → R'" bug.
  */
 export function resolveDragMove(input: {
   /** Pointer travel in screen px since the drag started (+x = right, +y = down). */
   dx: number;
   dy: number;
-  /** Grabbed cubie's current grid position (R=+x/L=-x, U=+y/D=-y). */
-  cubieX: number;
-  cubieY: number;
+  /** The grabbed sticker's outward face (F/B/U/D/R/L). */
+  face: CubeFace;
+  /** Grabbed cubie's current grid position (−1 | 0 | 1 per axis, logical). */
+  cubiePosition: { x: number; y: number; z: number };
+  /** The sticker's world-space hit point (cube centered at origin). */
+  worldPoint: Vec3;
+  /** Camera world basis: screen-right and screen-up (unit-ish vectors). */
+  cameraRight: Vec3;
+  cameraUp: Vec3;
 }): { face: CubeFace; direction: 1 | -1 } | null {
-  const layer = resolveDragLayer(input);
-  if (!layer) return null;
+  const { dx, dy, face, cubiePosition, worldPoint, cameraRight, cameraUp } = input;
+  if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
+  if (Math.hypot(dx, dy) < 1e-3) return null;
 
-  const angleSign = FACE_ROTATION_MAP[layer.face].angleSign;
-  // Dominant screen delta (+1 = right or down, −1 = left or up).
-  const screenSign = Math.abs(input.dx) > Math.abs(input.dy) ? Math.sign(input.dx) : Math.sign(input.dy);
-  // ±1 / ±1 is always exactly ±1 — no rounding error possible.
-  const direction = (screenSign / angleSign) as 1 | -1;
-  return { face: layer.face, direction };
+  // Screen drag → world drag (see the sign note above).
+  const worldDrag: Vec3 = {
+    x: dx * cameraRight.x - dy * cameraUp.x,
+    y: dx * cameraRight.y - dy * cameraUp.y,
+    z: dx * cameraRight.z - dy * cameraUp.z,
+  };
+
+  const normal = FACE_NORMAL[face];
+  const [axisA, axisB] = PLANE_AXES[normal];
+  const compA = Math.abs(worldDrag[axisA]);
+  const compB = Math.abs(worldDrag[axisB]);
+  // The dominant in-plane component is the drag axis; the turn axis is the
+  // OTHER one (same rule as the front face: vertical → columns, horizontal →
+  // rows — applied to the face's own orientation).
+  const turnAxis: TurnAxis = compA >= compB ? axisB : axisA;
+
+  const layerValue = cubiePosition[turnAxis];
+  const layerFace = FACE_BY_LAYER[`${turnAxis}${layerValue}`];
+  if (!layerFace) return null;
+
+  // "Stickers follow the finger": positive rotation around the turn axis
+  // moves the grab point along t = turnAxis × point; sign the drag against
+  // it (engine-tested arc-length math, reused as-is).
+  const dTheta = layerTwistAngleDelta({
+    axisVector: AXIS_VECTOR[turnAxis],
+    worldPoint,
+    worldDrag,
+  });
+  const angleSign = FACE_ROTATION_MAP[layerFace].angleSign;
+  const sign = dTheta > 0 ? 1 : dTheta < 0 ? -1 : 1;
+  // ±1 / ±1 is always exactly ±1.
+  const direction = (sign / angleSign) as 1 | -1;
+  return { face: layerFace, direction };
 }

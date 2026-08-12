@@ -15,20 +15,23 @@ import { resolveDragMove } from "@/utils/cubeDragLayer";
  * animation at the configured turn speed and the layer lands at exactly ±90°,
  * ignoring the mouse from then on (virtual-cube style — no 1:1 tracking).
  *
- *   • 1 finger drag ON a cube face → the LAYER under the finger turns, with
- *     the direction read from the swipe in PURE SCREEN SPACE
- *     (camera-independent, csTimer-style): the drag axis picks the turn axis,
- *     the grabbed cubie's grid position picks the layer, and the dominant
- *     screen delta picks the direction:
- *       - |dy| > |dx| (vertical drag) → the COLUMN layer at the sticker
- *         (x-axis → R/M/L by the sticker's x position); the stickers follow
- *         the finger — right column UP turns R (down R'), middle column UP
- *         turns M' (down M), left column DOWN turns L (up L').
- *       - |dx| > |dy| (horizontal drag) → the ROW layer at the sticker
- *         (y-axis → U/E/D by the sticker's y position): a right-swipe on the
- *         U face turns U', on the middle row turns E, on the bottom row D.
- *     The move is committed the moment the drag crosses `minSwipeDistance`
- *     (6 px); any further pointer travel is ignored.
+ *   • 1 finger drag ON a cube face → the LAYER under the finger turns, read
+ *     in the GRABBED FACE's own orientation ("as if that face faced you" —
+ *     see {@link resolveDragMove}): the drag is projected to world space and
+ *     compared against the face's two in-plane axes; the dominant axis picks
+ *     the drag direction and the OTHER axis is the turn axis, indexed by the
+ *     sticker's row/column on it:
+ *       - front face: vertical → columns R/M/L by x, horizontal → rows U/E/D
+ *         by y (the interaction you liked — unchanged);
+ *       - top/bottom face: horizontal → F/S/B by front-back row (front row →
+ *         F, middle → S, back → B), front-back → R/M/L by column;
+ *       - side faces: vertical → F/S/B by front-back column, front-back →
+ *         U/E/D by row.
+ *     The direction makes the stickers follow the finger (right-swipe on the
+ *     top face front row → F, down on the right face front column → F (up →
+ *     F'), up on the front face right column → R, ...). The move is
+ *     committed the moment the drag crosses `minSwipeDistance` (6 px); any
+ *     further pointer travel is ignored.
  *   • TAP on a cube face → deterministic CLOCKWISE turn of that face.
  *   • DRAG ON THE BACKGROUND → the CUBE rotates in discrete 90° steps (y for
  *     left/right swipes, x for up/down swipes) exactly like the x/y keys —
@@ -210,30 +213,33 @@ export function useCubeTurnControls({
 
   /**
    * Resolve WHICH move the drag fires, once (when the pointer first travels
-   * past `minSwipeDistance`). Rule (csTimer-style, PURE SCREEN SPACE — no
-   * camera projection, so it cannot be fooled by the view angle):
-   *
-   *   • |dy| > |dx| (vertical drag) → the COLUMN layer at the grabbed
-   *     sticker: x-axis, R/M/L by the cubie's x grid position. The stickers
-   *     of the dragged column follow the finger: right column UP = R,
-   *     middle column DOWN = M, left column DOWN = L.
-   *   • |dx| > |dy| (horizontal drag) → the ROW layer at the grabbed
-   *     sticker: y-axis, U/E/D by the cubie's y grid position. A right-swipe
-   *     on U turns U', on the bottom row D.
-   *
-   * The direction is computed directly from the dominant screen delta (no
-   * live tracking) — see {@link resolveDragMove}.
+   * past `minSwipeDistance`). The gesture is read in the grabbed face's own
+   * orientation (see {@link resolveDragMove}): the world-space drag is
+   * compared against the face's two in-plane axes, the turn axis is the
+   * other one, and the layer is the sticker's row/column on it. The
+   * direction signs the drag against the rotation tangent so the stickers
+   * follow the finger.
    */
-  const resolveTurn = useCallback((drag: DragState): ResolvedMove | null => {
-    const pick = drag.startPick;
-    if (!pick) return null;
-    return resolveDragMove({
-      dx: drag.lastX - drag.startX,
-      dy: drag.lastY - drag.startY,
-      cubieX: pick.cubiePosition.x,
-      cubieY: pick.cubiePosition.y,
-    });
-  }, []);
+  const resolveTurn = useCallback(
+    (drag: DragState): ResolvedMove | null => {
+      const engine = engineRef.current;
+      const pick = drag.startPick;
+      if (!engine || !pick) return null;
+      const cam = engine.sceneManager.camera;
+      cam.updateMatrixWorld(true);
+      const m = cam.matrixWorld.elements;
+      return resolveDragMove({
+        dx: drag.lastX - drag.startX,
+        dy: drag.lastY - drag.startY,
+        face: pick.face,
+        cubiePosition: pick.cubiePosition,
+        worldPoint: pick.worldPoint,
+        cameraRight: { x: m[0], y: m[1], z: m[2] },
+        cameraUp: { x: m[4], y: m[5], z: m[6] },
+      });
+    },
+    [engineRef],
+  );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
