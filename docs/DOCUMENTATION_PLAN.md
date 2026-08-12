@@ -112,9 +112,11 @@ Para cada unidad:
       `docs/18-archive/` con inventario (2026-08-12).
 - [x] Rellenar los 3 READMEs placeholder de `docs/02-architecture/`
       (diagrams, overview, validation) con su propósito real.
-- [ ] Revisar `docs/06-api`, `docs/07-database`, `docs/16-user`…: decidir qué se
-      documenta ahí y qué se deja para más adelante (no todo tiene que quedar lleno
-      si el contenido aún no existe, p.ej. `12-sdk`, `13-plugins`).
+- [x] Decidir qué se documenta en cada sección del índice (2026-08-12): `06-api`
+      → Fase 4, `16-user` → Fase 1, `11-devops` → Fase 6, `17-releases` → Fase 8;
+      `07-database`/`09-testing`/`10-security` quedan como READMEs de entrada con
+      punteros (el contenido vive en ADRs/06-api/11-devops); `12-sdk`/`13-plugins`
+      se dejan vacíos a propósito (aún no hay SDK público ni plugins de terceros).
 - [ ] Reconstruir la línea de tiempo de features desde git log (reciente) y
       `docs/01-roadmap/Master_Roadmap.md`: qué está hecho, qué está planeado.
 
@@ -288,11 +290,30 @@ placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 **Criterio de cierre:** proceso documentado + primer release preparado. ✅ Completado 2026-08-12.
 
 ### Fase 9 — Cierre y validación
-- [ ] Revisión cruzada: cada sección del índice `docs/` con contenido verificado.
-- [ ] Diagrama de arquitectura actualizado (`docs/02-architecture/diagrams/`).
-- [ ] Actualizar el `Architecture_Decision_Register.md` (ADR-023+ si se crearon).
-- [ ] Lista final de preguntas pendientes al usuario + resumen de lo documentado.
-- [ ] Marcar fases completadas en este plan con fecha.
+- [x] **Revisión cruzada del índice** (2026-08-12): `docs/README.md` actualizado
+      con tabla de estado de las 19 secciones; `07-database`, `09-testing`,
+      `10-security`, `12-sdk`, `13-plugins`, `14-ai` rellenados con estado
+      honesto + punteros; hallazgo: `14-ai/AGENTS.md` no existía (referencia
+      corregida en el índice raíz).
+- [x] **Diagramas** (2026-08-12): `monorepo-dependencies.mmd` (grafo real de
+      dependencias verificado con grep) + `data-flow.mmd` (flujo de un solve)
+      + README de diagrams.
+- [x] **Overview actualizado** (2026-08-12): `System_Architecture_Overview.md`
+      reescrito (estaba en Draft con texto pre-decisión: "React Native", "API
+      Gateway", "SM-2"…) a la verdad real; `Architecture_Index.md` actualizado
+      (quitadas las referencias *Pending* a docs que ya existen).
+- [x] **Registro de decisiones**: actualizado durante las fases (DEC-25 → DEC-29).
+- [x] **Lista final de pendientes** → ver cierre de la Fase 9 en `docs/README.md`
+      y los checkpoints de cada fase.
+
+**Criterio de cierre:** índice verificado, diagramas reales, pendientes listados. ✅ Completado 2026-08-12.
+
+### Pendientes abiertos (no bloqueantes, para una futura iteración)
+- [ ] Reconstruir la línea de tiempo de features desde git log + `01-roadmap`
+      (ícono de Fase 0 que quedó abierto).
+- [ ] Crear `14-ai/AGENTS.md` (el índice raíz ya lo referencia sin existir).
+- [ ] Diagrama ER de las tablas v2 de SQLite.
+- [ ] Tests unitarios Rust del CRC del timer (TDD frontend/0002).
 
 ## 6. Orden de ejecución y checkpoints
 

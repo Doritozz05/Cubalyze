@@ -1,0 +1,32 @@
+---
+title: CubeForge — Flujo de datos de un solve (2026-08-12)
+---
+%% Flujo verificado contra hooks/stores reales (Fases 1-3).
+
+flowchart LR
+    subgraph Hardware["Entrada de hardware (HAL)"]
+        cube["GanCubeAdapter / GanCubeAdapterTauri<br/>(BLE, ClockDriftReconciler)"]
+        timerHW["GanTimerAdapter / GanTimerAdapterTauri"]
+        stackmat["StackmatAdapter (audio)"]
+    end
+
+    timer["@cubeforge/timer-engine<br/>(TimerEngine: fases + penalizaciones)"]
+    timerStore["timerStore (idle→cooldown…)"]
+    solveSession["useSolveSession<br/>(registro de movimientos wide)"]
+    sessionStore["sessionStore + solves"]
+    db["SQLite (worker Comlink)<br/>OPFS (web) / nativa (desktop)"]
+    analysis["@cubeforge/analysis-engine<br/>(pipeline versionado)"]
+    widgets["Widgets (times-log, stats,<br/>pb-progression, phase-balance…)"]
+    insights["Vistas Insights + Training<br/>(estadísticas, SRS/FSRS)"]
+
+    cube -->|"moves$ facelets$"| solveSession
+    timerHW -->|"hardwareDown/Up/Reset"| timer
+    stackmat --> timer
+    timer --> timerStore
+    timerStore --> solveSession
+    solveSession -->|"Solve"| sessionStore
+    sessionStore -->|"persist"| db
+    db -->|"solves readonly"| widgets
+    db --> analysis
+    analysis --> insights
+    solveSession -->|"evento solve:completed"| widgets
