@@ -17,11 +17,19 @@ export interface VirtualCubeAdapter extends ScrambleValidationAdapter {
   /** Push an absolute facelet snapshot (solved on mount/reset, solved when
    *  the solve completes). */
   pushFacelets(facelets: string): void;
+  /**
+   * Force the scramble validator to re-seed from a FRESH state for the
+   * CURRENT scramble text. Used by the Scramble button, which applies the
+   * scramble already on screen — the text does not change, so the normal
+   * scramble-change re-seed never fires on its own.
+   */
+  pushReset(): void;
 }
 
 export function createVirtualCubeAdapter(): VirtualCubeAdapter {
   const movesSubject = new Subject<import("@cubeforge/types").CubeMoveEvent>();
   const faceletsSubject = new Subject<string>();
+  const resetSubject = new Subject<void>();
 
   return {
     // The virtual cube is always "connected": the validator + auto-arm
@@ -29,6 +37,7 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
     isConnected: true,
     moves$: movesSubject.asObservable(),
     facelets$: faceletsSubject.asObservable(),
+    reset$: resetSubject.asObservable(),
     // Facelets are pushed directly by the view (no hardware round-trip).
     requestFacelets: async () => {},
 
@@ -42,6 +51,9 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
     },
     pushFacelets(facelets) {
       faceletsSubject.next(facelets);
+    },
+    pushReset() {
+      resetSubject.next();
     },
   };
 }

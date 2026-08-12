@@ -189,9 +189,6 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   if (stateRef.current === null) stateRef.current = new CubeState();
   // One-time init once the engine is ready (initial solved facelets + camera).
   const didInitRef = useRef(false);
-  // A scramble waiting to be applied INSTANTLY by the Scramble button (the
-  // validator re-seeds on the scramble change, hence the effect below).
-  const pendingInstantRef = useRef<string | null>(null);
 
   const {
     phase,
@@ -200,6 +197,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     validation,
     notifyTurn,
     pushFacelets,
+    resetScramble,
     reset: resetSession,
   } = useVirtualCubeSession(scramble);
 
@@ -387,51 +385,44 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
 
   /**
    * Scramble NOW (the 3D widget's scramble button, moved into this view):
-   * generate a fresh scramble and apply it INSTANTLY — no need to perform it
-   * by hand. The validator consumes the applied moves (its state is
-   * re-seeded by the scramble change, hence the effect below), so the cube
-   * is immediately verified → armed → the first turn starts the timer.
+   * apply the CURRENT scramble INSTANTLY from the solved position — no new
+   * scramble is generated, the text on screen is the one to solve. The cube
+   * is reset to solved first (from a scrambled position the move feed could
+   * not be verified), the validator is re-seeded for the SAME text via the
+   * adapter's reset signal (the scramble-change re-seed would never fire
+   * since the text did not change), and every scramble move is fed in — so
+   * the cube is immediately verified → armed → the first turn starts the
+   * timer.
    */
   const handleScrambleNow = useCallback(() => {
-    const next = generateScrambleFor("3x3");
-    pendingInstantRef.current = next;
-    setScramble(next);
-  }, []);
-
-  // Apply the pending instant scramble once the validator has re-seeded on
-  // the new scramble text (effects run after render, so it is fresh here).
-  useEffect(() => {
-    const target = pendingInstantRef.current;
-    if (!target || target !== scramble) return;
-    pendingInstantRef.current = null;
-
-    // Cube → solved → scrambled (instant, like virtual-cube.net). The
-    // scramble is generated in the CUBE-fixed frame, so the grip resets to
-    // identity — otherwise a stale rotation would mis-remap the display AND
-    // mis-conjugate the validator feed.
+    // 1) Solved position + identity grip (the scramble lives in the
+    //    CUBE-fixed frame) + timer back to idle.
+    resetCube();
+    resetSession();
+    // 2) Re-seed the validator for the current scramble text (fresh state,
+    //    no scramble-change → the text stays identical on screen).
+    resetScramble();
+    // 3) Apply the scramble instantly to the logical state + engine.
     const state = new CubeState();
     try {
-      state.applySequence(target);
+      state.applySequence(scramble);
     } catch {
       // Unsupported token — leave the cube solved rather than crash.
     }
     stateRef.current = state;
-    engineRef.current?.resetCube();
-    resetCamera();
-    setGrip(OrientationTable.IDENTITY);
     syncState();
-
-    // Feed every scramble move to the validator (R2 = two quarter turns) so
-    // it verifies the scramble exactly as if the user had performed it.
-    // The scramble tokens are already cube-fixed (grip is identity), so the
-    // raw faces are exactly what the validator expects.
-    for (const token of target.trim().split(/\s+/)) {
+    // 4) Feed every scramble move to the validator (R2 = two quarter turns)
+    //    so it verifies the scramble exactly as if the user had performed
+    //    it. Tokens are cube-fixed (grip is identity), so the raw faces are
+    //    exactly what the validator expects.
+    for (const token of scramble.trim().split(/\s+/)) {
+      if (!token) continue;
       const face = token[0] as CubeFace;
       const direction: 1 | -1 = token.includes("'") ? -1 : 1;
       notifyTurn(face, direction);
       if (token.includes("2")) notifyTurn(face, direction);
     }
-  }, [scramble, engineRef, resetCamera, syncState, notifyTurn]);
+  }, [resetCube, resetSession, resetScramble, scramble, syncState, notifyTurn]);
 
   // ── Solve complete → next scramble (parity with the real timer, which
   //    advances to a fresh scramble after every solve). The cube restarts

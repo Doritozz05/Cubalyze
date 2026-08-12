@@ -35,6 +35,12 @@ export interface UseVirtualCubeSessionResult {
    * handler resets the sticky "too many mistakes" state on a solved cube.
    */
   pushFacelets: (facelets: string) => void;
+  /**
+   * Re-seed the scramble validator to a FRESH state for the current scramble
+   * text (no scramble-change). Used by the Scramble button, which applies
+   * the scramble already on screen.
+   */
+  resetScramble: () => void;
   /** Reset the timer engine (the view resets the cube itself). */
   reset: () => void;
 }
@@ -167,11 +173,15 @@ export function useVirtualCubeSession(
     [adapter],
   );
 
+  const resetScramble = useCallback(() => {
+    adapter.pushReset();
+  }, [adapter]);
+
   const reset = useCallback(() => {
     engine.reset();
     setTime(0);
     setLastTime(null);
   }, [engine]);
 
-  return { phase, time, lastTime, validation, notifyTurn, pushFacelets, reset };
+  return { phase, time, lastTime, validation, notifyTurn, pushFacelets, resetScramble, reset };
 }

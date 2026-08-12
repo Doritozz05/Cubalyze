@@ -17,6 +17,14 @@ export interface ScrambleValidationAdapter {
   facelets$?: Observable<string> | null;
   onFacelets?: ((facelets: string) => void) | null;
   requestFacelets?: () => Promise<void>;
+  /**
+   * Optional re-seed signal: the validator restarts from a FRESH state for
+   * the CURRENT scramble text (the same mechanism as the scramble-change
+   * effect). The virtual cube emits this when its Scramble button applies
+   * the scramble that is already on screen — the text does NOT change, so
+   * the scramble-change effect would never re-seed on its own.
+   */
+  reset$?: Observable<void> | null;
 }
 
 export type ScrambleMoveState = 'pending' | 'correct' | 'incorrect';
@@ -240,7 +248,12 @@ export function useScrambleValidator(
       s.scrambleCompleted = true;
     }
 
-    const errorMoves = s.activeErrorMoves;
+    // Fresh copy — consumers (e.g. the Cube tab's displayErrorMoves memo)
+    // depend on the errorMoves REFERENCE to re-render. activeErrorMoves is
+    // mutated in place, so the same reference would keep the error display
+    // stale: errors only appeared after a grip change (a cube rotation)
+    // recomputed the memo. A copy re-renders the moment an error lands.
+    const errorMoves = [...s.activeErrorMoves];
 
     // Compute display-notation error moves using current orientation
     const orientation = orientationStore.getState().orientation;
@@ -264,6 +277,11 @@ export function useScrambleValidator(
       awaitingSolve: s.awaitingSolve,
     });
   }, [enabled]);
+
+  // Latest scramble for the reset$ handler (the subscription effect below
+  // must not re-subscribe on every scramble change).
+  const scrambleRef = useRef(scramble);
+  scrambleRef.current = scramble;
 
   // Recompute expected state whenever the scramble text changes.
   useEffect(() => {
@@ -386,6 +404,20 @@ export function useScrambleValidator(
         s.startedFromSolved = false;
       }
     }
+
+    // Optional re-seed: the adapter (virtual cube) can force a FRESH
+    // validator state for the same scramble text — used when its Scramble
+    // button applies the scramble already on screen (the text doesn't
+    // change, so the scramble-change effect above never fires).
+    const resetSub = adapter.reset$?.subscribe(() => {
+      const { moves, expectedFacelets } = computeExpected(scrambleRef.current);
+      const ref = freshValidatorState();
+      ref.moves = moves;
+      ref.expectedFacelets = expectedFacelets;
+      stateRef.current = ref;
+      updateUI();
+      scheduleFacelets(ref, adapter);
+    });
 
     const moveSub = adapter.moves$.subscribe((ev: CubeMoveEvent) => {
       const s = stateRef.current;
@@ -609,6 +641,7 @@ export function useScrambleValidator(
 
     return () => {
       moveSub.unsubscribe();
+      resetSub?.unsubscribe();
       faceletCleanup?.();
       clearTimeout(stateRef.current.requestFaceletsTimeout);
     };
