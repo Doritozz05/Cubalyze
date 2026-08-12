@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { CubeModel, CubeMeshFactory, RotationEngine } from "@cubeforge/cube-3d-engine";
-import { CubeState, FaceletStringConverter, parseFaceletsToCubies } from "@cubeforge/math-core";
-import { CUBE_KEYMAP, actionToFaceEvents, actionToMoves, actionToNotation } from "./cubeKeybinds";
+import {
+  CubeState,
+  FaceletStringConverter,
+  OrientationTable,
+  parseFaceletsToCubies,
+} from "@cubeforge/math-core";
+import {
+  CUBE_KEYMAP,
+  actionToMoves,
+  actionToNotation,
+  actionToValidatorEvents,
+} from "./cubeKeybinds";
 
 const notationFor = (code: string) => actionToNotation(CUBE_KEYMAP[code]);
 
@@ -149,39 +159,69 @@ describe("CUBE_KEYMAP ↔ math-core determinism", () => {
   });
 });
 
-describe("actionToFaceEvents — validator feed", () => {
-  it("emits a single face event for face turns (M included)", () => {
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyJ)).toEqual([{ face: "U", direction: 1 }]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyK)).toEqual([{ face: "R", direction: -1 }]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.Digit5)).toEqual([{ face: "M", direction: 1 }]);
+describe("actionToValidatorEvents — cube-fixed validator feed", () => {
+  const identity = OrientationTable.IDENTITY;
+  // y rotation faceMap (position → original): front shows R, right shows B,
+  // back shows L, left shows F.
+  const yGrip = OrientationTable.rotationEntryFor("y")!;
+
+  it("with the identity grip, face turns pass through unchanged (M included)", () => {
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyJ, identity)).toEqual([{ face: "U", direction: 1 }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyK, identity)).toEqual([{ face: "R", direction: -1 }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.Digit5, identity)).toEqual([{ face: "M", direction: 1 }]);
   });
 
-  it("expands wide moves to their face+slice pair (r = R M', l = L M, u = U E', d = D E)", () => {
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyU)).toEqual([
+  it("conjugates face turns through a rotated grip (drag the front face after y → original R)", () => {
+    // After a y rotation the R face sits at the FRONT position: a drag that
+    // turns the front-face layer must validate as the original R move.
+    expect(actionToValidatorEvents({ kind: "turn", face: "F", direction: 1 }, yGrip)).toEqual([
+      { face: "R", direction: 1 },
+    ]);
+    // The F face sits at the LEFT position after y: dragging it → original F
+    // (a physical F turn is unchanged, it just looks like it sits on the left).
+    expect(actionToValidatorEvents({ kind: "turn", face: "L", direction: -1 }, yGrip)).toEqual([
+      { face: "F", direction: -1 },
+    ]);
+    // Slices conjugate too (a physical M' after y is an S' in the cube frame).
+    expect(actionToValidatorEvents({ kind: "turn", face: "M", direction: -1 }, yGrip)).toEqual([
+      { face: "S", direction: -1 },
+    ]);
+  });
+
+  it("with the identity grip, wide moves expand to their face+slice pair (r = R M', l = L M, u = U E', d = D E)", () => {
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyU, identity)).toEqual([
       { face: "R", direction: 1 },
       { face: "M", direction: -1 },
     ]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyM)).toEqual([
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyM, identity)).toEqual([
       { face: "R", direction: -1 },
       { face: "M", direction: 1 },
     ]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyV)).toEqual([
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyV, identity)).toEqual([
       { face: "L", direction: 1 },
       { face: "M", direction: 1 },
     ]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.Comma)).toEqual([
+    expect(actionToValidatorEvents(CUBE_KEYMAP.Comma, identity)).toEqual([
       { face: "U", direction: 1 },
       { face: "E", direction: -1 },
     ]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyZ)).toEqual([
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyZ, identity)).toEqual([
       { face: "D", direction: 1 },
       { face: "E", direction: 1 },
     ]);
   });
 
+  it("conjugates wide moves through a rotated grip (r after y → B + S')", () => {
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyU, yGrip)).toEqual([
+      { face: "B", direction: 1 },
+      { face: "S", direction: -1 },
+    ]);
+  });
+
   it("emits nothing for whole-cube rotations (they are not moves)", () => {
-    expect(actionToFaceEvents(CUBE_KEYMAP.KeyT)).toEqual([]);
-    expect(actionToFaceEvents(CUBE_KEYMAP.Semicolon)).toEqual([]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyT, identity)).toEqual([]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.Semicolon, identity)).toEqual([]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyT, yGrip)).toEqual([]);
   });
 });
 

@@ -84,8 +84,17 @@ function conjugateSlice(token: string, faceMap: FacePermutation): string {
   return slice + (prime ? "'" : '');
 }
 
-/** One pass over a token list with a running grip. */
-function conjugateWithGrip(
+/**
+ * One pass over a token list with a running grip.
+ *
+ * Exported so the virtual cube can conjugate a single position-frame move
+ * (the layer the user sees on a rotated view) back to the cube-fixed frame
+ * before feeding the scramble validator — the same frame the physical cube
+ * reports raw moves in. For the virtual cube the grip is the accumulated
+ * x/y/z rotation (not a gyro), and the caller passes it directly (the
+ * tokens themselves contain no rotations).
+ */
+export function conjugateWithGrip(
   tokens: readonly string[],
   grip: OrientationEntry,
 ): {
@@ -157,6 +166,33 @@ function conjugateWithGrip(
  */
 export function conjugateToBaseFrame(tokens: readonly string[]): string[] {
   return conjugateWithGrip(tokens, OrientationTable.IDENTITY).out;
+}
+
+/**
+ * Conjugate a SINGLE move token through an EXISTING grip into the
+ * cube-fixed frame.
+ *
+ * The virtual cube resolves drags/keyboard moves in the CURRENT (possibly
+ * rotated) view frame — "the face at the position the user sees" — but the
+ * scramble validator compares against the scramble in the CUBE-fixed frame
+ * (the same frame a physical smart cube reports raw moves in, where the
+ * gyro only remaps the DISPLAY). This rewrites one position-frame token
+ * (e.g. "F" when the original R face sits at the front) back to the
+ * cube-fixed equivalent ("R").
+ *
+ * @param token A single move token (face, slice or rotation). Faces and
+ *              slices conjugate through the grip; rotations pass through.
+ *              Wide moves (r/l/u/d/f/b) must be pre-expanded with
+ *              `expandWideMoves` before calling (conjugateWithGrip passes
+ *              them through unconjugated).
+ * @param grip  The current orientation entry (accumulated x/y/z).
+ * @returns The cube-fixed token.
+ */
+export function conjugateTokenThroughGrip(
+  token: string,
+  grip: OrientationEntry,
+): string {
+  return conjugateWithGrip([token], grip).out[0] ?? token;
 }
 
 /**

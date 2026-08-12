@@ -14,9 +14,9 @@ import { useCubeTurnControls } from "@/hooks/useCubeTurnControls";
 import { useVirtualCubeSession } from "@/hooks/useVirtualCubeSession";
 import {
   CUBE_KEYMAP,
-  actionToFaceEvents,
   actionToMoves,
   actionToNotation,
+  actionToValidatorEvents,
   type CubeKeyAction,
 } from "@/lib/keybinds/cubeKeybinds";
 import type { CubeFace } from "@cubeforge/types";
@@ -178,6 +178,12 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   // OrientationTable (the same verified math the timer's dynamic notation
   // uses) and applied via MoveTransformer.remapScrambleString.
   const [grip, setGrip] = useState<OrientationEntry>(OrientationTable.IDENTITY);
+  // Latest grip readable synchronously by applyAction — a drag can commit
+  // through onActionRef between an engine rotation and the React re-render
+  // flushing the new state, so the ref guarantees the conjugation always
+  // uses the grip that matches the engine's current visual orientation.
+  const gripRef = useRef(grip);
+  gripRef.current = grip;
 
   const stateRef = useRef<CubeState | null>(null);
   if (stateRef.current === null) stateRef.current = new CubeState();
@@ -190,6 +196,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   const {
     phase,
     time,
+    lastTime,
     validation,
     notifyTurn,
     pushFacelets,
@@ -292,9 +299,15 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         return;
       }
 
-      // Feed the SAME scramble validator the real timer uses (turn/wide
-      // decompose into the layers that actually turned).
-      for (const ev of actionToFaceEvents(action)) {
+      // Feed the SAME scramble validator the real timer uses. The virtual
+      // cube resolves moves in the CURRENT (possibly rotated) view frame —
+      // "the layer the user sees" — but the validator compares against the
+      // scramble in the CUBE-fixed frame, exactly like the physical timer
+      // (the smart cube reports raw moves in its own frame; the gyro only
+      // remaps the display). Each position-frame move is conjugated through
+      // the grip back to the cube frame, so after a y rotation dragging the
+      // front face validates as the original R move.
+      for (const ev of actionToValidatorEvents(action, gripRef.current)) {
         notifyTurn(ev.face, ev.direction);
       }
 
@@ -304,6 +317,9 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         pushFacelets(FaceletStringConverter.toFaceletString(state));
       }
     },
+    // grip is intentionally NOT a dependency: applyAction reads gripRef,
+    // which is always the latest rotation (a drag can commit between an
+    // engine rotation and the React re-render flushing the new grip state).
     [cubeTurnSpeed, engineRef, notifyTurn, pushFacelets],
   );
 
@@ -317,12 +333,15 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
         : scramble,
     [scramble, grip, scrambleFollowsCube],
   );
+  // Error moves are stored in the CUBE-fixed frame (that's what the validator
+  // consumed); remap them to the current view frame for display, mirroring
+  // the displayScramble remap above.
   const displayErrorMoves = useMemo(
     () =>
       scrambleFollowsCube
-        ? validation.displayErrorMoves.map((m) => MoveTransformer.remapScrambleString(m, grip))
-        : validation.displayErrorMoves,
-    [validation.displayErrorMoves, grip, scrambleFollowsCube],
+        ? validation.errorMoves.map((m) => MoveTransformer.remapScrambleString(m, grip))
+        : validation.errorMoves,
+    [validation.errorMoves, grip, scrambleFollowsCube],
   );
 
   const { performAction, pointerHandlers } = useCubeTurnControls({
@@ -386,7 +405,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     if (!target || target !== scramble) return;
     pendingInstantRef.current = null;
 
-    // Cube → solved → scrambled (instant, like virtual-cube.net).
+    // Cube → solved → scrambled (instant, like virtual-cube.net). The
+    // scramble is generated in the CUBE-fixed frame, so the grip resets to
+    // identity — otherwise a stale rotation would mis-remap the display AND
+    // mis-conjugate the validator feed.
     const state = new CubeState();
     try {
       state.applySequence(target);
@@ -396,10 +418,13 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     stateRef.current = state;
     engineRef.current?.resetCube();
     resetCamera();
+    setGrip(OrientationTable.IDENTITY);
     syncState();
 
     // Feed every scramble move to the validator (R2 = two quarter turns) so
     // it verifies the scramble exactly as if the user had performed it.
+    // The scramble tokens are already cube-fixed (grip is identity), so the
+    // raw faces are exactly what the validator expects.
     for (const token of target.trim().split(/\s+/)) {
       const face = token[0] as CubeFace;
       const direction: 1 | -1 = token.includes("'") ? -1 : 1;
@@ -407,6 +432,21 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
       if (token.includes("2")) notifyTurn(face, direction);
     }
   }, [scramble, engineRef, resetCamera, syncState, notifyTurn]);
+
+  // ── Solve complete → next scramble (parity with the real timer, which
+  //    advances to a fresh scramble after every solve). The cube restarts
+  //    solved with a brand-new scramble; the session resets the clock when
+  //    the scramble text changes. A short delay keeps the final time
+  //    visible before the next scramble appears.
+  const lastTimeRef = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = lastTimeRef.current;
+    lastTimeRef.current = lastTime;
+    if (lastTime !== null && prev === null) {
+      const t = setTimeout(handleRegenerate, 1200);
+      return () => clearTimeout(t);
+    }
+  }, [lastTime, handleRegenerate]);
 
   /**
    * Reset: cube back to SOLVED (undoes every move including whole-cube

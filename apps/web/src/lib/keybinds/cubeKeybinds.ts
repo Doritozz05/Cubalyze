@@ -1,4 +1,9 @@
 import { FACE_ROTATION_MAP, type LayerAxis } from "@cubeforge/cube-3d-engine";
+import {
+  conjugateTokenThroughGrip,
+  expandWideMoves,
+  type OrientationEntry,
+} from "@cubeforge/math-core";
 import type { CubeFace } from "@cubeforge/types";
 
 /**
@@ -166,31 +171,37 @@ export function actionToMoves(action: CubeKeyAction, order: number = 3): CubeEng
 }
 
 /**
- * Decompose a key action into validator-style face events (one per layer
- * that actually turned). Wide moves expand to their face+slice pair so the
- * virtual-cube validator sees the SAME layers the engine rotated — matching
+ * Decompose a key action into validator-style face events in the CUBE-fixed
+ * frame (one per layer that actually turned).
+ *
+ * The virtual cube resolves drags/keys in the CURRENT (possibly rotated)
+ * view frame — "the layer the user sees" — but the scramble validator
+ * compares against the scramble in the CUBE-fixed frame (the same frame a
+ * physical smart cube reports raw moves in, where the gyro only remaps the
+ * DISPLAY). Each position-frame token is conjugated through the current
+ * grip back to the cube frame, so a drag on the front face after a y
+ * rotation validates as the original R move, exactly like the real timer.
+ *
+ * Wide moves expand to their face+slice pair BEFORE conjugation — matching
  * math-core's `expandWideMoves` (r = R M', u = U E', l = L M, d = D E).
  * Whole-cube rotations emit nothing (they are not moves).
  */
-export function actionToFaceEvents(action: CubeKeyAction): { face: CubeFace; direction: 1 | -1 }[] {
-  switch (action.kind) {
-    case "turn":
-      return [{ face: action.face, direction: action.direction }];
-    case "wide": {
-      const slice = WIDE_SLICE[action.face];
-      // The slice primes (r = R M', u = U E') mean R/U wide moves turn the
-      // slice OPPOSITE to the face; L/D keep the same direction.
-      const sliceDirection = (action.face === "R" || action.face === "U"
-        ? (action.direction * -1) as 1 | -1
-        : action.direction) as 1 | -1;
-      return [
-        { face: action.face, direction: action.direction },
-        { face: slice, direction: sliceDirection },
-      ];
-    }
-    case "rotate":
-      return [];
-  }
+export function actionToValidatorEvents(
+  action: CubeKeyAction,
+  grip: OrientationEntry,
+): { face: CubeFace; direction: 1 | -1 }[] {
+  if (action.kind === "rotate") return [];
+  const positionTokens =
+    action.kind === "wide"
+      ? expandWideMoves(actionToNotation(action))
+      : [actionToNotation(action)];
+  return positionTokens.map((token) => {
+    const fixed = conjugateTokenThroughGrip(token, grip);
+    return {
+      face: fixed[0] as CubeFace,
+      direction: (fixed.endsWith("'") ? -1 : 1) as 1 | -1,
+    };
+  });
 }
 
 /** Human-readable move notation for a key action ("R", "U'", "M", "r", "x"). */
