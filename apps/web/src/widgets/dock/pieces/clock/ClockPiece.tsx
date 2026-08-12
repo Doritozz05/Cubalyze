@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import i18n from "@/i18n";
 
-/** Live clock pill — updates every minute, shows HH:MM with date tooltip. */
+/** Live clock — updates every minute, shows HH:MM with the date in the tooltip. */
 export function ClockPiece() {
   const [time, setTime] = useState(() => new Date());
 
@@ -19,14 +19,13 @@ export function ClockPiece() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex h-8 cursor-default items-center gap-1.5 rounded-full border border-line/70 bg-surface/80 px-2.5 text-xs text-ink select-none">
-          <Clock className="size-3.5 text-ink-3" />
-          <span className="nums font-medium text-ink">
+        <div className="flex h-8 cursor-default select-none items-center text-xs font-medium text-ink-2">
+          <span className="nums tabular-nums">
             {hours}:{minutes}
           </span>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="bottom">{time.toLocaleDateString()}</TooltipContent>
+      <TooltipContent side="bottom">{time.toLocaleDateString(i18n.language)}</TooltipContent>
     </Tooltip>
   );
 }

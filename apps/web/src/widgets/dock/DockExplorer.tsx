@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { DOCK_AREAS, type DockAreaDef } from "@/widgets/dock/dockAreasRegistry";
+import { DOCK_AREAS, type DockAreaDef, type DockKey } from "@/widgets/dock/dockAreasRegistry";
 import { DockItemCard } from "./DockItemCard";
 
 export const DOCK_EXPLORER_WIDTH = "sm:max-w-[900px]";
@@ -34,7 +34,7 @@ export interface DockExplorerProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const KIND_CATEGORIES: { id: DockAreaDef["category"] | "all"; label: string }[] = [
+const KIND_CATEGORIES: { id: DockAreaDef["category"] | "all"; label: DockKey }[] = [
   { id: "all", label: "explorer.allKinds" },
   { id: "core", label: "kind.core" },
   { id: "system", label: "kind.system" },

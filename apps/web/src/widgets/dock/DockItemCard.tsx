@@ -121,7 +121,7 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
         </div>
 
         <p className="line-clamp-2 text-[0.75rem] leading-5 text-ink-3">
-          {item.descKey ? t(item.descKey) : t(`desc.${item.category}`)}
+          {t(item.descKey)}
         </p>
       </div>
 
@@ -147,7 +147,7 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
                   ? "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
                   : "border-line/50 bg-surface text-ink-3/30 cursor-not-allowed",
               )}
-              aria-label={`Remove ${t(item.labelKey)}`}
+              aria-label={t("removeItem", { name: t(item.labelKey) })}
             >
               <Minus className="size-3" />
             </button>
@@ -160,7 +160,7 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
                 handleAdd();
               }}
               className="grid size-6 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-              aria-label={`Add ${t(item.labelKey)}`}
+              aria-label={t("addItem", { name: t(item.labelKey) })}
             >
               <Plus className="size-3" />
             </button>
@@ -176,7 +176,7 @@ export function DockItemCard({ item, className }: DockItemCardProps) {
             <Switch
               checked={inDock}
               onCheckedChange={handleToggle}
-              aria-label={`${inDock ? "Remove" : "Add"} ${t(item.labelKey)}`}
+              aria-label={t(inDock ? "removeItem" : "addItem", { name: t(item.labelKey) })}
             />
           </div>
         )}

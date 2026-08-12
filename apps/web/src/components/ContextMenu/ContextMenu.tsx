@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { cn } from "@/lib/utils";
 import { useContextMenuState } from "./contextMenuStore";
 import { contextMenuStore } from "./contextMenuStore";
@@ -126,7 +127,9 @@ export function ContextMenu() {
                   {item.icon && (
                     <item.icon className="size-4 shrink-0 text-ink-3" />
                   )}
-                  <span className="truncate">{t(item.label)}</span>
+                  <span className="truncate">
+                    {t(item.label as ParseKeys<"contextMenu">)}
+                  </span>
                 </button>
               </div>
             ))}

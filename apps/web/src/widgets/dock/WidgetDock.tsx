@@ -667,14 +667,21 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       aria-label={t("dock.dockedWidgets")}
       data-context-zone="dock"
     >
-      {/* Edit mode backdrop — dims the ENTIRE web (z-55 beats sidebar z-50);
-          click closes edit mode. backdrop-blur-sm blurs everything behind it. */}
-      {isEditing && (
-        <div
-          className="fixed inset-0 z-[55] bg-canvas/40 backdrop-blur-sm"
-          onClick={() => dockEditStore.stopEditing()}
-        />
-      )}
+      {/* Edit mode backdrop — portaled to <body> so it escapes the header's
+          z-20 stacking context: it dims + blurs the ENTIRE web, including the
+          z-50 sidebar and the floating widgets. It shares the sidebar's z-50
+          but sits later in the DOM (ties go to the later sibling), and any
+          dialog/sheet opened afterwards portals above it. The header itself is
+          raised to z-60 while editing (see Header) so the dock bar stays crisp
+          on top. Clicking anywhere closes edit mode. */}
+      {isEditing &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 bg-canvas/40 backdrop-blur-sm"
+            onClick={() => dockEditStore.stopEditing()}
+          />,
+          document.body,
+        )}
       <div
         className={cn(
           "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",

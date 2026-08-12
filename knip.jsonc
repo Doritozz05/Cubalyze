@@ -3,7 +3,10 @@
   "workspaces": {
     ".": {
       // scripts/*.cjs = dev utilities (find-orphans, lint-lines).
-      "entry": ["scripts/*.cjs"]
+      "entry": ["scripts/*.cjs"],
+      // @commitlint/cli: commit tooling kept for future gate (czg is the
+      // active path today; the husky hook is deliberately un-gated).
+      "ignoreDependencies": ["@commitlint/cli"]
     },
     "apps/desktop": {
       // Desktop is a thin Tauri shell that re-uses apps/web source via cross-app
@@ -132,13 +135,16 @@
     // public/ assets referenced by URL only (e.g. /stackmat-processor.js worklet loaded
     // via AudioWorklet.addModule in packages/hardware-hal/src/audio/StackmatAdapter.ts).
     "apps/web/public/**",
-    // Barrels under widgets/implementations/*/index.ts are the intentional public API
-    // surface for the future static plugin system (RFC-017) — imports go directly to
-    // definition.ts / FloatingX.tsx / Preview.tsx today.
-    "apps/web/src/widgets/implementations/**/index.ts",
     // Source of the Stackmat audio worklet: compiled manually into apps/web/public/
     // and loaded by URL, so TS import-graph analysis can never see it.
     "packages/hardware-hal/src/audio/StackmatProcessor.ts",
+    // The HTTP-only Vite variant is used by the Freebuff preview run doc
+    // (apps/web/vite.config.http.ts) — invoked via the vite CLI, never imported.
+    "apps/web/vite.config.http.ts",
+    // Generated seed catalogs (DO NOT edit by hand): the exported SUBSET_ID
+    // constants are the stable subset identifiers for future consumers even
+    // though nothing imports them yet.
+    "packages/algorithm-db/src/seed/**",
     // Desktop Tauri shell adapter layer — wired via vite.config.ts resolve.alias:
     //   @cubeforge/hardware-hal → src/hardware-hal-override.ts
     //   @cubeforge/database     → src/database-override.ts

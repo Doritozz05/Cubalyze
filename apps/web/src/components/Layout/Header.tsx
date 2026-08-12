@@ -2,21 +2,17 @@
 
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Puzzle,
-  Battery,
-  BatteryLow,
-  BatteryMedium,
-  BatteryFull,
-  BatteryWarning,
-} from "lucide-react";
+import { Puzzle } from "lucide-react";
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
+import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
+import { BatteryIcon } from "@/components/Hardware/BatteryIcon";
 import {
+  BatteryPiece,
   ClockPiece,
   ProfilePiece,
   SpacerPiece,
@@ -34,35 +30,6 @@ import { Button } from "@/components/ui/button";
 import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
-
-/**
- * Sleek Lucide Battery icon component changing icon state & vibrant color based on charge percentage.
- */
-function BatteryIcon({ level }: { level: number | null }) {
-  if (level === null) {
-    return <Battery className="size-4 text-ink-3 opacity-60" />;
-  }
-
-  const pct = Math.max(0, Math.min(100, level));
-
-  // Critical low battery (<= 15%): red warning icon
-  if (pct <= 15) {
-    return <BatteryWarning className="size-4 text-rose-500" />;
-  }
-
-  // Low battery (16% - 35%): warm amber 1-bar icon
-  if (pct <= 35) {
-    return <BatteryLow className="size-4 text-amber-500" />;
-  }
-
-  // Medium battery (36% - 75%): vibrant emerald 2-bar icon (shows 1/2 / middle stage)
-  if (pct <= 75) {
-    return <BatteryMedium className="size-4 text-emerald-500" />;
-  }
-
-  // Full battery (> 75%): vibrant emerald full icon
-  return <BatteryFull className="size-4 text-emerald-500" />;
-}
 
 // ── Glass-dock sub-components (desktop) ───────────────────────────────────
 
@@ -146,6 +113,7 @@ export function Header({
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
+  const isDockEditing = useIsDockEditing();
 
   useEffect(() => {
     setPuzzle(puzzleProp);
@@ -197,6 +165,7 @@ export function Header({
     );
     // Phase 4: system/layout pieces
     all["clock"] = <ClockPiece />;
+    all["battery"] = <BatteryPiece />;
     all["profile"] = <ProfilePiece onOpenProfile={onOpenProfile} />;
     all["spacer"] = <SpacerPiece />;
     all["separator"] = <SeparatorPiece />;
@@ -229,7 +198,10 @@ export function Header({
         // so its content never hides under the status bar (desktop: h-14).
         // Desktop (lg+) has NO background: the glass dock floats on its own;
         // touch keeps the solid bar so its controls never sit on bare content.
+        // While the dock is being edited the header is raised to z-60 so the
+        // bar stays crisp above the body-portaled edit backdrop (z-50).
         "fixed inset-x-0 lg:left-14 top-0 z-20",
+        isDockEditing && "z-[60]",
         "max-lg:border-b max-lg:bg-surface",
         "max-lg:h-[calc(3.5rem+env(safe-area-inset-top))] lg:h-14",
         className,

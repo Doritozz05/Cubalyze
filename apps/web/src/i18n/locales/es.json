@@ -3481,6 +3481,7 @@
   "dock": {
     "clock": "Reloj",
     "profile": "Perfil",
+    "battery": "Batería",
     "spacer": "Espaciador",
     "separator": "Separador",
     "widgetsArea": "Widgets",
@@ -3491,6 +3492,8 @@
     "addPiece": "Añadir pieza",
     "doneEditing": "Listo",
     "removePiece": "Quitar del dock",
+    "addItem": "Añadir {{name}}",
+    "removeItem": "Quitar {{name}}",
     "explorer": {
       "title": "Piezas del dock",
       "subtitle": "Añade widgets, reloj, perfil, espaciadores y más a tu barra del dock.",
@@ -3520,6 +3523,7 @@
       "widget": "Un widget flotante que puedes activar y desactivar.",
       "clock": "Muestra la hora actual en la barra del dock.",
       "profile": "Acceso rápido a tu perfil.",
+      "battery": "Estado de la batería del smart cube.",
       "spacer": "Espacio vacío entre grupos de elementos.",
       "separator": "Línea vertical divisora entre grupos.",
       "widgetsArea": "Zona de widgets — muestra las pills de los widgets acoplados.",

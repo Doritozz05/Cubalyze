@@ -20,14 +20,8 @@ import {
   MetricRing,
   SkippedBadge,
   FACE_HEX,
-  FACE_NAME,
-  colorName,
 } from "./atoms";
 import { ReplaySection } from "./ReplaySection";
-
-// Backward-compatible re-exports — the face-color constants live in ./atoms
-// now; consumers that imported them from this panel keep working.
-export { FACE_HEX, FACE_NAME, colorName };
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;

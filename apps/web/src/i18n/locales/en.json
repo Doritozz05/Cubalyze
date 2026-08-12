@@ -3481,6 +3481,7 @@
   "dock": {
     "clock": "Clock",
     "profile": "Profile",
+    "battery": "Battery",
     "spacer": "Spacer",
     "separator": "Separator",
     "widgetsArea": "Widgets",
@@ -3491,6 +3492,8 @@
     "addPiece": "Add piece",
     "doneEditing": "Done",
     "removePiece": "Remove from dock",
+    "addItem": "Add {{name}}",
+    "removeItem": "Remove {{name}}",
     "explorer": {
       "title": "Dock pieces",
       "subtitle": "Add widgets, clock, profile, spacers and more to your dock bar.",
@@ -3520,6 +3523,7 @@
       "widget": "A floating widget you can toggle on and off.",
       "clock": "Shows the current time in the dock bar.",
       "profile": "Quick access to your profile.",
+      "battery": "Smart cube battery status.",
       "spacer": "Empty space between groups of items.",
       "separator": "Vertical line divider between groups.",
       "widgetsArea": "The widget zone — shows docked widget pills.",
