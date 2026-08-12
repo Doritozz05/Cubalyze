@@ -107,17 +107,20 @@ Ver [`widgets/`](./widgets/) — 11 fichas (una por built-in):
 pb-progression, solve-timeline, phase-balance, metronome, notes, algorithm-db,
 layout-organizer.
 
-## ADRs relacionados — evaluación
+## ADRs y TDDs relacionados
 
-- **ADR-017** (Plugin System) ya registra la decisión de extensibilidad y se
-  actualizó en Fase 0 para reflejar que se implementó como **sistema de widgets**
-  (en la app, no en `packages/plugins/*`). **No se crea ADR nuevo**: la decisión
-  arquitectónica (cómo extender la app) está cubierta; el dock, el SDK y el
-  store son detalles de implementación que este documento describe.
+- **ADR-017** (Plugin System) — la decisión de extensibilidad a alto nivel
+  (implementada como widgets, no `packages/plugins/*`).
+- **ADR-026** — **Widget SDK y Arquitectura del Host** (`docs/03-adr/ADR-026-Widget_SDK_Host_Architecture.md`):
+  el SDK host-aislado (`WidgetPlugin`/`WidgetHostAPI`), el modelo de estado único,
+  la banda z y la política de seguridad (solo built-ins; URL-imports eliminados).
+- **TDD-0002** — diseño concreto del sistema
+  (`docs/05-tdd/frontend/0001-widget-sdk-dock-system.md`): contrato del SDK,
+  lifecycle, registry lazy, estado/migraciones del store (persist v8), dock
+  (áreas/pieces/zona de drag) y explorer/host.
 - **ADR-009** (Zustand) — el `widgetStore` es un store Zustand vanilla persistido.
 - **ADR-016** (Comlink/Workers) — el registro lazy aplica code-splitting.
 
-> Nota: si en el futuro se quiere abrir el sistema a **widgets de terceros**
-> (source: "community" | "custom"), merecería un ADR nuevo (el modelo actual es
-> built-in-only; los custom widgets por URL se eliminaron por seguridad
-> local-first, ver migración v6 del store).
+> Nota: abrir el sistema a **widgets de terceros** (source: "community" |
+> "custom") con un mecanismo seguro requeriría un ADR nuevo — hoy es
+> built-in-only por seguridad local-first.

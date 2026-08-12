@@ -160,9 +160,11 @@ implementaciones.
       `docs/02-architecture/Widgets_System.md`: SDK (WidgetPlugin/HostAPI),
       ciclo de vida, registry lazy, store (persist v8, banda z-25..49, layouts),
       dock (áreas + pieces + running indicators), explorer/host.
-      **Evaluación ADR**: no se crea ADR nuevo — ADR-017 ya cubre la decisión de
-      extensibilidad (actualizado en Fase 0); el SDK/dock son detalles documentados
-      aquí. Nota: widgets de terceros (custom/community) sí merecerían ADR.
+      **ADR-026** (Widget SDK & Host Architecture, 2026-08-12): SDK host-aislado,
+      estado único, banda z, política built-in-only — registrado retroactivamente.
+      **TDD-0002** (`docs/05-tdd/frontend/0001-widget-sdk-dock-system.md`): diseño
+      concreto (contrato, lifecycle, registry lazy, store v8, dock, explorer).
+      DEC-27 en el registro.
 - [x] Fichas de las **11 implementaciones** (2026-08-12, incluye `times-log` que
       faltaba en el plan) → `docs/02-architecture/widgets/*.md` (README índice
       + 11 fichas con props/estado y dónde se usa).
