@@ -27,6 +27,8 @@ export interface DockAreaDef {
   category: "core" | "system" | "layout";
   /** Whether this area can be removed in edit mode. */
   removable?: boolean;
+  /** Whether multiple instances of this area can exist (spacer, separator). */
+  repeatable?: boolean;
 }
 
 // ── Built-in areas ─────────────────────────────────────────────────────
@@ -44,8 +46,8 @@ export const DOCK_AREAS: DockAreaDef[] = [
   { id: "puzzle", icon: Puzzle, labelKey: "puzzleArea", descKey: "desc.puzzleArea", category: "core" },
   { id: "clock", icon: Clock, labelKey: "clock", descKey: "desc.clock", category: "system" },
   { id: "profile", icon: User, labelKey: "profile", descKey: "desc.profile", category: "system" },
-  { id: "spacer", icon: RectangleHorizontal, labelKey: "spacer", descKey: "desc.spacer", category: "layout" },
-  { id: "separator", icon: Minus, labelKey: "separator", descKey: "desc.separator", category: "layout" },
+  { id: "spacer", icon: RectangleHorizontal, labelKey: "spacer", descKey: "desc.spacer", category: "layout", repeatable: true },
+  { id: "separator", icon: Minus, labelKey: "separator", descKey: "desc.separator", category: "layout", repeatable: true },
 ];
 
 /** Default order of areas in the dock. */

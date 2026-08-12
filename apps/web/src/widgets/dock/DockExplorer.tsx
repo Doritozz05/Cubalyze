@@ -24,7 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useWidgetStore } from "@/widgets/widgetStore";
 import { DOCK_AREAS, type DockAreaDef } from "@/widgets/dock/dockAreasRegistry";
 import { DockItemCard } from "./DockItemCard";
 
@@ -52,7 +51,7 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
   const isTouch = useIsTouch();
   const [activeKind, setActiveKind] = useState<DockAreaDef["category"] | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+
 
   useEffect(() => {
     if (open) {
@@ -184,7 +183,6 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
                 <DockItemCard
                   key={item.id}
                   item={item}
-                  inDock={dockAreaOrder.includes(item.id)}
                 />
               ))}
             </div>

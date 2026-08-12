@@ -466,22 +466,24 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   // × button to remove it and the ＋ opens the DockExplorer.
   const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
   const handleAreaReorder = useCallback((newOrder: string[]) => {
-    widgetStore.getState().setDockAreaOrder(newOrder);
+    // Ensure "widgets" always stays at position 0 — it's the core area
+    const withoutWidgets = newOrder.filter((id) => id !== "widgets");
+    widgetStore.getState().setDockAreaOrder(["widgets", ...withoutWidgets]);
   }, []);
 
   const editModeAreas = useMemo(() => {
     if (!isEditing) return [];
     return dockAreaOrder.map((areaId) => {
-      // Widgets zone: render a compact preview of the widget pills
+      // Widgets zone: render a compact preview of the widget pills.
+      // NOT draggable — it's always the core leftmost area.
       if (areaId === "widgets") {
         return (
           <Reorder.Item
             key={areaId}
             value={areaId}
-            drag
             layout={reduceMotion ? undefined : true}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
-            className="relative flex cursor-grab items-center gap-0.5 touch-none"
+            className="relative flex h-8 items-center gap-0.5"
           >
             <div className="flex items-center gap-0.5 rounded-full border border-line/50 bg-surface-2/50 px-1.5 py-0.5">
               {dockedIds.slice(0, 5).map((wid) => {
@@ -501,7 +503,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
               onClick={() => {
                 /* widgets zone can't be removed — it's the core */
               }}
-              className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110 opacity-50 cursor-not-allowed"
+              className="absolute -right-1.5 -top-0.5 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110 opacity-50 cursor-not-allowed"
               aria-label={tDock("removePiece")}
               disabled
             >
@@ -524,7 +526,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             drag
             layout={reduceMotion ? undefined : true}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
-            className="relative flex items-center cursor-grab touch-none"
+            className="relative flex h-8 items-center cursor-grab touch-none"
           >
             <div className="mx-1 h-5 w-px shrink-0 bg-line/80" />
             <button
@@ -547,14 +549,13 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             drag
             layout={reduceMotion ? undefined : true}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
-            className="relative flex items-center cursor-grab touch-none"
+            className="relative flex h-8 items-center cursor-grab touch-none"
           >
             <div className="w-6 shrink-0 rounded border border-dashed border-ink-3/30" />
             <button
-              onClick={() => widgetStore.getState().removeDockArea(areaId)}
-              className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
-              aria-label={tDock("removePiece")}
-            >
+              onClick={() => widgetStore.getState().removeDockArea(areaId)}className="absolute -right-1.5 -top-0.5 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
+            aria-label={tDock("removePiece")}
+          >
               <X className="size-2.5" />
             </button>
           </Reorder.Item>
@@ -569,7 +570,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
           drag
           layout={reduceMotion ? undefined : true}
           transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
-          className="relative cursor-grab touch-none"
+          className="relative h-8 cursor-grab touch-none"
         >
           <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
             <Icon className="size-4" />
@@ -578,7 +579,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             onClick={() => {
               widgetStore.getState().removeDockArea(areaId);
             }}
-            className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
+            className="absolute -right-1.5 -top-0.5 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
             aria-label={tDock("removePiece")}
           >
               <X className="size-2.5" />
@@ -649,7 +650,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
         axis="x"
         values={dockAreaOrder}
         onReorder={handleAreaReorder}
-        className="flex items-center gap-1"
+        className="flex h-full items-center gap-1"
       >
         {editModeAreas}
       </Reorder.Group>
@@ -691,7 +692,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
         className={cn(
           "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
           isExpanded && "z-40 w-max",
-          isEditing && "z-[60]",
+          isEditing && "z-[60] overflow-hidden",
         )}
       >
         {isEditing ? renderEditMode() : renderNormal()}

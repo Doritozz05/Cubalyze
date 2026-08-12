@@ -1,47 +1,76 @@
 "use client";
 
-import { useCallback } from "react";
-import { Plus, Check } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { Plus, Minus, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { widgetStore } from "@/widgets/widgetStore";
+import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { useTranslation } from "react-i18next";
 import type { DockAreaDef } from "@/widgets/dock/dockAreasRegistry";
 
 export interface DockItemCardProps {
   item: DockAreaDef;
-  /** Whether this item is currently in the dock. */
-  inDock: boolean;
   className?: string;
 }
 
 /**
  * A single dockable-item card inside the Dock Explorer.
  *
- * Visually matches WidgetCard: same border, padding, icon style.
- * Instead of a toggle, shows a round "add" or "in-dock" indicator.
+ * - **Non-repeatable items**: shows a professional toggle switch (on/off).
+ * - **Repeatable items** (spacer, separator): shows a counter with +/- buttons.
+ * - **Locked items** (widgets): shows a lock icon, always on.
  */
-export function DockItemCard({ item, inDock, className }: DockItemCardProps) {
+export function DockItemCard({ item, className }: DockItemCardProps) {
   const { t } = useTranslation("dock");
   const Icon = item.icon;
 
-  const handleClick = useCallback(() => {
+  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+
+  // Count how many instances of this area exist in the dock
+  const count = useMemo(
+    () => dockAreaOrder.filter((id) => id === item.id).length,
+    [dockAreaOrder, item.id],
+  );
+
+  const inDock = count > 0;
+  const isLocked = item.removable === false;
+  const isRepeatable = item.repeatable === true;
+
+  const handleAdd = useCallback(() => {
+    const store = widgetStore.getState();
+    store.addDockArea(item.id);
+  }, [item.id]);
+
+  const handleRemove = useCallback(() => {
+    const store = widgetStore.getState();
+    // Remove the last occurrence
+    const order = [...store.dockAreaOrder];
+    const lastIdx = order.lastIndexOf(item.id);
+    if (lastIdx >= 0) {
+      order.splice(lastIdx, 1);
+      store.setDockAreaOrder(order);
+    }
+  }, [item.id]);
+
+  const handleToggle = useCallback(() => {
+    if (isLocked) return;
     const store = widgetStore.getState();
     if (inDock) {
-      store.removeDockArea(item.id);
+      // Remove all instances
+      store.setDockAreaOrder(store.dockAreaOrder.filter((id) => id !== item.id));
     } else {
       store.addDockArea(item.id);
     }
-  }, [item.id, inDock]);
+  }, [item.id, inDock, isLocked]);
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={handleClick}
+      onClick={!isRepeatable && !isLocked ? handleToggle : undefined}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (!isRepeatable && !isLocked && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
-          handleClick();
+          handleToggle();
         }
       }}
       className={cn(
@@ -51,6 +80,7 @@ export function DockItemCard({ item, inDock, className }: DockItemCardProps) {
         inDock
           ? "border-line bg-surface-2/30 shadow-xs"
           : "border-line/60 opacity-70 hover:opacity-100",
+        isLocked && "opacity-100 cursor-default",
         className,
       )}
     >
@@ -87,22 +117,69 @@ export function DockItemCard({ item, inDock, className }: DockItemCardProps) {
         </p>
       </div>
 
-      {/* Right: Add/Check indicator */}
+      {/* Right: Toggle / Counter / Lock */}
       <div className="flex shrink-0 flex-col items-center justify-center">
-        <div
-          className={cn(
-            "flex size-8 items-center justify-center rounded-full border transition-all duration-200",
-            inDock
-              ? "border-ink-2 bg-ink-2 text-canvas"
-              : "border-line bg-surface text-ink-3 group-hover:border-ink-2/50 group-hover:text-ink-2",
-          )}
-        >
-          {inDock ? (
-            <Check className="size-4" />
-          ) : (
-            <Plus className="size-4" />
-          )}
-        </div>
+        {isLocked ? (
+          /* Locked indicator — always on, can't be removed */
+          <div className="flex size-8 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-3">
+            <Lock className="size-3.5" />
+          </div>
+        ) : isRepeatable ? (
+          /* Counter with +/- for repeatable items */
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove();
+              }}
+              disabled={count === 0}
+              className={cn(
+                "grid size-6 shrink-0 place-items-center rounded-full border transition-colors",
+                count > 0
+                  ? "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
+                  : "border-line/50 bg-surface text-ink-3/30 cursor-not-allowed",
+              )}
+              aria-label={`Remove ${t(item.labelKey)}`}
+            >
+              <Minus className="size-3" />
+            </button>
+            <span className="nums w-5 text-center text-[0.72rem] font-medium text-ink">
+              {count}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAdd();
+              }}
+              className="grid size-6 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+              aria-label={`Add ${t(item.labelKey)}`}
+            >
+              <Plus className="size-3" />
+            </button>
+          </div>
+        ) : (
+          /* Professional toggle switch for non-repeatable items */
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggle();
+            }}
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200",
+              inDock ? "bg-ink" : "bg-line",
+            )}
+            role="switch"
+            aria-checked={inDock}
+            aria-label={`${inDock ? "Remove" : "Add"} ${t(item.labelKey)}`}
+          >
+            <span
+              className={cn(
+                "inline-block size-3.5 rounded-full bg-canvas shadow-xs transition-transform duration-200",
+                inDock ? "translate-x-4" : "translate-x-0.5",
+              )}
+            />
+          </button>
+        )}
       </div>
     </div>
   );
