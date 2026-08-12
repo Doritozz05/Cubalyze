@@ -35,6 +35,18 @@ import { preferencesStore } from "@cubeforge/state";
 /** The simulator currently supports 3×3 (architecture ready for more puzzles). */
 const CUBE_ORDER = 3;
 
+/**
+ * Canonical solved facelet string — the ONLY facelet state the virtual cube
+ * ever pushes to the session. Math-core keeps the centers FIXED (they never
+ * permute), so a solved-but-rotated mirror serializes to faces with a
+ * mismatched center sticker (e.g. "BBBBRBBBB") that FAILS the SOLVED_FACELETS
+ * regex — the timer would never stop and the validator would never reset
+ * after a rotated solve/undo. The canonical string matches SOLVED_FACELETS
+ * and tells both consumers "cube back at the solved start" regardless of
+ * frame.
+ */
+const SOLVED_CANONICAL = FaceletStringConverter.toFaceletString(new CubeState());
+
 type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
 
 /** Base animation duration (ms) per turn speed. `instant` disables animation. */
@@ -196,6 +208,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
     lastTime,
     validation,
     notifyTurn,
+    notifyTurnToken,
     pushFacelets,
     resetScramble,
     reset: resetSession,
@@ -235,9 +248,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   useEffect(() => {
     if (!isReady || didInitRef.current) return;
     didInitRef.current = true;
-    if (stateRef.current) {
-      pushFacelets(FaceletStringConverter.toFaceletString(stateRef.current));
-    }
+    // The virtual cube only ever pushes CANONICAL solved facelets (see
+    // SOLVED_CANONICAL) — every push tells both consumers "cube at the
+    // solved start" regardless of frame.
+    pushFacelets(SOLVED_CANONICAL);
   }, [isReady, pushFacelets]);
 
   /**
@@ -304,21 +318,27 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
       // (the smart cube reports raw moves in its own frame; the gyro only
       // remaps the display). Each position-frame move is conjugated through
       // the grip back to the cube frame, so after a y rotation dragging the
-      // front face validates as the original R move.
+      // front face validates as the original R move. Wide moves stay ONE
+      // token ("r" → conjugated "b") so the validator counts a single
+      // deviation instead of a phantom error for the slice half.
       for (const ev of actionToValidatorEvents(action, gripRef.current)) {
-        notifyTurn(ev.face, ev.direction);
+        if (ev.kind === "face") notifyTurn(ev.face, ev.direction);
+        else notifyTurnToken(ev.notation);
       }
 
       // Solved up to rotation → the session stops the running timer (and the
-      // validator resets its sticky error state on a solved cube).
+      // validator resets its sticky error state on a solved cube). The pushed
+      // facelets are the CANONICAL solved string, not the rotated mirror's
+      // (see SOLVED_CANONICAL above) — otherwise a rotated solve/undo would
+      // serialize to a facelet string that fails SOLVED_FACELETS.
       if (state.isSolvedUpToRotation()) {
-        pushFacelets(FaceletStringConverter.toFaceletString(state));
+        pushFacelets(SOLVED_CANONICAL);
       }
     },
     // grip is intentionally NOT a dependency: applyAction reads gripRef,
     // which is always the latest rotation (a drag can commit between an
     // engine rotation and the React re-render flushing the new grip state).
-    [cubeTurnSpeed, engineRef, notifyTurn, pushFacelets],
+    [cubeTurnSpeed, engineRef, notifyTurn, notifyTurnToken, pushFacelets],
   );
 
   // Orientation-adapted scramble (Settings → Scramble → "Rotate scramble
@@ -442,17 +462,22 @@ export const CubeSimulatorView = memo(function CubeSimulatorView() {
   /**
    * Reset: cube back to SOLVED (undoes every move including whole-cube
    * rotations x/y/z) + camera back to isometric + timer back to idle. The
-   * scramble stays on screen so the user can redo it. The solved facelet
-   * clears the validator's sticky "too many mistakes" state — the timer
-   * does NOT start again until the scramble is performed.
+   * scramble stays on screen so the user can redo it.
+   *
+   * The validator is re-seeded for the SAME scramble text (reset$ signal):
+   * its "post-scramble" lock (`scrambleCompleted`) must NOT survive a
+   * manual reset, or every subsequent move would be silently ignored (the
+   * timer would never re-verify the scramble). The solved facelet then
+   * confirms the validator starts from a solved cube.
    */
   const handleReset = useCallback(() => {
     resetCube();
     resetSession();
-    if (stateRef.current) {
-      pushFacelets(FaceletStringConverter.toFaceletString(stateRef.current));
-    }
-  }, [pushFacelets, resetCube, resetSession]);
+    resetScramble();
+    // Canonical solved facelets (see SOLVED_CANONICAL) — the cube is solved
+    // after resetCube, in the cube-fixed frame by definition.
+    pushFacelets(SOLVED_CANONICAL);
+  }, [pushFacelets, resetCube, resetSession, resetScramble]);
 
   // ── Timer display (session-driven: 0 while idle, live while running,
   //    frozen at the final time once stopped). ─────────────────────────────

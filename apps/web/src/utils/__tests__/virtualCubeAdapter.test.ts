@@ -39,6 +39,34 @@ describe("createVirtualCubeAdapter", () => {
     sub?.unsubscribe();
   });
 
+  it("pushToken emits the full-notation token on tokens$", () => {
+    const adapter = createVirtualCubeAdapter();
+    const seen: string[] = [];
+    const sub = adapter.tokens$?.subscribe((notation) => seen.push(notation));
+
+    adapter.pushToken("r");
+    adapter.pushToken("u'");
+
+    expect(seen).toEqual(["r", "u'"]);
+    sub?.unsubscribe();
+  });
+
+  it("pushMove and pushToken feed different streams (face events vs wide tokens)", () => {
+    const adapter = createVirtualCubeAdapter();
+    const moves: { face: string; direction: number }[] = [];
+    const tokens: string[] = [];
+    const m = adapter.moves$.subscribe((ev) => moves.push({ face: ev.face, direction: ev.direction }));
+    const t = adapter.tokens$?.subscribe((notation) => tokens.push(notation));
+
+    adapter.pushMove("R", 1);
+    adapter.pushToken("r");
+
+    expect(moves).toEqual([{ face: "R", direction: 1 }]);
+    expect(tokens).toEqual(["r"]);
+    m.unsubscribe();
+    t?.unsubscribe();
+  });
+
   it("pushReset emits the re-seed signal on reset$", () => {
     const adapter = createVirtualCubeAdapter();
     let resets = 0;

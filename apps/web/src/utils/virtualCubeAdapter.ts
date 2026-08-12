@@ -14,6 +14,12 @@ import type { ScrambleValidationAdapter } from "@/hooks/useScrambleValidator";
 export interface VirtualCubeAdapter extends ScrambleValidationAdapter {
   /** Push a completed turn (already mirrored into the CubeState/engine). */
   pushMove(face: CubeFace, direction: 1 | -1): void;
+  /**
+   * Push a completed action as ONE full-notation token ("r" for a wide
+   * move). Emitted on {@link tokens$} — the validator compares one user
+   * action against one scramble token.
+   */
+  pushToken(notation: string): void;
   /** Push an absolute facelet snapshot (solved on mount/reset, solved when
    *  the solve completes). */
   pushFacelets(facelets: string): void;
@@ -30,6 +36,7 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
   const movesSubject = new Subject<import("@cubeforge/types").CubeMoveEvent>();
   const faceletsSubject = new Subject<string>();
   const resetSubject = new Subject<void>();
+  const tokensSubject = new Subject<string>();
 
   return {
     // The virtual cube is always "connected": the validator + auto-arm
@@ -38,6 +45,7 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
     moves$: movesSubject.asObservable(),
     facelets$: faceletsSubject.asObservable(),
     reset$: resetSubject.asObservable(),
+    tokens$: tokensSubject.asObservable(),
     // Facelets are pushed directly by the view (no hardware round-trip).
     requestFacelets: async () => {},
 
@@ -48,6 +56,9 @@ export function createVirtualCubeAdapter(): VirtualCubeAdapter {
         cubeTimestamp: 0,
         hostTimestamp: performance.now(),
       });
+    },
+    pushToken(notation) {
+      tokensSubject.next(notation);
     },
     pushFacelets(facelets) {
       faceletsSubject.next(facelets);

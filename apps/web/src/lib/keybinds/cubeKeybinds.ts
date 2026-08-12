@@ -171,8 +171,46 @@ export function actionToMoves(action: CubeKeyAction, order: number = 3): CubeEng
 }
 
 /**
- * Decompose a key action into validator-style face events in the CUBE-fixed
- * frame (one per layer that actually turned).
+ * A single user action fed to the scramble validator. Each USER ACTION maps
+ * to exactly ONE validator event so a wide move counts as one deviation
+ * (not two face turns) and its inverse undoes it in one move.
+ */
+export type ValidatorEvent =
+  | { kind: "face"; face: CubeFace; direction: 1 | -1 }
+  | { kind: "token"; notation: string };
+
+/**
+ * Canonical wide-move tokens (inverse of math-core's `expandWideMoves`):
+ * used to re-pack a conjugated face+slice pair back into a single wide
+ * token (e.g. "B S'" under a y grip → "b"). Under any whole-cube rotation
+ * a wide pair always maps onto another canonical wide pair (the slice stays
+ * on the same axis as its face), so the pack lookup covers every case.
+ */
+const WIDE_PACK: Record<string, string> = {
+  "R M'": "r", "R' M": "r'", "R2 M2": "r2",
+  "L M": "l", "L' M'": "l'", "L2 M2": "l2",
+  "F S": "f", "F' S'": "f'", "F2 S2": "f2",
+  "U E'": "u", "U' E": "u'", "U2 E2": "u2",
+  "D E": "d", "D' E'": "d'", "D2 E2": "d2",
+  "B S'": "b", "B' S": "b'", "B2 S2": "b2",
+};
+
+/**
+ * Conjugate a WIDE token through the grip, keeping it a single token.
+ * `conjugateTokenThroughGrip` passes wide moves through unchanged (they must
+ * be pre-expanded), so: expand → conjugate each part → re-pack into the
+ * canonical wide token. Falls back to the space-joined parts when the
+ * conjugated pair is not a canonical wide move (should not happen for pure
+ * rotations — the pair stays on one axis).
+ */
+function conjugateWideToBase(token: string, grip: OrientationEntry): string {
+  const fixed = expandWideMoves(token).map((p) => conjugateTokenThroughGrip(p, grip));
+  return WIDE_PACK[fixed.join(" ")] ?? fixed.join(" ");
+}
+
+/**
+ * Decompose a key action into ONE validator event per user action, in the
+ * CUBE-fixed frame.
  *
  * The virtual cube resolves drags/keys in the CURRENT (possibly rotated)
  * view frame — "the layer the user sees" — but the scramble validator
@@ -182,26 +220,34 @@ export function actionToMoves(action: CubeKeyAction, order: number = 3): CubeEng
  * grip back to the cube frame, so a drag on the front face after a y
  * rotation validates as the original R move, exactly like the real timer.
  *
- * Wide moves expand to their face+slice pair BEFORE conjugation — matching
- * math-core's `expandWideMoves` (r = R M', u = U E', l = L M, d = D E).
- * Whole-cube rotations emit nothing (they are not moves).
+ * Wide moves stay a SINGLE token ("r" → conjugated "b"), emitted on the
+ * adapter's token stream so the validator compares one user action against
+ * one scramble token (matching math-core's `expandWideMoves` semantics for
+ * the CubeState mirror, while avoiding a phantom second error from the
+ * slice half of the pair). Whole-cube rotations emit nothing (they are not
+ * moves).
  */
 export function actionToValidatorEvents(
   action: CubeKeyAction,
   grip: OrientationEntry,
-): { face: CubeFace; direction: 1 | -1 }[] {
+): ValidatorEvent[] {
   if (action.kind === "rotate") return [];
-  const positionTokens =
-    action.kind === "wide"
-      ? expandWideMoves(actionToNotation(action))
-      : [actionToNotation(action)];
-  return positionTokens.map((token) => {
-    const fixed = conjugateTokenThroughGrip(token, grip);
-    return {
+  if (action.kind === "wide") {
+    // The fallback (conjugated pair not repackable) yields two tokens — the
+    // view emits them separately, which is the same as two independent
+    // deviations (rare; pure rotations always repack).
+    return conjugateWideToBase(actionToNotation(action), grip)
+      .split(" ")
+      .map((notation) => ({ kind: "token", notation }));
+  }
+  const fixed = conjugateTokenThroughGrip(actionToNotation(action), grip);
+  return [
+    {
+      kind: "face",
       face: fixed[0] as CubeFace,
       direction: (fixed.endsWith("'") ? -1 : 1) as 1 | -1,
-    };
-  });
+    },
+  ];
 }
 
 /** Human-readable move notation for a key action ("R", "U'", "M", "r", "x"). */

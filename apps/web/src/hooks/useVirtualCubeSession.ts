@@ -29,6 +29,11 @@ export interface UseVirtualCubeSessionResult {
    */
   notifyTurn: (face: CubeFace, direction: 1 | -1) => void;
   /**
+   * Feed a completed WIDE move as a single notation token ("r", "u'", …)
+   * so the validator compares one action against one scramble token.
+   */
+  notifyTurnToken: (notation: string) => void;
+  /**
    * Push an absolute facelet snapshot. The session stops the running timer
    * when the cube is solved (SOLVED_FACELETS matches any orientation, so
    * whole-cube rotations never stop it early) and the validator's facelet
@@ -134,15 +139,21 @@ export function useVirtualCubeSession(
 
   // ── Timer gating on moves ─────────────────────────────────────────────
   // IDLE turns are scramble moves (the validator consumes them). The first
-  // turn while armed starts the clock. Turns while RUNNING need nothing
-  // here — solve completion is detected via the facelet stream below.
+  // turn while armed starts the clock — from EITHER stream (face moves on
+  // moves$, wide moves as tokens on tokens$). Turns while RUNNING need
+  // nothing here — solve completion is detected via the facelet stream
+  // below.
   useEffect(() => {
-    const sub = adapter.moves$.subscribe(() => {
+    const startIfArmed = () => {
       if (engine.getState() === EngineState.READY_FOR_MOVE) {
         engine.handleSmartCubeStart();
       }
-    });
-    return () => sub.unsubscribe();
+    };
+    const subs = [adapter.moves$.subscribe(startIfArmed)];
+    if (adapter.tokens$) {
+      subs.push(adapter.tokens$.subscribe(startIfArmed));
+    }
+    return () => subs.forEach((s) => s.unsubscribe());
   }, [adapter, engine]);
 
   // ── Solved detection (same mechanism as the real timer's facelets$) ───
@@ -166,6 +177,13 @@ export function useVirtualCubeSession(
     [adapter],
   );
 
+  const notifyTurnToken = useCallback(
+    (notation: string) => {
+      adapter.pushToken(notation);
+    },
+    [adapter],
+  );
+
   const pushFacelets = useCallback(
     (facelets: string) => {
       adapter.pushFacelets(facelets);
@@ -183,5 +201,15 @@ export function useVirtualCubeSession(
     setLastTime(null);
   }, [engine]);
 
-  return { phase, time, lastTime, validation, notifyTurn, pushFacelets, resetScramble, reset };
+  return {
+    phase,
+    time,
+    lastTime,
+    validation,
+    notifyTurn,
+    notifyTurnToken,
+    pushFacelets,
+    resetScramble,
+    reset,
+  };
 }

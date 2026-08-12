@@ -166,56 +166,49 @@ describe("actionToValidatorEvents — cube-fixed validator feed", () => {
   const yGrip = OrientationTable.rotationEntryFor("y")!;
 
   it("with the identity grip, face turns pass through unchanged (M included)", () => {
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyJ, identity)).toEqual([{ face: "U", direction: 1 }]);
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyK, identity)).toEqual([{ face: "R", direction: -1 }]);
-    expect(actionToValidatorEvents(CUBE_KEYMAP.Digit5, identity)).toEqual([{ face: "M", direction: 1 }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyJ, identity)).toEqual([{ kind: "face", face: "U", direction: 1 }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyK, identity)).toEqual([{ kind: "face", face: "R", direction: -1 }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.Digit5, identity)).toEqual([{ kind: "face", face: "M", direction: 1 }]);
   });
 
   it("conjugates face turns through a rotated grip (drag the front face after y → original R)", () => {
     // After a y rotation the R face sits at the FRONT position: a drag that
     // turns the front-face layer must validate as the original R move.
     expect(actionToValidatorEvents({ kind: "turn", face: "F", direction: 1 }, yGrip)).toEqual([
-      { face: "R", direction: 1 },
+      { kind: "face", face: "R", direction: 1 },
     ]);
     // The F face sits at the LEFT position after y: dragging it → original F
     // (a physical F turn is unchanged, it just looks like it sits on the left).
     expect(actionToValidatorEvents({ kind: "turn", face: "L", direction: -1 }, yGrip)).toEqual([
-      { face: "F", direction: -1 },
+      { kind: "face", face: "F", direction: -1 },
     ]);
     // Slices conjugate too (a physical M' after y is an S' in the cube frame).
     expect(actionToValidatorEvents({ kind: "turn", face: "M", direction: -1 }, yGrip)).toEqual([
-      { face: "S", direction: -1 },
+      { kind: "face", face: "S", direction: -1 },
     ]);
   });
 
-  it("with the identity grip, wide moves expand to their face+slice pair (r = R M', l = L M, u = U E', d = D E)", () => {
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyU, identity)).toEqual([
-      { face: "R", direction: 1 },
-      { face: "M", direction: -1 },
-    ]);
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyM, identity)).toEqual([
-      { face: "R", direction: -1 },
-      { face: "M", direction: 1 },
-    ]);
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyV, identity)).toEqual([
-      { face: "L", direction: 1 },
-      { face: "M", direction: 1 },
-    ]);
-    expect(actionToValidatorEvents(CUBE_KEYMAP.Comma, identity)).toEqual([
-      { face: "U", direction: 1 },
-      { face: "E", direction: -1 },
-    ]);
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyZ, identity)).toEqual([
-      { face: "D", direction: 1 },
-      { face: "E", direction: 1 },
-    ]);
+  it("wide moves emit ONE token per action (r, l, u, d — no phantom slice error)", () => {
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyU, identity)).toEqual([{ kind: "token", notation: "r" }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyM, identity)).toEqual([{ kind: "token", notation: "r'" }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyV, identity)).toEqual([{ kind: "token", notation: "l" }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.Comma, identity)).toEqual([{ kind: "token", notation: "u" }]);
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyZ, identity)).toEqual([{ kind: "token", notation: "d" }]);
   });
 
-  it("conjugates wide moves through a rotated grip (r after y → B + S')", () => {
-    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyU, yGrip)).toEqual([
-      { face: "B", direction: 1 },
-      { face: "S", direction: -1 },
-    ]);
+  it("conjugates wide moves through a rotated grip, re-packed into a single token (r after y → b)", () => {
+    // r = R M' → under y: B + S' → the canonical wide token "b".
+    expect(actionToValidatorEvents(CUBE_KEYMAP.KeyU, yGrip)).toEqual([{ kind: "token", notation: "b" }]);
+  });
+
+  it("the re-packed wide token equals its conjugated parts on the cube", () => {
+    const viaToken = new CubeState();
+    viaToken.applySequence("b");
+    const viaParts = new CubeState();
+    viaParts.applySequence("B S'");
+    expect(FaceletStringConverter.toFaceletString(viaToken)).toBe(
+      FaceletStringConverter.toFaceletString(viaParts),
+    );
   });
 
   it("emits nothing for whole-cube rotations (they are not moves)", () => {
