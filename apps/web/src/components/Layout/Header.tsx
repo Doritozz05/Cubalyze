@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -89,11 +89,6 @@ function BatteryIcon({ level }: { level: number | null }) {
 }
 
 // ── Glass-dock sub-components (desktop) ───────────────────────────────────
-
-/** Thin vertical separator between groups inside the glass dock. */
-function DockDivider() {
-  return <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line/80" />;
-}
 
 /** Smart Cube battery % chip — status-tray style, pinned to the header edge. */
 function BatteryStatusChip() {
@@ -424,6 +419,51 @@ export function Header({
   const activeWidgetCount = useWidgetStore(
     (s) => Object.values(s.instances).filter((i) => i?.status !== "inactive").length,
   );
+  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+
+  // Build trailingAreas dynamically from the store's dockAreaOrder.
+  // The order is the single source of truth — the dock renders areas in this
+  // sequence, and edit mode can reorder/remove/add them.
+  const trailingAreas = useMemo(() => {
+    const all: Record<string, ReactNode> = {
+      "manual-solve": <ManualSolveIconButton onAddManual={onAddManual} />,
+    };
+    if (sessions && sessions.length > 0) {
+      all["session"] = (
+        <SessionMenu
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          sessionCount={sessionCount}
+          onSwitchSession={onSwitchSession}
+          onNewSession={onNewSession}
+          onRenameSession={onRenameSession}
+          onDeleteSession={onDeleteSession}
+        />
+      );
+    }
+    all["puzzle"] = (
+      <PuzzleSelect
+        puzzle={puzzle}
+        onPuzzleChange={(p) => {
+          setPuzzle(p);
+          onPuzzleChange?.(p);
+        }}
+        puzzleLocked={puzzleLocked}
+        variant="tray"
+      />
+    );
+    return all;
+  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, puzzle, puzzleLocked, onPuzzleChange]);
+
+  // Filter to only areas that exist in dockAreaOrder (so removed areas don't render)
+  const orderedTrailingAreas = useMemo(() => {
+    const result: Record<string, ReactNode> = {};
+    for (const id of dockAreaOrder) {
+      if (id === "widgets") continue; // widgets area is the left side, not trailing
+      if (trailingAreas[id]) result[id] = trailingAreas[id];
+    }
+    return result;
+  }, [dockAreaOrder, trailingAreas]);
 
   return (
     <motion.header
@@ -454,35 +494,7 @@ export function Header({
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
-          <WidgetDock
-            trailingAreas={{
-              "manual-solve": <ManualSolveIconButton onAddManual={onAddManual} />,
-              ...(sessions && sessions.length > 0 ? {
-                "session": (
-                  <SessionMenu
-                    sessions={sessions}
-                    activeSessionId={activeSessionId}
-                    sessionCount={sessionCount}
-                    onSwitchSession={onSwitchSession}
-                    onNewSession={onNewSession}
-                    onRenameSession={onRenameSession}
-                    onDeleteSession={onDeleteSession}
-                  />
-                ),
-              } : {}),
-              "puzzle": (
-                <PuzzleSelect
-                  puzzle={puzzle}
-                  onPuzzleChange={(p) => {
-                    setPuzzle(p);
-                    onPuzzleChange?.(p);
-                  }}
-                  puzzleLocked={puzzleLocked}
-                  variant="tray"
-                />
-              ),
-            }}
-          />
+          <WidgetDock trailingAreas={orderedTrailingAreas} />
         </div>
       </div>
 

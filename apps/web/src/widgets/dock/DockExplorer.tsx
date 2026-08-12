@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useWidgetStore } from "@/widgets/widgetStore";
-import { getAllDockItems, type DockItemKind } from "@/widgets/dock/dockRegistry";
+import { DOCK_AREAS, type DockAreaDef } from "@/widgets/dock/dockAreasRegistry";
 import { DockItemCard } from "./DockItemCard";
 
 export const DOCK_EXPLORER_WIDTH = "sm:max-w-[900px]";
@@ -35,12 +35,11 @@ export interface DockExplorerProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const KIND_CATEGORIES: { id: DockItemKind | "all"; label: string }[] = [
-  { id: "all", label: "dock.explorer.allKinds" },
-  { id: "widget", label: "dock.explorer.kindWidget" },
-  { id: "clock", label: "dock.explorer.kindClock" },
-  { id: "profile", label: "dock.explorer.kindProfile" },
-  { id: "spacer", label: "dock.explorer.kindSpacer" },
+const KIND_CATEGORIES: { id: DockAreaDef["category"] | "all"; label: string }[] = [
+  { id: "all", label: "explorer.allKinds" },
+  { id: "core", label: "explorer.kindWidget" },
+  { id: "system", label: "explorer.kindClock" },
+  { id: "layout", label: "explorer.kindSpacer" },
 ];
 
 /**
@@ -51,9 +50,9 @@ const KIND_CATEGORIES: { id: DockItemKind | "all"; label: string }[] = [
 export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
   const { t } = useTranslation("dock");
   const isTouch = useIsTouch();
-  const [activeKind, setActiveKind] = useState<DockItemKind | "all">("all");
+  const [activeKind, setActiveKind] = useState<DockAreaDef["category"] | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const dockItems = useWidgetStore((s) => s.dockItems);
+  const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
 
   useEffect(() => {
     if (open) {
@@ -62,26 +61,26 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
     }
   }, [open]);
 
-  const allItems = useMemo(() => getAllDockItems(), []);
+  const allItems = useMemo(() => DOCK_AREAS, []);
 
   const filteredItems = useMemo(() => {
     let list = allItems;
     if (activeKind !== "all") {
-      list = list.filter((item) => item.kind === activeKind);
+      list = list.filter((item) => item.category === activeKind);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (item) =>
           t(item.labelKey).toLowerCase().includes(q) ||
-          item.kind.toLowerCase().includes(q),
+          item.category.toLowerCase().includes(q),
       );
     }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allItems, activeKind, searchQuery]);
 
-  const handleSelectKind = useCallback((id: DockItemKind | "all") => {
+  const handleSelectKind = useCallback((id: DockAreaDef["category"] | "all") => {
     setActiveKind(id);
   }, []);
 
@@ -134,7 +133,7 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
         <div className="shrink-0 border-b border-line/60 px-4 py-2.5 lg:hidden">
           <Select
             value={activeKind}
-            onValueChange={(val) => handleSelectKind(val as DockItemKind | "all")}
+            onValueChange={(val) => handleSelectKind(val as DockAreaDef["category"] | "all")}
           >
             <SelectTrigger className="h-9 w-full max-w-60 gap-2 rounded-lg border border-line bg-surface-2 px-3 text-xs font-semibold text-ink shadow-xs">
               <div className="flex items-center gap-2 truncate">
@@ -185,7 +184,7 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
                 <DockItemCard
                   key={item.id}
                   item={item}
-                  inDock={dockItems.includes(item.id)}
+                  inDock={dockAreaOrder.includes(item.id)}
                 />
               ))}
             </div>

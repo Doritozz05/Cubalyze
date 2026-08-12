@@ -3482,6 +3482,7 @@
     "clock": "Clock",
     "profile": "Profile",
     "spacer": "Spacer",
+    "separator": "Separator",
     "widgetsArea": "Widgets",
     "manualSolve": "Add solve",
     "sessionArea": "Session",
@@ -3509,13 +3510,22 @@
       "widget": "Widget",
       "clock": "System",
       "profile": "System",
-      "spacer": "Layout"
+      "spacer": "Layout",
+      "separator": "Layout",
+      "core": "Core",
+      "system": "System",
+      "layout": "Layout"
     },
     "desc": {
       "widget": "A floating widget you can toggle on and off.",
       "clock": "Shows the current time in the dock bar.",
       "profile": "Quick access to your profile.",
-      "spacer": "Empty space between groups of items."
+      "spacer": "Empty space between groups of items.",
+      "separator": "Vertical line divider between groups.",
+      "widgetsArea": "The widget zone — shows docked widget pills.",
+      "manualSolve": "Quick-add button for manual solve entry.",
+      "sessionArea": "Session switcher with name and solve count.",
+      "puzzleArea": "Puzzle category selector (3x3, 2x2, etc.)"
     }
   },
   "contextMenu": {

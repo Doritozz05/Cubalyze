@@ -465,13 +465,24 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   // puzzle, clock, profile, spacer). In edit mode, each area gets a
   // × button to remove it and the ＋ opens the DockExplorer.
   const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
+  const handleAreaReorder = useCallback((newOrder: string[]) => {
+    widgetStore.getState().setDockAreaOrder(newOrder);
+  }, []);
+
   const editModeAreas = useMemo(() => {
     if (!isEditing) return [];
     return dockAreaOrder.map((areaId) => {
       // Widgets zone: render a compact preview of the widget pills
       if (areaId === "widgets") {
         return (
-          <div key={areaId} className="relative flex items-center gap-0.5">
+          <Reorder.Item
+            key={areaId}
+            value={areaId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            className="relative flex cursor-grab items-center gap-0.5 touch-none"
+          >
             <div className="flex items-center gap-0.5 rounded-full border border-line/50 bg-surface-2/50 px-1.5 py-0.5">
               {dockedIds.slice(0, 5).map((wid) => {
                 const def = getWidget(wid);
@@ -496,7 +507,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             >
               <X className="size-2.5" />
             </button>
-          </div>
+          </Reorder.Item>
         );
       }
       // Other areas: render from the area definition
@@ -504,7 +515,14 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       if (!area) return null;
       const Icon = area.icon;
       return (
-        <div key={areaId} className="relative">
+        <Reorder.Item
+          key={areaId}
+          value={areaId}
+          drag
+          layout={reduceMotion ? undefined : true}
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+          className="relative cursor-grab touch-none"
+        >
           <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
             <Icon className="size-4" />
           </div>
@@ -515,12 +533,12 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             className="absolute -right-1 -top-1 z-10 grid size-4 place-items-center rounded-full bg-dnf text-canvas shadow-md transition-transform hover:scale-110"
             aria-label={tDock("removePiece")}
           >
-            <X className="size-2.5" />
+              <X className="size-2.5" />
           </button>
-        </div>
+        </Reorder.Item>
       );
     });
-  }, [isEditing, dockAreaOrder, dockedIds, tDock]);
+  }, [isEditing, dockAreaOrder, dockedIds, reduceMotion, tDock]);
 
   const renderNormal = () => (
     <>
@@ -578,17 +596,23 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
 
   const renderEditMode = () => (
     <>
-      <div className="flex items-center gap-1">
+      <Reorder.Group
+        as="div"
+        axis="x"
+        values={dockAreaOrder}
+        onReorder={handleAreaReorder}
+        className="flex items-center gap-1"
+      >
         {editModeAreas}
-        {/* ＋ button to open DockExplorer */}
-        <button
-          onClick={() => setExplorerOpen(true)}
-          className="grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-ink-3/40 text-ink-3 transition-colors hover:border-ink-2 hover:text-ink"
-          aria-label={tDock("addPiece")}
-        >
-          <Plus className="size-4" />
-        </button>
-      </div>
+      </Reorder.Group>
+      {/* ＋ button to open DockExplorer */}
+      <button
+        onClick={() => setExplorerOpen(true)}
+        className="grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-ink-3/40 text-ink-3 transition-colors hover:border-ink-2 hover:text-ink"
+        aria-label={tDock("addPiece")}
+      >
+        <Plus className="size-4" />
+      </button>
 
       {/* Done button */}
       <button

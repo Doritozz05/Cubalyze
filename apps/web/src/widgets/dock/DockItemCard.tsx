@@ -5,10 +5,10 @@ import { Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetStore } from "@/widgets/widgetStore";
 import { useTranslation } from "react-i18next";
-import type { DockItemDef } from "@/widgets/dock/dockRegistry";
+import type { DockAreaDef } from "@/widgets/dock/dockAreasRegistry";
 
 export interface DockItemCardProps {
-  item: DockItemDef;
+  item: DockAreaDef;
   /** Whether this item is currently in the dock. */
   inDock: boolean;
   className?: string;
@@ -27,18 +27,11 @@ export function DockItemCard({ item, inDock, className }: DockItemCardProps) {
   const handleClick = useCallback(() => {
     const store = widgetStore.getState();
     if (inDock) {
-      store.removeDockItem(item.id);
+      store.removeDockArea(item.id);
     } else {
-      // For widgets, also make sure the widget is active (not inactive)
-      if (item.widgetId) {
-        const inst = store.instances[item.widgetId];
-        if (inst?.status === "inactive") {
-          store.toggleWidget(item.widgetId);
-        }
-      }
-      store.addDockItem(item.id);
+      store.addDockArea(item.id);
     }
-  }, [item.id, item.widgetId, inDock]);
+  }, [item.id, inDock]);
 
   return (
     <div
@@ -85,12 +78,12 @@ export function DockItemCard({ item, inDock, className }: DockItemCardProps) {
             </h4>
           </div>
           <span className="shrink-0 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[0.58rem] uppercase tracking-[0.12em] text-ink-3">
-            {t(`kind.${item.kind}`)}
+            {t(`kind.${item.category}`)}
           </span>
         </div>
 
         <p className="line-clamp-2 text-[0.75rem] leading-5 text-ink-3">
-          {t(`desc.${item.kind}`)}
+          {item.descKey ? t(item.descKey) : t(`desc.${item.category}`)}
         </p>
       </div>
 

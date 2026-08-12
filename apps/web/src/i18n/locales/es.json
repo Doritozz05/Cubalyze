@@ -3482,6 +3482,7 @@
     "clock": "Reloj",
     "profile": "Perfil",
     "spacer": "Espaciador",
+    "separator": "Separador",
     "widgetsArea": "Widgets",
     "manualSolve": "Añadir solve",
     "sessionArea": "Sesión",
@@ -3509,13 +3510,22 @@
       "widget": "Widget",
       "clock": "Sistema",
       "profile": "Sistema",
-      "spacer": "Diseño"
+      "spacer": "Diseño",
+      "separator": "Diseño",
+      "core": "Esencial",
+      "system": "Sistema",
+      "layout": "Diseño"
     },
     "desc": {
       "widget": "Un widget flotante que puedes activar y desactivar.",
       "clock": "Muestra la hora actual en la barra del dock.",
       "profile": "Acceso rápido a tu perfil.",
-      "spacer": "Espacio vacío entre grupos de elementos."
+      "spacer": "Espacio vacío entre grupos de elementos.",
+      "separator": "Línea vertical divisora entre grupos.",
+      "widgetsArea": "Zona de widgets — muestra las pills de los widgets acoplados.",
+      "manualSolve": "Botón de acceso rápido para añadir solve manual.",
+      "sessionArea": "Cambiador de sesión con nombre y contador.",
+      "puzzleArea": "Selector de categoría de puzzle (3x3, 2x2, etc.)"
     }
   },
   "contextMenu": {
