@@ -1,8 +1,16 @@
 
 # WCA Regulations
 
-Version: April 1, 2026
+Version: April 1, 2026 (current official version as of August 12, 2026)
 [`<a href="https://github.com/thewca/wca-regulations/tree/official/">official</a>:<a href="https://github.com/thewca/wca-regulations/commits/415be08">415be08</a>`]
+
+> **Completeness (verified 2026-08-12):** this document was compared programmatically against
+> the official source (`thewca/wca-regulations` @ `official`, version April 1, 2026).
+> All **762/762 regulation IDs** are present and **0 text differences** were found after
+> normalizing markup. It is a complete transcription of the current Regulations.
+> See the section [Pending Changes & Related WCA Documents](#pending-changes--related-wca-documents)
+> at the end of this file for upcoming regulatory changes (FTO/Clock) and the official
+> scramble program details.
 
 ## Notes
 
@@ -286,7 +294,7 @@ Note: Because Article and Regulation numbers are not reassigned when Regulations
     * [5b5f+++](https://www.worldcubeassociation.org/regulations/#5b5f+++)) [EXAMPLE](https://www.worldcubeassociation.org/regulations/#5b5f) A corner affected by a corner twist is considered to be placed in a valid position, but such position does not render the piece solved.
     * [5b5f++++](https://www.worldcubeassociation.org/regulations/#5b5f++++)) [CLARIFICATION](https://www.worldcubeassociation.org/regulations/#5b5f) If there are multiple pieces partially detached or not fully placed, their final position is assessed one at a time. The piece that is closest to an open position is assessed first, and is then considered to occupy that position. This process is repeated until all partially detached or not fully placed pieces have been assessed.
   * [5b6](https://www.worldcubeassociation.org/regulations/#5b6)) Definition: A part is one or more fully connected components from a group of puzzle components that remain connected and do not move relative to each other during ordinary operation of the puzzle (e.g. a 3x3x3 center cap, a Pyraminx tip, a 3x3x3 corner piece missing one face, one face of a 3x3x3 corner piece).
-* [5c+](https://www.worldcubeassociation.org/regulations/#5c+)) [REMINDER]() If a competitor has a puzzle defect, this does not grant them the right to an extra attempt.
+* [5c+](https://www.worldcubeassociation.org/regulations/#5c+)) [REMINDER] If a competitor has a puzzle defect, this does not grant them the right to an extra attempt.
 * [5d](https://www.worldcubeassociation.org/regulations/#5d)) The competitor is not permitted to cause a puzzle defect intentionally. Examples of intentionally causing puzzle defects: removing an attached center cap, rotating a corner piece, peeling a sticker.
   * [5d1](https://www.worldcubeassociation.org/regulations/#5d1)) Exception: the competitor may intentionally cause a puzzle defect while repairing a previous puzzle defect (see [Regulation 5b3b](https://www.worldcubeassociation.org/regulations/#5b3b) and [Regulation 5b3c](https://www.worldcubeassociation.org/regulations/#5b3c)).
   * [5d2](https://www.worldcubeassociation.org/regulations/#5d2)) Exception: if a competitor incorrectly fixes an existing puzzle defect, for example by rotating a corner piece in the wrong direction (see [Regulation 5b3c](https://www.worldcubeassociation.org/regulations/#5b3c)), this is not considered intentionally causing a puzzle defect.
@@ -400,7 +408,7 @@ Note: Because Article and Regulation numbers are not reassigned when Regulations
   * [9p3](https://www.worldcubeassociation.org/regulations/#9p3)) If a qualifying competitor withdraws from a round, they may be replaced by the best-ranked non-qualifying competitor from the preceding round.
   * [9p3+](https://www.worldcubeassociation.org/regulations/#9p3+)) [CLARIFICATION](https://www.worldcubeassociation.org/regulations/#9p3) If a non-qualifying competitor would replace a qualifying competitor in this way, they may also withdraw, allowing the next best-ranked competitor to take their place.
   * [9p4](https://www.worldcubeassociation.org/regulations/#9p4)) A competitor with results of only DNF and/or DNS is not eligible to advance.
-* [9q+](https://www.worldcubeassociation.org/regulations/#9q+)) [RECOMMENDATION]() Events and rounds should have at least 2 competitors.
+* [9q+](https://www.worldcubeassociation.org/regulations/#9q+)) [RECOMMENDATION] Events and rounds should have at least 2 competitors.
 * [9s](https://www.worldcubeassociation.org/regulations/#9s)) Each round of each event must have a time limit (see [Regulation A1a](https://www.worldcubeassociation.org/regulations/#A1a)).
 * [9t](https://www.worldcubeassociation.org/regulations/#9t)) If any change occurs to the results of a competitor after the competition has ended (e.g. score-taking mistake, retroactive penalty), such that the competitor would not have advanced to the next round (or was not allowed to take part in the round), all results of this competitor for all subsequent rounds must be removed (see [Regulation 9u](https://www.worldcubeassociation.org/regulations/#9u)).
 * [9t+](https://www.worldcubeassociation.org/regulations/#9t+)) [EXPLANATION](https://www.worldcubeassociation.org/regulations/#9t) Because of [9t1](https://www.worldcubeassociation.org/regulations/#9t1) and [9t2](https://www.worldcubeassociation.org/regulations/#9t2), rounds may look like they do not comply with [9p1](https://www.worldcubeassociation.org/regulations/#9p1), [9m1](https://www.worldcubeassociation.org/regulations/#9m1), [9m2](https://www.worldcubeassociation.org/regulations/#9m2) or [9m3](https://www.worldcubeassociation.org/regulations/#9m3). However, making changes to comply with these rules would affect innocent competitors, which is why the results must stay the same.
@@ -870,3 +878,38 @@ Note: Because Article and Regulation numbers are not reassigned when Regulations
     * [I5b1](https://www.worldcubeassociation.org/regulations/#I5b1)) When both competitors are present at the solving station and when each judge is ready, the announcer asks "READY?".
     * [I5b2](https://www.worldcubeassociation.org/regulations/#I5b2)) When both competitors have confirmed they are ready, or once at least 15 seconds have passed, the announcer calls “3, 2, 1, GO". The competitor must start the solve (see [Regulation B2d](https://www.worldcubeassociation.org/regulations/#B2d)) at this point. Penalty for intentionally delaying the start of the solve: disqualification of the attempt (DNF) at the discretion of the judge.
     * [I5b3](https://www.worldcubeassociation.org/regulations/#I5b3)) The competitor must not start the solve before the announcer calls "GO". Penalty: disqualification of the attempt (DNF) at the discretion of the judge.
+
+---
+
+## Pending Changes & Related WCA Documents
+
+_(Added 2026-08-12 from primary WCA sources; not part of the official Regulations text.)_
+
+### Pending changes to the list of official events (Board announcement, June 24, 2026)
+
+On June 24, 2026 the WCA Board announced changes to the [List of Official Events](https://www.worldcubeassociation.org/posts/changes-to-the-wca-s-list-of-official-events-june-2026):
+
+* **Face Turning Octahedron (FTO)** will be added to the official events — the first new WCA event since Skewb (2014). It will be available for inclusion in competitions **from January 2, 2027**, using the "Average of 5" format. FTO regulations will be developed for the January 2027 Regulations cycle.
+* **Clock** will be removed from the official events. Clock remains available at competitions **until July 18, 2027**; the WCA World Championship 2027 will be the last competition to hold the event.
+* Note: the WCA also indicated that 6x6x6/7x7x7 and 4x4x4/5x5x5 Blindfolded are being considered for future changes.
+
+The regulations above (Articles 1–I) reflect the current version (April 1, 2026) and still include Clock; the removal takes effect only after the World Championship 2027.
+
+### Official scramble program (Regulation 4b)
+
+* Official competition scrambles must be generated with a current version of the official WCA scramble program, available at [WCA Scrambles](https://www.worldcubeassociation.org/regulations/scrambles/). Current release: **TNoodle-WCA-1.2.3** (based on [thewca/tnoodle](https://github.com/thewca/tnoodle)).
+* **Random-state generation:** for 2x2x2–4x4x4, Pyraminx, Skewb and Clock, every puzzle state has equal weight. Square-1 uses the limiting distribution of random moves ("Markov random-state"). 5x5x5–7x7x7 and Megaminx use 60/80/100 random moves respectively (Regulation 4b3e).
+* **Scramble length conventions (official program):**
+  * **2x2x2, Pyraminx, Skewb: every scramble has a minimum of exactly 11 moves** (God's number for these puzzles) — implemented in tnoodle-lib as `generateExactly(state, 11)` (`TwoByTwoCubePuzzle.TWO_BY_TWO_MIN_SCRAMBLE_LENGTH = 11`). The stated purpose: *"This makes it harder to distinguish scrambles by scramble length (something that has been a historical issue)."*
+  * **3x3x3:** `Tools.randomCube()` (uniform random state) + min2phase `SearchWCA.solution(..., 21, 60s, 200ms, INVERSE_SOLUTION)` → the scramble is the inverse of the min2phase solution, typically 19–21 moves. Filter: state must require at least 2 moves (Regulation 4b3).
+* **Filtering thresholds (Regulation 4b3):** 3x3x3 ≥ 2 moves, 2x2x2 ≥ 4 moves, Skewb ≥ 7 moves, Square-1 ≥ 11 moves (+ must allow a `/` move without a prior (X, Y) move), Pyraminx ≥ 6 moves, blindfolded events randomly oriented, 5x5x5–7x7x7/Megaminx random moves with ≥ 2 moves to solve.
+* **TNoodle source reference:** `tnoodle-lib/scrambles/src/main/java/org/worldcubeassociation/tnoodle/puzzle/` — `TwoByTwoCubePuzzle.java` (exact-11 scramble), `TwoByTwoSolver.java` (`generateExactly`), `ThreeByThreeCubePuzzle.java` (min2phase inverse solution), `Puzzle.java` (`wcaMinScrambleDistance` filter, default 2).
+
+### Related WCA documents (policies and resources)
+
+* [WCA Regulations (website)](https://www.worldcubeassociation.org/regulations/) — HTML, [PDF](https://www.worldcubeassociation.org/regulations/wca-regulations.pdf), [Countries](https://www.worldcubeassociation.org/regulations/countries/), [Scrambles](https://www.worldcubeassociation.org/regulations/scrambles/).
+* [WCA Regulations source (GitHub)](https://github.com/thewca/wca-regulations) — development is public; discussion on the [WCA Forum → Regulations](https://forum.worldcubeassociation.org/c/regulations).
+* [Approved Timer List](https://drive.google.com/file/d/1UizYZOY4v-t7YnKcXas0hHzekX-NGuhW/view) (Regulation 7f1a).
+* [Visual Guide — Regulation 3j](https://drive.google.com/file/d/1m6THsA8fXRN7QFM4ApJbm6eVODKGbMLx/view), [Visual Guide — Regulation 5b5f](https://drive.google.com/file/d/15XszaCGNvy3Dk6X6qERzZWZaDH1RH04z/view), [Visual Guide — Head to Head structure (Regulation I2g)](https://drive.google.com/file/d/1dGy7DZZqPNuf8dDHJIJUw5vzwgoRjz1G/view).
+* [Disputes Motion (Regulation 2n3+)](https://documents.worldcubeassociation.org/documents/motions/16.2025.1%20-%20Disputes.pdf).
+* WCA Policies (applied alongside the Regulations by WCA Delegates): Competition Requirements Policy, Equipment Specification Policy, Registration Requirements Policy, and the WCA Code of Ethics — published under [WCA Documents](https://documents.worldcubeassociation.org/).

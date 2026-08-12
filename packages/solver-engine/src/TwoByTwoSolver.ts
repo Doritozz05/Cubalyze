@@ -256,6 +256,63 @@ function idaSearch(
   return null;
 }
 
+/**
+ * Exact-length IDA* search (TNoodle `generateExactly` equivalent).
+ *
+ * Finds a solution of EXACTLY `targetLength` moves for the given state,
+ * mirroring the official scramble program (see `TwoByTwoCubePuzzle` in
+ * tnoodle-lib, which generates 2×2 scrambles of exactly 11 moves via
+ * `twoSolver.generateExactly(state, 11)`).
+ *
+ * Differences from `idaSearch`:
+ *   • The search only succeeds when the state is solved AND the path is
+ *     exactly `targetLength` moves long (it may pass through solved and
+ *     "waste" moves coming back, as long as the length is exact).
+ *   • Pruning is safe because the combined table gives the exact distance
+ *     `h`: if `depth + h > targetLength`, no path can reach solved within
+ *     the remaining budget.
+ *   • Same-face pruning is kept, so the resulting scramble never contains
+ *     consecutive moves of the same face (matches TNoodle's `search`, which
+ *     skips `move / 3 == last_move / 3`).
+ *
+ * @returns The move-index path of exactly `targetLength` moves, or null if
+ *          no such solution exists within the search budget.
+ */
+function idaSearchExact(
+  permIdx: number,
+  twistIdx: number,
+  depth: number,
+  targetLength: number,
+  path: number[],
+  lastFace: number,
+): number[] | null {
+  // Solved with exactly `targetLength` moves → done.
+  if (permIdx === 0 && twistIdx === 0) {
+    return depth === targetLength ? path.slice() : null;
+  }
+
+  // No budget left to reach solved.
+  if (depth >= targetLength) return null;
+
+  const h = combinedDist![permIdx * N_TWIST + twistIdx];
+  if (depth + h > targetLength) return null;
+
+  for (let m = 0; m < NUM_MOVES; m++) {
+    const face = MOVE_FACE[m];
+    if (face === lastFace) continue;
+
+    const nextPerm = tables!.permMove[m][permIdx];
+    const nextTwist = tables!.twistMove[m][twistIdx];
+
+    path.push(m);
+    const result = idaSearchExact(nextPerm, nextTwist, depth + 1, targetLength, path, face);
+    if (result !== null) return result;
+    path.pop();
+  }
+
+  return null;
+}
+
 // ── Public solver class ──────────────────────────────────────────────────
 
 export interface TwoByTwoSolution {
@@ -340,6 +397,56 @@ export class TwoByTwoSolver {
     }
 
     return null; // Should never happen for a valid state
+  }
+
+  /**
+   * Solve a 2×2 cube state in EXACTLY `length` moves (TNoodle `generateExactly`).
+   *
+   * The official scramble program writes 2×2 scrambles of exactly 11 moves
+   * (`TWO_BY_TWO_MIN_SCRAMBLE_LENGTH = 11`, God's number for the 2×2) so
+   * scrambles cannot be distinguished by length. This method finds a
+   * (not necessarily optimal) solution of exactly `length` moves; invert it
+   * to obtain the scramble. The resulting solution never repeats the same
+   * face consecutively.
+   *
+   * @param state  The scrambled Cube2x2State (DBL corner fixed).
+   * @param length Exact number of moves the solution must have.
+   * @returns A {@link TwoByTwoSolution} with `moveCount === length`, or null
+   *          if the state is invalid or no exact-length solution exists.
+   */
+  public solveDetailedExact(state: Cube2x2State, length: number): TwoByTwoSolution | null {
+    this.init();
+
+    // The DBL corner (position 6) must be in its home position (WCA standard)
+    if (state.cp[6] !== 6) return null;
+    if (state.co[6] !== 0) return null;
+
+    const permIdx = permToIndex(state.cp);
+    const twistIdx = twistToIndex(state.co);
+
+    if (combinedDist![permIdx * N_TWIST + twistIdx] === 255) {
+      return null; // Unreachable from solved via U,R,F (invalid state)
+    }
+
+    // Solved with length 0 is the only exact-length solution at length 0.
+    if (length === 0) {
+      return permIdx === 0 && twistIdx === 0
+        ? { notation: '', moveCount: 0, moves: [] }
+        : null;
+    }
+
+    // Invalid target: below the state's optimal depth, or beyond what the
+    // search supports (God's number is 11; anything longer is a waste detour
+    // that the search can still express, so cap at a sane maximum).
+    if (length < 1 || length > 32) return null;
+
+    const path: number[] = [];
+    const result = idaSearchExact(permIdx, twistIdx, 0, length, path, -1);
+    if (result === null) return null;
+
+    const moves = result.map((m) => m as Move2x2);
+    const notation = moves.map((m) => MOVE_2X2_NOTATION[m]).join(' ');
+    return { notation, moveCount: moves.length, moves };
   }
 
   /**

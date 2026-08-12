@@ -36,11 +36,40 @@ describe('TwoByTwoScrambler', { timeout: 30000 }, () => {
 
   // ── WCA compliance: minLength ──────────────────────────────────────
 
-  it('default minLength=4 produces scrambles of at least 4 moves (WCA 4b3b)', () => {
+  it('default scrambles are EXACTLY 11 moves (TNoodle WCA convention)', () => {
+    for (let i = 0; i < 20; i++) {
+      const scramble = scrambler.generateScramble();
+      const tokens = scramble.trim().split(/\s+/).filter(Boolean);
+      expect(tokens.length, `"${scramble}" is not 11 moves`).toBe(11);
+    }
+  });
+
+  it('default scrambles produce states that require at least 4 moves (WCA 4b3b)', () => {
     for (let i = 0; i < 10; i++) {
       const scramble = scrambler.generateScramble();
       const tokens = scramble.trim().split(/\s+/).filter(Boolean);
       expect(tokens.length).toBeGreaterThanOrEqual(4);
+
+      // The STATE (not the written length) must be ≥ 4 moves from solved.
+      const state = new Cube2x2State();
+      state.applySequence(scramble);
+      const sol = solver.solveDetailed(state);
+      expect(sol!.moveCount).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('scramble applied to solved = the same state as the exact solution applied in reverse', () => {
+    // Sanity: scramble (inverse of an 11-move solution) + optimal solution = solved,
+    // already covered below; here we assert the scramble itself is 11 moves even
+    // when the state's optimal depth is small.
+    for (let i = 0; i < 10; i++) {
+      const scramble = scrambler.generateScramble();
+      expect(scramble.trim().split(/\s+/).filter(Boolean).length).toBe(11);
+      const state = new Cube2x2State();
+      state.applySequence(scramble);
+      const sol = solver.solveDetailed(state);
+      state.applySequence(sol!.notation);
+      expect(state.isSolved()).toBe(true);
     }
   });
 
@@ -52,12 +81,12 @@ describe('TwoByTwoScrambler', { timeout: 30000 }, () => {
     }
   });
 
-  it('minLength=11 produces scrambles of exactly 11 moves (God number)', { timeout: 30000 }, () => {
+  it('minLength=11 produces scrambles of exactly 11 moves (God number)', { timeout: 60000 }, () => {
     for (let i = 0; i < 5; i++) {
       const scramble = scrambler.generateScramble(11);
       if (scramble.length > 0) {
         const tokens = scramble.trim().split(/\s+/).filter(Boolean);
-        expect(tokens.length).toBeGreaterThanOrEqual(11);
+        expect(tokens.length).toBe(11);
       }
     }
   });

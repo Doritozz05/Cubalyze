@@ -9,18 +9,26 @@
  *      Random permutation of the 7 non-DBL corners + random orientation
  *      with sum ≡ 0 (mod 3). DBL stays at position 6 with twist 0.
  *   2. Solve it optimally using {@link TwoByTwoSolver} (combined pruning
- *      table, exact heuristic, <1 ms).
- *   3. Invert the solution → that's the scramble.
+ *      table, exact heuristic, <1 ms) to measure the state's optimal depth
+ *      (the WCA 4b3b filter).
+ *   3. Find a solution of **exactly 11 moves** for that state via
+ *      `TwoByTwoSolver.solveDetailedExact` (TNoodle `generateExactly`).
+ *   4. Invert that solution → the 11-move scramble.
  *
  * ## WCA compliance
  *
  *   • **Regulation 4b3b**: "The 2×2×2 Cube scrambling must produce random
  *     states that require at least 4 moves to solve (based on the fixed
- *     corner in DBL position)." — We default to minLength=4.
+ *     corner in DBL position)." — We default to minLength=4 for the state.
+ *   • **Official length convention**: TNoodle writes 2×2 scrambles of
+ *     **exactly 11 moves** (`TWO_BY_TWO_MIN_SCRAMBLE_LENGTH = 11`, God's
+ *     number for the 2×2) so scrambles cannot be distinguished by length —
+ *     "something that has been a historical issue" (readme-scramble.md).
+ *     Cubeforge matches this: the written scramble is always 11 moves.
  *   • **DBL corner fixed**: Only U, R, F moves appear in scrambles (since
  *     the DBL corner never moves). This matches WCA standards.
  *   • **Random state**: Uniform over all 3,674,160 valid 2×2 states.
- *   • **Optimal scramble**: The solver finds the shortest possible scramble.
+ *   • **No consecutive same-face moves** in the scramble (TNoodle parity).
  */
 
 import { Cube2x2State } from '@cubeforge/math-core';
@@ -28,6 +36,14 @@ import { TwoByTwoSolver, type TwoByTwoSolution } from './TwoByTwoSolver';
 
 // DBL corner (position 6) is always fixed
 const DBL_POS = 6;
+
+/**
+ * Official scramble length for the 2×2 (and Pyraminx/Skewb): God's number
+ * of these puzzles. TNoodle's `TwoByTwoCubePuzzle` uses
+ * `TWO_BY_TWO_MIN_SCRAMBLE_LENGTH = 11` via `generateExactly(state, 11)`, so
+ * every official 2×2 scramble is written with exactly 11 moves.
+ */
+const WCA_SCRAMBLE_LENGTH = 11;
 
 /** IDs of the 7 non-DBL corners. */
 const NON_DBL_CORNERS = [0, 1, 2, 3, 4, 5, 7];
@@ -80,8 +96,16 @@ export class TwoByTwoScrambler {
   /**
    * Generate a single WCA-style random-state scramble.
    *
-   * @param minLength  Minimum number of moves (default 4, per WCA 4b3b).
-   * @returns Space-separated scramble notation (e.g. "U R' F2 U R2").
+   * The written scramble always has **exactly 11 moves** (the official
+   * TNoodle convention, `WCA_SCRAMBLE_LENGTH`), while the underlying random
+   * state must require at least `minLength` moves to solve (default 4, per
+   * WCA 4b3b).
+   *
+   * @param minLength  Minimum optimal depth of the produced state (default
+   *                   4, per WCA 4b3b).
+   * @returns Space-separated scramble notation (e.g. "U R' F2 U R2 F' U R F U2 R'"),
+   *          or an empty string if no qualifying state was found within the
+   *          retry budget (e.g. minLength above God's number 11).
    */
   public generateScramble(minLength: number = 4): string {
     let scramble = '';
@@ -92,8 +116,14 @@ export class TwoByTwoScrambler {
       const solution = this.solver.solveDetailed(state);
 
       if (solution && solution.moveCount >= minLength) {
-        scramble = Cube2x2State.invertNotation(solution.notation);
-        break;
+        // TNoodle parity: write the scramble as the inverse of a solution of
+        // EXACTLY 11 moves (not the optimal one), so all scrambles share the
+        // same length and cannot be distinguished by it.
+        const exact = this.solver.solveDetailedExact(state, WCA_SCRAMBLE_LENGTH);
+        if (exact && exact.moveCount === WCA_SCRAMBLE_LENGTH) {
+          scramble = Cube2x2State.invertNotation(exact.notation);
+          break;
+        }
       }
       attempts++;
     }
@@ -114,6 +144,11 @@ export class TwoByTwoScrambler {
 
   /**
    * Generate a scramble AND its optimal solution.
+   *
+   * The scramble is written with exactly 11 moves (official convention); the
+   * returned `solution` is the OPTIMAL solution of the produced state, so
+   * `scramble + solution` returns the cube to solved (both solve the same
+   * random state).
    */
   public generateScrambleWithSolution(minLength: number = 4): {
     scramble: string;
@@ -125,14 +160,17 @@ export class TwoByTwoScrambler {
       const solution = this.solver.solveDetailed(state);
 
       if (solution && solution.moveCount >= minLength) {
-        return {
-          scramble: Cube2x2State.invertNotation(solution.notation),
-          solution: {
-            notation: solution.notation,
-            moveCount: solution.moveCount,
-            moves: solution.moves,
-          },
-        };
+        const exact = this.solver.solveDetailedExact(state, WCA_SCRAMBLE_LENGTH);
+        if (exact && exact.moveCount === WCA_SCRAMBLE_LENGTH) {
+          return {
+            scramble: Cube2x2State.invertNotation(exact.notation),
+            solution: {
+              notation: solution.notation,
+              moveCount: solution.moveCount,
+              moves: solution.moves,
+            },
+          };
+        }
       }
       attempts++;
     }
