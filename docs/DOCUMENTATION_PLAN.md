@@ -127,6 +127,11 @@ contra el código real.
 Para cada vista: **Training (25) → Algorithms (11) → SkillTree (5) →
 Reconstructions (4) → Cube (1) → Profile (1)**:
 
+- [x] **Training** (2026-08-12) → `docs/16-user/Training_View.md` (con inventario
+      archivo por archivo de las 25 archivos + sub-vistas y componentes) +
+      **ADR-024** (sistema Training/SRS FSRS) + **TDD-0001**
+      (`docs/05-tdd/training/0001-srs-training-system.md`) + DEC-25 en el registro.
+
 - [ ] Leer la vista completa (componentes, stores, servicios que usa).
 - [ ] Documentar en `docs/16-user/` (o sección correspondiente): qué hace la tab,
       flujo principal, ajustes/estado que guarda, atajos de teclado si tiene.

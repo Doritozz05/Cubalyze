@@ -1,10 +1,11 @@
 # 16 User
 
 ## Purpose
-This directory serves as the authoritative location for 16 User documentation within the CubeForge ecosystem.
+
+Documentación orientada al usuario final de cada parte de la aplicación:
+cómo funciona cada vista/tab, qué flujos tiene y qué guarda.
 
 ## Contents
-This folder contains all artifacts related to 16 User.
 
-## Governance
-Please refer to [Architecture & Documentation Standards](../08-standards/Architecture_and_Documentation_Standards.md) for rules regarding documents in this folder.
+- [`Training_View.md`](./Training_View.md) — la tab **Training**: práctica por
+  método/fase, calendario de entrenamiento y repaso SRS (FSRS).
