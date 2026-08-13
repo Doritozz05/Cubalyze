@@ -193,7 +193,7 @@ export interface PreferencesState {
 // env that shims storage.
 
 const DEFAULT_VALUES = {
-  theme: 'system' as const,
+  theme: 'light' as const,
   showHeader: true,
   appearance3d: 'default',
   scrambleFollowsCube: true,

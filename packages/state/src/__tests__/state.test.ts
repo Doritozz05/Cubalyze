@@ -7,12 +7,12 @@ import type { SolveData } from '../session.store.js';
 
 describe('PreferencesStore', () => {
   beforeEach(() => {
-    preferencesStore.getState().setTheme('system');
+    preferencesStore.getState().setTheme('light');
   });
 
   it('initializes with default theme', () => {
     const state = preferencesStore.getState();
-    expect(state.theme).toBe('system');
+    expect(state.theme).toBe('light');
   });
 
   it('updates theme correctly', () => {
@@ -113,7 +113,7 @@ describe('PreferencesStore', () => {
     store.resetPreferences();
 
     const reset = preferencesStore.getState();
-    expect(reset.theme).toBe('system');
+    expect(reset.theme).toBe('light');
     expect(reset.soundVolume).toBe(80);
     expect(reset.practiceReminders).toBe(false);
     expect(reset.reviewReminders).toBe(false);
