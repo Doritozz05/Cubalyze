@@ -380,7 +380,7 @@ export function deriveTimeline(solve: TimelineSolveInput): TimelineData {
   const windowLen = analysis?.tps.instantaneousWindow?.length ?? 0;
   const tpsSamples: TpsSample[] =
     windowLen > 1
-      ? analysis!.tps.instantaneousWindow!.map((tps, i) => ({
+      ? analysis!.tps.instantaneousWindow!.map((tps: number, i: number) => ({
           offsetMs:
             i < moveTicks.length
               ? moveTicks[i].offsetMs
@@ -403,7 +403,7 @@ export function deriveTimeline(solve: TimelineSolveInput): TimelineData {
       ? phaseRuns.map((run) => {
           const startMs = moveTicks[run.startIdx].offsetMs;
           const endMs = moveTicks[run.endIdx].offsetMs;
-          const phase = analysis?.phases.find((p) => p.phaseName === run.phaseName);
+          const phase = analysis?.phases.find((p: PhaseMetrics) => p.phaseName === run.phaseName);
           return {
             phaseName: run.phaseName,
             startMs,
@@ -418,7 +418,7 @@ export function deriveTimeline(solve: TimelineSolveInput): TimelineData {
         : [];
 
   const pauseMarks: PauseMark[] = analysis
-    ? analysis.pauses.pauses.map((p) => ({
+    ? analysis.pauses.pauses.map((p: PauseDetail) => ({
         startMs: p.startIndex < moveTicks.length ? moveTicks[p.startIndex].offsetMs : 0,
         endMs: p.endIndex < moveTicks.length ? moveTicks[p.endIndex].offsetMs : totalMs,
         durationMs: p.durationMs,
