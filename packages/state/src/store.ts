@@ -157,6 +157,10 @@ export interface PreferencesState {
   timerBackgroundFit: 'cover' | 'contain' | 'tile';
   setTimerBackgroundFit: (value: 'cover' | 'contain' | 'tile') => void;
 
+  /** Dark overlay opacity percentage for custom background (0-80). Default 0 (pure image). */
+  timerBackgroundOverlay: number;
+  setTimerBackgroundOverlay: (value: number) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -255,6 +259,7 @@ const DEFAULT_VALUES = {
   timerBackgroundOpacity: 100,
   timerBackgroundBlur: 0,
   timerBackgroundFit: 'cover' as const,
+  timerBackgroundOverlay: 0,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -309,6 +314,7 @@ export const createPreferencesStore = () => {
         setTimerBackgroundOpacity: (timerBackgroundOpacity) => set({ timerBackgroundOpacity }),
         setTimerBackgroundBlur: (timerBackgroundBlur) => set({ timerBackgroundBlur }),
         setTimerBackgroundFit: (timerBackgroundFit) => set({ timerBackgroundFit }),
+        setTimerBackgroundOverlay: (timerBackgroundOverlay) => set({ timerBackgroundOverlay }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -356,6 +362,7 @@ export const createPreferencesStore = () => {
           timerBackgroundOpacity: state.timerBackgroundOpacity,
           timerBackgroundBlur: state.timerBackgroundBlur,
           timerBackgroundFit: state.timerBackgroundFit,
+          timerBackgroundOverlay: state.timerBackgroundOverlay,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

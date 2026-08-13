@@ -28,6 +28,8 @@ export function CustomBackgroundSetting() {
   const setTimerBackgroundBlur = useStore(preferencesStore, (s) => s.setTimerBackgroundBlur);
   const timerBackgroundFit = useStore(preferencesStore, (s) => s.timerBackgroundFit);
   const setTimerBackgroundFit = useStore(preferencesStore, (s) => s.setTimerBackgroundFit);
+  const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
+  const setTimerBackgroundOverlay = useStore(preferencesStore, (s) => s.setTimerBackgroundOverlay);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,6 +114,12 @@ export function CustomBackgroundSetting() {
                 transform: timerBackgroundBlur ? 'scale(1.05)' : undefined,
               }}
             />
+            {timerBackgroundOverlay > 0 && (
+              <div
+                className="absolute inset-0 bg-black pointer-events-none"
+                style={{ opacity: timerBackgroundOverlay / 100 }}
+              />
+            )}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="rounded-md bg-surface/90 backdrop-blur-xs px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line/50">
                 00:00.00
@@ -120,7 +128,7 @@ export function CustomBackgroundSetting() {
           </div>
 
           {/* Controls grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Opacity slider */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs text-ink-2 font-medium">
@@ -148,6 +156,21 @@ export function CustomBackgroundSetting() {
                 step={1}
                 value={[timerBackgroundBlur]}
                 onValueChange={(val) => val[0] !== undefined && setTimerBackgroundBlur(val[0])}
+              />
+            </div>
+
+            {/* Overlay Darkness slider */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs text-ink-2 font-medium">
+                <span>{t('appearance.overlay')}</span>
+                <span className="nums font-mono">{timerBackgroundOverlay}%</span>
+              </div>
+              <Slider
+                min={0}
+                max={80}
+                step={5}
+                value={[timerBackgroundOverlay]}
+                onValueChange={(val) => val[0] !== undefined && setTimerBackgroundOverlay(val[0])}
               />
             </div>
 

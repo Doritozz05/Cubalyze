@@ -175,6 +175,7 @@
       "removeImage": "Quitar imagen",
       "opacity": "Opacidad",
       "blur": "Desenfoque",
+      "overlay": "Oscurecimiento",
       "fit": "Ajuste de imagen",
       "fitCover": "Cubrir (Cover)",
       "fitContain": "Ajustar (Contain)",

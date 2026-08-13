@@ -14,6 +14,7 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
   const timerBackgroundOpacity = useStore(preferencesStore, (s) => s.timerBackgroundOpacity);
   const timerBackgroundBlur = useStore(preferencesStore, (s) => s.timerBackgroundBlur);
   const timerBackgroundFit = useStore(preferencesStore, (s) => s.timerBackgroundFit);
+  const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
 
   const isVisible = !!timerBackgroundImage && (activeView === "timer" || activeView === "cube");
 
@@ -34,6 +35,11 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
           transform: timerBackgroundBlur ? "scale(1.05)" : undefined,
         }}
       />
+      {timerBackgroundOverlay > 0 && (
+        <div
+          className="absolute inset-0 bg-black pointer-events-none"
+          style={{ opacity: timerBackgroundOverlay / 100 }}
+        />
     </div>
   );
 }

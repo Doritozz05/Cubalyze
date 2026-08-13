@@ -175,6 +175,7 @@
       "removeImage": "Remove image",
       "opacity": "Opacity",
       "blur": "Blur",
+      "overlay": "Dark Overlay",
       "fit": "Image fit",
       "fitCover": "Cover",
       "fitContain": "Contain",
