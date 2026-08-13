@@ -35,7 +35,7 @@
     "@types/web-bluetooth": "^0.0.21",
     "eslint": "^10.7.0",
     "tsup": "^8.3.6",
-    "typescript": "^5.7.3",
+    "typescript": "~6.0.2",
     "vitest": "^3.0.5"
   }
 }

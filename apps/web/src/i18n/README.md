@@ -38,15 +38,19 @@ apps/web/src/i18n/
 
 Los `ParseKeys` tipados de i18next v26 se resuelven de forma **opuesta** en TS
 5.x vs 6.x: con 5.x, `useTranslation('ns')` exige claves con prefijo
-(`t('settings:key')`), que `tsc` 6.0.3 rechaza (y al revés con claves simples).
-El CLI usa TS 6.0.3 (declarado en `apps/web/package.json`), así que el editor
-debe usar la misma versión o verás falsos positivos `TS2345` en `t("key")`.
+(`t('settings:key')`), que `tsc` 6.0.x rechaza (y al revés con claves simples).
+Todo el monorepo usa TS **6.0.x** (raíz, `packages/*` y `apps/*` — todos
+`~6.0.2`), así que el editor debe usar la misma versión o verás falsos
+positivos `TS2345` en `t("key")`.
 
-- Fix local (no versionable, `.vscode/*` está en `.gitignore`):
-  `apps/web/.vscode/settings.json` con `"typescript.tsdk": "node_modules/typescript/lib"`.
-- Tras crearlo: recargar la ventana y, si VS Code pregunta, elegir
-  **Use Workspace Version** (o `Ctrl/Cmd+Shift+P` → *TypeScript: Select
-  TypeScript Version* → *Use Workspace Version* → *Restart TS Server*).
+- `.vscode/settings.json` (raíz) ya fija `"typescript.tsdk": "node_modules/typescript/lib"`,
+  y `apps/web/.vscode/settings.json` hace lo propio para la carpeta `apps/web`
+  (red de seguridad si se abre esa carpeta suelta). Ambos son locales
+  (`.vscode/*` está en `.gitignore`).
+- Si cambias de máquina o aparecen errores `TS2345` en `t(...)`: recargar la
+  ventana y, si VS Code pregunta, elegir **Use Workspace Version** (o
+  `Ctrl/Cmd+Shift+P` → *TypeScript: Select TypeScript Version* →
+  *Use Workspace Version* → *Restart TS Server*).
 
 ## Cómo se usa
 

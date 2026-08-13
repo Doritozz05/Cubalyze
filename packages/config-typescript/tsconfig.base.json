@@ -15,6 +15,9 @@
     "composite": false,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    // TS 6.0 deprecates `baseUrl` (error TS5101). tsup injects `baseUrl: "."`
+    // into its dts build, so opt out of the deprecation error repo-wide.
+    "ignoreDeprecations": "6.0"
   }
 }
