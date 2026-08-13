@@ -5,6 +5,7 @@ import { connectionStore } from "@cubeforge/state";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BatteryIcon } from "@/components/Hardware/BatteryIcon";
+import { cn } from "@/lib/utils";
 
 /** Smart-cube battery pill — always visible in the dock. Shows a muted
  *  "Disconnected"/"Connecting" state when no cube is linked, and the
@@ -28,15 +29,20 @@ export function BatteryPiece() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex h-8 cursor-default select-none items-center gap-1.5 text-xs">
-          <BatteryIcon level={batteryLevel} />
-          {isConnected ? (
-            <span className="nums font-medium text-ink">
+        <div
+          className={cn(
+            "flex h-8 cursor-default select-none items-center justify-center rounded-full text-xs font-medium leading-none text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink py-0",
+            isConnected ? "gap-1.5 px-2.5" : "size-8 shrink-0",
+          )}
+        >
+          <BatteryIcon
+            level={batteryLevel}
+            isConnected={isConnected}
+            className={isConnecting ? "animate-pulse" : undefined}
+          />
+          {isConnected && (
+            <span className="nums font-medium leading-none text-ink">
               {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
-            </span>
-          ) : (
-            <span className="font-medium text-ink-3">
-              {isConnecting ? t("statusConnecting") : t("statusDisconnected")}
             </span>
           )}
         </div>

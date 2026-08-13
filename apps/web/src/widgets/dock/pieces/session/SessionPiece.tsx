@@ -71,15 +71,16 @@ export function SessionPiece({
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="h-8 gap-1.5 rounded-full px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
+            size="sm"
+            className="h-8 gap-1.5 rounded-full px-2.5 py-0 text-xs font-medium leading-none text-ink-2 hover:bg-surface-2 hover:text-ink"
             aria-label={t("switchSession")}
           >
-            <History className="size-3.5 text-ink-3" />
-            <span className="nums max-w-28 truncate">
+            <History className="size-3.5 shrink-0 text-ink-3" />
+            <span className="nums max-w-28 truncate leading-none">
               {active?.name ?? t("session")}
             </span>
-            <span className="text-ink-3">·</span>
-            <span className="nums text-ink-3">{sessionCount ?? 0}</span>
+            <span className="text-ink-3 leading-none">·</span>
+            <span className="nums text-ink-3 leading-none">{sessionCount ?? 0}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">

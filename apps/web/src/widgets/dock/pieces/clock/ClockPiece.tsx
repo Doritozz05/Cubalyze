@@ -19,8 +19,8 @@ export function ClockPiece() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex h-8 cursor-default select-none items-center text-xs font-medium text-ink-2">
-          <span className="nums tabular-nums">
+        <div className="flex h-8 cursor-default select-none items-center rounded-full px-2.5 py-0 text-xs font-medium leading-none text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink">
+          <span className="nums tabular-nums leading-none">
             {hours}:{minutes}
           </span>
         </div>

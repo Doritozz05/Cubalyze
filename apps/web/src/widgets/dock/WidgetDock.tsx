@@ -638,6 +638,10 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
 
   const renderNormal = () => (
     <div ref={rowRef} className="flex min-w-0 items-center gap-0.5">
+      {/* Forced invisible spacers on the left side for layout symmetry */}
+      <div data-area-id="forced-spacer-l1" aria-hidden className="w-2 shrink-0 pointer-events-none" />
+      <div data-area-id="forced-spacer-l2" aria-hidden className="w-2 shrink-0 pointer-events-none" />
+
       {/* Render areas in dockAreaOrder — the widgets zone can sit anywhere. */}
       {dockAreaOrder.map((areaId) => {
         if (areaId === "widgets") {
@@ -693,6 +697,10 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
           </div>
         );
       })}
+
+      {/* Forced invisible spacers on the right side for layout symmetry */}
+      <div data-area-id="forced-spacer-r1" aria-hidden className="w-2 shrink-0 pointer-events-none" />
+      <div data-area-id="forced-spacer-r2" aria-hidden className="w-2 shrink-0 pointer-events-none" />
     </div>
   );
 
