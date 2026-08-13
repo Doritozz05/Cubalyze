@@ -18,6 +18,22 @@
     "ok": "OK",
     "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics"
   },
+  "meta": {
+    "brand": "CubeForge",
+    "timer": "Timer — {{count}} solves",
+    "timer_one": "Timer — {{count}} solve",
+    "insights": "Stats — {{count}} solves",
+    "insights_one": "Stats — {{count}} solve",
+    "algorithms": "Algorithms",
+    "training": "Training",
+    "skillTree": "Skill tree",
+    "profile": "Profile",
+    "reconstructions": "Reconstructions — {{count}} reconstructions",
+    "reconstructions_one": "Reconstructions — {{count}} reconstruction",
+    "reconstruction": "Reconstruction {{id}} — {{solver}}",
+    "cube": "Virtual cube",
+    "notFound": "Page not found"
+  },
   "nav": {
     "title": "Navigation",
     "main": "Main",

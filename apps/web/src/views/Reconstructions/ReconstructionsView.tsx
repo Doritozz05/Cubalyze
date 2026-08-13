@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -198,6 +199,22 @@ export function ReconstructionsView() {
   const match = location.pathname.match(/^\/reconstructions\/([^/?#]+)/);
   const selectedKey = match ? decodeURIComponent(match[1]) : undefined;
   const navigate = useNavigate();
+
+  // Localized document title: "Reconstructions — 250 reconstructions" for the
+  // list, "Reconstruction 2510 — Feliks Zemdegs" while a record is selected.
+  const { t: tMeta } = useTranslation("meta");
+  const selectedEntry = useMemo(
+    () => (selectedKey && index ? index.find((e) => e.key === selectedKey) : undefined),
+    [selectedKey, index],
+  );
+  useDocumentTitle(
+    selectedKey
+      ? tMeta("reconstruction", {
+          id: selectedEntry?.id ?? selectedKey,
+          solver: selectedEntry?.solver ?? "",
+        })
+      : tMeta("reconstructions", { count: index?.length ?? 0 }),
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
 

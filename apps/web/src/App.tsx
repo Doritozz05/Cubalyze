@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AppShell } from "@/components/Layout/AppShell";
+import { NotFoundView } from "@/components/Stage/NotFoundView";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
@@ -16,6 +18,7 @@ import { useSessionActions } from "@/hooks/useSessionActions";
 import { useManualSolves } from "@/hooks/useManualSolves";
 import { useTimerFocus } from "@/hooks/useTimerFocus";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { copyTextWithFallback } from "@/utils/clipboard";
 import { preloadSolvers } from "@/utils/puzzleUtils";
 import { preferencesStore } from "@cubeforge/state";
@@ -59,6 +62,9 @@ function pathForView(view: ViewId): string {
 
 function viewFromPath(pathname: string): ViewId | null {
   const segment = pathname.split("/").filter(Boolean)[0] ?? "";
+  // The bare root "/" is the default landing page (timer) — it must never
+  // be treated as an unknown path.
+  if (!segment) return "timer";
   const match = Object.entries(VIEW_PATH).find(
     ([, path]) => path === `/${segment}`,
   );
@@ -277,10 +283,35 @@ export default function App() {
     // The tour owns the keyboard while active (ESC skips, Space is swallowed).
     // The cube simulator also owns the keyboard — its csTimer layout uses N (x')
     // and C (u'), which would otherwise collide with the global New/Copy
-    // scramble shortcuts.
-    enabled: !tourActive && activeView !== "cube",
-    solveCount: solves.length,
+    // scramble shortcuts. The 404 page must never arm the timer either.
+    enabled: !tourActive && activeView !== "cube" && !notFound,
   });
+
+  // ── Localized, per-view document title (e.g. "Timer — 4 solves · CubeForge").
+  // Reconstructions owns its own richer title (record id + solver).
+  const { t } = useTranslation("meta");
+  const docTitle = useMemo(() => {
+    if (notFound) return null;
+    switch (activeView) {
+      case "timer":
+        return t("timer", { count: solves.length });
+      case "insights":
+        return t("insights", { count: solves.length });
+      case "algorithms":
+        return t("algorithms");
+      case "training":
+        return t("training");
+      case "skill-tree":
+        return t("skillTree");
+      case "profile":
+        return t("profile");
+      case "reconstructions":
+        return null; // owned by ReconstructionsView (has the record data)
+      case "cube":
+        return t("cube");
+    }
+  }, [activeView, solves.length, t, notFound]);
+  useDocumentTitle(docTitle);
 
   // ── Stage navigation (driven by the LeftSidebar rail) ──────────────────
   const scrollToTimer = useCallback(() => {
@@ -323,9 +354,14 @@ export default function App() {
     [updateSolve, resetTimer],
   );
 
+  // Unknown paths (e.g. /settings, /foo): full standalone page — no shell,
+  // no widgets, nothing but the 404 and a way back home.
+  if (notFound) {
+    return <NotFoundView />;
+  }
+
   return (
     <AppShell
-      notFound={notFound}
       solves={solves}
       sessions={sessions}
       activeSessionId={session?.id ?? null}

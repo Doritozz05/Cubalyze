@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import type { TimerState } from "@/types";
 
@@ -11,11 +10,11 @@ export interface GlobalShortcutsDeps {
   timerStateRef: React.MutableRefObject<TimerState>;
   /** The tour owns the keyboard while active (ESC skips, Space is swallowed). */
   enabled: boolean;
-  solveCount: number;
 }
 
 /**
- * Global keyboard shortcuts + document title (extracted from App.tsx).
+ * Global keyboard shortcuts (the localized per-view document title lives in
+ * useDocumentTitle, owned by App and the views).
  */
 export function useGlobalShortcuts(deps: GlobalShortcutsDeps) {
   useShortcuts({
@@ -25,8 +24,4 @@ export function useGlobalShortcuts(deps: GlobalShortcutsDeps) {
     timerStateRef: deps.timerStateRef,
     enabled: deps.enabled,
   });
-
-  useEffect(() => {
-    document.title = `cubeforge — ${deps.solveCount} solves`;
-  }, [deps.solveCount]);
 }

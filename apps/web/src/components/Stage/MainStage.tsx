@@ -10,7 +10,6 @@ import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { SolveMetrics } from "@cubeforge/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { VirtualSolveComplete } from "@/components/Layout/appShell.types";
-import { NotFoundView } from "./NotFoundView";
 
 // Heavy views are code-split: each loads its own chunk only when the user
 // visits it, keeping the initial bundle (timer + shell) small. The timer
@@ -61,8 +60,6 @@ function ViewFallback() {
 
 export interface MainStageProps {
   activeView: ViewId;
-  /** True when the current path matches no known view — render a 404 stage. */
-  notFound?: boolean;
   sessionId: string | null;
   sessions: SessionMeta[];
   solves: Solve[];
@@ -92,7 +89,6 @@ export interface MainStageProps {
 export function MainStage(props: MainStageProps) {
   const {
     activeView,
-    notFound,
     sessionId,
     sessions,
     solves,
@@ -129,10 +125,6 @@ export function MainStage(props: MainStageProps) {
   useEffect(() => {
     if (activeView === "timer") markAppReady();
   }, [activeView]);
-
-  if (notFound) {
-    return <NotFoundView onGoHome={() => onNavigate("timer")} />;
-  }
 
   if (activeView === "insights") {
     return (

@@ -47,7 +47,6 @@ export function AppShell(props: AppShellProps) {
     activeSessionId,
     sessionName,
     activeView,
-    notFound,
     profileSeed,
     profile,
     puzzle,
@@ -295,7 +294,6 @@ export function AppShell(props: AppShellProps) {
           main={
             <MainStage
               activeView={activeView}
-              notFound={notFound}
               sessionId={activeSessionId}
               sessions={sessions}
               solves={solves}

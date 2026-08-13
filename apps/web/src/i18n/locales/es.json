@@ -18,6 +18,22 @@
     "ok": "Aceptar",
     "appTitle": "CubeForge — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing"
   },
+  "meta": {
+    "brand": "CubeForge",
+    "timer": "Cronómetro — {{count}} resoluciones",
+    "timer_one": "Cronómetro — {{count}} resolución",
+    "insights": "Estadísticas — {{count}} resoluciones",
+    "insights_one": "Estadísticas — {{count}} resolución",
+    "algorithms": "Algoritmos",
+    "training": "Entrenamiento",
+    "skillTree": "Habilidades",
+    "profile": "Perfil",
+    "reconstructions": "Reconstrucciones — {{count}} reconstrucciones",
+    "reconstructions_one": "Reconstrucciones — {{count}} reconstrucción",
+    "reconstruction": "Reconstrucción {{id}} — {{solver}}",
+    "cube": "Cubo virtual",
+    "notFound": "Página no encontrada"
+  },
   "nav": {
     "title": "Navegación",
     "main": "Principal",
