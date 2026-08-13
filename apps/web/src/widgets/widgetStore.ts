@@ -283,14 +283,12 @@ export const widgetStore = createStore<WidgetStore>()(
             willBeActive && !s.dockOrder.includes(id)
               ? [...s.dockOrder, id]
               : s.dockOrder;
-          // Deterministic self-heal: re-activating a widget resets its
-          // position to the definition default. This guarantees a widget
-          // toggled ON again can never reappear off-screen / invisible due
-          // to a corrupted persisted position.
+          // Preserve the widget's last stored position if present; fall back
+          // to definition default if uninitialized.
           const def = getWidget(id);
-          const position = willBeActive && def
-            ? { ...def.defaultPosition }
-            : inst?.position;
+          const position =
+            inst?.position ??
+            (def ? { ...def.defaultPosition } : { x: 100, y: 100 });
           return {
             dockOrder,
             instances: {

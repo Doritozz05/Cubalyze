@@ -44,17 +44,17 @@ function launchWidget(widgetId: WidgetId) {
   const panelW = inst.panelWidth ?? 340;
   const isReasonable =
     pos &&
-    pos.x >= 72 &&
-    pos.y >= 60 &&
-    pos.x + panelW < window.innerWidth - 16 &&
-    pos.y < window.innerHeight - 60;
+    pos.x >= 0 &&
+    pos.y >= 50 &&
+    pos.x + 60 < window.innerWidth &&
+    pos.y + 40 < window.innerHeight;
 
   if (!isReasonable) {
     const floatingCount = Object.values(store.instances).filter(
       (i) => i.status === "floating" || i.status === "minimized",
     ).length;
     store.setPosition(widgetId, {
-      x: Math.max(72, Math.round((window.innerWidth - panelW) / 2)),
+      x: Math.max(24, Math.round((window.innerWidth - panelW) / 2)),
       y: 72 + floatingCount * 30,
     });
   }

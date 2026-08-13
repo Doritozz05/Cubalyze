@@ -610,6 +610,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
           <ScrambleDisplay
             scramble={scramble}
             displayScramble={displayScramble}
+            smartCubeConnected={false}
             states={validation.states}
             currentIndex={validation.currentIndex}
             errorMoves={displayErrorMoves}

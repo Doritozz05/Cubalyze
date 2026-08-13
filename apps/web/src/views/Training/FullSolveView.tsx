@@ -775,6 +775,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                   <ScrambleDisplay
                     scramble={currentScramble}
                     displayScramble={displayScramble}
+                    smartCubeConnected={hasSmartCube}
                     states={hasSmartCube && scrambleVerification ? smartCube.validation.states : undefined}
                     currentIndex={hasSmartCube ? smartCube.validation.currentIndex : 0}
                     errorMoves={hasSmartCube ? smartCube.validation.displayErrorMoves : []}

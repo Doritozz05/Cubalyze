@@ -67,6 +67,7 @@ export function PlainPracticeView({
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3/60 block mb-1">{t("practice.scramble")}</span>
               <ScrambleDisplay
                 scramble={currentScramble} displayScramble={displayScramble}
+                smartCubeConnected={hasSmartCube}
                 states={hasSmartCube ? smartCube.validation.states : undefined}
                 currentIndex={hasSmartCube ? smartCube.validation.currentIndex : 0}
                 errorMoves={hasSmartCube ? smartCube.validation.displayErrorMoves : []}

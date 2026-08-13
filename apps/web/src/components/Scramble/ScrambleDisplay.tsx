@@ -10,6 +10,7 @@ export interface ScrambleDisplayProps {
   scramble: string;
   /** Orientation-adapted scramble for display (raw scramble used for validation). */
   displayScramble?: string;
+  smartCubeConnected?: boolean;
   onRegenerate?: () => void;
   onCopy?: () => void;
   indexLabel?: string;
@@ -26,6 +27,7 @@ export interface ScrambleDisplayProps {
 export function ScrambleDisplay({
   scramble,
   displayScramble,
+  smartCubeConnected,
   onRegenerate,
   onCopy,
   indexLabel,
@@ -51,6 +53,13 @@ export function ScrambleDisplay({
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   };
+
+  // Move verification states (black & gray progress) trigger strictly when a
+  // SmartCube is connected AND non-empty verification states are active.
+  // Otherwise, scramble tokens display cleanly in solid black text (text-ink)
+  // without opacity reduction.
+  const isVerificationActive =
+    Boolean(smartCubeConnected) && Array.isArray(states) && states.length > 0;
 
   return (
     <div className="w-full" data-onboarding-target="timer">
@@ -135,19 +144,20 @@ export function ScrambleDisplay({
           translate="no"
         >
           {tokens.map((tok, i) => {
-            const state = states?.[i] || 'pending';
-            const isCompleted = state === 'correct';
-            const isActive = i === currentIndex;
+            const state = isVerificationActive ? (states?.[i] || 'pending') : 'normal';
+            const isCompleted = isVerificationActive && state === 'correct';
+            const isActive = isVerificationActive && i === currentIndex;
 
             return (
               <span
                 key={`${tok}-${i}`}
                 className={cn(
                   "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 max-lg:text-sm",
-                  isCompleted && "text-ink-3 scale-110",
-                  isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
-                  isActive && !isCompleted && !pendingHalfDouble && "text-ink scale-100",
-                  !isCompleted && !isActive && "text-ink/40 scale-95",
+                  !isVerificationActive && "text-ink scale-100",
+                  isVerificationActive && isCompleted && "text-ink-3 scale-110",
+                  isVerificationActive && isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
+                  isVerificationActive && isActive && !isCompleted && !pendingHalfDouble && "text-ink scale-100",
+                  isVerificationActive && !isCompleted && !isActive && "text-ink/40 scale-95",
                 )}
               >
                 {tok}

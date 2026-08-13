@@ -63,6 +63,7 @@ export function LSESubPhaseView({ methodId, phaseId, phaseName, subPhase, onBack
             <div className="shrink-0 rounded-xl border border-line bg-surface p-4">
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-ink-3/60 block mb-1">{t("practice.scramble")}</span>
               <ScrambleDisplay scramble={currentScramble} displayScramble={displayScramble}
+                smartCubeConnected={hasSmartCube}
                 states={hasSmartCube ? smartCube.validation.states : undefined} currentIndex={hasSmartCube ? smartCube.validation.currentIndex : 0}
                 errorMoves={hasSmartCube ? smartCube.validation.displayErrorMoves : []} pendingHalfDouble={hasSmartCube ? smartCube.validation.pendingHalfDouble : false}
                 isScrambled={hasSmartCube ? smartCube.validation.isScrambled : false} needsReset={hasSmartCube ? smartCube.validation.needsReset : false}

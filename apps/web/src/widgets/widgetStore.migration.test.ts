@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BUILT_IN_WIDGETS } from "./registry";
 import {
+  widgetStore,
   migratePersistedWidgetState,
   nextFreeDockAreaInstanceId,
 } from "./widgetStore";
@@ -107,5 +108,27 @@ describe("nextFreeDockAreaInstanceId — repeatable area instance ids", () => {
         "spacer",
       ),
     ).toBe("spacer-2");
+  });
+});
+
+describe("widgetStore toggleWidget position retention", () => {
+  it("preserves last stored position when re-activating an inactive widget", () => {
+    const id = "times-log";
+
+    // Set a custom position for the widget
+    widgetStore.getState().setPosition(id, { x: 500, y: 300 });
+
+    // Ensure it starts as docked, then toggle off to inactive
+    if (widgetStore.getState().instances[id]?.status !== "inactive") {
+      widgetStore.getState().toggleWidget(id);
+    }
+    expect(widgetStore.getState().instances[id]?.status).toBe("inactive");
+
+    // Toggle widget back on (inactive -> docked)
+    widgetStore.getState().toggleWidget(id);
+    expect(widgetStore.getState().instances[id]?.status).toBe("docked");
+
+    // Verify position was preserved, NOT reset to defaultPosition ({ x: 24, y: 72 })
+    expect(widgetStore.getState().instances[id]?.position).toEqual({ x: 500, y: 300 });
   });
 });

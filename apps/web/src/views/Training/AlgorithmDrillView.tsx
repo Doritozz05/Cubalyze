@@ -458,6 +458,7 @@ export function AlgorithmDrillView({
                   <ScrambleDisplay
                     scramble={currentSetup}
                     displayScramble={displaySetup}
+                    smartCubeConnected={hasSmartCube}
                     states={hasSmartCube ? drillSmartCube.validation.states : undefined}
                     currentIndex={hasSmartCube ? drillSmartCube.validation.currentIndex : 0}
                     errorMoves={hasSmartCube ? drillSmartCube.validation.displayErrorMoves : []}

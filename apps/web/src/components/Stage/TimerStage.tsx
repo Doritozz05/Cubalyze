@@ -128,13 +128,14 @@ export function TimerStage(props: TimerStageProps) {
             <ScrambleDisplay
               scramble={currentScramble}
               displayScramble={displayScramble}
-              states={isManualMode ? undefined : validation.states}
-              currentIndex={isManualMode ? 0 : validation.currentIndex}
-              errorMoves={isManualMode ? [] : validation.displayErrorMoves}
-              pendingHalfDouble={isManualMode ? false : validation.pendingHalfDouble}
-              isScrambled={isManualMode ? false : validation.isScrambled}
-              needsReset={isManualMode ? false : validation.needsReset}
-              awaitingSolve={isManualMode ? false : validation.awaitingSolve}
+              smartCubeConnected={smartCubeConnected}
+              states={isManualMode || !smartCubeConnected ? undefined : validation.states}
+              currentIndex={isManualMode || !smartCubeConnected ? 0 : validation.currentIndex}
+              errorMoves={isManualMode || !smartCubeConnected ? [] : validation.displayErrorMoves}
+              pendingHalfDouble={isManualMode || !smartCubeConnected ? false : validation.pendingHalfDouble}
+              isScrambled={isManualMode || !smartCubeConnected ? false : validation.isScrambled}
+              needsReset={isManualMode || !smartCubeConnected ? false : validation.needsReset}
+              awaitingSolve={isManualMode || !smartCubeConnected ? false : validation.awaitingSolve}
               onRegenerate={onRegenerate}
               onCopy={onCopy}
               indexLabel={`#${scrambleIndex + 1}`}
