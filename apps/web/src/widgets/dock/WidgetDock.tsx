@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useLayoutEffect, useEffect, useState, useMemo, forwardRef } from "react";
+import { memo, useRef, useCallback, useLayoutEffect, useEffect, useState, useMemo, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { ChevronUp, Plus } from "lucide-react";
@@ -72,7 +72,13 @@ function launchWidget(widgetId: WidgetId) {
  *   cursor. Dragging down past the commit threshold undocks to a
  *   free-floating minimized pill.
  */
-function DockPill({ widgetId }: { widgetId: WidgetId }) {
+const DockPill = memo(function DockPill({
+  widgetId,
+  onReorderEnd,
+}: {
+  widgetId: WidgetId;
+  onReorderEnd?: () => void;
+}) {
   const { t } = useTranslation("widgets");
   const definition = getWidget(widgetId);
   const status = useWidgetStore((s) => s.instances[widgetId]?.status);
@@ -200,6 +206,8 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
                 // with the minimized pill appearing at the same spot.
                 setIsCommitted(true);
               }
+              // Commit the reorder order captured during the drag (once, on drop).
+              onReorderEnd?.();
               // The click event fires AFTER this handler, so the suppression flag
               // must NOT be cleared here — the click itself (or a safety timeout)
               // clears it. Otherwise every reorder drag would launch the widget.
@@ -263,7 +271,7 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
       )}
     </>
   );
-}
+});
 
 // ── Overflow chevron (Windows-style) ─────────────────────────────────────
 
@@ -510,6 +518,32 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
     return () => cancelAnimationFrame(raf);
   }, [isDockZoneActive, dockedIds, draggingWidgetId]);
 
+  // ── Reorder state (dock-to-dock) ───────────────────────────────────
+  // The reorder order is kept in LOCAL state during a drag and committed to
+  // the persisted store ONCE on drop. Committing on every onReorder (which
+  // fires once per pill crossed) spammed a synchronous localStorage write
+  // plus a full store notify + dock re-render per swap — the visible lag when
+  // sweeping a pill back and forth quickly. The ref lets commitReorder read
+  // the latest order without re-subscribing every render.
+  const [reorderOrder, setReorderOrder] = useState<WidgetId[] | null>(null);
+  const reorderOrderRef = useRef<WidgetId[] | null>(null);
+
+  const handleReorder = useCallback((newOrder: WidgetId[]) => {
+    reorderOrderRef.current = newOrder;
+    setReorderOrder(newOrder);
+  }, []);
+
+  const commitReorder = useCallback(() => {
+    const order = reorderOrderRef.current;
+    if (!order) return;
+    reorderOrderRef.current = null;
+    setReorderOrder(null);
+    const current = widgetStore.getState().dockOrder;
+    const visibleSet = new Set(order);
+    const invisible = current.filter((id) => !visibleSet.has(id));
+    widgetStore.getState().setDockOrder([...order, ...invisible]);
+  }, []);
+
   // ── Display list: the dragged widget ITSELF joins the dock while its
   //    drag is over the bar — treated as if it were ALREADY docked (the
   //    user's suggested approach): its real pill sits in the flow at the
@@ -518,21 +552,24 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   //    compacting — nothing to mount or re-layout, so the bar never shows a
   //    missing icon even for one frame. If the drag leaves the bar, the pill
   //    simply exits the flow and the widget stays floating.
+  // The base order rendered in the Reorder.Group: the in-flight reorder
+  // order while a dock-to-dock drag is active, otherwise the store order.
+  const reorderBase = reorderOrder ?? renderedIds;
+
   const displayIds = useMemo(() => {
-    if (!isDockZoneActive || !draggingWidgetId) return renderedIds;
-    const ids = [...renderedIds];
-    if (ids.includes(draggingWidgetId)) return ids;
+    if (!isDockZoneActive || !draggingWidgetId) return reorderBase;
+    // Dragging a floating widget into the dock: lift its pill out of its
+    // current slot and re-insert an INVISIBLE ghost at the live insertion
+    // index. The other pills part around it via framer layout FLIP — the
+    // same "ghost parts the dock" effect as a dock-to-dock reorder. (A
+    // floating widget stays pinned in the dock while floating, so it must be
+    // removed FIRST; the old code early-returned when it was already present,
+    // leaving the ghost stuck at its original slot so the pills never parted.)
+    const ids = reorderBase.filter((id) => id !== draggingWidgetId);
     const idx = ghostIndex >= 0 ? Math.min(ghostIndex, ids.length) : ids.length;
     ids.splice(idx, 0, draggingWidgetId);
     return ids;
-  }, [renderedIds, isDockZoneActive, ghostIndex, draggingWidgetId]);
-
-  const handleReorder = (newOrder: WidgetId[]) => {
-    const current = widgetStore.getState().dockOrder;
-    const visibleSet = new Set(newOrder);
-    const invisible = current.filter((id) => !visibleSet.has(id));
-    widgetStore.getState().setDockOrder([...newOrder, ...invisible]);
-  };
+  }, [reorderBase, isDockZoneActive, ghostIndex, draggingWidgetId]);
 
   // ── Edit mode: render each dock area for reordering ──────────────────
   // The dock is composed of modular areas (widgets zone, ＋, session,
@@ -654,7 +691,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
               <Reorder.Group
                 as="div"
                 axis="x"
-                values={renderedIds}
+                values={reorderBase}
                 onReorder={handleReorder}
                 className="flex items-center gap-0.5"
               >
@@ -680,7 +717,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
                         </motion.div>
                       );
                     }
-                    return <DockPill key={id} widgetId={id} />;
+                    return <DockPill key={id} widgetId={id} onReorderEnd={commitReorder} />;
                   })}
                 </AnimatePresence>
               </Reorder.Group>
