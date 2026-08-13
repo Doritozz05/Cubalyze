@@ -11,7 +11,7 @@ export const solveTimelineDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 420, y: 72 },
   tags: ["timeline", "phases", "analysis", "pauses", "last-solve"],
 };

@@ -11,7 +11,7 @@ export const pbProgressionDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 880, y: 440 },
   tags: ["pb", "personal-best", "progression", "timeline", "milestones"],
 };

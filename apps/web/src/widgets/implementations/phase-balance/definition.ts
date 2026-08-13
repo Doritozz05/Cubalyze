@@ -11,7 +11,7 @@ export const phaseBalanceDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 420, y: 300 },
   tags: ["phase", "balance", "cfop", "cross", "f2l", "oll", "pll", "analysis"],
 };

@@ -11,7 +11,7 @@ export const algorithmDbDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 380, y: 72 },
   tags: ["algorithms", "cfop", "roux", "pll", "oll", "f2l", "visualization", "library"],
 };

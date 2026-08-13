@@ -11,7 +11,7 @@ export const layoutOrganizerDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 80, y: 100 },
   tags: ["layout", "organize", "arrange", "position", "grid", "workspace"],
 };

@@ -11,7 +11,7 @@ export const timeDistributionDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 880, y: 72 },
   tags: ["distribution", "histogram", "stats", "consistency", "bar-chart"],
 };

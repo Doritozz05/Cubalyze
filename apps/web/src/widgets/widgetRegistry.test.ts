@@ -63,9 +63,9 @@ describe("lazy widget registry integrity", () => {
     }
   });
 
-  it("cube-button is the ONLY default-active widget on first-ever load", () => {
+  it("all built-in widgets are default-active on first-ever load", () => {
     const defaultActive = BUILT_IN_WIDGETS.filter((w) => w.defaultActive);
-    expect(defaultActive.map((w) => w.id)).toEqual(["cube-button"]);
+    expect(defaultActive.map((w) => w.id)).toEqual(BUILT_IN_WIDGETS.map((w) => w.id));
   });
 });
 

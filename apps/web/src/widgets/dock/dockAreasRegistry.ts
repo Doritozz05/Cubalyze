@@ -60,10 +60,9 @@ export const DOCK_AREAS: DockAreaDef[] = [
 export const DEFAULT_DOCK_AREA_ORDER = [
   "widgets",
   "separator-0",
-  "manual-solve",
+  "spacer-0",
   "session",
   "puzzle",
-  "battery",
 ];
 
 /**

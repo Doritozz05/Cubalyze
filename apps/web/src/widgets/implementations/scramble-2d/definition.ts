@@ -11,7 +11,7 @@ export const scramble2DDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 24, y: 440 },
   tags: ["scramble", "2d", "net", "visualizer", "cube"],
 };

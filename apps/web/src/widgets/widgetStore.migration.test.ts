@@ -29,7 +29,7 @@ describe("widget persistence migration", () => {
     const dockOrder = migrated.dockOrder as string[];
 
     expect(instances["phase-balance"]).toEqual({
-      status: "inactive",
+      status: "docked",
       position: { x: 420, y: 300 },
     });
     expect(dockOrder.slice(0, 2)).toEqual(["solve-timeline", "times-log"]);

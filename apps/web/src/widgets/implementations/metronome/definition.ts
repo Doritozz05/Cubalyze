@@ -11,7 +11,7 @@ export const metronomeDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: false,
+  defaultActive: true,
   defaultPosition: { x: 920, y: 72 },
   tags: ["metronome", "tps", "rhythm", "audio", "timer", "pacing", "fluidity"],
 };
