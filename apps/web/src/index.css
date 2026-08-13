@@ -494,85 +494,92 @@ input[type="image"],
 
 .cf-rubik-lateral-square {
   position: absolute;
+  left: 0;
+  top: 0;
   width: var(--cf-spinner-sq, 14px);
   height: var(--cf-spinner-sq, 14px);
   border-radius: var(--cf-spinner-radius, 2.5px);
+  will-change: transform;
 }
 
+/* Base transform = each square's slot, so the shape is always complete (no
+   stacking on soft reloads, no reduced-motion collapse). Transform-based
+   keyframes are GPU-composited, and every loop is seamless (100% == 0%) so
+   the flow never teleports at the cycle boundary. No start delay and no
+   staggered fade-in: all squares are visible and animating from the very
+   first frame. */
 .cf-sq-1 {
   background-color: var(--phase-orange, #f97316);
-  animation: cf-sq1 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.1s ease-out both;
+  transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  animation: cf-sq1 2.4s ease-in-out infinite;
 }
 
 .cf-sq-2 {
   background-color: var(--phase-blue, #3b82f6);
-  animation: cf-sq2 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.2s ease-out both;
+  transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  animation: cf-sq2 2.4s ease-in-out infinite;
 }
 
 .cf-sq-3 {
   background-color: var(--phase-amber, #fbbf24);
-  animation: cf-sq3 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.3s ease-out both;
+  transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  animation: cf-sq3 2.4s ease-in-out infinite;
 }
 
 .cf-sq-4 {
   background-color: var(--phase-emerald, #34d399);
-  animation: cf-sq4 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.4s ease-out both;
+  transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  animation: cf-sq4 2.4s ease-in-out infinite;
 }
 
 .cf-sq-5 {
   background-color: var(--phase-violet, #a78bfa);
-  animation: cf-sq5 2.4s 0.2s ease-in-out infinite, cf-sqfadein 0.4s 0.5s ease-out both;
+  transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  animation: cf-sq5 2.4s ease-in-out infinite;
 }
 
 @keyframes cf-sq1 {
-  0% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
-  8.333% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  100% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  0% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  8.333% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  100% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
 }
 
 @keyframes cf-sq2 {
-  0% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  8.333% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
-  16.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
-  25.00% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  83.33% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  91.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
-  100% { left: calc(0 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
+  0% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  8.333% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
+  16.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
+  25.00% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  83.33% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  91.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  100% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
 }
 
 @keyframes cf-sq3 {
-  0%, 100% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  16.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  25.00% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
-  33.33% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
-  41.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  66.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  75.00% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
-  83.33% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
-  91.67% { left: calc(1 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  0%, 100% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  16.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  25.00% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  33.33% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  41.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  66.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
+  83.33% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
+  91.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
 }
 
 @keyframes cf-sq4 {
-  0% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  33.33% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  41.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
-  50.00% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(2 * var(--cf-spinner-offset, 18px)); }
-  58.33% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  100% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
+  0%, 100% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  33.33% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  41.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
+  50.00% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
+  58.33% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
 }
 
 @keyframes cf-sq5 {
-  0% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  50.00% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  58.33% { left: calc(3 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
-  66.67% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(0 * var(--cf-spinner-offset, 18px)); }
-  75.00% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-  100% { left: calc(2 * var(--cf-spinner-offset, 18px)); top: calc(1 * var(--cf-spinner-offset, 18px)); }
-}
-
-@keyframes cf-sqfadein {
-  0% { transform: scale(0.75); opacity: 0; }
-  100% { transform: scale(1.0); opacity: 1; }
+  0%, 100% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  50.00% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  58.33% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  66.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
 }
 
 

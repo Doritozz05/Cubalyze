@@ -46,69 +46,68 @@
       }
       .cf-rubik-sq-root {
         position: absolute;
+        left: 0;
+        top: 0;
         width: var(--sq);
         height: var(--sq);
         border-radius: 2.5px;
+        will-change: transform;
       }
-      /* Colors match the app spinner tokens (--phase-orange / --phase-blue). */
-      .cf-sq1-r { background-color: #fb923c; animation: cf-sq1-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.1s ease-out both; }
-      .cf-sq2-r { background-color: #60a5fa; animation: cf-sq2-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.2s ease-out both; }
-      .cf-sq3-r { background-color: #fbbf24; animation: cf-sq3-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.3s ease-out both; }
-      .cf-sq4-r { background-color: #34d399; animation: cf-sq4-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.4s ease-out both; }
-      .cf-sq5-r { background-color: #a78bfa; animation: cf-sq5-r 2.4s 0.2s ease-in-out infinite, cf-sqin-r 0.4s 0.5s ease-out both; }
+      /* Colors match the app spinner tokens (--phase-orange / --phase-blue).
+         Every square has a BASE transform = its slot, so the cube shape is
+         always complete — even on a soft reload where the browser reuses
+         cached animation state, and under reduced motion. Positions animate
+         via transform (GPU-composited, no layout thrash) and every loop is
+         SEAMLESS (100% == 0%), so the flow never jumps or teleports at the
+         cycle boundary. No start delay and no staggered fade-in: all squares
+         are visible and animating from the very first frame. */
+      .cf-sq1-r { background-color: #fb923c; transform: translate3d(0px, 0px, 0); animation: cf-sq1-r 2.4s ease-in-out infinite; }
+      .cf-sq2-r { background-color: #60a5fa; transform: translate3d(0px, 18px, 0); animation: cf-sq2-r 2.4s ease-in-out infinite; }
+      .cf-sq3-r { background-color: #fbbf24; transform: translate3d(18px, 18px, 0); animation: cf-sq3-r 2.4s ease-in-out infinite; }
+      .cf-sq4-r { background-color: #34d399; transform: translate3d(36px, 18px, 0); animation: cf-sq4-r 2.4s ease-in-out infinite; }
+      .cf-sq5-r { background-color: #a78bfa; transform: translate3d(54px, 18px, 0); animation: cf-sq5-r 2.4s ease-in-out infinite; }
 
       @keyframes cf-sq1-r {
-        0% { left: 0px; top: 0px; }
-        8.333% { left: 0px; top: 18px; }
-        100% { left: 0px; top: 18px; }
+        0% { transform: translate3d(0px, 0px, 0); }
+        8.333% { transform: translate3d(0px, 18px, 0); }
+        100% { transform: translate3d(0px, 0px, 0); }
       }
       @keyframes cf-sq2-r {
-        0% { left: 0px; top: 18px; }
-        8.333% { left: 0px; top: 36px; }
-        16.67% { left: 18px; top: 36px; }
-        25.00% { left: 18px; top: 18px; }
-        83.33% { left: 18px; top: 18px; }
-        91.67% { left: 18px; top: 0px; }
-        100% { left: 0px; top: 0px; }
+        0% { transform: translate3d(0px, 18px, 0); }
+        8.333% { transform: translate3d(0px, 36px, 0); }
+        16.67% { transform: translate3d(18px, 36px, 0); }
+        25.00% { transform: translate3d(18px, 18px, 0); }
+        83.33% { transform: translate3d(18px, 18px, 0); }
+        91.67% { transform: translate3d(18px, 0px, 0); }
+        100% { transform: translate3d(0px, 18px, 0); }
       }
       @keyframes cf-sq3-r {
-        0%, 100% { left: 18px; top: 18px; }
-        16.67% { left: 18px; top: 18px; }
-        25.00% { left: 18px; top: 0px; }
-        33.33% { left: 36px; top: 0px; }
-        41.67% { left: 36px; top: 18px; }
-        66.67% { left: 36px; top: 18px; }
-        75.00% { left: 36px; top: 36px; }
-        83.33% { left: 18px; top: 36px; }
-        91.67% { left: 18px; top: 18px; }
+        0%, 100% { transform: translate3d(18px, 18px, 0); }
+        16.67% { transform: translate3d(18px, 18px, 0); }
+        25.00% { transform: translate3d(18px, 0px, 0); }
+        33.33% { transform: translate3d(36px, 0px, 0); }
+        41.67% { transform: translate3d(36px, 18px, 0); }
+        66.67% { transform: translate3d(36px, 18px, 0); }
+        75.00% { transform: translate3d(36px, 36px, 0); }
+        83.33% { transform: translate3d(18px, 36px, 0); }
+        91.67% { transform: translate3d(18px, 18px, 0); }
       }
       @keyframes cf-sq4-r {
-        0% { left: 36px; top: 18px; }
-        33.33% { left: 36px; top: 18px; }
-        41.67% { left: 36px; top: 36px; }
-        50.00% { left: 54px; top: 36px; }
-        58.33% { left: 54px; top: 18px; }
-        100% { left: 54px; top: 18px; }
+        0%, 100% { transform: translate3d(36px, 18px, 0); }
+        33.33% { transform: translate3d(36px, 18px, 0); }
+        41.67% { transform: translate3d(36px, 36px, 0); }
+        50.00% { transform: translate3d(54px, 36px, 0); }
+        58.33% { transform: translate3d(54px, 18px, 0); }
       }
       @keyframes cf-sq5-r {
-        0% { left: 54px; top: 18px; }
-        50.00% { left: 54px; top: 18px; }
-        58.33% { left: 54px; top: 0px; }
-        66.67% { left: 36px; top: 0px; }
-        75.00% { left: 36px; top: 18px; }
-        100% { left: 36px; top: 18px; }
-      }
-      @keyframes cf-sqin-r {
-        0% { transform: scale(0.75); opacity: 0; }
-        100% { transform: scale(1.0); opacity: 1; }
+        0%, 100% { transform: translate3d(54px, 18px, 0); }
+        50.00% { transform: translate3d(54px, 18px, 0); }
+        58.33% { transform: translate3d(54px, 0px, 0); }
+        66.67% { transform: translate3d(36px, 0px, 0); }
+        75.00% { transform: translate3d(36px, 18px, 0); }
       }
       @media (prefers-reduced-motion: reduce) {
         .cf-sq1-r, .cf-sq2-r, .cf-sq3-r, .cf-sq4-r, .cf-sq5-r { animation: none; }
-        .cf-sq1-r { left: 0px; top: 18px; }
-        .cf-sq2-r { left: 0px; top: 0px; }
-        .cf-sq3-r { left: 18px; top: 18px; }
-        .cf-sq4-r { left: 54px; top: 18px; }
-        .cf-sq5-r { left: 36px; top: 18px; }
       }
 
       /* Smooth hand-off to the app: the overlay shares the app's background, so
