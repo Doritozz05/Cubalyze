@@ -32,8 +32,12 @@ interface UseDraggableOptions {
   /**
    * Called continuously during a drag (RAF-batched, ~1 call per frame).
    * Use this for real-time feedback (e.g., dock zone detection).
+   * `pointer` is the cursor's actual viewport position (clientX/clientY) —
+   * it stays invariant under mid-drag re-anchoring, so zone tests based on
+   * it never flap when the element is recentered (e.g. a panel collapsing
+   * into a dock pill).
    */
-  onDrag?: (pos: Position) => void;
+  onDrag?: (pos: Position, pointer?: Position) => void;
   /**
    * Snap threshold in pixels. If edges are within this distance,
    * the position is gently nudged to align. 0 = disabled.
@@ -254,6 +258,9 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   // Where the pointer currently sits within the element (grab offset or a
   // custom anchor) — updated on every move so the safeguard can re-anchor.
   const lastAnchorRef = useRef({ x: 0, y: 0 });
+  // The pointer's real viewport position (clientX/clientY) — updated on
+  // every move so the RAF-batched onDrag always sees the latest cursor.
+  const currentPointerRef = useRef<Position>({ x: 0, y: 0 });
 
   /** Current position during drag. Updated on every pointer move, read by RAF. */
   const currentDragPos = useRef(position);
@@ -346,6 +353,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       // Pointer's current viewport position (fixed offset from its start).
       const pointerX = state.startX + dx;
       const pointerY = state.startY + dy;
+      currentPointerRef.current = { x: pointerX, y: pointerY };
 
       // Where the pointer sits within the element: the original grab offset,
       // or a custom anchor (e.g. the center of a shrunk dock pill).
@@ -390,7 +398,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       if (rafRef.current === null) {
         rafRef.current = requestAnimationFrame(() => {
           rafRef.current = null;
-          onDragRef.current?.(currentDragPos.current);
+          onDragRef.current?.(currentDragPos.current, currentPointerRef.current);
         });
       }
     },
@@ -424,7 +432,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
 
       // Fire one last onDrag BEFORE persisting, so dock zone state is
       // settled before handlePositionChange reads dropIndex.
-      onDragRef.current?.(currentDragPos.current);
+      onDragRef.current?.(currentDragPos.current, currentPointerRef.current);
 
       if (movedRef.current) {
         // Commit the final position from our ref → React state

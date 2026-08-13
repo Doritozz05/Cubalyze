@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useCallback, useLayoutEffect, useState, useMemo, forwardRef } from "react";
+import { useRef, useCallback, useLayoutEffect, useEffect, useState, useMemo, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
-import { useDockZoneActive, useDropX, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
+import { useDockZoneActive, useDraggingWidgetId, dockZoneState } from "@/widgets/dock/dockZoneState";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useTranslation } from "react-i18next";
@@ -337,7 +337,6 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   const dockOrder = useWidgetStore((s) => s.dockOrder);
   const instances = useWidgetStore((s) => s.instances);
   const isDockZoneActive = useDockZoneActive();
-  const dropX = useDropX();
   const draggingWidgetId = useDraggingWidgetId();
   const isEditing = useIsDockEditing();
   const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
@@ -346,6 +345,39 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   const containerRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const widgetsGroupRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // ── Live dock rect registration ────────────────────────────────────────
+  // The drag-to-dock zone is the bar's ACTUAL on-screen rectangle, not a
+  // hardcoded top-of-viewport band. Report it to dockZoneState so floating
+  // widgets shrink only when the pointer is over the real bar — never over
+  // dead header space left/right of the centered dock. Re-measured after
+  // every commit (covers the header entrance animation and reflows) plus a
+  // ResizeObserver for pure-CSS size changes (bar expanding to w-max while
+  // a widget drags over, webfont settling). Cleared on unmount.
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    dockZoneState.setDockRect({ x: r.left, y: r.top, w: r.width, h: r.height });
+  });
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      dockZoneState.setDockRect({ x: r.left, y: r.top, w: r.width, h: r.height });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      dockZoneState.setDockRect(null);
+    };
+  }, []);
 
   // The dock lists every ACTIVE widget (docked, floating or minimized) —
   // launching a widget keeps its pill in the bar and marks it "running"
@@ -450,25 +482,39 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   // ── Drop index for dock-from-floating drops ───────────────────────────
   const [ghostIndex, setGhostIndex] = useState(-1);
 
-  useLayoutEffect(() => {
+  // PERFORMANCE: a continuous RAF loop polls the dragged widget's X (stored
+  // in module state — dockZoneState.enter updates it every frame WITHOUT
+  // notifying React) and only touches React state when the computed
+  // insertion index actually changes. The previous approach subscribed to
+  // dropX and recomputed the index in a layout effect on EVERY frame of
+  // pointer movement over the bar, re-rendering the whole dock (framer
+  // Reorder + AnimatePresence) at 60fps — the visible lag on entering and
+  // leaving the dock zone.
+  useEffect(() => {
     if (!isDockZoneActive || dockedIds.length === 0 || !draggingWidgetId) {
       setGhostIndex(-1);
       dockZoneState.setDropIndex(-1);
       return;
     }
-    // Map the pointer onto the WIDGETS GROUP (not the whole bar) — other
-    // areas (clock, profile…) sit beside the pills and don't take slots.
-    const row = widgetsGroupRef.current;
-    if (!row) return;
-    const rect = row.getBoundingClientRect();
-    const contentX = dropX - rect.left;
-    const contentWidth = Math.max(row.scrollWidth - PILL_PITCH, 1);
-    const proportion = Math.max(0, Math.min(1, contentX / contentWidth));
-    const idx = Math.round(proportion * dockedIds.length);
-
-    setGhostIndex(idx);
-    dockZoneState.setDropIndex(idx);
-  }, [dropX, isDockZoneActive, dockedIds, draggingWidgetId]);
+    let raf = 0;
+    const tick = () => {
+      // Map the pointer onto the WIDGETS GROUP (not the whole bar) — other
+      // areas (clock, profile…) sit beside the pills and don't take slots.
+      const row = widgetsGroupRef.current;
+      if (row) {
+        const rect = row.getBoundingClientRect();
+        const contentX = dockZoneState.dropX - rect.left;
+        const contentWidth = Math.max(row.scrollWidth - PILL_PITCH, 1);
+        const proportion = Math.max(0, Math.min(1, contentX / contentWidth));
+        const idx = Math.round(proportion * dockedIds.length);
+        setGhostIndex((prev) => (prev === idx ? prev : idx));
+        dockZoneState.setDropIndex(idx);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isDockZoneActive, dockedIds, draggingWidgetId]);
 
   // ── Display list: the dragged widget ITSELF joins the dock while its
   //    drag is over the bar — treated as if it were ALREADY docked (the
@@ -709,6 +755,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
           document.body,
         )}
       <div
+        ref={barRef}
         className={cn(
           "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
           isExpanded && "z-40 w-max",

@@ -32,17 +32,42 @@ export interface FloatingWidgetWrapperProps {
   defaultPosition?: { x: number; y: number };
 }
 
-/** Threshold (px from top) for entering the dock zone. */
-const DOCK_THRESHOLD = 30;
+/**
+ * Enter margin (px) around the dock bar's LIVE rectangle: the pointer must
+ * be inside the bar (inflated by this margin) for the drag to count as
+ * "near the dock". The zone follows the bar's actual on-screen rectangle
+ * (WidgetDock registers it via a ResizeObserver), so dragging a widget up
+ * over dead header space — left or right of the centered bar — never
+ * shrinks it. Previously this was a hardcoded top-of-viewport Y threshold
+ * left over from the full-width header, so the pill collapsed anywhere in
+ * the top band even where no dock existed.
+ */
+const DOCK_ENTER_MARGIN = 16;
 
 /**
- * Leave hysteresis (px from top): once near the dock, the pill only expands
- * back after the drag passes this line. Without it, natural vertical jitter
- * while dragging horizontally near the boundary flips near/not-near every few
- * frames, re-anchoring the element and visibly vibrating it. Drops inside the
- * band still dock (see handlePositionChange), so no pill gets left behind.
+ * Leave hysteresis (px): once near the dock, the pill only expands back
+ * after the pointer passes this WIDER margin around the bar. Without it,
+ * natural jitter while dragging near the boundary flips near/not-near every
+ * few frames, re-anchoring the element and visibly vibrating it. Drops
+ * inside the band still dock (see handlePositionChange), so no pill gets
+ * left behind.
  */
-const DOCK_LEAVE = 45;
+const DOCK_LEAVE_MARGIN = 40;
+
+/** True when the pointer sits within the dock bar's live rect + margin. */
+function isPointerNearDock(
+  pointer: { x: number; y: number } | undefined,
+  margin: number,
+): boolean {
+  const rect = dockZoneState.dockRect;
+  if (!rect || !pointer) return false;
+  return (
+    pointer.x >= rect.x - margin &&
+    pointer.x <= rect.x + rect.w + margin &&
+    pointer.y >= rect.y - margin &&
+    pointer.y <= rect.y + rect.h + margin
+  );
+}
 
 /**
  * Proportional scale applied to floating widgets in the touch regime: the
@@ -199,10 +224,12 @@ export function FloatingWidgetWrapper({
       // IMPORTANT: Read dropIndex BEFORE calling dockZoneState.leave(),
       // because leave() clears _dropIndex when _nearIds becomes empty.
       const index = dockZoneState.dropIndex;
-      // Drop anywhere inside the hysteresis band (DOCK_LEAVE), not just the
-      // enter threshold — otherwise a release between the two lines would
-      // leave the widget stuck as a pill (still "near" but not docked).
-      const shouldDock = pos.y < DOCK_LEAVE;
+      // Drop anywhere inside the leave hysteresis band (DOCK_LEAVE_MARGIN
+      // around the live dock rect), not just the enter margin — otherwise a
+      // release between the two lines would leave the widget stuck as a pill
+      // (still "near" but not docked). isNearDockRef was settled by the last
+      // onDrag (fired just before persist in useDraggable's endDrag).
+      const shouldDock = isNearDockRef.current;
 
       dockZoneState.leave(widgetId);
 
@@ -223,17 +250,24 @@ export function FloatingWidgetWrapper({
     clickThreshold: 4,
     onPositionChange: handlePositionChange,
     onDrag: useCallback(
-      (pos) => {
+      (pos, pointer) => {
         // Touch: free-floating mini-panels — no dock zone.
         if (isTouchRef.current) return;
 
         // ── Throttled dock zone state: only update React state when the
         //    threshold is actually crossed, not on every frame.
-        //    Hysteresis: enter under DOCK_THRESHOLD, but don't flip back out
-        //    until the drag passes DOCK_LEAVE.
+        //    Hysteresis: enter inside the bar + DOCK_ENTER_MARGIN, but
+        //    don't flip back out until the pointer passes the wider
+        //    DOCK_LEAVE_MARGIN. The zone tracks the dock bar's LIVE
+        //    rectangle (dockZoneState.dockRect), so the widget only
+        //    shrinks while the pointer is actually over the dock. Using
+        //    the POINTER (not the widget's top-left) also means the
+        //    mid-drag re-anchoring never flaps the state: the anchor
+        //    recenters the pill on the cursor, and the cursor is the
+        //    invariant we test.
         const nearDock = isNearDockRef.current
-          ? pos.y < DOCK_LEAVE
-          : pos.y < DOCK_THRESHOLD;
+          ? isPointerNearDock(pointer, DOCK_LEAVE_MARGIN)
+          : isPointerNearDock(pointer, DOCK_ENTER_MARGIN);
         if (nearDock !== isNearDockRef.current) {
           isNearDockRef.current = nearDock;
           setIsNearDock(nearDock);
