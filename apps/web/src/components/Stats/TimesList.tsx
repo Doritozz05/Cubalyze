@@ -20,6 +20,7 @@ import {
   ScrollArea,
 } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export interface TimesListProps {
   solves: Solve[];
@@ -155,6 +156,7 @@ const SolveRow = memo(function SolveRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(solve.note ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -360,13 +362,21 @@ const SolveRow = memo(function SolveRow({
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => onDelete(solve.id)}
+            onClick={() => setConfirmDeleteOpen(true)}
           >
             <Trash2 className="size-3.5" />
             {t("delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title={t("confirmDeleteTitle")}
+        description={t("confirmDeleteDescription")}
+        confirmLabel={t("delete")}
+        onConfirm={() => onDelete(solve.id)}
+      />
     </li>
   );
 });

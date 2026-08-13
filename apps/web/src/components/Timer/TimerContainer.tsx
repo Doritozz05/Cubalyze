@@ -10,6 +10,7 @@ import { PbCelebrationBanner } from "./PbCelebrationBanner";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
 import type { TimerState, Solve, Penalty } from "@/types";
 import type { HintContext } from "./hintFor";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
@@ -99,6 +100,7 @@ export function TimerContainer({
 
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteInput, setNoteInput] = useState("");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     setIsEditingNote(false);
@@ -313,7 +315,7 @@ export function TimerContainer({
                     type="button"
                     onClick={() => {
                       hapticTap();
-                      onDeleteSolve(lastSolve.id);
+                      setConfirmDeleteOpen(true);
                     }}
                     className={cn(
                       "h-6 px-2 rounded-full text-ink-3 hover:bg-dnf-soft hover:text-dnf transition-all duration-150 cursor-pointer outline-none select-none grid place-items-center max-lg:h-10 max-lg:px-3",
@@ -324,6 +326,14 @@ export function TimerContainer({
                 </TooltipTrigger>
                 <TooltipContent side="top">{t("deleteSolve")}</TooltipContent>
               </Tooltip>
+              <ConfirmDialog
+                open={confirmDeleteOpen}
+                onOpenChange={setConfirmDeleteOpen}
+                title={t("confirmDeleteTitle")}
+                description={t("confirmDeleteDescription")}
+                confirmLabel={t("deleteSolve")}
+                onConfirm={() => onDeleteSolve(lastSolve.id)}
+              />
             </>
           )}
           {(onUpdateSolve || onUpdateNote) && (

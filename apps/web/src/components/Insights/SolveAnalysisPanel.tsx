@@ -529,14 +529,14 @@ function TimelineSection({
         eyebrow={
           totalPauseMs > 0
             ? t("analysis.timelineEyebrowPaused", {
-                moves: moveTicks.length,
-                total: formatTime(totalMs),
-                paused: formatTime(totalPauseMs),
-              })
+              moves: moveTicks.length,
+              total: formatTime(totalMs),
+              paused: formatTime(totalPauseMs),
+            })
             : t("analysis.timelineEyebrow", {
-                moves: moveTicks.length,
-                total: formatTime(totalMs),
-              })
+              moves: moveTicks.length,
+              total: formatTime(totalMs),
+            })
         }
       />
 
@@ -1183,14 +1183,14 @@ function PhaseBreakdownSection({
         eyebrow={
           showGap
             ? t("analysis.phaseEyebrowGap", {
-                count: metrics.phases.length,
-                active: formatTime(phaseSumMs),
-                gap: formatTime(totalGapMs),
-              })
+              count: metrics.phases.length,
+              active: formatTime(phaseSumMs),
+              gap: formatTime(totalGapMs),
+            })
             : t("analysis.phaseEyebrow", {
-                count: metrics.phases.length,
-                active: formatTime(phaseSumMs),
-              })
+              count: metrics.phases.length,
+              active: formatTime(phaseSumMs),
+            })
         }
       />
       <div className="mt-3 overflow-hidden rounded-lg border border-line/60">
