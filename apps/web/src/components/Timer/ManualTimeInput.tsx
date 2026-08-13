@@ -104,9 +104,9 @@ export function ManualTimeInput({
           className={cn(
             // Desktop: fluid clamp. Touch (<1024px): fill the stage width so the
             // input + on-screen keyboard stay comfortable on phones/tablets.
-            "nums w-[clamp(320px,70vw,900px)] max-lg:w-full rounded-xl border-2 bg-transparent py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
+            "nums w-[clamp(320px,70vw,900px)] max-lg:w-full rounded-xl border-2 bg-surface py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
             "border-line text-ink placeholder:text-ink-3/20",
-            "focus:border-ink-2 focus:bg-surface/50",
+            "focus:border-ink-2 focus:bg-surface",
           )}
           autoComplete="off"
           spellCheck={false}
