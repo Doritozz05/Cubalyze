@@ -10,6 +10,7 @@ import { SIDEBAR_MOTION, type ViewId } from "./sidebar.constants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
+import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { PuzzleCategory } from "@/types";
 
@@ -110,6 +111,11 @@ export function MainLayout({
   useEffect(() => setMounted(true), []);
   const rawIsTouch = useIsTouch();
   const isTouch = mounted ? rawIsTouch : false;
+  // True while the dock is being edited (right-click → "Editar dock…").
+  // When editing, the wrapper below drops its `z-1` stacking context so the
+  // header's z-60 can rise above the body-portaled edit backdrop (z-50);
+  // otherwise the z-1 wrapper traps the header and the blur covers the dock.
+  const isDockEditing = useIsDockEditing();
 
   // Track viewport width and height so the cube panel can derive responsive bounds
   const [vw, setVw] = useState(() =>
@@ -282,7 +288,12 @@ export function MainLayout({
       </AnimatePresence>
 
       <div className={cn(
-        "relative z-1 flex flex-1 flex-col min-h-0 overflow-hidden",
+        // `z-1` stacks content above the BackgroundLayer — but it also creates
+        // a stacking context that would trap the fixed header's z-60 beneath
+        // the body-portaled dock-edit backdrop (z-50). While editing, drop to
+        // `z-auto` so the header can actually rise above the blur.
+        isDockEditing ? "relative z-auto" : "relative z-1",
+        "flex flex-1 flex-col min-h-0 overflow-hidden",
         // Header offset: desktop reserves exactly 3.5rem; touch also adds the
         // iOS top safe-area so the header (which grows on iOS) never overlaps.
         // When the header is hidden, keep only the safe-area inset on touch so
