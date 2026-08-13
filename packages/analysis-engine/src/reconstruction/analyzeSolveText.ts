@@ -497,8 +497,8 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   const grip = OrientationTable.ENTRIES[gripIndex] ?? OrientationTable.IDENTITY;
   const schemeToUse = scheme ?? IDENTITY_SCHEME;
   const orientation = {
-    up: schemeToUse[grip.faceMap.U] ?? 'U',
-    front: schemeToUse[grip.faceMap.F] ?? 'F',
+    up: schemeToUse[grip.faceMap.U as FaceLetter] ?? 'U',
+    front: schemeToUse[grip.faceMap.F as FaceLetter] ?? 'F',
   };
 
   const reconstruction: SolveReconstruction = {
