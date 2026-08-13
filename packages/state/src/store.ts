@@ -201,10 +201,10 @@ const DEFAULT_VALUES = {
   scrambleDisplay: true,
   scrambleVerification: true,
   method: 'CFOP' as const,
-  focusMode: false,
+  focusMode: true,
   audioCues: true,
   voiceType: 'male' as const,
-  showPbDelta: false,
+  showPbDelta: true,
   pbCelebrationAudio: true,
   pbCelebrationAnimation: true,
   customStickerColors: {
