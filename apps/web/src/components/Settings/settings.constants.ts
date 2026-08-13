@@ -14,6 +14,7 @@ import {
   Download,
   UserRound,
   Heart,
+  AudioLines,
 } from 'lucide-react';
 
 /**
@@ -58,6 +59,12 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     labelKey: 'sections.timer.label',
     icon: Clock,
     descriptionKey: 'sections.timer.description',
+  },
+  {
+    id: 'audio',
+    labelKey: 'sections.audio.label',
+    icon: AudioLines,
+    descriptionKey: 'sections.audio.description',
   },
   {
     id: 'scramble',

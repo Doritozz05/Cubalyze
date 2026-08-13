@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Mic, MicOff, Cpu, Headphones, Bluetooth, Keyboard } from 'lucide-react';
+import { Clock, Cpu, Headphones, Bluetooth, Keyboard } from 'lucide-react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -21,8 +21,6 @@ import {
  *   - Click to start/stop    : allow clicking the timer area to start/stop like spacebar.
  *   - Inspection             : run the 15s WCA inspection countdown before
  *                              the solve.
- *   - Inspection Audio Cues  : play voice alerts during inspection.
- *   - Voice Type             : male or female voice for the alerts.
  *   - Focus Mode             : hide UI elements during solve.
  *   - Hardware Timer         : Stackmat (audio jack) or GAN Timer (Bluetooth).
  */
@@ -32,10 +30,6 @@ export function TimerSection() {
   const setInspection = useStore(preferencesStore, (s) => s.setInspection);
   const focusMode = useStore(preferencesStore, (s) => s.focusMode);
   const setFocusMode = useStore(preferencesStore, (s) => s.setFocusMode);
-  const audioCues = useStore(preferencesStore, (s) => s.audioCues);
-  const setAudioCues = useStore(preferencesStore, (s) => s.setAudioCues);
-  const voiceType = useStore(preferencesStore, (s) => s.voiceType);
-  const setVoiceType = useStore(preferencesStore, (s) => s.setVoiceType);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const setShowPbDelta = useStore(preferencesStore, (s) => s.setShowPbDelta);
   const hardwareTimer = useStore(preferencesStore, (s) => s.hardwareTimer);
@@ -184,51 +178,6 @@ export function TimerSection() {
         checked={inspection}
         onCheckedChange={setInspection}
       />
-
-      <SettingToggle
-        title={t('timer.audioCues')}
-        description={t('timer.audioCuesHint')}
-        checked={audioCues}
-        onCheckedChange={setAudioCues}
-      />
-
-      {/* Voice type selector — only visible when audio cues are enabled */}
-      {audioCues && (
-        <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-          <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
-              {voiceType === 'male' ? (
-                <Mic className="size-3.5 text-ink-2" />
-              ) : (
-                <MicOff className="size-3.5 text-ink-2" />
-              )}
-              {t('timer.voice')}
-            </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              {t('timer.voiceHint')}
-            </p>
-          </div>
-          <div className="mt-0.5 shrink-0">
-            <Select value={voiceType} onValueChange={setVoiceType}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder={t('timer.selectVoice')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">
-                  <div className="flex items-center gap-2">
-                    <span>{t('timer.male')}</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="female">
-                  <div className="flex items-center gap-2">
-                    <span>{t('timer.female')}</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
 
       <SettingToggle
         title={t('timer.pbDelta')}

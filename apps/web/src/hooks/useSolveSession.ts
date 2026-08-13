@@ -421,10 +421,10 @@ export function useSolveSession(
     const sub4 = engine.inspectionWarning$.subscribe((warning) => {
       // Read fresh values from the store each time (avoids stale closures).
       // Inspection voice cues are gated by the audio-cue toggle AND the
-      // master notifications/sound switches (Settings → Notifications).
+      // audio master switch (Settings → Audio) — notifications master no
+      // longer silences sound.
       const prefs = preferencesStore.getState();
-      if (!prefs.audioCues) return;
-      if (!prefs.notificationsEnabled || !prefs.soundsEnabled) return;
+      if (!prefs.audioCues || !prefs.soundsEnabled) return;
       if (warning === "8s") globalAudioSystem.play8s();
       if (warning === "12s") globalAudioSystem.play12s();
     });

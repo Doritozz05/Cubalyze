@@ -42,6 +42,7 @@ import {
 } from "@cubeforge/math-core";
 import { preferencesStore } from "@cubeforge/state";
 import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
+import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
 
 /** The simulator currently supports 3×3 (architecture ready for more puzzles). */
 const CUBE_ORDER = 3;
@@ -306,6 +307,8 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
   useEffect(() => {
     if (!isReady || didInitRef.current) return;
     didInitRef.current = true;
+    // Warm up the turn-sound sample pool so the first turn clicks immediately.
+    cubeTurnSounds.preload();
     // The virtual cube only ever pushes CANONICAL solved facelets (see
     // SOLVED_CANONICAL) — every push tells both consumers "cube at the
     // solved start" regardless of frame.
@@ -368,6 +371,11 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
         }
         return;
       }
+
+      // Randomized turn click for every layer turn (keyboard + drag).
+      // Whole-cube x/y/z rotations are viewing aids, not moves — they stay
+      // silent, matching the replay engine's onMove semantics.
+      cubeTurnSounds.play();
 
       // Feed the SAME scramble validator the real timer uses. The virtual
       // cube resolves moves in the CURRENT (possibly rotated) view frame —

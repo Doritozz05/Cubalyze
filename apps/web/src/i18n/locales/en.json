@@ -90,6 +90,10 @@
         "label": "Timer",
         "description": "Solve start rules and inspection."
       },
+      "audio": {
+        "label": "Audio",
+        "description": "Voice, volume, and sound effects."
+      },
       "scramble": {
         "label": "Scramble",
         "description": "Scramble verification and display options."
@@ -104,7 +108,7 @@
       },
       "notifications": {
         "label": "Notifications",
-        "description": "Alerts, sound, and timer feedback."
+        "description": "Alerts, banners, and daily reminders."
       },
       "shortcuts": {
         "label": "Shortcuts",
@@ -191,13 +195,6 @@
       "gan": "GAN Timer",
       "inspection": "Inspection",
       "inspectionHint": "Show the 15-second WCA inspection countdown before the timer starts. Recommended for competition-style practice.",
-      "audioCues": "Inspection audio cues",
-      "audioCuesHint": "Play official voice alerts ('8 seconds' and '12 seconds') during the WCA inspection countdown.",
-      "voice": "Voice",
-      "voiceHint": "Choose between male and female voice for the inspection alerts. Uses the official WCA audio clips.",
-      "selectVoice": "Select voice",
-      "male": "Male",
-      "female": "Female",
       "pbDelta": "PB delta",
       "pbDeltaHint": "Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best.",
       "sessionStats": "Session stats",
@@ -326,16 +323,28 @@
       "notJsonError": "This file is not a CubeForge JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.",
       "importError": "Import failed: {{message}}"
     },
-    "notifications": {
-      "info": "Control every alert, sound and daily reminder the app can send.",
-      "master": "Notifications",
-      "masterHint": "Master switch. When off, every notification below is suppressed — no sounds, no banners, no daily reminders.",
+    "audio": {
+      "info": "Control every sound the app makes — master switch, volume, voices, and per-effect toggles.",
       "sounds": "Sounds",
-      "soundsHint": "Play sound effects — inspection voice cues ('8 seconds' / '12 seconds') and the PB victory fanfare.",
+      "soundsHint": "Audio master switch. When off, every sound category below is silenced.",
       "volume": "Volume",
-      "volumeHint": "Master volume for inspection voice cues and the PB fanfare (0–100%).",
+      "volumeHint": "Master volume for every sound (0–100%).",
+      "audioCues": "Inspection audio cues",
+      "audioCuesHint": "Play official voice alerts ('8 seconds' and '12 seconds') during the WCA inspection countdown.",
+      "voice": "Voice",
+      "voiceHint": "Choose between male and female voice for the inspection alerts. Uses the official WCA audio clips.",
+      "selectVoice": "Select voice",
+      "male": "Male",
+      "female": "Female",
+      "turnSounds": "Cube turn sounds",
+      "turnSoundsHint": "Play a randomized click sound on every layer turn of the replay and the virtual cube.",
       "pbVictorySound": "PB victory sound",
-      "pbVictorySoundHint": "Play a subtle victory fanfare when achieving a new Personal Best (Single, Ao5, Ao12).",
+      "pbVictorySoundHint": "Play a subtle victory fanfare when achieving a new Personal Best (Single, Ao5, Ao12)."
+    },
+    "notifications": {
+      "info": "Control the alerts, banners and daily reminders the app can send.",
+      "master": "Notifications",
+      "masterHint": "Master switch. When off, every notification below is suppressed — no banners, no daily reminders.",
       "pbBanner": "PB celebration banner",
       "pbBannerHint": "Display a minimalist floating banner upon setting a new Personal Best.",
       "practiceReminder": "Daily practice reminder",
