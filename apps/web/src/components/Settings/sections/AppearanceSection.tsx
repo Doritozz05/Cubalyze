@@ -8,6 +8,7 @@ import { preferencesStore } from '@cubeforge/state';
 import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
+import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
 import { Palette, Sun, Moon, Monitor, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dockEditStore } from '@/widgets/dock/dockEditStore';
@@ -110,6 +111,9 @@ export function AppearanceSection() {
         checked={showHeader}
         onCheckedChange={setShowHeader}
       />
+
+      {/* Custom Background Image */}
+      <CustomBackgroundSetting />
 
       {/* Edit dock */}
       <button

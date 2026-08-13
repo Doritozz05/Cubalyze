@@ -759,7 +759,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       <div
         ref={barRef}
         className={cn(
-          "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
+          "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line bg-surface px-1.5 py-1 shadow-sm",
           isExpanded && "z-40 w-max",
           isEditing && "z-60 overflow-hidden",
         )}

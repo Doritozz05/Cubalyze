@@ -167,7 +167,18 @@
       "showHeader": "Show header",
       "showHeaderHint": "Hide the top bar for a cleaner, distraction-free view. Note: the session switcher lives in the header — when hidden, switch sessions from the Insights dropdown.",
       "editDock": "Edit dock…",
-      "editDockHint": "Customize the dock bar: add, remove or reorder widgets, clock, profile, spacers and more."
+      "editDockHint": "Customize the dock bar: add, remove or reorder widgets, clock, profile, spacers and more.",
+      "backgroundImage": "Custom background image",
+      "backgroundImageHint": "Set a custom background image for main views (Timer and Virtual Cube).",
+      "uploadImage": "Upload image",
+      "changeImage": "Change image",
+      "removeImage": "Remove image",
+      "opacity": "Opacity",
+      "blur": "Blur",
+      "fit": "Image fit",
+      "fitCover": "Cover",
+      "fitContain": "Contain",
+      "fitTile": "Tile"
     },
     "timer": {
       "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",

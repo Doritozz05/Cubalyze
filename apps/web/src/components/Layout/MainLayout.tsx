@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
-import { SIDEBAR_MOTION } from "./sidebar.constants";
+import { BackgroundLayer } from "./BackgroundLayer";
+import { SIDEBAR_MOTION, type ViewId } from "./sidebar.constants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
@@ -30,6 +31,8 @@ const CUBE_RESIZE_MIN_WIDTH = 220; // Minimum width when user resizes to the rig
 const INNER_PADDING = "px-4 py-6 sm:px-6 lg:py-8";
 
 export interface MainLayoutProps {
+  /** Currently active view/tab id. Used for view-scoped background layer. */
+  activeView?: ViewId;
   /** Primary content area: scramble, timer, quick stats — or a full Insights
    *  view (Times/Stats/Analysis) when the LeftSidebar nav switches to it. */
   main: React.ReactNode;
@@ -93,6 +96,7 @@ export function MainLayout({
   onNewSession,
   onRenameSession,
   onDeleteSession,
+  activeView,
   onOpenProfile,
   isFocused,
   hideHeader,
@@ -267,16 +271,18 @@ export function MainLayout({
   return (
     <div
       className={cn(
-        "flex h-dvh flex-col overflow-hidden bg-canvas text-ink",
+        "relative flex h-dvh flex-col overflow-hidden bg-canvas text-ink",
         className,
       )}
     >
+      <BackgroundLayer activeView={activeView} />
+
       <AnimatePresence>
         {!isFocused && leftSidebar}
       </AnimatePresence>
 
       <div className={cn(
-        "flex flex-1 flex-col min-h-0 overflow-hidden",
+        "relative z-1 flex flex-1 flex-col min-h-0 overflow-hidden",
         // Header offset: desktop reserves exactly 3.5rem; touch also adds the
         // iOS top safe-area so the header (which grows on iOS) never overlaps.
         // When the header is hidden, keep only the safe-area inset on touch so

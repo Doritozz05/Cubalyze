@@ -240,6 +240,7 @@ export function AppShell(props: AppShellProps) {
     <div className="antialiased bg-background text-foreground h-dvh w-full overflow-hidden">
       <ThemeProvider>
         <MainLayout
+          activeView={activeView}
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={activeSessionId}

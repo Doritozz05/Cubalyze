@@ -46,7 +46,7 @@ function BatteryStatusChip() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex h-8 cursor-default items-center gap-1.5 rounded-full border border-line/70 bg-surface/80 px-2.5 text-xs text-ink select-none">
+        <div className="flex h-8 cursor-default items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs text-ink select-none">
           <BatteryIcon level={batteryLevel} />
           <span className="nums font-medium text-ink">
             {batteryLevel !== null ? `${batteryLevel}%` : "--%"}

@@ -167,7 +167,18 @@
       "showHeader": "Mostrar cabecera",
       "showHeaderHint": "Oculta la barra superior para una vista más limpia y sin distracciones. Nota: el selector de sesión vive en la cabecera; si está oculta, cambia de sesión desde el selector de Insights.",
       "editDock": "Editar dock…",
-      "editDockHint": "Personaliza la barra del dock: añade, quita o reordena widgets, reloj, perfil, espaciadores y más."
+      "editDockHint": "Personaliza la barra del dock: añade, quita o reordena widgets, reloj, perfil, espaciadores y más.",
+      "backgroundImage": "Imagen de fondo personalizada",
+      "backgroundImageHint": "Establece una imagen de fondo para las vistas principales (Cronómetro y Cubo Virtual).",
+      "uploadImage": "Subir imagen",
+      "changeImage": "Cambiar imagen",
+      "removeImage": "Quitar imagen",
+      "opacity": "Opacidad",
+      "blur": "Desenfoque",
+      "fit": "Ajuste de imagen",
+      "fitCover": "Cubrir (Cover)",
+      "fitContain": "Ajustar (Contain)",
+      "fitTile": "Mosaico (Tile)"
     },
     "timer": {
       "header": "Configura cómo debe comenzar una resolución. Estos ajustes también se aplican cuando no hay un Smart Cube conectado.",

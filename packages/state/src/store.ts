@@ -141,6 +141,23 @@ export interface PreferencesState {
   showHints: boolean;
   setShowHints: (value: boolean) => void;
 
+  /** Custom timer background image data URL or null. Only active on timer and virtual cube views. */
+  timerBackgroundImage: string | null;
+  setTimerBackgroundImage: (value: string | null) => void;
+
+  /** Opacity of the custom timer background image (0-100). Default 100. */
+  timerBackgroundOpacity: number;
+  setTimerBackgroundOpacity: (value: number) => void;
+
+  /** Blur of the custom timer background image in px (0-20). Default 0. */
+  timerBackgroundBlur: number;
+  setTimerBackgroundBlur: (value: number) => void;
+
+  /** Fit style of the custom timer background image ('cover' | 'contain' | 'tile'). Default 'cover'. */
+  timerBackgroundFit: 'cover' | 'contain' | 'tile';
+  setTimerBackgroundFit: (value: 'cover' | 'contain' | 'tile') => void;
+
+
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
   /** Master switch: when OFF, every notification (toast, banner, reminder) is suppressed. */
@@ -234,6 +251,10 @@ const DEFAULT_VALUES = {
   haptics: true,
   showSessionStats: true,
   showHints: true,
+  timerBackgroundImage: null,
+  timerBackgroundOpacity: 100,
+  timerBackgroundBlur: 0,
+  timerBackgroundFit: 'cover' as const,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -284,6 +305,10 @@ export const createPreferencesStore = () => {
         setHaptics: (haptics) => set({ haptics }),
         setShowSessionStats: (showSessionStats) => set({ showSessionStats }),
         setShowHints: (showHints) => set({ showHints }),
+        setTimerBackgroundImage: (timerBackgroundImage) => set({ timerBackgroundImage }),
+        setTimerBackgroundOpacity: (timerBackgroundOpacity) => set({ timerBackgroundOpacity }),
+        setTimerBackgroundBlur: (timerBackgroundBlur) => set({ timerBackgroundBlur }),
+        setTimerBackgroundFit: (timerBackgroundFit) => set({ timerBackgroundFit }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -327,6 +352,10 @@ export const createPreferencesStore = () => {
           haptics: state.haptics,
           showSessionStats: state.showSessionStats,
           showHints: state.showHints,
+          timerBackgroundImage: state.timerBackgroundImage,
+          timerBackgroundOpacity: state.timerBackgroundOpacity,
+          timerBackgroundBlur: state.timerBackgroundBlur,
+          timerBackgroundFit: state.timerBackgroundFit,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,
