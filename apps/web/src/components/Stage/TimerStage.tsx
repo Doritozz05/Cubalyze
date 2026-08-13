@@ -116,7 +116,7 @@ export function TimerStage(props: TimerStageProps) {
   return (
     <>
       <AnimatePresence mode="wait">
-        {scrambleDisplay && (scrambleVerification || !isFocused) ? (
+        {scrambleDisplay && !isFocused ? (
           <motion.div
             key="scramble-display-container"
             initial={{ y: "-100%", opacity: 0 }}
