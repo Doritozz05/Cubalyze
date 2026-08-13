@@ -34,8 +34,6 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
           transform: timerBackgroundBlur ? "scale(1.05)" : undefined,
         }}
       />
-      {/* Dynamic theme backdrop overlay for visual contrast */}
-      <div className="absolute inset-0 bg-canvas/30 dark:bg-canvas/50" />
     </div>
   );
 }
