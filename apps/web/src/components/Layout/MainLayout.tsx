@@ -344,9 +344,8 @@ export function MainLayout({
                 minWidth: !isTouch && rightVisible ? CUBE_RESIZE_MIN_WIDTH : undefined,
               }}
               className={cn(
-                "relative flex shrink-0 flex-col bg-surface overflow-hidden",
+                "relative flex shrink-0 flex-col bg-surface overflow-hidden border-line border-t lg:border-l rounded-tl-xl max-lg:rounded-t-xl",
                 !isFocused && "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
-                !isFocused && "border-line max-lg:border-t max-lg:border-l-0 lg:border-l lg:border-t-0",
                 cubeShown && "min-h-0",
                 !rightVisible && "pointer-events-none",
               )}

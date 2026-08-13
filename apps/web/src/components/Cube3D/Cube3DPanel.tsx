@@ -108,7 +108,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
   return (
     <div className={cn("@container flex flex-1 h-full min-h-0 flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line px-1 pb-2.5 min-w-0 select-none">
+      <div className="flex items-center justify-between border-b border-line px-3 py-2 min-w-0 select-none">
         <div className="flex items-baseline gap-2 min-w-0 overflow-hidden">
           <h3 className="text-sm font-medium text-ink truncate">Cube</h3>
         </div>
