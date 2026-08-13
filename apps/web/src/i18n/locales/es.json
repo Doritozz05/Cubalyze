@@ -90,6 +90,10 @@
         "label": "Cronómetro",
         "description": "Reglas de inicio del solve e inspección."
       },
+      "audio": {
+        "label": "Audio",
+        "description": "Voz, volumen y efectos de sonido."
+      },
       "scramble": {
         "label": "Scramble",
         "description": "Opciones de verificación y visualización del scramble."
@@ -104,7 +108,7 @@
       },
       "notifications": {
         "label": "Notificaciones",
-        "description": "Alertas, sonido y feedback del cronómetro."
+        "description": "Alertas, banners y recordatorios diarios."
       },
       "shortcuts": {
         "label": "Atajos",
@@ -191,13 +195,6 @@
       "gan": "GAN Timer",
       "inspection": "Inspección",
       "inspectionHint": "Muestra la cuenta atrás de inspección WCA de 15 segundos antes de iniciar el cronómetro. Recomendado para practicar como en competición.",
-      "audioCues": "Avisos de voz de inspección",
-      "audioCuesHint": "Reproduce avisos de voz oficiales (\"8 segundos\" y \"12 segundos\") durante la cuenta atrás de inspección WCA.",
-      "voice": "Voz",
-      "voiceHint": "Elige entre voz masculina y femenina para los avisos de inspección. Usa los clips de audio oficiales de la WCA.",
-      "selectVoice": "Seleccionar voz",
-      "male": "Masculina",
-      "female": "Femenina",
       "pbDelta": "Diferencia de PB",
       "pbDeltaHint": "Muestra un margen rojo o verde junto al cronómetro tras cada resolución, indicando cuánto (+/-) se aleja el tiempo de tu récord personal.",
       "sessionStats": "Estadísticas de sesión",
@@ -326,16 +323,28 @@
       "notJsonError": "Este archivo no es una exportación JSON de CubeForge. Usa “Importar datos” para otros formatos, o vuelve a exportar con “Exportar todo (JSON)”.",
       "importError": "Importación fallida: {{message}}"
     },
-    "notifications": {
-      "info": "Controla cada aviso, sonido y recordatorio diario que la app puede enviar.",
-      "master": "Notificaciones",
-      "masterHint": "Interruptor principal. Cuando está desactivado, todas las notificaciones de abajo se suprimen: sin sonidos, sin banners, sin recordatorios diarios.",
+    "audio": {
+      "info": "Controla cada sonido que emite la app: interruptor general, volumen, voces y ajustes por efecto.",
       "sounds": "Sonidos",
-      "soundsHint": "Reproduce efectos de sonido: avisos de voz de inspección («8 segundos» / «12 segundos») y la fanfarria de victoria de PB.",
+      "soundsHint": "Interruptor general de audio. Cuando está desactivado, todas las categorías de sonido de abajo quedan en silencio.",
       "volume": "Volumen",
-      "volumeHint": "Volumen general de los avisos de voz de inspección y la fanfarria de PB (0–100%).",
+      "volumeHint": "Volumen general de todos los sonidos (0–100%).",
+      "audioCues": "Avisos de voz de inspección",
+      "audioCuesHint": "Reproduce avisos de voz oficiales («8 segundos» y «12 segundos») durante la cuenta atrás de inspección WCA.",
+      "voice": "Voz",
+      "voiceHint": "Elige entre voz masculina y femenina para los avisos de inspección. Usa los clips de audio oficiales de la WCA.",
+      "selectVoice": "Seleccionar voz",
+      "male": "Masculina",
+      "female": "Femenina",
+      "turnSounds": "Sonido de giros del cubo",
+      "turnSoundsHint": "Reproduce un sonido de clic aleatorio en cada giro de capa del replay y del cubo virtual.",
       "pbVictorySound": "Sonido de victoria de PB",
-      "pbVictorySoundHint": "Reproduce una sutil fanfarria de victoria al lograr un nuevo récord personal (Simple, Ao5, Ao12).",
+      "pbVictorySoundHint": "Reproduce una sutil fanfarria de victoria al lograr un nuevo récord personal (Simple, Ao5, Ao12)."
+    },
+    "notifications": {
+      "info": "Controla los avisos, banners y recordatorios diarios que la app puede enviar.",
+      "master": "Notificaciones",
+      "masterHint": "Interruptor principal. Cuando está desactivado, todas las notificaciones de abajo se suprimen: sin banners, sin recordatorios diarios.",
       "pbBanner": "Banner de celebración de PB",
       "pbBannerHint": "Muestra un banner flotante minimalista al establecer un nuevo récord personal.",
       "practiceReminder": "Recordatorio diario de práctica",

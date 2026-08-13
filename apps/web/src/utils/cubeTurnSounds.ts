@@ -14,10 +14,10 @@
  *   • A small element POOL (2 copies per source) allows real overlap when
  *     turns are faster than the samples (fast solves), while reusing nodes
  *     instead of allocating a fresh `Audio` per turn.
- *   • Playback is gated by the existing preferences (Settings → Notifications):
- *     `notificationsEnabled` + `soundsEnabled` must be on, and the master
- *     `soundVolume` scales every sample — the same contract the inspection
- *     cues and PB fanfare use.
+ *   • Playback is gated by the Audio preferences (Settings → Audio):
+ *     `soundsEnabled` (audio master) + `cubeTurnSoundsEnabled` must be on,
+ *     and the master `soundVolume` scales every sample — the same contract
+ *     the inspection cues and PB fanfare use.
  *   • Fully lazy: no DOM/Audio work happens until the first play or an
  *     explicit `preload()`, so SSR, tests and users who never open the
  *     replay/virtual cube pay zero cost.
@@ -64,7 +64,7 @@ export class CubeTurnSounds {
    */
   public play(): void {
     const prefs = preferencesStore.getState();
-    if (!prefs.notificationsEnabled || !prefs.soundsEnabled) return;
+    if (!prefs.soundsEnabled || !prefs.cubeTurnSoundsEnabled) return;
 
     this.ensurePool();
     if (this.pool.length === 0) return;

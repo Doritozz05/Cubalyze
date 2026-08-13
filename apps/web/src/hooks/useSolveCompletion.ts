@@ -132,9 +132,10 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       );
       if (pbResult.types.length > 0) {
         hapticCelebrate();
-        // PB audio is gated by the master notifications switch, the sounds
-        // toggle and the per-celebration toggle (Settings → Notifications).
-        if (pbCelebrationAudio && notificationsEnabled && soundsEnabled) {
+        // PB audio is gated by the audio master switch and the per-celebration
+        // toggle (Settings → Audio) — notifications master no longer silences
+        // sound.
+        if (pbCelebrationAudio && soundsEnabled) {
           globalAudioSystem.setVolume(soundVolume);
           globalAudioSystem.playPbFanfare(pbResult.types);
         }

@@ -137,19 +137,25 @@ export interface PreferencesState {
   showSessionStats: boolean;
   setShowSessionStats: (value: boolean) => void;
 
-  // ── Notifications & sound (Settings → Notifications) ──────────────────
+  // ── Notifications (Settings → Notifications) ──────────────────────────
 
-  /** Master switch: when OFF, every notification (sound, toast, reminder) is suppressed. */
+  /** Master switch: when OFF, every notification (toast, banner, reminder) is suppressed. */
   notificationsEnabled: boolean;
   setNotificationsEnabled: (value: boolean) => void;
 
-  /** Sounds on/off — gates inspection voice cues and PB fanfare audio. */
+  // ── Audio (Settings → Audio) ──────────────────────────────────────────
+
+  /** Audio master switch: when OFF, every sound category is silenced. */
   soundsEnabled: boolean;
   setSoundsEnabled: (value: boolean) => void;
 
-  /** Master sound volume 0–100 (applies to inspection voice and PB fanfare). */
+  /** Master sound volume 0–100 (applies to every sound category). */
   soundVolume: number;
   setSoundVolume: (value: number) => void;
+
+  /** Randomized click sounds on every layer turn (replay + virtual cube). */
+  cubeTurnSoundsEnabled: boolean;
+  setCubeTurnSoundsEnabled: (value: boolean) => void;
 
   /** Daily practice reminder (browser notification + in-app toast). */
   practiceReminders: boolean;
@@ -226,6 +232,7 @@ const DEFAULT_VALUES = {
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
+  cubeTurnSoundsEnabled: true,
   practiceReminders: false,
   practiceReminderTime: '19:00',
   reviewReminders: false,
@@ -275,6 +282,7 @@ export const createPreferencesStore = () => {
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
         setSoundVolume: (soundVolume) => set({ soundVolume }),
+        setCubeTurnSoundsEnabled: (cubeTurnSoundsEnabled) => set({ cubeTurnSoundsEnabled }),
         setPracticeReminders: (practiceReminders) => set({ practiceReminders }),
         setPracticeReminderTime: (practiceReminderTime) => set({ practiceReminderTime }),
         setReviewReminders: (reviewReminders) => set({ reviewReminders }),
@@ -315,6 +323,7 @@ export const createPreferencesStore = () => {
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,
+          cubeTurnSoundsEnabled: state.cubeTurnSoundsEnabled,
           practiceReminders: state.practiceReminders,
           practiceReminderTime: state.practiceReminderTime,
           reviewReminders: state.reviewReminders,

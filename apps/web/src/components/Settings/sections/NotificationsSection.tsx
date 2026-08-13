@@ -1,11 +1,10 @@
 "use client";
 
-import { Bell, BellOff, Volume2, CalendarClock, Repeat } from "lucide-react";
+import { Bell, BellOff, CalendarClock, Repeat } from "lucide-react";
 import { useStore } from "zustand";
 import { useTranslation } from "react-i18next";
 import { preferencesStore } from "@cubeforge/state";
 import { SettingToggle } from "../components/SettingToggle";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -34,12 +33,10 @@ function TimeInput({
 }
 
 /**
- * Notifications settings section.
- *
- * Houses every notification channel:
+ * Notifications settings section — non-audio channels only (sound lives in
+ * the Audio section):
  *   - Master switch (disables everything below).
- *   - Sounds on/off + master volume (inspection voice cues & PB fanfare).
- *   - PB celebrations (audio + banner) — moved here from the Timer tab.
+ *   - PB celebration banner (the audio moved to Audio).
  *   - Daily practice reminder.
  *   - Daily SRS review-queue reminder.
  */
@@ -48,13 +45,6 @@ export function NotificationsSection() {
 
   const notificationsEnabled = useStore(preferencesStore, (s) => s.notificationsEnabled);
   const setNotificationsEnabled = useStore(preferencesStore, (s) => s.setNotificationsEnabled);
-  const soundsEnabled = useStore(preferencesStore, (s) => s.soundsEnabled);
-  const setSoundsEnabled = useStore(preferencesStore, (s) => s.setSoundsEnabled);
-  const soundVolume = useStore(preferencesStore, (s) => s.soundVolume);
-  const setSoundVolume = useStore(preferencesStore, (s) => s.setSoundVolume);
-
-  const pbCelebrationAudio = useStore(preferencesStore, (s) => s.pbCelebrationAudio);
-  const setPbCelebrationAudio = useStore(preferencesStore, (s) => s.setPbCelebrationAudio);
   const pbCelebrationAnimation = useStore(preferencesStore, (s) => s.pbCelebrationAnimation);
   const setPbCelebrationAnimation = useStore(preferencesStore, (s) => s.setPbCelebrationAnimation);
 
@@ -90,46 +80,7 @@ export function NotificationsSection() {
       />
 
       <div className={cn("flex flex-col gap-5", !notificationsEnabled && "pointer-events-none opacity-45")}>
-        {/* ── Sounds ─────────────────────────────────────────────────── */}
-        <SettingToggle
-          title={t("notifications.sounds")}
-          description={t("notifications.soundsHint")}
-          checked={soundsEnabled}
-          onCheckedChange={setSoundsEnabled}
-        />
-
-        <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-          <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
-              <Volume2 className="size-3.5 text-ink-2" />
-              {t("notifications.volume")}
-            </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              {t("notifications.volumeHint")}
-            </p>
-          </div>
-          <div className="mt-1 flex w-48 shrink-0 items-center gap-3">
-            <Slider
-              min={0}
-              max={100}
-              step={5}
-              value={[soundVolume]}
-              onValueChange={(val) => val[0] !== undefined && setSoundVolume(val[0])}
-              className="flex-1"
-            />
-            <span className="nums w-9 text-right text-[0.72rem] text-ink-2">
-              {soundVolume}%
-            </span>
-          </div>
-        </div>
-
-        <SettingToggle
-          title={t("notifications.pbVictorySound")}
-          description={t("notifications.pbVictorySoundHint")}
-          checked={pbCelebrationAudio}
-          onCheckedChange={setPbCelebrationAudio}
-        />
-
+        {/* ── PB celebration banner (audio lives in the Audio section) ── */}
         <SettingToggle
           title={t("notifications.pbBanner")}
           description={t("notifications.pbBannerHint")}

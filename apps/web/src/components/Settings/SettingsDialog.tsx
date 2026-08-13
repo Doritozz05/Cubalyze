@@ -29,6 +29,7 @@ import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
 import { GeneralSection } from './sections/GeneralSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { TimerSection } from './sections/TimerSection';
+import { AudioSection } from './sections/AudioSection';
 import { AnalysisSection } from './sections/AnalysisSection';
 import { SmartCubeSection } from './sections/SmartCubeSection';
 import { PlaceholderSection } from './sections/PlaceholderSection';
@@ -121,6 +122,8 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return <AppearanceSection />;
       case 'timer':
         return <TimerSection />;
+      case 'audio':
+        return <AudioSection />;
       case 'scramble':
         return <ScrambleSection />;
       case 'analysis':

@@ -39,6 +39,7 @@ describe("CubeTurnSounds", () => {
     preferencesStore.getState().setNotificationsEnabled(true);
     preferencesStore.getState().setSoundsEnabled(true);
     preferencesStore.getState().setSoundVolume(80);
+    preferencesStore.getState().setCubeTurnSoundsEnabled(true);
   });
 
   it("picks a valid source index within range", () => {
@@ -66,8 +67,8 @@ describe("CubeTurnSounds", () => {
     expect(FakeAudio.instances).toHaveLength(0);
   });
 
-  it("does nothing when notifications are disabled", () => {
-    preferencesStore.getState().setNotificationsEnabled(false);
+  it("does nothing when cube turn sounds are disabled", () => {
+    preferencesStore.getState().setCubeTurnSoundsEnabled(false);
     const player = new CubeTurnSounds();
     player.play();
     expect(FakeAudio.instances).toHaveLength(0);
