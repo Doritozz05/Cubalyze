@@ -40,6 +40,7 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
           className="absolute inset-0 bg-black pointer-events-none"
           style={{ opacity: timerBackgroundOverlay / 100 }}
         />
+      )}
     </div>
   );
 }

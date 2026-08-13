@@ -201,7 +201,7 @@ export function Header({
         // While the dock is being edited the header is raised to z-60 so the
         // bar stays crisp above the body-portaled edit backdrop (z-50).
         "fixed inset-x-0 lg:left-14 top-0 z-20",
-        isDockEditing && "z-[60]",
+        isDockEditing && "z-60",
         "max-lg:border-b max-lg:bg-surface",
         "max-lg:h-[calc(3.5rem+env(safe-area-inset-top))] lg:h-14",
         className,
