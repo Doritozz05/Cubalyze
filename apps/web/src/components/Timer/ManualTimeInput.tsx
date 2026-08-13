@@ -129,7 +129,7 @@ export function ManualTimeInput({
       </div>
 
       {/* Quick Penalty & Note Action Bar for Manual Entry (styled like TimerContainer's solve completion bar) */}
-      <div className="flex items-center gap-1 rounded-full border border-line bg-surface-2 px-1.5 py-1 shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5">
+      <div className="flex items-center gap-1 rounded-full border border-line bg-surface px-1.5 py-1 shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <button

@@ -329,7 +329,7 @@ export function MainLayout({
               "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-out",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
               hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
-              isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50 bg-canvas" : ""
+              isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50" : ""
             )}
           >
             {main}

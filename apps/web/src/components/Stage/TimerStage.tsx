@@ -150,7 +150,7 @@ export function TimerStage(props: TimerStageProps) {
                           "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
                           manualFocus
                             ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                            : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
+                            : "border border-line bg-surface text-ink-2 hover:border-ink/20 hover:bg-surface-2 hover:text-ink",
                         )}
                       >
                         <Eye className="size-3.5" />
@@ -183,7 +183,7 @@ export function TimerStage(props: TimerStageProps) {
                     "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
                     manualFocus
                       ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                      : "border border-line/40 bg-surface/50 text-ink-2 hover:border-line hover:bg-surface-2 hover:text-ink",
+                      : "border border-line bg-surface text-ink-2 hover:border-ink/20 hover:bg-surface-2 hover:text-ink",
                   )}
                 >
                   <Eye className="size-3.5" />

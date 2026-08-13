@@ -11,6 +11,8 @@ import type { PbMilestoneResult } from "@/utils/pbDetection";
 import type { TimerState, Solve, Penalty } from "@/types";
 import type { HintContext } from "./hintFor";
 
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -91,6 +93,7 @@ export function TimerContainer({
 }: TimerContainerProps) {
   const { t } = useTranslation("timer");
   const isTouch = useIsTouch();
+  const hasBackgroundImage = !!useStore(preferencesStore, (s) => s.timerBackgroundImage);
   // Touch devices always enable click/tap to start & stop because there is no keyboard.
   const activeClickToStart = clickToStart || isTouch;
 
@@ -211,10 +214,10 @@ export function TimerContainer({
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-0 rounded-lg transition-all duration-300",
-          phase === "ready" && "bg-ready-soft/60",
-          phase === "holding" && "bg-hold-soft/40",
-          phase === "ready_for_move" && "bg-ready-soft/40",
-          phase === "inspection" && "bg-caution-soft/30",
+          !hasBackgroundImage && phase === "ready" && "bg-ready-soft/60",
+          !hasBackgroundImage && phase === "holding" && "bg-hold-soft/40",
+          !hasBackgroundImage && phase === "ready_for_move" && "bg-ready-soft/40",
+          !hasBackgroundImage && phase === "inspection" && "bg-caution-soft/30",
         )}
       />
 
@@ -252,7 +255,7 @@ export function TimerContainer({
       {/* Quick Penalty Action Bar for Last Solve (Only for solves completed in the current session) */}
       {lastTime !== null && lastSolve && onUpdatePenalty && (phase === "stopped" || phase === "idle") && (
         <div
-          className="mt-3 flex items-center gap-1 rounded-full border border-line bg-surface-2 px-1.5 py-1 shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5"
+          className="mt-3 flex items-center gap-1 rounded-full border border-line bg-surface px-1.5 py-1 shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
