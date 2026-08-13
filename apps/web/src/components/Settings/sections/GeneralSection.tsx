@@ -24,8 +24,6 @@ export function GeneralSection() {
   const { t } = useTranslation('settings');
   const language = useStore(preferencesStore, (s) => s.language);
   const setLanguage = useStore(preferencesStore, (s) => s.setLanguage);
-  const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
-  const setTimePrecision = useStore(preferencesStore, (s) => s.setTimePrecision);
   const haptics = useStore(preferencesStore, (s) => s.haptics);
   const setHaptics = useStore(preferencesStore, (s) => s.setHaptics);
 
@@ -73,25 +71,7 @@ export function GeneralSection() {
         </div>
       </div>
 
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{t('general.timePrecision')}</h4>
-          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            {t('general.timePrecisionHint')}
-          </p>
-        </div>
-        <div className="mt-0.5 shrink-0">
-          <Select value={timePrecision} onValueChange={(val) => setTimePrecision(val as 'centiseconds' | 'milliseconds')}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder={t('general.selectPrecision')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="centiseconds">{t('general.centiseconds')}</SelectItem>
-              <SelectItem value="milliseconds">{t('general.milliseconds')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+
 
       <SettingToggle
         title={t('general.haptics')}

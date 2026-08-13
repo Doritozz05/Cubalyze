@@ -37,7 +37,7 @@ export interface TimerStageProps {
   onUpdatePenalty: (id: string, penalty: Penalty) => void;
   onUpdateSolve?: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
   onDeleteSolve: (id: string) => void;
-  onManualSubmit: (time: number, penalty: Penalty) => void;
+  onManualSubmit: (time: number, penalty: Penalty, note?: string | null) => void;
   onExpand: () => void;
   puzzleFilter: string;
   isFocused: boolean;

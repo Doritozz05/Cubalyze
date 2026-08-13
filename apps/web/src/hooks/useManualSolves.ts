@@ -28,12 +28,13 @@ export function useManualSolves(deps: ManualSolvesDeps) {
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
 
   const handleManualSubmit = useCallback(
-    async (time: number, penalty: Penalty) => {
+    async (time: number, penalty: Penalty, note?: string | null) => {
       await addSolve({
         time,
         penalty,
         scramble: scrambleDisplay ? currentScramble : "",
         method: methodPref,
+        note: note ? note.trim() || undefined : undefined,
         source: "manual",
         puzzleType: puzzleCategoryToType(puzzle),
       });

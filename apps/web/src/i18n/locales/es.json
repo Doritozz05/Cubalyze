@@ -171,6 +171,11 @@
     },
     "timer": {
       "header": "Configura cómo debe comenzar una resolución. Estos ajustes también se aplican cuando no hay un Smart Cube conectado.",
+      "timePrecision": "Precisión de tiempos",
+      "timePrecisionHint": "Elige si los tiempos mostrados usan precisión de centésimas (0,01 s) o de milésimas (0,001 s).",
+      "selectPrecision": "Seleccionar precisión",
+      "centiseconds": "Centésimas (0,01 s)",
+      "milliseconds": "Milésimas (0,001 s)",
       "manualEntry": "Entrada manual de tiempos",
       "manualEntryHint": "Sustituye el cronómetro por un campo de texto para escribir los tiempos directamente (como csTimer). Los enteros son centésimas: \"10\" → 0,10 s, \"1450\" → 14,50 s. También acepta \"1:23.45\", \"DNF\", \"15.50+\" (+2) y varios tiempos separados por comas. Se omiten la inspección y la espera de pulsación.",
       "inputModePlaceholder": "Modo de entrada",

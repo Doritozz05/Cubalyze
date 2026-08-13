@@ -35,6 +35,8 @@ export function TimerSection() {
   const hardwareTimer = useStore(preferencesStore, (s) => s.hardwareTimer);
   const setHardwareTimer = useStore(preferencesStore, (s) => s.setHardwareTimer);
 
+  const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
+  const setTimePrecision = useStore(preferencesStore, (s) => s.setTimePrecision);
   const spacebarHoldDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
   const setSpacebarHoldDelay = useStore(preferencesStore, (s) => s.setSpacebarHoldDelay);
   const inputMode = useStore(preferencesStore, (s) => s.inputMode);
@@ -82,6 +84,33 @@ export function TimerSection() {
                   <span>{t('timer.manualEntryOption')}</span>
                 </div>
               </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* ── Time Precision: Centiseconds vs Milliseconds ────────── */}
+      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="min-w-0 flex-1">
+          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+            <Clock className="size-3.5 text-ink-2" />
+            {t('timer.timePrecision')}
+          </h4>
+          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
+            {t('timer.timePrecisionHint')}
+          </p>
+        </div>
+        <div className="mt-0.5 shrink-0">
+          <Select
+            value={timePrecision}
+            onValueChange={(val) => setTimePrecision(val as 'centiseconds' | 'milliseconds')}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder={t('timer.selectPrecision')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="centiseconds">{t('timer.centiseconds')}</SelectItem>
+              <SelectItem value="milliseconds">{t('timer.milliseconds')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -80,7 +80,7 @@ export interface AppShellProps {
   onReplay: (solve: Solve) => void;
   onUpdatePenalty: (id: string, penalty: Penalty) => void;
   /** Inline manual-mode submit (timer stage). */
-  onManualSubmit: (time: number, penalty: Penalty) => void;
+  onManualSubmit: (time: number, penalty: Penalty, note?: string | null) => void;
   /** Manual solve sheet submit (header "+" button). */
   defaultMethod: SolveMethod;
   onManualSubmitSheet: (input: {

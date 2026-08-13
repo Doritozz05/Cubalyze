@@ -171,6 +171,11 @@
     },
     "timer": {
       "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",
+      "timePrecision": "Time Precision",
+      "timePrecisionHint": "Choose whether displayed times use centisecond (0.01s) or millisecond (0.001s) accuracy.",
+      "selectPrecision": "Select precision",
+      "centiseconds": "Centiseconds (0.01s)",
+      "milliseconds": "Milliseconds (0.001s)",
       "manualEntry": "Manual time entry",
       "manualEntryHint": "Replace the timer with a text input to type times directly (like csTimer). Integers are centiseconds: \"10\" → 0.10s, \"1450\" → 14.50s. Also accepts \"1:23.45\", \"DNF\", \"15.50+\" (+2) and several times separated by commas. Inspection and hold-to-start are bypassed.",
       "inputModePlaceholder": "Input mode",
