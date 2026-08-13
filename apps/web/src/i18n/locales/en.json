@@ -557,6 +557,8 @@
     "mean": "Mean",
     "solves": "Solves",
     "clear": "Clear",
+    "clearAllTitle": "Clear all solves?",
+    "clearAllDescription": "This permanently deletes all {{count}} solves in this session. This can't be undone.",
     "noSolvesYet": "No solves yet",
     "holdTimerToStart": "Hold the timer (or press Space) to start.",
     "sessionBest": "Session best",
@@ -695,6 +697,9 @@
     "copy": "Copy",
     "storageVolatile": "Storage is volatile — solves will be lost on reload. Export your data in Settings → Data.",
     "loading3dCube": "Loading 3D cube…",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "This address doesn't match any section of the app. Check the URL or go back to the timer.",
+    "notFoundGoHome": "Back to the timer",
     "resizeWidth": "Drag to resize width (Double-click to reset)",
     "resizeHeight": "Drag to resize or close (Double-click to reset)",
     "more": {
@@ -3504,7 +3509,9 @@
         "solves_other": "{{count}} solves"
       },
       "timesLog": {
-        "clear": "Clear"
+        "clear": "Clear",
+        "clearAllTitle": "Clear all solves?",
+        "clearAllDescription": "This permanently deletes all {{count}} solves in this session. This can't be undone."
       },
       "cubeButton": {
         "open3d": "Open 3D cube view"

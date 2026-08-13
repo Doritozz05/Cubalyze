@@ -557,6 +557,8 @@
     "mean": "Media",
     "solves": "Resoluciones",
     "clear": "Borrar",
+    "clearAllTitle": "¿Borrar todas las resoluciones?",
+    "clearAllDescription": "Esto eliminará permanentemente las {{count}} resoluciones de esta sesión. No se puede deshacer.",
     "noSolvesYet": "Aún no hay resoluciones",
     "holdTimerToStart": "Mantén el cronómetro pulsado (o pulsa espacio) para empezar.",
     "sessionBest": "Mejor de la sesión",
@@ -695,6 +697,9 @@
     "copy": "Copiar",
     "storageVolatile": "El almacenamiento es volátil: los solves se perderán al recargar. Exporta tus datos en Ajustes → Datos.",
     "loading3dCube": "Cargando cubo 3D…",
+    "notFoundTitle": "Página no encontrada",
+    "notFoundDescription": "Esta dirección no coincide con ninguna sección de la app. Revisa la URL o vuelve al cronómetro.",
+    "notFoundGoHome": "Volver al cronómetro",
     "resizeWidth": "Arrastra para ajustar el ancho (doble clic para restablecer)",
     "resizeHeight": "Arrastra para ajustar o cerrar (doble clic para restablecer)",
     "more": {
@@ -3504,7 +3509,9 @@
         "solves_other": "{{count}} resoluciones"
       },
       "timesLog": {
-        "clear": "Borrar"
+        "clear": "Borrar",
+        "clearAllTitle": "¿Borrar todas las resoluciones?",
+        "clearAllDescription": "Esto eliminará permanentemente las {{count}} resoluciones de esta sesión. No se puede deshacer."
       },
       "cubeButton": {
         "open3d": "Abrir vista 3D del cubo"

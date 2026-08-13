@@ -57,12 +57,12 @@ function pathForView(view: ViewId): string {
   return VIEW_PATH[view];
 }
 
-function viewFromPath(pathname: string): ViewId {
+function viewFromPath(pathname: string): ViewId | null {
   const segment = pathname.split("/").filter(Boolean)[0] ?? "";
   const match = Object.entries(VIEW_PATH).find(
     ([, path]) => path === `/${segment}`,
   );
-  return (match?.[0] as ViewId | undefined) ?? "timer";
+  return (match?.[0] as ViewId | undefined) ?? null;
 }
 
 export default function App() {
@@ -96,7 +96,11 @@ export default function App() {
   // deep-linkable and survives reloads.
   const location = useLocation();
   const navigate = useNavigate();
-  const activeView = viewFromPath(location.pathname);
+  // Unknown paths (e.g. /settings, /foo) keep the shell alive but render a
+  // proper 404 stage instead of silently showing the timer.
+  const routedView = viewFromPath(location.pathname);
+  const activeView = routedView ?? "timer";
+  const notFound = routedView === null;
   const setActiveView = useCallback(
     (view: ViewId) => navigate(pathForView(view)),
     [navigate],
@@ -156,8 +160,9 @@ export default function App() {
   useEffect(() => {
     // The cube simulator owns the keyboard while open (csTimer-layout moves);
     // training views and the tour must also never arm the practice timer.
-    keyboardDisabledRef.current = activeView === "training" || activeView === "cube" || tourActive;
-  }, [activeView, tourActive]);
+    keyboardDisabledRef.current =
+      notFound || activeView === "training" || activeView === "cube" || tourActive;
+  }, [notFound, activeView, tourActive]);
 
   // ── Cube tab is 3×3-only today: entering it forces the puzzle selector to
   //    3×3 and locks it (Header disables the Select). TODO(virtual-puzzles):
@@ -292,14 +297,12 @@ export default function App() {
 
   // "Analysis" / "Replay" on a solve row: jump to Insights and select that
   // exact solve via the URL param (InsightsDashboard already reads
-  // ?solve= from window.location.search).
+  // ?solve= from the URL). PUSHES a history entry so the browser Back button
+  // returns to the timer (the previous implementation used replace, which
+  // swallowed the timer entry).
   const handleAnalyzeSolve = useCallback(
     (solve: Solve) => {
-      // replace: don't spam history when analyzing several solves in a row
-      // (the previous implementation used history.replaceState too).
-      navigate(`/insights?solve=${encodeURIComponent(solve.id)}`, {
-        replace: true,
-      });
+      navigate(`/insights?solve=${encodeURIComponent(solve.id)}`);
     },
     [navigate],
   );
@@ -322,6 +325,7 @@ export default function App() {
 
   return (
     <AppShell
+      notFound={notFound}
       solves={solves}
       sessions={sessions}
       activeSessionId={session?.id ?? null}

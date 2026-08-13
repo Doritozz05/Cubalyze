@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 
 // Reuse the EXISTING App component from apps/web — zero duplication.
 // All UI, hooks, views, and logic live there and are shared between
@@ -34,8 +35,15 @@ listen<{ cubes: { name: string; address: string }[] }>('ble:devices_found', asyn
   }
 });
 
+// App is router-driven (deep-linkable views: /timer, /insights, …) and uses
+// useLocation/useNavigate, so it MUST render inside a Router — without one
+// the whole desktop app crashes on mount. BrowserRouter mirrors the web PWA
+// entry (in-app SPA navigation works on the Tauri asset protocol; desktop
+// users never deep-link into a path).
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );

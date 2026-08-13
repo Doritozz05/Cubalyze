@@ -42,6 +42,8 @@ export interface AppShellProps {
   activeSessionId: string | null;
   sessionName: string | undefined;
   activeView: ViewId;
+  /** True when the current path matches no known view — render a 404 stage. */
+  notFound?: boolean;
   profileSeed: string | null;
   profile: Profile | null;
   puzzle: PuzzleCategory;

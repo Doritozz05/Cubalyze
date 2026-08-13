@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { ListOrdered } from "lucide-react";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { useTranslation } from "react-i18next";
 import { TimesList } from "@/components/Stats/TimesList";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Solve } from "@/types";
 
 const PANEL_WIDTH = 320;
@@ -35,13 +37,14 @@ export function FloatingTimesPanel({
   onReplay,
 }: FloatingTimesPanelProps) {
   const { t } = useTranslation("widgets");
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const headerActions =
     solves.length > 0 && onClear ? (
       <button
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
-          onClear();
+          setConfirmClearOpen(true);
         }}
         className="rounded px-1.5 py-1 text-[0.65rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-dnf"
       >
@@ -70,6 +73,18 @@ export function FloatingTimesPanel({
           className="h-full"
         />
       </div>
+
+      {/* Clearing wipes the WHOLE session — always confirm first. */}
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onOpenChange={setConfirmClearOpen}
+        title={t("panel.timesLog.clearAllTitle")}
+        description={t("panel.timesLog.clearAllDescription", {
+          count: solves.length,
+        })}
+        confirmLabel={t("panel.timesLog.clear")}
+        onConfirm={() => onClear?.()}
+      />
     </FloatingWidgetWrapper>
   );
 }

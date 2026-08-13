@@ -60,6 +60,7 @@ export const TimesList = memo(function TimesList({
   className,
 }: TimesListProps) {
   const { t } = useTranslation("stats");
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const bestTimePerPuzzle = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of solves) {
@@ -87,7 +88,7 @@ export const TimesList = memo(function TimesList({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClear}
+              onClick={() => setConfirmClearOpen(true)}
               className="h-7 px-2 text-xs text-ink-3 hover:text-dnf"
             >
               {t("clear")}
@@ -95,6 +96,14 @@ export const TimesList = memo(function TimesList({
           ) : null}
         </div>
       )}
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onOpenChange={setConfirmClearOpen}
+        title={t("clearAllTitle")}
+        description={t("clearAllDescription", { count: solves.length })}
+        confirmLabel={t("clear")}
+        onConfirm={() => onClear?.()}
+      />
 
       {solves.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 py-16 text-center">

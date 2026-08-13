@@ -177,13 +177,32 @@ export function InsightsDashboard({
 
   // ── Selection (synced to ?solve= URL param) ────────────────────────────
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const isFirstPush = useRef(true);
 
+  // The ?solve= URL param is the source of truth until the data pool has
+  // loaded. Before that point the URL-sync effect below must never write to
+  // the URL: in dev, React StrictMode double-invokes effects on mount, and a
+  // sync run while selectedId is still null (data pool not loaded yet) would
+  // strip the param — so Analyze/Replay from the timer land on the overview
+  // instead of the requested solve's analysis.
+  const initializedRef = useRef(false);
+
+  // Resolve the initial selection from ?solve= once the pool is available.
   useEffect(() => {
+    if (initializedRef.current) return;
+    if (dataPool.length === 0) return; // still loading — keep waiting
+    initializedRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const initial = params.get("solve");
     if (initial && dataPool.some((s) => s.id === initial)) {
       setSelectedId(initial);
+    } else if (initial) {
+      // The requested solve isn't in the current pool (deleted, other
+      // session, filtered puzzle…): drop the stale param so the URL always
+      // reflects what is actually shown. Guarded by initializedRef, so this
+      // single write can never race StrictMode's mount double-effect.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("solve");
+      window.history.replaceState(null, "", url.toString());
     }
   }, [dataPool]);
 
@@ -193,11 +212,10 @@ export function InsightsDashboard({
     }
   }, [dataPool, selectedId]);
 
+  // Keep the URL in sync with USER-driven selection changes only — never
+  // before the initial read above has taken ownership of the URL.
   useEffect(() => {
-    if (isFirstPush.current) {
-      isFirstPush.current = false;
-      return;
-    }
+    if (!initializedRef.current) return;
     const url = new URL(window.location.href);
     if (selectedId) url.searchParams.set("solve", selectedId);
     else url.searchParams.delete("solve");
