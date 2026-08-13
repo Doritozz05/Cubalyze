@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, FileSearch, Box } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, Box } from "lucide-react";
+import { FaListOl } from "react-icons/fa";
 
 export const COLLAPSED_WIDTH = 56;
 export const EXPANDED_WIDTH = 208;
@@ -47,7 +48,7 @@ export type ViewId =
 export interface NavItem {
   id: ViewId | "widgets";
   labelKey: ParseKeys<"nav">;
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType<{ className?: string }>;
 }
 
 export interface NavGroup {
@@ -91,7 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     titleKey: "explore",
     items: [
-      { id: "reconstructions", labelKey: "reconstructions", icon: FileSearch },
+      { id: "reconstructions", labelKey: "reconstructions", icon: FaListOl },
       { id: "widgets", labelKey: "widgets", icon: Puzzle },
     ],
   },

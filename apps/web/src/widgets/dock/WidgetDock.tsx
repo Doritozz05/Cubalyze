@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ReactNode } from "react";
 import type { WidgetId } from "@/widgets/types";
 import { useIsDockEditing, dockEditStore } from "@/widgets/dock/dockEditStore";
@@ -120,132 +121,125 @@ function DockPill({ widgetId }: { widgetId: WidgetId }) {
 
   return (
     <>
-      <Reorder.Item
-        as="button"
-        value={widgetId}
-        drag
-        layout={reduceMotion ? undefined : true}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-        ref={(el: HTMLElement | null) => {
-          itemRef.current = el;
-        }}
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
-        animate={{ opacity: isDragging ? 0 : 1 }}
-        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
-        transition={
-          reduceMotion
-            ? { duration: 0 }
-            : {
-                type: "spring",
-                stiffness: 400,
-                damping: 30,
-                // Hide the real pill INSTANTLY on lift (no clipped fade); fade
-                // it back smoothly when it snaps back.
-                opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
-              }
-        }
-        onClick={() => {
-          if (suppressClickRef.current) {
-            suppressClickRef.current = false;
-            return;
-          }
-          // Toggle semantics: clicking a docked pill launches the widget
-          // (floating, pill stays with the running dot); clicking the running
-          // pill again closes its panel and docks it back — the dot
-          // disappears and the pill stays pinned (status → docked).
-          const st = widgetStore.getState().instances[widgetId]?.status;
-          if (st === "floating" || st === "minimized") {
-            widgetStore.getState().setStatus(widgetId, "docked");
-          } else {
-            launchWidget(widgetId);
-          }
-        }}
-        onDragStart={(_e, info) => {
-          suppressClickRef.current = true;
-          setIsDragging(true);
-          setIsCommitted(false);
-          dragStartOffsetRef.current = { x: info.offset.x, y: info.offset.y };
-          // Lift out from the pill's exact dock position so there's no jump.
-          const el = itemRef.current;
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            ghostOriginRef.current = { x: rect.left, y: rect.top };
-            placeGhost(rect.left, rect.top);
-          } else {
-            placeGhost(info.point.x - 60, info.point.y - 16);
-          }
-        }}
-        onDrag={(_e, info) => {
-          const origin = ghostOriginRef.current;
-          if (!origin) return;
-          const start = dragStartOffsetRef.current;
-          placeGhost(
-            origin.x + (info.offset.x - start.x),
-            origin.y + (info.offset.y - start.y),
-          );
-        }}
-        onDragEnd={(_e, info) => {
-          if (info.offset.y > 35) {
-            const store = widgetStore.getState();
-            store.setStatus(widgetId, "minimized");
-            store.setPosition(widgetId, {
-              x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
-              y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
-            });
-            // Commit: hide the clone instantly so it doesn't double-vision
-            // with the minimized pill appearing at the same spot.
-            setIsCommitted(true);
-          }
-          // The click event fires AFTER this handler, so the suppression flag
-          // must NOT be cleared here — the click itself (or a safety timeout)
-          // clears it. Otherwise every reorder drag would launch the widget.
-          setIsDragging(false);
-          ghostOriginRef.current = null;
-          window.setTimeout(() => {
-            suppressClickRef.current = false;
-          }, 0);
-        }}
-        style={{ zIndex: isHovered ? 30 : undefined }}
-        className={cn(
-          "relative grid size-8 shrink-0 touch-none select-none cursor-grab place-items-center rounded-full",
-          "text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink active:cursor-grabbing",
-        )}
-        aria-label={t(isRunning ? "dock.running" : "dock.pinned", {
-          name: t(WIDGET_LABEL_KEY[widgetId]),
-        })}
-      >
-        {/* Magnified icon (macOS-style) — the label floats above on hover. */}
-        <motion.span
-          animate={{ scale: isHovered ? 1.35 : 1 }}
-          transition={
-            reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 22 }
-          }
-          className="grid place-items-center"
-        >
-          <Icon className="size-4" />
-        </motion.span>
-        {/* Running indicator (macOS-style active dot) — only when the
-            widget is ALSO open as a floating panel or minimized. */}
-        {isRunning && (
-          <span
-            aria-hidden
-            className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink-3"
-          />
-        )}
-        {isHovered && (
-          <motion.span
-            initial={{ opacity: 0, y: -3 }}
-            animate={{ opacity: 1, y: 0 }}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Reorder.Item
+            as="button"
+            value={widgetId}
+            drag
+            layout={reduceMotion ? undefined : true}
+            onHoverStart={() => setIsHovered(true)}
+            onHoverEnd={() => setIsHovered(false)}
+            ref={(el: HTMLElement | null) => {
+              itemRef.current = el;
+            }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
+            animate={{ opacity: isDragging ? 0 : 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
             transition={
-              reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 26 }
+              reduceMotion
+                ? { duration: 0 }
+                : {
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    // Hide the real pill INSTANTLY on lift (no clipped fade); fade
+                    // it back smoothly when it snaps back.
+                    opacity: isDragging ? { duration: 0 } : { duration: 0.15 },
+                  }
             }
-            className="pointer-events-none absolute top-9 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-0.5 text-[0.65rem] font-medium text-canvas"
+            onClick={() => {
+              if (suppressClickRef.current) {
+                suppressClickRef.current = false;
+                return;
+              }
+              // Toggle semantics: clicking a docked pill launches the widget
+              // (floating, pill stays with the running dot); clicking the running
+              // pill again closes its panel and docks it back — the dot
+              // disappears and the pill stays pinned (status → docked).
+              const st = widgetStore.getState().instances[widgetId]?.status;
+              if (st === "floating" || st === "minimized") {
+                widgetStore.getState().setStatus(widgetId, "docked");
+              } else {
+                launchWidget(widgetId);
+              }
+            }}
+            onDragStart={(_e, info) => {
+              suppressClickRef.current = true;
+              setIsDragging(true);
+              setIsCommitted(false);
+              dragStartOffsetRef.current = { x: info.offset.x, y: info.offset.y };
+              // Lift out from the pill's exact dock position so there's no jump.
+              const el = itemRef.current;
+              if (el) {
+                const rect = el.getBoundingClientRect();
+                ghostOriginRef.current = { x: rect.left, y: rect.top };
+                placeGhost(rect.left, rect.top);
+              } else {
+                placeGhost(info.point.x - 60, info.point.y - 16);
+              }
+            }}
+            onDrag={(_e, info) => {
+              const origin = ghostOriginRef.current;
+              if (!origin) return;
+              const start = dragStartOffsetRef.current;
+              placeGhost(
+                origin.x + (info.offset.x - start.x),
+                origin.y + (info.offset.y - start.y),
+              );
+            }}
+            onDragEnd={(_e, info) => {
+              if (info.offset.y > 35) {
+                const store = widgetStore.getState();
+                store.setStatus(widgetId, "minimized");
+                store.setPosition(widgetId, {
+                  x: Math.max(0, Math.min(window.innerWidth - 120, info.point.x - 60)),
+                  y: Math.max(64, Math.min(window.innerHeight - 40, info.point.y - 16)),
+                });
+                // Commit: hide the clone instantly so it doesn't double-vision
+                // with the minimized pill appearing at the same spot.
+                setIsCommitted(true);
+              }
+              // The click event fires AFTER this handler, so the suppression flag
+              // must NOT be cleared here — the click itself (or a safety timeout)
+              // clears it. Otherwise every reorder drag would launch the widget.
+              setIsDragging(false);
+              ghostOriginRef.current = null;
+              window.setTimeout(() => {
+                suppressClickRef.current = false;
+              }, 0);
+            }}
+            style={{ zIndex: isHovered ? 30 : undefined }}
+            className={cn(
+              "relative grid size-8 shrink-0 touch-none select-none cursor-grab place-items-center rounded-full",
+              "text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink active:cursor-grabbing",
+            )}
+            aria-label={t(isRunning ? "dock.running" : "dock.pinned", {
+              name: t(WIDGET_LABEL_KEY[widgetId]),
+            })}
           >
-            {t(WIDGET_LABEL_KEY[widgetId])}
-          </motion.span>
-        )}
-      </Reorder.Item>
+            {/* Magnified icon (macOS-style) — the label floats above on hover. */}
+            <motion.span
+              animate={{ scale: isHovered ? 1.35 : 1 }}
+              transition={
+                reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 22 }
+              }
+              className="grid place-items-center"
+            >
+              <Icon className="size-4" />
+            </motion.span>
+            {/* Running indicator (macOS-style active dot) — only when the
+                widget is ALSO open as a floating panel or minimized. */}
+            {isRunning && (
+              <span
+                aria-hidden
+                className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink-3"
+              />
+            )}
+          </Reorder.Item>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{t(WIDGET_LABEL_KEY[widgetId])}</TooltipContent>
+      </Tooltip>
 
       {/* Lifted clone — portaled to <body> so it's NEVER clipped. Rendered
           always (for zero-latency lift) but only visible while dragging;
@@ -759,7 +753,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
         className={cn(
           "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line/70 bg-surface/80 px-1.5 py-1 shadow-sm backdrop-blur-xl",
           isExpanded && "z-40 w-max",
-          isEditing && "z-[60] overflow-hidden",
+          isEditing && "z-60 overflow-hidden",
         )}
       >
         {isEditing ? renderEditMode() : renderNormal()}

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon, User, FileSearch, Network, Box } from "lucide-react";
+import { Settings, Bluetooth, Sun, Moon, User, Network, Box } from "lucide-react";
+import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
   DrawerContent,
@@ -91,7 +92,7 @@ export function MobileMoreSheet({
     },
     {
       key: "reconstructions",
-      icon: FileSearch,
+      icon: FaListOl,
       title: tNav("reconstructions"),
       subtitle: t("more.reconstructionsSubtitle"),
       onClick: () => handleAction(() => onNavigate?.("reconstructions")),
