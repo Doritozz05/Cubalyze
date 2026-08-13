@@ -2,7 +2,8 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { preferencesStore, type AppLanguage } from "@cubeforge/state";
 import en from "./locales/en.json";
-import es from "./locales/es.json";
+// NOTE: `es` is intentionally NOT imported statically — it is loaded on demand
+// (see `ensureSpanish`) so the initial bundle only ships one language.
 
 /**
  * Professional i18n bootstrap (react-i18next + i18next).
@@ -21,9 +22,11 @@ import es from "./locales/es.json";
  * @see ./README.md for the migration playbook.
  */
 
+// English is the bundled fallback AND the source of the typed keys; every
+// other locale is loaded on demand (see `applyLanguage` below) so the initial
+// bundle only carries one language (~60 kB gzip saved).
 export const resources = {
   en,
-  es,
 } as const;
 
 /**
@@ -61,6 +64,31 @@ export function resolveLanguage(preference: AppLanguage): "en" | "es" {
   return preference === "auto" ? detectBrowserLanguage() : preference;
 }
 
+// ── Lazy locale loading ────────────────────────────────────────────────
+// English ships with the bundle (it's the fallback + the typed-key source).
+// Spanish loads on first use; the rest of the app never blocks on it.
+let spanishBundle: Promise<void> | null = null;
+
+function ensureSpanish(): Promise<void> {
+  if (spanishBundle) return spanishBundle;
+  spanishBundle = import("./locales/es.json").then((mod) => {
+    const es = mod.default as typeof en;
+    for (const ns of NAMESPACES) {
+      i18n.addResourceBundle("es", ns, es[ns], true, true);
+    }
+  });
+  return spanishBundle;
+}
+
+/**
+ * Apply a concrete language, loading its bundle on demand first.
+ * Awaitable so callers (and tests) can wait for the async `es` load.
+ */
+export async function applyLanguage(lng: "en" | "es"): Promise<void> {
+  if (lng === "es") await ensureSpanish();
+  await i18n.changeLanguage(lng);
+}
+
 /** Keep `<html lang>` in sync for a11y + translation tools (guarded for non-DOM envs). */
 function applyHtmlLang(lng: string) {
   if (typeof document !== "undefined") {
@@ -81,14 +109,18 @@ void i18n
     resources,
     ns: NAMESPACES,
     defaultNS: DEFAULT_NS,
-    lng: resolveLanguage(preferencesStore.getState().language),
+    // Start on the bundled fallback; the real preference (which may be "es"
+    // and therefore needs its lazy bundle) is applied right after init below.
+    lng: FALLBACK_LNG,
     fallbackLng: FALLBACK_LNG,
     supportedLngs: SUPPORTED_LNGS,
     nonExplicitSupportedLngs: true,
     load: "languageOnly",
     interpolation: { escapeValue: false }, // React already escapes output
     react: { useSuspense: false }, // resources are bundled — no Suspense needed
-  });
+  })
+  .then(() => applyLanguage(resolveLanguage(preferencesStore.getState().language)))
+  .catch((err) => console.error("[i18n] Failed to apply initial language:", err));
 
 // Initial <html lang> + tab title (init does not fire `languageChanged` for the first lng).
 applyHtmlLang(i18n.language);
@@ -104,7 +136,7 @@ i18n.on("languageChanged", (lng) => {
 // `preferencesStore.setLanguage(...)` and i18n follows.
 preferencesStore.subscribe((state, prev) => {
   if (state.language === prev.language) return;
-  void i18n.changeLanguage(resolveLanguage(state.language));
+  void applyLanguage(resolveLanguage(state.language));
 });
 
 export default i18n;

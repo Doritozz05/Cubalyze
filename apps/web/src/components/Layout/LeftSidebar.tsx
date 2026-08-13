@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
@@ -30,7 +30,11 @@ import {
 } from "./sidebar.constants";
 
 const HOVER_SUPPRESS_MS = 500;
-import { SettingsDialog } from "@/components/Settings/SettingsDialog";
+// Settings is a large, rarely-opened surface (all its sections + country-flag
+// icons). Load it on demand so it stays out of the initial bundle.
+const SettingsDialog = lazy(() =>
+  import("@/components/Settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
+);
 import { WidgetExplorer } from "@/widgets/explorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import type { Solve } from "@/types";
@@ -329,20 +333,22 @@ export function LeftSidebar({
             }
           }}
         />
-        <SettingsDialog
-          open={settingsOpen}
-          onOpenChange={(open) => {
-            setSettingsOpen(open);
-            if (!open) {
-              onMobileOpenChange?.(false);
-            }
-          }}
-          initialSection={settingsInitialSection}
-          solves={solves}
-          sessionName={sessionName}
-          onImportSolves={onImportSolves}
-          onExportAllJSON={onExportAllJSON}
-        />
+        <Suspense fallback={null}>
+          <SettingsDialog
+            open={settingsOpen}
+            onOpenChange={(open) => {
+              setSettingsOpen(open);
+              if (!open) {
+                onMobileOpenChange?.(false);
+              }
+            }}
+            initialSection={settingsInitialSection}
+            solves={solves}
+            sessionName={sessionName}
+            onImportSolves={onImportSolves}
+            onExportAllJSON={onExportAllJSON}
+          />
+        </Suspense>
         {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
             used to leak into the layout top-left in the touch regime (e.g.
             the stray Bluetooth icon on the Skill Tree view). The rail button
@@ -385,20 +391,22 @@ export function LeftSidebar({
           }
         }}
       />
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={(open) => {
-          setSettingsOpen(open);
-          if (!open) {
-            onMobileOpenChange?.(false);
-          }
-        }}
-        initialSection={settingsInitialSection}
-        solves={solves}
-        sessionName={sessionName}
-        onImportSolves={onImportSolves}
-        onExportAllJSON={onExportAllJSON}
-      />
+      <Suspense fallback={null}>
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={(open) => {
+            setSettingsOpen(open);
+            if (!open) {
+              onMobileOpenChange?.(false);
+            }
+          }}
+          initialSection={settingsInitialSection}
+          solves={solves}
+          sessionName={sessionName}
+          onImportSolves={onImportSolves}
+          onExportAllJSON={onExportAllJSON}
+        />
+      </Suspense>
     </>
   );
 }

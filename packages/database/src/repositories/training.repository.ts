@@ -6,7 +6,6 @@
  */
 
 import type { CubeMoveEvent } from "@cubeforge/types";
-import { buildExerciseCatalog } from "@cubeforge/training";
 import type {
   AlgorithmProgressRecord,
   ExerciseProgressRecord,
@@ -268,6 +267,12 @@ export class TrainingRepository {
    * the real exercise ids instead of hardcoding them.
    */
   async seedExercises(): Promise<number> {
+    // DYNAMIC IMPORT: `buildExerciseCatalog` transitively pulls the whole
+    // @cubeforge/algorithm-db seed catalog (~3 MB of CFOP case tables) through
+    // @cubeforge/training's barrel. Seeding only happens when the training
+    // tracker boots (post-mount pre-warm or first training surface), so load
+    // it on demand instead of bloating the initial bundle via this eager repo.
+    const { buildExerciseCatalog } = await import("@cubeforge/training");
     const defs = buildExerciseCatalog();
     const now = Date.now();
     const BATCH = 40; // 6 cols × 40 rows = 240 bind vars, well under SQLite's 999

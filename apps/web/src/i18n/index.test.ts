@@ -53,12 +53,14 @@ describe("i18n infrastructure", () => {
   });
 
   it("switches the active language when the preference store changes", async () => {
+    // The `es` bundle is now loaded on demand, so the store subscription fires
+    // an async import + changeLanguage; yield a few ticks to let it settle.
     preferencesStore.getState().setLanguage("es");
-    await Promise.resolve(); // changeLanguage is async even with bundled resources
+    await new Promise((r) => setTimeout(r, 30));
     expect(i18n.language).toBe("es");
 
     preferencesStore.getState().setLanguage("en");
-    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 30));
     expect(i18n.language).toBe("en");
   });
 });

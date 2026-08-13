@@ -162,6 +162,13 @@ export default defineConfig(({ mode }) => ({
             // it and push ~820 kB into the initial load. Its own group keeps
             // it in a lazy chunk (loaded only when exporting to Excel).
             { name: 'xlsx', test: /node_modules[\\/]xlsx[\\/]/, priority: 25 },
+            // country-flag-icons ships every national flag as a React component
+            // (~330 kB). It's only reachable from lazy surfaces (Settings, Profile),
+            // but the vendor catch-all would hoist it into the initial load.
+            { name: 'country-flags', test: /node_modules[\\/]country-flag-icons[\\/]/, priority: 25 },
+            // @dnd-kit is only used by the Algorithms view (lazy) for reordering
+            // algorithm lists. Same catch-all problem — keep it out of vendor.
+            { name: 'dnd-kit', test: /node_modules[\\/]@dnd-kit[\\/]/, priority: 25 },
             // Specific big libs next (higher priority = checked first).
             { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-is|scheduler|use-sync-external-store)[\\/]/, priority: 30 },
             // three: the regex also captures three-stdlib (shared "three"

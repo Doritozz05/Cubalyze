@@ -615,29 +615,33 @@ export function FloatingWidgetWrapper({
         )}
       </div>
 
-      {/* 2-Way Smooth Expandable Body (Height Grid + Delayed Content Reveal) */}
-      {!isNearDock && (
-        <div
-          className="grid transition-[grid-template-rows] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
-          style={{
-            gridTemplateRows: showBody ? "1fr" : "0fr",
-          }}
-        >
-          <div className="min-h-0 overflow-hidden">
-            <div
-              className={cn(
-                "min-h-0 overflow-y-auto transition-[opacity,transform] duration-250 ease-out",
-                showBody
-                  ? "opacity-100 translate-y-0 delay-100 pointer-events-auto"
-                  : "opacity-0 -translate-y-2 delay-0 pointer-events-none",
-              )}
-              style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
-            >
-              {children}
-            </div>
+      {/* 2-Way Smooth Expandable Body (Height Grid + Delayed Content Reveal).
+          The body stays MOUNTED while the panel collapses into a dock pill —
+          only the grid row collapses (the outer pill's overflow-hidden clips
+          it). Unmounting the children here was the main drag hitch: entering
+          or leaving the dock zone tore down and rebuilt the whole widget
+          content (charts, tables, …) every time. Keeping it mounted makes the
+          enter/leave transition instant and preserves widget state. */}
+      <div
+        className="grid transition-[grid-template-rows] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{
+          gridTemplateRows: !isNearDock && showBody ? "1fr" : "0fr",
+        }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className={cn(
+              "min-h-0 overflow-y-auto transition-[opacity,transform] duration-250 ease-out",
+              showBody && !isNearDock
+                ? "opacity-100 translate-y-0 delay-100 pointer-events-auto"
+                : "opacity-0 -translate-y-2 delay-0 pointer-events-none",
+            )}
+            style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+          >
+            {children}
           </div>
         </div>
-      )}
+      </div>
     </div>,
     document.body,
   );

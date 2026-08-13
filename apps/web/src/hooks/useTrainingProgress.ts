@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { initDB, AlgorithmsRepository, TrainingRepository } from "@cubeforge/database";
-import { seedIfEmpty } from "@cubeforge/algorithm-db";
-import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord } from "@cubeforge/training";
+import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord, AttemptVerdict, PlayMode } from "@cubeforge/training";
 import type { TrainingAttempt } from "@cubeforge/database";
-import { ProgressTracker, normalizeAlgorithmProgress, DEFAULT_EASE_FACTOR, FSRS_DEFAULTS } from "@cubeforge/training";
-import type { AttemptVerdict, PlayMode } from "@cubeforge/training";
+// `@cubeforge/training` statically imports @cubeforge/algorithm-db's barrel,
+// which pulls the entire ~3 MB seed catalog (CFOP F2L/OLL/PLL tables) into the
+// initial bundle. The VALUES are only needed once the tracker actually boots
+// (post-mount pre-warm or first training surface), so import them dynamically
+// and keep only the types (erased at build time) static.
+import type { ProgressTracker } from "@cubeforge/training";
 
 // ─── Adapter: wraps TrainingRepository into ITrainingProgressRepo ──────────
 
@@ -15,6 +18,13 @@ async function ensureTrainingCatalog(dbExecutor: (sql: string, bind?: unknown[])
   // replace the underlying SQLite database during the lifetime of the app, and
   // a resolved module-level promise would then leave the new DB unseeded.
   const algorithmsRepo = new AlgorithmsRepository(dbExecutor);
+  // DYNAMIC IMPORT: the algorithm seed data (CFOP F2L/OLL/PLL/… case tables,
+  // ~3 MB of source) lives in @cubeforge/algorithm-db and is ONLY needed here.
+  // Seeding is already deferred (post-mount pre-warm, or lazy init on the
+  // first training surface), so keeping this import dynamic stops the entire
+  // seed catalog from bloating the initial bundle — it loads in the
+  // background instead of blocking first paint.
+  const { seedIfEmpty } = await import("@cubeforge/algorithm-db");
   await seedIfEmpty(algorithmsRepo);
   // Seed the canonical exercise registry (idempotent, batched) so the UI can
   // discover real exercise ids instead of hardcoding them.
@@ -90,6 +100,7 @@ async function getSharedTracker(): Promise<ProgressTracker> {
     // so closeDB() + re-init naturally produces a fresh, correctly seeded DB.
     await ensureTrainingCatalog(dbExecutor);
     const repo = new TrainingRepository(dbExecutor);
+    const { ProgressTracker } = await import("@cubeforge/training");
     return new ProgressTracker(createRepoAdapter(repo));
   })();
   sharedInit = { client: dbClient, promise };
@@ -231,6 +242,8 @@ export function useTrainingProgress(): UseTrainingProgressResult {
   const getCaseProgress = useCallback(
     async (algorithmId: string) => {
       if (!tracker) {
+        const { normalizeAlgorithmProgress, DEFAULT_EASE_FACTOR, FSRS_DEFAULTS } =
+          await import("@cubeforge/training");
         return normalizeAlgorithmProgress({
           algorithmId,
           mastery: 0,
