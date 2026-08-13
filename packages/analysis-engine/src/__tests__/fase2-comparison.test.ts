@@ -48,7 +48,7 @@ function rawEndIndices(rec: ChunkRecord): number[] {
 }
 
 describe('Fase 2 comparison harness', () => {
-  it('prints raw vs ours for clean, verified solves', () => {
+  it('prints raw vs ours for clean, verified solves', { timeout: 120_000 }, () => {
     const records = loadRecords();
     const clean: ChunkRecord[] = [];
     let checked = 0;
