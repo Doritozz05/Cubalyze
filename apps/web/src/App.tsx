@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AppShell } from "@/components/Layout/AppShell";
 import { NotFoundView } from "@/components/Stage/NotFoundView";
+import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
@@ -92,6 +93,15 @@ export default function App() {
     deleteSession,
     fetchSessionSolves,
   } = usePersistentSession();
+
+  // Keep the pre-React boot loader up until the DB/session data has hydrated
+  // (idempotent): the session dock piece, solve counts and the times widget
+  // all depend on sessions/solves, so fading early made them pop in a moment
+  // after the loader disappeared. Fired from sessionLoading only — switchSession
+  // re-toggles loading later, but the promise is already resolved by then.
+  useEffect(() => {
+    if (!sessionLoading) markAppDataReady();
+  }, [sessionLoading]);
 
   const { puzzle, scrambleIndex, currentScramble, handlePuzzleChange, handleRegenerate, resetScramble, forcePuzzle } =
     useScrambleState();

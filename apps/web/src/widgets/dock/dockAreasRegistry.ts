@@ -9,7 +9,7 @@ import {
   Battery,
   RectangleHorizontal,
   LayoutGrid,
-  Minus,
+  SeparatorVertical,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
@@ -53,7 +53,7 @@ export const DOCK_AREAS: DockAreaDef[] = [
   { id: "profile", icon: User, labelKey: "profile", descKey: "desc.profile", category: "system" },
   { id: "battery", icon: Battery, labelKey: "battery", descKey: "desc.battery", category: "system" },
   { id: "spacer", icon: RectangleHorizontal, labelKey: "spacer", descKey: "desc.spacer", category: "layout", repeatable: true },
-  { id: "separator", icon: Minus, labelKey: "separator", descKey: "desc.separator", category: "layout", repeatable: true },
+  { id: "separator", icon: SeparatorVertical, labelKey: "separator", descKey: "desc.separator", category: "layout", repeatable: true },
 ];
 
 /** Default order of areas in the dock. */

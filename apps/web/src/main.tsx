@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
-import { appReady, markAppReady } from './boot/appReady'
+import { appReady, appDataReady, markAppReady, markAppDataReady } from './boot/appReady'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -15,12 +15,14 @@ createRoot(document.getElementById('root')!).render(
 
 // Fade the pre-React boot loader (#root-loader-wrapper in index.html) out —
 // but only once the app signals that the INITIAL view is ready (its lazy
-// chunk loaded / the eager timer mounted). Until then the overlay stays up,
-// covering the Suspense fallback, so the user never sees a second loading
-// state or a white flash. Two frames after ready: React has committed and
-// painted the view underneath, and the crossfade (same background) hides the
-// swap. Removing the element after the transition avoids a stuck overlay.
-appReady.then(() => {
+// chunk loaded / the eager timer mounted) AND the database/session data has
+// hydrated. Until then the overlay stays up, covering the Suspense fallback
+// and the async DB load, so the user never sees a second loading state, a
+// white flash, or dock pieces (session, solve counts) popping in after the
+// fade. Two frames after ready: React has committed and painted the view
+// underneath, and the crossfade (same background) hides the swap. Removing
+// the element after the transition avoids a stuck overlay.
+Promise.all([appReady, appDataReady]).then(() => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       const loader = document.getElementById('root-loader-wrapper')
@@ -39,9 +41,12 @@ appReady.then(() => {
   })
 })
 
-// Last resort: if the app never signals ready (chunk failure, runtime error),
-// release the overlay after a generous timeout so it can't block the UI.
-// Deliberately long: on slow connections the view chunk can take a while to
-// download, and a stuck-but-animated overlay is better than re-revealing a
-// second loading spinner.
-window.setTimeout(() => markAppReady(), 20000)
+// Last resort: if the app never signals ready (chunk failure, runtime error,
+// DB hang), release the overlay after a generous timeout so it can't block
+// the UI. Deliberately long: on slow connections the view chunk can take a
+// while to download, and a stuck-but-animated overlay is better than
+// re-revealing a second loading spinner.
+window.setTimeout(() => {
+  markAppReady();
+  markAppDataReady();
+}, 20000)

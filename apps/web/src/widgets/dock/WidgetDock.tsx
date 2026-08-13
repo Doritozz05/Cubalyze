@@ -3,7 +3,7 @@
 import { memo, useRef, useCallback, useLayoutEffect, useEffect, useState, useMemo, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { ChevronUp, Plus } from "lucide-react";
+import { ChevronUp, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
 import { getWidget } from "@/widgets/registry";
@@ -272,6 +272,33 @@ const DockPill = memo(function DockPill({
     </>
   );
 });
+
+// ── Edit-mode remove button ─────────────────────────────────────────────
+
+/**
+ * Small X badge shown on each dock area in edit mode. Clicking removes that
+ * piece from the dock (the DockExplorer can re-add it). The pointerdown stop
+ * propagation keeps the badge's click from starting the Reorder drag, and
+ * the click stop propagation prevents the dock-area's own handlers.
+ */
+function AreaRemoveButton({ areaId, name }: { areaId: string; name: string }) {
+  const { t } = useTranslation("dock");
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        widgetStore.getState().removeDockArea(areaId);
+      }}
+      aria-label={t("removeItem", { name })}
+      title={t("removeItem", { name })}
+      className="absolute -right-1 -top-1 z-10 grid size-5 place-items-center rounded-full border border-line bg-surface text-ink-2 shadow-sm transition-colors hover:border-dnf/40 hover:bg-dnf/10 hover:text-dnf"
+    >
+      <X className="size-3" />
+    </button>
+  );
+}
 
 // ── Overflow chevron (Windows-style) ─────────────────────────────────────
 
@@ -623,7 +650,8 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
       if (!area) return null;
       const Icon = area.icon;
 
-      // Separator: render as a vertical line
+      // Separator: a visible draggable chip in edit mode — the thin vertical
+      // line is a piece too, so it gets the same circle affordance + remove X.
       if (baseId === "separator") {
         return (
           <Reorder.Item
@@ -634,12 +662,15 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
             className="relative flex h-8 items-center cursor-grab touch-none"
           >
-            <div className="mx-1 h-5 w-px shrink-0 bg-line/80" />
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-ink-3/40 bg-surface-2/70 text-ink-3">
+              <Icon className="size-4" />
+            </div>
+            <AreaRemoveButton areaId={areaId} name={tDock(area.labelKey)} />
           </Reorder.Item>
         );
       }
 
-      // Spacer: render as empty space with dashed border in edit mode
+      // Spacer: a visible draggable chip in edit mode — same circle affordance.
       if (baseId === "spacer") {
         return (
           <Reorder.Item
@@ -650,12 +681,15 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
             className="relative flex h-8 items-center cursor-grab touch-none"
           >
-            <div className="w-6 shrink-0 rounded border border-dashed border-ink-3/30" />
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-ink-3/40 bg-surface-2/70 text-ink-3">
+              <Icon className="size-4" />
+            </div>
+            <AreaRemoveButton areaId={areaId} name={tDock(area.labelKey)} />
           </Reorder.Item>
         );
       }
 
-      // Default: icon circle
+      // Default: icon circle + remove X
       return (
         <Reorder.Item
           key={areaId}
@@ -668,10 +702,11 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
           <div className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
             <Icon className="size-4" />
           </div>
+          <AreaRemoveButton areaId={areaId} name={tDock(area.labelKey)} />
         </Reorder.Item>
       );
     });
-  }, [isEditing, dockAreaOrder, dockedIds, reduceMotion]);
+  }, [isEditing, dockAreaOrder, dockedIds, reduceMotion, tDock]);
 
   const renderNormal = () => (
     <div ref={rowRef} className="flex min-w-0 items-center gap-0.5">
