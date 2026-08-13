@@ -204,6 +204,10 @@
       "pbDeltaHint": "Muestra un margen rojo o verde junto al cronómetro tras cada resolución, indicando cuánto (+/-) se aleja el tiempo de tu récord personal.",
       "sessionStats": "Estadísticas de sesión",
       "sessionStatsHint": "Muestra la tira compacta de estadísticas de sesión (Ao5, Ao12, Mejor, Media) bajo el cronómetro. Desactívala para una pantalla de cronómetro más limpia.",
+      "bpaWpa": "Mejor y peor promedio posible (BPA / WPA)",
+      "bpaWpaHint": "Muestra los límites teóricos del mejor promedio posible (BPA) y del peor promedio posible (WPA) en las estadísticas activas cuando queda 1 resolución en Ao5/Ao12.",
+      "showHints": "Mostrar instrucciones del cronómetro",
+      "showHintsHint": "Muestra el texto de ayuda bajo el cronómetro (como \"Mantén pulsada la barra para empezar\", \"Inspeccionando\", etc.).",
       "focusMode": "Modo de concentración",
       "focusModeHint": "Oculta todos los elementos de interfaz (scramble, estadísticas, barra lateral) cuando el cronómetro está listo y en marcha para eliminar distracciones."
     },
@@ -218,8 +222,6 @@
     },
     "analysis": {
       "header": "Selecciona tu método de resolución. La detección de fases y las métricas se adaptarán automáticamente. El análisis se ejecuta cuando hay un Smart Cube conectado.",
-      "bpaWpa": "Mejor y peor promedio posible (BPA / WPA)",
-      "bpaWpaHint": "Muestra los límites teóricos del mejor promedio posible (BPA) y del peor promedio posible (WPA) en las estadísticas activas cuando queda 1 resolución en Ao5/Ao12.",
       "solvingMethod": "Método de resolución",
       "methodCfop": "Cross, F2L, OLL, PLL — el método más popular.",
       "methodRoux": "Construcción de bloques con CMLL y LSE — sin rotaciones.",

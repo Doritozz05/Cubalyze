@@ -39,6 +39,14 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().showSessionStats).toBe(true);
   });
 
+  it('toggles showHints (default ON)', () => {
+    expect(preferencesStore.getState().showHints).toBe(true);
+    preferencesStore.getState().setShowHints(false);
+    expect(preferencesStore.getState().showHints).toBe(false);
+    preferencesStore.getState().setShowHints(true);
+    expect(preferencesStore.getState().showHints).toBe(true);
+  });
+
   it('toggles showHeader (default ON)', () => {
     expect(preferencesStore.getState().showHeader).toBe(true);
     preferencesStore.getState().setShowHeader(false);

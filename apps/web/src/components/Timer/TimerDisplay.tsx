@@ -58,6 +58,7 @@ export function TimerDisplay({
   className,
 }: TimerDisplayProps) {
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
+  const showHints = useStore(preferencesStore, (s) => s.showHints);
   const hint = hintFor(state, hasLast, hintCtx);
 
   let formattedTime = "";
@@ -122,11 +123,13 @@ export function TimerDisplay({
         )}
       </div>
 
-      <div className="flex items-center justify-center text-ink-3">
-        <span className="nums text-[0.7rem] uppercase tracking-[0.18em]">
-          {hint}
-        </span>
-      </div>
+      {showHints && hint && (
+        <div className="flex items-center justify-center text-ink-3">
+          <span className="nums text-[0.7rem] uppercase tracking-[0.18em]">
+            {hint}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

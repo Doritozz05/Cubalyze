@@ -204,6 +204,10 @@
       "pbDeltaHint": "Show a red or green offset next to the timer after each solve, indicating how far (+/-) the time is from your personal best.",
       "sessionStats": "Session stats",
       "sessionStatsHint": "Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Turn it off for a cleaner timer screen.",
+      "bpaWpa": "Best & Worst Possible Average (BPA / WPA)",
+      "bpaWpaHint": "Show theoretical Best Possible Average (BPA) and Worst Possible Average (WPA) bounds in active stats when 1 solve remains in Ao5/Ao12.",
+      "showHints": "Show timer hints",
+      "showHintsHint": "Show action hint text below the timer (such as \"Press & hold space to start\", \"Inspecting\", etc.).",
       "focusMode": "Focus mode",
       "focusModeHint": "Hide all UI elements (scramble, stats, sidebar) when the timer is ready and running to eliminate distractions."
     },
@@ -218,8 +222,6 @@
     },
     "analysis": {
       "header": "Select your solving method. Phase detection and metrics will adapt automatically. Analysis runs when a Smart Cube is connected.",
-      "bpaWpa": "Best & Worst Possible Average (BPA / WPA)",
-      "bpaWpaHint": "Show theoretical Best Possible Average (BPA) and Worst Possible Average (WPA) bounds in active stats when 1 solve remains in Ao5/Ao12.",
       "solvingMethod": "Solving Method",
       "methodCfop": "Cross, F2L, OLL, PLL — the most popular method.",
       "methodRoux": "Blockbuilding with CMLL and LSE — no rotations.",

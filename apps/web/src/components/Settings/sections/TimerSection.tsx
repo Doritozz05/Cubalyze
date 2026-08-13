@@ -45,6 +45,10 @@ export function TimerSection() {
   const setClickToStart = useStore(preferencesStore, (s) => s.setClickToStart);
   const showSessionStats = useStore(preferencesStore, (s) => s.showSessionStats);
   const setShowSessionStats = useStore(preferencesStore, (s) => s.setShowSessionStats);
+  const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
+  const setShowBpaWpa = useStore(preferencesStore, (s) => s.setShowBpaWpa);
+  const showHints = useStore(preferencesStore, (s) => s.showHints);
+  const setShowHints = useStore(preferencesStore, (s) => s.setShowHints);
 
   return (
     <div className="flex flex-col gap-5">
@@ -220,6 +224,20 @@ export function TimerSection() {
         description={t('timer.sessionStatsHint')}
         checked={showSessionStats}
         onCheckedChange={setShowSessionStats}
+      />
+
+      <SettingToggle
+        title={t('timer.bpaWpa')}
+        description={t('timer.bpaWpaHint')}
+        checked={showBpaWpa}
+        onCheckedChange={setShowBpaWpa}
+      />
+
+      <SettingToggle
+        title={t('timer.showHints')}
+        description={t('timer.showHintsHint')}
+        checked={showHints}
+        onCheckedChange={setShowHints}
       />
 
       <SettingToggle

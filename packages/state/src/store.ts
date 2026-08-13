@@ -137,6 +137,10 @@ export interface PreferencesState {
   showSessionStats: boolean;
   setShowSessionStats: (value: boolean) => void;
 
+  /** Show instruction/hint text (such as "Press space to start") below the timer. Default ON. */
+  showHints: boolean;
+  setShowHints: (value: boolean) => void;
+
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
   /** Master switch: when OFF, every notification (toast, banner, reminder) is suppressed. */
@@ -229,6 +233,7 @@ const DEFAULT_VALUES = {
   clickToStart: false,
   haptics: true,
   showSessionStats: true,
+  showHints: true,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -278,6 +283,7 @@ export const createPreferencesStore = () => {
         setClickToStart: (clickToStart) => set({ clickToStart }),
         setHaptics: (haptics) => set({ haptics }),
         setShowSessionStats: (showSessionStats) => set({ showSessionStats }),
+        setShowHints: (showHints) => set({ showHints }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -320,6 +326,7 @@ export const createPreferencesStore = () => {
           clickToStart: state.clickToStart,
           haptics: state.haptics,
           showSessionStats: state.showSessionStats,
+          showHints: state.showHints,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

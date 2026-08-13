@@ -5,7 +5,6 @@ import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import type { ParseKeys } from 'i18next';
 import { preferencesStore } from '@cubeforge/state';
-import { SettingToggle } from '../components/SettingToggle';
 import type { SolveMethod } from '@/types';
 
 const METHODS: { id: SolveMethod; label: string; descKey: ParseKeys<'settings'> }[] = [
@@ -19,8 +18,6 @@ export function AnalysisSection() {
   const { t } = useTranslation('settings');
   const method = useStore(preferencesStore, (s) => s.method);
   const setMethod = useStore(preferencesStore, (s) => s.setMethod);
-  const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
-  const setShowBpaWpa = useStore(preferencesStore, (s) => s.setShowBpaWpa);
 
   return (
     <div className="flex flex-col gap-5">
@@ -32,13 +29,6 @@ export function AnalysisSection() {
           {t('analysis.header')}
         </p>
       </div>
-
-      <SettingToggle
-        title={t('analysis.bpaWpa')}
-        description={t('analysis.bpaWpaHint')}
-        checked={showBpaWpa}
-        onCheckedChange={setShowBpaWpa}
-      />
 
       <div className="space-y-3">
         <h3 className="text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-3">
