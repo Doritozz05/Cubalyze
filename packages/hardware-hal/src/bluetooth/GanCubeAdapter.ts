@@ -93,6 +93,11 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     // Request hardware info to populate model name and gyroSupported flag, and request battery level
     this.requestHardware().catch(() => {});
     this.requestBattery().catch(() => {});
+    // Seed the protocol driver's serial tracker: the GAN driver DISCARDS
+    // every MOVE until the first FACELETS event arrives (its lastSerial
+    // starts at -1). Requesting facelets right after connect closes that
+    // window, so the first moves are never dropped.
+    this.requestFacelets().catch(() => {});
     this.onConnectionChange?.('connected');
     this.connectionStatusSubject.next('connected');
   }
@@ -292,6 +297,8 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.setupEventsSubscription();
         // Request hardware info to populate model name and gyroSupported flag
         this.requestHardware().catch(() => {});
+        // Re-seed the serial tracker so moves aren't discarded after reconnect
+        this.requestFacelets().catch(() => {});
         this.onConnectionChange?.('connected');
         this.connectionStatusSubject.next('connected');
       } catch {

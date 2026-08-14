@@ -239,6 +239,11 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     // Request initial state — errors are non-fatal (cube may not support all commands)
     this.requestHardware().catch(() => {});
     this.requestBattery().catch(() => {});
+    // Seed the protocol driver's serial tracker: the GAN driver DISCARDS
+    // every MOVE until the first FACELETS event arrives (its lastSerial
+    // starts at -1). Requesting facelets right after connect closes that
+    // window, so the first moves after auto-connect are never dropped.
+    this.requestFacelets().catch(() => {});
   }
 
   async disconnect(): Promise<void> {
