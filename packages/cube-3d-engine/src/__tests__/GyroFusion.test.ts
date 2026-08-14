@@ -109,6 +109,26 @@ describe('GyroFusion', () => {
     gyro.updateTargetQuaternion(0.5, 0.5, 0.5, 0.5, { x: 0, y: 0, z: 0 });
     expect(calibrated).not.toBeNull();
   });
+
+  it('adopts an external calibration reference via setCalibrationQuaternion', () => {
+    gyro.enable();
+    let notified: { x: number; y: number; z: number; w: number } | null = null;
+    gyro.onCalibrate = (q) => { notified = q; };
+
+    // Reference = 90° around Y (MAPPED Three.js convention: y=+0.7071).
+    gyro.setCalibrationQuaternion({ x: 0, y: 0.70710678, z: 0, w: 0.70710678 });
+    expect(gyro.getIsCalibrated()).toBe(true);
+    expect(notified).toEqual({ x: 0, y: 0.70710678, z: 0, w: 0.70710678 });
+
+    // Feeding back the SAME physical orientation (raw {0,0,0.7071,0.7071}
+    // maps to that reference) → corrected quaternion is identity.
+    gyro.updateTargetQuaternion(0, 0, 0.70710678, 0.70710678);
+    gyro.update(100);
+    expect(Math.abs(target.quaternion.w)).toBeGreaterThan(0.9);
+    expect(Math.abs(target.quaternion.x)).toBeLessThan(0.1);
+    expect(Math.abs(target.quaternion.y)).toBeLessThan(0.1);
+    expect(Math.abs(target.quaternion.z)).toBeLessThan(0.1);
+  });
 });
 
 describe('isGyroAtRest', () => {

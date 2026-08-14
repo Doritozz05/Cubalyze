@@ -104,6 +104,11 @@ export function startOrientationTracking(adapter: OrientationTrackingSource): vo
       if (pendingAutoCalibrate && isGyroAtRest(q.velocity)) {
         tracker.setCalibration(mapped);
         pendingAutoCalibrate = false;
+        // Publish the ONE calibration reference so the 3D visual (GyroFusion)
+        // and every other consumer use the SAME reference instead of
+        // capturing their own — otherwise the move labels and the 3D model
+        // can calibrate to different poses and diverge.
+        orientationStore.getState().setCalibrationQuaternion(mapped);
       }
 
       tracker.update(mapped);
@@ -116,6 +121,9 @@ export function calibrateOrientationTracking(): void {
   if (lastMappedQuat) {
     tracker.setCalibration(lastMappedQuat);
     pendingAutoCalibrate = false;
+    // Same single-reference rule as auto-calibrate: the visual must follow
+    // the tracker's reference so labels and model never diverge.
+    orientationStore.getState().setCalibrationQuaternion(lastMappedQuat);
   } else {
     pendingAutoCalibrate = true;
   }

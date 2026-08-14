@@ -131,6 +131,26 @@ export class GyroFusion {
   }
 
   /**
+   * Apply an EXTERNAL calibration reference (the headless tracker's).
+   *
+   * The headless orientation service owns calibration (first at-rest sample
+   * after connect, or the manual Calibrate button). Every mounted GyroFusion
+   * must adopt the SAME reference quaternion so the 3D model and the move
+   * labels never calibrate to different poses. `q` is in the MAPPED Three.js
+   * convention (already converted from raw hardware), identical to what
+   * `updateTargetQuaternion` receives.
+   */
+  public setCalibrationQuaternion(q: { x: number; y: number; z: number; w: number }): void {
+    // Store the inverse (conjugate) of the reference; a unit quaternion's
+    // inverse is its conjugate. Matches OrientationTracker.setCalibration.
+    this.offsetQuatInverse.set(-q.x, -q.y, -q.z, q.w).normalize();
+    this.isCalibrated = true;
+    this.pendingAutoCalibrate = false;
+    this.hasReceivedUpdate = true;
+    this.onCalibrate?.(q);
+  }
+
+  /**
    * Resets calibration so raw quaternions are applied directly.
    */
   public resetCalibration(): void {

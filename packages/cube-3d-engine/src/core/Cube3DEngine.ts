@@ -404,6 +404,21 @@ export class Cube3DEngine {
     this.requestRender();
   }
 
+  /**
+   * Adopt the headless tracker's calibration reference (Three.js convention).
+   *
+   * The headless orientation service owns calibration — it captures the
+   * first at-rest sample after connect and publishes the reference to the
+   * orientation store. Every mounted engine must use THAT reference instead
+   * of capturing its own (which would diverge from the move-label display
+   * and, if captured mid-motion, rotate the whole 3D frame).
+   */
+  public setGyroCalibration(q: { x: number; y: number; z: number; w: number }): void {
+    if (!this.gyroFusion) return;
+    this.gyroFusion.setCalibrationQuaternion(q);
+    this.requestRender();
+  }
+
   public setGyroSupported(supported: boolean): void {
     if (!this.orientationTracker) return;
 

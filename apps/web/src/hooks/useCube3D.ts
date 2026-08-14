@@ -142,6 +142,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     let gyroSub: Subscription | null = null;
     let faceletsSub: Subscription | null = null;
     let connSub: Subscription | null = null;
+    let calibSub: (() => void) | null = null;
 
     const initEngineIfNeeded = (w: number, h: number) => {
       if (engineRef.current || initFailedRef.current || w <= 0 || h <= 0) return;
@@ -230,13 +231,30 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
           connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
             if (status === "connected") {
               globalCubeAdapter.requestFacelets().catch(console.error);
-              engine.calibrateGyro();
             }
           });
 
           if (globalCubeAdapter.isConnected) {
             globalCubeAdapter.requestFacelets().catch(console.error);
-            engine.calibrateGyro();
+          }
+
+          // ── Single calibration authority ──────────────────────────────
+          // The headless orientation service (services/orientationTracking)
+          // owns calibration: it captures the first AT-REST sample after
+          // connect and publishes the reference to the store. This engine
+          // must adopt THAT reference — NOT capture its own on connect
+          // (which could be a mid-motion or differently-posed sample and
+          // would diverge from the move labels). Manual Calibrate re-runs
+          // both (calibrateOrientationTracking re-publishes, and
+          // calibrateGyro below re-captures from the same latest sample).
+          calibSub = orientationStore.subscribe((state) => {
+            if (state.calibrationQuaternion) {
+              engine.setGyroCalibration(state.calibrationQuaternion);
+            }
+          });
+          const existingCalib = orientationStore.getState().calibrationQuaternion;
+          if (existingCalib) {
+            engine.setGyroCalibration(existingCalib);
           }
         }
 
@@ -279,6 +297,8 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       gyroSub?.unsubscribe();
       faceletsSub?.unsubscribe();
       connSub?.unsubscribe();
+      calibSub?.();
+      calibSub = null;
 
       if (engineRef.current) {
         engineRef.current.dispose();

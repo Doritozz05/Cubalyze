@@ -857,8 +857,16 @@ export { runAnalysis };
  * timeline — so re-analysis is lossless for the core metrics (phase
  * detection, TPS, pauses, efficiency all derive from `moves`). The only
  * reconstructed input is the per-move orientation array, expanded back out
- * of the stored keyframe timeline; `runAnalysis` re-compacts moves (a no-op
- * on already-compacted moves) so the two arrays stay aligned.
+ * of the stored keyframe timeline.
+ *
+ * CRITICAL: this must NOT re-compact `moves`. The stored moves are already
+ * the canonical compacted sequence (the same one that built the stored
+ * timeline), and compactCubeMoves is only idempotent since the merge guard
+ * was added — but even then, re-deriving the sequence is pointless work and
+ * any future change to the compacter could shift the indices under the
+ * reconstructed orientations. Feed the stored moves straight to the
+ * pipeline and persist them unchanged, so re-analysis is bit-identical to
+ * the original run.
  *
  * @returns The same shape as `runAnalysis` — fresh metrics plus the
  *   (unchanged) compacted moves and orientation timeline to persist.
@@ -871,6 +879,23 @@ export async function reanalyzeSolve(
   solveTimeMs?: number,
 ): Promise<{ metrics: SolveMetrics; compactedMoves: CubeMoveEvent[]; compactedOrientationTimeline: OrientationTimeline | undefined } | null> {
   if (moves.length === 0) return null;
-  const orientations = expandOrientationTimeline(orientationTimeline, moves.length);
-  return runAnalysis(moves, scramble, method, orientations, solveTimeMs);
+  try {
+    // Reconstruct per-move orientations from the STORED keyframe timeline
+    // (its moveIndex keyframes index exactly this moves array).
+    const orientations = expandOrientationTimeline(orientationTimeline, moves.length);
+
+    const { metrics } = await analyzeSolve({
+      moves,
+      method,
+      scramble,
+      orientations,
+      solveTimeMs,
+      stateTokens: stateTokensFromMoves(moves),
+    });
+
+    return { metrics, compactedMoves: moves, compactedOrientationTimeline: orientationTimeline };
+  } catch (err) {
+    console.error("[Analysis] Re-analysis failed:", err);
+    return null;
+  }
 }

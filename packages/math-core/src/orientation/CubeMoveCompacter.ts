@@ -12,6 +12,13 @@ import type { CubeMoveEvent, CubeMoveDirection, CubeOrientation } from '@cubefor
  * Different faces (M-slice: B+F') and cancelling pairs (D + D') are NOT
  * merged — those are distinct physical moves.
  *
+ * IDEMPOTENCY: 180° moves (direction 2) are NEVER merged with another 180°
+ * move. Two adjacent D2 are a redundant 360° turn (net identity), not a
+ * single D2 (net 180°) — merging them would corrupt the cube state. This
+ * also means re-running compaction on an already-compacted sequence (e.g.
+ * re-analyzing a persisted solve) is a no-op: the stored compacted moves
+ * come back unchanged.
+ *
  * The orientations array is compacted in lockstep so downstream consumers
  * (e.g. TimelineBuilder) receive aligned arrays after merging.
  *
@@ -46,7 +53,12 @@ export function compactCubeMoves(
       i + 1 < moves.length &&
       moves[i + 1].face === current.face &&
       moves[i + 1].direction === current.direction &&
-      moves[i + 1].wide === current.wide
+      moves[i + 1].wide === current.wide &&
+      // Only merge QUARTER turns. Two adjacent 180° moves (e.g. L2 L2 from
+      // a four-identical-quarter-turn quad) are a redundant 360° turn, NOT
+      // one 180° — merging them changes the net cube state. Excluding
+      // direction 2 also makes compaction idempotent for persisted moves.
+      current.direction !== 2
     ) {
       const next = moves[i + 1];
       compactedMoves.push({

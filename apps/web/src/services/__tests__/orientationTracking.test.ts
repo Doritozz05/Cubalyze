@@ -106,4 +106,42 @@ describe("orientationTracking (headless)", () => {
     calibrateOrientationTracking();
     expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
   });
+
+  it("publishes the single calibration reference to the store on auto-calibrate", () => {
+    const adapter = makeFakeAdapter();
+    startOrientationTracking(adapter);
+    adapter.connectionStatus$.next("connected");
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+
+    // First at-rest sample becomes the reference AND is published (mapped
+    // convention) so the 3D visual adopts the SAME reference.
+    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
+    // Normalize -0 (the mapping produces z = -q.y, which is -0 when y is 0).
+    const norm = (q: { x: number; y: number; z: number; w: number }) => ({
+      x: q.x || 0, y: q.y || 0, z: q.z || 0, w: q.w || 0,
+    });
+    expect(norm(orientationStore.getState().calibrationQuaternion!)).toEqual({
+      x: 0, y: 0, z: 0, w: 1,
+    });
+
+    // Manual calibrate re-references and re-publishes the new reference.
+    adapter.gyro$.next({ x: 0, y: 0, z: -0.70710678, w: 0.70710678 }); // y pose
+    calibrateOrientationTracking();
+    expect(norm(orientationStore.getState().calibrationQuaternion!)).toEqual({
+      x: 0, y: -0.70710678, z: 0, w: 0.70710678,
+    });
+    // Re-referenced: the y pose is now identity.
+    expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
+  });
+
+  it("clears the calibration reference on disconnect", () => {
+    const adapter = makeFakeAdapter();
+    startOrientationTracking(adapter);
+    adapter.connectionStatus$.next("connected");
+    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
+    expect(orientationStore.getState().calibrationQuaternion).not.toBeNull();
+
+    adapter.connectionStatus$.next("disconnected");
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+  });
 });
