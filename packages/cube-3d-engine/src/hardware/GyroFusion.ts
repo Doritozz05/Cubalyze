@@ -1,6 +1,29 @@
 import { Object3D, Quaternion } from 'three';
 
 /**
+ * Angular-velocity magnitude below which the cube is considered at rest.
+ * The GAN IMU reports a 4-bit quantized velocity per axis (−7..7): 0 means
+ * still, ±7 means a fast turn. Auto-calibration must only capture the
+ * reference quaternion at rest — the first gyro event after connect can be a
+ * mid-motion or wake-up transient, and calibrating to it rotates the whole
+ * reference frame (an L displays as U, the scramble shifts on rotation).
+ *
+ * A single axis at ±1 is tolerated as sensor noise; `undefined` (hardware
+ * that doesn't report velocity) is treated as at-rest so the legacy
+ * calibrate-on-first-event behavior is preserved.
+ */
+export function isGyroAtRest(
+  velocity: { x: number; y: number; z: number } | undefined,
+  threshold = 1,
+): boolean {
+  if (!velocity) return true;
+  return (
+    Math.abs(velocity.x) + Math.abs(velocity.y) + Math.abs(velocity.z) <=
+    threshold
+  );
+}
+
+/**
  * Smoothly fuses hardware gyroscope/IMU quaternion data with the 3D scene.
  *
  * Key features:
@@ -48,7 +71,13 @@ export class GyroFusion {
    * Receives the latest raw quaternion from the hardware gyroscope.
    * Normalizes it as a safety measure against noisy BLE data.
    */
-  public updateTargetQuaternion(x: number, y: number, z: number, w: number): void {
+  public updateTargetQuaternion(
+    x: number,
+    y: number,
+    z: number,
+    w: number,
+    velocity?: { x: number; y: number; z: number },
+  ): void {
     // Specific mapping for GAN 356 i3 and similar cubes:
     // The hardware sends coordinates relative to the cube PCB.
     // To convert to Three.js (Right-Handed, Y-up):
@@ -59,7 +88,10 @@ export class GyroFusion {
 
     this.hasReceivedUpdate = true;
 
-    if (this.pendingAutoCalibrate) {
+    // Auto-calibrate only when the cube is at rest: the reference must be a
+    // settled orientation, not a mid-motion snapshot. While the cube is
+    // moving we keep waiting for the first still event.
+    if (this.pendingAutoCalibrate && isGyroAtRest(velocity)) {
       this.calibrate();
     }
   }

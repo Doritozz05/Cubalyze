@@ -217,7 +217,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
           if (globalCubeAdapter.gyro$) {
             gyroSub = globalCubeAdapter.gyro$.subscribe((q) => {
-              engine.updateGyro(q.x, q.y, q.z, q.w);
+              engine.updateGyro(q.x, q.y, q.z, q.w, q.velocity);
             });
           }
 

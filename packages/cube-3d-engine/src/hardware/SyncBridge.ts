@@ -100,7 +100,7 @@ export class SyncBridge {
     if (gyro$) {
       this.subs.push(
         gyro$.subscribe((gyro: GyroEvent) => {
-          this.workerProxy.updateGyro(gyro.x, gyro.y, gyro.z, gyro.w);
+          this.workerProxy.updateGyro(gyro.x, gyro.y, gyro.z, gyro.w, gyro.velocity);
         })
       );
     }

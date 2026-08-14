@@ -80,8 +80,14 @@ export class EngineWorkerAPI {
     this.engine?.rotateCamera(dx, dy);
   }
 
-  public updateGyro(x: number, y: number, z: number, w: number) {
-    this.engine?.updateGyro(x, y, z, w);
+  public updateGyro(
+    x: number,
+    y: number,
+    z: number,
+    w: number,
+    velocity?: { x: number; y: number; z: number },
+  ) {
+    this.engine?.updateGyro(x, y, z, w, velocity);
   }
 
   public disableGyro() {

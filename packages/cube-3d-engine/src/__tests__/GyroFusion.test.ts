@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Object3D, Quaternion } from 'three';
-import { GyroFusion } from '../hardware/GyroFusion';
+import { GyroFusion, isGyroAtRest } from '../hardware/GyroFusion';
 
 describe('GyroFusion', () => {
   let target: Object3D;
@@ -92,5 +92,35 @@ describe('GyroFusion', () => {
     const q = target.quaternion;
     expect(Math.abs(q.w)).toBeGreaterThan(0.9);
     expect(Math.abs(q.x)).toBeLessThan(0.1);
+  });
+
+  it('auto-calibrates only at rest: skips a moving packet, captures the still one', () => {
+    gyro.enable();
+    let calibrated: { x: number; y: number; z: number; w: number } | null = null;
+    gyro.onCalibrate = (q) => { calibrated = q; };
+    // Calibrate BEFORE any packet → auto-calibrate armed
+    gyro.calibrate();
+
+    // A moving packet must NOT be captured as the reference
+    gyro.updateTargetQuaternion(0.5, 0.5, 0.5, 0.5, { x: 7, y: 0, z: 0 });
+    expect(calibrated).toBeNull();
+
+    // The first still packet IS captured as the reference
+    gyro.updateTargetQuaternion(0.5, 0.5, 0.5, 0.5, { x: 0, y: 0, z: 0 });
+    expect(calibrated).not.toBeNull();
+  });
+});
+
+describe('isGyroAtRest', () => {
+  it('classifies rest vs motion from the quantized velocity', () => {
+    expect(isGyroAtRest(undefined)).toBe(true);
+    expect(isGyroAtRest({ x: 0, y: 0, z: 0 })).toBe(true);
+    // A single ±1 tick is sensor noise, still "at rest"
+    expect(isGyroAtRest({ x: 1, y: 0, z: 0 })).toBe(true);
+    expect(isGyroAtRest({ x: 0, y: -1, z: 0 })).toBe(true);
+    // Any real turn (magnitude > 1, or two moving axes) is motion
+    expect(isGyroAtRest({ x: 2, y: 0, z: 0 })).toBe(false);
+    expect(isGyroAtRest({ x: 1, y: 1, z: 0 })).toBe(false);
+    expect(isGyroAtRest({ x: 0, y: 0, z: 7 })).toBe(false);
   });
 });

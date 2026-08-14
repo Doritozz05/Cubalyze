@@ -20,8 +20,9 @@
  *
  * Coordinate mapping mirrors `Cube3DEngine.updateGyro` (GAN hardware →
  * Three.js Y-up right-handed): `{ x, y: z, z: -y, w }`. The calibration
- * reference is taken from the first gyro event after connecting (the cube is
- * typically at rest), matching GyroFusion's auto-calibrate semantics.
+ * reference is taken from the first AT-REST gyro event after connecting
+ * (angular velocity ≈ 0), matching GyroFusion's auto-calibrate semantics —
+ * a mid-motion first sample would otherwise rotate the whole reference frame.
  *
  * Known limitation: the tracker accepts a snapped orientation only above a
  * 0.9 confidence, so VERY fast mid-solve rotations can be missed and
@@ -29,7 +30,7 @@
  * events is unaffected). Tuning this threshold is a follow-up.
  */
 
-import { OrientationTracker } from "@cubeforge/cube-3d-engine";
+import { OrientationTracker, isGyroAtRest } from "@cubeforge/cube-3d-engine";
 import { orientationStore } from "@cubeforge/state";
 import type { GyroEvent } from "@cubeforge/types";
 import type { Observable, Subscription } from "rxjs";
@@ -95,7 +96,12 @@ export function startOrientationTracking(adapter: OrientationTrackingSource): vo
         orientationStore.getState().setCapabilities({ hasIMU: true, gyroSupported: true });
       }
 
-      if (pendingAutoCalibrate) {
+      // Auto-calibrate only when the cube is at rest. The first gyro event
+      // after connect can be a mid-motion or wake-up transient sample, and
+      // calibrating to it rotates the whole reference frame (an L shows as U,
+      // the scramble shifts when the cube rotates). While it's moving we keep
+      // waiting for the first still event.
+      if (pendingAutoCalibrate && isGyroAtRest(q.velocity)) {
         tracker.setCalibration(mapped);
         pendingAutoCalibrate = false;
       }

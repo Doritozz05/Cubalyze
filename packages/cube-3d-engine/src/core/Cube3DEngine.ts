@@ -369,10 +369,16 @@ export class Cube3DEngine {
     this.requestRender();
   }
 
-  public updateGyro(x: number, y: number, z: number, w: number): void {
+  public updateGyro(
+    x: number,
+    y: number,
+    z: number,
+    w: number,
+    velocity?: { x: number; y: number; z: number },
+  ): void {
     if (!this.gyroFusion) return;
     this.gyroFusion.enable();
-    this.gyroFusion.updateTargetQuaternion(x, y, z, w);
+    this.gyroFusion.updateTargetQuaternion(x, y, z, w, velocity);
 
     if (!this.orientationTracker.capabilitiesInfo.gyroSupported) {
       this.orientationTracker.enableGyroSupport();
