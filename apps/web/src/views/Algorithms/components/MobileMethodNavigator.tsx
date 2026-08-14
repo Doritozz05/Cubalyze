@@ -125,7 +125,7 @@ export interface MobileMethodNavigatorProps {
 }
 
 /**
- * Touch (<1024px) method navigator for the Algorithms view.
+ * Touch (<768px) method navigator for the Algorithms view.
  *
  * Desktop keeps the collapsible `MethodTree`. On touch, a compact path bar
  * (e.g. "3×3 › CFOP › PLL ▾") opens an iOS-style drill-down sheet: each level

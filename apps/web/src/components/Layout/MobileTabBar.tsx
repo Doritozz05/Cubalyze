@@ -9,7 +9,7 @@ import type { ParseKeys } from "i18next";
 import type { ViewId } from "./sidebar.constants";
 
 /**
- * Standard native bottom tab bar for the touch regime (mobile + tablet, <1024px).
+ * Standard native bottom tab bar for the touch regime (phones + small tablets, <768px).
  *
  * Features:
  * - 4 primary tabs (Training, Algorithms, Timer, Stats) + 1 "More" tab (opens grid sheet).

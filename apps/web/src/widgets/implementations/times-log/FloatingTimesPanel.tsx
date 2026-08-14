@@ -24,8 +24,8 @@ export interface FloatingTimesPanelProps {
 /**
  * Floating solve-log panel — always open, draggable, minimizable.
  *
- * - **Desktop (>=1024px)**: FloatingWidgetWrapper for portal/drag/minimize.
- * - **Touch (<1024px)**: the same wrapper renders a bottom sheet anchored
+ * - **Desktop (>=768px)**: FloatingWidgetWrapper for portal/drag/minimize.
+ * - **Touch (<768px)**: the same wrapper renders a bottom sheet anchored
  *   above the tab bar (drag handle, minimize, close) — desktop is untouched.
  */
 export function FloatingTimesPanel({

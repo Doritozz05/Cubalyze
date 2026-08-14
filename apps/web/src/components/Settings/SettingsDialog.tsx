@@ -158,7 +158,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Mobile-only compact section dropdown header (<1024px) */}
+        {/* Mobile-only compact section dropdown header (<768px) */}
         <div className="shrink-0 border-b border-line px-4 py-3 lg:hidden">
           <Select value={activeSection} onValueChange={handleSelectSection}>
             <SelectTrigger className="h-10 w-full gap-2 rounded-xl border border-line bg-surface-2 px-3.5 text-sm font-semibold text-ink shadow-xs">
@@ -180,7 +180,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
           </Select>
         </div>
 
-        {/* Desktop section header (>=1024px) */}
+        {/* Desktop section header (>=768px) */}
         <div className="shrink-0 border-b border-line px-8 py-6 max-lg:hidden">
           <h2 className="text-[0.95rem] font-semibold leading-5 text-ink">
             {activeMeta ? t(activeMeta.labelKey) : t('title')}

@@ -1,15 +1,18 @@
 import * as React from "react"
 
 /**
- * Touch-first regime (mobile + tablet). Everything below `lg` (1024px) gets
- * the full touch experience (bottom tab bar, sheets, no hover-only). Desktop
- * (>=1024px) is untouched.
+ * Touch-first regime (phones + small tablets). Everything below `lg` (768px)
+ * gets the full touch experience (bottom tab bar, sheets, no hover-only).
+ * Large tablets (iPad portrait and up, >=768px) get the desktop layout.
+ *
+ * Keep in sync with `--breakpoint-lg` in index.css (Tailwind `lg:`/`max-lg:`)
+ * and the matchMedia gate in utils/haptics.ts.
  */
-const TOUCH_BREAKPOINT = 1024
+const TOUCH_BREAKPOINT = 768
 /**
- * True when the viewport is in the touch regime (<1024px). This is the single
- * source of truth for "should I behave like a touch app" — tablets included.
- * Desktop (>=1024px) always returns false.
+ * True when the viewport is in the touch regime (<768px). This is the single
+ * source of truth for "should I behave like a touch app". Desktop (>=768px)
+ * always returns false.
  */
 export function useIsTouch() {
   // Initialise synchronously (not in an effect) so the first render already

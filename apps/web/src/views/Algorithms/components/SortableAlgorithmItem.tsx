@@ -57,7 +57,7 @@ export function SortableAlgorithmItem({
       style={style}
       onClick={onSelect}
       className={cn(
-        // Touch (<1024px): taller rows for thumb targets.
+        // Touch (<768px): taller rows for thumb targets.
         "group flex gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors relative max-lg:p-3",
         isSelected
           ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"

@@ -56,7 +56,7 @@ function FilterChip({ active, count, dot, onClick, children }: FilterChipProps) 
       onClick={onClick}
       className={cn(
         "flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.62rem] font-medium transition-colors",
-        // Touch (<1024px): ≥32px tap targets
+        // Touch (<768px): ≥32px tap targets
         "max-lg:h-8 max-lg:px-3 max-lg:text-xs",
         active
           ? "bg-surface-2 text-ink"

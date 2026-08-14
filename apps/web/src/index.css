@@ -15,6 +15,19 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ───────────────────────────────────────────────────────────────────────
+   Touch/desktop breakpoint override.
+   Desktop (sidebar rail, dock, header) now starts at 768px so large tablets
+   (iPad portrait and up) get the full desktop layout; phones and small
+   tablets (<768px) keep the touch regime (bottom tab bar + sheets). `lg:`
+   and `max-lg:` utilities below switch at 768px instead of the Tailwind
+   default 1024px. Keep in sync with TOUCH_BREAKPOINT in hooks/use-mobile.ts
+   and the matchMedia gate in utils/haptics.ts.
+   ─────────────────────────────────────────────────────────────────────── */
+@theme {
+  --breakpoint-lg: 768px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
    Speedcubing timer — pale, utilitarian, flat palette.
    Bone-white canvas, carbon ink, muted semantic accents for timer states.
    ─────────────────────────────────────────────────────────────────────── */
@@ -423,10 +436,10 @@ input[type="image"],
   padding-top: env(safe-area-inset-top);
 }
 
-/* Touch regime (<1024px): keep overscroll/rubber-banding from pulling the
+/* Touch regime (<768px): keep overscroll/rubber-banding from pulling the
    page past its edge (which fights the bottom tab bar and fixed sheets) and
    prevent double-tap-to-zoom delays on buttons. Desktop: untouched. */
-@media (max-width: 1023px) {
+@media (max-width: 767px) {
   html,
   body {
     height: 100%;

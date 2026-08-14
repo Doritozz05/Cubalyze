@@ -3,11 +3,11 @@
 import { preferencesStore } from "@cubeforge/state";
 
 /**
- * Optional haptic feedback for the touch regime (<1024px).
+ * Optional haptic feedback for the touch regime (<768px).
  *
  * Wraps `navigator.vibrate` with the app's own guardrails so haptics are:
- *   - **Touch-only**: the gate checks `window.matchMedia("(max-width: 1023px)")`
- *     so desktop (>=1024px) NEVER vibrates — the F8 "desktop is sacred" rule.
+ *   - **Touch-only**: the gate checks `window.matchMedia("(max-width: 767px)")`
+ *     so desktop (>=768px) NEVER vibrates — the F8 "desktop is sacred" rule.
  *   - **Opt-out**: respects `preferencesStore.haptics` (Settings → General).
  *   - **Safe**: no-ops when `navigator.vibrate` is missing (desktop Chrome,
  *     iOS Safari, etc.) or when the browser blocks it.
@@ -18,7 +18,7 @@ import { preferencesStore } from "@cubeforge/state";
 
 function isTouchRegime(): boolean {
   if (typeof window === "undefined") return false;
-  return window.matchMedia("(max-width: 1023px)").matches;
+  return window.matchMedia("(max-width: 767px)").matches;
 }
 
 function hapticsEnabled(): boolean {

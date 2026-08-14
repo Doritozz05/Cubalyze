@@ -122,7 +122,7 @@ export function ScrambleDisplay({
         </div>
       ) : errorMoves.length > 0 ? (
         <div
-          // Touch (<1024px): smaller tokens that wrap so the full scramble
+          // Touch (<768px): smaller tokens that wrap so the full scramble
           // fits on screen with zero horizontal scroll. Desktop unchanged.
           className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
           translate="no"
@@ -138,7 +138,7 @@ export function ScrambleDisplay({
         </div>
       ) : (
         <div
-          // Touch (<1024px): smaller tokens that wrap so the full scramble
+          // Touch (<768px): smaller tokens that wrap so the full scramble
           // fits on screen with zero horizontal scroll. Desktop unchanged.
           className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
           translate="no"

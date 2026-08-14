@@ -90,8 +90,8 @@ export function LeftSidebar({
   cubeConnectorOpen: externalCubeConnectorOpen,
   onCubeConnectorOpenChange,
 }: LeftSidebarProps) {
-  // Touch regime (mobile + tablet <1024px) renders the Sheet variant.
-  // Desktop (>=1024px) keeps the hover-to-expand rail untouched.
+  // Touch regime (phones + small tablets <768px) renders the Sheet variant.
+  // Desktop (>=768px) keeps the hover-to-expand rail untouched.
   const isTouch = useIsTouch();
   const { t } = useTranslation("nav");
   const { t: tCommon } = useTranslation();

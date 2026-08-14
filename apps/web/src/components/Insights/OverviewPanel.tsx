@@ -85,7 +85,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
     }
     return { isModal: modal, meanBinLabel: meanLabel };
   }, [histogram, stats.mean]);
-  // Touch (<1024px): fewer heatmap weeks so the grid never overflows the
+  // Touch (<768px): fewer heatmap weeks so the grid never overflows the
   // narrower column. Desktop shows 6 months (26 weeks).
   const isTouch = useIsTouch();
   const heatmapWeeks = isTouch ? 8 : 26;

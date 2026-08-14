@@ -193,7 +193,7 @@ export function Header({
       transition={SIDEBAR_MOTION.panel}
       className={cn(
         // `lg:left-14` keeps the desktop header aligned with the rail.
-        // Below 1024px the header spans the full width (touch regime).
+        // Below 768px the header spans the full width (touch regime).
         // On iOS with viewport-fit=cover the header grows by the top safe-area
         // so its content never hides under the status bar (desktop: h-14).
         // Desktop (lg+) has NO background: the glass dock floats on its own;

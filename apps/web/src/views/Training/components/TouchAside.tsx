@@ -23,8 +23,8 @@ export interface TouchAsideProps {
 /**
  * Sidebar wrapper for training views.
  *
- * Desktop (>=1024px): renders the exact same `<aside>` markup as before —
- * zero visual change. Touch (<1024px): the aside content collapses into a
+ * Desktop (>=768px): renders the exact same `<aside>` markup as before —
+ * zero visual change. Touch (<768px): the aside content collapses into a
  * tappable "Options ▾" bar that opens the content in a bottom sheet
  * (`TouchPanel`), so stats/options never steal vertical space from the timer.
  */

@@ -119,7 +119,7 @@ export function FloatingWidgetWrapper({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Touch regime (<1024px): floating widgets become compact mini-panels.
+  // Touch regime (<768px): floating widgets become compact mini-panels.
   const isTouch = useIsTouch();
   // Stable ref so the drag callbacks can read the current touch mode without
   // re-creating themselves when the media query flips after mount.
@@ -320,7 +320,7 @@ export function FloatingWidgetWrapper({
   //     (TOUCH_SCALE) so fonts and inner content stay small and the app stays
   //     visible (user feedback: full-width sheets were too big). Draggable via
   //     the header — pointer events work on touch. No dock zone on touch:
-  //     dragging to the top would hide the widget. Desktop (>=1024px) is
+  //     dragging to the top would hide the widget. Desktop (>=768px) is
   //     untouched: this branch is gated by useIsTouch.
   if (isTouch) {
     // Always above the z-40 tab bar, still below every z-50 surface.

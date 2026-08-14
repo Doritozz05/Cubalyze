@@ -102,7 +102,7 @@ export function ManualTimeInput({
           onKeyDown={handleKeyDown}
           placeholder="0.00"
           className={cn(
-            // Desktop: fluid clamp. Touch (<1024px): fill the stage width so the
+            // Desktop: fluid clamp. Touch (<768px): fill the stage width so the
             // input + on-screen keyboard stay comfortable on phones/tablets.
             "nums w-[clamp(320px,70vw,900px)] max-lg:w-full rounded-xl border-2 bg-surface py-3 text-center text-[clamp(3.75rem,15vw,9.5rem)] font-medium leading-none tracking-tight outline-none transition-all duration-200",
             "border-line text-ink placeholder:text-ink-3/20",
