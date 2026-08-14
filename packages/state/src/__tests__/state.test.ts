@@ -31,12 +31,20 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().language).toBe('auto');
   });
 
-  it('toggles showSessionStats (default ON)', () => {
-    expect(preferencesStore.getState().showSessionStats).toBe(true);
-    preferencesStore.getState().setShowSessionStats(false);
-    expect(preferencesStore.getState().showSessionStats).toBe(false);
-    preferencesStore.getState().setShowSessionStats(true);
-    expect(preferencesStore.getState().showSessionStats).toBe(true);
+  it('toggles showBottomLayout (default ON)', () => {
+    expect(preferencesStore.getState().showBottomLayout).toBe(true);
+    preferencesStore.getState().setShowBottomLayout(false);
+    expect(preferencesStore.getState().showBottomLayout).toBe(false);
+    preferencesStore.getState().setShowBottomLayout(true);
+    expect(preferencesStore.getState().showBottomLayout).toBe(true);
+  });
+
+  it('selects a bottom layout template (default session-stats)', () => {
+    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('session-stats');
+    preferencesStore.getState().setBottomLayoutTemplate('half-half');
+    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('half-half');
+    preferencesStore.getState().setBottomLayoutTemplate('session-stats');
+    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('session-stats');
   });
 
   it('toggles showHints (default ON)', () => {

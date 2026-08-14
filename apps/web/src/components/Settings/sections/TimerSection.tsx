@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Cpu, Headphones, Bluetooth, Keyboard } from 'lucide-react';
+import { Clock, Cpu, Headphones, Bluetooth, Keyboard, LayoutTemplate } from 'lucide-react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { BOTTOM_LAYOUT_TEMPLATES } from '@/bottom-layout/registry';
 
 /**
  * Timer settings section.
@@ -43,8 +44,10 @@ export function TimerSection() {
   const setInputMode = useStore(preferencesStore, (s) => s.setInputMode);
   const clickToStart = useStore(preferencesStore, (s) => s.clickToStart);
   const setClickToStart = useStore(preferencesStore, (s) => s.setClickToStart);
-  const showSessionStats = useStore(preferencesStore, (s) => s.showSessionStats);
-  const setShowSessionStats = useStore(preferencesStore, (s) => s.setShowSessionStats);
+  const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
+  const setShowBottomLayout = useStore(preferencesStore, (s) => s.setShowBottomLayout);
+  const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
+  const setBottomLayoutTemplate = useStore(preferencesStore, (s) => s.setBottomLayoutTemplate);
   const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
   const setShowBpaWpa = useStore(preferencesStore, (s) => s.setShowBpaWpa);
   const showHints = useStore(preferencesStore, (s) => s.showHints);
@@ -220,11 +223,39 @@ export function TimerSection() {
       />
 
       <SettingToggle
-        title={t('timer.sessionStats')}
-        description={t('timer.sessionStatsHint')}
-        checked={showSessionStats}
-        onCheckedChange={setShowSessionStats}
+        title={t('timer.showBottomLayout')}
+        description={t('timer.showBottomLayoutHint')}
+        checked={showBottomLayout}
+        onCheckedChange={setShowBottomLayout}
       />
+
+      {showBottomLayout && (
+        <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+          <div className="min-w-0 flex-1">
+            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+              <LayoutTemplate className="size-3.5 text-ink-2" />
+              {t('timer.bottomLayoutTemplate')}
+            </h4>
+            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
+              {t('timer.bottomLayoutTemplateHint')}
+            </p>
+          </div>
+          <div className="mt-0.5 shrink-0">
+            <Select value={bottomLayoutTemplate} onValueChange={setBottomLayoutTemplate}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder={t('timer.selectBottomLayoutTemplate')} />
+              </SelectTrigger>
+              <SelectContent>
+                {BOTTOM_LAYOUT_TEMPLATES.map((tpl) => (
+                  <SelectItem key={tpl.id} value={tpl.id}>
+                    {t(tpl.nameKey as never)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
 
       <SettingToggle
         title={t('timer.bpaWpa')}
