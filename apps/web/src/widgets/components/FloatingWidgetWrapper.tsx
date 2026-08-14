@@ -15,7 +15,7 @@ import { useIsTouch } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useDraggable, type SnapRect } from "@/hooks/useDraggable";
 import { widgetStore, useWidgetStore } from "@/widgets/widgetStore";
-import { dockZoneState } from "@/widgets/dock/dockZoneState";
+import { dockZoneState, dockRevealState } from "@/widgets/dock/dockZoneState";
 import type { WidgetId } from "@/widgets/types";
 
 export interface FloatingWidgetWrapperProps {
@@ -53,6 +53,16 @@ const DOCK_ENTER_MARGIN = 16;
  * left behind.
  */
 const DOCK_LEAVE_MARGIN = 40;
+
+/**
+ * Reveal band (px) for the auto-hide dock: while a floating widget's pointer
+ * is inside the top strip where the hidden dock lives (it sits at y≈8–48 once
+ * revealed, and the dock zone adds a 16px enter margin), the dock is asked to
+ * slide back down via dockRevealState. The drag holds pointer capture, which
+ * suppresses the header reveal band's pointerenter — the drag loop must drive
+ * the reveal itself.
+ */
+const DOCK_REVEAL_BAND = 64;
 
 /** True when the pointer sits within the dock bar's live rect + margin. */
 function isPointerNearDock(
@@ -137,6 +147,9 @@ export function FloatingWidgetWrapper({
   useEffect(() => {
     return () => {
       dockZoneState.leave(widgetId);
+      // If this widget was the one holding the auto-hide reveal open (e.g.
+      // teardown mid-drag), release it so the dock can retract normally.
+      dockRevealState.clearReveal();
     };
   }, [widgetId]);
 
@@ -232,6 +245,10 @@ export function FloatingWidgetWrapper({
       const shouldDock = isNearDockRef.current;
 
       dockZoneState.leave(widgetId);
+      // Release the auto-hide reveal: the drag is over, so the Header falls
+      // back to its normal retract delay (and the pointer's own hover keeps
+      // the dock visible while it stays over the band).
+      dockRevealState.clearReveal();
 
       if (shouldDock) {
         store.dockAt(widgetId, index);
@@ -253,6 +270,17 @@ export function FloatingWidgetWrapper({
       (pos, pointer) => {
         // Touch: free-floating mini-panels — no dock zone.
         if (isTouchRef.current) return;
+
+        // ── Auto-hide dock reveal ────────────────────────────────────────
+        // While the pointer is inside the top strip where the hidden dock
+        // lives, ask the dock to slide back down. Cleared as soon as the
+        // pointer leaves the strip (the Header then schedules the standard
+        // retract) and again at drag end.
+        if (pointer && pointer.y < DOCK_REVEAL_BAND) {
+          dockRevealState.requestReveal();
+        } else {
+          dockRevealState.clearReveal();
+        }
 
         // ── Throttled dock zone state: only update React state when the
         //    threshold is actually crossed, not on every frame.

@@ -117,3 +117,63 @@ export function useDraggingWidgetId(): string | null {
     () => (_nearIds.size > 0 ? [..._nearIds][0] : null),
   );
 }
+
+// ── Drag-to-reveal (auto-hide dock) ────────────────────────────────────
+
+let _revealRequested = false;
+const revealListeners = new Set<() => void>();
+
+function notifyReveal() {
+  revealListeners.forEach((fn) => fn());
+}
+
+/**
+ * Lightweight signal between floating widgets and the auto-hide dock.
+ *
+ * Dragging a floating widget uses setPointerCapture, which suppresses the
+ * hover-based reveal band in the Header — pointerenter never fires on it
+ * mid-drag, so the dock can't reveal while a widget is being dragged toward
+ * it. The widget's drag loop instead calls requestReveal() while the pointer
+ * sits in the top strip where the hidden dock lives, and the Header slides
+ * the dock back down. Cleared when the pointer leaves the strip or the drag
+ * ends (the Header then falls back to its normal retract delay).
+ */
+export const dockRevealState = {
+  get requested() {
+    return _revealRequested;
+  },
+  /** Ask the auto-hidden dock to reveal itself (idempotent). */
+  requestReveal() {
+    if (!_revealRequested) {
+      _revealRequested = true;
+      notifyReveal();
+    }
+  },
+  /** Let the dock retract again (idempotent). */
+  clearReveal() {
+    if (_revealRequested) {
+      _revealRequested = false;
+      notifyReveal();
+    }
+  },
+  subscribe(fn: () => void) {
+    revealListeners.add(fn);
+    return () => {
+      revealListeners.delete(fn);
+    };
+  },
+  getSnapshot() {
+    return _revealRequested;
+  },
+};
+
+/**
+ * React hook: true while a floating widget is being dragged near the top
+ * strip where the (auto-hidden) dock lives.
+ */
+export function useDockRevealRequested(): boolean {
+  return useSyncExternalStore(
+    dockRevealState.subscribe,
+    dockRevealState.getSnapshot,
+  );
+}

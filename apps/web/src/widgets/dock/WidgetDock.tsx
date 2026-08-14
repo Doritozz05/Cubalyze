@@ -400,7 +400,12 @@ export function WidgetDock({
   // a widget drags over, webfont settling). Cleared on unmount.
   useLayoutEffect(() => {
     const el = barRef.current;
-    if (!el || !reportRectRef.current) return;
+    if (!el || !reportRectRef.current) {
+      // Retracted (auto-hide) or not yet mounted: drop the drag-to-dock zone
+      // so floating widgets never treat the hidden bar's old spot as live.
+      dockZoneState.setDockRect(null);
+      return;
+    }
     const r = el.getBoundingClientRect();
     dockZoneState.setDockRect({ x: r.left, y: r.top, w: r.width, h: r.height });
   });
@@ -425,6 +430,37 @@ export function WidgetDock({
       dockZoneState.setDockRect(null);
     };
   }, []);
+
+  // ── Continuous rect refresh while visible ──────────────────────────────
+  // The bar slides in/out during auto-hide (a transform — invisible to
+  // ResizeObserver) and expands while a widget drags over it. A cheap RAF
+  // loop keeps the drag-to-dock zone at the bar's LIVE on-screen position
+  // (guarded writes — setDockRect never notifies React), so floating widgets
+  // test against the real bar, not a stale pre-animation spot.
+  useEffect(() => {
+    if (!reportRect) return;
+    let raf = 0;
+    let lastKey = "";
+    const tick = () => {
+      const el = barRef.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const key = `${r.left},${r.top},${r.width},${r.height}`;
+        if (key !== lastKey) {
+          lastKey = key;
+          dockZoneState.setDockRect({
+            x: r.left,
+            y: r.top,
+            w: r.width,
+            h: r.height,
+          });
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [reportRect]);
 
   // The dock lists every ACTIVE widget (docked, floating or minimized) —
   // launching a widget keeps its pill in the bar and marks it "running"

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
+import { useDockRevealRequested } from "@/widgets/dock/dockZoneState";
 import { BatteryIcon } from "@/components/Hardware/BatteryIcon";
 import {
   BatteryPiece,
@@ -134,6 +135,11 @@ export function Header({
   const dockAutoHide = headerMode === "autohide";
   const [dockRevealed, setDockRevealed] = useState(false);
   const retractTimerRef = useRef<number | null>(null);
+  // True while a floating widget is being dragged near the top strip where
+  // the hidden dock lives (see dockRevealState). Pointer capture during the
+  // drag suppresses the hover band's pointerenter, so this signal is what
+  // actually reveals the dock mid-drag.
+  const dragRevealRequested = useDockRevealRequested();
 
   const cancelRetract = useCallback(() => {
     if (retractTimerRef.current !== null) {
@@ -161,6 +167,18 @@ export function Header({
       if (retractTimerRef.current !== null) window.clearTimeout(retractTimerRef.current);
     };
   }, []);
+
+  // Drag-to-dock reveal: while a floating widget is dragged toward the top,
+  // slide the (auto-hidden) dock back down; when the drag leaves the strip or
+  // ends, fall back to the normal retract delay so the dock doesn't vanish
+  // the instant the drag stops.
+  useEffect(() => {
+    if (dragRevealRequested) {
+      revealDock();
+    } else {
+      scheduleRetract();
+    }
+  }, [dragRevealRequested, revealDock, scheduleRetract]);
 
   // Auto-hide off, revealed by hover, or dock editing → bar always visible.
   const dockVisible = !dockAutoHide || dockRevealed || isDockEditing;
@@ -308,7 +326,13 @@ export function Header({
               y: dockVisible ? 0 : -48,
               opacity: dockVisible ? 1 : 0,
             }}
-            transition={dockAutoHide ? DOCK_SLIDE_MOTION : { duration: 0 }}
+            // While a widget drag is revealing the dock, snap it into place
+            // instantly (no 0.6s slide): the drag-to-dock zone rect is
+            // measured from the bar's live position, so a slide would leave
+            // the zone stale mid-animation and the widget wouldn't engage.
+            transition={
+              dockAutoHide && !dragRevealRequested ? DOCK_SLIDE_MOTION : { duration: 0 }
+            }
             style={dockVisible ? undefined : { pointerEvents: "none" }}
             className="min-w-0"
           >
