@@ -17,14 +17,17 @@ import type { PuzzleCategory } from "@/types";
 /**
  * Width the 3D cube panel occupies once expanded.
  *
- * The cube scales with the viewport (≈ half of the available width, minus the
- * left nav) so it visually matches the previous `lg:grid-cols-2` "focus mode"
- * layout, clamped so it stays readable on small or very wide screens.
+ * The cube scales with the viewport: large tablets in desktop layout (iPad Pro
+ * landscape ≈ 1194–1366px) open it at ¼ of the available width, real desktops
+ * (≥1280px) at ⅓ — clamped so it stays readable on small or very wide screens.
  */
 const LEFT_NAV_WIDTH = 56; // matches md:pl-14 on the row
-const CUBE_MIN_WIDTH = 510;
+const CUBE_MIN_WIDTH = 280;
 const CUBE_MAX_WIDTH = 800;
 const CUBE_RESIZE_MIN_WIDTH = 220; // Minimum width when user resizes to the right
+// Viewport line between the "large tablet" regime (panel opens at ¼ of the
+// available width) and the desktop regime (⅓). Matches Tailwind `xl` (1280px).
+const DESKTOP_REGIME_MIN_WIDTH = 1280;
 
 /** Padding applied around the cube canvas. Lives on the inner wrapper (NOT on
  *  the animated <motion.aside>) so the container can collapse to width=0 /
@@ -150,7 +153,10 @@ export function MainLayout({
   const maxPanelWidth = cubeShown
     ? Math.max(
         CUBE_MIN_WIDTH,
-        Math.min(CUBE_MAX_WIDTH, (vw - LEFT_NAV_WIDTH) / 2),
+        Math.min(
+          CUBE_MAX_WIDTH,
+          (vw - LEFT_NAV_WIDTH) * (vw < DESKTOP_REGIME_MIN_WIDTH ? 0.25 : 1 / 3),
+        ),
       )
     : 0;
 
