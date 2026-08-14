@@ -91,7 +91,7 @@ export function ScrambleDisplay({
             ) : (
               <Copy className="size-3.5" />
             )}
-            {copied ? t("copied") : t("copy")}
+            <span className="max-lg:hidden">{copied ? t("copied") : t("copy")}</span>
           </Button>
           {onRegenerate ? (
             <Button
@@ -102,7 +102,7 @@ export function ScrambleDisplay({
               aria-label={t("newScramble")}
             >
               <RefreshCw className="size-3.5" />
-              {t("new")}
+              <span className="max-lg:hidden">{t("new")}</span>
             </Button>
           ) : null}
         </div>

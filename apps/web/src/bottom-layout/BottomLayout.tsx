@@ -1,7 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { SessionStats } from "@/components/Stats/SessionStats";
 import type { Solve } from "@/types";
+import { GenericBottomLayout } from "./GenericBottomLayout";
 import {
   DEFAULT_BOTTOM_LAYOUT_TEMPLATE,
   getBottomLayoutTemplate,
@@ -16,15 +18,18 @@ export interface BottomLayoutProps {
   onExpand?: () => void;
   /** Filter solves to a specific puzzle type (e.g. '3x3x3', '2x2x2'). */
   puzzleFilter?: string;
+  /** Injected scramble element rendered by templates with a `scramble` cell. */
+  scramble?: ReactNode;
+  /** Injected 2D scramble net rendered by templates with a `scramble-2d` cell. */
+  scramble2d?: ReactNode;
 }
 
 /**
  * Renders the selected bottom layout template underneath the timer.
  *
- * The template is resolved from the registry; unknown ids fall back to the
- * default template. Today only `session-stats` is implemented — future
- * templates (2-column half/half, 3-column with a central scramble) add a case
- * here (or a generic column renderer driven by the template's `columns`).
+ * `session-stats` keeps its bespoke renderer (minimize, BPA/WPA pill, expand
+ * shortcut). Every other template is rendered data-driven by
+ * `GenericBottomLayout` from its column/cell descriptor.
  */
 export function BottomLayout({
   templateId,
@@ -32,22 +37,31 @@ export function BottomLayout({
   className,
   onExpand,
   puzzleFilter,
+  scramble,
+  scramble2d,
 }: BottomLayoutProps) {
   const template =
     getBottomLayoutTemplate(templateId) ?? DEFAULT_BOTTOM_LAYOUT_TEMPLATE;
 
-  switch (template.id) {
-    case "session-stats":
-      return (
-        <SessionStats
-          solves={solves}
-          className={className}
-          onExpand={onExpand}
-          puzzleFilter={puzzleFilter}
-        />
-      );
-    default:
-      // Registered template without a renderer yet.
-      return null;
+  if (template.id === "session-stats") {
+    return (
+      <SessionStats
+        solves={solves}
+        className={className}
+        onExpand={onExpand}
+        puzzleFilter={puzzleFilter}
+      />
+    );
   }
+
+  return (
+    <GenericBottomLayout
+      template={template}
+      solves={solves}
+      puzzleFilter={puzzleFilter}
+      scramble={scramble}
+      scramble2d={scramble2d}
+      className={className}
+    />
+  );
 }

@@ -30,6 +30,7 @@ export type BottomLayoutStatId =
 export type BottomLayoutCell =
   | { kind: "stat"; stat: BottomLayoutStatId }
   | { kind: "scramble" }
+  | { kind: "scramble-2d" }
   | { kind: "timer" };
 
 /** A vertical stack of cells that occupies one horizontal slot. */
