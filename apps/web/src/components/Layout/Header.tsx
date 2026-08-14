@@ -238,12 +238,12 @@ export function Header({
             onClick={() => setWidgetsOpen(true)}
             aria-label={t("openWidgets")}
             data-onboarding-target="widgets-entry"
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink max-[420px]:px-2"
           >
             <Puzzle className="size-3.5" />
-            <span className="nums">{tCommon("widgets")}</span>
+            <span className="nums max-[420px]:hidden">{tCommon("widgets")}</span>
             {activeWidgetCount > 0 && (
-              <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2">
+              <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2 max-[420px]:hidden">
                 {activeWidgetCount}
               </span>
             )}
