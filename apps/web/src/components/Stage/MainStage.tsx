@@ -66,6 +66,8 @@ export interface MainStageProps {
   fetchSessionSolves: (sessionId: string) => Promise<Solve[]>;
   lastAnalysis: SolveMetrics | null;
   onUpdateSolve: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
+  /** Re-run the analysis pipeline on a stored solve. */
+  onReanalyze: (solve: Solve) => Promise<void>;
   onDeleteSolve: (id: string) => void;
   puzzle: PuzzleCategory;
   onPuzzleChange: (puzzle: PuzzleCategory) => void;
@@ -95,6 +97,7 @@ export function MainStage(props: MainStageProps) {
     fetchSessionSolves,
     lastAnalysis,
     onUpdateSolve,
+    onReanalyze,
     onDeleteSolve,
     puzzle,
     onPuzzleChange,
@@ -140,6 +143,7 @@ export function MainStage(props: MainStageProps) {
           pendingAnalysis={lastAnalysis}
           sessionId={sessionId}
           onUpdateSolve={onUpdateSolve}
+          onReanalyze={onReanalyze}
           onDeleteSolve={onDeleteSolve}
         />
       </Suspense>

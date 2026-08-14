@@ -39,6 +39,8 @@ export interface InsightsDashboardProps {
   /** Active session id — the component is keyed by this in App.tsx so it remounts. */
   sessionId: string | null;
   onUpdateSolve: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
+  /** Re-run the analysis pipeline on a stored solve. */
+  onReanalyze: (solve: Solve) => Promise<void>;
   onDeleteSolve: (id: string) => void;
   className?: string;
 }
@@ -72,6 +74,7 @@ export function InsightsDashboard({
   pendingAnalysis,
   sessionId,
   onUpdateSolve,
+  onReanalyze,
   onDeleteSolve,
   className,
 }: InsightsDashboardProps) {
@@ -406,6 +409,7 @@ export function InsightsDashboard({
                 liveMetrics={liveMetrics}
                 isLive={isLive}
                 onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
+                onReanalyze={() => onReanalyze(selected)}
                 onDeleteSolve={() => handleDelete(selected.id)}
                 onBackToOverview={handleBackToOverview}
               />
@@ -448,6 +452,7 @@ export function InsightsDashboard({
                   liveMetrics={liveMetrics}
                   isLive={isLive}
                   onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
+                  onReanalyze={() => onReanalyze(selected)}
                   onDeleteSolve={() => handleDelete(selected.id)}
                   onBackToOverview={handleBackToOverview}
                   className="px-3"

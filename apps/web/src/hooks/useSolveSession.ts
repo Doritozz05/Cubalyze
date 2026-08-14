@@ -40,6 +40,7 @@ import { analyzeSolve } from "@cubeforge/analysis-engine";
 import {
   compactCubeMoves,
   compactOrientationTimeline,
+  expandOrientationTimeline,
   CubeState,
   expandWideMoves,
   FaceletStringConverter,
@@ -847,3 +848,29 @@ export function useSolveSession(
 
 /** Re-export for consumers that need the analysis pipeline. */
 export { runAnalysis };
+
+/**
+ * Re-runs the analysis pipeline on an already-persisted solve.
+ *
+ * A solve stores everything the pipeline needs — compacted moves, the
+ * scramble, the method, the solve time, and the compact orientation
+ * timeline — so re-analysis is lossless for the core metrics (phase
+ * detection, TPS, pauses, efficiency all derive from `moves`). The only
+ * reconstructed input is the per-move orientation array, expanded back out
+ * of the stored keyframe timeline; `runAnalysis` re-compacts moves (a no-op
+ * on already-compacted moves) so the two arrays stay aligned.
+ *
+ * @returns The same shape as `runAnalysis` — fresh metrics plus the
+ *   (unchanged) compacted moves and orientation timeline to persist.
+ */
+export async function reanalyzeSolve(
+  moves: CubeMoveEvent[],
+  scramble: string,
+  method: SolveMethod,
+  orientationTimeline: OrientationTimeline | undefined,
+  solveTimeMs?: number,
+): Promise<{ metrics: SolveMetrics; compactedMoves: CubeMoveEvent[]; compactedOrientationTimeline: OrientationTimeline | undefined } | null> {
+  if (moves.length === 0) return null;
+  const orientations = expandOrientationTimeline(orientationTimeline, moves.length);
+  return runAnalysis(moves, scramble, method, orientations, solveTimeMs);
+}

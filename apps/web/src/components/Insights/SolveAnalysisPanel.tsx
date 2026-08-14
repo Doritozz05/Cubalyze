@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, MessageSquare, Check, Pencil, X } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, MessageSquare, Check, Pencil, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
@@ -29,6 +29,8 @@ export interface SolveAnalysisPanelProps {
   liveMetrics: SolveMetrics | null;
   isLive: boolean;
   onUpdateSolve: (updates: { penalty?: Penalty; note?: string | null }) => void;
+  /** Re-run the analysis pipeline on this solve (returns when finished). */
+  onReanalyze?: () => Promise<void>;
   onDeleteSolve: () => void;
   onBackToOverview: () => void;
   className?: string;
@@ -68,6 +70,7 @@ export function SolveAnalysisPanel({
   liveMetrics,
   isLive,
   onUpdateSolve,
+  onReanalyze,
   onDeleteSolve,
   onBackToOverview,
   className,
@@ -95,6 +98,20 @@ export function SolveAnalysisPanel({
   const [, setReplaying] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(solve.note ?? "");
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
+
+  // Re-analysis is meaningful whenever per-move data exists and the initial
+  // analysis is not still pending (a pending live job would race with it).
+  const canReanalyze = (solve.moves?.length ?? 0) > 0 && !isLive;
+  const handleReanalyze = useCallback(async () => {
+    if (!onReanalyze || isReanalyzing) return;
+    setIsReanalyzing(true);
+    try {
+      await onReanalyze();
+    } finally {
+      setIsReanalyzing(false);
+    }
+  }, [onReanalyze, isReanalyzing]);
 
   // Stable solve object for the ReplaySection (avoids unnecessary re-creates).
   const replaySolve = useMemo(
@@ -162,15 +179,30 @@ export function SolveAnalysisPanel({
             </span>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDeleteSolve}
-          className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
-        >
-          <Trash2 className="size-3" />
-          {t("analysis.delete")}
-        </Button>
+        <div className="flex items-center gap-1">
+          {canReanalyze && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReanalyze}
+              disabled={isReanalyzing}
+              className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-ink disabled:opacity-50"
+              title={t("analysis.reanalyzeTooltip")}
+            >
+              <RotateCcw className={cn("size-3", isReanalyzing && "animate-spin")} />
+              {isReanalyzing ? t("analysis.reanalyzing") : t("analysis.reanalyze")}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDeleteSolve}
+            className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
+          >
+            <Trash2 className="size-3" />
+            {t("analysis.delete")}
+          </Button>
+        </div>
       </div>
 
       {/* Hero */}

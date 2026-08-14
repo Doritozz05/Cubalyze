@@ -75,6 +75,7 @@ export function AppShell(props: AppShellProps) {
     activePbMilestone,
     onDismissPbBanner,
     onUpdateSolve,
+    onReanalyze,
     onDeleteSolve,
     onClear,
     onAnalyze,
@@ -299,6 +300,7 @@ export function AppShell(props: AppShellProps) {
               solves={solves}
               lastAnalysis={lastAnalysis}
               onUpdateSolve={onUpdateSolve}
+              onReanalyze={onReanalyze}
               onDeleteSolve={onDeleteSolve}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}

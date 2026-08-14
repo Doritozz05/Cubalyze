@@ -74,6 +74,8 @@ export interface AppShellProps {
   onDismissPbBanner: () => void;
   fetchSessionSolves: (sessionId: string) => Promise<Solve[]>;
   onUpdateSolve: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
+  /** Re-run the analysis pipeline on a stored solve. */
+  onReanalyze: (solve: Solve) => Promise<void>;
   onDeleteSolve: (id: string) => void;
   onClear: () => void;
   onAnalyze: (solve: Solve) => void;

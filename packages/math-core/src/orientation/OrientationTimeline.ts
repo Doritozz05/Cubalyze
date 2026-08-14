@@ -1,6 +1,7 @@
 import { OrientationTable } from './OrientationTable';
 import type { OrientationTimeline } from '@cubeforge/types';
 import type { CubeOrientation } from '@cubeforge/types';
+import type { FacePermutation } from '@cubeforge/types';
 
 /**
  * Compresses per-move orientation snapshots into an ultra-compact
@@ -72,4 +73,45 @@ export function getOrientationAtIndex(
     }
   }
   return result;
+}
+
+/**
+ * Reconstructs the per-move orientation snapshots from a compact keyframe
+ * timeline.
+ *
+ * This is the inverse of {@link compactOrientationTimeline}: it expands the
+ * sparse `[moveIndex, orientationIndex]` keyframes back into an array with
+ * one `CubeOrientation` per move. Between keyframes the orientation is
+ * assumed constant (that is the timeline's storage contract), and before the
+ * first keyframe it is identity. Used to re-run the analysis pipeline on an
+ * already-persisted solve whose raw per-move snapshots were only stored in
+ * compact form.
+ *
+ * @param timeline - Compact orientation timeline from a persisted solve
+ * @param moveCount - Length of the moves array to align against
+ * @returns One orientation per move index (identity-filled before keyframe 0)
+ */
+export function expandOrientationTimeline(
+  timeline: OrientationTimeline | undefined,
+  moveCount: number,
+): (CubeOrientation | undefined)[] {
+  const orientations: (CubeOrientation | undefined)[] = new Array(moveCount).fill(undefined);
+  if (!timeline || timeline.length === 0) return orientations;
+
+  for (let i = 0; i < moveCount; i++) {
+    const orientationId = getOrientationAtIndex(timeline, i);
+    const entry = OrientationTable.ENTRIES[orientationId] ?? OrientationTable.IDENTITY;
+    orientations[i] = {
+      quaternion: {
+        x: entry.quaternion.x,
+        y: entry.quaternion.y,
+        z: entry.quaternion.z,
+        w: entry.quaternion.w,
+      },
+      faceMap: { ...entry.faceMap } as FacePermutation,
+      label: entry.label,
+    };
+  }
+
+  return orientations;
 }

@@ -7,7 +7,7 @@ import { AppShell } from "@/components/Layout/AppShell";
 import { NotFoundView } from "@/components/Stage/NotFoundView";
 import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
-import { useSolveSession } from "@/hooks/useSolveSession";
+import { useSolveSession, reanalyzeSolve } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { useReminderScheduler } from "@/hooks/useReminderScheduler";
@@ -364,6 +364,38 @@ export default function App() {
     [updateSolve, resetTimer],
   );
 
+  // Re-run the analysis pipeline on a stored solve. The solve already holds
+  // every input the pipeline needs (compacted moves, scramble, method, time,
+  // compact orientation timeline), so re-analysis is lossless — it recomputes
+  // metrics from the same canonical moves and persists them back in place.
+  const handleReanalyze = useCallback(
+    async (solve: Solve) => {
+      const moves = solve.moves ?? [];
+      if (moves.length === 0) {
+        toast.error(i18n.t("insights:analysis.reanalyzeNoMoves"));
+        return;
+      }
+      const result = await reanalyzeSolve(
+        moves,
+        solve.scramble ?? "",
+        solve.method ?? "CFOP",
+        solve.orientationTimeline,
+        solve.time,
+      );
+      if (!result) {
+        toast.error(i18n.t("insights:analysis.reanalyzeFailed"));
+        return;
+      }
+      await updateSolve(solve.id, {
+        moves: result.compactedMoves,
+        orientationTimeline: result.compactedOrientationTimeline,
+        analysis: result.metrics,
+      });
+      toast.success(i18n.t("insights:analysis.reanalyzeDone"));
+    },
+    [updateSolve],
+  );
+
   // Unknown paths (e.g. /settings, /foo): full standalone page — no shell,
   // no widgets, nothing but the 404 and a way back home.
   if (notFound) {
@@ -406,6 +438,7 @@ export default function App() {
       onVirtualSolveComplete={handleComplete}
       fetchSessionSolves={fetchSessionSolves}
       onUpdateSolve={handleUpdate}
+      onReanalyze={handleReanalyze}
       onDeleteSolve={handleDelete}
       onClear={handleClear}
       onAnalyze={handleAnalyzeSolve}
