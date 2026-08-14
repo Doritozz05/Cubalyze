@@ -144,6 +144,13 @@ export class GyroFusion {
     // Store the inverse (conjugate) of the reference; a unit quaternion's
     // inverse is its conjugate. Matches OrientationTracker.setCalibration.
     this.offsetQuatInverse.set(-q.x, -q.y, -q.z, q.w).normalize();
+    // Also seed the raw target with the reference itself so the very next
+    // render computes corrected = offset⁻¹ · rawTarget = identity.
+    // Without this, adopting the reference BEFORE the first gyro packet
+    // (e.g. a panel mounting after the cube is already connected) leaves
+    // rawTargetQuat at identity and slerps the model toward conjugate(q)
+    // — visibly tilted until a fresh packet arrives.
+    this.rawTargetQuat.set(q.x, q.y, q.z, q.w).normalize();
     this.isCalibrated = true;
     this.pendingAutoCalibrate = false;
     this.hasReceivedUpdate = true;

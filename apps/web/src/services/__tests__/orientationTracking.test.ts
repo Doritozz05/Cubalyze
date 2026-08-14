@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { BehaviorSubject, Subject } from "rxjs";
 import { orientationStore } from "@cubeforge/state";
 import {
@@ -20,18 +20,37 @@ import {
  *   - 90° around Y:    raw {0, 0, -0.7071, 0.7071} → mapped {0, -0.7071, 0, 0.7071}
  */
 
+interface FakeGyroEvent {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+  velocity?: { x: number; y: number; z: number };
+}
+
 function makeFakeAdapter() {
   return {
     connectionStatus$: new BehaviorSubject<
       "connecting" | "connected" | "disconnected" | "reconnecting"
     >("disconnected"),
-    gyro$: new Subject<{ x: number; y: number; z: number; w: number }>(),
+    gyro$: new Subject<FakeGyroEvent>(),
   };
+}
+
+const IDENTITY = { x: 0, y: 0, z: 0, w: 1 };
+const Y_ROTATION = { x: 0, y: 0, z: -0.70710678, w: 0.70710678 };
+
+/** Emit N identical samples — enough to satisfy the settled-window detector. */
+function settle(adapter: ReturnType<typeof makeFakeAdapter>, sample = IDENTITY, count = 3) {
+  for (let i = 0; i < count; i++) {
+    adapter.gyro$.next({ ...sample });
+  }
 }
 
 describe("orientationTracking (headless)", () => {
   afterEach(() => {
     disposeOrientationTracking();
+    vi.useRealTimers();
   });
 
   it("stays identity until a cube connects and streams gyro data", () => {
@@ -46,29 +65,93 @@ describe("orientationTracking (headless)", () => {
     expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
   });
 
-  it("calibrates on the first gyro event and tracks a real rotation", () => {
+  it("calibrates once the cube is observably settled, then tracks a real rotation", () => {
     const adapter = makeFakeAdapter();
     startOrientationTracking(adapter);
     adapter.connectionStatus$.next("connected");
 
-    // First event: becomes the calibration reference (cube at rest) → identity.
-    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
+    // A single sample is NOT enough — it could be a wake-up transient.
+    adapter.gyro$.next({ ...IDENTITY });
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+
+    // Three identical samples = settled → calibrate (identity reference).
+    settle(adapter);
+    expect(orientationStore.getState().calibrationQuaternion).not.toBeNull();
     expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
     // First gyro event also confirms IMU capability.
     expect(orientationStore.getState().capabilities.gyroSupported).toBe(true);
 
     // A 90° rotation around Y relative to the calibration → snapped to the y
     // orientation (confidence 1.0 — exact table match).
-    adapter.gyro$.next({ x: 0, y: 0, z: -0.70710678, w: 0.70710678 });
+    adapter.gyro$.next({ ...Y_ROTATION });
     expect(orientationStore.getState().orientation.label).toBe("F:R U:U R:B");
+  });
+
+  it("does NOT calibrate on mid-motion samples — waits for the cube to settle", () => {
+    const adapter = makeFakeAdapter();
+    startOrientationTracking(adapter);
+    adapter.connectionStatus$.next("connected");
+
+    // Three samples with HIGH velocity and different orientations: not settled.
+    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1, velocity: { x: 7, y: 0, z: 0 } });
+    adapter.gyro$.next({ x: 0, y: 0, z: -0.5, w: 0.866, velocity: { x: 0, y: 7, z: 0 } });
+    adapter.gyro$.next({ x: 0, y: 0, z: -0.7071, w: 0.7071, velocity: { x: 0, y: 0, z: 5 } });
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+
+    // Now the cube settles on the same orientation with zero velocity.
+    adapter.gyro$.next({ x: 0, y: 0, z: -0.7071, w: 0.7071, velocity: { x: 0, y: 0, z: 0 } });
+    adapter.gyro$.next({ x: 0, y: 0, z: -0.7071, w: 0.7071, velocity: { x: 0, y: 0, z: 0 } });
+    adapter.gyro$.next({ x: 0, y: 0, z: -0.7071, w: 0.7071, velocity: { x: 0, y: 0, z: 0 } });
+    expect(orientationStore.getState().calibrationQuaternion).not.toBeNull();
+    // The settled pose becomes identity.
+    expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
+  });
+
+  it("falls back to the latest sample after the timeout if the cube never settles", () => {
+    vi.useFakeTimers();
+    const adapter = makeFakeAdapter();
+    startOrientationTracking(adapter);
+    adapter.connectionStatus$.next("connected");
+
+    // One sample only (cube went quiet, or keeps moving). No calibration yet.
+    adapter.gyro$.next({ ...IDENTITY });
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+
+    // Timeout elapses → fallback calibrates to the latest sample.
+    vi.advanceTimersByTime(2000);
+    expect(orientationStore.getState().calibrationQuaternion).not.toBeNull();
+    expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
+  });
+
+  it("does NOT give up when the cube is silent at connect — re-arms until a sample arrives", () => {
+    vi.useFakeTimers();
+    const adapter = makeFakeAdapter();
+    startOrientationTracking(adapter);
+    adapter.connectionStatus$.next("connected");
+
+    // The cube is waking up / not streaming while held still: the watchdog
+    // elapses with NO sample. The old one-shot timer silently gave up here,
+    // leaving auto-calibration armed but dead — the visual stayed on the raw
+    // quaternion until the user pressed Calibrate.
+    vi.advanceTimersByTime(2000);
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+
+    // A single sample finally arrives (a nudge). It does not settle.
+    adapter.gyro$.next({ ...IDENTITY });
+    expect(orientationStore.getState().calibrationQuaternion).toBeNull();
+
+    // The re-armed watchdog adopts it on the next tick.
+    vi.advanceTimersByTime(2000);
+    expect(orientationStore.getState().calibrationQuaternion).not.toBeNull();
+    expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
   });
 
   it("resets the store when the cube disconnects", () => {
     const adapter = makeFakeAdapter();
     startOrientationTracking(adapter);
     adapter.connectionStatus$.next("connected");
-    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
-    adapter.gyro$.next({ x: 0, y: 0, z: -0.70710678, w: 0.70710678 });
+    settle(adapter);
+    adapter.gyro$.next({ ...Y_ROTATION });
     expect(orientationStore.getState().orientation.label).toBe("F:R U:U R:B");
 
     adapter.connectionStatus$.next("disconnected");
@@ -80,7 +163,7 @@ describe("orientationTracking (headless)", () => {
     const adapter = makeFakeAdapter();
     startOrientationTracking(adapter);
     adapter.connectionStatus$.next("connected");
-    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
+    settle(adapter);
 
     disposeOrientationTracking();
     expect(orientationStore.getState().orientation.label).toBe("F:F U:U R:R");
@@ -89,8 +172,8 @@ describe("orientationTracking (headless)", () => {
     const adapter2 = makeFakeAdapter();
     startOrientationTracking(adapter2);
     adapter2.connectionStatus$.next("connected");
-    adapter2.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
-    adapter2.gyro$.next({ x: 0, y: 0, z: -0.70710678, w: 0.70710678 });
+    settle(adapter2);
+    adapter2.gyro$.next({ ...Y_ROTATION });
     expect(orientationStore.getState().orientation.label).toBe("F:R U:U R:B");
   });
 
@@ -98,8 +181,8 @@ describe("orientationTracking (headless)", () => {
     const adapter = makeFakeAdapter();
     startOrientationTracking(adapter);
     adapter.connectionStatus$.next("connected");
-    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 }); // calib = identity
-    adapter.gyro$.next({ x: 0, y: 0, z: -0.70710678, w: 0.70710678 }); // y pose
+    settle(adapter); // calib = identity
+    adapter.gyro$.next({ ...Y_ROTATION }); // y pose
     expect(orientationStore.getState().orientation.label).toBe("F:R U:U R:B");
 
     // Re-reference to the current pose → the y pose becomes identity.
@@ -113,9 +196,7 @@ describe("orientationTracking (headless)", () => {
     adapter.connectionStatus$.next("connected");
     expect(orientationStore.getState().calibrationQuaternion).toBeNull();
 
-    // First at-rest sample becomes the reference AND is published (mapped
-    // convention) so the 3D visual adopts the SAME reference.
-    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
+    settle(adapter);
     // Normalize -0 (the mapping produces z = -q.y, which is -0 when y is 0).
     const norm = (q: { x: number; y: number; z: number; w: number }) => ({
       x: q.x || 0, y: q.y || 0, z: q.z || 0, w: q.w || 0,
@@ -125,7 +206,7 @@ describe("orientationTracking (headless)", () => {
     });
 
     // Manual calibrate re-references and re-publishes the new reference.
-    adapter.gyro$.next({ x: 0, y: 0, z: -0.70710678, w: 0.70710678 }); // y pose
+    adapter.gyro$.next({ ...Y_ROTATION }); // y pose
     calibrateOrientationTracking();
     expect(norm(orientationStore.getState().calibrationQuaternion!)).toEqual({
       x: 0, y: -0.70710678, z: 0, w: 0.70710678,
@@ -138,7 +219,7 @@ describe("orientationTracking (headless)", () => {
     const adapter = makeFakeAdapter();
     startOrientationTracking(adapter);
     adapter.connectionStatus$.next("connected");
-    adapter.gyro$.next({ x: 0, y: 0, z: 0, w: 1 });
+    settle(adapter);
     expect(orientationStore.getState().calibrationQuaternion).not.toBeNull();
 
     adapter.connectionStatus$.next("disconnected");

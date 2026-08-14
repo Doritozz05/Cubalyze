@@ -129,6 +129,20 @@ describe('GyroFusion', () => {
     expect(Math.abs(target.quaternion.y)).toBeLessThan(0.1);
     expect(Math.abs(target.quaternion.z)).toBeLessThan(0.1);
   });
+
+  it('setCalibrationQuaternion alone lands on identity (no fresh packet needed)', () => {
+    gyro.enable();
+    // Adopt the external reference BEFORE any updateTargetQuaternion — the
+    // panel-mounted-after-connect case. The model must not slerp toward
+    // conjugate(q); it must sit at identity immediately.
+    gyro.setCalibrationQuaternion({ x: 0, y: 0.70710678, z: 0, w: 0.70710678 });
+    gyro.update(100);
+
+    expect(Math.abs(target.quaternion.w)).toBeGreaterThan(0.9);
+    expect(Math.abs(target.quaternion.x)).toBeLessThan(0.1);
+    expect(Math.abs(target.quaternion.y)).toBeLessThan(0.1);
+    expect(Math.abs(target.quaternion.z)).toBeLessThan(0.1);
+  });
 });
 
 describe('isGyroAtRest', () => {

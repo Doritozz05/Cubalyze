@@ -240,21 +240,32 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
 
           // ── Single calibration authority ──────────────────────────────
           // The headless orientation service (services/orientationTracking)
-          // owns calibration: it captures the first AT-REST sample after
-          // connect and publishes the reference to the store. This engine
-          // must adopt THAT reference — NOT capture its own on connect
-          // (which could be a mid-motion or differently-posed sample and
-          // would diverge from the move labels). Manual Calibrate re-runs
-          // both (calibrateOrientationTracking re-publishes, and
+          // owns calibration: it publishes the settled reference to the
+          // store. This engine must adopt THAT reference — NOT capture its
+          // own on connect (which could be a mid-motion or differently-posed
+          // sample and would diverge from the move labels). Manual Calibrate
+          // re-runs both (calibrateOrientationTracking re-publishes, and
           // calibrateGyro below re-captures from the same latest sample).
+          //
+          // Only re-adopt when a NEW reference is published. The vanilla
+          // store subscribe fires on EVERY state change (orientation,
+          // capabilities…), so re-applying on each tick would reset the
+          // visual + engine tracker to identity mid-solve.
+          let lastCalibRef: { x: number; y: number; z: number; w: number } | null = null;
+          const adoptCalibration = (q: { x: number; y: number; z: number; w: number }) => {
+            if (q !== lastCalibRef) {
+              lastCalibRef = q;
+              engine.setGyroCalibration(q);
+            }
+          };
           calibSub = orientationStore.subscribe((state) => {
             if (state.calibrationQuaternion) {
-              engine.setGyroCalibration(state.calibrationQuaternion);
+              adoptCalibration(state.calibrationQuaternion);
             }
           });
           const existingCalib = orientationStore.getState().calibrationQuaternion;
           if (existingCalib) {
-            engine.setGyroCalibration(existingCalib);
+            adoptCalibration(existingCalib);
           }
         }
 
