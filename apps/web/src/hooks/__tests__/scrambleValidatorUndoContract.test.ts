@@ -86,7 +86,9 @@ function resetRef(s: Sim): void {
 }
 
 /** handleFacelets — only the branches the virtual cube's canonical-solved
- *  push can hit (isSolved → resetRef; non-solved at index 0 → unsolve). */
+ *  push can hit (isSolved → resetRef). A non-solved facelet at index 0 is
+ *  the normal mid-scramble broadcast and MUST NOT downgrade startedFromSolved
+ *  (the regression below pins that isScrambled can still fire afterwards). */
 function handleFacelets(s: Sim, f: string): void {
   const isSolved = SOLVED_FACELETS.test(f);
   if (isSolved) {
@@ -98,8 +100,6 @@ function handleFacelets(s: Sim, f: string): void {
     if (s.currentIndex > 0 || s.isError) {
       resetRef(s);
     }
-  } else if (s.currentIndex === 0 && s.startedFromSolved && s.initialCheckDone) {
-    s.startedFromSolved = false;
   }
 }
 
@@ -243,6 +243,26 @@ describe("scramble validator — error → rotate → undo contract", () => {
 
     for (const move of SCRAMBLE.split(" ")) {
       feed(view, sim, move);
+    }
+
+    expect(sim.currentIndex).toBe(SCRAMBLE.split(" ").length);
+    expect(sim.isError).toBe(false);
+    expect(sim.startedFromSolved).toBe(true);
+  });
+
+  it("a non-solved facelet at index 0 (first-turn broadcast racing the MOVE) does not poison startedFromSolved", () => {
+    const sim = fresh(SCRAMBLE.split(" "));
+    // The cube broadcasts a facelet for the first turn BEFORE the MOVE event
+    // advances currentIndex. This must not downgrade startedFromSolved —
+    // otherwise the clean scramble below absorbs every token yet isScrambled
+    // can never fire (the reported "stuck gray / waiting" bug).
+    const afterFirstMove = new CubeState();
+    afterFirstMove.applySequence("U");
+    handleFacelets(sim, FaceletStringConverter.toFaceletString(afterFirstMove));
+    expect(sim.startedFromSolved).toBe(true);
+
+    for (const move of SCRAMBLE.split(" ")) {
+      processToken(sim, move);
     }
 
     expect(sim.currentIndex).toBe(SCRAMBLE.split(" ").length);

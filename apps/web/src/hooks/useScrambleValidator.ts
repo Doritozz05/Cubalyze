@@ -413,9 +413,16 @@ export function useScrambleValidator(
           resetRef(s);
           updateUI();
         }
-      } else if (s.currentIndex === 0 && s.startedFromSolved && s.initialCheckDone) {
-        s.startedFromSolved = false;
       }
+      // NOTE: do NOT downgrade `startedFromSolved` when a non-solved facelet
+      // arrives at currentIndex === 0. That is the NORMAL mid-scramble state:
+      // the cube broadcasts a facelet snapshot for the first turn, which can
+      // be processed before the MOVE event advances currentIndex. The old
+      // `else if` here flipped `startedFromSolved` to false, and since
+      // `isScrambled` requires it, a perfectly-executed scramble would absorb
+      // every token yet never confirm (the reported "stuck gray / waiting"
+      // bug). A genuinely-unsolved cube is already handled by the initial
+      // check (→ awaitingSolve) and the error/needsReset recovery.
     }
 
     // Optional re-seed: the adapter (virtual cube) can force a FRESH
