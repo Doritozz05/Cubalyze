@@ -503,45 +503,48 @@ export class ColorPhaseDetector {
 
     for (const face of FACE_LETTERS) {
       if (!relaxed) {
-        // ── Strict mode: first state where the cross face holds a completed
-        // (oriented) cross. One candidate per face, exactly as before.
-        let crossIdx = -1;
-        let crossColor: FaceLetter | null = null;
+        // ── Strict mode: evaluate EVERY valid strict completion per color.
+        // The first hit can lock onto a spurious early state (a scramble
+        // occasionally leaves the 4 cross stickers on a face for a move or
+        // two, DISALIGNED — their side-color order is then a reflection, not
+        // a rotation, so buildScheme yields no valid scheme, or a scheme
+        // whose F2L/OLL chain never completes). The real cross completes a
+        // state or two later with the correct alignment. Per (face, color)
+        // keep the best chain (complete > earlier), then the winning
+        // (face, color) competes globally with the usual tiebreaks — the
+        // same structure as relaxed mode, with the strict oriented-cross
+        // gate instead of the permutation gate.
+        const sideFaces = CROSS_SIDE_FACES[face];
+        const colorBest: Partial<Record<FaceLetter, ColorDetectionResult>> = {};
         for (let i = 0; i < raw.length; i++) {
-          const c = crossColorAt(raw[i], face);
-          if (c !== null) {
-            crossIdx = i;
-            crossColor = c;
-            break;
+          const crossColor = crossColorAt(raw[i], face);
+          if (crossColor === null) continue;
+          const sideColors = crossSideColors(states[i], face, crossColor);
+          if (sideColors === null) continue;
+          for (let rotation = 0; rotation < 4; rotation++) {
+            const scheme = buildScheme(face, crossColor, sideFaces, sideColors, rotation);
+            if (scheme === null) continue;
+            const candidate = evaluateCandidate(
+              raw,
+              states,
+              i,
+              face,
+              crossColor,
+              scheme,
+              false,
+            );
+            const prev = colorBest[crossColor];
+            if (
+              prev === undefined ||
+              betterSameCross(candidate, prev)
+            ) {
+              colorBest[crossColor] = candidate;
+            }
           }
         }
-        if (crossIdx < 0 || crossColor === null) continue;
-
-        const sideColors = crossSideColors(states[crossIdx], face, crossColor);
-        if (sideColors === null) continue;
-        const sideFaces = CROSS_SIDE_FACES[face];
-
-        // The cross may be complete but disaligned; try all 4 AUF rotations
-        // of the scheme and keep the best chain for this face.
-        let faceBest: ColorDetectionResult | null = null;
-        for (let rotation = 0; rotation < 4; rotation++) {
-          const scheme = buildScheme(face, crossColor, sideFaces, sideColors, rotation);
-          if (scheme === null) continue;
-          const candidate = evaluateCandidate(
-            raw,
-            states,
-            crossIdx,
-            face,
-            crossColor,
-            scheme,
-            false,
-          );
-          if (
-            faceBest === null ||
-            better(candidate, faceBest, lastIndex, preferredCrossIdx, false)
-          ) {
-            faceBest = candidate;
-          }
+        for (const color of FACE_LETTERS) {
+          const candidate = colorBest[color];
+          if (candidate === undefined) continue;
           if (
             best === null ||
             better(candidate, best, lastIndex, preferredCrossIdx, false)
