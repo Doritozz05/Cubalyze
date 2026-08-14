@@ -133,9 +133,17 @@ export interface PreferencesState {
   haptics: boolean;
   setHaptics: (value: boolean) => void;
 
-  /** Show the compact session stats strip (Ao5, Ao12, Best, Mean) below the timer. Default ON. */
-  showSessionStats: boolean;
-  setShowSessionStats: (value: boolean) => void;
+  /** Show the bottom layout strip below the timer. Default ON. */
+  showBottomLayout: boolean;
+  setShowBottomLayout: (value: boolean) => void;
+
+  /**
+   * Selected bottom layout template id (see `apps/web/src/bottom-layout`).
+   * The store only holds the id — template resolution/validation lives in the
+   * UI layer. Default 'session-stats'.
+   */
+  bottomLayoutTemplate: string;
+  setBottomLayoutTemplate: (value: string) => void;
 
   /** Show instruction/hint text (such as "Press space to start") below the timer. Default ON. */
   showHints: boolean;
@@ -253,7 +261,8 @@ const DEFAULT_VALUES = {
   inputMode: 'timer' as const,
   clickToStart: false,
   haptics: true,
-  showSessionStats: true,
+  showBottomLayout: true,
+  bottomLayoutTemplate: 'session-stats',
   showHints: true,
   timerBackgroundImage: null,
   timerBackgroundOpacity: 100,
@@ -308,7 +317,8 @@ export const createPreferencesStore = () => {
         setInputMode: (inputMode) => set({ inputMode }),
         setClickToStart: (clickToStart) => set({ clickToStart }),
         setHaptics: (haptics) => set({ haptics }),
-        setShowSessionStats: (showSessionStats) => set({ showSessionStats }),
+        setShowBottomLayout: (showBottomLayout) => set({ showBottomLayout }),
+        setBottomLayoutTemplate: (bottomLayoutTemplate) => set({ bottomLayoutTemplate }),
         setShowHints: (showHints) => set({ showHints }),
         setTimerBackgroundImage: (timerBackgroundImage) => set({ timerBackgroundImage }),
         setTimerBackgroundOpacity: (timerBackgroundOpacity) => set({ timerBackgroundOpacity }),
@@ -356,7 +366,8 @@ export const createPreferencesStore = () => {
           inputMode: state.inputMode,
           clickToStart: state.clickToStart,
           haptics: state.haptics,
-          showSessionStats: state.showSessionStats,
+          showBottomLayout: state.showBottomLayout,
+          bottomLayoutTemplate: state.bottomLayoutTemplate,
           showHints: state.showHints,
           timerBackgroundImage: state.timerBackgroundImage,
           timerBackgroundOpacity: state.timerBackgroundOpacity,
@@ -374,7 +385,22 @@ export const createPreferencesStore = () => {
           betaFeatures: state.betaFeatures,
           language: state.language,
         }),
-        version: 1,
+        // v2: `showSessionStats` was renamed to `showBottomLayout` and the
+        // selected template id was introduced (`bottomLayoutTemplate`).
+        version: 2,
+        migrate: (persistedState, version) => {
+          const raw = (persistedState ?? {}) as Record<string, unknown>;
+          if (version >= 2) return raw;
+          const migrated: Record<string, unknown> = { ...raw };
+          if (typeof raw.showSessionStats === 'boolean') {
+            migrated.showBottomLayout = raw.showSessionStats;
+          }
+          delete migrated.showSessionStats;
+          if (typeof migrated.bottomLayoutTemplate !== 'string') {
+            migrated.bottomLayoutTemplate = 'session-stats';
+          }
+          return migrated;
+        },
       },
     ),
   );

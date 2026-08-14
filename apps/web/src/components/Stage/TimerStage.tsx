@@ -10,7 +10,7 @@ import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { SessionStats } from "@/components/Stats/SessionStats";
+import { BottomLayout } from "@/bottom-layout/BottomLayout";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { useSolveSession } from "@/hooks/useSolveSession";
 import type { Penalty, Solve } from "@/types";
@@ -95,7 +95,8 @@ export function TimerStage(props: TimerStageProps) {
   const holdDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
-  const showSessionStats = useStore(preferencesStore, (s) => s.showSessionStats);
+  const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
+  const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
   const isManualMode = inputMode === "manual";
 
   // Previous PB (excluding the most recent solve) for accurate PB delta.
@@ -228,8 +229,9 @@ export function TimerStage(props: TimerStageProps) {
         />
       )}
 
-      {showSessionStats && !isFocused && (
-        <SessionStats
+      {showBottomLayout && !isFocused && (
+        <BottomLayout
+          templateId={bottomLayoutTemplate}
           solves={solves}
           onExpand={onExpand}
           puzzleFilter={puzzleFilter}
