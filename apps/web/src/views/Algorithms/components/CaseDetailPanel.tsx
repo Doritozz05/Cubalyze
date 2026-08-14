@@ -49,8 +49,8 @@ export interface CaseDetailPanelProps {
   onPracticeCase?: (subsetId: string, caseId: string) => void;
   className?: string;
   /**
-   * 'panel' renders the desktop side panel (>=1024px, default).
-   * 'overlay' renders the touch full-screen sheet (<1024px): back button in
+   * 'panel' renders the desktop side panel (>=768px, default).
+   * 'overlay' renders the touch full-screen sheet (<768px): back button in
    * the header and a sticky bottom "Practice this case" CTA.
    */
   variant?: "panel" | "overlay";

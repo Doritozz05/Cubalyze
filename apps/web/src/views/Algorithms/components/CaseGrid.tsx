@@ -42,7 +42,7 @@ export const CaseGrid = memo(function CaseGrid({
   return (
     <div
       className={cn(
-        // Touch (<1024px): always 2 compact columns; desktop keeps its
+        // Touch (<768px): always 2 compact columns; desktop keeps its
         // lg/xl column counts untouched.
         "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 max-lg:grid-cols-2 gap-3.5 max-lg:gap-3",
         className,

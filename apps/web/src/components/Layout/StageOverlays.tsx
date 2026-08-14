@@ -105,7 +105,7 @@ export function StageOverlays(props: StageOverlaysProps) {
 
   return (
     <>
-      {/* Bottom tab bar — touch regime only (mobile + tablet <1024px). */}
+      {/* Bottom tab bar — touch regime only (phones + small tablets <768px). */}
       {!isFocused && (
         <MobileTabBar
           activeView={activeView}

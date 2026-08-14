@@ -32,7 +32,7 @@ export function AlgorithmDashboard({
   );
 
   // Defer useIsTouch to post-mount to avoid SSR/hydration flash (same
-  // pattern as MainLayout / TouchAside). Desktop (>=1024px) always false.
+  // pattern as MainLayout / TouchAside). Desktop (>=768px) always false.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const rawIsTouch = useIsTouch();
@@ -89,7 +89,7 @@ export function AlgorithmDashboard({
   return (
     <div className="relative flex-1 min-h-0 w-full" data-onboarding-target="algorithms">
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5">
-        {/* Left panel: Method tree — desktop only (>=1024px) */}
+        {/* Left panel: Method tree — desktop only (>=768px) */}
         <aside className="hidden h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface lg:flex lg:w-64 lg:shrink-0">
           <div className="flex-1 overflow-y-auto py-2">
             <MethodTree
@@ -101,7 +101,7 @@ export function AlgorithmDashboard({
 
         {/* Right panel: Case grid + optional detail panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-canvas">
-          {/* Touch (<1024px): drill-down method navigator replaces the
+          {/* Touch (<768px): drill-down method navigator replaces the
               aside. CSS-gated (lg:hidden) — desktop never renders it. */}
           <div className="shrink-0 border-b border-line bg-surface px-2 py-2 lg:hidden">
             <MobileMethodNavigator
@@ -137,7 +137,7 @@ export function AlgorithmDashboard({
               />
             </div>
 
-            {/* Detail panel — desktop side panel only (>=1024px) */}
+            {/* Detail panel — desktop side panel only (>=768px) */}
             {selectedCase && !isTouch && (
               <div
                 className={cn(
@@ -157,7 +157,7 @@ export function AlgorithmDashboard({
         </div>
       </div>
 
-      {/* Touch (<1024px): full-screen case detail overlay with back button */}
+      {/* Touch (<768px): full-screen case detail overlay with back button */}
       {isTouch && (
         <AnimatePresence>
           {selectedCase && (

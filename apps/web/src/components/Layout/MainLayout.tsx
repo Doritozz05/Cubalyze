@@ -300,10 +300,10 @@ export function MainLayout({
         // content never sits under the iOS status bar.
         !isFocused && !hideHeader && "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-14",
         !isFocused && hideHeader && "max-lg:pt-safe",
-        // Rail padding only where the desktop rail actually renders (>=1024px).
-        // Tablets (<1024px) use the touch regime with the bottom tab bar.
+        // Rail padding only where the desktop rail actually renders (>=768px).
+        // Phones + small tablets (<768px) use the touch regime with the bottom tab bar.
         !isFocused && "lg:pl-14",
-        // Reserve room for the fixed bottom tab bar on touch (<1024px). This
+        // Reserve room for the fixed bottom tab bar on touch (<768px). This
         // lives on the wrapper (not <main>) because <main> is flex-1 — its
         // used height comes from flex layout, so an explicit height on it
         // would be ignored. Desktop has no bottom bar, so no padding.

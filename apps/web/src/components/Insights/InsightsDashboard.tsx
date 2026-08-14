@@ -81,7 +81,7 @@ export function InsightsDashboard({
   const { t } = useTranslation("insights");
   void sessionId;
 
-  // ── Touch regime (<1024px): master-detail pages ─────────────────────
+  // ── Touch regime (<768px): master-detail pages ─────────────────────
   // "list" = solve list page + full-screen detail overlay;
   // "stats" = OverviewPanel page. Desktop shows both side-by-side.
   const isTouch = useIsTouch();

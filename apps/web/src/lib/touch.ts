@@ -1,7 +1,7 @@
 /**
- * Full-bleed bottom-sheet treatment for dialogs below 1024px (touch regime).
+ * Full-bleed bottom-sheet treatment for dialogs below 768px (touch regime).
  *
- * Every class is max-lg-prefixed, so desktop (>=1024px) is untouched. The
+ * Every class is max-lg-prefixed, so desktop (>=768px) is untouched. The
  * trailing-bang `!` on max-w-none is REQUIRED: the base max-w-[calc(100%-2rem)]
  * / sm:max-w-* caps would otherwise limit the width of the left-anchored sheet
  * (Tailwind emits max-lg before sm in the max-w group, so a plain

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Puzzle } from "lucide-react";
+import { History, Puzzle } from "lucide-react";
 import { useStore } from "zustand";
 import { connectionStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
@@ -185,6 +185,12 @@ export function Header({
     return result;
   }, [dockAreaOrder, trailingAreas]);
 
+  // Active session name for the touch header (shows "Name · count").
+  const activeSessionName = useMemo(
+    () => sessions?.find((s) => s.id === activeSessionId)?.name ?? null,
+    [sessions, activeSessionId],
+  );
+
   return (
     <motion.header
       initial={{ y: "-100%", opacity: 0 }}
@@ -193,7 +199,7 @@ export function Header({
       transition={SIDEBAR_MOTION.panel}
       className={cn(
         // `lg:left-14` keeps the desktop header aligned with the rail.
-        // Below 1024px the header spans the full width (touch regime).
+        // Below 768px the header spans the full width (touch regime).
         // On iOS with viewport-fit=cover the header grows by the top safe-area
         // so its content never hides under the status bar (desktop: h-14).
         // Desktop (lg+) has NO background: the glass dock floats on its own;
@@ -221,25 +227,23 @@ export function Header({
         </div>
       </div>
 
-      {/* Touch (<lg): compact layout — battery, widgets button, quick
-          actions. No dock pills on touch. */}
+      {/* Touch (<lg): compact layout — battery + widgets on the left,
+          quick actions (manual solve, session, puzzle) on the right.
+          No dock pills on touch. */}
       <div className="flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <BatteryStatusChip />
-        </div>
-
-        <div className="flex min-w-0 flex-1 items-center justify-center">
           <button
             type="button"
             onClick={() => setWidgetsOpen(true)}
             aria-label={t("openWidgets")}
             data-onboarding-target="widgets-entry"
-            className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink max-[420px]:px-2"
           >
             <Puzzle className="size-3.5" />
-            <span className="nums">{tCommon("widgets")}</span>
+            <span className="nums max-[420px]:hidden">{tCommon("widgets")}</span>
             {activeWidgetCount > 0 && (
-              <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2">
+              <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2 max-[420px]:hidden">
                 {activeWidgetCount}
               </span>
             )}
@@ -247,7 +251,7 @@ export function Header({
         </div>
 
         <div className="flex min-w-0 items-center justify-end gap-2">
-          <ManualSolvePiece onAddManual={onAddManual} />
+          <ManualSolvePiece onAddManual={onAddManual} variant="chip" />
 
           {sessions && sessions.length > 0 ? (
             <>
@@ -257,7 +261,12 @@ export function Header({
                 className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink cursor-pointer"
                 aria-label={t("switchSession")}
               >
-                <span className="nums font-medium text-ink-3">{sessionCount ?? 0}</span>
+                <History className="size-3.5 shrink-0 text-ink-3" />
+                <span className="nums max-w-24 truncate font-medium leading-none text-ink-2">
+                  {activeSessionName ?? t("session")}
+                </span>
+                <span className="leading-none text-ink-3">·</span>
+                <span className="nums font-medium leading-none text-ink-3">{sessionCount ?? 0}</span>
               </Button>
 
               <MobileSessionSheet

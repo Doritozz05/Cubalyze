@@ -35,8 +35,8 @@ export interface Case3DPanelProps {
   onPracticeCase?: (subsetId: string, caseId: string) => void;
   className?: string;
   /**
-   * 'panel' = desktop side panel (>=1024px). 'overlay' = touch full-screen
-   * sheet (<1024px) with a back button + sticky bottom CTA.
+   * 'panel' = desktop side panel (>=768px). 'overlay' = touch full-screen
+   * sheet (<768px) with a back button + sticky bottom CTA.
    */
   variant?: "panel" | "overlay";
 }

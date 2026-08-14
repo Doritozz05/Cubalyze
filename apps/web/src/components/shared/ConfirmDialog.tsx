@@ -42,8 +42,8 @@ export interface ConfirmDialogProps {
 /**
  * Reusable confirm / alert dialog.
  *
- * - **Desktop (≥1024 px)**: `Dialog` with a blurred backdrop overlay.
- * - **Touch (<1024 px)**: `Drawer` sliding up from the bottom.
+ * - **Desktop (≥768 px)**: `Dialog` with a blurred backdrop overlay.
+ * - **Touch (<768 px)**: `Drawer` sliding up from the bottom.
  *
  * Pattern mirrors `CubeConnector` so both Dialog and Drawer surfaces look
  * identical in terms of styling tokens and responsive behaviour.

@@ -20,11 +20,11 @@ export interface TouchPanelProps {
 }
 
 /**
- * Generic bottom sheet for the touch regime (<1024px).
+ * Generic bottom sheet for the touch regime (<768px).
  *
  * Uses Vaul Drawer for smooth mobile swipe-to-dismiss drag gestures.
  * Fixed to the bottom of the viewport with a rounded top, drag-handle,
- * backdrop and iOS safe-area padding. Desktop (>=1024px) never renders it.
+ * backdrop and iOS safe-area padding. Desktop (>=768px) never renders it.
  */
 export function TouchPanel({ open, onOpenChange, title, children, className }: TouchPanelProps) {
   // Light tap when the sheet opens (touch regime only).
