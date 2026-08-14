@@ -563,6 +563,72 @@ describe('ReplayEngine — inspection pre-roll (solver-frame grip)', () => {
     await engine.stepForward(); // move 3 → rotations 5 then 8, in order
     expect(orientCalls).toEqual([2, 5, 8]);
   });
+
+  it('rotates the grip BEFORE the layer move during playback — rotate, wait, then move (the reported replay bug)', async () => {
+    // Deterministic clock + manual frame driving: the tick loop's rAF callback
+    // is captured and fired by hand with an advancing fake clock, so the
+    // rotation-before-move ordering is asserted without real-time flakiness.
+    let fakeNow = 0;
+    let pendingFrame: FrameRequestCallback | null = null;
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      pendingFrame = cb;
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => fakeNow);
+    try {
+      const calls: string[] = [];
+      let releaseGrip: (() => void) | null = null;
+      const gripDone = new Promise<void>((r) => (releaseGrip = r));
+      const engine = new ReplayEngine(
+        [bunchedMove(0), bunchedMove(1)],
+        {
+          resetCube: () => {},
+          rotateLayers: () => { calls.push('move'); },
+          setOrientation: (oi, dur) => {
+            calls.push(`orient:${oi}:${dur}`);
+            return gripDone; // the grip rotation is STILL turning
+          },
+        },
+        undefined,
+        [[1, 2]], // keyframe at move 1: the grip rotation happens before move 1
+      );
+      engine.preRollEnabled = false;
+
+      const playing = engine.play();
+      // play() runs through the transport serialization queue (an extra
+      // microtask), so flush pending microtasks before observing the tick.
+      await new Promise((r) => setTimeout(r, 0));
+      // Move 0 has no rotation — it runs immediately.
+      expect(calls).toEqual(['move']);
+
+      // Advance the clock to move 1's slot and fire the queued frame.
+      fakeNow = 500;
+      pendingFrame!(fakeNow);
+      await new Promise((r) => setTimeout(r, 0));
+      // Move 1's grip is turning — the OLD bug fired rotateLayers and
+      // setOrientation in the same frame; now NO move may run concurrently.
+      expect(calls.filter((c) => c.startsWith('move'))).toHaveLength(1);
+      expect(calls.filter((c) => c.startsWith('orient'))).toHaveLength(1);
+      expect(calls.filter((c) => c.startsWith('orient'))[0]).toMatch(/^orient:\d+:260$/);
+
+      releaseGrip!();
+      // The chain's cleanup (which kicks the deferred move) settles in later
+      // microtasks than the already-resolved play() promise — flush one
+      // macrotask so the kick has run before asserting.
+      await new Promise((r) => setTimeout(r, 0));
+      await playing;
+      // Only after the grip rotation completed does the deferred move start —
+      // and the orientation call strictly precedes it.
+      expect(calls).toHaveLength(3);
+      expect(calls[0]).toBe('move');
+      expect(calls[1]).toMatch(/^orient:\d+:260$/);
+      expect(calls[2]).toBe('move');
+    } finally {
+      vi.unstubAllGlobals();
+      nowSpy.mockRestore();
+    }
+  });
 });
 
 describe('ReplayEngine — speed scaling of animation durations', () => {

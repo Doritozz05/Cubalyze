@@ -185,6 +185,16 @@ export class ReplayEngine {
    * older one's cleanup.
    */
   private orientationChainGen = 0;
+  /**
+   * A move deferred until its grip rotation has finished animating (see
+   * tick). The grip rotates FIRST — rotate, wait, then move — so the replay
+   * shows the solver turning the cube in hand and only then turning the
+   * layer, instead of animating both at once (the reported replay bug: on
+   * stats, the rotation and the move played simultaneously).
+   */
+  private delayedMove: { index: number; animDuration: number } | null = null;
+  /** The last dispatched layer-move animation (completion awaits it). */
+  private lastMovePromise: Promise<void> | null = null;
   /** Index (into preRollOrientations) of the grip step currently animating.
    *  Pause snaps the cube to THIS step's target, not the composed final. */
   private preRollStepIndex = 0;
@@ -496,6 +506,8 @@ export class ReplayEngine {
     this.orientationBusy = false;
     this.orientationChainGen = 0;
     this.orientationChainPromise = null;
+    this.delayedMove = null;
+    this.lastMovePromise = null;
     // Forget the applied orientation so a play() after stop() re-grips the
     // start orientation (smart-cube solves snap it at position 0).
     this.lastAppliedOrientation = -1;
@@ -550,6 +562,8 @@ export class ReplayEngine {
     this.lastAppliedOrientation = -1;
     this.orientationBusy = false;
     this.orientationChainGen = 0;
+    this.delayedMove = null;
+    this.lastMovePromise = null;
 
     // Apply stored scramble rotations so the cube starts from the
     // correct scrambled state, not from solved.
@@ -780,10 +794,11 @@ export class ReplayEngine {
       !this.orientationBusy
     ) {
       const r = this.rotations[this.nextIndex];
+      const moveIndex = this.nextIndex;
       // Calculate how much of this move's time window has elapsed,
       // so the 3D animation picks up at the right visual stage.
-      const prevOffsetMs = this.nextIndex > 0
-        ? this.rotations[this.nextIndex - 1].offsetMs
+      const prevOffsetMs = moveIndex > 0
+        ? this.rotations[moveIndex - 1].offsetMs
         : 0;
       const moveDuration = Math.max(0, r.offsetMs - prevOffsetMs);
       const elapsedWithinMove = Math.max(0, pos - r.offsetMs);
@@ -799,25 +814,42 @@ export class ReplayEngine {
         ? Math.min(elapsedWithinMove / Math.max(0.1, this._speed), animDuration)
         : 0;
 
-      // The callback may return void or a Promise; handle both.
-      const prom = this.callbacks.rotateLayers(r.axis, r.layerValues, r.angle, animDuration, elapsedAnim);
-      if (prom instanceof Promise) prom.catch(() => {});
-      this.nextIndex++;
-      this.onMove?.(this.nextIndex - 1, this.rotations.length);
-      // Apply orientation at this move index with smooth animation. Cap the
-      // duration by the remaining slot (speed-adjusted) so a grip rotation
-      // never overlaps the next move's start at higher speeds.
+      // Rotate the whole cube (grip) BEFORE the layer move — the solver turns
+      // the cube in hand, then turns the layer. When the grip has a rotation
+      // at this index, the move is DEFERRED until the rotation chain finishes
+      // (rotate → wait → move); delayed moves start from 0°, never from a
+      // mid-rotation pose computed off the virtual clock.
       const orientationDuration = Math.min(
         this.orientationAnimationDurationMs / Math.max(0.1, this._speed),
         this.moveSpacingMs / Math.max(0.1, this._speed),
       );
-      this.applyOrientationAt(this.nextIndex - 1, orientationDuration);
+      const rotationStarted = this.applyOrientationAt(moveIndex, orientationDuration);
+
+      if (rotationStarted) {
+        this.delayedMove = { index: moveIndex, animDuration };
+      } else {
+        this.startMove(moveIndex, animDuration, elapsedAnim);
+      }
+      this.nextIndex++;
+      this.onMove?.(this.nextIndex - 1, this.rotations.length);
     }
+
+    // A move deferred behind its grip rotation starts as soon as the rotation
+    // has finished (also kicked from the chain's cleanup in applyOrientationAt).
+    this.startDelayedMove();
 
     this._positionMs = pos;
     this.onPosition?.(pos, Math.max(0, this.nextIndex - 1));
 
-    if (pos >= this._totalMs) {
+    // Completion waits for the LAST animation: only mark complete once the
+    // final move and its grip rotation have fully finished, so the cube never
+    // snaps to the end state while the last turn is still animating.
+    if (
+      pos >= this._totalMs &&
+      !this.orientationBusy &&
+      !this.delayedMove &&
+      !this.lastMovePromise
+    ) {
       this.setState('complete');
       this.onComplete?.();
       return;
@@ -825,6 +857,37 @@ export class ReplayEngine {
 
     this.rafId = requestAnimationFrame(this.tick);
   };
+
+  /**
+   * Dispatch a move's layer rotation (fire-and-forget — the animation runs in
+   * the renderer; completion is tracked via lastMovePromise).
+   */
+  private startMove(index: number, animDuration: number, elapsedAnim: number): void {
+    const r = this.rotations[index];
+    const prom = this.callbacks.rotateLayers(r.axis, r.layerValues, r.angle, animDuration, elapsedAnim);
+    if (prom instanceof Promise) {
+      const p = prom.catch(() => {});
+      this.lastMovePromise = p;
+      void p.then(() => {
+        if (this.lastMovePromise === p) this.lastMovePromise = null;
+      });
+    }
+  }
+
+  /**
+   * Start a move that was deferred until its grip rotation finished animating.
+   * Delayed moves start from 0° — the rotation consumed the move's slot, so
+   * picking up at a mid-rotation pose would jump the layer.
+   */
+  private startDelayedMove(): void {
+    if (!this.delayedMove || this.orientationBusy) return;
+    // A pause/stop may have aborted the rotation chain mid-turn — do NOT start
+    // the move while the transport is not playing (it fires on resume).
+    if (this._state !== 'playing') return;
+    const { index, animDuration } = this.delayedMove;
+    this.delayedMove = null;
+    this.startMove(index, animDuration, 0);
+  }
 
   private setState(state: ReplayState): void {
     this._state = state;
@@ -883,8 +946,11 @@ export class ReplayEngine {
    * @param moveIndex - Current move index in the solve
    * @param animateMs - Per-step animation duration (0 = instant snap for seeking)
    */
-  private applyOrientationAt(moveIndex: number, animateMs = 0): void {
-    if (!this.orientationTimeline || !this.callbacks.setOrientation) return;
+  private applyOrientationAt(moveIndex: number, animateMs = 0): boolean {
+    // Returns true when an ANIMATED rotation chain was started (the tick
+    // defers the layer move until it finishes); false when nothing rotated
+    // (or only an instant snap — seeking) so the move can start immediately.
+    if (!this.orientationTimeline || !this.callbacks.setOrientation) return false;
 
     // Last keyframe whose move index is <= moveIndex (timeline is sorted).
     let lastIdx = -1;
@@ -892,11 +958,11 @@ export class ReplayEngine {
       if (this.orientationTimeline[k][0] <= moveIndex) lastIdx = k;
       else break;
     }
-    if (lastIdx < 0) return;
+    if (lastIdx < 0) return false;
 
     const prevApplied = this.lastAppliedOrientation;
     const finalOi = this.orientationTimeline[lastIdx][1];
-    if (finalOi === prevApplied) return;
+    if (finalOi === prevApplied) return false;
     this.lastAppliedOrientation = finalOi;
 
     // Collect the run of keyframes sharing the last keyframe's move index
@@ -913,13 +979,13 @@ export class ReplayEngine {
       if (oi === prevApplied && pending.length === 0) continue; // already there
       if (oi !== pending[pending.length - 1]) pending.push(oi);
     }
-    if (pending.length === 0) return;
+    if (pending.length === 0) return false;
 
     if (animateMs <= 0) {
       // Snap (seeking): only the composed final orientation matters.
       const prom = this.callbacks.setOrientation(finalOi, 0);
       if (prom instanceof Promise) prom.catch(() => {});
-      return;
+      return false;
     }
 
     // Smart-cube timelines are COMPACT (one keyframe per orientation change),
@@ -980,6 +1046,10 @@ export class ReplayEngine {
       // tick's gate early.
       if (gen === this.orientationChainGen) this.orientationBusy = false;
       if (this.orientationChainPromise === chain) this.orientationChainPromise = null;
+      // The grip rotation finished — kick the move that was waiting on it
+      // (rotate → wait → move) without waiting for the next animation frame.
+      this.startDelayedMove();
     }).catch(() => {});
+    return true;
   }
 }
