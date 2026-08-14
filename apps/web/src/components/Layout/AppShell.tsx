@@ -96,8 +96,8 @@ export function AppShell(props: AppShellProps) {
   const isTouch = useIsTouch();
   const { t } = useTranslation("shell");
 
-  // User preference: hide the top header entirely (Settings → Appearance).
-  const showHeader = useStore(preferencesStore, (s) => s.showHeader);
+  // Top-bar visibility mode (Settings → Appearance): always / hidden / autohide.
+  const headerMode = useStore(preferencesStore, (s) => s.headerMode);
 
   // ── Shell-level UI state (owned here, not in App) ──────────────────────
   const [cubePanelOpen, setCubePanelOpen] = useState(false);
@@ -245,7 +245,7 @@ export function AppShell(props: AppShellProps) {
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={activeSessionId}
-          hideHeader={activeView === "skill-tree" || !showHeader}
+          hideHeader={activeView === "skill-tree" || headerMode === "hidden"}
           onSwitchSession={onSwitchSession}
           onNewSession={onNewSession}
           onRenameSession={onRenameSession}

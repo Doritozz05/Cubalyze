@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { History, Puzzle } from "lucide-react";
 import { useStore } from "zustand";
-import { connectionStore } from "@cubeforge/state";
+import { connectionStore, preferencesStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
@@ -30,6 +30,16 @@ import { Button } from "@/components/ui/button";
 import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
+
+/**
+ * Dock slide — slower than the sidebar panels (0.25s) so the auto-hide
+ * reveal/retract reads as a smooth, deliberate motion instead of a snap.
+ * easeOutCubic: fast start, gentle settle, no bounce.
+ */
+const DOCK_SLIDE_MOTION = { duration: 0.6, ease: [0.22, 1, 0.36, 1] } as const;
+
+/** How long the dock stays visible after the pointer leaves, before it retracts. */
+const DOCK_RETRACT_DELAY_MS = 6000;
 
 // ── Glass-dock sub-components (desktop) ───────────────────────────────────
 
@@ -114,6 +124,71 @@ export function Header({
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
   const isDockEditing = useIsDockEditing();
+
+  // ── macOS-style dock auto-hide (headerMode === 'autohide') ─────────────
+  // The glass bar slides out of view and is revealed while the pointer hovers
+  // the top edge of the viewport (the whole desktop header row acts as the
+  // reveal band). Leaving the bar/band retracts it after a short delay;
+  // editing the dock keeps it pinned.
+  const headerMode = useStore(preferencesStore, (s) => s.headerMode);
+  const dockAutoHide = headerMode === "autohide";
+  const [dockRevealed, setDockRevealed] = useState(false);
+  const retractTimerRef = useRef<number | null>(null);
+
+  const cancelRetract = useCallback(() => {
+    if (retractTimerRef.current !== null) {
+      window.clearTimeout(retractTimerRef.current);
+      retractTimerRef.current = null;
+    }
+  }, []);
+
+  const revealDock = useCallback(() => {
+    cancelRetract();
+    setDockRevealed(true);
+  }, [cancelRetract]);
+
+  const scheduleRetract = useCallback(() => {
+    cancelRetract();
+    retractTimerRef.current = window.setTimeout(
+      () => setDockRevealed(false),
+      DOCK_RETRACT_DELAY_MS,
+    );
+  }, [cancelRetract]);
+
+  // Clear any pending retract on unmount.
+  useEffect(() => {
+    return () => {
+      if (retractTimerRef.current !== null) window.clearTimeout(retractTimerRef.current);
+    };
+  }, []);
+
+  // Auto-hide off, revealed by hover, or dock editing → bar always visible.
+  const dockVisible = !dockAutoHide || dockRevealed || isDockEditing;
+
+  // Native enter/leave listeners (React's onPointerEnter/Leave are
+  // synthesized from pointerover/out pairs and can't be driven reliably, so
+  // attach native pointerenter/pointerleave to the reveal band and the dock
+  // wrapper instead — identical behavior for real pointers).
+  const bandRef = useRef<HTMLDivElement>(null);
+  const dockWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!dockAutoHide) return;
+    const band = bandRef.current;
+    const wrap = dockWrapRef.current;
+    if (!band || !wrap) return;
+    const onEnter = () => revealDock();
+    const onLeave = () => scheduleRetract();
+    band.addEventListener("pointerenter", onEnter);
+    band.addEventListener("pointerleave", onLeave);
+    wrap.addEventListener("pointerenter", onEnter);
+    wrap.addEventListener("pointerleave", onLeave);
+    return () => {
+      band.removeEventListener("pointerenter", onEnter);
+      band.removeEventListener("pointerleave", onLeave);
+      wrap.removeEventListener("pointerenter", onEnter);
+      wrap.removeEventListener("pointerleave", onLeave);
+    };
+  }, [dockAutoHide, revealDock, scheduleRetract]);
 
   useEffect(() => {
     setPuzzle(puzzleProp);
@@ -217,14 +292,43 @@ export function Header({
           session and puzzle all live in the same bar (Option B), so the
           header reads as a single macOS-dock / Windows-taskbar piece. The
           battery is a status-tray chip pinned to the header's left edge. */}
-      <div className="hidden h-full w-full items-center lg:flex">
+      {/* The desktop header row doubles as the reveal band when the dock is
+          in auto-hide mode: hovering it (mostly empty while retracted)
+          slides the bar back down. */}
+      <div ref={bandRef} className="relative hidden h-full w-full items-center lg:flex">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 sm:left-6">
           <BatteryStatusChip />
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
-          <WidgetDock trailingAreas={orderedTrailingAreas} />
+          <motion.div
+            ref={dockWrapRef}
+            initial={false}
+            animate={{
+              y: dockVisible ? 0 : -48,
+              opacity: dockVisible ? 1 : 0,
+            }}
+            transition={dockAutoHide ? DOCK_SLIDE_MOTION : { duration: 0 }}
+            style={dockVisible ? undefined : { pointerEvents: "none" }}
+            className="min-w-0"
+          >
+            <WidgetDock trailingAreas={orderedTrailingAreas} reportRect={dockVisible} />
+          </motion.div>
         </div>
+
+        {/* Floating reveal line — while the dock is retracted a thin glowing
+            line marks the top edge so auto-hide stays discoverable. */}
+        {dockAutoHide && (
+          <motion.div
+            aria-hidden
+            initial={false}
+            animate={{ opacity: dockVisible ? 0 : 0.6 }}
+            transition={DOCK_SLIDE_MOTION}
+            className="pointer-events-none absolute left-1/2 top-1.5 z-10 -translate-x-1/2"
+          >
+            <div className="h-1 w-12 rounded-full bg-ink/25 shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]" />
+          </motion.div>
+        )}
       </div>
 
       {/* Touch (<lg): compact layout — battery + widgets on the left,

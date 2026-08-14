@@ -359,7 +359,17 @@ const OverflowMenu = forwardRef<HTMLButtonElement, { ids: WidgetId[] }>(
  * While a floating widget is dragged near the dock, the bar temporarily
  * expands to show every pill (plus the drop-zone ghost) for precise docking.
  */
-export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, ReactNode> }) {
+export function WidgetDock({
+  trailingAreas,
+  reportRect = true,
+}: {
+  trailingAreas?: Record<string, ReactNode>;
+  /**
+   * When false (dock auto-hidden), the bar is not registered as a drag-to-dock
+   * zone — invisible bars must not shrink floating widgets dragged overhead.
+   */
+  reportRect?: boolean;
+}) {
   const { t } = useTranslation("widgets");
   const { t: tDock } = useTranslation("dock");
   const reduceMotion = useReducedMotion();
@@ -375,6 +385,10 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   const rowRef = useRef<HTMLDivElement>(null);
   const widgetsGroupRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
+  // Ref so the resize/measure observers read the CURRENT visibility without
+  // re-subscribing when it flips (dock auto-hide reveal/retract).
+  const reportRectRef = useRef(reportRect);
+  reportRectRef.current = reportRect;
 
   // ── Live dock rect registration ────────────────────────────────────────
   // The drag-to-dock zone is the bar's ACTUAL on-screen rectangle, not a
@@ -386,7 +400,7 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
   // a widget drags over, webfont settling). Cleared on unmount.
   useLayoutEffect(() => {
     const el = barRef.current;
-    if (!el) return;
+    if (!el || !reportRectRef.current) return;
     const r = el.getBoundingClientRect();
     dockZoneState.setDockRect({ x: r.left, y: r.top, w: r.width, h: r.height });
   });
@@ -395,6 +409,10 @@ export function WidgetDock({ trailingAreas }: { trailingAreas?: Record<string, R
     const el = barRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const measure = () => {
+      if (!reportRectRef.current) {
+        dockZoneState.setDockRect(null);
+        return;
+      }
       const r = el.getBoundingClientRect();
       dockZoneState.setDockRect({ x: r.left, y: r.top, w: r.width, h: r.height });
     };
