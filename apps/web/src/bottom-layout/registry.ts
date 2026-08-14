@@ -82,6 +82,75 @@ export const BOTTOM_LAYOUT_TEMPLATES: BottomLayoutDefinition[] = [
       },
     ],
   },
+  {
+    id: "split",
+    nameKey: "timer.bottomLayoutTemplateSplit",
+    descriptionKey: "timer.bottomLayoutTemplateSplitHint",
+    weights: [1, 1],
+    columns: [
+      {
+        cells: [
+          { kind: "stat", stat: "best" },
+          { kind: "stat", stat: "worst" },
+          { kind: "stat", stat: "mean" },
+          { kind: "stat", stat: "deviation" },
+        ],
+      },
+      {
+        cells: [
+          { kind: "stat", stat: "ao5" },
+          { kind: "stat", stat: "ao12" },
+          { kind: "stat", stat: "ao50" },
+          { kind: "stat", stat: "ao100" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "records",
+    nameKey: "timer.bottomLayoutTemplateRecords",
+    descriptionKey: "timer.bottomLayoutTemplateRecordsHint",
+    columns: [
+      {
+        cells: [
+          { kind: "stat", stat: "bestAo5" },
+          { kind: "stat", stat: "bestAo12" },
+          { kind: "stat", stat: "mo3" },
+          { kind: "stat", stat: "best" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "performance",
+    nameKey: "timer.bottomLayoutTemplatePerformance",
+    descriptionKey: "timer.bottomLayoutTemplatePerformanceHint",
+    weights: [1, 1, 1.25],
+    columns: [
+      {
+        cells: [
+          { kind: "stat", stat: "mo3" },
+          { kind: "stat", stat: "mean" },
+          { kind: "stat", stat: "deviation" },
+        ],
+      },
+      {
+        cells: [
+          { kind: "stat", stat: "tps" },
+          { kind: "stat", stat: "best" },
+          { kind: "stat", stat: "count" },
+        ],
+      },
+      {
+        cells: [
+          { kind: "stat", stat: "ao5" },
+          { kind: "stat", stat: "ao12" },
+          { kind: "stat", stat: "ao50" },
+          { kind: "stat", stat: "ao100" },
+        ],
+      },
+    ],
+  },
 ];
 
 /** The template used when the preference is unset or points at an unknown id. */

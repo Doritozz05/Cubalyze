@@ -258,7 +258,7 @@ export function TimerStage(props: TimerStageProps) {
           onExpand={onExpand}
           puzzleFilter={puzzleFilter}
           scramble={embedScramble ? scrambleElement : undefined}
-          scramble2d={embedsScramble2d ? <Scramble2DNet scramble={currentScramble} /> : undefined}
+          scramble2d={embedsScramble2d ? <Scramble2DNet scramble={currentScramble} compact /> : undefined}
         />
       )}
     </>

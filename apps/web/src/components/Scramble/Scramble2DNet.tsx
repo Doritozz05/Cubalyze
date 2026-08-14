@@ -57,9 +57,11 @@ function parseFacelets(faceletsStr: string | null, size: number) {
 function Cube2DSVG({
   parsedFacelets,
   size,
+  compact = false,
 }: {
   parsedFacelets: Record<string, string[]> | null;
   size: number;
+  compact?: boolean;
 }) {
   // Scale sticker size based on cube order
   const S = size === 2 ? 30 : 22;
@@ -84,7 +86,7 @@ function Cube2DSVG({
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      className="w-full h-auto max-w-85 select-none"
+      className={`w-full h-auto select-none ${compact ? "max-w-40 max-sm:max-w-28" : "max-w-85"}`}
     >
       {Object.entries(FACE_POS).map(([face, [fx, fy]]) => {
         const stickers = parsedFacelets?.[face];
@@ -161,6 +163,8 @@ function compute2DFacelets(
 export interface Scramble2DNetProps {
   scramble?: string;
   className?: string;
+  /** Render a small net (for tight layout cells) instead of the full-size one. */
+  compact?: boolean;
 }
 
 /**
@@ -168,7 +172,7 @@ export interface Scramble2DNetProps {
  * Shared by the floating scramble-2d widget and the bottom layout, where the
  * top scramble display stays in place and this renders inside a cell.
  */
-export function Scramble2DNet({ scramble, className }: Scramble2DNetProps) {
+export function Scramble2DNet({ scramble, className, compact = false }: Scramble2DNetProps) {
   const displayFacelets = useMemo(() => compute2DFacelets(scramble), [scramble]);
   const parsed = displayFacelets
     ? parseFacelets(displayFacelets.facelets, displayFacelets.size)
@@ -177,7 +181,7 @@ export function Scramble2DNet({ scramble, className }: Scramble2DNetProps) {
 
   return (
     <div className={className}>
-      <Cube2DSVG parsedFacelets={parsed} size={size} />
+      <Cube2DSVG parsedFacelets={parsed} size={size} compact={compact} />
     </div>
   );
 }

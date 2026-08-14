@@ -1,16 +1,45 @@
 import { useMemo } from "react";
-import { averageOf, computeStats, stdDeviation } from "@cubeforge/statistics";
+import {
+  averageOf,
+  computeStats,
+  effectiveTime,
+  stdDeviation,
+  type StatSolve,
+} from "@cubeforge/statistics";
+import { deriveTpsSeries } from "@cubeforge/analysis-engine";
 import type { Solve } from "@/types";
 import { formatDuration, statLabel } from "@/utils/formatTime";
 import type { BottomLayoutStatId } from "./types";
+
+/** Mean of the most recent `n` solves with WCA Mo3 semantics (any DNF → DNF). */
+function meanOfN(solves: StatSolve[], n: number): number | null {
+  if (solves.length < n) return null;
+  const slice = solves.slice(0, n).map(effectiveTime);
+  if (slice.some((t) => !Number.isFinite(t))) return Number.POSITIVE_INFINITY;
+  return slice.reduce((acc, t) => acc + t, 0) / n;
+}
+
+/** Best rolling AoN across the session (newest-first window slide). */
+function bestRollingAverage(solves: StatSolve[], n: number): number | null {
+  if (solves.length < n) return null;
+  let best: number | null = null;
+  for (let i = 0; i <= solves.length - n; i++) {
+    const avg = averageOf(solves.slice(i, i + n), n);
+    if (avg !== null && Number.isFinite(avg) && (best === null || avg < best)) {
+      best = avg;
+    }
+  }
+  return best;
+}
 
 /**
  * Compute every stat a bottom layout cell can display, formatted for UI.
  *
  * All values are derived from the same filtered solve list in one pass via
- * `computeStats`; Ao50 uses the generic `averageOf` (the statistics package
- * already supports it even though `SessionStats` does not surface it) and the
- * deviation uses `stdDeviation`. Returns a lookup keyed by `BottomLayoutStatId`.
+ * `computeStats`; Ao50 uses the generic `averageOf`, the deviation uses
+ * `stdDeviation`, Mo3/Best-Ao5/Best-Ao12 roll over the session, and TPS is the
+ * mean of the analysed solves' global TPS (reusing `deriveTpsSeries`).
+ * Returns a lookup keyed by `BottomLayoutStatId`.
  */
 export function useBottomLayoutStats(
   solves: Solve[],
@@ -23,17 +52,29 @@ export function useBottomLayoutStats(
     const statSolves = filtered.map((s) => ({ time: s.time ?? 0, penalty: s.penalty }));
     const stats = computeStats(statSolves);
 
+    // TPS: average global TPS across analysed solves (smart/virtual). Manual
+    // solves without move data are excluded by `deriveTpsSeries`.
+    const tpsPoints = deriveTpsSeries(filtered);
+    const tps =
+      tpsPoints.length > 0
+        ? tpsPoints.reduce((acc, p) => acc + p.tps, 0) / tpsPoints.length
+        : null;
+
     return {
       ao5: statLabel(stats.ao5),
       ao12: statLabel(stats.ao12),
       ao50: statLabel(averageOf(statSolves, 50)),
       ao100: statLabel(stats.ao100),
+      mo3: statLabel(meanOfN(statSolves, 3)),
       best: statLabel(stats.best),
       worst: statLabel(stats.worst),
       mean: statLabel(stats.mean),
       deviation: statLabel(stdDeviation(statSolves, stats.mean)),
       count: String(stats.count),
       sessionTime: formatDuration(stats.sessionTime),
+      tps: tps !== null ? tps.toFixed(2) : "—",
+      bestAo5: statLabel(bestRollingAverage(statSolves, 5)),
+      bestAo12: statLabel(bestRollingAverage(statSolves, 12)),
     };
   }, [solves, puzzleFilter]);
 }

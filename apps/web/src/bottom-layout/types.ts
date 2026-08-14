@@ -19,12 +19,16 @@ export type BottomLayoutStatId =
   | "ao12"
   | "ao50"
   | "ao100"
+  | "mo3"
   | "best"
   | "worst"
   | "mean"
   | "deviation"
   | "count"
-  | "sessionTime";
+  | "sessionTime"
+  | "tps"
+  | "bestAo5"
+  | "bestAo12";
 
 /** Content a cell can hold. */
 export type BottomLayoutCell =
