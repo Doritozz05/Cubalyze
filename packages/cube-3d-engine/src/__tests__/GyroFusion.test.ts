@@ -1,6 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Object3D, Quaternion } from 'three';
 import { GyroFusion, isGyroAtRest } from '../hardware/GyroFusion';
+
+/** Signed rotation (deg) about X that takes a -> b (all tests rotate about X). */
+function signedAngleDegX(a: Quaternion, b: Quaternion): number {
+  const d = a.clone().conjugate().multiply(b);
+  const half = Math.acos(Math.min(Math.max(d.w, -1), 1));
+  const s = Math.sin(half);
+  if (s < 1e-9) return 0;
+  return Math.sign(d.x / s) * 2 * half * 180 / Math.PI;
+}
+
+/** Rotation about X by `deg` (mapped axis == raw X axis, so identity mapping). */
+function rotX(deg: number): { x: number; y: number; z: number; w: number } {
+  const rad = deg * Math.PI / 180;
+  return { x: Math.sin(rad / 2), y: 0, z: 0, w: Math.cos(rad / 2) };
+}
 
 describe('GyroFusion', () => {
   let target: Object3D;
@@ -9,6 +24,10 @@ describe('GyroFusion', () => {
   beforeEach(() => {
     target = new Object3D();
     gyro = new GyroFusion(target);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('initializes with identity quaternion on target', () => {
@@ -24,7 +43,6 @@ describe('GyroFusion', () => {
     gyro.update(16); // one frame at 60fps
 
     // rawTargetQuat should have been set to (0.5, 0.5, -0.5, 0.5) normalized
-    // After SLERP with identity, target quaternion should be close to rawTargetQuat
     const q = target.quaternion;
     expect(q.x).not.toBe(0);
     expect(q.z).not.toBe(0);
@@ -142,6 +160,134 @@ describe('GyroFusion', () => {
     expect(Math.abs(target.quaternion.x)).toBeLessThan(0.1);
     expect(Math.abs(target.quaternion.y)).toBeLessThan(0.1);
     expect(Math.abs(target.quaternion.z)).toBeLessThan(0.1);
+  });
+
+  // ── Rebased-interpolation behavior ─────────────────────────────────────
+
+  it('moves at constant velocity and never reverses during a 360° turn (the "salta" regression)', () => {
+    vi.useFakeTimers({ toFake: ['performance'] });
+    gyro.enable();
+
+    const deltas: number[] = [];
+    let prev = target.quaternion.clone();
+    const frame = () => {
+      vi.advanceTimersByTime(16);
+      gyro.update(16);
+      deltas.push(signedAngleDegX(prev, target.quaternion));
+      prev = target.quaternion.clone();
+    };
+
+    // Rest at identity, then a regular 360° turn: samples 60° apart @150ms.
+    gyro.updateTargetQuaternion(0, 0, 0, 1, { x: 0, y: 0, z: 0 });
+    for (let i = 0; i < 10; i++) frame();
+    for (let deg = 60; deg <= 360; deg += 60) {
+      gyro.updateTargetQuaternion(rotX(deg).x, rotX(deg).y, rotX(deg).z, rotX(deg).w, { x: 7, y: 0, z: 0 });
+      for (let i = 0; i < 10; i++) frame();
+    }
+    // Stop (velocity 0) and hold — the old dead-reckoning bounced here.
+    gyro.updateTargetQuaternion(0, 0, 0, -1, { x: 0, y: 0, z: 0 });
+    for (let i = 0; i < 16; i++) frame();
+
+    // NEVER backward while turning or after stopping.
+    const backward = deltas.filter((d) => d < -0.3);
+    expect(backward).toEqual([]);
+
+    // Lands exactly on the final pose (360° ≡ identity as -q, same pose).
+    const angle = (2 * Math.atan2(target.quaternion.x, target.quaternion.w)) * 180 / Math.PI;
+    expect(Math.abs(angle - 360) % 360).toBeLessThan(1);
+
+    // Constant velocity during steady rotation: the per-frame deltas while
+    // the cube is turning are all roughly equal (60°/150ms ≈ 6.7°/frame).
+    const duringTurn = deltas.filter((d) => d > 1);
+    expect(duringTurn.length).toBeGreaterThan(20);
+    const max = Math.max(...duringTurn);
+    const min = Math.min(...duringTurn);
+    // Steady cadence → near-constant velocity; the small spread is the
+    // gentle warm-up of the first rebased segment (5.0 → 6.7°/frame).
+    expect(max - min).toBeLessThan(6);
+  });
+
+  it('animates a sparse 180° (x2) rotation at bounded speed instead of teleporting', () => {
+    vi.useFakeTimers({ toFake: ['performance'] });
+    gyro.enable();
+
+    // The x2 happens entirely between two samples (identity → 180° @150ms).
+    gyro.updateTargetQuaternion(0, 0, 0, 1, { x: 0, y: 0, z: 0 });
+    vi.advanceTimersByTime(150);
+    gyro.updateTargetQuaternion(1, 0, 0, 0, { x: 0, y: 7, z: 0 }); // 180° about X
+
+    let maxFrameDelta = 0;
+    let prev = target.quaternion.clone();
+    for (let i = 0; i < 40; i++) {
+      vi.advanceTimersByTime(16);
+      gyro.update(16);
+      maxFrameDelta = Math.max(maxFrameDelta, Math.abs(signedAngleDegX(prev, target.quaternion)));
+      prev = target.quaternion.clone();
+    }
+
+    // Bounded: the 180° jump is ANIMATED (≤ ~20°/frame), never a teleport.
+    expect(maxFrameDelta).toBeLessThanOrEqual(20.5);
+    expect(maxFrameDelta).toBeGreaterThan(5); // and it DOES move (no freeze)
+
+    const angle = (2 * Math.atan2(target.quaternion.x, target.quaternion.w)) * 180 / Math.PI;
+    expect(Math.abs(angle - 180)).toBeLessThan(1);
+  });
+
+  it('animates a stale gap (huge delta) at bounded speed instead of teleporting', () => {
+    vi.useFakeTimers({ toFake: ['performance'] });
+    gyro.enable();
+
+    // Rest at identity, then 60°, then a >600ms silent gap while the cube
+    // turns another 120° (missed packets recovered as one big delta).
+    gyro.updateTargetQuaternion(0, 0, 0, 1, { x: 0, y: 0, z: 0 });
+    vi.advanceTimersByTime(150);
+    gyro.updateTargetQuaternion(0.5, 0, 0, 0.8660254, { x: 0, y: 0, z: 0 });
+    vi.advanceTimersByTime(800); // gap → no segment, direct tracking
+    gyro.updateTargetQuaternion(1, 0, 0, 0, { x: 0, y: 0, z: 0 }); // 180°
+
+    let maxFrameDelta = 0;
+    let prev = target.quaternion.clone();
+    for (let i = 0; i < 30; i++) {
+      vi.advanceTimersByTime(16);
+      gyro.update(16);
+      maxFrameDelta = Math.max(maxFrameDelta, Math.abs(signedAngleDegX(prev, target.quaternion)));
+      prev = target.quaternion.clone();
+    }
+    expect(maxFrameDelta).toBeLessThanOrEqual(20.5);
+
+    // And it converges to the recovered sample.
+    const angle = (2 * Math.atan2(target.quaternion.x, target.quaternion.w)) * 180 / Math.PI;
+    expect(Math.abs(angle - 180)).toBeLessThan(1);
+  });
+
+  it('does not drift when the cube is still (identical samples)', () => {
+    vi.useFakeTimers({ toFake: ['performance'] });
+    gyro.enable();
+
+    // Two identical samples 150ms apart = the cube is at rest.
+    gyro.updateTargetQuaternion(0.5, 0, 0, 0.8660254, { x: 0, y: 0, z: 0 });
+    vi.advanceTimersByTime(150);
+    gyro.updateTargetQuaternion(0.5, 0, 0, 0.8660254, { x: 0, y: 0, z: 0 });
+
+    for (let i = 0; i < 40; i++) {
+      vi.advanceTimersByTime(16);
+      gyro.update(16);
+    }
+
+    const angle = (2 * Math.atan2(target.quaternion.x, target.quaternion.w)) * 180 / Math.PI;
+    // Still → no drift; stays at the measured 60°.
+    expect(Math.abs(angle - 60)).toBeLessThan(2);
+  });
+
+  it('handles samples >90° apart without throwing (Three.js r185 has no Quaternion.negate)', () => {
+    gyro.enable();
+
+    // A fast long rotation: consecutive samples 100° apart → dot < 0.
+    expect(() => {
+      gyro.updateTargetQuaternion(0, 0, 0, 1, { x: 7, y: 0, z: 0 });
+      gyro.updateTargetQuaternion(0.7660444, 0, 0, 0.6427876, { x: 7, y: 0, z: 0 }); // 100° around X
+      gyro.update(16);
+    }).not.toThrow();
   });
 });
 
