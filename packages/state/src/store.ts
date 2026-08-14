@@ -22,13 +22,23 @@ export type AppLanguage = 'auto' | 'en' | 'es';
  * the state is rehydrated synchronously on cold load. No backend migration
  * is required.
  */
+/** Visibility mode for the top bar (header + glass dock). */
+export type HeaderMode = 'always' | 'hidden' | 'autohide';
+
 export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
 
-  /** Show the top header bar (session switcher, puzzle selector, profile chip…). */
-  showHeader: boolean;
-  setShowHeader: (value: boolean) => void;
+  /**
+   * Top-bar (header + glass dock) visibility mode:
+   * - `'always'`  — always visible (default);
+   * - `'hidden'`  — hidden entirely;
+   * - `'autohide'` — macOS-style: the dock slides away and reappears while
+   *   hovering the top edge of the viewport (desktop only; on touch the
+   *   Appearance toggle keeps its simple on/off semantics).
+   */
+  headerMode: HeaderMode;
+  setHeaderMode: (mode: HeaderMode) => void;
 
   /** 3D Appearance mode */
   appearance3d: string;
@@ -227,7 +237,7 @@ export interface PreferencesState {
 
 const DEFAULT_VALUES = {
   theme: 'light' as const,
-  showHeader: true,
+  headerMode: 'always' as const,
   appearance3d: 'default',
   scrambleFollowsCube: true,
   inspection: true,
@@ -288,7 +298,7 @@ export const createPreferencesStore = () => {
         ...DEFAULT_VALUES,
 
         setTheme: (theme) => set({ theme }),
-        setShowHeader: (showHeader) => set({ showHeader }),
+        setHeaderMode: (headerMode) => set({ headerMode }),
         setAppearance3d: (appearance3d) => set({ appearance3d }),
         setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),
         setInspection: (inspection) => set({ inspection }),
@@ -343,7 +353,7 @@ export const createPreferencesStore = () => {
         name: 'cubeforge-prefs',
         partialize: (state) => ({
           theme: state.theme,
-          showHeader: state.showHeader,
+          headerMode: state.headerMode,
           appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
           inspection: state.inspection,
@@ -387,17 +397,27 @@ export const createPreferencesStore = () => {
         }),
         // v2: `showSessionStats` was renamed to `showBottomLayout` and the
         // selected template id was introduced (`bottomLayoutTemplate`).
-        version: 2,
+        // v3: `showHeader`/`dockAutoHide` booleans were replaced by the
+        // `headerMode` tri-state ('always' | 'hidden' | 'autohide').
+        version: 3,
         migrate: (persistedState, version) => {
           const raw = (persistedState ?? {}) as Record<string, unknown>;
-          if (version >= 2) return raw;
           const migrated: Record<string, unknown> = { ...raw };
-          if (typeof raw.showSessionStats === 'boolean') {
-            migrated.showBottomLayout = raw.showSessionStats;
+          if (version < 2) {
+            if (typeof raw.showSessionStats === 'boolean') {
+              migrated.showBottomLayout = raw.showSessionStats;
+            }
+            delete migrated.showSessionStats;
+            if (typeof migrated.bottomLayoutTemplate !== 'string') {
+              migrated.bottomLayoutTemplate = 'session-stats';
+            }
           }
-          delete migrated.showSessionStats;
-          if (typeof migrated.bottomLayoutTemplate !== 'string') {
-            migrated.bottomLayoutTemplate = 'session-stats';
+          if (version < 3) {
+            if (typeof raw.showHeader === 'boolean') {
+              migrated.headerMode = raw.showHeader ? 'always' : 'hidden';
+            }
+            delete migrated.showHeader;
+            delete migrated.dockAutoHide;
           }
           return migrated;
         },

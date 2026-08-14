@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from 'zustand';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore, type HeaderMode } from '@cubeforge/state';
 // Import from the side-effect-free "/skins" subpath: the engine's main entry
 // pulls in three.js (~545 kB), which would otherwise land in the initial
 // bundle just for this settings list.
@@ -12,6 +12,8 @@ import { CustomBackgroundSetting } from '@/components/Settings/components/Custom
 import { Palette, Sun, Moon, Monitor, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dockEditStore } from '@/widgets/dock/dockEditStore';
+import { useIsTouch } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import type { ParseKeys } from 'i18next';
 
 import {
@@ -47,6 +49,14 @@ const SKIN_LABEL_KEY: Record<string, ParseKeys<'settings'>> = {
   custom: 'appearance.skinCustom',
 };
 
+const HEADER_MODES: HeaderMode[] = ['always', 'hidden', 'autohide'];
+
+const HEADER_MODE_LABEL_KEY: Record<HeaderMode, ParseKeys<'settings'>> = {
+  always: 'appearance.headerModeAlways',
+  hidden: 'appearance.headerModeHidden',
+  autohide: 'appearance.headerModeAutohide',
+};
+
 export function AppearanceSection() {
   const { t } = useTranslation('settings');
   const theme = useStore(preferencesStore, (s) => s.theme);
@@ -55,8 +65,9 @@ export function AppearanceSection() {
   const setAppearance3d = useStore(preferencesStore, (s) => s.setAppearance3d);
   const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
   const setCustomStickerColors = useStore(preferencesStore, (s) => s.setCustomStickerColors);
-  const showHeader = useStore(preferencesStore, (s) => s.showHeader);
-  const setShowHeader = useStore(preferencesStore, (s) => s.setShowHeader);
+  const headerMode = useStore(preferencesStore, (s) => s.headerMode);
+  const setHeaderMode = useStore(preferencesStore, (s) => s.setHeaderMode);
+  const isTouch = useIsTouch();
 
   return (
     <div className="flex flex-col gap-5">
@@ -104,13 +115,42 @@ export function AppearanceSection() {
         </div>
       </div>
 
-      {/* Header toggle */}
-      <SettingToggle
-        title={t('appearance.showHeader')}
-        description={t('appearance.showHeaderHint')}
-        checked={showHeader}
-        onCheckedChange={setShowHeader}
-      />
+      {/* Header visibility — mobile keeps the simple on/off toggle; desktop
+          gets the tri-state selector (always visible / hidden / auto-hide). */}
+      {isTouch ? (
+        <SettingToggle
+          title={t('appearance.showHeader')}
+          description={t('appearance.showHeaderHint')}
+          checked={headerMode !== 'hidden'}
+          onCheckedChange={(show) => setHeaderMode(show ? 'always' : 'hidden')}
+        />
+      ) : (
+        <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.headerMode')}</h4>
+            <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+              {t('appearance.headerModeHint')}
+            </p>
+          </div>
+          <div className="mt-0.5 flex shrink-0 rounded-full border border-line bg-surface-2 p-0.5">
+            {HEADER_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setHeaderMode(mode)}
+                className={cn(
+                  'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                  headerMode === mode
+                    ? 'bg-ink text-canvas shadow-sm'
+                    : 'text-ink-2 hover:text-ink',
+                )}
+              >
+                {t(HEADER_MODE_LABEL_KEY[mode])}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Custom Background Image */}
       <CustomBackgroundSetting />
