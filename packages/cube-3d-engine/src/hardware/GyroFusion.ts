@@ -1,4 +1,9 @@
-import { Object3D, Quaternion, Vector3 } from 'three';
+import { Object3D, Quaternion } from 'three';
+
+/** Monotonic clock in ms — faked in tests to exercise the interpolation. */
+function nowMs(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
 
 /**
  * Angular-velocity magnitude below which the cube is considered at rest.
@@ -26,84 +31,88 @@ export function isGyroAtRest(
 /**
  * Smoothly fuses hardware gyroscope/IMU quaternion data with the 3D scene.
  *
- * WHY A CRITICALLY-DAMPED SPRING FOLLOWER:
+ * WHY "REBASED INTERPOLATION":
  *
  * The GAN IMU streams orientation at only ~6-7 Hz (~150ms between samples),
- * so the model must bridge each gap without ever teleporting. Three earlier
- * designs each failed one of the requirements:
+ * so the model must bridge each gap without ever teleporting. Three previous
+ * approaches failed:
  *
  *   1. EXTRAPOLATION (dead-reckoning): predicted the future from the last
  *      two samples. The target reset to the raw sample at every arrival (a
  *      sawtooth), so the model overshot and REVERSED direction at every
  *      sample boundary — a constant judder ("el cubo salta todo el rato"),
  *      plus a stop-bounce when the cube stopped.
- *   2. INTERPOLATION of the past sample pair played over the real dt: on
- *      irregular BLE cadence the model FREEZES between segments and SPRINTS
- *      when a late sample restarts the path — "va a tirones"; a sparse 180°
- *      (x2) rotation played over its real ~150ms as a 20°/frame blur after a
- *      freeze — reads as a teleport.
- *   3. REBASED INTERPOLATION (each sample restarts a constant-velocity
- *      segment from the model's current pose): near-perfect during steady
- *      rotation, but the model's velocity still steps DISCONTINUOUSLY at
- *      every transition — 0 → 15°/frame the instant a turn starts, and an
- *      abrupt stop when the cube stops — the "clunk" at the end of every
- *      rotation.
+ *   2. INTERPOLATION of the past sample pair played over the real dt: when
+ *      the BLE cadence is irregular the model FREEZES between segments and
+ *      SPRINTS when a late sample restarts the path — "va a tirones"; a
+ *      sparse 180° (x2) rotation played over its real ~150ms as a 20°/frame
+ *      blur after a freeze — reads as a teleport.
+ *   3. A plain bounded chase (exponential SLERP toward the latest sample):
+ *      smooth but the model's velocity still jumps at every sample arrival
+ *      (the 6.5 Hz pulsing the user originally complained about).
  *
- * The chosen design is a CRITICALLY-DAMPED SPRING FOLLOWER: the model
- * accelerates toward the latest corrected sample with continuous angular
- * velocity (only ACCELERATION jumps, and it is bounded by ω_n²). This gives
+ * The chosen approach — REBASED INTERPOLATION — gives TRUE constant-velocity
+ * motion with zero freezes, zero sprints and zero reversals:
  *
- *   - continuous velocity: no freeze, no sprint, no reversal, no stop-clunk
- *     (a real cube turn also accelerates and decelerates smoothly);
- *   - a sparse x2 animates at ≤ ~1200°/s with a smooth ease-in/ease-out —
- *     human-speed, never a teleport;
- *   - critical damping (ζ = 1) means NO overshoot and NO oscillation — the
- *     model eases into every pose;
- *   - the angular velocity is hard-clamped (MAX_ANGULAR_VEL) so even a
- *     pathological input (missed packet recovered as a huge delta, a first
- *     sample, a calibration re-reference) is ANIMATED — "si hay un salto,
- *     animamos el trayecto aunque sea rápido";
- *   - the model lags ~2·v/ω_n behind a rotation at speed v (~160ms at a
- *     400°/s rotation) — the accepted delay for zero jumps.
+ *   - Every sample arrival starts a constant-velocity segment that goes
+ *     from the model's CURRENT pose to the NEW corrected pose, over at least
+ *     MIN_DURATION_MS (200ms). Because the segment always starts where the
+ *     model already is, the path is continuous by construction: no jump, no
+ *     sprint, no freeze, and a sparse x2 (0°→180°) plays at ≤15°/frame — a
+ *     normal human-speed rotation, never a blur or teleport.
+ *   - The 200ms minimum also bounds the worst-case segment speed
+ *     (≤ 180°/200ms = 15°/frame) even for pathological single-packet jumps.
+ *   - A per-frame clamp (MAX_DEG_PER_MS) is the final safety net: even when
+ *     no segment is playable (first sample, >MAX_GAP_MS silent stretch) the
+ *     model catches up at bounded speed — "si hay un salto, animamos el
+ *     trayecto aunque sea rápido".
+ *   - The model tracks ~200ms behind the physical cube — the accepted
+ *     trade-off for zero jumps.
  */
 export class GyroFusion {
   private target: Object3D;
   private enabled = false;
 
-  // ── Pre-allocated quaternions / vectors (no GC in the render loop) ──
-  private rawTargetQuat = new Quaternion();  // latest RAW sample
-  private correctedQuat = new Quaternion();  // target pose AFTER calibration offset
-  private stepQuat = new Quaternion();       // scratch: model → target error quaternion
+  // ── Pre-allocated quaternions (no GC in the render loop) ──
+  private rawTargetQuat = new Quaternion();  // latest RAW sample (never overwritten by interpolation)
+  private correctedQuat = new Quaternion();  // interpolated pose AFTER calibration offset
+  private stepQuat = new Quaternion();       // scratch: model → corrected delta
   private offsetQuatInverse = new Quaternion(); // Q_offset⁻¹ — applied to every incoming quaternion
-  private expQuat = new Quaternion();        // scratch: pose integration step
-  private errorVec = new Vector3();          // spring error (model-local rotation vector)
-  private accelVec = new Vector3();          // spring acceleration
-  private axisVec = new Vector3();           // scratch: rotation axis
 
   private isCalibrated = false;
   private hasReceivedUpdate = false;
   private pendingAutoCalibrate = false;
 
-  /** Body-frame angular velocity of the model (rad/s) — the spring's state. */
-  private angularVel = new Vector3();
+  // ── Rebased-interpolation state ─────────────────────────────────────────
+  private segmentStartQuat = new Quaternion(); // segment start (model's pose at sample arrival)
+  private segmentEndQuat = new Quaternion();   // segment end (new corrected pose)
+  private segmentStartTime = 0;
+  private segmentDurationMs = 0;
+  private hasSegment = false;
+  private hasPrevSample = false;
+  private lastMeasuredAt = 0;
 
   /**
-   * Natural frequency (rad/s) of the critically-damped follower. 12 rad/s
-   * settles a turn in ~0.3s with ~160ms tracking lag — smooth and
-   * responsive without pulsing at the 6.5 Hz sample rate.
+   * Every segment plays for at least this long, which bounds the worst-case
+   * segment speed (≤ 180°/200ms = 15°/frame) and gives a sparse 180° (x2)
+   * rotation a human-speed duration instead of a blur.
    */
-  private static readonly OMEGA_N = 12;
-  /** Critical damping: no overshoot, no oscillation. */
-  private static readonly ZETA = 1;
+  private static readonly MIN_DURATION_MS = 200;
+  /** Long segments are capped so a slow stream doesn't crawl after the cube. */
+  private static readonly MAX_DURATION_MS = 350;
   /**
-   * Hard cap on the model's angular speed: 21 rad/s ≈ 1200°/s ≈ 20°/frame
-   * at 60fps. Real rotations are never limited; anomalies (a recovered
-   * gap, a first sample, a calibration change) are animated at this
-   * bounded rate rather than teleported.
+   * Above this inter-sample gap the interval is stale — the cube may have
+   * moved a lot during a silent stretch, so we fall back to direct tracking
+   * (the per-frame clamp still animates the catch-up instead of teleporting).
    */
-  private static readonly MAX_ANGULAR_VEL = 21;
-  /** Spring integration sub-step cap (s) — keeps the semi-implicit Euler stable on frame hitches. */
-  private static readonly INTEGRATION_DT_MAX = 0.05;
+  private static readonly MAX_GAP_MS = 600;
+  /**
+   * Hard cap on the model's angular speed: 1.2°/ms ≈ 1200°/s ≈ 20°/frame at
+   * 60fps. Real turns (≤ ~15°/frame through the rebased segments) are never
+   * limited; anomalies (gaps, first sample, calibration changes) are
+   * animated at this bounded rate rather than teleported.
+   */
+  private static readonly MAX_DEG_PER_MS = 1.2;
 
   /** Optional callback fired when calibration occurs (for OrientationTracker). */
   public onCalibrate?: (q: { x: number; y: number; z: number; w: number }) => void;
@@ -117,10 +126,7 @@ export class GyroFusion {
   }
 
   public disable(): void {
-    // Freeze the spring state so a re-enable doesn't resume with stale
-    // momentum after the cube has been idle.
     this.enabled = false;
-    this.angularVel.set(0, 0, 0);
   }
 
   /**
@@ -149,6 +155,38 @@ export class GyroFusion {
     // 2. Invert X (or adjust signs per sensor) to correct perceived inversion
     //    and align physical motion with the camera.
     this.rawTargetQuat.set(x, z, -y, w).normalize();
+
+    const now = nowMs();
+
+    if (this.hasPrevSample) {
+      const dt = now - this.lastMeasuredAt;
+      if (dt <= GyroFusion.MAX_GAP_MS) {
+        // REBASE: a constant-velocity segment from where the model IS right
+        // now to the new corrected pose. Starting from the model's own pose
+        // (not the previous sample) keeps the path continuous no matter how
+        // irregular the BLE cadence is — no jumps, no sprints, no freezes.
+        this.segmentStartQuat.copy(this.target.quaternion);
+        this.correctedQuat
+          .copy(this.offsetQuatInverse)
+          .multiply(this.rawTargetQuat);
+        this.segmentEndQuat.copy(this.correctedQuat);
+        this.segmentStartTime = now;
+        this.segmentDurationMs = Math.max(
+          GyroFusion.MIN_DURATION_MS,
+          Math.min(dt, GyroFusion.MAX_DURATION_MS),
+        );
+        this.hasSegment = true;
+      } else {
+        // Stale gap: track the latest sample directly (clamped in update()).
+        this.hasSegment = false;
+      }
+    } else {
+      // First sample: no previous segment to rebase from — track directly.
+      this.hasSegment = false;
+    }
+
+    this.lastMeasuredAt = now;
+    this.hasPrevSample = true;
     this.hasReceivedUpdate = true;
 
     // Auto-calibrate only when the cube is at rest: the reference must be a
@@ -184,9 +222,9 @@ export class GyroFusion {
     this.pendingAutoCalibrate = false;
     // Store the inverse of the current raw quaternion
     this.offsetQuatInverse.copy(this.rawTargetQuat).conjugate();
-    // The corrected frame just changed — drop any model momentum built in
-    // the OLD reference frame.
-    this.angularVel.set(0, 0, 0);
+    // The corrected frame just changed — a stale segment (built in the OLD
+    // corrected frame) must not keep playing on top of the new reference.
+    this.hasSegment = false;
     // Notify the OrientationTracker with the current raw quaternion
     this.onCalibrate?.({
       x: this.rawTargetQuat.x,
@@ -216,8 +254,10 @@ export class GyroFusion {
     // (e.g. a panel mounting after the cube is already connected) leaves
     // rawTargetQuat at identity and the model tilted until a fresh packet.
     this.rawTargetQuat.set(q.x, q.y, q.z, q.w).normalize();
-    // The corrected frame just changed — drop stale spring momentum.
-    this.angularVel.set(0, 0, 0);
+    // The corrected frame just changed: no stale segment may survive it.
+    this.hasSegment = false;
+    this.hasPrevSample = true;
+    this.lastMeasuredAt = nowMs();
     this.isCalibrated = true;
     this.pendingAutoCalibrate = false;
     this.hasReceivedUpdate = true;
@@ -232,7 +272,10 @@ export class GyroFusion {
     this.isCalibrated = false;
     this.hasReceivedUpdate = false;
     this.pendingAutoCalibrate = false;
-    this.angularVel.set(0, 0, 0);
+    this.hasPrevSample = false;
+    this.segmentStartQuat.identity();
+    this.segmentEndQuat.identity();
+    this.hasSegment = false;
   }
 
   public getIsCalibrated(): boolean {
@@ -242,58 +285,37 @@ export class GyroFusion {
   /**
    * Called every frame in the render loop.
    *
-   * Drives the model with a critically-damped spring toward the latest
-   * corrected sample. Only the model's ACCELERATION jumps (bounded by
-   * ω_n²), so the model's angular velocity is continuous: turns ease in,
-   * cruise and ease out — no freeze, no sprint, no reversal, no stop-clunk.
-   * The angular velocity is hard-clamped so any "jump" in the input (a
-   * recovered gap, a first sample, a calibration change) is ANIMATED at
-   * bounded speed instead of teleported.
+   * Advances the rebased interpolation segment (constant angular velocity)
+   * or falls back to the latest corrected sample, then moves the model
+   * toward it with a per-frame speed clamp that makes any "jump" (first
+   * sample, recovered gap, calibration change) an ANIMATED catch-up instead
+   * of a teleport.
    */
   public update(deltaTimeMs: number): void {
     if (!this.enabled || deltaTimeMs <= 0) return;
 
-    // Target pose: apply the calibration offset to the latest raw sample.
-    this.correctedQuat
-      .copy(this.offsetQuatInverse)
-      .multiply(this.rawTargetQuat);
-
-    // Integrate with sub-stepping so a frame hitch stays stable. The spring
-    // error is recomputed after every pose update (semi-implicit Euler).
-    let remaining = deltaTimeMs / 1000;
-    while (remaining > 0) {
-      const dt = Math.min(remaining, GyroFusion.INTEGRATION_DT_MAX);
-      remaining -= dt;
-
-      // Spring error (model-local rotation vector): log(q_model⁻¹ · q_target).
-      this.stepQuat.copy(this.target.quaternion).conjugate().multiply(this.correctedQuat);
-      const half = Math.acos(Math.min(Math.max(this.stepQuat.w, -1), 1));
-      const sinHalf = Math.sin(half);
-      const scale = sinHalf > 1e-9 ? (2 * half) / sinHalf : 2;
-      this.errorVec.set(
-        this.stepQuat.x * scale,
-        this.stepQuat.y * scale,
-        this.stepQuat.z * scale,
+    if (this.hasSegment) {
+      const elapsed = nowMs() - this.segmentStartTime;
+      const frac = Math.min(Math.max(elapsed / this.segmentDurationMs, 0), 1);
+      // slerp handles q ≡ −q (sign flips) by taking the short path.
+      this.correctedQuat.slerpQuaternions(
+        this.segmentStartQuat,
+        this.segmentEndQuat,
+        frac,
       );
-
-      // Critically-damped spring: a = −2·ζ·ωn·ω − ωn²·e  (ζ = 1).
-      this.accelVec
-        .copy(this.angularVel)
-        .multiplyScalar(-2 * GyroFusion.ZETA * GyroFusion.OMEGA_N);
-      this.accelVec.addScaledVector(this.errorVec, GyroFusion.OMEGA_N * GyroFusion.OMEGA_N);
-      this.angularVel.addScaledVector(this.accelVec, dt);
-      if (this.angularVel.length() > GyroFusion.MAX_ANGULAR_VEL) {
-        this.angularVel.setLength(GyroFusion.MAX_ANGULAR_VEL);
-      }
-
-      // Pose integration: q ← q ⊗ exp(ω·dt)  (body-frame angular velocity).
-      const angle = this.angularVel.length() * dt;
-      if (angle > 1e-9) {
-        this.axisVec.copy(this.angularVel).normalize();
-        this.expQuat.setFromAxisAngle(this.axisVec, angle);
-        this.target.quaternion.multiply(this.expQuat);
-        this.target.quaternion.normalize();
-      }
+    } else {
+      // No playable segment: hold/track the latest corrected sample.
+      this.correctedQuat
+        .copy(this.offsetQuatInverse)
+        .multiply(this.rawTargetQuat);
     }
+
+    // Move the model toward the corrected pose, bounded per frame.
+    const maxDeg = GyroFusion.MAX_DEG_PER_MS * deltaTimeMs;
+    this.stepQuat.copy(this.target.quaternion).conjugate().multiply(this.correctedQuat);
+    const half = Math.acos(Math.min(Math.max(this.stepQuat.w, -1), 1));
+    const deg = 2 * half * 180 / Math.PI;
+    const factor = deg > maxDeg ? maxDeg / deg : 1;
+    this.target.quaternion.slerp(this.correctedQuat, factor);
   }
 }
