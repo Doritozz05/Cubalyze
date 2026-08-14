@@ -151,18 +151,68 @@ describe('SceneManager — Level 2 Edge Cases', () => {
       expect(sceneManager.camera.position.y).toBeCloseTo(0);
     });
 
-    it('rotateCamera clamps phi (does not go below MIN_PHI or above MAX_PHI)', () => {
-      // Rotate far upward
-      sceneManager.rotateCamera(0, 100000);
+    it('rotateCamera rolls over the poles instead of stopping at the U/D faces (infinite rotation)', () => {
+      // Far upward drag: must pass over the yellow (U) face pole and around
+      // the far side, ending BELOW the cube — not stick at MIN_PHI (y ≈ +7).
+      sceneManager.rotateCamera(0, 700); // Δphi = −3.5 rad → over the top pole
       const posUp = sceneManager.camera.position;
-      const distUp = Math.sqrt(posUp.x ** 2 + posUp.y ** 2 + posUp.z ** 2);
-      expect(distUp).toBeCloseTo(7, 0);
+      expect(Math.sqrt(posUp.x ** 2 + posUp.y ** 2 + posUp.z ** 2)).toBeCloseTo(7, 5);
+      expect(posUp.y).toBeLessThan(0); // crossed the top, now down the far side
 
-      // Rotate far downward
-      sceneManager.rotateCamera(0, -100000);
+      sceneManager.resetCamera();
+
+      // Far downward drag: must pass under the white (D) face pole and come
+      // up the far side — not stick at MAX_PHI (y ≈ −7).
+      sceneManager.rotateCamera(0, -700); // Δphi = +3.5 rad → under the bottom pole
       const posDown = sceneManager.camera.position;
-      const distDown = Math.sqrt(posDown.x ** 2 + posDown.y ** 2 + posDown.z ** 2);
-      expect(distDown).toBeCloseTo(7, 0);
+      expect(Math.sqrt(posDown.x ** 2 + posDown.y ** 2 + posDown.z ** 2)).toBeCloseTo(7, 5);
+      expect(posDown.y).toBeGreaterThan(0); // passed the bottom, now above on the far side
+    });
+
+    it('rotateCamera passes exactly over the pole without inverting the view (up stays perpendicular)', () => {
+      // Rotate exactly 90°: the camera sits on the top pole, looking straight
+      // down at the yellow face. A world-up lookAt degenerates here (up is
+      // parallel to the view → arbitrary roll — the "everything inverts"
+      // bug). The trackball keeps up perpendicular to the view.
+      sceneManager.rotateCamera(0, Math.PI / 2 / 0.005);
+      const pos = sceneManager.camera.position;
+      expect(pos.x).toBeCloseTo(0, 5);
+      expect(pos.y).toBeCloseTo(7, 5); // exactly on the top pole
+      expect(pos.z).toBeCloseTo(0, 5);
+
+      const up = sceneManager.camera.up;
+      expect(Number.isFinite(up.x) && Number.isFinite(up.y) && Number.isFinite(up.z)).toBe(true);
+      // forward = (0, -1, 0) — up must stay perpendicular, never parallel.
+      const dot = up.y * -1;
+      expect(Math.abs(dot)).toBeLessThan(1e-6);
+    });
+
+    it('rotateCamera round-trips over a pole and back with the up vector upright', () => {
+      // Up past the top pole, then back down: the camera returns to the front
+      // view with its up vector upright (no accumulated roll / flip).
+      sceneManager.rotateCamera(0, 400); // Δangle = −2 rad → past the top pole
+      sceneManager.rotateCamera(0, -400); // Δangle = +2 rad → back to the front
+      const up = sceneManager.camera.up;
+      expect(up.x).toBeCloseTo(0, 4);
+      expect(up.y).toBeCloseTo(1, 4);
+      expect(up.z).toBeCloseTo(0, 4);
+      expect(sceneManager.camera.position.z).toBeCloseTo(7, 4);
+    });
+
+    it('rotateCamera keeps rolling when dragged repeatedly past a pole (no dead zone)', () => {
+      // Drag past the top pole in small steps: after crossing, the camera
+      // must keep moving and end up on the far side — not freeze at the face
+      // center (which would leave y ≈ +7, z ≈ +0.7).
+      for (let i = 0; i < 8; i++) {
+        sceneManager.rotateCamera(0, 80); // phi -= 0.4 rad per step
+      }
+      // phi = π/2 − 3.2 rad → over the top pole, down the far side near the
+      // bottom equator: behind (−z) and roughly at cube height (y ≈ 0).
+      const pos = sceneManager.camera.position;
+      const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2);
+      expect(dist).toBeCloseTo(7, 5);
+      expect(pos.z).toBeLessThan(-6); // flipped to the far side (did NOT stop at the pole)
+      expect(Math.abs(pos.y)).toBeLessThan(1); // kept rolling past the top, down the far side
     });
 
     it('rotateCamera keeps camera at orbit radius after large horizontal rotation', () => {
@@ -290,7 +340,7 @@ describe('SceneManager — Level 2 Edge Cases', () => {
 
     it('rotating the camera keeps near in sync with distance', () => {
       const before = sceneManager.camera.near;
-      sceneManager.rotateCamera(0, -10000); // phi clamps, radius stays 7
+      sceneManager.rotateCamera(0, -10000); // rotation preserves radius 7
       expect(sceneManager.camera.near).toBeCloseTo(before, 5);
       sceneManager.zoomBy(2); // radius → 14
       expect(sceneManager.camera.near).toBeCloseTo(0.42, 5);
