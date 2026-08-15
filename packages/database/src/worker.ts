@@ -201,6 +201,32 @@ function runMigrations(): void {
   }
 }
 
+/**
+ * Open the OPFS-backed database, retrying transient failures (the cross-tab
+ * WebLock is briefly held by another tab or by a Vite HMR reload). Only after
+ * every attempt fails do we give up and let the caller fall back to memory —
+ * a fresh in-memory DB silently loses everything written to it on reload.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function openOpfsDbWithRetry(sqlite3: any): Promise<any | null> {
+  const attempts = 3;
+  let lastError: unknown = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
+    } catch (e) {
+      lastError = e;
+      if (i < attempts - 1) {
+        console.warn(`[DB Worker] OPFS open failed (attempt ${i + 1}/${attempts}) — retrying…`, e);
+        await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+      }
+    }
+  }
+  console.warn(`[DB Worker] OPFS open failed after ${attempts} attempts — falling back to memory (data lost on reload).`, lastError);
+  return null;
+}
+
 export const DBWorker = {
   async init() {
     if (db) return true;
@@ -216,12 +242,11 @@ export const DBWorker = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((sqlite3 as any).oo1?.OpfsDb) {
         console.log('[DB Worker] OPFS is available. Using OpfsDb (PERSISTENT).');
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          db = new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
+        const opfsDb = await openOpfsDbWithRetry(sqlite3);
+        if (opfsDb) {
+          db = opfsDb;
           _storageType = 'opfs';
-        } catch (e) {
-          console.warn('[DB Worker] OPFS database failed to open (likely locked by another tab or HMR). Falling back to memory.', e);
+        } else {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
           _storageType = 'memory';
