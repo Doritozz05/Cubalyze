@@ -3,7 +3,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { StageOverlays } from "@/components/Layout/StageOverlays";
@@ -27,7 +26,7 @@ function CubePanelFallback() {
 import { ThemeProvider } from "@/components/theme-provider";
 import { ContextMenu } from "@/components/ContextMenu/ContextMenu";
 import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
-import { RefreshCw, Copy, Plus, Puzzle, Settings, LayoutGrid } from "lucide-react";
+import { RefreshCw, Copy, Plus, Puzzle, Settings, LayoutGrid, TriangleAlert } from "lucide-react";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -127,21 +126,10 @@ export function AppShell(props: AppShellProps) {
   }, [tourActive]);
 
   // Volatile-storage warning: when the DB falls back to in-memory storage
-  // (OPFS unavailable), all data is lost on reload. Warn the user once per
-  // session so they can export.
-  const storageWarnedRef = useRef(false);
+  // (OPFS unavailable or locked), all data is lost on reload. Rendered as a
+  // persistent banner (below) instead of a one-shot toast so a solve is never
+  // silently written into a volatile DB.
   const storageType = useStore(useStorageStatusStore, (s) => s.storageType);
-  useEffect(() => {
-    if (storageType === "memory" && !storageWarnedRef.current) {
-      storageWarnedRef.current = true;
-      toast.warning(
-        t("storageVolatile"),
-        { duration: 8000 },
-      );
-    }
-    // `t` from react-i18next is referentially stable, so this effect still
-    // only fires on storage-type changes.
-  }, [storageType, t]);
 
   // ── Generic context menu items (set once, refs keep them current) ──
   const onRegenerateRef = useRef(onRegenerate);
@@ -240,8 +228,20 @@ export function AppShell(props: AppShellProps) {
   return (
     <div className="antialiased bg-background text-foreground h-dvh w-full overflow-hidden">
       <ThemeProvider>
-        <MainLayout
-          activeView={activeView}
+        <div className="flex h-full flex-col">
+          {storageType === "memory" && (
+            <div
+              role="alert"
+              className="flex shrink-0 items-center justify-center gap-2 border-b border-white/20 bg-dnf px-4 py-2 text-center text-xs font-medium text-white"
+            >
+              <TriangleAlert className="size-3.5 shrink-0" />
+              <span>{t("storageVolatile")}</span>
+            </div>
+          )}
+          <div className="min-h-0 flex-1">
+            <MainLayout
+              className="h-full"
+              activeView={activeView}
           sessionCount={solves.length}
           sessions={sessions}
           activeSessionId={activeSessionId}
@@ -313,6 +313,8 @@ export function AppShell(props: AppShellProps) {
             />
           }
         />
+          </div>
+        </div>
 
         <StageOverlays
           isTouch={isTouch}
