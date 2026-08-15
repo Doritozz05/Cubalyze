@@ -4,10 +4,19 @@ import { create } from "zustand";
 
 export type StorageType = "opfs" | "desktop" | "memory" | "unknown";
 
+/**
+ * Outcome of `navigator.storage.persist()` (ADR-011): whether the browser has
+ * agreed to protect this origin's storage from automatic eviction.
+ */
+export type StoragePersistence = "granted" | "denied" | "unsupported" | "unknown";
+
 interface StorageStatusState {
   /** opfs/desktop = persistent, memory = data lost on reload, unknown = not checked yet. */
   storageType: StorageType;
   setStorageType: (t: StorageType) => void;
+  /** Eviction-protection status (granted/denied/unsupported/unknown). */
+  persistence: StoragePersistence;
+  setPersistence: (p: StoragePersistence) => void;
 }
 
 /**
@@ -22,4 +31,6 @@ interface StorageStatusState {
 export const useStorageStatusStore = create<StorageStatusState>((set) => ({
   storageType: "unknown",
   setStorageType: (storageType) => set({ storageType }),
+  persistence: "unknown",
+  setPersistence: (persistence) => set({ persistence }),
 }));

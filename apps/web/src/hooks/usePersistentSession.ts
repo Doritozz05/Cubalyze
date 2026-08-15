@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { initDB, SessionsRepository, SolvesRepository, type Solve as DBSolve } from "@cubeforge/database";
 import { isDev } from "@/utils/env";
 import { useStorageStatusStore } from "@/stores/storageStatus";
+import { requestPersistentStorage } from "@/boot/storagePersistence";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { attachDemoDataHelpers } from "@/utils/seedDemoData";
@@ -134,6 +135,12 @@ export function usePersistentSession(): UsePersistentSessionResult {
         try {
           const storageType = await dbClient.getStorageType();
           useStorageStatusStore.getState().setStorageType(storageType);
+          // Ask the browser to protect the OPFS DB from automatic eviction
+          // (ADR-011). Only OPFS is eligible: desktop is already file-backed
+          // and memory is volatile regardless of the browser's answer.
+          if (storageType === "opfs") {
+            void requestPersistentStorage();
+          }
         } catch {
           // storage type check is best-effort
         }

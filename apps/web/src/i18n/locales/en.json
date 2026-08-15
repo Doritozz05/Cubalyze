@@ -469,7 +469,17 @@
         "desktop": "Desktop (file)",
         "memory": "In-memory (volatile)",
         "unknown": "Unknown"
-      }
+      },
+      "persistence": "Persistence",
+      "persistenceStatus": {
+        "granted": "Protected",
+        "denied": "Not protected",
+        "unsupported": "Not supported",
+        "unknown": "Checking…",
+        "desktop": "File-backed",
+        "memory": "Volatile"
+      },
+      "persistenceRisk": "Not protected from automatic eviction — export regularly."
     },
     "credits": {
       "introTitle": "Made possible by the community",

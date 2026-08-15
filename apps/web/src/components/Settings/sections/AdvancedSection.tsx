@@ -124,6 +124,7 @@ export function AdvancedSection() {
   const resetPreferences = useStore(preferencesStore, (s) => s.resetPreferences);
 
   const storageType = useStorageStatusStore((s) => s.storageType);
+  const persistence = useStorageStatusStore((s) => s.persistence);
   const { usage, quota } = useStorageEstimate();
   const { entries, refresh } = useAppStorageEntries();
 
@@ -166,6 +167,28 @@ export function AdvancedSection() {
     toast.success(i18n.t("toast:storageCleared"));
     refresh();
   };
+
+  // Eviction-protection status for the storage inspector. Desktop is already
+  // file-backed and memory is volatile regardless of `navigator.storage.persist()`,
+  // so only the OPFS backend maps through the requested/observed status.
+  const persistenceView = useMemo(() => {
+    if (storageType === "desktop") {
+      return { key: "advanced.persistenceStatus.desktop", tone: "text-ready", Icon: CheckCircle2 } as const;
+    }
+    if (storageType === "memory") {
+      return { key: "advanced.persistenceStatus.memory", tone: "text-dnf", Icon: TriangleAlert } as const;
+    }
+    switch (persistence) {
+      case "granted":
+        return { key: "advanced.persistenceStatus.granted", tone: "text-ready", Icon: CheckCircle2 } as const;
+      case "denied":
+        return { key: "advanced.persistenceStatus.denied", tone: "text-caution", Icon: TriangleAlert } as const;
+      case "unsupported":
+        return { key: "advanced.persistenceStatus.unsupported", tone: "text-caution", Icon: TriangleAlert } as const;
+      default:
+        return { key: "advanced.persistenceStatus.unknown", tone: "text-ink-3", Icon: HardDrive } as const;
+    }
+  }, [storageType, persistence]);
 
   const envActive = envFlags.filter((f) => f.value).length;
 
@@ -254,7 +277,7 @@ export function AdvancedSection() {
           </Button>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border border-line bg-surface-2/40 p-3">
             <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">{t("advanced.backend")}</p>
             <p className="mt-1 flex items-center gap-1.5 text-[0.8rem] font-medium text-ink">
@@ -265,6 +288,19 @@ export function AdvancedSection() {
               <p className="mt-1 flex items-center gap-1 text-[0.6rem] text-dnf">
                 <TriangleAlert className="size-3" />
                 {t("advanced.dataLost")}
+              </p>
+            )}
+          </div>
+          <div className="rounded-lg border border-line bg-surface-2/40 p-3">
+            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-ink-3">{t("advanced.persistence")}</p>
+            <p className={`mt-1 flex items-center gap-1.5 text-[0.8rem] font-medium ${persistenceView.tone}`}>
+              <persistenceView.Icon className="size-3.5 shrink-0" />
+              {t(persistenceView.key)}
+            </p>
+            {storageType === "opfs" && persistence === "denied" && (
+              <p className="mt-1 flex items-center gap-1 text-[0.6rem] text-caution">
+                <TriangleAlert className="size-3 shrink-0" />
+                {t("advanced.persistenceRisk")}
               </p>
             )}
           </div>

@@ -469,7 +469,17 @@
         "desktop": "Escritorio (archivo)",
         "memory": "En memoria (volátil)",
         "unknown": "Desconocido"
-      }
+      },
+      "persistence": "Persistencia",
+      "persistenceStatus": {
+        "granted": "Protegido",
+        "denied": "Sin protección",
+        "unsupported": "No soportado",
+        "unknown": "Comprobando…",
+        "desktop": "Archivo local",
+        "memory": "Volátil"
+      },
+      "persistenceRisk": "Sin protección contra el borrado automático: exporta con regularidad."
     },
     "credits": {
       "introTitle": "Hecho posible por la comunidad",
