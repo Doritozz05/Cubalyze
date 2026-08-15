@@ -4,6 +4,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
+import { LIGHT_CANVAS } from './src/theme/themeColors.js'
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -68,8 +69,10 @@ export default defineConfig(({ mode }) => ({
         description: 'Smart Cube Training Platform',
         start_url: '/',
         display: 'standalone',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        // Static manifest — the light canvas (the app's no-JS default). The
+        // in-page browser bar follows the theme dynamically via theme-color.js.
+        theme_color: LIGHT_CANVAS,
+        background_color: LIGHT_CANVAS,
         icons: [
           {
             src: '/icon-192.png',
