@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
+import { dragActivity } from "@/components/ui/dragActivity";
 
 export interface Position {
   x: number;
@@ -274,6 +275,15 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial.x, initial.y]);
 
+  // Safety net: if the component unmounts mid-drag (no pointerup/pointercancel
+  // ever arrives), release the global drag-activity flag so tooltips and the
+  // dock's rect loop don't stay frozen "dragging" forever.
+  useEffect(() => {
+    return () => {
+      if (dragState.current || movedRef.current) dragActivity.end();
+    };
+  }, []);
+
   const persist = useCallback(
     (pos: Position) => {
       if (onPositionChange) onPositionChange(pos);
@@ -341,6 +351,9 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       ) {
         movedRef.current = true;
         setIsDragging(true);
+        // Tell the app a drag is underway (disables tooltips, keeps the
+        // dock's rect-measure RAF loop alive, etc.).
+        dragActivity.begin();
       }
       if (!movedRef.current) return;
 
@@ -439,6 +452,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
         const finalPos = currentDragPos.current;
         setPosition(finalPos);
         persist(finalPos);
+        dragActivity.end();
       }
 
       dragState.current = null;

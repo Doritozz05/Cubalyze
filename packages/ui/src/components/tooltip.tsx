@@ -4,6 +4,7 @@ import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "../lib/utils"
+import { useDragActivityActive } from "./dragActivity"
 
 function TooltipProvider({
   delayDuration = 0,
@@ -21,9 +22,19 @@ function TooltipProvider({
 function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  // While anything is being dragged, suppress tooltips app-wide — they'd
+  // otherwise pop under the pointer as a drag sweeps over other elements
+  // (e.g. a dock pill reorder crossing its neighbors). Non-dragging callers
+  // (including controlled ones like the onboarding tour) pass through
+  // untouched: the forced `open: false` is only injected mid-drag.
+  const dragActive = useDragActivityActive()
   return (
     <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        {...props}
+        {...(dragActive ? { open: false } : {})}
+      />
     </TooltipProvider>
   )
 }

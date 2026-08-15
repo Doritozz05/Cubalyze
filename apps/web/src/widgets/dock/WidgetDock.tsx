@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { dragActivity, useDragActivityActive } from "@/components/ui/dragActivity";
 import type { ReactNode } from "react";
 import type { WidgetId } from "@/widgets/types";
 import { useIsDockEditing, dockEditStore } from "@/widgets/dock/dockEditStore";
@@ -110,6 +111,9 @@ const DockPill = memo(function DockPill({
   // the whole drag instead (cleanup also runs on unmount).
   useGlobalDragCursor(isDragging);
   const reduceMotion = useReducedMotion();
+  // True while ANY drag is in progress (floating widget or another pill's
+  // reorder) — suppresses the hover magnify + lets begin/end report here.
+  const dragActive = useDragActivityActive();
 
   // The dock shows every ACTIVE widget (docked, floating or minimized) —
   // macOS-style: launching keeps the pill, the running dot marks it.
@@ -171,6 +175,7 @@ const DockPill = memo(function DockPill({
               }
             }}
             onDragStart={(_e, info) => {
+              dragActivity.begin();
               suppressClickRef.current = true;
               setIsDragging(true);
               setIsCommitted(false);
@@ -195,6 +200,7 @@ const DockPill = memo(function DockPill({
               );
             }}
             onDragEnd={(_e, info) => {
+              dragActivity.end();
               if (info.offset.y > 35) {
                 const store = widgetStore.getState();
                 store.setStatus(widgetId, "minimized");
@@ -228,7 +234,7 @@ const DockPill = memo(function DockPill({
           >
             {/* Magnified icon (macOS-style) — the label floats above on hover. */}
             <motion.span
-              animate={{ scale: isHovered ? 1.35 : 1 }}
+              animate={{ scale: isHovered && !dragActive ? 1.35 : 1 }}
               transition={
                 reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 22 }
               }
@@ -378,6 +384,7 @@ export function WidgetDock({
   const isDockZoneActive = useDockZoneActive();
   const draggingWidgetId = useDraggingWidgetId();
   const isEditing = useIsDockEditing();
+  const dragActive = useDragActivityActive();
   const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
   const [explorerOpen, setExplorerOpen] = useState(false);
 
@@ -390,25 +397,13 @@ export function WidgetDock({
   const reportRectRef = useRef(reportRect);
   reportRectRef.current = reportRect;
 
-  // ── Live dock rect registration ────────────────────────────────────────
-  // The drag-to-dock zone is the bar's ACTUAL on-screen rectangle, not a
-  // hardcoded top-of-viewport band. Report it to dockZoneState so floating
-  // widgets shrink only when the pointer is over the real bar — never over
-  // dead header space left/right of the centered dock. Re-measured after
-  // every commit (covers the header entrance animation and reflows) plus a
-  // ResizeObserver for pure-CSS size changes (bar expanding to w-max while
-  // a widget drags over, webfont settling). Cleared on unmount.
-  useLayoutEffect(() => {
-    const el = barRef.current;
-    if (!el || !reportRectRef.current) {
-      // Retracted (auto-hide) or not yet mounted: drop the drag-to-dock zone
-      // so floating widgets never treat the hidden bar's old spot as live.
-      dockZoneState.setDockRect(null);
-      return;
-    }
-    const r = el.getBoundingClientRect();
-    dockZoneState.setDockRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-  });
+  // ── Retract clears the drag-to-dock zone ───────────────────────────────
+  // When the auto-hide bar retracts (reportRect flips false), its old spot
+  // must stop acting as a drop zone immediately — the slide-up is a transform
+  // the ResizeObserver never sees, so clear it on the prop flip itself.
+  useEffect(() => {
+    if (!reportRect) dockZoneState.setDockRect(null);
+  }, [reportRect]);
 
   useEffect(() => {
     const el = barRef.current;
@@ -431,36 +426,34 @@ export function WidgetDock({
     };
   }, []);
 
-  // ── Continuous rect refresh while visible ──────────────────────────────
-  // The bar slides in/out during auto-hide (a transform — invisible to
-  // ResizeObserver) and expands while a widget drags over it. A cheap RAF
-  // loop keeps the drag-to-dock zone at the bar's LIVE on-screen position
-  // (guarded writes — setDockRect never notifies React), so floating widgets
-  // test against the real bar, not a stale pre-animation spot.
+  // ── Live rect refresh WHILE DRAGGING ───────────────────────────────────
+  // The bar can move under a live drag (auto-hide snap-reveal, or pills
+  // parting as a widget enters) in ways the ResizeObserver never sees
+  // (transforms) or sees too late (framer springs). A per-frame RAF read
+  // keeps the drag-to-dock zone at the bar's LIVE position — but ONLY while
+  // a drag is active, so idle frames never pay a forced layout read (the
+  // ResizeObserver + window-resize listener above keep the rect current
+  // while nothing is moving). setDockRect is a guarded module write — it
+  // never notifies React.
   useEffect(() => {
-    if (!reportRect) return;
+    if (!reportRect || !dragActive) return;
     let raf = 0;
-    let lastKey = "";
     const tick = () => {
       const el = barRef.current;
       if (el) {
         const r = el.getBoundingClientRect();
-        const key = `${r.left},${r.top},${r.width},${r.height}`;
-        if (key !== lastKey) {
-          lastKey = key;
-          dockZoneState.setDockRect({
-            x: r.left,
-            y: r.top,
-            w: r.width,
-            h: r.height,
-          });
-        }
+        dockZoneState.setDockRect({
+          x: r.left,
+          y: r.top,
+          w: r.width,
+          h: r.height,
+        });
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [reportRect]);
+  }, [reportRect, dragActive]);
 
   // The dock lists every ACTIVE widget (docked, floating or minimized) —
   // launching a widget keeps its pill in the bar and marks it "running"
