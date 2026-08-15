@@ -32,6 +32,25 @@ const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
 /** Horizontal pitch of one icon-only pill (size-8 + gap-0.5). */
 const PILL_PITCH = 34;
 
+/**
+ * The element whose width is the dock's real horizontal budget.
+ *
+ * The bar's immediate parent is a content-sized wrapper (added for the
+ * auto-hide slide), so its clientWidth equals the bar's own width — useless
+ * as an overflow budget (it would collapse every widget into the chevron).
+ * The first ancestor genuinely wider than the bar is the flex container
+ * that centers it; the fixed header caps the walk when the bar fills it.
+ */
+function getDockBudgetParent(el: HTMLElement): HTMLElement | null {
+  let parent = el.parentElement;
+  while (parent && parent !== document.body) {
+    if (parent.clientWidth >= el.offsetWidth + 8) return parent;
+    if (getComputedStyle(parent).position === "fixed") return parent;
+    parent = parent.parentElement;
+  }
+  return null;
+}
+
 /** Launch a widget as a floating panel at a smart position. */
 function launchWidget(widgetId: WidgetId) {
   const store = widgetStore.getState();
@@ -492,8 +511,7 @@ export function WidgetDock({
 
   const recompute = useCallback(() => {
     const el = containerRef.current;
-    const parent = el?.parentElement;
-    if (!el || !parent) return;
+    if (!el) return;
     if (isDockZoneActive) {
       setHiddenCount((prev) => (prev === 0 ? prev : 0));
       return;
@@ -503,7 +521,15 @@ export function WidgetDock({
       setHiddenCount((prev) => (prev === 0 ? prev : 0));
       return;
     }
-    const available = parent.clientWidth;
+    // ── Available width ───────────────────────────────────────────────────
+    // The bar's immediate parent is a content-sized wrapper (added for the
+    // auto-hide slide), so its clientWidth equals the bar's own width and
+    // would report zero room for pills — collapsing EVERY widget into the
+    // overflow chevron. The real budget is the first ancestor genuinely
+    // wider than the bar (the flex container that centers it), capped at
+    // the fixed header that constrains the whole bar.
+    const budget = getDockBudgetParent(el);
+    const available = budget ? budget.clientWidth : window.innerWidth;
     const gap = 2; // gap-0.5
     // Sum the widths of every non-widget area (session, puzzle, clock,
     // profile, spacer, separator…) — they're interleaved with the pills now.
@@ -531,11 +557,14 @@ export function WidgetDock({
   useLayoutEffect(() => {
     recompute();
     const el = containerRef.current;
-    const parent = el?.parentElement;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(recompute);
     ro.observe(el);
-    if (parent) ro.observe(parent);
+    // Observe the real budget element too — a window resize changes the
+    // flex container (not the content-sized wrapper), so without this the
+    // overflow chevron would never appear/clear as the viewport resizes.
+    const budget = getDockBudgetParent(el);
+    if (budget) ro.observe(budget);
     let cancelled = false;
     // Re-measure once webfonts settle (tray labels depend on the font).
     document.fonts?.ready?.then(() => {
