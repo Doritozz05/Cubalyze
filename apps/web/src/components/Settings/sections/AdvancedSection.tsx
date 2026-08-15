@@ -42,8 +42,25 @@ const STORAGE_LABEL_KEY: Partial<Record<string, ParseKeys<"settings">>> = {
   unknown: "advanced.storage.unknown",
 };
 
-/** Keys under the app's namespace in localStorage. */
-const APP_STORAGE_KEYS = ["cubeforge-prefs", "cubeforge:activeSessionId"];
+/**
+ * Every key the app owns in localStorage shares the `cubeforge` prefix
+ * (preferences, active session, widget layout, onboarding/migration flags…).
+ * Clears them all — solves and training data live in SQLite, not localStorage,
+ * so they are never touched here.
+ */
+function clearAppStorage() {
+  if (typeof window === "undefined") return;
+  // Collect first: removing entries while iterating the live `localStorage`
+  // shifts indices and would silently skip every other key.
+  const keys: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key && key.startsWith("cubeforge")) keys.push(key);
+  }
+  for (const key of keys) {
+    window.localStorage.removeItem(key);
+  }
+}
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null || !Number.isFinite(bytes)) return "—";
@@ -160,10 +177,7 @@ export function AdvancedSection() {
   };
 
   const handleClearAppStorage = () => {
-    if (typeof window === "undefined") return;
-    for (const key of APP_STORAGE_KEYS) {
-      window.localStorage.removeItem(key);
-    }
+    clearAppStorage();
     toast.success(i18n.t("toast:storageCleared"));
     refresh();
   };

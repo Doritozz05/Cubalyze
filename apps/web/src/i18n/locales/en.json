@@ -454,7 +454,7 @@
       "used": "Used",
       "quota": "Quota",
       "dataLost": "Data lost on reload — export regularly",
-      "clearStorageHint": "Clearing app storage resets preferences & session id (a reload is required).",
+      "clearStorageHint": "Clearing app storage resets preferences, session, widget layout and onboarding flags (a reload is required). Solves and training data are never touched.",
       "clearStorage": "Clear app storage",
       "envFlags": "Environment flags",
       "envFlagsHint": "Runtime environment detected by the app — useful when sharing bug reports.",

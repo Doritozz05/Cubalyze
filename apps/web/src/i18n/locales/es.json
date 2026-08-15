@@ -454,7 +454,7 @@
       "used": "En uso",
       "quota": "Cuota",
       "dataLost": "Los datos se pierden al recargar: exporta con regularidad",
-      "clearStorageHint": "Vaciar el almacenamiento de la app restablece las preferencias y el id de sesión (se requiere recargar).",
+      "clearStorageHint": "Vaciar el almacenamiento de la app restablece preferencias, sesión, diseño de widgets y banderas de onboarding (se requiere recargar). Los solves y los datos de entrenamiento no se tocan.",
       "clearStorage": "Vaciar almacenamiento de la app",
       "envFlags": "Indicadores de entorno",
       "envFlagsHint": "Entorno de ejecución detectado por la app: útil al compartir informes de errores.",
