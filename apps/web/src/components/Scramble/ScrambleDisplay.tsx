@@ -11,6 +11,12 @@ export interface ScrambleDisplayProps {
   /** Orientation-adapted scramble for display (raw scramble used for validation). */
   displayScramble?: string;
   smartCubeConnected?: boolean;
+  /**
+   * Force verification visuals (per-move gray/black progress + animation)
+   * even without a physical smart cube — the virtual cube runs the same
+   * scramble validator. Defaults to smartCubeConnected.
+   */
+  verificationActive?: boolean;
   onRegenerate?: () => void;
   onCopy?: () => void;
   indexLabel?: string;
@@ -28,6 +34,7 @@ export function ScrambleDisplay({
   scramble,
   displayScramble,
   smartCubeConnected,
+  verificationActive,
   onRegenerate,
   onCopy,
   indexLabel,
@@ -54,12 +61,15 @@ export function ScrambleDisplay({
     setTimeout(() => setCopied(false), 1400);
   };
 
-  // Move verification states (black & gray progress) trigger strictly when a
-  // SmartCube is connected AND non-empty verification states are active.
-  // Otherwise, scramble tokens display cleanly in solid black text (text-ink)
-  // without opacity reduction.
+  // Move verification states (black & gray progress) trigger when a smart
+  // cube is connected OR verification is explicitly active (the virtual cube
+  // runs the same scramble validator) AND non-empty verification states are
+  // present. Otherwise, scramble tokens display cleanly in solid black text
+  // (text-ink) without opacity reduction.
   const isVerificationActive =
-    Boolean(smartCubeConnected) && Array.isArray(states) && states.length > 0;
+    (verificationActive ?? Boolean(smartCubeConnected)) &&
+    Array.isArray(states) &&
+    states.length > 0;
 
   return (
     <div className="w-full" data-onboarding-target="timer">

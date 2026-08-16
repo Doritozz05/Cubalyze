@@ -630,7 +630,7 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
           <ScrambleDisplay
             scramble={scramble}
             displayScramble={displayScramble}
-            smartCubeConnected={false}
+            verificationActive
             states={validation.states}
             currentIndex={validation.currentIndex}
             errorMoves={displayErrorMoves}
