@@ -9,13 +9,18 @@ import { CubeTurnSounds } from "../cubeTurnSounds";
  */
 class FakeAudio {
   static instances: FakeAudio[] = [];
+  /** Every element that has had play() called, in order (warm-up + real turns). */
+  static playLog: FakeAudio[] = [];
   src: string;
   preload = "";
   volume = 1;
+  muted = false;
   paused = true;
   currentTime = 0;
+  load = vi.fn();
   play = vi.fn(() => {
     this.paused = false;
+    FakeAudio.playLog.push(this);
     return Promise.resolve();
   });
 
@@ -27,9 +32,16 @@ class FakeAudio {
 
 const random = (value: number) => () => value;
 
+// The pool is built in source order with 2 copies per source (POOL_SIZE 8 / 4
+// samples), so an instance's source is its position in `instances` divided by 2.
+const COPIES_PER_SOURCE = 2;
+const sourceIndexOf = (el: FakeAudio) =>
+  Math.floor(FakeAudio.instances.indexOf(el) / COPIES_PER_SOURCE);
+
 describe("CubeTurnSounds", () => {
   beforeEach(() => {
     FakeAudio.instances = [];
+    FakeAudio.playLog = [];
     vi.stubGlobal("Audio", FakeAudio);
   });
 
@@ -58,6 +70,34 @@ describe("CubeTurnSounds", () => {
     const third = player.pickSourceIndex(random(0.3)); // 1 → bumped to 2
     expect(second).not.toBe(first);
     expect(third).not.toBe(second);
+  });
+
+  it("preload decode-warms every pooled copy muted, so the first turn is instant", () => {
+    const player = new CubeTurnSounds();
+    player.preload();
+    const pool = FakeAudio.instances;
+    expect(pool).toHaveLength(8);
+    // The warm-up pass played every copy once, muted, to force decode.
+    expect(pool.every((a) => a.play.mock.calls.length >= 1)).toBe(true);
+    expect(pool.every((a) => a.muted)).toBe(true);
+  });
+
+  it("never plays the same source twice in a row, even when every copy is busy", () => {
+    const player = new CubeTurnSounds();
+    player.preload();
+    FakeAudio.playLog = [];
+    // Every copy still playing → play() must take the busy-fallback path AND
+    // still avoid the source that just played.
+    FakeAudio.instances.forEach((a) => {
+      a.paused = false;
+    });
+    for (let i = 0; i < 30; i++) player.play();
+    expect(FakeAudio.playLog).toHaveLength(30);
+    for (let i = 1; i < FakeAudio.playLog.length; i++) {
+      expect(sourceIndexOf(FakeAudio.playLog[i])).not.toBe(
+        sourceIndexOf(FakeAudio.playLog[i - 1]),
+      );
+    }
   });
 
   it("does nothing when sounds are disabled", () => {

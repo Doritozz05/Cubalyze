@@ -259,6 +259,13 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
     engineRef.current?.setIsometricView();
   }, [engineRef]);
 
+  // Warm the turn-sound sample pool as soon as the view mounts — BEFORE the
+  // 3D engine is ready — so the first move's click is already decoded and
+  // never lags (see cubeTurnSounds.preload's muted decode-warm).
+  useEffect(() => {
+    cubeTurnSounds.preload();
+  }, []);
+
   // Share the current scramble with the floating widgets while the Cube view
   // is active — each view owns an independent scramble lifecycle, so the
   // host reads THIS value (not the real timer's) on the Cube tab.
@@ -286,8 +293,6 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
   useEffect(() => {
     if (!isReady || didInitRef.current) return;
     didInitRef.current = true;
-    // Warm up the turn-sound sample pool so the first turn clicks immediately.
-    cubeTurnSounds.preload();
     // The virtual cube only ever pushes CANONICAL solved facelets (see
     // solvedCanonical) — every push tells both consumers "cube at the
     // solved start" regardless of frame.

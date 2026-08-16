@@ -14,6 +14,16 @@
  *   • A small element POOL (2 copies per source) allows real overlap when
  *     turns are faster than the samples (fast solves), while reusing nodes
  *     instead of allocating a fresh `Audio` per turn.
+ *   • `preload()` DECODE-WARMS the pool: it plays every copy muted, forcing
+ *     the browser to decode each sample now rather than on the first turn
+ *     (the reported first-move latency). Muted playback is exempt from
+ *     autoplay policy, and a rejection just means the browser decodes lazily.
+ *     Consumers call `preload()` on mount / engine init so the samples are
+ *     ready before the cube becomes interactive.
+ *   • Playback never repeats a sample: `play()` avoids the source that just
+ *     played in EVERY path — idle copy, idle copy of another source, and the
+ *     all-copies-busy restart fallback — so two consecutive turns are never
+ *     the same click.
  *   • Playback is gated by the Audio preferences (Settings → Audio):
  *     `soundsEnabled` (audio master) + `cubeTurnSoundsEnabled` must be on,
  *     and the master `soundVolume` scales every sample — the same contract
@@ -46,16 +56,22 @@ export class CubeTurnSounds {
   private pool: PoolEntry[] = [];
   /** Round-robin cursor over the pool (spreads restarts across copies). */
   private cursor = 0;
-  /** Index of the last played source, so consecutive turns rarely repeat. */
+  /** Index of the last source actually played (or picked by the test helper). */
   private lastSourceIndex = -1;
+  /** Whether the decode-warm pass has already run (keeps preload idempotent). */
+  private warmedUp = false;
 
   /**
-   * Create the audio pool and start preloading the samples. Safe to call
-   * repeatedly; a no-op when the pool already exists or `Audio` is
-   * unavailable (SSR / tests without a DOM stub).
+   * Create the audio pool, force each sample to start loading and run the
+   * decode-warm pass. Safe to call repeatedly; a no-op after the first call
+   * or when `Audio` is unavailable (SSR / tests without a DOM stub).
    */
   public preload(): void {
     this.ensurePool();
+    if (!this.warmedUp) {
+      this.warmedUp = true;
+      this.warmup();
+    }
   }
 
   /**
@@ -69,29 +85,32 @@ export class CubeTurnSounds {
     this.ensurePool();
     if (this.pool.length === 0) return;
 
-    const sourceIdx = this.pickSourceIndex();
     const volume = prefs.soundVolume / 100;
 
-    // Prefer an idle copy of the chosen source; when every copy is still
-    // playing (turns faster than the samples), reuse the next pool slot so
-    // the sound naturally overlaps instead of dropping.
-    const start = this.cursor;
-    let chosen: PoolEntry | null = null;
-    for (let i = 0; i < this.pool.length; i++) {
-      const entry = this.pool[this.cursor];
-      this.cursor = (this.cursor + 1) % this.pool.length;
-      if (entry.sourceIndex === sourceIdx && entry.el.paused) {
-        chosen = entry;
-        break;
-      }
-    }
-    if (!chosen) {
-      chosen = this.pool[start];
-      this.cursor = (start + 1) % this.pool.length;
-    }
+    // Capture the just-played source BEFORE picking, so the fallback paths can
+    // still honor the no-repeat rule even though pickSourceIndex() advances
+    // the internal cursor.
+    const previous = this.lastSourceIndex;
+    const preferred = this.pickSourceIndex();
+
+    // 1) An idle copy of the preferred source (always ≠ previous).
+    // 2) Otherwise an idle copy of any source ≠ previous.
+    // 3) Otherwise — every copy still playing (turns faster than the samples)
+    //    — restart any copy of a source ≠ previous. With 2 copies × 4 sources
+    //    there is always at least one such entry, so two consecutive turns
+    //    never play the same sample.
+    const chosen =
+      this.scan((e) => e.sourceIndex === preferred && e.el.paused) ??
+      this.scan((e) => e.sourceIndex !== previous && e.el.paused) ??
+      this.scan((e) => e.sourceIndex !== previous) ??
+      this.pool[this.cursor];
+
+    this.lastSourceIndex = chosen.sourceIndex;
 
     const el = chosen.el;
     el.volume = volume;
+    // A copy may still be muted from the decode-warm pass — make it audible.
+    el.muted = false;
     try {
       el.currentTime = 0; // restart a still-playing copy from the top
     } catch {
@@ -115,6 +134,32 @@ export class CubeTurnSounds {
     return idx;
   }
 
+  /** Round-robin scan: the first pool entry matching the predicate, while
+   *  advancing the cursor so restarts spread across copies. */
+  private scan(predicate: (entry: PoolEntry) => boolean): PoolEntry | null {
+    for (let i = 0; i < this.pool.length; i++) {
+      const entry = this.pool[this.cursor];
+      this.cursor = (this.cursor + 1) % this.pool.length;
+      if (predicate(entry)) return entry;
+    }
+    return null;
+  }
+
+  /**
+   * Decode-warm every pooled copy: playing muted forces the browser to decode
+   * the sample NOW, so the first real turn does not pay the decode latency.
+   * We never pause/seek from a promise — a real turn that lands mid-warmup
+   * simply restarts the copy via play() (which resets `muted`), so there is
+   * no race between the warm-up and a fast first turn.
+   */
+  private warmup(): void {
+    for (const entry of this.pool) {
+      const el = entry.el;
+      el.muted = true;
+      void el.play().catch(() => {});
+    }
+  }
+
   private ensurePool(): void {
     if (this.pool.length > 0 || typeof Audio === "undefined") return;
     const volume = preferencesStore.getState().soundVolume / 100;
@@ -124,6 +169,9 @@ export class CubeTurnSounds {
         const el = new Audio(src);
         el.preload = "auto";
         el.volume = volume;
+        // new Audio(src) may only schedule the fetch; load() makes it start
+        // immediately, so the samples are ready before the first turn.
+        el.load();
         return { el, sourceIndex };
       }),
     );
