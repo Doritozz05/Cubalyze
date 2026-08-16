@@ -11,67 +11,64 @@
  *   • Sources are imported as Vite asset URLs, so they are hashed and bundled
  *     with the app and resolve correctly in both the PWA and the Tauri
  *     desktop build (no hard-coded /public paths).
- *   • A small element POOL (2 copies per source) allows real overlap when
- *     turns are faster than the samples (fast solves), while reusing nodes
- *     instead of allocating a fresh `Audio` per turn.
- *   • `preload()` DECODE-WARMS the pool: it plays every copy muted, forcing
- *     the browser to decode each sample now rather than on the first turn
- *     (the reported first-move latency). Muted playback is exempt from
- *     autoplay policy, and a rejection just means the browser decodes lazily.
- *     Consumers call `preload()` on mount / engine init so the samples are
- *     ready before the cube becomes interactive.
- *   • Playback never repeats a sample: `play()` avoids the source that just
- *     played in EVERY path — idle copy, idle copy of another source, and the
- *     all-copies-busy restart fallback — so two consecutive turns are never
- *     the same click.
+ *   • Playback goes through the Web Audio API: `preload()` fetches and
+ *     DECODES every sample once into an in-memory `AudioBuffer`
+ *     (`decodeAudioData`), and each turn fires a one-shot
+ *     `AudioBufferSourceNode`. This replaces the old `HTMLAudioElement` pool,
+ *     whose media-pipeline state Chrome evicts while the tab is hidden —
+ *     coming back to the app and turning the cube re-fetched/re-decoded the
+ *     sample through the element pipeline, which showed up as the reported
+ *     ~2 s first-click delay. A decoded buffer survives backgrounding, so a
+ *     turn after returning plays instantly on the audio clock.
+ *   • Autoplay policy: the AudioContext is created lazily (by `preload()` or
+ *     the first `play()`). Chrome keeps it `suspended` until a user gesture —
+ *     and also suspends it while the tab is hidden — so `play()` (always
+ *     reached from a user interaction: cube turn / replay play) resumes it.
+ *     The samples are already decoded in memory, so the first click after
+ *     coming back fires as soon as the context re-arms: no delay.
+ *   • Turns that land while the first fetch/decode is still in flight are
+ *     queued and played the moment the buffers are ready, so the very first
+ *     fast interaction never drops a click.
+ *   • Playback never repeats a sample: `pickSourceIndex()` avoids the source
+ *     that just played.
  *   • Playback is gated by the Audio preferences (Settings → Audio):
  *     `soundsEnabled` (audio master) + `cubeTurnSoundsEnabled` must be on,
  *     and the master `soundVolume` scales every sample — the same contract
  *     the inspection cues and PB fanfare use.
- *   • Fully lazy: no DOM/Audio work happens until the first play or an
- *     explicit `preload()`, so SSR, tests and users who never open the
+ *   • Fully lazy: no fetch / AudioContext work happens until the first play
+ *     or an explicit `preload()`, so SSR, tests and users who never open the
  *     replay/virtual cube pay zero cost.
  *
  * Samples: "rubik cube turn" series by spacejoe on Freesound (see
  * `assets/sounds/README.md` for the attribution/rename table).
  */
 
-import { preferencesStore } from "@cubeforge/state";
-import turn1Url from "@/assets/sounds/turn-1.wav";
-import turn2Url from "@/assets/sounds/turn-2.wav";
-import turn3Url from "@/assets/sounds/turn-3.wav";
-import turn4Url from "@/assets/sounds/turn-4.wav";
-
-/** Number of pooled <audio> elements. 2 copies per source → fast turns can
- *  overlap without restarting the same node mid-play. */
-const POOL_SIZE = 8;
-
-interface PoolEntry {
-  el: HTMLAudioElement;
-  sourceIndex: number;
-}
+import { preferencesStore } from '@cubeforge/state';
+import turn1Url from '@/assets/sounds/turn-1.wav';
+import turn2Url from '@/assets/sounds/turn-2.wav';
+import turn3Url from '@/assets/sounds/turn-3.wav';
+import turn4Url from '@/assets/sounds/turn-4.wav';
 
 export class CubeTurnSounds {
   private readonly sources = [turn1Url, turn2Url, turn3Url, turn4Url];
-  private pool: PoolEntry[] = [];
-  /** Round-robin cursor over the pool (spreads restarts across copies). */
-  private cursor = 0;
+  private ctx: AudioContext | null = null;
+  /** Decoded samples in source order (null = not decoded yet / failed). */
+  private buffers: (AudioBuffer | null)[] = [];
   /** Index of the last source actually played (or picked by the test helper). */
   private lastSourceIndex = -1;
-  /** Whether the decode-warm pass has already run (keeps preload idempotent). */
-  private warmedUp = false;
+  /** Whether the fetch + decode pass has already been kicked off. */
+  private loadingStarted = false;
+  /** Turns that arrived before the first decode finished (drained on ready). */
+  private pending: number[] = [];
 
   /**
-   * Create the audio pool, force each sample to start loading and run the
-   * decode-warm pass. Safe to call repeatedly; a no-op after the first call
-   * or when `Audio` is unavailable (SSR / tests without a DOM stub).
+   * Create the AudioContext and start fetching + decoding every sample into
+   * an AudioBuffer. Safe to call repeatedly; the decode pass runs only once.
+   * No-op when the Web Audio API is unavailable (SSR / tests without a stub).
    */
   public preload(): void {
-    this.ensurePool();
-    if (!this.warmedUp) {
-      this.warmedUp = true;
-      this.warmup();
-    }
+    this.ensureContext();
+    this.loadSamples();
   }
 
   /**
@@ -82,43 +79,28 @@ export class CubeTurnSounds {
     const prefs = preferencesStore.getState();
     if (!prefs.soundsEnabled || !prefs.cubeTurnSoundsEnabled) return;
 
-    this.ensurePool();
-    if (this.pool.length === 0) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
 
-    const volume = prefs.soundVolume / 100;
-
-    // Capture the just-played source BEFORE picking, so the fallback paths can
-    // still honor the no-repeat rule even though pickSourceIndex() advances
-    // the internal cursor.
-    const previous = this.lastSourceIndex;
-    const preferred = this.pickSourceIndex();
-
-    // 1) An idle copy of the preferred source (always ≠ previous).
-    // 2) Otherwise an idle copy of any source ≠ previous.
-    // 3) Otherwise — every copy still playing (turns faster than the samples)
-    //    — restart any copy of a source ≠ previous. With 2 copies × 4 sources
-    //    there is always at least one such entry, so two consecutive turns
-    //    never play the same sample.
-    const chosen =
-      this.scan((e) => e.sourceIndex === preferred && e.el.paused) ??
-      this.scan((e) => e.sourceIndex !== previous && e.el.paused) ??
-      this.scan((e) => e.sourceIndex !== previous) ??
-      this.pool[this.cursor];
-
-    this.lastSourceIndex = chosen.sourceIndex;
-
-    const el = chosen.el;
-    el.volume = volume;
-    // A copy may still be muted from the decode-warm pass — make it audible.
-    el.muted = false;
-    try {
-      el.currentTime = 0; // restart a still-playing copy from the top
-    } catch {
-      // Not seekable yet (preload still in flight) — play from wherever it is.
+    // Autoplay policy AND background-tab suspend: browsers freeze the context
+    // clock while the tab is hidden, so this user gesture (cube turn) must
+    // re-arm it. The samples are already decoded in memory, so the click fires
+    // as soon as resume completes — no media-pipeline re-fetch / re-decode.
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
     }
-    // Best effort: autoplay policy / unmounted media must never throw or
-    // leak an unhandled rejection from a fire-and-forget cue.
-    void el.play().catch(() => {});
+
+    const index = this.pickSourceIndex();
+    const buffer = this.buffers[index];
+    if (!buffer) {
+      // First decode still in flight (very first interaction) — queue the cue
+      // and play it the moment the buffers are ready.
+      this.pending.push(index);
+      this.loadSamples();
+      return;
+    }
+
+    this.startSource(index, prefs.soundVolume / 100);
   }
 
   /**
@@ -134,47 +116,82 @@ export class CubeTurnSounds {
     return idx;
   }
 
-  /** Round-robin scan: the first pool entry matching the predicate, while
-   *  advancing the cursor so restarts spread across copies. */
-  private scan(predicate: (entry: PoolEntry) => boolean): PoolEntry | null {
-    for (let i = 0; i < this.pool.length; i++) {
-      const entry = this.pool[this.cursor];
-      this.cursor = (this.cursor + 1) % this.pool.length;
-      if (predicate(entry)) return entry;
-    }
-    return null;
-  }
+  /** Fire one decoded sample through the Web Audio graph as a one-shot node. */
+  private startSource(index: number, volume: number): void {
+    const ctx = this.ctx;
+    const buffer = this.buffers[index];
+    if (!ctx || !buffer) return;
 
-  /**
-   * Decode-warm every pooled copy: playing muted forces the browser to decode
-   * the sample NOW, so the first real turn does not pay the decode latency.
-   * We never pause/seek from a promise — a real turn that lands mid-warmup
-   * simply restarts the copy via play() (which resets `muted`), so there is
-   * no race between the warm-up and a fast first turn.
-   */
-  private warmup(): void {
-    for (const entry of this.pool) {
-      const el = entry.el;
-      el.muted = true;
-      void el.play().catch(() => {});
+    try {
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctx.createGain();
+      gain.gain.value = volume;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start();
+      // One-shot nodes must be disconnected after playback or they leak.
+      source.onended = () => {
+        source.disconnect();
+        gain.disconnect();
+      };
+    } catch (e) {
+      console.warn('[CubeTurnSounds] Could not play turn sound:', e);
     }
   }
 
-  private ensurePool(): void {
-    if (this.pool.length > 0 || typeof Audio === "undefined") return;
+  /** Play every cue that arrived while the first decode was still running. */
+  private drainPending(): void {
+    if (this.pending.length === 0 || !this.ctx) return;
     const volume = preferencesStore.getState().soundVolume / 100;
-    const copiesPerSource = Math.max(1, Math.floor(POOL_SIZE / this.sources.length));
-    this.pool = this.sources.flatMap((src, sourceIndex) =>
-      Array.from({ length: copiesPerSource }, () => {
-        const el = new Audio(src);
-        el.preload = "auto";
-        el.volume = volume;
-        // new Audio(src) may only schedule the fetch; load() makes it start
-        // immediately, so the samples are ready before the first turn.
-        el.load();
-        return { el, sourceIndex };
+    const pending = this.pending;
+    this.pending = [];
+    for (const index of pending) {
+      if (this.buffers[index]) this.startSource(index, volume);
+    }
+  }
+
+  /** Fetch + decode every sample into an AudioBuffer (idempotent). */
+  private loadSamples(): void {
+    if (this.loadingStarted) return;
+    this.loadingStarted = true;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    void Promise.all(
+      this.sources.map(async (url, i) => {
+        try {
+          const response = await fetch(url);
+          const arrayBuffer = await response.arrayBuffer();
+          this.buffers[i] = await ctx.decodeAudioData(arrayBuffer);
+        } catch {
+          this.buffers[i] = null; // a failed sample stays silent; the rest play
+        }
       }),
-    );
+    ).then(() => {
+      this.drainPending();
+    });
+  }
+
+  private ensureContext(): AudioContext | null {
+    if (this.ctx) return this.ctx;
+
+    // `globalThis` fallback lets tests stub AudioContext in a Node environment;
+    // browsers always expose it on `window`.
+    const root: {
+      AudioContext?: typeof AudioContext;
+      webkitAudioContext?: typeof AudioContext;
+    } = typeof window !== 'undefined' ? window : globalThis;
+    const Ctor = root.AudioContext ?? root.webkitAudioContext;
+    if (!Ctor) return null;
+
+    try {
+      this.ctx = new Ctor();
+    } catch {
+      // Context creation can fail (browser limit / unavailable) — stay silent.
+      return null;
+    }
+    return this.ctx;
   }
 }
 

@@ -1,60 +1,127 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { preferencesStore } from "@cubeforge/state";
-import { CubeTurnSounds } from "../cubeTurnSounds";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { preferencesStore } from '@cubeforge/state';
+import { CubeTurnSounds } from '../cubeTurnSounds';
 
 /**
- * Minimal Audio stand-in: node has no Audio/HTMLMediaElement, and the module
- * only touches the DOM lazily (pool creation), so a fake is enough to assert
- * playback wiring without a browser.
+ * Minimal Web Audio stand-ins: node has no AudioContext / AudioBuffer, and the
+ * module only touches the Web Audio graph lazily, so fakes are enough to
+ * assert fetch/decode/playback wiring without a browser.
  */
-class FakeAudio {
-  static instances: FakeAudio[] = [];
-  /** Every element that has had play() called, in order (warm-up + real turns). */
-  static playLog: FakeAudio[] = [];
-  src: string;
-  preload = "";
-  volume = 1;
-  muted = false;
-  paused = true;
+class FakeAudioBuffer {
+  duration = 0.3;
+  get length(): number {
+    return Math.round(44100 * this.duration);
+  }
+  get sampleRate(): number {
+    return 44100;
+  }
+  get numberOfChannels(): number {
+    return 1;
+  }
+}
+
+class FakeGainNode {
+  gain = { value: 1 };
+  connect = vi.fn();
+  disconnect = vi.fn();
+}
+
+class FakeBufferSource {
+  buffer: FakeAudioBuffer | null = null;
+  start = vi.fn();
+  stop = vi.fn();
+  connect = vi.fn();
+  disconnect = vi.fn();
+  onended: (() => void) | null = null;
+}
+
+class FakeAudioContext {
+  static instances: FakeAudioContext[] = [];
+  /** One-shot sources started, in order (each play = one node). */
+  static sources: FakeBufferSource[] = [];
+  /** Gain nodes created, in order (used to assert per-play volume). */
+  static gains: FakeGainNode[] = [];
+  /** Buffers produced by decodeAudioData, in creation order. */
+  static decodedBuffers: FakeAudioBuffer[] = [];
+  /** Resolvers for in-flight decodeAudioData calls, in call order. */
+  static decodeResolvers: (() => void)[] = [];
+
+  state: AudioContextState = 'suspended';
   currentTime = 0;
-  load = vi.fn();
-  play = vi.fn(() => {
-    this.paused = false;
-    FakeAudio.playLog.push(this);
+  destination = {};
+  resume = vi.fn(() => {
+    this.state = 'running';
     return Promise.resolve();
   });
+  close = vi.fn(() => Promise.resolve());
+  decodeAudioData = vi.fn(() => {
+    return new Promise<FakeAudioBuffer>((resolve) => {
+      FakeAudioContext.decodeResolvers.push(() => {
+        const buffer = new FakeAudioBuffer();
+        FakeAudioContext.decodedBuffers.push(buffer);
+        resolve(buffer);
+      });
+    });
+  });
+  createBufferSource = vi.fn(() => {
+    const source = new FakeBufferSource();
+    FakeAudioContext.sources.push(source);
+    return source;
+  });
+  createGain = vi.fn(() => {
+    const gain = new FakeGainNode();
+    FakeAudioContext.gains.push(gain);
+    return gain;
+  });
 
-  constructor(src: string) {
-    this.src = src;
-    FakeAudio.instances.push(this);
+  constructor() {
+    FakeAudioContext.instances.push(this);
   }
 }
 
 const random = (value: number) => () => value;
 
-// The pool is built in source order with 2 copies per source (POOL_SIZE 8 / 4
-// samples), so an instance's source is its position in `instances` divided by 2.
-const COPIES_PER_SOURCE = 2;
-const sourceIndexOf = (el: FakeAudio) =>
-  Math.floor(FakeAudio.instances.indexOf(el) / COPIES_PER_SOURCE);
+let fetchMock: ReturnType<typeof vi.fn>;
 
-describe("CubeTurnSounds", () => {
+/** Resolve every in-flight decodeAudioData call with a fresh buffer. */
+const flushDecodes = () => {
+  const resolvers = FakeAudioContext.decodeResolvers.splice(0);
+  for (const resolve of resolvers) resolve();
+};
+
+/** Wait for all 4 samples to be decoding, resolve them, and await the buffers. */
+const decodeAll = async () => {
+  await vi.waitFor(() => {
+    expect(FakeAudioContext.instances[0].decodeAudioData).toHaveBeenCalledTimes(4);
+  });
+  flushDecodes();
+  await vi.waitFor(() => expect(FakeAudioContext.decodedBuffers).toHaveLength(4));
+};
+
+describe('CubeTurnSounds', () => {
   beforeEach(() => {
-    FakeAudio.instances = [];
-    FakeAudio.playLog = [];
-    vi.stubGlobal("Audio", FakeAudio);
+    FakeAudioContext.instances = [];
+    FakeAudioContext.sources = [];
+    FakeAudioContext.gains = [];
+    FakeAudioContext.decodedBuffers = [];
+    FakeAudioContext.decodeResolvers = [];
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    fetchMock = vi.fn(async () => ({
+      arrayBuffer: async () => new ArrayBuffer(8),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    // Restore defaults so tests never leak a muted state into each other.
+    // Restore defaults so tests never leak prefs into each other.
     preferencesStore.getState().setNotificationsEnabled(true);
     preferencesStore.getState().setSoundsEnabled(true);
     preferencesStore.getState().setSoundVolume(80);
     preferencesStore.getState().setCubeTurnSoundsEnabled(true);
   });
 
-  it("picks a valid source index within range", () => {
+  it('picks a valid source index within range', () => {
     const player = new CubeTurnSounds();
     for (const value of [0, 0.2499, 0.5, 0.9999]) {
       const idx = player.pickSourceIndex(random(value));
@@ -63,7 +130,7 @@ describe("CubeTurnSounds", () => {
     }
   });
 
-  it("never repeats the same source back-to-back", () => {
+  it('never repeats the same source back-to-back', () => {
     const player = new CubeTurnSounds();
     const first = player.pickSourceIndex(random(0)); // 0
     const second = player.pickSourceIndex(random(0)); // same roll → bumped
@@ -72,87 +139,91 @@ describe("CubeTurnSounds", () => {
     expect(third).not.toBe(second);
   });
 
-  it("preload decode-warms every pooled copy muted, so the first turn is instant", () => {
+  it('preload fetches and decodes every sample so the first turn is instant', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    const pool = FakeAudio.instances;
-    expect(pool).toHaveLength(8);
-    // The warm-up pass played every copy once, muted, to force decode.
-    expect(pool.every((a) => a.play.mock.calls.length >= 1)).toBe(true);
-    expect(pool.every((a) => a.muted)).toBe(true);
+    expect(FakeAudioContext.instances).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    await decodeAll();
+    // The first turn after decode fires a one-shot source immediately.
+    player.play();
+    expect(FakeAudioContext.sources).toHaveLength(1);
+    expect(FakeAudioContext.sources[0].buffer).toBeInstanceOf(FakeAudioBuffer);
+    expect(FakeAudioContext.sources[0].start).toHaveBeenCalled();
   });
 
-  it("never plays the same source twice in a row, even when every copy is busy", () => {
+  it('never plays the same source twice in a row, even on rapid turns', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    FakeAudio.playLog = [];
-    // Every copy still playing → play() must take the busy-fallback path AND
-    // still avoid the source that just played.
-    FakeAudio.instances.forEach((a) => {
-      a.paused = false;
-    });
+    await decodeAll();
     for (let i = 0; i < 30; i++) player.play();
-    expect(FakeAudio.playLog).toHaveLength(30);
-    for (let i = 1; i < FakeAudio.playLog.length; i++) {
-      expect(sourceIndexOf(FakeAudio.playLog[i])).not.toBe(
-        sourceIndexOf(FakeAudio.playLog[i - 1]),
+    expect(FakeAudioContext.sources).toHaveLength(30);
+    const bufferIndexOf = (b: FakeAudioBuffer | null) =>
+      b === null ? -1 : FakeAudioContext.decodedBuffers.indexOf(b);
+    for (let i = 1; i < FakeAudioContext.sources.length; i++) {
+      expect(bufferIndexOf(FakeAudioContext.sources[i].buffer)).not.toBe(
+        bufferIndexOf(FakeAudioContext.sources[i - 1].buffer),
       );
     }
   });
 
-  it("does nothing when sounds are disabled", () => {
+  it('does nothing when sounds are disabled', () => {
     preferencesStore.getState().setSoundsEnabled(false);
     const player = new CubeTurnSounds();
     player.play();
-    expect(FakeAudio.instances).toHaveLength(0);
+    expect(FakeAudioContext.instances).toHaveLength(0);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does nothing when cube turn sounds are disabled", () => {
+  it('does nothing when cube turn sounds are disabled', () => {
     preferencesStore.getState().setCubeTurnSoundsEnabled(false);
     const player = new CubeTurnSounds();
     player.play();
-    expect(FakeAudio.instances).toHaveLength(0);
+    expect(FakeAudioContext.instances).toHaveLength(0);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("builds the pool on first play and starts one sample", () => {
+  it('queues turns that land before the first decode and plays them once ready', async () => {
     const player = new CubeTurnSounds();
     player.play();
-    expect(FakeAudio.instances.length).toBeGreaterThan(0);
-    const played = FakeAudio.instances.filter((a) => !a.paused);
-    expect(played).toHaveLength(1);
+    player.play();
+    // Decode still in flight → nothing audible yet, both cues queued.
+    expect(FakeAudioContext.sources).toHaveLength(0);
+    await decodeAll();
+    await vi.waitFor(() => expect(FakeAudioContext.sources).toHaveLength(2));
+    expect(FakeAudioContext.sources[0].buffer).toBeInstanceOf(FakeAudioBuffer);
+    expect(FakeAudioContext.sources[1].buffer).toBeInstanceOf(FakeAudioBuffer);
   });
 
-  it("scales playback volume from the soundVolume preference", () => {
+  it('scales playback volume from the soundVolume preference', async () => {
     preferencesStore.getState().setSoundVolume(35);
     const player = new CubeTurnSounds();
+    player.preload();
+    await decodeAll();
     player.play();
-    const played = FakeAudio.instances.find((a) => !a.paused);
-    expect(played?.volume).toBeCloseTo(0.35);
+    expect(FakeAudioContext.gains[0]?.gain.value).toBeCloseTo(0.35);
   });
 
-  it("reuses the pool instead of allocating an element per turn", () => {
+  it('resumes a suspended AudioContext when returning to the tab', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    const poolSize = FakeAudio.instances.length;
-    expect(poolSize).toBeGreaterThan(0);
-    for (let i = 0; i < 25; i++) player.play();
-    expect(FakeAudio.instances).toHaveLength(poolSize);
-    expect(FakeAudio.instances.every((a) => a.play.mock.calls.length >= 1)).toBe(true);
+    await decodeAll();
+    const ctx = FakeAudioContext.instances[0];
+    // Simulate the background-tab freeze Chrome applies while the tab is hidden.
+    ctx.state = 'suspended';
+    player.play();
+    expect(ctx.resume).toHaveBeenCalled();
+    expect(ctx.state).toBe('running');
+    expect(FakeAudioContext.sources).toHaveLength(1);
   });
 
-  it("restarts a playing copy from the top on very fast turns", () => {
+  it('reuses the decoded buffers instead of refetching on every turn', async () => {
     const player = new CubeTurnSounds();
-    player.play();
-    // Force every pooled element to look busy → play() must still fire a
-    // sample (falling back to the round-robin slot) rather than dropping.
-    FakeAudio.instances.forEach((a) => {
-      a.paused = false;
-    });
-    player.play();
-    const totalPlays = FakeAudio.instances.reduce(
-      (sum, a) => sum + a.play.mock.calls.length,
-      0,
-    );
-    expect(totalPlays).toBeGreaterThanOrEqual(2);
+    player.preload();
+    await decodeAll();
+    for (let i = 0; i < 25; i++) player.play();
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    // Every turn is a fresh one-shot node — fast turns overlap naturally.
+    expect(FakeAudioContext.sources).toHaveLength(25);
   });
 });
