@@ -263,15 +263,20 @@ export const DBWorker = {
       // now covered by the versioned app_meta table created in migration 020.
       // Keeping schema changes inside migrations keeps the schema auditable.
 
-      // Enforce the FKs declared in the baseline v2 schema and use WAL where the
-      // backend supports it (OPFS does; in-memory falls back silently).
-      // `foreign_keys` is a per-connection pragma — must be set on every open.
-      db.exec('PRAGMA foreign_keys = ON;');
+      // Use WAL where the backend supports it (OPFS does; in-memory falls
+      // back silently).
       try {
         db.exec('PRAGMA journal_mode = WAL;');
       } catch {
         // In-memory DBs cannot switch to WAL — not an error.
       }
+
+      // CRITICAL: `foreign_keys` must stay OFF while migrations run.
+      // Migrations 026/027 rebuild `sessions` (parent) and `solves` (child)
+      // via RENAME + DROP of the legacy tables. With FK enforcement ON, the
+      // `DROP TABLE sessions_*_legacy` fires the solves FK's ON DELETE
+      // CASCADE and deletes EVERY solve. Enable it only AFTER migrations and
+      // the v1 restore have completed.
 
       // Preserve v1 data before the baseline v2 migration wipes it (first run
       // after upgrading from main only; idempotent afterwards).
@@ -288,6 +293,11 @@ export const DBWorker = {
       } catch (e) {
         console.warn('[DB Worker] v1→v2 restore failed (non-fatal, backups kept):', e);
       }
+
+      // Enforce the FKs declared in the baseline v2 schema for normal app
+      // operation. `foreign_keys` is a per-connection pragma — must be set on
+      // every open, and only after the migration DDL has finished (see above).
+      db.exec('PRAGMA foreign_keys = ON;');
 
       return true;
     } catch (err) {

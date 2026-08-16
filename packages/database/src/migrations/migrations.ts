@@ -700,8 +700,10 @@ export const MIGRATIONS: Migration[] = [
           created_at, updated_at, is_demo
         FROM sessions_puzzle_type_check_legacy;
 
-      DROP TABLE IF EXISTS sessions_puzzle_type_check_legacy;
-
+      -- Do NOT drop the legacy sessions table yet: the solves table still
+      -- references it (the RENAME above rewrote the FK). Dropping it here
+      -- would fire the solves FK's ON DELETE CASCADE and delete every solve.
+      -- It is dropped at the very end, after solves has been rebuilt.
       CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
       CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
 
@@ -747,6 +749,10 @@ export const MIGRATIONS: Migration[] = [
 
       DROP TABLE IF EXISTS solves_puzzle_type_check_legacy;
 
+      -- Now safe: solves no longer references the legacy sessions table, so
+      -- this DROP cannot cascade into any surviving data.
+      DROP TABLE IF EXISTS sessions_puzzle_type_check_legacy;
+
       CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
       CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
       CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
@@ -791,8 +797,10 @@ export const MIGRATIONS: Migration[] = [
           created_at, updated_at, is_demo
         FROM sessions_wca_legacy;
 
-      DROP TABLE IF EXISTS sessions_wca_legacy;
-
+      -- Do NOT drop the legacy sessions table yet: the solves table still
+      -- references it (the RENAME above rewrote the FK). Dropping it here
+      -- would fire the solves FK's ON DELETE CASCADE and delete every solve.
+      -- It is dropped at the very end, after solves has been rebuilt.
       CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
       CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
 
@@ -835,6 +843,10 @@ export const MIGRATIONS: Migration[] = [
         FROM solves_wca_legacy;
 
       DROP TABLE IF EXISTS solves_wca_legacy;
+
+      -- Now safe: solves no longer references the legacy sessions table, so
+      -- this DROP cannot cascade into any surviving data.
+      DROP TABLE IF EXISTS sessions_wca_legacy;
 
       CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
       CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);

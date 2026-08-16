@@ -11,6 +11,7 @@ import { requestPersistentStorage } from "@/boot/storagePersistence";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { attachDemoDataHelpers } from "@/utils/seedDemoData";
+import { attachDataIntegrityHelpers } from "@/utils/dataIntegrity";
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -150,6 +151,11 @@ export function usePersistentSession(): UsePersistentSessionResult {
         const sessionsRepo = new SessionsRepository(dbExecutor);
         const solvesRepo = new SolvesRepository(dbExecutor);
         reposRef.current = { sessions: sessionsRepo, solves: solvesRepo };
+
+        // Data-integrity console helpers (auditSolves / dedupeSolves).
+        // Uses the RAW executor so the audit can see every row (the repos'
+        // findAll intentionally hides demo rows).
+        attachDataIntegrityHelpers(dbExecutor, () => useStorageStatusStore.getState().storageType);
 
         if (!seedPromise) {
           seedPromise = (async () => {

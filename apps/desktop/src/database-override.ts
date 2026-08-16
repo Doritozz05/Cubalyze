@@ -211,8 +211,11 @@ async function initDB(): Promise<DBClient> {
     // On Windows: C:\Users\<user>\AppData\Roaming\com.cubeforge.desktop\cubeforge.db
     db = await Database.load('sqlite:cubeforge.db');
 
-    // Enforce the FKs declared in the baseline v2 schema (per-connection pragma).
-    await db.execute('PRAGMA foreign_keys = ON');
+    // CRITICAL: `foreign_keys` must stay OFF while migrations run (see the
+    // same note in packages/database/src/worker.ts). Migrations 026/027 drop
+    // the legacy `sessions` table while `solves` still references it; with FK
+    // enforcement ON, that DROP fires ON DELETE CASCADE and deletes every
+    // solve. Enable it only AFTER migrations + restore.
 
     // Preserve v1 data before the baseline v2 migration wipes it.
     await backupLegacyTables();
@@ -264,6 +267,10 @@ async function initDB(): Promise<DBClient> {
     } catch (e) {
       console.warn('[Database] v1→v2 restore failed (non-fatal, backups kept):', e);
     }
+
+    // Enforce the FKs declared in the baseline v2 schema for normal app
+    // operation (per-connection pragma — set only after migration DDL).
+    await db.execute('PRAGMA foreign_keys = ON');
 
     console.log(
       '%c[Database]%c Storage: tauri-plugin-sql (persistent) — data saved to AppData folder.',
