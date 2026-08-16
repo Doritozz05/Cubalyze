@@ -14,17 +14,9 @@ import { useTranslation } from "react-i18next";
 import { TouchPanel } from "@/components/TouchPanel";
 import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmSubset } from "@cubeforge/algorithm-db";
+import { PUZZLE_LABELS, PUZZLE_ORDER, type PuzzleType } from "@/utils/puzzleTypes";
 
 // ── Tree model (generic — scales to any nesting depth) ─────────────────────
-
-type PuzzleTypeKey = "3x3x3" | "2x2x2";
-
-const PUZZLE_LABELS: Record<PuzzleTypeKey, string> = {
-  "3x3x3": "3×3",
-  "2x2x2": "2×2",
-};
-
-const PUZZLE_ORDER: PuzzleTypeKey[] = ["3x3x3", "2x2x2"];
 
 interface NavNode {
   id: string;
@@ -48,10 +40,10 @@ function subsetNode(subset: AlgorithmSubset): NavNode {
 
 function buildTree(): NavNode[] {
   return PUZZLE_ORDER.filter((pt) =>
-    METHODS.some((m) => (m.puzzleType as PuzzleTypeKey) === pt),
+    METHODS.some((m) => (m.puzzleType as PuzzleType) === pt),
   ).map((pt) => {
     const methods = METHODS.filter(
-      (m) => (m.puzzleType as PuzzleTypeKey) === pt,
+      (m) => (m.puzzleType as PuzzleType) === pt,
     );
     return {
       id: pt,

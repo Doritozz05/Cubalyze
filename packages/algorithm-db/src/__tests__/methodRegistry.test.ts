@@ -16,7 +16,7 @@ describe("method registry — Advanced 3x3 attribution", () => {
 
   it("registers an 'Advanced 3x3' method on the 3×3 puzzle", () => {
     expect(advanced).toBeDefined();
-    expect(advanced!.puzzleType).toBe("3x3x3");
+    expect(advanced!.puzzleType).toBe("333"); // WCA code (ADR-002)
     expect(advanced!.sortOrder).toBeGreaterThan(cfop!.sortOrder);
   });
 

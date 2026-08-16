@@ -244,6 +244,7 @@ export function AppShell(props: AppShellProps) {
               activeView={activeView}
           sessionCount={solves.length}
           sessions={sessions}
+          solves={solves}
           activeSessionId={activeSessionId}
           hideHeader={activeView === "skill-tree" || headerMode === "hidden"}
           onSwitchSession={onSwitchSession}

@@ -16,7 +16,7 @@ export interface BottomLayoutProps {
   className?: string;
   /** When provided, the layout becomes a shortcut to the full Stats view. */
   onExpand?: () => void;
-  /** Filter solves to a specific puzzle type (e.g. '3x3x3', '2x2x2'). */
+  /** Filter solves to a specific puzzle type (e.g. '333', '222'). */
   puzzleFilter?: string;
   /** Injected scramble element rendered by templates with a `scramble` cell. */
   scramble?: ReactNode;

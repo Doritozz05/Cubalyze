@@ -12,7 +12,7 @@ import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
-import type { PuzzleCategory } from "@/types";
+import type { PuzzleCategory, Solve } from "@/types";
 
 /**
  * Width the 3D cube panel occupies once expanded.
@@ -78,6 +78,8 @@ export interface MainLayoutProps {
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
   /** Lock the puzzle selector to its current value (Cube tab: 3×3 only). */
   puzzleLocked?: boolean;
+  /** Active session solves (newest-first) — forwarded to the header dock pieces. */
+  solves?: Solve[];
   className?: string;
 }
 
@@ -107,6 +109,7 @@ export function MainLayout({
   puzzle,
   onPuzzleChange,
   puzzleLocked,
+  solves,
   className,
 }: MainLayoutProps) {
   // Defer useIsTouch to post-mount to avoid SSR/hydration flash.
@@ -331,6 +334,7 @@ export function MainLayout({
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               puzzleLocked={puzzleLocked}
+              solves={solves}
             />
           )}
         </AnimatePresence>

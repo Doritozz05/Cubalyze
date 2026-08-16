@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 
 /**
  * Rainbow badge styles per phase token for 3D sticker badges.
@@ -101,7 +102,9 @@ export function ProfileHero({
     { key: "handle", value: handle },
     { key: "member", value: memberSince },
     { key: "country", value: profile.country ?? "" },
-    { key: "puzzle", value: profile.mainPuzzle },
+    // Show the human label ("3×3"), not the DB code ("333") — the code is
+    // the internal puzzle_type (ADR-002), never user-facing.
+    { key: "puzzle", value: puzzleTypeLabel(profile.mainPuzzle) },
     ...profile.declaredMethods.map((method) => ({ key: `method-${method}`, value: method })),
   ].filter((chip) => chip.value !== "");
 

@@ -1,0 +1,7 @@
+{
+  "extends": "@cubeforge/config-typescript/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

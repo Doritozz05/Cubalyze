@@ -172,7 +172,7 @@ export function SRSReviewView({ methodId, onBack }: SRSReviewViewProps) {
       const setup = generateRandomSetup(
         defaultAlgorithm.moves,
         "Y",
-        currentCase?.puzzleType ?? "3x3x3",
+        currentCase?.puzzleType ?? "333",
         currentCase?.setupScramble,
       );
       setCurrentSetup(setup || currentCase?.setupScramble || "");

@@ -14,24 +14,29 @@ function solve(overrides: Partial<UISolve> & { time: number }): UISolve {
     penalty: "none",
     scramble: "",
     timestamp: Date.now(),
-    puzzleType: "3x3x3",
+    puzzleType: "333",
     ...overrides,
   };
 }
 
 describe("normalizePuzzleKey", () => {
-  it("normalizes 3x3 variants to 3x3x3", () => {
-    expect(normalizePuzzleKey("3x3")).toBe("3x3x3");
-    expect(normalizePuzzleKey("3x3x3")).toBe("3x3x3");
-    expect(normalizePuzzleKey(" 3X3 ")).toBe("3x3x3");
+  it("normalizes 3x3 variants (incl. the pre-ADR-002 '3x3x3') to '333'", () => {
+    expect(normalizePuzzleKey("3x3")).toBe("333");
+    expect(normalizePuzzleKey("333")).toBe("333");
+    expect(normalizePuzzleKey("3x3x3")).toBe("333");
+    expect(normalizePuzzleKey(" 3X3 ")).toBe("333");
   });
-  it("normalizes 2x2 variants to 2x2x2", () => {
-    expect(normalizePuzzleKey("2x2")).toBe("2x2x2");
-    expect(normalizePuzzleKey("2x2x2")).toBe("2x2x2");
+  it("normalizes 2x2 variants (incl. the pre-ADR-002 '2x2x2') to '222'", () => {
+    expect(normalizePuzzleKey("2x2")).toBe("222");
+    expect(normalizePuzzleKey("222")).toBe("222");
+    expect(normalizePuzzleKey("2x2x2")).toBe("222");
+  });
+  it("keeps OH as its own event", () => {
+    expect(normalizePuzzleKey("333oh")).toBe("333oh");
   });
   it("passes through unknown keys and defaults undefined", () => {
     expect(normalizePuzzleKey("Megaminx")).toBe("megaminx");
-    expect(normalizePuzzleKey(undefined)).toBe("3x3x3");
+    expect(normalizePuzzleKey(undefined)).toBe("333");
   });
 });
 
@@ -92,20 +97,20 @@ describe("aggregateByPuzzle", () => {
   const base = Date.now();
   it("groups solves by puzzle and computes stats", () => {
     const solves = [
-      solve({ time: 10_000, timestamp: base, puzzleType: "3x3x3" }),
-      solve({ time: 12_000, timestamp: base + 1, puzzleType: "3x3x3" }),
-      solve({ time: 8000, timestamp: base + 2, puzzleType: "2x2x2" }),
+      solve({ time: 10_000, timestamp: base, puzzleType: "333" }),
+      solve({ time: 12_000, timestamp: base + 1, puzzleType: "333" }),
+      solve({ time: 8000, timestamp: base + 2, puzzleType: "222" }),
     ];
     const result = aggregateByPuzzle(solves);
     expect(result).toHaveLength(2);
-    const three = result.find((r) => r.puzzle === "3x3x3")!;
-    const two = result.find((r) => r.puzzle === "2x2x2")!;
+    const three = result.find((r) => r.puzzle === "333")!;
+    const two = result.find((r) => r.puzzle === "222")!;
     expect(three.count).toBe(2);
     expect(three.stats.best).toBe(10_000);
     expect(two.count).toBe(1);
     expect(two.stats.best).toBe(8000);
     // Sorted by count desc.
-    expect(result[0].puzzle).toBe("3x3x3");
+    expect(result[0].puzzle).toBe("333");
   });
 
   it("ignores DNF solves for best but counts them", () => {

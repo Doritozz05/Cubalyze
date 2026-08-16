@@ -37,7 +37,7 @@ describe('SolvesRepository', () => {
 
   it('findAll returns mapped solves', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 12345, timestamp: 1767225600000, scramble: "R U R'", penalty: 'none', method: null, source: 'manual', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3', created_at: 1767225600000, updated_at: 1767225600000 },
+      { id: 's1', session_id: 'ses1', time_ms: 12345, timestamp: 1767225600000, scramble: "R U R'", penalty: 'none', method: null, source: 'manual', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '333', created_at: 1767225600000, updated_at: 1767225600000 },
     ]);
     repo = new SolvesRepository(db);
     const solves = await repo.findAll();
@@ -49,12 +49,12 @@ describe('SolvesRepository', () => {
     expect(solves[0].source).toBe('manual');
   });
 
-  it('findAll with sessionId filters by session', async () => {
+  it('findAll with sessionId filters by session and excludes demo solves', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.findAll('ses1');
     expect(db).toHaveBeenCalledWith(
-      'SELECT * FROM solves WHERE session_id = ? ORDER BY timestamp ASC',
+      'SELECT * FROM solves WHERE is_demo = 0 AND session_id = ? ORDER BY timestamp ASC',
       ['ses1']
     );
   });
@@ -66,7 +66,7 @@ describe('SolvesRepository', () => {
 
   it('findById returns mapped solve', async () => {
     const db = mockDb([
-      { id: 's1', session_id: 'ses1', time_ms: 5000, timestamp: 1767484800000, scramble: 'U', penalty: '+2', method: 'CFOP', source: 'smart', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3', created_at: 1767225600000, updated_at: 1767225600000 },
+      { id: 's1', session_id: 'ses1', time_ms: 5000, timestamp: 1767484800000, scramble: 'U', penalty: '+2', method: 'CFOP', source: 'smart', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '333', created_at: 1767225600000, updated_at: 1767225600000 },
     ]);
     repo = new SolvesRepository(db);
     const solve = await repo.findById('s1');
@@ -80,7 +80,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3',
+      id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333',
     });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
@@ -92,7 +92,7 @@ describe('SolvesRepository', () => {
   it('update calls UPDATE SQL', async () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
-    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: '', penalty: '+2', source: 'manual', moves: [], puzzleType: '3x3x3' });
+    await repo.update({ id: 's1', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: '', penalty: '+2', source: 'manual', moves: [], puzzleType: '333' });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
     expect(call[0]).toContain('UPDATE solves SET');
@@ -116,7 +116,7 @@ describe('SolvesRepository', () => {
   it('rowToSolve defaults source to manual when column missing', async () => {
     // Simulates a pre-migration row that has no `source` column value.
     const db = mockDb([
-      { id: 's9', session_id: 'ses1', time_ms: 9000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', method: null, source: 'manual', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3', created_at: 1767225600000, updated_at: 1767225600000 },
+      { id: 's9', session_id: 'ses1', time_ms: 9000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', method: null, source: 'manual', note: null, moves: "[]", orientation_timeline: null, analysis_engine_version: null, analysis: null, puzzle_type: '333', created_at: 1767225600000, updated_at: 1767225600000 },
     ]);
     repo = new SolvesRepository(db);
     const solve = await repo.findById('s9');
@@ -128,7 +128,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's2', sessionId: 'ses1', timeMs: 1500, timestamp: 1767225600000, scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [], puzzleType: '3x3x3',
+      id: 's2', sessionId: 'ses1', timeMs: 1500, timestamp: 1767225600000, scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [], puzzleType: '333',
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[6]).toBe('CFOP'); // method
@@ -139,8 +139,8 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     const count = await repo.insertMany([
-      { id: 'b1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3' },
-      { id: 'b2', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: "U'", penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3' },
+      { id: 'b1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', source: 'manual', moves: [], puzzleType: '333' },
+      { id: 'b2', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: "U'", penalty: 'none', source: 'manual', moves: [], puzzleType: '333' },
     ]);
     expect(count).toBe(2);
     expect(db.mock.calls[0][0]).toBe('BEGIN');
@@ -165,7 +165,7 @@ describe('SolvesRepository', () => {
       return [];
     });
     repo = new SolvesRepository(db);
-    await expect(repo.insertMany([{ id: 'x1', sessionId: 'ses1', timeMs: 1, timestamp: 1, scramble: 'fail', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3' }])).rejects.toThrow('boom');
+    await expect(repo.insertMany([{ id: 'x1', sessionId: 'ses1', timeMs: 1, timestamp: 1, scramble: 'fail', penalty: 'none', source: 'manual', moves: [], puzzleType: '333' }])).rejects.toThrow('boom');
     expect(db.mock.calls[0][0]).toBe('BEGIN');
     expect(db.mock.calls[db.mock.calls.length - 1][0]).toBe('ROLLBACK');
   });
@@ -197,12 +197,12 @@ describe('SessionsRepository', () => {
 
   it('findAll returns mapped sessions', async () => {
     const db = mockDb([
-      { id: 'ses1', name: 'Practice', puzzle_type: '3x3x3', created_at: '2026-01-01' },
+      { id: 'ses1', name: 'Practice', puzzle_type: '333', created_at: '2026-01-01' },
     ]);
     repo = new SessionsRepository(db);
     const sessions = await repo.findAll();
     expect(sessions).toHaveLength(1);
-    expect(sessions[0].puzzleType).toBe('3x3x3');
+    expect(sessions[0].puzzleType).toBe('333');
   });
 
   it('findById returns null for missing session', async () => {
@@ -213,12 +213,12 @@ describe('SessionsRepository', () => {
   it('insert and update call correct SQL', async () => {
     const db = mockDb();
     repo = new SessionsRepository(db);
-    await repo.insert({ id: 'ses1', name: 'Test', puzzleType: '3x3x3', createdAt: 1767225600000 });
+    await repo.insert({ id: 'ses1', name: 'Test', puzzleType: '333', createdAt: 1767225600000 });
     expect(db.mock.calls[0][0]).toContain('INSERT INTO sessions');
 
     db.mockReset();
     db.mockResolvedValue([]);
-    await repo.update({ id: 'ses1', name: 'Updated', puzzleType: '4x4x4', createdAt: 1767225600000 });
+    await repo.update({ id: 'ses1', name: 'Updated', puzzleType: '444', createdAt: 1767225600000 });
     expect(db.mock.calls[0][0]).toContain('UPDATE sessions');
   });
 
@@ -249,11 +249,11 @@ describe('AlgorithmsRepository', () => {
     repo = new AlgorithmsRepository(db);
 
     const count = await repo.seedAll({
-      methods: [{ id: 'm1', name: 'CFOP', description: '', sortOrder: 1, puzzleType: '3x3x3' }],
-      subsets: [{ id: 's1', methodId: 'm1', name: 'PLL', description: '', sortOrder: 1, puzzleType: '3x3x3' }],
+      methods: [{ id: 'm1', name: 'CFOP', description: '', sortOrder: 1, puzzleType: '333' }],
+      subsets: [{ id: 's1', methodId: 'm1', name: 'PLL', description: '', sortOrder: 1, puzzleType: '333' }],
       cases: [{
         id: 'c1', subsetId: 's1', caseNumber: 'PLL 1', name: 'Aa', recognitionPatterns: [],
-        setupScramble: '', diagramType: '2d-top', difficulty: 'intermediate', tags: [], puzzleType: '3x3x3',
+        setupScramble: '', diagramType: '2d-top', difficulty: 'intermediate', tags: [], puzzleType: '333',
       }],
       algorithms: [{
         id: 'a1', caseId: 'c1', moves: ["R", "U"], moveCount: { htm: 2, qtm: 2, stm: 2 },

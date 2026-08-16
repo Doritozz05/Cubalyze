@@ -223,7 +223,7 @@ export class Global3DSnapshotService {
 
       try {
         const { key, caseData, selectedSlot } = task;
-        const is2x2 = caseData.puzzleType === '2x2x2';
+        const is2x2 = caseData.puzzleType === '222';
         const order = is2x2 ? 2 : 3;
         const engine = this.getOrCreateEngine(order);
         const canvas = is2x2 ? this.canvas2x2 : this.canvas;

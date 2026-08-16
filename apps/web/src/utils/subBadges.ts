@@ -2,6 +2,7 @@
 
 import type { ProfileStats } from "@/hooks/useProfileStats";
 import { normalizePuzzleKey } from "@/hooks/useProfileStats";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 
 /**
  * Sub-X milestone badges ("Sub 5 · 3×3", "Sub 2 · 2×2"…).
@@ -13,7 +14,7 @@ import { normalizePuzzleKey } from "@/hooks/useProfileStats";
  */
 
 export interface SubBadge {
-  /** Normalized puzzle key (e.g. '3x3x3'). */
+  /** Normalized puzzle key (e.g. '333'). */
   puzzle: string;
   /** Short display label (e.g. '3×3'). */
   puzzleLabel: string;
@@ -27,17 +28,17 @@ export interface SubBadge {
   color: string;
 }
 
-/** Milestones per puzzle (seconds, ascending). Fastest-first = the PB. */
+/** Milestones per puzzle (seconds, ascending). Keys are WCA codes (ADR-002). */
 const SUB_THRESHOLDS: Record<string, number[]> = {
-  "2x2x2": [1, 2, 3, 4, 5, 8, 10],
-  "3x3x3": [5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30],
-  "3x3oh": [10, 12, 15, 17, 20, 25, 30, 40],
-  "4x4x4": [30, 40, 45, 50, 60, 75, 90, 120],
-  "5x5x5": [60, 75, 90, 105, 120, 150, 180],
-  "6x6x6": [120, 150, 180, 210, 240, 300, 360],
-  "7x7x7": [180, 210, 240, 300, 360, 420, 480],
-  megaminx: [60, 75, 90, 120, 150, 180],
-  pyraminx: [3, 4, 5, 6, 8, 10, 12],
+  "222": [1, 2, 3, 4, 5, 8, 10],
+  "333": [5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30],
+  "333oh": [10, 12, 15, 17, 20, 25, 30, 40],
+  "444": [30, 40, 45, 50, 60, 75, 90, 120],
+  "555": [60, 75, 90, 105, 120, 150, 180],
+  "666": [120, 150, 180, 210, 240, 300, 360],
+  "777": [180, 210, 240, 300, 360, 420, 480],
+  minx: [60, 75, 90, 120, 150, 180],
+  pyram: [3, 4, 5, 6, 8, 10, 12],
   skewb: [3, 4, 5, 6, 8, 10, 12],
 };
 
@@ -49,15 +50,15 @@ const FALLBACK_THRESHOLDS = [30, 45, 60, 90, 120, 180, 300];
  * stable color (same family as the CFOP timeline / phase dots).
  */
 const PUZZLE_COLORS: Record<string, string> = {
-  "2x2x2": "phase-blue",
-  "3x3x3": "phase-emerald",
-  "4x4x4": "phase-teal",
-  "5x5x5": "phase-amber",
-  "6x6x6": "phase-violet",
-  "7x7x7": "phase-purple",
-  "3x3oh": "phase-indigo",
-  megaminx: "phase-rose",
-  pyraminx: "phase-cyan",
+  "222": "phase-blue",
+  "333": "phase-emerald",
+  "444": "phase-teal",
+  "555": "phase-amber",
+  "666": "phase-violet",
+  "777": "phase-purple",
+  "333oh": "phase-indigo",
+  minx: "phase-rose",
+  pyram: "phase-cyan",
   skewb: "phase-orange",
 };
 
@@ -92,22 +93,12 @@ export function badgeColor(puzzle: string): string {
   );
 }
 
-const PUZZLE_LABELS: Record<string, string> = {
-  "2x2x2": "2×2",
-  "3x3x3": "3×3",
-  "3x3oh": "3×3 OH",
-  "4x4x4": "4×4",
-  "5x5x5": "5×5",
-  "6x6x6": "6×6",
-  "7x7x7": "7×7",
-  megaminx: "Megaminx",
-  pyraminx: "Pyraminx",
-  skewb: "Skewb",
-};
-
-/** Short puzzle label for badges ("3x3x3" → "3×3"). */
+/**
+ * Short puzzle label for badges ("333" → "3×3"). Resolved from the shared
+ * label map (puzzleTypes.ts, phase A3 SSoT) — never the raw DB code.
+ */
 export function puzzleShortLabel(key: string): string {
-  return PUZZLE_LABELS[key] ?? key;
+  return puzzleTypeLabel(key);
 }
 
 /** Threshold display: '5' under a minute, '1:00' at or above. */

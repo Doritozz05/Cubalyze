@@ -2,12 +2,14 @@
  * Puzzle utility helpers.
  *
  * Maps the UI {@link PuzzleCategory} to:
- *   • `puzzleType` — the database identifier (e.g. '3x3x3', '2x2x2')
+ *   • `puzzleType` — the database identifier (the WCA event code, ADR-002:
+ *     '333', '222', '333oh', …)
  *   • `order` — the cube dimension for the 3D engine (2 or 3)
- *   • scramble generation — delegates to the appropriate solver/scrambler
+ *   • scramble generation — delegates to the registered ScrambleProvider
  *
- * Only 2×2 and 3×3 are fully functional right now; other categories fall
- * back to the 3×3 scramble generator (safe default, no breakage).
+ * Only events with a real provider are functional (2×2, 3×3, 3×3 OH and
+ * Pyraminx as of phase D2); the others return "" — never a silent 3×3
+ * fallback.
  *
  * ## Solver initialisation
  *
@@ -18,41 +20,99 @@
  */
 
 import type { PuzzleCategory } from "@/types";
-import {
-  RandomStateGenerator,
-  Min2PhaseSolver,
-  TwoByTwoScrambler,
-  TwoByTwoSolver,
-} from "@cubeforge/solver-engine";
+import { EVENT_REGISTRY, generateScramble, getEvent, type PuzzleType } from "@cubeforge/events";
+import { Min2PhaseSolver, TwoByTwoScrambler, TwoByTwoSolver } from "@cubeforge/solver-engine";
 
 // ── Mappings ─────────────────────────────────────────────────────────────
 
-/** All puzzle categories selectable in the UI, in display order. */
-export const PUZZLE_CATEGORIES: PuzzleCategory[] = [
-  "2x2",
-  "3x3",
-  "4x4",
-  "5x5",
-  "6x6",
-  "7x7",
-  "3x3 OH",
-  "Megaminx",
-  "Pyraminx",
-  "Skewb",
-];
-
-/** Map a UI PuzzleCategory to the database puzzle_type string. */
-export function puzzleCategoryToType(category: PuzzleCategory): string {
+/** Map a UI PuzzleCategory to the canonical database puzzle_type (WCA code, ADR-002). */
+export function puzzleCategoryToType(category: PuzzleCategory): PuzzleType {
   switch (category) {
     case "2x2":
-      return "2x2x2";
+      return "222";
     case "3x3":
+      return "333";
     case "3x3 OH":
-      return "3x3x3";
-    // Other categories not yet implemented — default to 3×3
+      return "333oh"; // OH is its own event — never mixed with 333
+    case "Pyraminx":
+      return "pyram"; // phase D2 — real random-state provider
+    case "FTO":
+      return "fto";
+    // Categories without a real implementation keep the safe storage
+    // default; the SELECTOR no longer offers them (phase A6) and
+    // generateScrambleFor never lies.
     default:
-      return "3x3x3";
+      return "333";
   }
+}
+
+/** UI category → WCA event code (the registry id = the puzzle_type, ADR-002). */
+const CATEGORY_TO_EVENT_CODE: Record<PuzzleCategory, PuzzleType> = {
+  "2x2": "222",
+  "3x3": "333",
+  "3x3 OH": "333oh",
+  "4x4": "444",
+  "5x5": "555",
+  "6x6": "666",
+  "7x7": "777",
+  Megaminx: "minx",
+  Pyraminx: "pyram",
+  Skewb: "skewb",
+  FTO: "fto",
+};
+
+/**
+ * WCA event code → UI category, for the categories the UI exposes today.
+ * Events without a UI category (sq1, bld×3, fm, mbf, clock) are simply not
+ * rendered — they are declared in the registry and appear once implemented.
+ */
+const EVENT_TO_CATEGORY: Partial<Record<PuzzleType, PuzzleCategory>> = Object.fromEntries(
+  (Object.entries(CATEGORY_TO_EVENT_CODE) as [PuzzleCategory, PuzzleType][]).map(([c, t]) => [t, c]),
+);
+
+/** One entry of the data-driven puzzle selector (phase A6). */
+export interface PuzzleSelectorItem {
+  /** The UI category shown to the user. */
+  category: PuzzleCategory;
+  /** True when a real scramble provider is registered (playable today). */
+  playable: boolean;
+  /** True when the event is on the WCA calendar but not yet official/available (e.g. FTO). */
+  planned: boolean;
+}
+
+/**
+ * The puzzle selector, generated FROM THE REGISTRY (phase A6).
+ *
+ * Only two kinds of events appear:
+ *   • events with a real scramble provider (playable) — 2×2, 3×3, 3×3 OH,
+ *     Pyraminx (phase D2)
+ *   • events marked "planned" on the WCA calendar (disabled, e.g. FTO)
+ *
+ * The ghost puzzles (4×4–7×7, Megaminx, Skewb, …) have NO provider and are
+ * NOT shown — they never were functional, the selector was lying.
+ */
+export const PUZZLE_SELECTOR: readonly PuzzleSelectorItem[] = EVENT_REGISTRY.filter(
+  (e) => (e.scrambleProvider !== null && e.status === "available") || e.status === "planned",
+)
+  .map((e) => {
+    const category = EVENT_TO_CATEGORY[e.id];
+    if (!category) return null;
+    return {
+      category,
+      playable: e.scrambleProvider !== null,
+      planned: e.status === "planned",
+    };
+  })
+  .filter((x): x is PuzzleSelectorItem => x !== null);
+
+/** Categories with a real provider — the enabled entries of the selector. */
+export const SELECTABLE_PUZZLE_CATEGORIES: readonly PuzzleCategory[] = PUZZLE_SELECTOR.filter(
+  (i) => i.playable,
+).map((i) => i.category);
+
+/** Resolve the event spec behind a UI category. */
+export function getEventForCategory(category: PuzzleCategory) {
+  return getEvent(CATEGORY_TO_EVENT_CODE[category]);
 }
 
 /** Map a UI PuzzleCategory to the 3D engine cube order (2 or 3). */
@@ -137,17 +197,16 @@ export function preloadSolvers(): void {
 }
 
 /**
- * Generate a scramble for the given puzzle category.
+ * Generate a scramble for the given UI category.
  *
- * 2×2: WCA-style random-state scramble via TwoByTwoScrambler (U/R/F only, ≤11 moves).
- * 3×3 (and others): random-state scramble via RandomStateGenerator + Min2Phase.
+ * Resolves the category to its event spec and delegates to the registered
+ * ScrambleProvider (phase A4). Events without a provider (4×4–7×7, Megaminx,
+ * Skewb, …) return "" — there is NO silent 3×3 fallback; the selector gates
+ * those categories in phase A6.
  */
 export function generateScrambleFor(category: PuzzleCategory): string {
-  switch (category) {
-    case "2x2":
-      return getTwoByTwoScrambler().generateScramble();
-    default:
-      return RandomStateGenerator.generateScramble(getMin2PhaseSolver());
-  }
+  const event = getEventForCategory(category);
+  if (!event) return "";
+  return generateScramble(event) ?? "";
 }
 

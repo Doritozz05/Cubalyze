@@ -118,7 +118,7 @@ export function MainStage(props: MainStageProps) {
 
   // Current session PB for the active puzzle (used by the Insights dashboard).
   const currentPuzzleType = puzzleCategoryToType(puzzle);
-  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType);
+  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "333") === currentPuzzleType);
   const validSolves = puzzleSolves.filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const currentPB =
     validSolves.length > 0 ? Math.min(...validSolves.map((s) => effectiveTime(s))) : null;

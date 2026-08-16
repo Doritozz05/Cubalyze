@@ -26,16 +26,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { PUZZLE_TYPES, type PuzzleType } from "@/utils/puzzleTypes";
 import type { PuzzleCategory } from "@/types";
-
-// ── Puzzle type grouping ──────────────────────────────────────────────────
-
-type PuzzleTypeKey = '3x3x3' | '2x2x2';
-
-const PUZZLE_TYPES: { value: PuzzleTypeKey; label: string }[] = [
-  { value: '3x3x3', label: '3x3' },
-  { value: '2x2x2', label: '2x2' },
-];
 
 export interface FloatingAlgorithmDbPanelProps {
   solves?: unknown[];
@@ -50,18 +42,18 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
   );
 
   // ── Puzzle type filter ────────────────────────────────────────────────
-  const [puzzleType, setPuzzleType] = useState<PuzzleTypeKey>(() => {
+  const [puzzleType, setPuzzleType] = useState<PuzzleType>(() => {
     if (puzzle) {
-      const mapped = puzzleCategoryToType(puzzle as PuzzleCategory) as PuzzleTypeKey;
+      const mapped = puzzleCategoryToType(puzzle as PuzzleCategory);
       if (PUZZLE_TYPES.some((pt) => pt.value === mapped)) return mapped;
     }
-    return '3x3x3';
+    return '333';
   });
 
   // Sync internal puzzle type when the global app puzzle changes
   useEffect(() => {
     if (!puzzle) return;
-    const mapped = puzzleCategoryToType(puzzle as never) as PuzzleTypeKey;
+    const mapped = puzzleCategoryToType(puzzle as PuzzleCategory);
     if (PUZZLE_TYPES.some((pt) => pt.value === mapped)) {
       setPuzzleType(mapped);
       setSelectedCaseId(null);
@@ -71,7 +63,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
 
   // Filter methods by puzzle type
   const puzzleMethods = useMemo(
-    () => METHODS.filter((m) => (m.puzzleType ?? '3x3x3') === puzzleType),
+    () => METHODS.filter((m) => (m.puzzleType ?? '333') === puzzleType),
     [puzzleType],
   );
 
@@ -168,7 +160,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
   const currentSubsetName =
     availableSubsets.find((s) => s.id === effectiveSubsetId)?.name ?? "subset";
 
-  const puzzleLabel = PUZZLE_TYPES.find((pt) => pt.value === puzzleType)?.label ?? '3x3';
+  const puzzleLabel = PUZZLE_TYPES.find((pt) => pt.value === puzzleType)?.label ?? '3×3';
   const { t } = useTranslation("widgets");
 
   return (
@@ -214,7 +206,7 @@ export function FloatingAlgorithmDbPanel({ solves: _solves, puzzle }: FloatingAl
               <Select
                 value={puzzleType}
                 onValueChange={(val) => {
-                  setPuzzleType(val as PuzzleTypeKey);
+                  setPuzzleType(val as PuzzleType);
                   setSelectedCaseId(null);
                   setActiveViewMode("list");
                 }}

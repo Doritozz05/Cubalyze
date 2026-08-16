@@ -24,7 +24,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Anti Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -102,7 +102,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Anti Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -180,7 +180,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Anti Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -258,7 +258,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Anti Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -336,7 +336,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Anti Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -414,7 +414,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Anti Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -492,7 +492,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -570,7 +570,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -648,7 +648,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -726,7 +726,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -804,7 +804,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -882,7 +882,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Sune",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -960,7 +960,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "L",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1038,7 +1038,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "L",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1116,7 +1116,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "L",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1194,7 +1194,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "L",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1272,7 +1272,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "L",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1350,7 +1350,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "L",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1428,7 +1428,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "U",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1506,7 +1506,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "U",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1584,7 +1584,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "U",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1662,7 +1662,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "U",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1740,7 +1740,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "U",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1818,7 +1818,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "U",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1896,7 +1896,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "T",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1974,7 +1974,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "T",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2052,7 +2052,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "T",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2130,7 +2130,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "T",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2208,7 +2208,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "T",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2286,7 +2286,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "T",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2364,7 +2364,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Pi",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2442,7 +2442,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Pi",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2520,7 +2520,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Pi",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2598,7 +2598,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Pi",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2676,7 +2676,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Pi",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2754,7 +2754,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Pi",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2832,7 +2832,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "H",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2910,7 +2910,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "H",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2988,7 +2988,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "H",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3066,7 +3066,7 @@ export const COLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "H",
       tags: ["coll", "last-layer"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

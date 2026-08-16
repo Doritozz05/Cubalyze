@@ -1,4 +1,5 @@
 import type { Solve } from './types.js';
+import { isDbPuzzleType } from '@cubeforge/events';
 import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
 import { withTransaction } from './transaction.js';
 
@@ -91,13 +92,23 @@ function rowToSolve(row: SolveRow): Solve {
     orientationTimeline: safeParseOrientationTimeline(row.orientation_timeline),
     analysisEngineVersion: row.analysis_engine_version ?? undefined,
     analysis: row.analysis ?? undefined,
-    puzzleType: row.puzzle_type ?? '3x3x3',
+    puzzleType: row.puzzle_type ?? '333',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 function solveToRow(solve: Solve): SolveRow {
+  // Phase A2 (ADR-002) — validate puzzle_type against the WCA event
+  // registry at the write boundary (covers insert, insertMany and update).
+  // Undefined is allowed (defaults to '333'); a DEFINED value that is not a
+  // WCA event code is a bug and must never reach the disk. The SQLite CHECK
+  // (migration 027) enforces the same contract at the schema level.
+  if (solve.puzzleType !== undefined && !isDbPuzzleType(solve.puzzleType)) {
+    throw new Error(
+      `Cannot persist solve: unknown puzzle_type '${solve.puzzleType}' — must be a WCA event code declared by the registry`
+    );
+  }
   return {
     id: solve.id,
     session_id: solve.sessionId,
@@ -114,7 +125,7 @@ function solveToRow(solve: Solve): SolveRow {
       : null,
     analysis_engine_version: solve.analysisEngineVersion ?? null,
     analysis: solve.analysis ?? null,
-    puzzle_type: solve.puzzleType ?? '3x3x3',
+    puzzle_type: solve.puzzleType ?? '333',
     created_at: solve.createdAt ?? Date.now(),
     updated_at: solve.updatedAt ?? Date.now(),
   };
@@ -126,11 +137,18 @@ export class SolvesRepository {
     this.db = db;
   }
 
+  /**
+   * All NON-demo solves (optionally for one session), oldest first.
+   *
+   * Demo solves (is_demo = 1) are excluded here so seeded sample data can
+   * never leak into the user's session list, stats or history — isolation
+   * no longer depends solely on demo solves living in a demo session.
+   */
   async findAll(sessionId?: string): Promise<Solve[]> {
-    let sql = 'SELECT * FROM solves';
+    let sql = 'SELECT * FROM solves WHERE is_demo = 0';
     const bind: unknown[] = [];
     if (sessionId) {
-      sql += ' WHERE session_id = ? ORDER BY timestamp ASC';
+      sql += ' AND session_id = ? ORDER BY timestamp ASC';
       bind.push(sessionId);
     } else {
       sql += ' ORDER BY timestamp ASC';

@@ -24,7 +24,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -102,7 +102,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -180,7 +180,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -258,7 +258,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -336,7 +336,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -414,7 +414,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -477,7 +477,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -525,7 +525,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -573,7 +573,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -651,7 +651,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -729,7 +729,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -807,7 +807,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -885,7 +885,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -963,7 +963,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1041,7 +1041,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1104,7 +1104,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1182,7 +1182,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1260,7 +1260,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1338,7 +1338,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1416,7 +1416,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1494,7 +1494,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1557,7 +1557,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1635,7 +1635,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1713,7 +1713,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1761,7 +1761,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1839,7 +1839,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1917,7 +1917,7 @@ export const WV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["wv", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

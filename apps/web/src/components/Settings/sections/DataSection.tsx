@@ -10,7 +10,7 @@ import type { ParseKeys } from 'i18next';
 import { useStorageStatusStore } from '@/stores/storageStatus';
 import { exportSolvesToCSV, exportSolvesToCsTimer, exportSolvesToXLSX, downloadFile } from '@/utils/exportSolves';
 import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPreview } from '@/utils/importSolves';
-import { PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
+import { SELECTABLE_PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
 import type { Solve, PuzzleCategory } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -492,7 +492,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        {PUZZLE_CATEGORIES.map((c) => (
+                        {SELECTABLE_PUZZLE_CATEGORIES.map((c) => (
                           <button
                             key={c}
                             onClick={() => setImportCategory(c)}

@@ -15,7 +15,7 @@ function _makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     id: 's1', session_id: 'ses1', time_ms: 12345, timestamp: 1767225600000,
     scramble: "R U R'", penalty: 'none', method: 'CFOP', source: 'smart',
     note: null, moves: '[]', orientation_timeline: null,
-    analysis_engine_version: null, analysis: null, puzzle_type: '3x3x3',
+    analysis_engine_version: null, analysis: null, puzzle_type: '333',
     created_at: '2026-01-01', updated_at: '2026-01-01',
     ...overrides,
   };
@@ -31,7 +31,7 @@ describe('F4 — SolvesRepository.insert fuzzing', () => {
     const repo = new SolvesRepository(db);
     await repo.insert({
       id: 's1', sessionId: 'ses1', timeMs: 0, timestamp: 1767225600000,
-      scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '3x3x3',
+      scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333',
     });
     expect(db).toHaveBeenCalled();
     const bind = db.mock.calls[0][1] as unknown[];
@@ -44,7 +44,7 @@ describe('F4 — SolvesRepository.insert fuzzing', () => {
     await repo.insert({
       id: 's1', sessionId: 'ses1', timeMs: Number.MAX_SAFE_INTEGER,
       timestamp: 1767225600000, scramble: '', penalty: 'none',
-      source: 'manual', moves: [], puzzleType: '3x3x3',
+      source: 'manual', moves: [], puzzleType: '333',
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[2]).toBe(Number.MAX_SAFE_INTEGER);
@@ -56,7 +56,7 @@ describe('F4 — SolvesRepository.insert fuzzing', () => {
     await repo.insert({
       id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
       scramble: '', penalty: "none'; DROP TABLE solves;--" as unknown as 'none',
-      source: 'manual', moves: [], puzzleType: '3x3x3',
+      source: 'manual', moves: [], puzzleType: '333',
     });
     // Parameterized query should prevent SQL injection
     const sql = db.mock.calls[0][0];
@@ -101,7 +101,7 @@ describe('F5 — SQL injection resistance', () => {
     await repo.insert({
       id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
       scramble: evilScramble, penalty: 'none', source: 'manual',
-      moves: [], puzzleType: '3x3x3',
+      moves: [], puzzleType: '333',
     });
 
     const bind = db.mock.calls[0][1] as unknown[];
@@ -122,13 +122,13 @@ describe('R2 — Duplicate ID handling', () => {
     await repo.insert({
       id: 'duplicate-id', sessionId: 'ses1', timeMs: 1000,
       timestamp: 1767225600000, scramble: '', penalty: 'none',
-      source: 'manual', moves: [], puzzleType: '3x3x3',
+      source: 'manual', moves: [], puzzleType: '333',
     });
 
     await repo.insert({
       id: 'duplicate-id', sessionId: 'ses1', timeMs: 2000,
       timestamp: 1767225600000, scramble: '', penalty: 'none',
-      source: 'manual', moves: [], puzzleType: '3x3x3',
+      source: 'manual', moves: [], puzzleType: '333',
     });
 
     expect(db).toHaveBeenCalledTimes(2);
@@ -142,7 +142,7 @@ describe('R2 — Duplicate ID handling', () => {
     await repo.update({
       id: 'nonexistent', sessionId: 'ses1', timeMs: 5000,
       timestamp: 1767225600000, scramble: '', penalty: 'none',
-      source: 'manual', moves: [], puzzleType: '3x3x3',
+      source: 'manual', moves: [], puzzleType: '333',
     });
 
     expect(db).toHaveBeenCalled();

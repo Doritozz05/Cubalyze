@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useStore } from "zustand";
 import type { TimerState, Penalty, SolveMethod } from "@/types";
-import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
+import { TimerEngine, TimerState as EngineState, type WcaRulesProfile } from "@cubeforge/timer-engine";
 import { mapTimerState } from "@/utils/timerState";
 import { useTimerKeyboard } from "@/hooks/useTimerKeyboard";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
@@ -70,6 +70,13 @@ export interface UseSolveSessionOptions {
    * from interfering with training views that have their own timer.
    */
   keyboardDisabledRef?: React.MutableRefObject<boolean>;
+  /**
+   * WCA rules profile of the active event (phase A5). Defaults to the
+   * 3×3 speed profile inside the engine. Events without inspection
+   * (inspectionMs: null, e.g. BLD) force inspection off regardless of
+   * the user preference.
+   */
+  rules?: WcaRulesProfile;
 }
 
 export interface UseSolveSessionResult {
@@ -222,10 +229,13 @@ export function useSolveSession(
   const engine = useMemo(
     () =>
       new TimerEngine({
-        useInspection: inspectionPref,
+        // Phase A5: the event profile decides whether inspection exists at
+        // all — the user preference only narrows within allowed events.
+        useInspection: inspectionPref && options.rules?.inspectionMs != null,
         holdToStartDelay: spacebarHoldDelayPref,
+        rules: options.rules,
       }),
-    [inspectionPref, spacebarHoldDelayPref],
+    [inspectionPref, options.rules, spacebarHoldDelayPref],
   );
 
   const validation = useScrambleValidator(scramble, scrambleVerificationPref);

@@ -25,7 +25,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -119,7 +119,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -200,7 +200,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -280,7 +280,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -360,7 +360,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Square Shapes",
       tags: ["square"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -440,7 +440,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Square Shapes",
       tags: ["square"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -520,7 +520,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Lightning Shapes",
       tags: ["lightning"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -600,7 +600,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Lightning Shapes",
       tags: ["lightning"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -681,7 +681,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Fish Shapes",
       tags: ["fish"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -759,7 +759,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Fish Shapes",
       tags: ["fish"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -839,7 +839,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Lightning Shapes",
       tags: ["lightning"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -919,7 +919,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Lightning Shapes",
       tags: ["lightning"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -999,7 +999,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Knight Move Shapes",
       tags: ["knight"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1080,7 +1080,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Knight Move Shapes",
       tags: ["knight"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1160,7 +1160,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Knight Move Shapes",
       tags: ["knight"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1241,7 +1241,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Knight Move Shapes",
       tags: ["knight"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1321,7 +1321,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1401,7 +1401,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1495,7 +1495,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1576,7 +1576,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Dot Case",
       tags: ["dot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1656,7 +1656,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1737,7 +1737,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1831,7 +1831,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1912,7 +1912,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1992,7 +1992,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2072,7 +2072,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll", "antisune"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2153,7 +2153,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "OCLL",
       tags: ["ocll", "sune"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2234,7 +2234,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "All Corners Oriented",
       tags: ["corners-oriented"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2314,7 +2314,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Awkward Shapes",
       tags: ["awkward"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2395,7 +2395,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Awkward Shapes",
       tags: ["awkward"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2475,7 +2475,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "P Shapes",
       tags: ["p"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2555,7 +2555,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "P Shapes",
       tags: ["p"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2636,7 +2636,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "T Shapes",
       tags: ["t"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2716,7 +2716,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "C Shapes",
       tags: ["c"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2796,7 +2796,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Fish Shapes",
       tags: ["fish"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2890,7 +2890,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "W Shapes",
       tags: ["w"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2970,7 +2970,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Fish Shapes",
       tags: ["fish"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3051,7 +3051,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "W Shapes",
       tags: ["w"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3131,7 +3131,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Lightning Shapes",
       tags: ["lightning"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3211,7 +3211,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Lightning Shapes",
       tags: ["lightning"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3291,7 +3291,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Awkward Shapes",
       tags: ["awkward"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3371,7 +3371,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Awkward Shapes",
       tags: ["awkward"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3451,7 +3451,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "P Shapes",
       tags: ["p"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3532,7 +3532,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "P Shapes",
       tags: ["p"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3613,7 +3613,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "T Shapes",
       tags: ["t"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3693,7 +3693,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "C Shapes",
       tags: ["c"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3773,7 +3773,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "L Shapes",
       tags: ["l"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3854,7 +3854,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "L Shapes",
       tags: ["l"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3934,7 +3934,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "L Shapes",
       tags: ["l"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4014,7 +4014,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "L Shapes",
       tags: ["l"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4094,7 +4094,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Line Shapes",
       tags: ["line"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4175,7 +4175,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Line Shapes",
       tags: ["line"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4255,7 +4255,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "L Shapes",
       tags: ["l"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4335,7 +4335,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "L Shapes",
       tags: ["l"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4415,7 +4415,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Line Shapes",
       tags: ["line"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4495,7 +4495,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Line Shapes",
       tags: ["line"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4575,7 +4575,7 @@ export const OLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "All Corners Oriented",
       tags: ["corners-oriented"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

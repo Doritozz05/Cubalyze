@@ -117,6 +117,9 @@ export function exportSolvesToJSON(
       note: solve.note,
       source: solve.source,
       puzzleType: solve.puzzleType,
+      moves: solve.moves,
+      analysis: solve.analysis,
+      orientationTimeline: solve.orientationTimeline,
     })),
   };
   return JSON.stringify(data, null, 2);
@@ -148,6 +151,9 @@ export function exportAllSolvesToJSON(
         note: solve.note,
         source: solve.source,
         puzzleType: solve.puzzleType,
+        moves: solve.moves,
+        analysis: solve.analysis,
+        orientationTimeline: solve.orientationTimeline,
       })),
     })),
   };

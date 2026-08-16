@@ -82,7 +82,7 @@ function makeSolve(i: number, sessionId: string, timestampBase: number): Solve {
     source: i % 2 === 0 ? 'smart' : 'manual',
     note: i % 7 === 0 ? `note-${i}` : undefined,
     moves,
-    puzzleType: '3x3x3',
+    puzzleType: '333',
   };
 }
 
@@ -93,7 +93,9 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     const ok = await DBWorker.init();
     expect(ok).toBe(true);
     // Same executor shape the repositories receive from the Comlink client.
-    exec = (sql, bind) => Promise.resolve(DBWorker.execute(sql, bind));
+    // `async` so a synchronous SQLite throw surfaces as a rejected promise
+    // (DBWorker.execute throws synchronously, not via promise rejection).
+    exec = async (sql, bind) => DBWorker.execute(sql, bind);
     solvesRepo = new SolvesRepository(exec);
     sessionsRepo = new SessionsRepository(exec);
   }, 60_000);
@@ -117,7 +119,7 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     const session: Session = {
       id: UUID(1),
       name: 'Smoke 500',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     };
     await sessionsRepo.insert(session);
@@ -148,7 +150,7 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Rollback',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     // Seed one solve whose id will be duplicated at insert #499 of the batch.
@@ -176,7 +178,7 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Delete batch',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     const batch = Array.from({ length: 500 }, (_, i) =>
@@ -197,7 +199,7 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Order',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     const base = 1_700_000_000_000;
@@ -224,7 +226,7 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Chunking',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     // 1200 solves → 3 multi-row INSERT statements (500 + 500 + 200).
@@ -238,19 +240,44 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await solvesRepo.deleteBySession(sessionId);
   }, 30_000);
 
+  it('rejects an unknown puzzle_type at the SQL level (migration 027 CHECK)', async () => {
+    // The repository layer already validates (A2); this proves the SQLite
+    // CHECK from migration 027 (WCA codes) enforces the same contract even
+    // for raw SQL.
+    await sessionsRepo.insert({
+      id: UUID(7),
+      name: 'CHECK',
+      puzzleType: '333',
+      createdAt: 1_700_000_000_000,
+    });
+    await expect(
+      exec(
+        "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, source, moves, puzzle_type) VALUES ('00000000-0000-4000-8000-000000000999', ?, 1000, 1700000000000, '', 'none', 'manual', '[]', '9x9x9')",
+        [UUID(7)]
+      )
+    ).rejects.toThrow(/CHECK/i);
+    // Canonical types still pass the CHECK.
+    await exec(
+      "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, source, moves, puzzle_type) VALUES ('00000000-0000-4000-8000-000000000998', ?, 1000, 1700000000000, '', 'none', 'manual', '[]', '222')",
+      [UUID(7)]
+    );
+    const all = await solvesRepo.findAll(UUID(7));
+    expect(all.map((s) => s.puzzleType)).toEqual(['222']);
+  }, 30_000);
+
   it('countBySession returns per-session counts in one query', async () => {
     const a = UUID(5);
     const b = UUID(6);
     await sessionsRepo.insert({
       id: a,
       name: 'Counts A',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     await sessionsRepo.insert({
       id: b,
       name: 'Counts B',
-      puzzleType: '3x3x3',
+      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
 

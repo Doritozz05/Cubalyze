@@ -99,7 +99,7 @@ function CaseCard({
         {caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d" ? (
           <Case3DDiagram caseData={caseData} algorithm={algorithm} className="w-full max-w-44 max-lg:max-w-36" />
         ) : caseData.diagramType === "2d-top" || caseData.diagram2D ? (
-          caseData.puzzleType === '2x2x2' ? (
+          caseData.puzzleType === '222' ? (
             <Case2x2Diagram
               faceletColors={caseData.diagram2D?.faceletColors}
               setupScramble={caseData.setupScramble}

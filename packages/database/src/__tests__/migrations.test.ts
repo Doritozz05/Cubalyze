@@ -145,6 +145,65 @@ describe('MIGRATIONS — schema migrations module', () => {
     }
   });
 
+  it('migration 026 adds a puzzle_type CHECK generated from the event registry', () => {
+    const m = MIGRATIONS.find((x) => x.id === '026_add_puzzle_type_check');
+    expect(m).toBeDefined();
+    // The CHECK is built from @cubeforge/events DB_PUZZLE_TYPES (canonical + legacy).
+    expect(m!.sql).toContain("CHECK (puzzle_type IN ('2x2x2', '3x3x3'");
+    expect(m!.sql).toMatch(/puzzle_type\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'3x3x3'\s+CHECK/i);
+    // Data preservation on both tables: rename → recreate → copy back → drop.
+    expect(m!.sql).toMatch(/ALTER\s+TABLE\s+solves\s+RENAME\s+TO/i);
+    expect(m!.sql).toMatch(/ALTER\s+TABLE\s+sessions\s+RENAME\s+TO/i);
+    expect(m!.sql).toMatch(/INSERT\s+INTO\s+solves/i);
+    expect(m!.sql).toMatch(/INSERT\s+INTO\s+sessions/i);
+    expect(m!.sql).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+solves_puzzle_type_check_legacy/i);
+    expect(m!.sql).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+sessions_puzzle_type_check_legacy/i);
+    // The recreated solves keeps the source CHECK from 025 (incl. 'virtual').
+    expect(m!.sql).toMatch(/source\s+IN\s+\(\s*'smart'\s*,\s*'manual'\s*,\s*'virtual'\s*\)/i);
+    // Indexes recreated on the fresh tables.
+    expect(m!.sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+idx_sessions_created_at/i);
+    expect(m!.sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+idx_sessions_is_demo/i);
+  });
+
+  it('migration 026 preserves short aliases and heals other non-registry values to 3x3x3', () => {
+    const m = MIGRATIONS.find((x) => x.id === '026_add_puzzle_type_check');
+    expect(m).toBeDefined();
+    // The INSERT SELECT wraps puzzle_type in a CASE. Short aliases are mapped
+    // to their canonical legacy scheme FIRST ('3x3'→'3x3x3', '2x2'→'2x2x2')
+    // so 027 can convert them to WCA codes — otherwise '2x2' would fall
+    // through to the ELSE and be silently reclassified as 3×3.
+    expect(m!.sql).toMatch(/WHEN\s+puzzle_type\s*=\s*'3x3'\s+THEN\s+'3x3x3'/i);
+    expect(m!.sql).toMatch(/WHEN\s+puzzle_type\s*=\s*'2x2'\s+THEN\s+'2x2x2'/i);
+    // Anything else outside the allow-list still normalizes to '3x3x3'.
+    expect(m!.sql).toMatch(/THEN\s+puzzle_type\s+ELSE\s+'3x3x3'\s+END/i);
+    // The frozen allow-list is the OLD canonical scheme, not WCA codes.
+    expect(m!.sql).toContain("CHECK (puzzle_type IN ('2x2x2', '3x3x3'");
+    expect(m!.sql).not.toContain("CHECK (puzzle_type IN ('222'");
+  });
+
+  it('migration 027 normalizes puzzle_type to WCA event codes (ADR-002)', () => {
+    const m = MIGRATIONS.find((x) => x.id === '027_puzzle_type_wca_codes');
+    expect(m).toBeDefined();
+    // Rebuilt tables carry the WCA-code CHECK and DEFAULT '333'.
+    expect(m!.sql).toContain("CHECK (puzzle_type IN ('222', '333'");
+    expect(m!.sql).toMatch(/puzzle_type\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'333'\s+CHECK/i);
+    // Conversion CASE in both rebuilt tables: legacy → WCA codes.
+    expect(m!.sql).toMatch(/'3x3x3', '3x3'\) THEN '333'/);
+    expect(m!.sql).toMatch(/'2x2x2', '2x2'\) THEN '222'/);
+    // Data preservation on both tables: rename → recreate → copy back → drop.
+    expect(m!.sql).toMatch(/ALTER\s+TABLE\s+solves\s+RENAME\s+TO\s+solves_wca_legacy/i);
+    expect(m!.sql).toMatch(/ALTER\s+TABLE\s+sessions\s+RENAME\s+TO\s+sessions_wca_legacy/i);
+    expect(m!.sql).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+solves_wca_legacy/i);
+    expect(m!.sql).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+sessions_wca_legacy/i);
+    // sessions rebuilt BEFORE solves (FK lesson from 026).
+    expect(m!.sql.indexOf('sessions_wca_legacy')).toBeLessThan(m!.sql.indexOf('solves_wca_legacy'));
+    // Algorithm catalog and profile puzzle values are converted too.
+    expect(m!.sql).toMatch(/UPDATE\s+algorithm_methods\s+SET\s+puzzle_type/i);
+    expect(m!.sql).toMatch(/UPDATE\s+algorithm_subsets\s+SET\s+puzzle_type/i);
+    expect(m!.sql).toMatch(/UPDATE\s+algorithm_cases\s+SET\s+puzzle_type/i);
+    expect(m!.sql).toMatch(/UPDATE\s+profiles\s+SET\s+main_puzzle/i);
+  });
+
   it('migration 025 accepts the virtual source and preserves existing rows', () => {
     const m = MIGRATIONS.find((x) => x.id === '025_add_virtual_source');
     expect(m).toBeDefined();

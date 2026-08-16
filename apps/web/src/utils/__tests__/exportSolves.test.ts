@@ -24,7 +24,7 @@ describe("exportSolvesToCsTimer", () => {
         scramble: "F U2 R2 F2 D2 L2 B2 L' F2 L' U2 R D2 B' U' R D L' B U'",
         timestamp: new Date(2025, 0, 16, 8, 49, 47).getTime(),
         source: "manual",
-        puzzleType: "3x3x3",
+        puzzleType: "333",
       },
       {
         id: "2",
@@ -33,7 +33,7 @@ describe("exportSolvesToCsTimer", () => {
         scramble: "D F2 L' D2 L B' L U R2 D2 F2 B2 R2 B2 R' F2 L' F2 L U",
         timestamp: new Date(2025, 0, 16, 11, 25, 54).getTime(),
         source: "manual",
-        puzzleType: "3x3x3",
+        puzzleType: "333",
       },
       {
         id: "3",
@@ -43,7 +43,7 @@ describe("exportSolvesToCsTimer", () => {
         note: "Hola",
         timestamp: new Date(2026, 6, 31, 13, 6, 30).getTime(),
         source: "manual",
-        puzzleType: "3x3x3",
+        puzzleType: "333",
       },
     ];
 
@@ -89,7 +89,7 @@ describe("formula injection guard (OWASP CSV/XLSX)", () => {
       method: "+SUM(A1:A9)" as Solve["method"],
       note: "=cmd|'/C calc'!A0",
       source: "manual",
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     {
       id: "inj2",
@@ -100,7 +100,7 @@ describe("formula injection guard (OWASP CSV/XLSX)", () => {
       method: "-2+3" as Solve["method"],
       note: "\t1+1",
       source: "manual",
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
   ];
 
@@ -140,7 +140,7 @@ describe("CubeForge JSON full-fidelity round trip", () => {
       method: "CFOP",
       note: "nice",
       source: "manual",
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     {
       id: "b",
@@ -150,7 +150,7 @@ describe("CubeForge JSON full-fidelity round trip", () => {
       timestamp: 1737020000000,
       method: "Roux",
       source: "smart",
-      puzzleType: "2x2x2",
+      puzzleType: "222",
     },
   ];
 
@@ -168,10 +168,10 @@ describe("CubeForge JSON full-fidelity round trip", () => {
     expect(s0.timestamp).toBe(1737013787000);
     expect(s0.method).toBe("CFOP");
     expect(s0.note).toBe("nice");
-    expect(s0.puzzleType).toBe("3x3x3");
+    expect(s0.puzzleType).toBe("333");
 
     // The 2x2 solve keeps 2x2x2 — NOT forced to a single category.
-    expect(result.solves[1]!.puzzleType).toBe("2x2x2");
+    expect(result.solves[1]!.puzzleType).toBe("222");
     expect(result.solves[1]!.note).toBeUndefined();
   });
 
@@ -193,13 +193,92 @@ describe("CubeForge JSON full-fidelity round trip", () => {
     expect(result.solves).toHaveLength(3);
     // Puzzle types survive the round trip per solve.
     const types = result.solves.map((s) => s.puzzleType);
-    expect(types).toEqual(["3x3x3", "2x2x2", "2x2x2"]);
+    expect(types).toEqual(["333", "222", "222"]);
   });
 
   it("toSolveInput keeps the exported puzzleType", () => {
     const result = parseImport(exportSolvesToJSON(sample));
     const input = result.solves.map((s) => toSolveInput(s));
-    expect(input[0]!.puzzleType).toBe("3x3x3");
-    expect(input[1]!.puzzleType).toBe("2x2x2");
+    expect(input[0]!.puzzleType).toBe("333");
+    expect(input[1]!.puzzleType).toBe("222");
+  });
+
+  it("JSON export/import round-trips moves, analysis and orientationTimeline", () => {
+    const rich: Solve[] = [
+      {
+        id: "rich",
+        time: 5123,
+        penalty: "none",
+        scramble: "R U R' U'",
+        timestamp: 1737013787000,
+        source: "smart",
+        puzzleType: "333",
+        moves: [{ face: "R", direction: 1, cubeTimestamp: 0, hostTimestamp: 0 }],
+        analysis: { totalTimeMs: 5123 } as Solve["analysis"],
+        orientationTimeline: [[0, 0]] as Solve["orientationTimeline"],
+      },
+    ];
+
+    const result = parseImport(exportSolvesToJSON(rich, "Rich"));
+    expect(result.errors).toHaveLength(0);
+    const input = toSolveInput(result.solves[0]!);
+    expect(input.moves).toEqual([{ face: "R", direction: 1, cubeTimestamp: 0, hostTimestamp: 0 }]);
+    expect(input.analysis).toEqual({ totalTimeMs: 5123 });
+    expect(input.orientationTimeline).toEqual([[0, 0]]);
+  });
+
+  it("imports pre-migration JSON exports by normalizing legacy puzzleTypes to WCA codes", () => {
+    // A CubeForge JSON exported on an older build carried the pre-ADR-002
+    // spellings. After migration 027 the DB only accepts WCA codes, so the
+    // import path must normalize these instead of failing the write.
+    const legacyJson = JSON.stringify({
+      app: "CubeForge",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      sessionName: "Legacy",
+      solveCount: 4,
+      solves: [
+        { timeMs: 10000, penalty: "none", scramble: "R U R' U'", timestamp: 1, puzzleType: "3x3x3" },
+        { timeMs: 11000, penalty: "none", scramble: "R U F'", timestamp: 2, puzzleType: "2x2x2" },
+        { timeMs: 12000, penalty: "none", scramble: "R U R' U'", timestamp: 3, puzzleType: "3x3" },
+        { timeMs: 13000, penalty: "none", scramble: "R U F'", timestamp: 4, puzzleType: "2x2" },
+      ],
+    });
+
+    const result = parseImport(legacyJson);
+    expect(result.format).toBe("cubeforge-json");
+    expect(result.errors).toHaveLength(0);
+
+    const inputs = result.solves.map((s) => toSolveInput(s));
+    expect(inputs.map((i) => i.puzzleType)).toEqual(["333", "222", "333", "222"]);
+  });
+
+  it("imports an export-all JSON with mixed legacy and WCA puzzleTypes", () => {
+    const legacyJson = JSON.stringify({
+      app: "CubeForge",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      sessionCount: 2,
+      sessions: [
+        {
+          sessionName: "A",
+          solveCount: 2,
+          solves: [
+            { timeMs: 10000, penalty: "none", scramble: "R U R' U'", timestamp: 1, puzzleType: "3x3x3" },
+            { timeMs: 11000, penalty: "none", scramble: "R U F'", timestamp: 2, puzzleType: "222" },
+          ],
+        },
+        {
+          sessionName: "B",
+          solveCount: 1,
+          solves: [
+            { timeMs: 12000, penalty: "none", scramble: "R U F'", timestamp: 3, puzzleType: "2x2x2" },
+          ],
+        },
+      ],
+    });
+
+    const result = parseImport(legacyJson);
+    expect(result.errors).toHaveLength(0);
+    const inputs = result.solves.map((s) => toSolveInput(s));
+    expect(inputs.map((i) => i.puzzleType)).toEqual(["333", "222", "222"]);
   });
 });

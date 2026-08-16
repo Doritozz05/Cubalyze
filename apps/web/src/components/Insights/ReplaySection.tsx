@@ -288,7 +288,7 @@ export function ReplaySection({
         // Cube3DEngine/CubeModel already support order 2 — same FACE_ROTATION_MAP
         // layerValues (±1) apply unchanged, so the replay moves work as-is.
         const puzzleOrder =
-          solveRef.current.puzzleType === "2x2x2" ||
+          solveRef.current.puzzleType === "222" ||
           solveRef.current.puzzleType === "2x2"
             ? 2
             : 3;

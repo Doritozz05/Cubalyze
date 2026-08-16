@@ -90,7 +90,7 @@ export const AlgorithmCaseSchema = z.object({
   category: z.string().optional(),
   relatedCases: z.array(z.string()).optional(),
   tags: z.array(z.string()).default([]),
-  puzzleType: z.string().default('3x3x3'),
+  puzzleType: z.string().default('333'),
 });
 
 // ─── Subset (e.g. "OLL", "PLL", "CMLL") ────────────────────────────────────
@@ -102,7 +102,7 @@ export const AlgorithmSubsetSchema = z.object({
   name: z.string(),
   description: z.string(),
   sortOrder: z.number().int().default(0),
-  puzzleType: z.string().default('3x3x3'),
+  puzzleType: z.string().default('333'),
 });
 
 // ─── Method (e.g. "CFOP", "Roux", "ZZ") ────────────────────────────────────
@@ -112,7 +112,7 @@ export const AlgorithmMethodSchema = z.object({
   name: z.string(),
   description: z.string(),
   sortOrder: z.number().int().default(0),
-  puzzleType: z.string().default('3x3x3'),
+  puzzleType: z.string().default('333'),
 });
 
 // ─── Derived types ─────────────────────────────────────────────────────────

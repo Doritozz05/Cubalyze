@@ -548,7 +548,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
           source: "virtual",
           // The virtual cube owns its scramble (3×3-only today).
           scramble,
-          puzzleType: "3x3x3",
+          puzzleType: "333",
           onNextScramble: () => setTimeout(handleRegenerate, 1200),
         },
       );

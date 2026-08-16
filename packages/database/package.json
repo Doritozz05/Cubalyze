@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@cubeforge/algorithm-db": "workspace:*",
+    "@cubeforge/events": "workspace:*",
     "@cubeforge/models": "workspace:*",
     "@cubeforge/training": "workspace:*",
     "@cubeforge/types": "workspace:*",

@@ -319,7 +319,7 @@ export function Case3DPanel({
                       alg={alg}
                       isSelected={alg.id === activeAlg?.id}
                       isPrimary={alg.id === filteredPrimary?.id}
-                      is2x2={caseData.puzzleType === "2x2x2"}
+                      is2x2={caseData.puzzleType === "222"}
                       subsetId={caseData.subsetId}
                       onSelect={() => setSelectedAlgId(alg.id)}
                       onEdit={() => handleOpenEditDialog(alg)}

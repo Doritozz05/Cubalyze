@@ -29,7 +29,7 @@ import type { PuzzleCategory } from "@/types";
 import type { PhaseStatsRecord, PhasePracticeType } from "@cubeforge/training";
 import type { TrainingTask, TaskRepeat, TaskColor } from "@cubeforge/database";
 import { EXERCISE_IDS } from "@cubeforge/training";
-import { puzzleCategoryToType, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+import { puzzleCategoryToType, SELECTABLE_PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
   TrainingPractice,
   getPhasesForMethod,
@@ -120,7 +120,7 @@ export function TrainingDashboard({
   const targetPuzzleType = puzzleCategoryToType(selectedPuzzle);
 
   const puzzleMethods = useMemo(() => {
-    return METHODS.filter((m) => (m.puzzleType ?? "3x3x3") === targetPuzzleType);
+    return METHODS.filter((m) => (m.puzzleType ?? "333") === targetPuzzleType);
   }, [targetPuzzleType]);
 
   const [activeMethodId, setActiveMethodId] = useState<string>(() => puzzleMethods[0]?.id ?? METHODS[0]?.id ?? "");
@@ -136,7 +136,7 @@ export function TrainingDashboard({
     setSelectedPuzzle(p);
     onPuzzleChange?.(p);
     const newTargetType = puzzleCategoryToType(p);
-    const newMethods = METHODS.filter((m) => (m.puzzleType ?? "3x3x3") === newTargetType);
+    const newMethods = METHODS.filter((m) => (m.puzzleType ?? "333") === newTargetType);
     if (newMethods.length > 0) {
       setActiveMethodId(newMethods[0].id);
     }
@@ -227,9 +227,9 @@ export function TrainingDashboard({
       if (subset) {
         setActiveMethodId(subset.methodId);
         const method = METHODS.find((m) => m.id === subset.methodId);
-        if (method?.puzzleType === "2x2x2") {
+        if (method?.puzzleType === "222") {
           setSelectedPuzzle("2x2");
-        } else if (method?.puzzleType === "3x3x3") {
+        } else if (method?.puzzleType === "333") {
           setSelectedPuzzle("3x3");
         }
       }
@@ -461,7 +461,7 @@ export function TrainingDashboard({
                 <SelectValue placeholder={t("selectPuzzle")} />
               </SelectTrigger>
               <SelectContent>
-                {PUZZLE_CATEGORIES.map((p) => {
+                {SELECTABLE_PUZZLE_CATEGORIES.map((p) => {
                   const is2x2 = p === "2x2";
                   const is3x3 = p === "3x3";
                   return (

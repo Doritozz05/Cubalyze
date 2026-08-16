@@ -4,6 +4,27 @@ export interface Migration {
   sql: string;
 }
 
+/**
+ * FROZEN snapshots — migrations must be deterministic forever, so they do
+ * NOT read the live registry. These lists are the values in force when each
+ * migration was written (A2 / ADR-002). Do not edit them.
+ */
+
+/** Canonical puzzle_type values BEFORE ADR-002 (used by migration 026). */
+const LEGACY_CANONICAL_TYPES: readonly string[] = [
+  '2x2x2', '3x3x3', '4x4x4', '5x5x5', '6x6x6', '7x7x7', '333oh', '333bf',
+  '333fm', '333mbf', '444bf', '555bf', 'clock', 'minx', 'pyram', 'skewb',
+  'sq1', 'fto',
+];
+const LEGACY_TYPE_LIST_SQL = LEGACY_CANONICAL_TYPES.map((t) => `'${t}'`).join(', ');
+
+/** WCA event codes in force after ADR-002 (used by migration 027). */
+const WCA_CODES: readonly string[] = [
+  '222', '333', '333oh', '444', '555', '666', '777', '333bf', '444bf',
+  '555bf', '333fm', '333mbf', 'clock', 'minx', 'pyram', 'skewb', 'sq1', 'fto',
+];
+const WCA_CODE_LIST_SQL = WCA_CODES.map((t) => `'${t}'`).join(', ');
+
 export const MIGRATIONS: Migration[] = [
   {
     id: '001_create_solves',
@@ -626,6 +647,224 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
       CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
       CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
+    `,
+  },
+  {
+    id: '026_add_puzzle_type_check',
+    description: 'Add CHECK constraints on solves.puzzle_type / sessions.puzzle_type so the database itself rejects any puzzle type the WCA event registry does not declare (phase A2). SQLite cannot ALTER a CHECK, so both tables are rebuilt with data preserved, following the 025 pattern.',
+    sql: `
+      -- FROZEN snapshot: the canonical puzzle_type values in force when this
+      -- migration was written (A2). The registry now uses WCA codes; 027
+      -- converts this scheme forward. Do not edit this migration.
+      --
+      --   ${LEGACY_TYPE_LIST_SQL}
+      --
+      -- ORDER MATTERS: sessions is rebuilt FIRST. Renaming sessions makes
+      -- SQLite rewrite solves' FK (REFERENCES sessions → REFERENCES
+      -- sessions_puzzle_type_check_legacy); if solves were recreated before
+      -- sessions, its FK would point at the dropped legacy table and every
+      -- later INSERT would fail with "no such table". Recreating solves
+      -- AFTER sessions leaves its FK pointing at the final table.
+
+      -- ── sessions ─────────────────────────────────────────────────────
+      DROP INDEX IF EXISTS idx_sessions_created_at;
+      DROP INDEX IF EXISTS idx_sessions_is_demo;
+
+      ALTER TABLE sessions RENAME TO sessions_puzzle_type_check_legacy;
+
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        puzzle_type TEXT NOT NULL DEFAULT '3x3x3' CHECK (puzzle_type IN (${LEGACY_TYPE_LIST_SQL})),
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        is_demo INTEGER NOT NULL DEFAULT 0
+      );
+
+      -- Data heal: legacy rows may carry short aliases ('3x3', '2x2') or
+      -- other values outside the registry (they were never validated).
+      --
+      -- ORDER OF THE CASE MATTERS for 2×2 integrity: the short aliases must
+      -- be mapped to their CANONICAL legacy scheme ('3x3'→'3x3x3',
+      -- '2x2'→'2x2x2') so migration 027 can then convert them to the WCA
+      -- codes ('333'/'222'). Mapping '2x2' straight to the ELSE ('3x3x3')
+      -- would silently reclassify 2×2 data as 3×3. Unknown values still
+      -- normalize to '3x3x3' so the migration never fails on existing data.
+      INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo)
+        SELECT
+          id, name,
+          CASE WHEN puzzle_type = '3x3' THEN '3x3x3'
+               WHEN puzzle_type = '2x2' THEN '2x2x2'
+               WHEN puzzle_type IN (${LEGACY_TYPE_LIST_SQL}) THEN puzzle_type
+               ELSE '3x3x3' END,
+          created_at, updated_at, is_demo
+        FROM sessions_puzzle_type_check_legacy;
+
+      DROP TABLE IF EXISTS sessions_puzzle_type_check_legacy;
+
+      CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
+
+      -- ── solves ───────────────────────────────────────────────────────
+      DROP INDEX IF EXISTS idx_solves_session_id;
+      DROP INDEX IF EXISTS idx_solves_timestamp;
+      DROP INDEX IF EXISTS idx_solves_is_demo;
+
+      ALTER TABLE solves RENAME TO solves_puzzle_type_check_legacy;
+
+      CREATE TABLE IF NOT EXISTS solves (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        time_ms INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        scramble TEXT NOT NULL DEFAULT '',
+        penalty TEXT NOT NULL DEFAULT 'none' CHECK (penalty IN ('none', '+2', 'dnf', 'DNF')),
+        method TEXT,
+        source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('smart', 'manual', 'virtual')),
+        note TEXT,
+        moves TEXT NOT NULL DEFAULT '[]',
+        orientation_timeline TEXT,
+        analysis_engine_version TEXT,
+        analysis TEXT,
+        puzzle_type TEXT NOT NULL DEFAULT '3x3x3' CHECK (puzzle_type IN (${LEGACY_TYPE_LIST_SQL})),
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+
+      -- Same heal as sessions (and same short-alias mapping so 027 can
+      -- convert '2x2' → '222' instead of reclassifying it as 3×3).
+      INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at)
+        SELECT
+          id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis,
+          CASE WHEN puzzle_type = '3x3' THEN '3x3x3'
+               WHEN puzzle_type = '2x2' THEN '2x2x2'
+               WHEN puzzle_type IN (${LEGACY_TYPE_LIST_SQL}) THEN puzzle_type
+               ELSE '3x3x3' END,
+          is_demo, created_at, updated_at
+        FROM solves_puzzle_type_check_legacy;
+
+      DROP TABLE IF EXISTS solves_puzzle_type_check_legacy;
+
+      CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
+      CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
+    `,
+  },
+  {
+    id: '027_puzzle_type_wca_codes',
+    description: 'Normalize puzzle_type to WCA event codes (ADR-002): rebuild solves/sessions with the WCA-code CHECK and DEFAULT (migration 026 created the old-scheme CHECK, which must be replaced — SQLite cannot ALTER a CHECK), converting legacy values in place ("3x3x3"/"3x3" → "333", "2x2x2"/"2x2" → "222") in solves, sessions, algorithm tables and profiles.main_puzzle. Zero data loss: every row is copied or updated, never dropped.',
+    sql: `
+      -- ADR-002: puzzle_type = WCA event code. Frozen WCA allow-list:
+      --   ${WCA_CODE_LIST_SQL}
+      --
+      -- Conversion CASE (repeated per table — SQLite has no variables):
+      --   '3x3x3'/'3x3' → '333', '2x2x2'/'2x2' → '222',
+      --   already-canonical WCA codes pass through, unknown → '333'.
+      --
+      -- ORDER MATTERS (same lesson as 026): sessions rebuilt FIRST so
+      -- solves' FK points at the final table.
+
+      -- ── sessions ─────────────────────────────────────────────────────
+      DROP INDEX IF EXISTS idx_sessions_created_at;
+      DROP INDEX IF EXISTS idx_sessions_is_demo;
+
+      ALTER TABLE sessions RENAME TO sessions_wca_legacy;
+
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        puzzle_type TEXT NOT NULL DEFAULT '333' CHECK (puzzle_type IN (${WCA_CODE_LIST_SQL})),
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        is_demo INTEGER NOT NULL DEFAULT 0
+      );
+
+      INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo)
+        SELECT
+          id, name,
+          CASE WHEN puzzle_type IN ('3x3x3', '3x3') THEN '333'
+               WHEN puzzle_type IN ('2x2x2', '2x2') THEN '222'
+               WHEN puzzle_type IN (${WCA_CODE_LIST_SQL}) THEN puzzle_type
+               ELSE '333' END,
+          created_at, updated_at, is_demo
+        FROM sessions_wca_legacy;
+
+      DROP TABLE IF EXISTS sessions_wca_legacy;
+
+      CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
+
+      -- ── solves ───────────────────────────────────────────────────────
+      DROP INDEX IF EXISTS idx_solves_session_id;
+      DROP INDEX IF EXISTS idx_solves_timestamp;
+      DROP INDEX IF EXISTS idx_solves_is_demo;
+
+      ALTER TABLE solves RENAME TO solves_wca_legacy;
+
+      CREATE TABLE IF NOT EXISTS solves (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        time_ms INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        scramble TEXT NOT NULL DEFAULT '',
+        penalty TEXT NOT NULL DEFAULT 'none' CHECK (penalty IN ('none', '+2', 'dnf', 'DNF')),
+        method TEXT,
+        source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('smart', 'manual', 'virtual')),
+        note TEXT,
+        moves TEXT NOT NULL DEFAULT '[]',
+        orientation_timeline TEXT,
+        analysis_engine_version TEXT,
+        analysis TEXT,
+        puzzle_type TEXT NOT NULL DEFAULT '333' CHECK (puzzle_type IN (${WCA_CODE_LIST_SQL})),
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+
+      INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at)
+        SELECT
+          id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis,
+          CASE WHEN puzzle_type IN ('3x3x3', '3x3') THEN '333'
+               WHEN puzzle_type IN ('2x2x2', '2x2') THEN '222'
+               WHEN puzzle_type IN (${WCA_CODE_LIST_SQL}) THEN puzzle_type
+               ELSE '333' END,
+          is_demo, created_at, updated_at
+        FROM solves_wca_legacy;
+
+      DROP TABLE IF EXISTS solves_wca_legacy;
+
+      CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
+      CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
+
+      -- ── Algorithm catalog (no CHECK on these columns — plain UPDATEs) ──
+      UPDATE algorithm_methods SET puzzle_type =
+        CASE WHEN puzzle_type IN ('3x3x3', '3x3') THEN '333'
+             WHEN puzzle_type IN ('2x2x2', '2x2') THEN '222'
+             WHEN puzzle_type IN (${WCA_CODE_LIST_SQL}) THEN puzzle_type
+             ELSE '333' END;
+
+      UPDATE algorithm_subsets SET puzzle_type =
+        CASE WHEN puzzle_type IN ('3x3x3', '3x3') THEN '333'
+             WHEN puzzle_type IN ('2x2x2', '2x2') THEN '222'
+             WHEN puzzle_type IN (${WCA_CODE_LIST_SQL}) THEN puzzle_type
+             ELSE '333' END;
+
+      UPDATE algorithm_cases SET puzzle_type =
+        CASE WHEN puzzle_type IN ('3x3x3', '3x3') THEN '333'
+             WHEN puzzle_type IN ('2x2x2', '2x2') THEN '222'
+             WHEN puzzle_type IN (${WCA_CODE_LIST_SQL}) THEN puzzle_type
+             ELSE '333' END;
+
+      -- ── Profile main puzzle ──────────────────────────────────────────
+      UPDATE profiles SET main_puzzle =
+        CASE WHEN main_puzzle IN ('3x3x3', '3x3') THEN '333'
+             WHEN main_puzzle IN ('2x2x2', '2x2') THEN '222'
+             WHEN main_puzzle IN (${WCA_CODE_LIST_SQL}) THEN main_puzzle
+             ELSE '333' END;
     `,
   },
 ];

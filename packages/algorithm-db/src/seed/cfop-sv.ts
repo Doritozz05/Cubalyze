@@ -24,7 +24,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -102,7 +102,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -180,7 +180,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -258,7 +258,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -306,7 +306,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -384,7 +384,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -417,7 +417,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -480,7 +480,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -558,7 +558,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -606,7 +606,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -654,7 +654,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -717,7 +717,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -780,7 +780,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -843,7 +843,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -891,7 +891,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -924,7 +924,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -957,7 +957,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -990,7 +990,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1038,7 +1038,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1116,7 +1116,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1149,7 +1149,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1182,7 +1182,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1215,7 +1215,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1263,7 +1263,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1296,7 +1296,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1374,7 +1374,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1407,7 +1407,7 @@ export const SV_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["sv", "summer-variation", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

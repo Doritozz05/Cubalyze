@@ -65,7 +65,7 @@ export function Case3DDiagram({
   const effectiveInteractive = interactive || !!effectiveCamera;
 
   if (effectiveInteractive) {
-    const order = caseData.puzzleType === "2x2x2" ? 2 : 3;
+    const order = caseData.puzzleType === "222" ? 2 : 3;
     return (
       <div className="flex flex-col items-center w-full">
         <Case3DCanvas

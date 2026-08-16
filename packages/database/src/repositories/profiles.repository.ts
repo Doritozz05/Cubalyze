@@ -61,7 +61,7 @@ function defaultProfile(userId: string): Profile {
     handle: '',
     bio: '',
     avatarKind: 'identicon',
-    mainPuzzle: '3x3x3',
+    mainPuzzle: '333',
     declaredMethods: [],
     country: '',
     createdAt: 0,
@@ -95,7 +95,7 @@ export class ProfilesRepository {
       `INSERT OR IGNORE INTO profiles
         (user_id, display_name, handle, bio, avatar_kind, avatar_data, main_puzzle, declared_methods, country, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, '', '', '', 'identicon', null, '3x3x3', '[]', '', now, now],
+      [userId, '', '', '', 'identicon', null, '333', '[]', '', now, now],
     );
 
     const created = await this.findById(userId);

@@ -106,7 +106,7 @@ export function AlgorithmViewerCard({
       {/* ── Diagram Rendering Area ── */}
       <div className="relative flex justify-center items-center h-32 bg-surface-2/30 border border-line rounded-lg p-2 overflow-hidden">
         {activeViewMode === "2d" ? (
-          caseData.puzzleType === '2x2x2' ? (
+          caseData.puzzleType === '222' ? (
             <Case2x2Diagram
               faceletColors={caseData.diagram2D?.faceletColors}
               setupScramble={caseData.setupScramble}

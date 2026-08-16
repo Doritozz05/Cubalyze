@@ -1,4 +1,5 @@
 import type { Session } from './types.js';
+import { isDbPuzzleType } from '@cubeforge/events';
 
 export interface SessionRow {
   id: string;
@@ -52,13 +53,18 @@ export class SessionsRepository {
    * it stays hidden from the UI and removable via deleteDemoSessions().
    */
   async insert(session: Session, options?: { isDemo?: boolean }): Promise<void> {
+    // Same default as the SessionSchema (ADR-002): a missing puzzle_type is
+    // '333', never a legacy alias.
+    const puzzleType = session.puzzleType ?? '333';
+    assertValidSessionPuzzleType({ ...session, puzzleType });
     await this.db(
       'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
-      [session.id, session.name, session.puzzleType, session.createdAt || Date.now(), session.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
+      [session.id, session.name, puzzleType, session.createdAt || Date.now(), session.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
     );
   }
 
   async update(session: Session): Promise<void> {
+    assertValidSessionPuzzleType(session);
     await this.db(
       'UPDATE sessions SET name = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
       [session.name, session.puzzleType, Date.now(), session.id]
@@ -82,5 +88,18 @@ export class SessionsRepository {
   async count(): Promise<number> {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM sessions');
     return (rows[0] as { cnt: number }).cnt;
+  }
+}
+
+/**
+ * Phase A2 (ADR-002) — validate a session's puzzle_type against the WCA
+ * event registry before any write. Same contract as the solves repository
+ * and the SQLite CHECK (migration 027): unknown values never reach the disk.
+ */
+function assertValidSessionPuzzleType(session: Session): void {
+  if (!isDbPuzzleType(session.puzzleType)) {
+    throw new Error(
+      `Cannot persist session: unknown puzzle_type '${session.puzzleType}' — must be a WCA event code declared by the registry`
+    );
   }
 }

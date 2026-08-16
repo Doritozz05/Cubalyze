@@ -20,3 +20,25 @@ export {
   type CrossScrambleOptions,
   type CrossScrambleResult,
 } from './CrossScrambleGenerator';
+
+// Pyraminx random-state solver + scrambler (clean-room implementation of
+// the official WCA scramble — see Fase-D2-Pyraminx-Cleanroom.md)
+export {
+  PYRAMINX_MOVE_NAMES,
+  PYRAMINX_TIP_NAMES,
+  PYRAMINX_SCRAMBLE_LENGTH,
+  PYRAMINX_MIN_DISTANCE,
+  solvedPyraminx,
+  isPyraminxSolved,
+  isPyraminxReachable,
+  randomPyraminxState,
+  applyPyraminxMove,
+  applyPyraminxTip,
+  applyPyraminxSequence,
+  generatePyraminxScramble,
+  isValidPyraminxScramble,
+  pyraminxDistance,
+  pyraminxDistanceBound,
+  type PyraminxState,
+  type Rng,
+} from './PyraminxSolver';

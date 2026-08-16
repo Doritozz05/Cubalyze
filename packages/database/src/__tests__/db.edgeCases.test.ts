@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SolvesRepository } from '../repositories/solves.repository';
+import { SessionsRepository } from '../repositories/sessions.repository';
 import type { OrientationTimeline } from '@cubeforge/types';
 
 // ────────────────────────────────────────────────────────────────────────
@@ -29,7 +30,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}): Record<strin
     orientation_timeline: null,
     analysis_engine_version: null,
     analysis: null,
-    puzzle_type: '3x3x3',
+    puzzle_type: '333',
     created_at: 1767225600000,
     updated_at: 1767225600000,
     ...overrides,
@@ -178,20 +179,20 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       expect(solves[0].source).toBe('manual');
     });
 
-    it('puzzle_type = undefined defaults to "3x3x3"', async () => {
+    it('puzzle_type = undefined defaults to "333"', async () => {
       const row = makeRow();
       delete row.puzzle_type;
       const db = mockDb([row]);
       repo = new SolvesRepository(db);
       const solves = await repo.findAll();
-      expect(solves[0].puzzleType).toBe('3x3x3');
+      expect(solves[0].puzzleType).toBe('333');
     });
 
-    it('puzzle_type = "2x2x2" is preserved', async () => {
-      const db = mockDb([makeRow({ puzzle_type: '2x2x2' })]);
+    it('puzzle_type = "222" is preserved', async () => {
+      const db = mockDb([makeRow({ puzzle_type: '222' })]);
       repo = new SolvesRepository(db);
       const solves = await repo.findAll();
-      expect(solves[0].puzzleType).toBe('2x2x2');
+      expect(solves[0].puzzleType).toBe('222');
     });
 
     it('note = null → undefined', async () => {
@@ -242,16 +243,66 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       expect(result!.id).toBe("solve'; DROP TABLE solves;--");
     });
 
-    it('insert with puzzleType=2x2x2 sets puzzle_type correctly', async () => {
+    it('insert with puzzleType=222 sets puzzle_type correctly', async () => {
       const db = mockDb();
       repo = new SolvesRepository(db);
       await repo.insert({
         id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
-        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '2x2x2',
+        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '222',
       });
       const bind = db.mock.calls[0][1] as unknown[];
       // puzzle_type is at index 13 in the INSERT
-      expect(bind[13]).toBe('2x2x2');
+      expect(bind[13]).toBe('222');
+    });
+
+    it('insert rejects an unknown puzzle_type (A2 — registry validation)', async () => {
+      const db = mockDb();
+      repo = new SolvesRepository(db);
+      await expect(
+        repo.insert({
+          id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
+          scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '9x9x9',
+        })
+      ).rejects.toThrow(/unknown puzzle_type '9x9x9'/);
+      // Nothing reached the DB.
+      expect(db).not.toHaveBeenCalled();
+    });
+
+    it('update rejects an unknown puzzle_type (A2 — registry validation)', async () => {
+      const db = mockDb();
+      repo = new SolvesRepository(db);
+      await expect(
+        repo.update({
+          id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
+          scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: 'pyraminx',
+        })
+      ).rejects.toThrow(/unknown puzzle_type 'pyraminx'/);
+      expect(db).not.toHaveBeenCalled();
+    });
+
+    it('insertMany rejects the whole batch when one solve has an unknown puzzle_type (A2)', async () => {
+      const db = mockDb();
+      repo = new SolvesRepository(db);
+      const good = {
+        id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
+        scramble: '', penalty: 'none' as const, source: 'manual' as const, moves: [], puzzleType: '333',
+      };
+      const bad = { ...good, id: 's2', puzzleType: 'Megaminx' };
+      await expect(repo.insertMany([good, bad])).rejects.toThrow(/unknown puzzle_type 'Megaminx'/);
+      // The transaction rolls back: BEGIN/ROLLBACK may be issued, but no
+      // INSERT statement may reach the DB.
+      const inserts = db.mock.calls.filter(([sql]) => String(sql).includes('INSERT INTO solves'));
+      expect(inserts).toHaveLength(0);
+    });
+
+    it('insert accepts the legacy OH storage type (A2 — 333 is canonical for 333)', async () => {
+      const db = mockDb();
+      repo = new SolvesRepository(db);
+      await repo.insert({
+        id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
+        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333',
+      });
+      expect(db).toHaveBeenCalledTimes(1);
     });
 
     it('timeMs = 0 is valid (DNF solve)', async () => {
@@ -304,7 +355,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       expect(solve.method).toBe('CFOP');
       expect(solve.source).toBe('smart');
       expect(solve.moves).toEqual([]);
-      expect(solve.puzzleType).toBe('3x3x3');
+      expect(solve.puzzleType).toBe('333');
     });
 
     it('insert + findAll round-trips moves correctly', async () => {
@@ -315,7 +366,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
         id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
         scramble: '', penalty: 'none', source: 'smart',
         moves: [{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }],
-        puzzleType: '3x3x3',
+        puzzleType: '333',
       });
 
       // Verify moves was JSON stringified
@@ -339,7 +390,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
         scramble: '', penalty: 'none', source: 'smart',
         moves: [{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }],
         orientationTimeline: timeline,
-        puzzleType: '3x3x3',
+        puzzleType: '333',
       });
 
       // Verify it was stored as a JSON array of tuples
@@ -353,6 +404,45 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       const solves = await repo.findAll();
       expect(solves[0].orientationTimeline).toEqual([[0, 2], [3, 5], [7, 0]]);
     });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────
+//  SessionsRepository — puzzle_type validation (A2)
+// ────────────────────────────────────────────────────────────────────────
+
+describe('SessionsRepository — puzzle_type validation against the registry (A2)', () => {
+  let db: ReturnType<typeof mockDb>;
+  let repo: SessionsRepository;
+
+  beforeEach(() => {
+    db = mockDb();
+    repo = new SessionsRepository(db);
+  });
+
+  function makeSession(puzzleType: string) {
+    return {
+      id: 'ses1',
+      name: 'Main',
+      puzzleType,
+      createdAt: 1767225600000,
+      updatedAt: 1767225600000,
+    };
+  }
+
+  it('insert accepts canonical types', async () => {
+    await repo.insert(makeSession('222'));
+    expect(db).toHaveBeenCalledTimes(1);
+  });
+
+  it('insert rejects an unknown puzzle_type', async () => {
+    await expect(repo.insert(makeSession('9x9x9'))).rejects.toThrow(/unknown puzzle_type '9x9x9'/);
+    expect(db).not.toHaveBeenCalled();
+  });
+
+  it('update rejects an unknown puzzle_type', async () => {
+    await expect(repo.update(makeSession('pyraminx'))).rejects.toThrow(/unknown puzzle_type 'pyraminx'/);
+    expect(db).not.toHaveBeenCalled();
   });
 });
 

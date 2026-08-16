@@ -108,7 +108,7 @@ export function RecognitionStep({
           {caseData && (caseData.diagramType === "3d-isometric" || caseData.diagramType === "3d") ? (
             <Case3DDiagram caseData={caseData} algorithm={algorithm ?? undefined} className="w-28 sm:w-36" />
           ) : caseData && (caseData.diagramType === "2d-top" || caseData.diagram2D) ? (
-            caseData.puzzleType === "2x2x2" ? (
+            caseData.puzzleType === "222" ? (
               <Case2x2Diagram
                 faceletColors={caseData.diagram2D?.faceletColors}
                 setupScramble={caseData.setupScramble}

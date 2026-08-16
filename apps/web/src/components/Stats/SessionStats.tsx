@@ -14,7 +14,7 @@ export interface SessionStatsProps {
   className?: string;
   /** When provided, the row becomes a clickable shortcut to the full Stats view. */
   onExpand?: () => void;
-  /** Filter solves to a specific puzzle type (e.g. '3x3x3', '2x2x2'). */
+  /** Filter solves to a specific puzzle type (e.g. '333', '222'). */
   puzzleFilter?: string;
 }
 
@@ -36,7 +36,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
 
   const filtered = useMemo(() => {
     if (!puzzleFilter) return solves;
-    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === puzzleFilter);
+    return solves.filter((s) => (s.puzzleType ?? "333") === puzzleFilter);
   }, [solves, puzzleFilter]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);

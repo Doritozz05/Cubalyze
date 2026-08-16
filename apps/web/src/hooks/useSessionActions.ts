@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import type { Penalty, PuzzleCategory, Solve, SolveSource } from "@/types";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
@@ -17,6 +18,9 @@ type ImportInputs = Array<{
   note?: string;
   source?: SolveSource;
   puzzleType?: string;
+  moves?: CubeMoveEvent[];
+  analysis?: SolveMetrics;
+  orientationTimeline?: OrientationTimeline;
 }>;
 
 export interface SessionActionsDeps {

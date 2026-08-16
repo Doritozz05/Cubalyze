@@ -33,18 +33,22 @@ const EXCLUDED_FROM_DOCK = new Set(["cube-button"]);
 const PILL_PITCH = 34;
 
 /**
- * The element whose width is the dock's real horizontal budget.
+ * The element whose width is the dock's real horizontal budget: the nearest
+ * fixed-position ancestor — the app header.
  *
- * The bar's immediate parent is a content-sized wrapper (added for the
- * auto-hide slide), so its clientWidth equals the bar's own width — useless
- * as an overflow budget (it would collapse every widget into the chevron).
- * The first ancestor genuinely wider than the bar is the flex container
- * that centers it; the fixed header caps the walk when the bar fills it.
+ * On desktop the header runs from the sidebar's right edge to the right edge
+ * of the viewport (`lg:left-14`), so this is exactly the "until the bar
+ * touches the sidebar" bound: the dock only collapses when it would actually
+ * reach the sidebar, never before — even when the viewport has spare room.
+ *
+ * The bar's immediate parents are content-sized flex wrappers whose width
+ * tracks the bar itself, so measuring them reports "no room" and collapses
+ * every widget. The fixed header is the only stable, genuinely constraining
+ * ancestor; outside one we fall back to the viewport width.
  */
 function getDockBudgetParent(el: HTMLElement): HTMLElement | null {
   let parent = el.parentElement;
   while (parent && parent !== document.body) {
-    if (parent.clientWidth >= el.offsetWidth + 8) return parent;
     if (getComputedStyle(parent).position === "fixed") return parent;
     parent = parent.parentElement;
   }

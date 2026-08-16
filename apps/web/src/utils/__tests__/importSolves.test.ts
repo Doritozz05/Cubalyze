@@ -26,6 +26,29 @@ const CSTIMER_HEADER_CSV = [
   "7;44.83;;U2 F L2 B2 D' U2 B2 L2 U L2 R2 D R2 L' U F' L2 R U' L D';2026-07-31 13:06:30;44.83",
 ].join("\n");
 
+// Classic quoted csTimer rows — the 7-field format with the puzzle code in
+// the first field. Used to pin the phase-D1 fix: csTimer's "333oh" must stay
+// "333oh" (identity, ADR-002), never collapse into "333".
+const CSTIMER_QUOTED_OH_CSV = [
+  '"333oh";"Normal";"122170";"1620000000000";"R U R\' U\'";"0";""',
+  '"333";"Normal";"123456";"1620000001000";"R U R\' U\' R\' F R F\'";"0";""',
+  '"222";"Normal";"4567";"1620000002000";"R U R\' F";"0";""',
+].join("\n");
+
+describe("csTimer quoted CSV — puzzle type identity (D1)", () => {
+  it("keeps 333oh distinct from 333 (never mixed)", () => {
+    const result = parseImport(CSTIMER_QUOTED_OH_CSV);
+    expect(result.format).toBe("cstimer");
+    const types = result.solves.map((s) => s.puzzleType);
+    expect(types).toContain("333oh");
+    expect(types).toContain("333");
+    expect(types).toContain("222");
+    // The OH row must not be stamped as 333.
+    const oh = result.solves.find((s) => s.puzzleType === "333oh");
+    expect(oh).toBeDefined();
+  });
+});
+
 describe("detectFormat — csTimer header CSV", () => {
   it("detects the unquoted header-based csTimer export", () => {
     expect(detectFormat(CSTIMER_HEADER_CSV)).toBe("cstimer");
@@ -141,7 +164,7 @@ describe("parseImport — Twisty Timer", () => {
 
   it("infers 3x3x3 for these 18-20 move all-face scrambles", () => {
     const result = parseImport(TWISTY_TIMER_CSV);
-    expect(result.solves.every((s) => s.puzzleType === "3x3x3")).toBe(true);
+    expect(result.solves.every((s) => s.puzzleType === "333")).toBe(true);
   });
 
   it("previews with Twisty Timer headers", () => {
@@ -154,7 +177,7 @@ describe("parseImport — Twisty Timer", () => {
   it("propagates puzzleType through toSolveInput", () => {
     const result = parseImport(TWISTY_TIMER_CSV);
     const input = toSolveInput(result.solves[0]!);
-    expect(input.puzzleType).toBe("3x3x3");
+    expect(input.puzzleType).toBe("333");
   });
 });
 
@@ -227,7 +250,7 @@ describe("csTimer header CSV — penalties & comments", () => {
 describe("2x2 vs 3x3 detection", () => {
   it("infers 3x3x3 from scrambles using L/D/B faces", () => {
     const result = parseImport(CSTIMER_HEADER_CSV);
-    expect(result.solves.every((s) => s.puzzleType === "3x3x3")).toBe(true);
+    expect(result.solves.every((s) => s.puzzleType === "333")).toBe(true);
   });
 
   it("infers 2x2x2 from scrambles using only R/U/F faces (WCA 2x2 style)", () => {
@@ -236,7 +259,7 @@ describe("2x2 vs 3x3 detection", () => {
       "1;3.21;;R U' R' U' F2 R U' R2 F';2025-01-16 08:49:47;3.21",
     ].join("\n");
     const result = parseImport(csv);
-    expect(result.solves[0]!.puzzleType).toBe("2x2x2");
+    expect(result.solves[0]!.puzzleType).toBe("222");
   });
 
   it("maps explicit puzzle codes from classic quoted csTimer CSV", () => {
@@ -245,14 +268,14 @@ describe("2x2 vs 3x3 detection", () => {
       '"333";"Normal";"73521";"1737013787000";"R U R\' U\'";"0";""',
     ].join("\n");
     const result = parseImport(csv);
-    expect(result.solves[0]!.puzzleType).toBe("2x2x2");
-    expect(result.solves[1]!.puzzleType).toBe("3x3x3");
+    expect(result.solves[0]!.puzzleType).toBe("222");
+    expect(result.solves[1]!.puzzleType).toBe("333");
   });
 
   it("propagates puzzleType through toSolveInput", () => {
     const result = parseImport(CSTIMER_HEADER_CSV);
     const input = toSolveInput(result.solves[0]!);
-    expect(input.puzzleType).toBe("3x3x3");
+    expect(input.puzzleType).toBe("333");
   });
 });
 

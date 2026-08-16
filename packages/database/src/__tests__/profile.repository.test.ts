@@ -83,7 +83,7 @@ const SAMPLE_PROFILE_ROW: Record<string, unknown> = {
   bio: 'Sub-15 CFOP',
   avatar_kind: 'photo',
   avatar_data: 'data:image/png;base64,AAAA',
-  main_puzzle: '3x3x3',
+  main_puzzle: '333',
   declared_methods: '["CFOP","Roux"]',
   country: 'MX',
   created_at: 1750000000000,
@@ -185,7 +185,7 @@ describe('ProfilesRepository', () => {
     expect(profile!.avatarKind).toBe('photo');
     expect(profile!.avatarData).toBe('data:image/png;base64,AAAA');
     expect(profile!.declaredMethods).toEqual(['CFOP', 'Roux']);
-    expect(profile!.mainPuzzle).toBe('3x3x3');
+    expect(profile!.mainPuzzle).toBe('333');
     expect(profile!.country).toBe('MX');
     expect(profile!.createdAt).toBe(1750000000000);
   });
@@ -209,7 +209,7 @@ describe('ProfilesRepository', () => {
     expect(first.userId).toBe(userId);
     expect(first.displayName).toBe('');
     expect(first.avatarKind).toBe('identicon');
-    expect(first.mainPuzzle).toBe('3x3x3');
+    expect(first.mainPuzzle).toBe('333');
     expect(first.declaredMethods).toEqual([]);
     expect(first.createdAt).toBeGreaterThan(0);
     expect(rows).toHaveLength(1);
@@ -238,7 +238,7 @@ describe('ProfilesRepository', () => {
       handle: 'f2l',
       bio: 'Lookahead',
       avatarKind: 'identicon',
-      mainPuzzle: '2x2x2',
+      mainPuzzle: '222',
       declaredMethods: ['ZZ'],
       country: 'AU',
       createdAt: 1750000000000,

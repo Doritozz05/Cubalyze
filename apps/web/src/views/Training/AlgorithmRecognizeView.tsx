@@ -436,7 +436,7 @@ function QuizPanel({
               {currentCase.diagramType === "3d-isometric" || currentCase.diagramType === "3d" ? (
                 <Case3DDiagram caseData={currentCase} algorithm={algorithm} className="w-44 sm:w-52 lg:w-60" />
               ) : currentCase.diagramType === "2d-top" || currentCase.diagram2D ? (
-                currentCase.puzzleType === '2x2x2' ? (
+                currentCase.puzzleType === '222' ? (
                   <Case2x2Diagram
                     faceletColors={currentCase.diagram2D?.faceletColors}
                     setupScramble={currentCase.setupScramble}

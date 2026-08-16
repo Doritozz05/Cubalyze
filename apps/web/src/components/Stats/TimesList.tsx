@@ -43,8 +43,8 @@ export interface TimesListProps {
  * list on every pointermove.
  */
 function formatPuzzleBadge(puzzleType?: string): string {
-  if (!puzzleType || puzzleType === "3x3x3" || puzzleType === "3x3") return "3x3";
-  if (puzzleType === "2x2x2" || puzzleType === "2x2") return "2x2";
+  if (!puzzleType || puzzleType === "333" || puzzleType === "3x3") return "3x3";
+  if (puzzleType === "222" || puzzleType === "2x2") return "2x2";
   if (puzzleType === "4x4x4" || puzzleType === "4x4") return "4x4";
   return puzzleType;
 }
@@ -64,7 +64,7 @@ export const TimesList = memo(function TimesList({
   const bestTimePerPuzzle = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of solves) {
-      const pType = s.puzzleType ?? "3x3x3";
+      const pType = s.puzzleType ?? "333";
       const eff = effectiveTime(s);
       if (Number.isFinite(eff)) {
         const current = map.get(pType);
@@ -116,7 +116,7 @@ export const TimesList = memo(function TimesList({
             {solves.map((solve, i) => {
               const eff = effectiveTime(solve);
               const isDnf = !Number.isFinite(eff);
-              const pType = solve.puzzleType ?? "3x3x3";
+              const pType = solve.puzzleType ?? "333";
               const bestForPuzzle = bestTimePerPuzzle.get(pType);
               const isBest =
                 bestForPuzzle !== undefined && eff === bestForPuzzle && !isDnf;

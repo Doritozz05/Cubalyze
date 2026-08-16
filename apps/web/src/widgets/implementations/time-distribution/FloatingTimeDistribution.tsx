@@ -28,7 +28,7 @@ export function FloatingTimeDistribution({ solves, puzzle }: FloatingTimeDistrib
   const filteredSolves = useMemo(() => {
     if (!puzzle) return solves;
     const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
-    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
+    return solves.filter((s) => (s.puzzleType ?? "333") === targetType);
   }, [solves, puzzle]);
 
   const { histogram, stats } = useMemo(() => {

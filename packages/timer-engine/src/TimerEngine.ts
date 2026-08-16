@@ -1,6 +1,6 @@
 import { Subject, BehaviorSubject } from 'rxjs';
 import { TimerState } from './TimerState';
-import { Penalty, getInspectionPenalty, calculateFinalTime } from './WcaRules';
+import { Penalty, getInspectionPenalty, calculateFinalTime, isPenaltyAllowed, SPEED_RULES, type WcaRulesProfile } from './WcaRules';
 
 export interface TimerConfig {
   useInspection: boolean;
@@ -17,13 +17,20 @@ export interface TimerConfig {
    * still rescued, and a stuck inspection READY is DNF'd by the 17s rule.
    */
   readySafetyDelay: number;
+  /**
+   * WCA rules profile of the active event (phase A5). Defaults to
+   * {@link SPEED_RULES} — the 3×3 behaviour — so engines constructed
+   * without an explicit profile keep working exactly as before.
+   */
+  rules: WcaRulesProfile;
 }
 
 const DEFAULT_CONFIG: TimerConfig = {
   useInspection: true,
   holdToStartDelay: 300,
   cooldownDelay: 500,
-  readySafetyDelay: 15000
+  readySafetyDelay: 15000,
+  rules: SPEED_RULES
 };
 
 export interface TimerStopEventDetail {
@@ -71,7 +78,7 @@ export class TimerEngine {
   private readyEntry: _PreviousEntryState | null = null;
 
   constructor(config?: Partial<TimerConfig>) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = { ...DEFAULT_CONFIG, ...config, rules: config?.rules ?? SPEED_RULES };
   }
 
   public getState(): TimerState {
@@ -84,6 +91,8 @@ export class TimerEngine {
 
   public startInspection(): boolean {
     if (!this.config.useInspection) return false;
+    // Events without inspection (BLD/FMC/MBLD, phase A5) never enter INSPECTION.
+    if (this.config.rules.inspectionMs === null) return false;
     if (this.currentState !== TimerState.IDLE && this.currentState !== TimerState.STOPPED) return false;
 
     this.setState(TimerState.INSPECTION);
@@ -130,7 +139,7 @@ export class TimerEngine {
           this.setState(TimerState.STOPPED);
         }, this.config.cooldownDelay);
       }
-    }, 17000);
+    }, this.config.rules.dnfAfterMs ?? 17000);
 
     return true;
   }
@@ -176,7 +185,7 @@ export class TimerEngine {
         this.setState(TimerState.READY);
         if (previousWasInspection) {
           const elapsed = performance.now() - this.inspectionStartTimestamp;
-          this.currentPenalty = getInspectionPenalty(elapsed);
+          this.currentPenalty = getInspectionPenalty(elapsed, this.config.rules);
           if (this.currentPenalty !== Penalty.NONE) {
             this.penalty$.next(this.currentPenalty);
           }
@@ -288,7 +297,7 @@ export class TimerEngine {
     }
     if (this.currentState === TimerState.INSPECTION) {
       const elapsed = performance.now() - this.inspectionStartTimestamp;
-      this.currentPenalty = getInspectionPenalty(elapsed);
+      this.currentPenalty = getInspectionPenalty(elapsed, this.config.rules);
       if (this.currentPenalty !== Penalty.NONE) {
         this.penalty$.next(this.currentPenalty);
       }
@@ -329,6 +338,13 @@ export class TimerEngine {
     }
 
     if (this.currentPenalty === Penalty.DNF && flag === 'OK') {
+      return;
+    }
+
+    // Per-event penalty set (phase A5): events like BLD only allow NONE/DNF,
+    // so '+2' is simply not applicable there.
+    const target: Penalty = flag === 'OK' ? Penalty.NONE : flag === '+2' ? Penalty.PLUS_TWO : Penalty.DNF;
+    if (!isPenaltyAllowed(this.config.rules, target)) {
       return;
     }
 
@@ -422,7 +438,7 @@ export class TimerEngine {
         this.inspectionWarning$.next('12s');
       }
 
-      const newPenalty = getInspectionPenalty(timeMs);
+      const newPenalty = getInspectionPenalty(timeMs, this.config.rules);
       if (newPenalty !== this.currentPenalty) {
         this.currentPenalty = newPenalty;
         this.penalty$.next(this.currentPenalty);

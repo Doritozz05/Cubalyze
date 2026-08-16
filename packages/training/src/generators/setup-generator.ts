@@ -85,20 +85,20 @@ function invertMoves(moves: string[]): string[] {
  * 3x3 moves are mapped through z2 so the setup scramble creates the case
  * state on the Yellow face (top layer when solving CFOP).
  *
- * For 2x2 cases (puzzleType === '2x2x2'), 2x2 inverse moves or seeded setup
+ * For 2x2 cases (puzzleType === '222' — WCA code, ADR-002), 2x2 inverse moves or seeded setup
  * scrambles with random AUF are used to keep scrambles short (4-8 moves)
  * and in standard 2x2 notation (R, U, F).
  *
  * @param moves - The algorithm moves to generate a setup for
  * @param targetFace - 'Y' for Yellow face (CFOP standard), 'W' for White face
- * @param puzzleType - '3x3x3' or '2x2x2'
+ * @param puzzleType - '333' or '222'
  * @param presetSetupScramble - Pre-computed setup scramble if available in case definition
  * @returns A scramble string that creates the case state from solved
  */
 export function generateRandomSetup(
   moves: string[],
   targetFace: 'Y' | 'W' = 'Y',
-  puzzleType: string = '3x3x3',
+  puzzleType: string = '333',
   presetSetupScramble?: string,
 ): string {
   if (!moves || moves.length === 0) {
@@ -114,7 +114,7 @@ export function generateRandomSetup(
   }
 
   // ── 2×2 setup scramble generation ───────────────────────────────────────
-  if (puzzleType === '2x2x2') {
+  if (puzzleType === '222') {
     const inverse = invertMoves(moves);
     if (randomAuf) {
       inverse.push(randomAuf);

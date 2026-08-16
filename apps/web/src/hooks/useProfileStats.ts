@@ -7,12 +7,18 @@ import type { SessionStats } from "@cubeforge/statistics";
 import type { Solve as UISolve } from "@/types";
 import { effectiveTime } from "@/types";
 
-/** Normalize DB puzzle values ('3x3', '3x3x3') to a display key. */
+/**
+ * Normalize DB puzzle values to the canonical WCA-code key (ADR-002).
+ * Accepts the current codes ('333', '222', '333oh') AND the pre-ADR-002
+ * spellings ('3x3x3'/'3x3', '2x2x2'/'2x2') so old exports/data still group
+ * correctly.
+ */
 export function normalizePuzzleKey(puzzle?: string): string {
-  const p = (puzzle ?? "3x3x3").toLowerCase().replace(/\s+/g, "");
-  if (p === "3x3" || p === "3x3x3") return "3x3x3";
-  if (p === "2x2" || p === "2x2x2") return "2x2x2";
-  return p || "3x3x3";
+  const p = (puzzle ?? "333").toLowerCase().replace(/\s+/g, "");
+  if (p === "3x3" || p === "333" || p === "3x3x3") return "333";
+  if (p === "2x2" || p === "222" || p === "2x2x2") return "222";
+  if (p === "3x3oh") return "333oh";
+  return p || "333";
 }
 
 export interface PuzzleStats {
@@ -109,7 +115,7 @@ function toUISolveSafe(dbSolve: DBSolveLike): UISolve {
     note: dbSolve.note ?? undefined,
     method: dbSolve.method as UISolve["method"] | undefined,
     source: (dbSolve.source as UISolve["source"]) ?? "manual",
-    puzzleType: dbSolve.puzzleType ?? "3x3x3",
+    puzzleType: dbSolve.puzzleType ?? "333",
   };
 }
 

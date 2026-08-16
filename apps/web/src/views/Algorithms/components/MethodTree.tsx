@@ -6,17 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
 import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
-
-// ── Puzzle type grouping ──────────────────────────────────────────────────
-
-type PuzzleTypeKey = '3x3x3' | '2x2x2';
-
-const PUZZLE_LABELS: Record<PuzzleTypeKey, string> = {
-  '3x3x3': '3×3',
-  '2x2x2': '2×2',
-};
-
-const PUZZLE_ORDER: PuzzleTypeKey[] = ['3x3x3', '2x2x2'];
+import { PUZZLE_LABELS, PUZZLE_ORDER, type PuzzleType } from "@/utils/puzzleTypes";
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -35,9 +25,9 @@ export const MethodTree = memo(function MethodTree({
 
   // Group methods by puzzle type
   const puzzleGroups = useMemo(() => {
-    const groups = new Map<PuzzleTypeKey, AlgorithmMethod[]>();
+    const groups = new Map<PuzzleType, AlgorithmMethod[]>();
     for (const m of METHODS) {
-      const pt = (m.puzzleType as PuzzleTypeKey) ?? '3x3x3';
+      const pt = (m.puzzleType as PuzzleType) ?? '333';
       if (!groups.has(pt)) groups.set(pt, []);
       groups.get(pt)!.push(m);
     }
@@ -47,8 +37,8 @@ export const MethodTree = memo(function MethodTree({
   }, []);
 
   // ── State: which puzzle sections are expanded ──────────────────────────
-  const [expandedPuzzles, setExpandedPuzzles] = useState<Set<PuzzleTypeKey>>(
-    () => new Set<PuzzleTypeKey>(['3x3x3']),
+  const [expandedPuzzles, setExpandedPuzzles] = useState<Set<PuzzleType>>(
+    () => new Set<PuzzleType>(['333']),
   );
 
   // ── State: which methods are expanded (collapsible) ────────────────────
@@ -83,7 +73,7 @@ export const MethodTree = memo(function MethodTree({
       // Also expand the puzzle section
       for (const m of METHODS) {
         if (m.id === methodId) {
-          const pt = (m.puzzleType as PuzzleTypeKey) ?? '3x3x3';
+          const pt = (m.puzzleType as PuzzleType) ?? '333';
           setExpandedPuzzles((prev) => {
             if (prev.has(pt)) return prev;
             const next = new Set(prev);
@@ -96,7 +86,7 @@ export const MethodTree = memo(function MethodTree({
     }
   }, [selectedSubsetId, findMethodForSubset]);
 
-  const togglePuzzle = (pt: PuzzleTypeKey) => {
+  const togglePuzzle = (pt: PuzzleType) => {
     setExpandedPuzzles((prev) => {
       const next = new Set(prev);
       if (next.has(pt)) next.delete(pt);

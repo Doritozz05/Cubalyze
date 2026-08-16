@@ -725,6 +725,7 @@
     "addManualSolve": "Add manual solve",
     "openWidgets": "Open widgets",
     "puzzleCategory": "Puzzle category",
+    "upcoming": "upcoming",
     "openProfile": "Open profile",
     "smartCube": "Smart cube",
     "smartCubeWithDevice": "Smart cube ({{device}})",
@@ -1676,7 +1677,7 @@
         "EG": "Extended CLL: EG-1 (adjacent swap) and EG-2 (diagonal swap) when first face is solved."
       },
       "phase": {
-        "3x3x3": {
+        "333": {
           "cross": "Solve the cross efficiently. Fewer moves, faster solutions.",
           "f2l": "Basic first two layers — 41 algorithmic pairs.",
           "af2l": "Advanced first two layers — 126 trapped & keyhole cases.",
@@ -1695,7 +1696,7 @@
           "f2l-petrus": "Finish F2L after EO.",
           "ll-petrus": "COLL + EPLL for Petrus last layer."
         },
-        "2x2x2": {
+        "222": {
           "oll": "Orient top face — 7 cases to master.",
           "pbl": "Permute Both Layers — 6 cases for 2×2.",
           "cll": "Corners of Last Layer — 42 cases for 2×2.",
@@ -1704,7 +1705,7 @@
         }
       },
       "subset": {
-        "3x3x3": {
+        "333": {
           "F2L": "First Two Layers — algorithmic pairs for each slot.",
           "Basic F2L": "41 standard F2L cases (easy to advanced pairs).",
           "Advanced F2L": "126 Advanced F2L cases (BirdF2L patterns: trapped corner, trapped edge, both trapped).",
@@ -1729,7 +1730,7 @@
           "2x2x3 Block": "Extending to a 2x2x3 block.",
           "EO": "Edge orientation for Petrus."
         },
-        "2x2x2": {
+        "222": {
           "OLL": "Orient the last face (7 cases for 2×2).",
           "PBL": "Permute Both Layers — solve the cube after OLL.",
           "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
@@ -3581,6 +3582,8 @@
     "clock": "Clock",
     "profile": "Profile",
     "battery": "Battery",
+    "sessionStats": "Session stats",
+    "sessionChart": "Trend",
     "spacer": "Spacer",
     "separator": "Separator",
     "widgetsArea": "Widgets",
@@ -3623,6 +3626,8 @@
       "clock": "Shows the current time in the dock bar.",
       "profile": "Quick access to your profile.",
       "battery": "Smart cube battery status.",
+      "sessionStats": "Live session numbers — Ao5, Ao12, best and mean.",
+      "sessionChart": "Mini sparkline of your recent solve times.",
       "spacer": "Empty space between groups of items.",
       "separator": "Vertical line divider between groups.",
       "widgetsArea": "The widget zone — shows docked widget pills.",

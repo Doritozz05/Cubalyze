@@ -55,60 +55,60 @@ const METHOD_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
 };
 
 const PHASE_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
-  "3x3x3:cross": "catalog.phase.3x3x3.cross",
-  "3x3x3:f2l": "catalog.phase.3x3x3.f2l",
-  "3x3x3:af2l": "catalog.phase.3x3x3.af2l",
-  "3x3x3:oll": "catalog.phase.3x3x3.oll",
-  "3x3x3:pll": "catalog.phase.3x3x3.pll",
-  "3x3x3:first-block": "catalog.phase.3x3x3.first-block",
-  "3x3x3:second-block": "catalog.phase.3x3x3.second-block",
-  "3x3x3:cmll": "catalog.phase.3x3x3.cmll",
-  "3x3x3:lse": "catalog.phase.3x3x3.lse",
-  "3x3x3:eoline": "catalog.phase.3x3x3.eoline",
-  "3x3x3:f2l-zz": "catalog.phase.3x3x3.f2l-zz",
-  "3x3x3:ll-zz": "catalog.phase.3x3x3.ll-zz",
-  "3x3x3:block-222": "catalog.phase.3x3x3.block-222",
-  "3x3x3:block-223": "catalog.phase.3x3x3.block-223",
-  "3x3x3:eo-petrus": "catalog.phase.3x3x3.eo-petrus",
-  "3x3x3:f2l-petrus": "catalog.phase.3x3x3.f2l-petrus",
-  "3x3x3:ll-petrus": "catalog.phase.3x3x3.ll-petrus",
-  "2x2x2:oll": "catalog.phase.2x2x2.oll",
-  "2x2x2:pbl": "catalog.phase.2x2x2.pbl",
-  "2x2x2:cll": "catalog.phase.2x2x2.cll",
-  "2x2x2:eg1": "catalog.phase.2x2x2.eg1",
-  "2x2x2:eg2": "catalog.phase.2x2x2.eg2",
+  "333:cross": "catalog.phase.333.cross",
+  "333:f2l": "catalog.phase.333.f2l",
+  "333:af2l": "catalog.phase.333.af2l",
+  "333:oll": "catalog.phase.333.oll",
+  "333:pll": "catalog.phase.333.pll",
+  "333:first-block": "catalog.phase.333.first-block",
+  "333:second-block": "catalog.phase.333.second-block",
+  "333:cmll": "catalog.phase.333.cmll",
+  "333:lse": "catalog.phase.333.lse",
+  "333:eoline": "catalog.phase.333.eoline",
+  "333:f2l-zz": "catalog.phase.333.f2l-zz",
+  "333:ll-zz": "catalog.phase.333.ll-zz",
+  "333:block-222": "catalog.phase.333.block-222",
+  "333:block-223": "catalog.phase.333.block-223",
+  "333:eo-petrus": "catalog.phase.333.eo-petrus",
+  "333:f2l-petrus": "catalog.phase.333.f2l-petrus",
+  "333:ll-petrus": "catalog.phase.333.ll-petrus",
+  "222:oll": "catalog.phase.222.oll",
+  "222:pbl": "catalog.phase.222.pbl",
+  "222:cll": "catalog.phase.222.cll",
+  "222:eg1": "catalog.phase.222.eg1",
+  "222:eg2": "catalog.phase.222.eg2",
 };
 
 const SUBSET_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
-  "3x3x3:F2L": "catalog.subset.3x3x3.F2L",
-  "3x3x3:Basic F2L": "catalog.subset.3x3x3.Basic F2L",
-  "3x3x3:Advanced F2L": "catalog.subset.3x3x3.Advanced F2L",
-  "3x3x3:OLL": "catalog.subset.3x3x3.OLL",
-  "3x3x3:PLL": "catalog.subset.3x3x3.PLL",
-  "3x3x3:COLL": "catalog.subset.3x3x3.COLL",
-  "3x3x3:Winter Variation": "catalog.subset.3x3x3.Winter Variation",
-  "3x3x3:VLS": "catalog.subset.3x3x3.VLS",
-  "3x3x3:ZBLL": "catalog.subset.3x3x3.ZBLL",
-  "3x3x3:CLS": "catalog.subset.3x3x3.CLS",
-  "3x3x3:Summer Variation": "catalog.subset.3x3x3.Summer Variation",
-  "3x3x3:ELL": "catalog.subset.3x3x3.ELL",
-  "3x3x3:Anti PLL": "catalog.subset.3x3x3.Anti PLL",
-  "3x3x3:CMLL": "catalog.subset.3x3x3.CMLL",
-  "3x3x3:LSE": "catalog.subset.3x3x3.LSE",
-  "3x3x3:First Block": "catalog.subset.3x3x3.First Block",
-  "3x3x3:Second Block": "catalog.subset.3x3x3.Second Block",
-  "3x3x3:OCLL": "catalog.subset.3x3x3.OCLL",
-  "3x3x3:EOLine": "catalog.subset.3x3x3.EOLine",
-  "3x3x3:ZZLL": "catalog.subset.3x3x3.ZZLL",
-  "3x3x3:2x2x2 Block": "catalog.subset.3x3x3.2x2x2 Block",
-  "3x3x3:2x2x3 Block": "catalog.subset.3x3x3.2x2x3 Block",
-  "3x3x3:EO": "catalog.subset.3x3x3.EO",
-  "2x2x2:OLL": "catalog.subset.2x2x2.OLL",
-  "2x2x2:PBL": "catalog.subset.2x2x2.PBL",
-  "2x2x2:CLL": "catalog.subset.2x2x2.CLL",
-  "2x2x2:EG": "catalog.subset.2x2x2.EG",
-  "2x2x2:EG-1": "catalog.subset.2x2x2.EG-1",
-  "2x2x2:EG-2": "catalog.subset.2x2x2.EG-2",
+  "333:F2L": "catalog.subset.333.F2L",
+  "333:Basic F2L": "catalog.subset.333.Basic F2L",
+  "333:Advanced F2L": "catalog.subset.333.Advanced F2L",
+  "333:OLL": "catalog.subset.333.OLL",
+  "333:PLL": "catalog.subset.333.PLL",
+  "333:COLL": "catalog.subset.333.COLL",
+  "333:Winter Variation": "catalog.subset.333.Winter Variation",
+  "333:VLS": "catalog.subset.333.VLS",
+  "333:ZBLL": "catalog.subset.333.ZBLL",
+  "333:CLS": "catalog.subset.333.CLS",
+  "333:Summer Variation": "catalog.subset.333.Summer Variation",
+  "333:ELL": "catalog.subset.333.ELL",
+  "333:Anti PLL": "catalog.subset.333.Anti PLL",
+  "333:CMLL": "catalog.subset.333.CMLL",
+  "333:LSE": "catalog.subset.333.LSE",
+  "333:First Block": "catalog.subset.333.First Block",
+  "333:Second Block": "catalog.subset.333.Second Block",
+  "333:OCLL": "catalog.subset.333.OCLL",
+  "333:EOLine": "catalog.subset.333.EOLine",
+  "333:ZZLL": "catalog.subset.333.ZZLL",
+  "333:2x2x2 Block": "catalog.subset.333.2x2x2 Block",
+  "333:2x2x3 Block": "catalog.subset.333.2x2x3 Block",
+  "333:EO": "catalog.subset.333.EO",
+  "222:OLL": "catalog.subset.222.OLL",
+  "222:PBL": "catalog.subset.222.PBL",
+  "222:CLL": "catalog.subset.222.CLL",
+  "222:EG": "catalog.subset.222.EG",
+  "222:EG-1": "catalog.subset.222.EG-1",
+  "222:EG-2": "catalog.subset.222.EG-2",
 };
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -561,7 +561,7 @@ function PhaseRow({
   const modes = phaseModes ?? [];
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 lg:flex-row lg:items-center lg:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
           <Icon className="size-4 text-ink-2" />
@@ -645,7 +645,7 @@ function SubsetRow({
   const descKey = SUBSET_DESC_KEY[`${puzzleType}:${subset.name}`];
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 lg:flex-row lg:items-center lg:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
           <Sparkles className="size-4 text-ink-2" />

@@ -26,13 +26,28 @@
 const ISO_MS = (col: string) =>
   `COALESCE(CAST((julianday(${col}) - 2440587.5) * 86400000 AS INTEGER), CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))`;
 
+/**
+ * Convert a legacy `puzzle_type` value to the WCA-code scheme (ADR-002).
+ *
+ * Backups may predate migration 027: values can be `'3x3x3'`/`'3x3'`
+ * (→ `'333'`), `'2x2x2'`/`'2x2'` (→ `'222'`), already-canonical WCA codes
+ * (pass through), or unknown junk (→ `'333'` default). Restore runs AFTER
+ * migrations, so the post-027 CHECK (WCA codes only) would reject legacy
+ * values — this CASE is what makes every restore path safe.
+ */
+const PUZZLE_TYPE = (col: string) => `CASE
+    WHEN ${col} IN ('3x3x3', '3x3') THEN '333'
+    WHEN ${col} IN ('2x2x2', '2x2') THEN '222'
+    WHEN ${col} IN ('222','333','333oh','444','555','666','777','333bf','444bf','555bf','333fm','333mbf','clock','minx','pyram','skewb','sq1','fto') THEN ${col}
+    ELSE '333' END`;
+
 /** Copy `_backup_v1_sessions` → `sessions` (sessions first: solves FK depends on it). */
 export const RESTORE_SESSIONS_SQL = `
   INSERT OR IGNORE INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo)
   SELECT
     id,
     name,
-    COALESCE(puzzle_type, '3x3x3'),
+    ${PUZZLE_TYPE("COALESCE(puzzle_type, '3x3x3')")},
     ${ISO_MS('created_at')},
     ${ISO_MS('updated_at')},
     COALESCE(is_demo, 0)
@@ -60,7 +75,7 @@ export const RESTORE_SOLVES_SQL = `
     orientation_timeline,
     analysis_engine_version,
     analysis,
-    COALESCE(puzzle_type, '3x3x3'),
+    ${PUZZLE_TYPE("COALESCE(puzzle_type, '3x3x3')")},
     COALESCE(is_demo, 0),
     ${ISO_MS('created_at')},
     ${ISO_MS('updated_at')}
@@ -88,7 +103,7 @@ export const RESTORE_SOLVES_V2_SNAPSHOT_SQL = `
     orientation_timeline,
     analysis_engine_version,
     analysis,
-    puzzle_type,
+    ${PUZZLE_TYPE('puzzle_type')},
     is_demo,
     created_at,
     updated_at
@@ -101,7 +116,7 @@ export const RESTORE_SESSIONS_V2_SNAPSHOT_SQL = `
   SELECT
     id,
     name,
-    puzzle_type,
+    ${PUZZLE_TYPE('puzzle_type')},
     created_at,
     updated_at,
     is_demo

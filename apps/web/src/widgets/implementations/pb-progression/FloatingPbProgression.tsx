@@ -45,7 +45,7 @@ export function FloatingPbProgression({ solves, puzzle }: FloatingPbProgressionP
   const filteredSolves = useMemo(() => {
     if (!puzzle) return solves;
     const targetType = puzzleCategoryToType(puzzle as PuzzleCategory);
-    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === targetType);
+    return solves.filter((s) => (s.puzzleType ?? "333") === targetType);
   }, [solves, puzzle]);
 
   // Chronological milestones (oldest to newest)

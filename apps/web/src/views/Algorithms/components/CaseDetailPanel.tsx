@@ -207,7 +207,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
           {/* Diagram — uses primaryAlgorithm (first in order) */}
           {(caseData.diagramType === "2d-top" || caseData.diagram2D) && (
             <div className="flex flex-col items-center justify-center">
-              {caseData.puzzleType === "2x2x2" ? (
+              {caseData.puzzleType === "222" ? (
                 <Case2x2Diagram
                   faceletColors={caseData.diagram2D?.faceletColors}
                   setupScramble={caseData.setupScramble}
@@ -303,7 +303,7 @@ export const CaseDetailPanel = memo(function CaseDetailPanel({
                       alg={alg}
                       isSelected={alg.id === activeAlg?.id}
                       isPrimary={alg.id === primaryAlgorithm?.id}
-                      is2x2={caseData.puzzleType === "2x2x2"}
+                      is2x2={caseData.puzzleType === "222"}
                       subsetId={caseData.subsetId}
                       onSelect={() => setSelectedAlgId(alg.id)}
                       onEdit={() => handleOpenEditDialog(alg)}

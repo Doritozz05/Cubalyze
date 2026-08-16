@@ -35,8 +35,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-/** Puzzle types the app actually supports today (2×2 / 3×3). */
-const PUZZLE_OPTIONS = ["2x2x2", "3x3x3"] as const;
+/**
+ * Puzzle types the app actually supports today (2×2 / 3×3). The buttons
+ * show the human label ("3×3") while the stored value stays the canonical
+ * puzzle_type code ("333", ADR-002) — never user-facing.
+ */
+const PUZZLE_OPTIONS: { value: string; label: string }[] = [
+  { value: "222", label: "2×2" },
+  { value: "333", label: "3×3" },
+];
 
 /** Methods selectable for the profile (from the algorithm catalog). */
 const METHOD_NAMES = METHODS.map((m) => m.name);
@@ -64,7 +71,7 @@ export function ProfileSection() {
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [bio, setBio] = useState("");
-  const [mainPuzzle, setMainPuzzle] = useState<string>("3x3x3");
+  const [mainPuzzle, setMainPuzzle] = useState<string>("333");
   const [country, setCountry] = useState<string>("");
   const [methods, setMethods] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ handle?: string; bio?: string }>({});
@@ -80,7 +87,11 @@ export function ProfileSection() {
       setDisplayName(profile.displayName);
       setHandle(profile.handle);
       setBio(profile.bio);
-      setMainPuzzle(profile.mainPuzzle || "3x3x3");
+      // Normalize any legacy spelling ('3x3x3', '2x2x2', '3x3', '2x2') to the
+      // canonical codes the picker offers, so a legacy row always selects a
+      // visible option instead of silently matching none.
+      const mp = (profile.mainPuzzle || "").toLowerCase().replace(/\s+/g, "");
+      setMainPuzzle(mp === "222" || mp === "2x2" || mp === "2x2x2" ? "222" : "333");
       setCountry(profile.country ?? "");
       setMethods(profile.declaredMethods ?? []);
     }
@@ -376,20 +387,20 @@ export function ProfileSection() {
           {t("profile.mainPuzzle")}
         </span>
         <div className="flex flex-wrap gap-2">
-          {PUZZLE_OPTIONS.map((p) => (
+          {PUZZLE_OPTIONS.map(({ value, label }) => (
             <button
-              key={p}
+              key={value}
               type="button"
-              aria-pressed={mainPuzzle === p}
-              onClick={() => setMainPuzzle(p)}
+              aria-pressed={mainPuzzle === value}
+              onClick={() => setMainPuzzle(value)}
               className={cn(
                 "rounded-lg border px-3.5 py-2 text-[0.75rem] font-medium transition-all duration-150 cursor-pointer",
-                mainPuzzle === p
+                mainPuzzle === value
                   ? "border-ink bg-ink text-surface"
                   : "border-line bg-surface-2/40 text-ink-2 hover:border-ink/40 hover:bg-surface-2",
               )}
             >
-              {p}
+              {label}
             </button>
           ))}
         </div>

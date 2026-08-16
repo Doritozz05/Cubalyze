@@ -25,7 +25,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Corner cycles",
       tags: ["x-rotation", "D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -105,7 +105,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Corner cycles",
       tags: ["x-rotation", "D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -185,7 +185,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Corner swaps",
       tags: ["diagonal"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -265,7 +265,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Adjacent swap",
       tags: ["popular"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -345,7 +345,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "G perms",
       tags: ["3-cycle", "D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -425,7 +425,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "G perms",
       tags: ["3-cycle", "D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -505,7 +505,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "G perms",
       tags: ["3-cycle", "D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -586,7 +586,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "G perms",
       tags: ["3-cycle", "D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -666,7 +666,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "beginner",
       category: "Edge swaps",
       tags: ["M-slice", "fast"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -746,7 +746,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "J perms",
       tags: ["fast", "popular"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -827,7 +827,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "J perms",
       tags: ["fast", "popular"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -908,7 +908,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "N perms",
       tags: ["diagonal"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -989,7 +989,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "N perms",
       tags: ["diagonal"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1070,7 +1070,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "R perms",
       tags: ["D-moves"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1150,7 +1150,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "R perms",
       tags: [],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1231,7 +1231,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Adjacent swap",
       tags: ["popular", "fast"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1311,7 +1311,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Edge cycles",
       tags: ["2-gen", "RU"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1392,7 +1392,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Edge cycles",
       tags: ["2-gen", "RU"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1457,7 +1457,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Adjacent swap",
       tags: ["rotation"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1538,7 +1538,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Diagonal swap",
       tags: [],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1618,7 +1618,7 @@ export const PLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "Edge swaps",
       tags: ["M-slice"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

@@ -596,9 +596,9 @@ export function reconToSolve(record: ReconFullRecord): Solve {
     // So 2×2 reconstructions replay on a 2×2 cube (not a 3×3).
     puzzleType:
       record.puzzle === "2x2"
-        ? "2x2x2"
+        ? "222"
         : record.puzzle === "3x3"
-          ? "3x3x3"
+          ? "333"
           : undefined,
     analysis: { phases } as unknown as SolveMetrics,
   };

@@ -161,7 +161,7 @@ Esto cumple el PRD §0.3.3 (no reinventar, reutilizar) y el Master Roadmap §3�
 | # | Evento | Esfuerzo | Notas |
 |---|---|---|---|
 | D1 | **3×3 OH** | Bajo | Mismo scramble/reglas que 3×3; solo `puzzle_type` propio + filtros. Desbloquea la migración de datos mezclados |
-| D2 | **Pyraminx** | Medio | Scramble random-state disponible; reglas estándar |
+| D2 | **Pyraminx** | Medio | **✅ hecho** — port manual del scrambler oficial (ver `Fase-D2-Pyraminx.md`) |
 | D3 | **Skewb** | Medio | Ídem |
 | D4 | **Square-1** | Medio | Reglas estándar; scramble random-state más complejo (forma) |
 | D5 | **4×4 / 5×5** | Medio-Alto | Random-state vía solver de gran orden (coste de tablas) |
@@ -173,7 +173,7 @@ Esto cumple el PRD §0.3.3 (no reinventar, reutilizar) y el Master Roadmap §3�
 | D11 | **Clock** | Decisión | **Saliendo de WCA en 2027** — decidir si se implementa (riesgo de esfuerzo muerto) |
 | D12 | **FTO** | Medio-Alto | Nuevo evento oficial desde 2-ene-2027; primer evento con geometría octaédrica |
 
-**Dependencia global**: D1–D12 dependen de la Fase A (registry + provider + reglas). D2–D7 dependen de la decisión de librería de scrambles (RFC, ver §8).
+**Dependencia global**: D1–D12 dependen de la Fase A (registry + provider + reglas). D2 se resolvió con port manual (estudio en `Fase-D2-Pyraminx.md`); D3/D4 (Skewb, Square-1) son viables igualmente con port manual (estados pequeños). **D5–D7 (4×4–7×7, Megaminx) dependen del RFC de la librería de scrambles** (ver §8): el coste de tablas de gran orden hace inviable el port a mano.
 
 **Definición de Done por evento** (aplica a cada D#):
 1. Selector real con el evento (sin falsa apariencia).
@@ -188,6 +188,12 @@ Esto cumple el PRD §0.3.3 (no reinventar, reutilizar) y el Master Roadmap §3�
 
 ## 7. Progreso y métricas
 
+- **Fases A1–A6 ✅** (registro, DB validada + ADR-002, tipos SSoT, providers, reglas por evento, selector data-driven).
+- **Fase B ✅** (B1 matriz de cobertura en `Fase-B1-Cobertura-3x3.md`; B2 golden path en `apps/web/tests/integration/goldenPath.3x3.test.ts`; B3 modelo mental en `Fase-B3-Modelo-3x3.md`). Conclusión: el único acoplamiento real a 3×3 es el análisis por solve; el resto de la fundación ya es genérica.
+- **Fase C1 ✅** (informe de paridad en `Fase-C1-Paridad-2x2-vs-3x3.md`): 2×2 está al nivel de 3×3 en 8/12 dimensiones; brechas con dueño — **G1 seeds CLL/EG (126 casos) → C2**, **G2 análisis 2×2 por capas → C2**, G4 reconocimiento desde solves → Fase D.
+- **Decisión de alcance D (2026-08)**: los eventos de la Fase D se implementan **sin análisis ni catálogo por ahora** (requieren investigación) — solo **scramble + playabilidad** (timer, sesiones, stats, import/export). El registro ya lo refleja (`analysis: NONE_ANALYSIS`, sin seeds).
+- **Fase D1 ✅ — 3×3 OH usable end-to-end**: scramble real (reusa provider 3×3), selector ✅, solves/sesiones como `'333oh'` (nunca mezclados con 3×3), stats separadas (`byPuzzle`/filtros), import csTimer `'333oh'` → `'333oh'` (bug corregido), label UI "3×3 OH" (SSoT). Tests: `ohEvent.test.ts` + extensión del golden path con insert OH en el motor real.
+- **Fase D2 ✅ — Pyraminx jugable con scramble oficial manual**: estudio del paisaje (tnoodle GPL / cubing.js MIT / random-move) en `Fase-D2-Pyraminx.md`; scrambler random-state (933.120 estados, God 11, 11 movs + tips, filtro distancia ≥ 6) en `@cubeforge/solver-engine` con transposition set (1 ms/scramble, peor caso 21 ms); verificado contra la tabla de Jaap (BFS completo) + 1.000 scrambles; provider `pyraminx-random-state` registrado y Pyraminx aparece como **jugable** en el selector (fin del ghost). Bugs reales encontrados y corregidos: RNG default que no escalaba por n, y transposition set para acotar la búsqueda exacta-11. **Licencia: libre de GPL** — la versión inicial (port directo de TNoodle) fue sustituida por una implementación **clean-room** desde la especificación pública (`Fase-D2-Pyraminx-Cleanroom.md`): nomenclatura y estructura propias, factorádico con arrays, sin código derivado de terceros; validada por la misma suite de aceptación.
 - **Matriz de cobertura** (investigación §13.6): de 6 ❌ en "Puzzles y eventos" a 0 ❌ para los 17 eventos (y FTO en 2027).
 - **Definición de Done por fase** del Master Roadmap §9 (testeado, mergeado, revisado).
 - Cada fase genera su **TDD** (docs/05-tdd) antes de implementar, según el ciclo del Master Roadmap §10.
@@ -199,7 +205,7 @@ Esto cumple el PRD §0.3.3 (no reinventar, reutilizar) y el Master Roadmap §3�
 | Decisión | Opciones | Urgencia |
 |---|---|---|
 | Ubicación del Event Registry | `packages/types` vs nuevo `packages/events` | Antes de A1 |
-| Librería de scrambles por evento | Reimplementar (recomendado por licencia) vs integrar tnoodle/ksolve+ (GPL) | Antes de D2 |
+| Librería de scrambles por evento | **Port manual** (D2 validó la plantilla para estados pequeños: Pyraminx, Skewb, Square-1) vs **integrar cubing.js (MIT)** para los grandes (4×4–7×7, Megaminx) | **Antes de D5** (D3/D4 no lo necesitan) |
 | Política de migración de solves OH mezclados | Separar por sesión/flag vs dejar como está documentado | En A2 |
 | Destino de Clock | Implementar, marcar "próximamente", o descartar (sale de WCA 2027) | En D11 |
 | FTO | Preparar spec en el registro ya (2-ene-2027) | Al finalizar Fase A |

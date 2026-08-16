@@ -28,7 +28,7 @@ export interface StatsFilters {
   methods: Set<SolveMethod>;
   sort: SortOrder;
   search: string;
-  /** Filter by puzzle type. null = show all. Default "3x3x3". */
+  /** Filter by puzzle type. null = show all. Default "333". */
   puzzleType: string | null;
 }
 
@@ -39,7 +39,7 @@ export const DEFAULT_FILTERS: StatsFilters = {
   methods: new Set(),
   sort: "newest",
   search: "",
-  puzzleType: "3x3x3",
+  puzzleType: "333",
 };
 
 /**
@@ -70,10 +70,10 @@ export function useStatsFilters(
     [],
   );
 
-  // Solves scoped to the active puzzle type (e.g. "3x3x3")
+  // Solves scoped to the active puzzle type (e.g. "333")
   const puzzleSolves = useMemo(() => {
     if (filters.puzzleType == null) return solves;
-    return solves.filter((s) => (s.puzzleType ?? "3x3x3") === filters.puzzleType);
+    return solves.filter((s) => (s.puzzleType ?? "333") === filters.puzzleType);
   }, [solves, filters.puzzleType]);
 
   const filtered = useMemo(() => {

@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import type { PuzzleCategory } from "@/types";
-import { generateScrambleFor, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+import { generateScrambleFor, SELECTABLE_PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 
 /**
  * Owns the puzzle selection + current scramble + scramble counter (extracted
@@ -15,8 +15,10 @@ import { generateScrambleFor, PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 export function useScrambleState() {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(() => {
     if (typeof window !== "undefined") {
+      // Phase A6: only categories with a real provider are restorable.
+      // A pre-A6 saved ghost (e.g. '4x4') falls back to 3×3 — honest.
       const saved = localStorage.getItem("cubeforge_puzzle");
-      if (saved && PUZZLE_CATEGORIES.includes(saved as PuzzleCategory)) {
+      if (saved && SELECTABLE_PUZZLE_CATEGORIES.includes(saved as PuzzleCategory)) {
         return saved as PuzzleCategory;
       }
     }

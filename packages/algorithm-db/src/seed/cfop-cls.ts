@@ -24,7 +24,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -102,7 +102,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -165,7 +165,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -213,7 +213,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -261,7 +261,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -309,7 +309,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -357,7 +357,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -405,7 +405,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -468,7 +468,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -546,7 +546,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -624,7 +624,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -657,7 +657,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -735,7 +735,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -813,7 +813,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -861,7 +861,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -924,7 +924,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -957,7 +957,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1005,7 +1005,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1038,7 +1038,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1086,7 +1086,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1134,7 +1134,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1167,7 +1167,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1200,7 +1200,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1233,7 +1233,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1266,7 +1266,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1314,7 +1314,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1377,7 +1377,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1440,7 +1440,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1503,7 +1503,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1566,7 +1566,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1629,7 +1629,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1677,7 +1677,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1725,7 +1725,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1758,7 +1758,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Front",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1791,7 +1791,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1869,7 +1869,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1917,7 +1917,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1950,7 +1950,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1998,7 +1998,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2031,7 +2031,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2079,7 +2079,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2127,7 +2127,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Trapped Corner",
       tags: ["cls", "last-slot", "trapped-corner"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2175,7 +2175,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2253,7 +2253,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2301,7 +2301,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2349,7 +2349,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2412,7 +2412,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2475,7 +2475,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2523,7 +2523,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2556,7 +2556,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2604,7 +2604,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2682,7 +2682,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2730,7 +2730,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2763,7 +2763,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2811,7 +2811,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2844,7 +2844,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2877,7 +2877,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2910,7 +2910,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2958,7 +2958,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3006,7 +3006,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3054,7 +3054,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3102,7 +3102,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3150,7 +3150,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3198,7 +3198,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3246,7 +3246,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3294,7 +3294,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3342,7 +3342,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3390,7 +3390,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Right",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3423,7 +3423,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3501,7 +3501,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3549,7 +3549,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3582,7 +3582,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3630,7 +3630,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3663,7 +3663,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3696,7 +3696,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3744,7 +3744,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3792,7 +3792,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3825,7 +3825,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3858,7 +3858,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3891,7 +3891,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3939,7 +3939,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3972,7 +3972,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4020,7 +4020,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4068,7 +4068,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4101,7 +4101,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4134,7 +4134,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4182,7 +4182,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4215,7 +4215,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4263,7 +4263,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4296,7 +4296,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4344,7 +4344,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4377,7 +4377,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4410,7 +4410,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4443,7 +4443,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4476,7 +4476,7 @@ export const CLS_CASES: CaseData[] = [
       difficulty: "advanced",
       category: "Cross Color Facing Up",
       tags: ["cls", "last-slot"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

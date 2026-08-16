@@ -486,7 +486,7 @@ export async function seedDemoData(
     {
       id: sessionId,
       name: DEMO_SESSION_NAME,
-      puzzleType: "3x3",
+      puzzleType: "333", // canonical DB type (A2)
       createdAt: Date.now(),
     },
     { isDemo: true },

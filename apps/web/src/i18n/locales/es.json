@@ -725,6 +725,7 @@
     "addManualSolve": "Añadir solve manual",
     "openWidgets": "Abrir widgets",
     "puzzleCategory": "Categoría de puzzle",
+    "upcoming": "próximamente",
     "openProfile": "Abrir perfil",
     "smartCube": "Smart cube",
     "smartCubeWithDevice": "Smart cube ({{device}})",
@@ -1676,7 +1677,7 @@
         "EG": "CLL extendido: EG-1 (intercambio adyacente) y EG-2 (intercambio diagonal) cuando la primera cara está resuelta."
       },
       "phase": {
-        "3x3x3": {
+        "333": {
           "cross": "Resuelve la cruz con eficiencia. Menos movimientos, soluciones más rápidas.",
           "f2l": "Primeras dos capas básicas: 41 pares algorítmicos.",
           "af2l": "Primeras dos capas avanzadas: 126 casos de pieza atrapada y keyhole.",
@@ -1695,7 +1696,7 @@
           "f2l-petrus": "Termina el F2L después de EO.",
           "ll-petrus": "COLL + EPLL para la última capa de Petrus."
         },
-        "2x2x2": {
+        "222": {
           "oll": "Orienta la cara superior: 7 casos por dominar.",
           "pbl": "Permuta ambas capas: 6 casos para 2×2.",
           "cll": "Esquinas de la última capa: 42 casos para 2×2.",
@@ -1704,7 +1705,7 @@
         }
       },
       "subset": {
-        "3x3x3": {
+        "333": {
           "F2L": "Primeras dos capas: pares algorítmicos para cada ranura.",
           "Basic F2L": "41 casos F2L estándar (pares de fáciles a avanzados).",
           "Advanced F2L": "126 casos F2L avanzados (patrones de BirdF2L: esquina atrapada, arista atrapada, ambas atrapadas).",
@@ -1729,7 +1730,7 @@
           "2x2x3 Block": "Ampliación a un bloque 2x2x3.",
           "EO": "Orientación de aristas para Petrus."
         },
-        "2x2x2": {
+        "222": {
           "OLL": "Orienta la última cara (7 casos para 2×2).",
           "PBL": "Permuta ambas capas: resuelve el cubo después de OLL.",
           "CLL": "Esquinas de la última capa: 42 casos que orientan y permutan las esquinas cuando la primera capa está resuelta.",
@@ -3581,6 +3582,8 @@
     "clock": "Reloj",
     "profile": "Perfil",
     "battery": "Batería",
+    "sessionStats": "Estadísticas de sesión",
+    "sessionChart": "Tendencia",
     "spacer": "Espaciador",
     "separator": "Separador",
     "widgetsArea": "Widgets",
@@ -3623,6 +3626,8 @@
       "clock": "Muestra la hora actual en la barra del dock.",
       "profile": "Acceso rápido a tu perfil.",
       "battery": "Estado de la batería del smart cube.",
+      "sessionStats": "Números de la sesión en vivo: Ao5, Ao12, mejor y media.",
+      "sessionChart": "Mini gráfica de tus tiempos recientes.",
       "spacer": "Espacio vacío entre grupos de elementos.",
       "separator": "Línea vertical divisora entre grupos.",
       "widgetsArea": "Zona de widgets — muestra las pills de los widgets acoplados.",

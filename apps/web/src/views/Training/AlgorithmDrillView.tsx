@@ -314,7 +314,7 @@ export function AlgorithmDrillView({
       setup = generateRandomSetup(
         defaultAlgorithm.moves,
         "Y",
-        selectedCase?.puzzleType ?? "3x3x3",
+        selectedCase?.puzzleType ?? "333",
         selectedCase?.setupScramble,
       ) || selectedCase?.setupScramble || "";
     }
@@ -424,7 +424,7 @@ export function AlgorithmDrillView({
                 {selectedCase && (selectedCase.diagramType === "3d-isometric" || selectedCase.diagramType === "3d") ? (
                   <Case3DDiagram caseData={selectedCase} algorithm={defaultAlgorithm} className="w-28 sm:w-36" />
                 ) : selectedCase && (selectedCase.diagramType === "2d-top" || selectedCase.diagram2D) ? (
-                  selectedCase.puzzleType === '2x2x2' ? (
+                  selectedCase.puzzleType === '222' ? (
                     <Case2x2Diagram
                       faceletColors={selectedCase.diagram2D?.faceletColors}
                       setupScramble={selectedCase.setupScramble}

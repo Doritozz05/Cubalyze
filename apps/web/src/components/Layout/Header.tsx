@@ -21,6 +21,8 @@ import {
   ManualSolvePiece,
   SessionPiece,
   PuzzlePiece,
+  SessionStatsPiece,
+  SessionChartPiece,
 } from "@/widgets/dock/pieces";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { useWidgetStore } from "@/widgets/widgetStore";
@@ -29,7 +31,7 @@ import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { MobileSessionSheet } from "./MobileSessionSheet";
-import type { PuzzleCategory } from "@/types";
+import type { PuzzleCategory, Solve } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 
 /**
@@ -98,6 +100,8 @@ export interface HeaderProps {
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
   /** Lock the puzzle selector (Cube tab is 3×3-only today). */
   puzzleLocked?: boolean;
+  /** Active session solves (newest-first) — feeds the live stats/chart dock pieces. */
+  solves?: Solve[];
   className?: string;
 }
 
@@ -121,6 +125,7 @@ export function Header({
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
   puzzleLocked,
+  solves,
   className,
 }: HeaderProps) {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
@@ -260,10 +265,12 @@ export function Header({
     all["clock"] = <ClockPiece />;
     all["battery"] = <BatteryPiece />;
     all["profile"] = <ProfilePiece onOpenProfile={onOpenProfile} />;
+    all["session-stats"] = <SessionStatsPiece solves={solves ?? []} />;
+    all["session-chart"] = <SessionChartPiece solves={solves ?? []} />;
     all["spacer"] = <SpacerPiece />;
     all["separator"] = <SeparatorPiece />;
     return all;
-  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, puzzle, puzzleLocked, onPuzzleChange]);
+  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, puzzle, puzzleLocked, onPuzzleChange, solves]);
 
   // Filter to only areas that exist in dockAreaOrder (so removed areas don't
   // render). Repeatable instances are suffixed ("separator-0"), so look up

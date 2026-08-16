@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isDbPuzzleType } from '@cubeforge/events';
 import type { CubeMoveEvent } from '@cubeforge/types';
 
 export const CubeMoveEventSchema = z.object({
@@ -38,8 +39,15 @@ export const SolveSchema = z.object({
   orientationTimeline: z.array(z.tuple([z.number(), z.number()])).optional(),
   analysisEngineVersion: z.string().optional(),
   analysis: z.string().optional(),
-  /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). Optional for backward compat. */
-  puzzleType: z.string().optional(),
+  /**
+   * Puzzle type for this solve (e.g. '333', '222'). Optional for backward
+   * compat. Validated against the WCA event registry (A2/ADR-002): the DB
+   * only stores WCA event codes ('333', '222', '333oh', …). The column
+   * stays TEXT in SQLite; the registry is the runtime source of truth.
+   */
+  puzzleType: z.string().refine(isDbPuzzleType, {
+    message: 'Unknown puzzle_type — must be a WCA event code declared by the registry',
+  }).optional(),
   createdAt: z.number().int().optional(),
   updatedAt: z.number().int().optional(),
 });

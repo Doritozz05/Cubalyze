@@ -131,7 +131,7 @@ function makeOllCase(
       difficulty,
       category,
       tags,
-      puzzleType: '2x2x2',
+      puzzleType: "222",
     },
     algorithms: algorithmsData.map((algData, i) => {
       const moves = expandWideMoves(algData.moves);
@@ -175,7 +175,7 @@ function makePblCase(
       difficulty,
       category,
       tags,
-      puzzleType: '2x2x2',
+      puzzleType: "222",
     },
     algorithms: algorithmsData.map((algData, i) => {
       const moves = expandWideMoves(algData.moves);

@@ -24,7 +24,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -102,7 +102,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -180,7 +180,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -258,7 +258,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -336,7 +336,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -414,7 +414,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -477,7 +477,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -540,7 +540,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -618,7 +618,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -696,7 +696,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -774,7 +774,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -852,7 +852,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -930,7 +930,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1008,7 +1008,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1086,7 +1086,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1164,7 +1164,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1242,7 +1242,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1275,7 +1275,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1353,7 +1353,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1431,7 +1431,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1509,7 +1509,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1587,7 +1587,7 @@ export const ANTIPLL_CASES: CaseData[] = [
       difficulty: "intermediate",
       category: "",
       tags: ["anti-pll", "pll", "recognition"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

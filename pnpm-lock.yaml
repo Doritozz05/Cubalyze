@@ -321,6 +321,9 @@ importers:
       '@cubeforge/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@cubeforge/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@cubeforge/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
@@ -695,6 +698,9 @@ importers:
       '@cubeforge/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
+      '@cubeforge/events':
+        specifier: workspace:*
+        version: link:../events
       '@cubeforge/models':
         specifier: workspace:*
         version: link:../models
@@ -720,6 +726,31 @@ importers:
       eslint:
         specifier: ^10.7.0
         version: 10.7.0(jiti@2.7.0)
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(yaml@2.9.0)
+
+  packages/events:
+    dependencies:
+      '@cubeforge/timer-engine':
+        specifier: workspace:*
+        version: link:../timer-engine
+    devDependencies:
+      '@cubeforge/config-eslint':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@cubeforge/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      eslint:
+        specifier: ^10.7.0
+        version: 10.7.0(jiti@2.7.0)
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.17)(typescript@6.0.3)(yaml@2.9.0)
       typescript:
         specifier: ~6.0.2
         version: 6.0.3
@@ -855,6 +886,9 @@ importers:
       '@cubeforge/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
+      '@cubeforge/events':
+        specifier: workspace:*
+        version: link:../events
       '@cubeforge/types':
         specifier: workspace:*
         version: link:../types

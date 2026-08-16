@@ -59,7 +59,7 @@ export function getBestRollingAverage(solves: StatSolve[], n: number): number | 
  * @param existingSolves Solves prior to the new solve (newest first).
  * @param newTimeMs Time of the new solve in ms.
  * @param newPenalty Penalty of the new solve ("none", "+2", "DNF").
- * @param currentPuzzleType Optional puzzle type filter (e.g. '3x3x3', '2x2x2').
+ * @param currentPuzzleType Optional puzzle type filter (e.g. '333', '222').
  */
 export function detectPbMilestones(
   existingSolves: MinimalSolve[],
@@ -87,7 +87,7 @@ export function detectPbMilestones(
   }
 
   const filteredExisting = currentPuzzleType
-    ? existingSolves.filter((s) => (s.puzzleType ?? "3x3x3") === currentPuzzleType)
+    ? existingSolves.filter((s) => (s.puzzleType ?? "333") === currentPuzzleType)
     : existingSolves;
 
   const existingStatSolves = filteredExisting.map(toStatSolve);

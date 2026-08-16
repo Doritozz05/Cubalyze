@@ -47,7 +47,7 @@ export function useBottomLayoutStats(
 ): Record<BottomLayoutStatId, string> {
   return useMemo(() => {
     const filtered = puzzleFilter
-      ? solves.filter((s) => (s.puzzleType ?? "3x3x3") === puzzleFilter)
+      ? solves.filter((s) => (s.puzzleType ?? "333") === puzzleFilter)
       : solves;
     const statSolves = filtered.map((s) => ({ time: s.time ?? 0, penalty: s.penalty }));
     const stats = computeStats(statSolves);

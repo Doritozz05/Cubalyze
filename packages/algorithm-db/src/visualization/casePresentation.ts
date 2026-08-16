@@ -199,7 +199,7 @@ export function buildCaseRenderPlan(
 ): CaseRenderPlan {
   const subset = getSubset(caseData.subsetId);
   const style = resolveCaseVisualizationStyle(caseData, subset);
-  const is2x2 = caseData.puzzleType === '2x2x2';
+  const is2x2 = caseData.puzzleType === '222'; // WCA code (ADR-002)
   const f2l = isF2LCase(caseData, subset);
   const advancedF2L = f2l && isAdvancedF2LCase(caseData, subset);
   const prefs = resolveAlgorithmViewPreferences(options.algorithm);

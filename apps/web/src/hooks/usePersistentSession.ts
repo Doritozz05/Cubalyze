@@ -42,7 +42,7 @@ export interface UsePersistentSessionResult {
     timestamp?: number;
     /** Optional note (used for imported solves). */
     note?: string;
-    /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+    /** Puzzle type for this solve (e.g. '333', '222'). */
     puzzleType?: string;
   }) => Promise<string | null>;
   updateSolve: (
@@ -68,6 +68,9 @@ export interface UsePersistentSessionResult {
     note?: string;
     source?: SolveSource;
     puzzleType?: string;
+    moves?: CubeMoveEvent[];
+    analysis?: SolveMetrics;
+    orientationTimeline?: OrientationTimeline;
   }>) => Promise<number>;
   newSession: (name?: string, puzzle?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
@@ -99,7 +102,7 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
     orientationTimeline: dbSolve.orientationTimeline as UISolve['orientationTimeline'],
-    puzzleType: (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzleType ?? (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzle_type ?? '3x3x3',
+    puzzleType: (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzleType ?? (dbSolve as { puzzleType?: string; puzzle_type?: string }).puzzle_type ?? '333',
   };
 }
 
@@ -155,7 +158,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
               const defaultSession = {
                 id: uuidv4(),
                 name: "Main session",
-                puzzleType: "3x3",
+                // Canonical DB type (A2): the registry rejects short aliases
+                // like '3x3' — sessions must persist '333'.
+                puzzleType: "333",
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
               };
@@ -193,7 +198,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
             await sessionsRepo.insert({
               id: emergencyId,
               name: "Main session",
-              puzzleType: "3x3",
+              puzzleType: "333", // canonical DB type (A2)
               createdAt: now,
               updatedAt: now,
             });
@@ -278,7 +283,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
       orientationTimeline: input.orientationTimeline,
       analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
       analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
-      puzzleType: input.puzzleType ?? '3x3x3',
+      puzzleType: input.puzzleType ?? '333',
     } as DBSolve;
     
     try {
@@ -414,6 +419,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
       note?: string;
       source?: SolveSource;
       puzzleType?: string;
+      moves?: CubeMoveEvent[];
+      analysis?: SolveMetrics;
+      orientationTimeline?: OrientationTimeline;
     }>,
   ): Promise<number> => {
     if (!session || !reposRef.current) return 0;
@@ -429,11 +437,11 @@ export function usePersistentSession(): UsePersistentSessionResult {
       method: input.method,
       note: input.note,
       source: input.source ?? "manual",
-      moves: [],
-      orientationTimeline: undefined,
+      moves: input.moves || [],
+      orientationTimeline: input.orientationTimeline,
       analysisEngineVersion: ANALYSIS_PIPELINE_VERSION,
-      analysis: undefined,
-      puzzleType: input.puzzleType ?? '3x3x3',
+      analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
+      puzzleType: input.puzzleType ?? '333',
     } as DBSolve));
 
     // All-or-nothing: the whole batch lands inside one SQLite transaction.
@@ -492,7 +500,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const newSess = {
       id: uuidv4(),
       name: name ?? "Session",
-      puzzleType: puzzle ?? "3x3",
+      puzzleType: puzzle ?? "333", // canonical DB type (A2)
       createdAt: Date.now(),
     };
     

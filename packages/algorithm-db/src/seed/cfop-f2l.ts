@@ -25,7 +25,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Free Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -727,7 +727,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Free Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -1428,7 +1428,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Free Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2129,7 +2129,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Free Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -2830,7 +2830,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -3531,7 +3531,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4232,7 +4232,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -4916,7 +4916,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -5583,7 +5583,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -6284,7 +6284,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -6985,7 +6985,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -7685,7 +7685,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -8386,7 +8386,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -9055,7 +9055,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -9724,7 +9724,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -10425,7 +10425,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -11126,7 +11126,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -11795,7 +11795,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -12400,7 +12400,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -13069,7 +13069,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -13722,7 +13722,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -14424,7 +14424,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Disconnected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -15125,7 +15125,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -15826,7 +15826,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Connected Pairs",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -16528,7 +16528,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Corner in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -17229,7 +17229,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Corner in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -17929,7 +17929,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Corner in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -18581,7 +18581,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Corner in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -19201,7 +19201,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Corner in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -19885,7 +19885,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Corner in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -20553,7 +20553,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Edge in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -21253,7 +21253,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Edge in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -21953,7 +21953,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Edge in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -22637,7 +22637,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Edge in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -23322,7 +23322,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Edge in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -24022,7 +24022,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Edge in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -24723,7 +24723,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Pieces in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -25423,7 +25423,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Pieces in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -26107,7 +26107,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Pieces in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -26807,7 +26807,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Pieces in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -27507,7 +27507,7 @@ export const BASIC_F2L_CASES: F2LCaseData[] = [
       difficulty: "beginner",
       category: "Pieces in Slot",
       tags: ["f2l", "basic"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -28208,7 +28208,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -28377,7 +28377,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -28750,7 +28750,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -29038,7 +29038,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -29207,7 +29207,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -29308,7 +29308,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -29562,7 +29562,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -29731,7 +29731,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -30172,7 +30172,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -30613,7 +30613,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -31054,7 +31054,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -31461,7 +31461,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -31902,7 +31902,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -32343,7 +32343,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -32784,7 +32784,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -32936,7 +32936,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -33537,7 +33537,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -33937,7 +33937,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -34004,7 +34004,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -34292,7 +34292,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -34733,7 +34733,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -35174,7 +35174,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -35615,7 +35615,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -35750,7 +35750,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -36191,7 +36191,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -36241,7 +36241,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -36682,7 +36682,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -37123,7 +37123,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -37564,7 +37564,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -38005,7 +38005,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -38446,7 +38446,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -38649,7 +38649,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -39090,7 +39090,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -39531,7 +39531,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -39921,7 +39921,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -40362,7 +40362,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -40803,7 +40803,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -41244,7 +41244,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -41345,7 +41345,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -41786,7 +41786,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -41836,7 +41836,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -41971,7 +41971,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -42412,7 +42412,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -42853,7 +42853,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -43107,7 +43107,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -45880,7 +45880,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -46321,7 +46321,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -46762,7 +46762,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -47203,7 +47203,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -47644,7 +47644,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -48085,7 +48085,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -48526,7 +48526,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -48967,7 +48967,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -49136,7 +49136,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -49577,7 +49577,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -50018,7 +50018,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -52934,7 +52934,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -53069,7 +53069,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -53510,7 +53510,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -53951,7 +53951,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -54392,7 +54392,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -54442,7 +54442,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -54883,7 +54883,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -55324,7 +55324,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -55578,7 +55578,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -56019,7 +56019,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -56426,7 +56426,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -56544,7 +56544,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -56985,7 +56985,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -57426,7 +57426,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -57867,7 +57867,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -58308,7 +58308,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -58443,7 +58443,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -58731,7 +58731,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -59002,7 +59002,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -59443,7 +59443,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -59884,7 +59884,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -59951,7 +59951,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -60392,7 +60392,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -60442,7 +60442,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -60883,7 +60883,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -61324,7 +61324,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -61765,7 +61765,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -62206,7 +62206,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -62494,7 +62494,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -62935,7 +62935,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -63376,7 +63376,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -63817,7 +63817,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -64258,7 +64258,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -64410,7 +64410,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -64851,7 +64851,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -65292,7 +65292,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -65733,7 +65733,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -65783,7 +65783,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -66224,7 +66224,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -66665,7 +66665,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -67106,7 +67106,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -67173,7 +67173,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -67512,7 +67512,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -67953,7 +67953,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -68394,7 +68394,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -68835,7 +68835,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -69276,7 +69276,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -69717,7 +69717,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -70158,7 +70158,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -70599,7 +70599,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -71040,7 +71040,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -71481,7 +71481,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -71548,7 +71548,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -71598,7 +71598,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -72039,7 +72039,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -72480,7 +72480,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -72921,7 +72921,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -73362,7 +73362,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -73701,7 +73701,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -74142,7 +74142,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -74583,7 +74583,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -75024,7 +75024,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -75465,7 +75465,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -75787,7 +75787,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -76228,7 +76228,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -76499,7 +76499,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -76940,7 +76940,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -77381,7 +77381,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -77720,7 +77720,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {
@@ -78161,7 +78161,7 @@ export const ADVANCED_F2L_CASES: F2LCaseData[] = [
       diagramType: "3d-isometric",
       difficulty: "advanced",
       tags: ["f2l", "af2l", "advanced"],
-      puzzleType: "3x3x3",
+      puzzleType: "333",
     },
     algorithms: [
 {

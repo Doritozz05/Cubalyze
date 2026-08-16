@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { Penalty, Solve } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 import { useStatsFilters } from "@/hooks/useStatsFilters";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import { SolveListPanel } from "./SolveListPanel";
@@ -45,11 +46,9 @@ export interface InsightsDashboardProps {
   className?: string;
 }
 
-/** Puzzle type label: "3x3x3" → "3×3", "2x2x2" → "2×2" */
+/** Puzzle label from the shared SSoT map ("333" → "3×3", "333oh" → "3×3 OH"). */
 function puzzleLabel(pt: string): string {
-  if (pt === "2x2x2") return "2×2";
-  if (pt === "3x3x3") return "3×3";
-  return pt.replace(/x/g, "×");
+  return puzzleTypeLabel(pt);
 }
 
 /**
@@ -158,16 +157,16 @@ export function InsightsDashboard({
   const { filters, setFilters, filtered, puzzleSolves, totalCount, filteredCount, reset } =
     useStatsFilters(dataPool);
 
-  // Current cube type from filters (always non-null, default "3x3x3")
-  const currentCube = filters.puzzleType ?? "3x3x3";
+  // Current cube type from filters (always non-null, default "333")
+  const currentCube = filters.puzzleType ?? "333";
 
   // Available cube types in the data pool
   const availableCubeTypes = useMemo(() => {
     const types = new Set<string>();
     for (const s of dataPool) {
-      types.add(s.puzzleType ?? "3x3x3");
+      types.add(s.puzzleType ?? "333");
     }
-    if (types.size === 0) types.add("3x3x3");
+    if (types.size === 0) types.add("333");
     return Array.from(types).sort();
   }, [dataPool]);
 

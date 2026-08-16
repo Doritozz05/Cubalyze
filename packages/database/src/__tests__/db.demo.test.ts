@@ -16,7 +16,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
     penalty: 'none' as const,
     source: 'manual' as const,
     moves: [] as never[],
-    puzzleType: '3x3x3',
+    puzzleType: '333',
   };
 
   it('insert without options binds is_demo = 0', async () => {
@@ -65,7 +65,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
 });
 
 describe('SessionsRepository — demo session isolation (is_demo)', () => {
-  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '3x3x3', createdAt: 1767225600000 };
+  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '333', createdAt: 1767225600000 };
 
   it('insert without options binds is_demo = 0', async () => {
     const db = mockDb();
@@ -87,7 +87,7 @@ describe('SessionsRepository — demo session isolation (is_demo)', () => {
 
   it('findAllNonDemo filters out demo sessions', async () => {
     const db = mockDb([
-      { id: 'ses1', name: 'Main', puzzle_type: '3x3x3', created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 'ses1', name: 'Main', puzzle_type: '333', created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     const repo = new SessionsRepository(db);
     const sessions = await repo.findAllNonDemo();

@@ -2,6 +2,8 @@
 
 import type { Penalty, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty } from "@/types";
+import { WCA_EVENT_CODES } from "@cubeforge/events";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Import format identifiers
@@ -32,10 +34,16 @@ export interface ImportedSolve {
   note?: string;
   puzzle?: string;
   category?: string;
-  /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+  /** Puzzle type for this solve (e.g. '333', '222'). */
   puzzleType?: string;
   /** How the solve was recorded ('smart' | 'manual') — preserved from CubeForge JSON. */
   source?: SolveSource;
+  /** Raw moves captured from a Smart Cube / virtual solve — full-fidelity JSON. */
+  moves?: CubeMoveEvent[];
+  /** Post-solve analysis metrics — full-fidelity JSON. */
+  analysis?: SolveMetrics;
+  /** Compact gyro/orientation timeline — full-fidelity JSON. */
+  orientationTimeline?: OrientationTimeline;
 }
 
 export interface ImportResult {
@@ -325,16 +333,53 @@ function parseWcaTimeWithPenalty(raw: string): { timeMs: number; penalty: Penalt
   return { timeMs: plain, penalty: "none" };
 }
 
-/** Map a csTimer puzzle code ("333", "222", "222so") to a puzzleType ("3x3x3", "2x2x2"). */
+/**
+ * Map a csTimer puzzle code ("333", "222", "222so") to a puzzleType.
+ * ADR-002: the DB stores WCA event codes, so the code IS the puzzle type
+ * (identity) — with 3×3-family variant prefixes ("333oh" etc.) preserved.
+ */
+const WCA_CODE_SET = new Set<string>(WCA_EVENT_CODES);
+
 function mapPuzzleCode(code: string): string | undefined {
   const c = code.trim().toLowerCase();
-  if (c.startsWith("222")) return "2x2x2";
-  if (c.startsWith("333")) return "3x3x3";
-  if (c.startsWith("444")) return "4x4x4";
-  if (c.startsWith("555")) return "5x5x5";
-  if (c.startsWith("666")) return "6x6x6";
-  if (c.startsWith("777")) return "7x7x7";
+  // ADR-002: an exact WCA code IS the puzzle type (identity). csTimer uses
+  // the same codes, so "333oh" stays "333oh" — it must NEVER collapse into
+  // "333" (that was the OH-mixed-with-3x3 bug, phase D1).
+  if (WCA_CODE_SET.has(c)) return c;
+  // csTimer non-official variants (e.g. "222so") collapse to the base family.
+  if (c.startsWith("222")) return "222";
+  if (c.startsWith("333")) return "333";
+  if (c.startsWith("444")) return "444";
+  if (c.startsWith("555")) return "555";
+  if (c.startsWith("666")) return "666";
+  if (c.startsWith("777")) return "777";
   return undefined;
+}
+
+/**
+ * Legacy puzzle_type spellings written before the WCA-code migration
+ * (ADR-002, migration 027): '3x3x3'/'3x3' → '333', '2x2x2'/'2x2' → '222',
+ * and the other pre-ADR canonical NxNxN codes. Mirrors migration 027's CASE
+ * so a JSON export made on an older build still imports cleanly after the
+ * migration (the DB + repositories reject anything that is not a WCA code).
+ */
+const LEGACY_PUZZLE_TYPE_TO_WCA: Record<string, string> = {
+  "3x3x3": "333",
+  "3x3": "333",
+  "2x2x2": "222",
+  "2x2": "222",
+  "4x4x4": "444",
+  "5x5x5": "555",
+  "6x6x6": "666",
+  "7x7x7": "777",
+};
+
+/** Normalize any incoming puzzle_type to a WCA event code (or '333'). */
+function normalizePuzzleType(raw: string | undefined): string {
+  if (!raw) return "333";
+  const c = raw.trim().toLowerCase();
+  if (WCA_CODE_SET.has(c)) return c;
+  return LEGACY_PUZZLE_TYPE_TO_WCA[c] ?? "333";
 }
 
 /**
@@ -347,11 +392,11 @@ function mapPuzzleCode(code: string): string | undefined {
  */
 function inferPuzzleType(scramble: string): string {
   const moves = scramble.trim().split(/\s+/).filter(Boolean);
-  if (moves.length === 0) return "3x3x3";
+  if (moves.length === 0) return "333";
   const faces = new Set(moves.map((mv) => mv.replace(/^([RLUDFB]).*$/, "$1")));
   const onlyRuf = [...faces].every((f) => f === "R" || f === "U" || f === "F");
-  if (onlyRuf && moves.length <= 12) return "2x2x2";
-  return "3x3x3";
+  if (onlyRuf && moves.length <= 12) return "222";
+  return "333";
 }
 
 interface CsTimerHeaderMap {
@@ -807,6 +852,9 @@ interface CubeForgeExport {
     note?: string;
     source?: string;
     puzzleType?: string;
+    moves?: CubeMoveEvent[];
+    analysis?: SolveMetrics;
+    orientationTimeline?: OrientationTimeline;
   }>;
 }
 
@@ -826,6 +874,9 @@ interface CubeForgeAllExport {
       note?: string;
       source?: string;
       puzzleType?: string;
+      moves?: CubeMoveEvent[];
+      analysis?: SolveMetrics;
+      orientationTimeline?: OrientationTimeline;
     }>;
   }>;
 }
@@ -838,7 +889,10 @@ function toImportedSolve(s: CubeForgeExport["solves"][number]): ImportedSolve {
     timestamp: s.timestamp ?? Date.now(),
     method: s.method && isSolveMethod(s.method) ? (s.method as SolveMethod) : undefined,
     note: s.note,
-    puzzleType: s.puzzleType ?? inferPuzzleType(s.scramble ?? ""),
+    puzzleType: normalizePuzzleType(s.puzzleType ?? inferPuzzleType(s.scramble ?? "")),
+    moves: s.moves,
+    analysis: s.analysis,
+    orientationTimeline: s.orientationTimeline,
     source:
       s.source === "smart" || s.source === "manual" || s.source === "virtual"
         ? s.source
@@ -1085,6 +1139,9 @@ export function toSolveInput(
   note?: string;
   puzzleType?: string;
   source: SolveSource;
+  moves?: CubeMoveEvent[];
+  analysis?: SolveMetrics;
+  orientationTimeline?: OrientationTimeline;
 } {
   return {
     time: imported.time,
@@ -1093,7 +1150,10 @@ export function toSolveInput(
     method: imported.method,
     timestamp: imported.timestamp,
     note: unescapeFormulaMarker(imported.note),
-    puzzleType: imported.puzzleType ?? inferPuzzleType(imported.scramble),
+    puzzleType: normalizePuzzleType(imported.puzzleType ?? inferPuzzleType(imported.scramble)),
     source: imported.source ?? "manual",
+    moves: imported.moves,
+    analysis: imported.analysis,
+    orientationTimeline: imported.orientationTimeline,
   };
 }

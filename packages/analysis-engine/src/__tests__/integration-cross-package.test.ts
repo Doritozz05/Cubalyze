@@ -158,7 +158,7 @@ describe('I7 — Solve data export/import round-trip', () => {
         { face: 'R' as const, direction: 1 as const, cubeTimestamp: 300, hostTimestamp: 320 },
         { face: 'U' as const, direction: -1 as const, cubeTimestamp: 400, hostTimestamp: 425 },
       ],
-      puzzleType: '3x3x3',
+      puzzleType: '333',
     };
 
     const json = JSON.stringify(solve);
@@ -181,7 +181,7 @@ describe('I7 — Solve data export/import round-trip', () => {
       penalty: 'none' as const, source: 'manual' as const,
       moves: [],
       analysis: JSON.stringify({ phases: [{ name: 'Cross', durationMs: 500 }] }),
-      puzzleType: '3x3x3',
+      puzzleType: '333',
     };
 
     const json = JSON.stringify(solve);
@@ -198,7 +198,7 @@ describe('I7 — Solve data export/import round-trip', () => {
       penalty: 'none' as const, source: 'smart' as const,
       moves: [],
       orientationTimeline: [[0, 0], [5, 3], [15, 7]] as [number, number][],
-      puzzleType: '3x3x3',
+      puzzleType: '333',
     };
 
     const json = JSON.stringify(solve);
@@ -213,7 +213,7 @@ describe('I7 — Solve data export/import round-trip', () => {
         id: `s${i}`, sessionId: 'ses1', timeMs: 1000 + i * 100,
         date: new Date(2026, 0, 1, 0, 0, 0, i * 1000).toISOString(),
         scramble: `U${i % 2 === 0 ? '' : "'"} R${i % 3 === 0 ? '2' : ''}`,
-        penalty: 'none' as const, source: 'manual' as const, moves: [], puzzleType: '3x3x3',
+        penalty: 'none' as const, source: 'manual' as const, moves: [], puzzleType: '333',
       });
     }
 

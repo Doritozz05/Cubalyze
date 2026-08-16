@@ -4,6 +4,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { MetricTile, type MetricTileAccent } from "@/components/Stats/atoms/MetricTile";
 import { statLabel } from "@/utils/formatTime";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import type { ProfileStats } from "@/hooks/useProfileStats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,7 @@ export const StatStrip = memo(function StatStrip({ stats, loading, puzzle, class
           {
             label: t("strip.pbSingle"),
             value: fmt(target.stats.best),
-            sub: target.count > 0 ? t("strip.bestIn", { puzzle: target.puzzle }) : undefined,
+            sub: target.count > 0 ? t("strip.bestIn", { puzzle: puzzleTypeLabel(target.puzzle) }) : undefined,
             accent: "ready",
           },
           { label: "Ao5", value: fmt(target.stats.ao5) },

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
+import { PUZZLE_SELECTOR } from "@/utils/puzzleUtils";
 import type { PuzzleCategory } from "@/types";
 
 export interface PuzzlePieceProps {
@@ -42,9 +42,14 @@ export function PuzzlePiece({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {PUZZLE_CATEGORIES.map((c) => (
-          <SelectItem key={c} value={c} className="text-xs">
-            {c}
+        {PUZZLE_SELECTOR.map((item) => (
+          <SelectItem
+            key={item.category}
+            value={item.category}
+            disabled={!item.playable}
+            className="text-xs"
+          >
+            {item.planned ? `${item.category} — ${t("upcoming")}` : item.category}
           </SelectItem>
         ))}
       </SelectContent>

@@ -29,6 +29,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { formatTime, statLabel } from "@/utils/formatTime";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { effectiveTime } from "@/types";
 import { ALL_SKILL_NODES, CATEGORY_KEY } from "@/views/SkillTree/skillTreeData";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
@@ -50,7 +51,7 @@ const QUICK_ACTIONS: Array<{
 function PuzzleRow({ p }: { p: PuzzleStats }) {
   return (
     <div className="grid grid-cols-[1fr_repeat(4,auto)] items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm">
-      <span className="text-xs font-semibold text-ink">{p.puzzle}</span>
+      <span className="text-xs font-semibold text-ink">{puzzleTypeLabel(p.puzzle)}</span>
       <span className="w-16 text-right">
         <span className="nums text-ink">{statLabel(p.stats.best)}</span>
       </span>

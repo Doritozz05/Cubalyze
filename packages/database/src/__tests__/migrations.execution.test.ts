@@ -153,6 +153,98 @@ describe('migration runner (execution against real sqlite)', () => {
     }
   });
 
+  it('027 preserves EVERY legacy row while converting puzzle_type to WCA codes (ADR-002)', () => {
+    const db = openDb();
+    try {
+      // The user's real DB: migrations up to 025 (before the A2 work), with
+      // legacy data — sessions created as '3x3' by older app code, solves
+      // stored as '3x3x3'/'2x2x2', an OH solve stored as '3x3x3', a profile
+      // main_puzzle, and a seeded algorithm catalog.
+      const upTo025 = MIGRATIONS.filter(
+        (m) => m.id !== '026_add_puzzle_type_check' && m.id !== '027_puzzle_type_wca_codes',
+      );
+      runMigrations(db, upTo025);
+
+      // Sessions first — solves has a real FK on sessions.
+      db.exec(
+        "INSERT INTO sessions (id, name, puzzle_type) VALUES ('ses-a','Main','3x3'), ('ses-b','OH','3x3x3'), ('ses-c','2x2','2x2x2'), ('ses-d','2x2 alias','2x2')",
+      );
+      db.exec(
+        "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, source, moves, puzzle_type) VALUES " +
+          "('sv-a','ses-a',1000,1700000000000,'R U R','none','manual','[]','3x3'), " +
+          "('sv-b','ses-b',2000,1700000000000,'R U R U','none','manual','[]','3x3x3'), " +
+          "('sv-c','ses-c',3000,1700000000000,'R U R','none','manual','[]','2x2x2'), " +
+          "('sv-d','ses-b',4000,1700000000000,'R U R U R U','none','manual','[]','333oh'), " +
+          "('sv-e','ses-d',5000,1700000000000,'R U F','none','manual','[]','2x2')",
+      );
+      db.exec(
+        "INSERT INTO algorithm_methods (id, name, puzzle_type) VALUES ('m1','CFOP','3x3x3'), ('m2','Ortega','2x2x2')",
+      );
+      db.exec("INSERT INTO algorithm_subsets (id, method_id, name, puzzle_type) VALUES ('s1','m1','PLL','3x3x3')");
+      db.exec(
+        "INSERT INTO algorithm_cases (id, subset_id, case_number, name, puzzle_type) VALUES ('c1','s1','Aa','Aa Perm','3x3x3')",
+      );
+      db.exec("INSERT INTO profiles (user_id, main_puzzle) VALUES ('u1','3x3x3')");
+
+      const count = (t: string) =>
+        Number(db.exec({ sql: `SELECT COUNT(*) AS c FROM ${t}`, rowMode: 'array' })[0][0]);
+      const before = {
+        sessions: count('sessions'),
+        solves: count('solves'),
+        methods: count('algorithm_methods'),
+        subsets: count('algorithm_subsets'),
+        cases: count('algorithm_cases'),
+        profiles: count('profiles'),
+      };
+
+      // Run the A2 migrations (026 heal + 027 normalization) over the legacy DB.
+      const a2 = MIGRATIONS.filter(
+        (m) => m.id === '026_add_puzzle_type_check' || m.id === '027_puzzle_type_wca_codes',
+      );
+      runMigrations(db, a2);
+
+      // ZERO DATA LOSS: identical row counts in every table.
+      expect(count('sessions')).toBe(before.sessions);
+      expect(count('solves')).toBe(before.solves);
+      expect(count('algorithm_methods')).toBe(before.methods);
+      expect(count('algorithm_subsets')).toBe(before.subsets);
+      expect(count('algorithm_cases')).toBe(before.cases);
+      expect(count('profiles')).toBe(before.profiles);
+
+      // Values converted to WCA codes; already-canonical codes pass through.
+      const pt = (t: string, id: string) =>
+        String(db.exec({ sql: `SELECT puzzle_type FROM ${t} WHERE id='${id}'`, rowMode: 'array' })[0][0]);
+      expect(pt('sessions', 'ses-a')).toBe('333'); // '3x3' → '333'
+      expect(pt('sessions', 'ses-b')).toBe('333'); // '3x3x3' → '333'
+      expect(pt('sessions', 'ses-c')).toBe('222'); // '2x2x2' → '222'
+      expect(pt('sessions', 'ses-d')).toBe('222'); // '2x2' → '222' (never reclassified as 3x3)
+      expect(pt('solves', 'sv-a')).toBe('333');
+      expect(pt('solves', 'sv-b')).toBe('333');
+      expect(pt('solves', 'sv-c')).toBe('222');
+      expect(pt('solves', 'sv-d')).toBe('333oh'); // already canonical → unchanged
+      expect(pt('solves', 'sv-e')).toBe('222'); // '2x2' → '222' (never reclassified as 3x3)
+      expect(pt('algorithm_methods', 'm1')).toBe('333');
+      expect(pt('algorithm_methods', 'm2')).toBe('222');
+      expect(pt('algorithm_subsets', 's1')).toBe('333');
+      expect(pt('algorithm_cases', 'c1')).toBe('333');
+      expect(
+        String(db.exec({ sql: "SELECT main_puzzle FROM profiles WHERE user_id='u1'", rowMode: 'array' })[0][0]),
+      ).toBe('333');
+
+      // Post-027 CHECK: the pre-ADR-002 values are now rejected at the SQL level.
+      expect(() =>
+        db.exec("INSERT INTO sessions (id, name, puzzle_type) VALUES ('ses-x','x','3x3x3')"),
+      ).toThrow();
+      expect(() =>
+        db.exec(
+          "INSERT INTO solves (id, session_id, time_ms, timestamp, puzzle_type) VALUES ('sv-x','ses-a',1,1700000000000,'2x2x2')",
+        ),
+      ).toThrow();
+    } finally {
+      db.close();
+    }
+  });
+
   it('rolls a failed migration back atomically (no orphan tables, no record)', () => {
     const db = openDb();
     try {

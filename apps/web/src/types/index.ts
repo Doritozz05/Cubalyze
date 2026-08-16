@@ -53,7 +53,7 @@ export interface Solve {
    *   the cube root follows the timeline.
    */
   replayMovesConjugated?: boolean;
-  /** Puzzle type for this solve (e.g. '3x3x3', '2x2x2'). */
+  /** Puzzle type for this solve (e.g. '333', '222'). */
   puzzleType?: string;
 }
 
@@ -105,15 +105,21 @@ export type TimerState =
   | "running"
   | "stopped";
 
-/** Cube categories supported by the UI (mock). */
+/**
+ * Cube categories exposed by the UI. Kept in sync with the event registry
+ * (phase A6): the selector is generated from the registry, so these are the
+ * categories the app can render labels for. Ghost categories (no provider)
+ * are NOT offered anywhere.
+ */
 export type PuzzleCategory =
   | "2x2"
   | "3x3"
+  | "3x3 OH"
   | "4x4"
   | "5x5"
   | "6x6"
   | "7x7"
-  | "3x3 OH"
   | "Megaminx"
   | "Pyraminx"
-  | "Skewb";
+  | "Skewb"
+  | "FTO";

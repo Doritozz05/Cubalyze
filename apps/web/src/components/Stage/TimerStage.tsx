@@ -118,7 +118,7 @@ export function TimerStage(props: TimerStageProps) {
   const embedsScramble2d = templateHasCell(bottomTemplate, "scramble-2d");
 
   // Previous PB (excluding the most recent solve) for accurate PB delta.
-  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "3x3x3") === puzzleFilter);
+  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "333") === puzzleFilter);
   const previousSolves = puzzleSolves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
   const previousPB =
     previousSolves.length > 0 ? Math.min(...previousSolves.map((s) => effectiveTime(s))) : null;

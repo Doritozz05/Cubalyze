@@ -21,7 +21,10 @@ import { useTimerFocus } from "@/hooks/useTimerFocus";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { copyTextWithFallback } from "@/utils/clipboard";
-import { preloadSolvers } from "@/utils/puzzleUtils";
+import { preloadSolvers, getEventForCategory } from "@/utils/puzzleUtils";
+// Side-effect: registers the 2×2/3×3 ScrambleProviders BEFORE the first
+// render, so useScrambleState's initial scramble generation finds them.
+import "@/utils/scrambleProviders";
 import { preferencesStore } from "@cubeforge/state";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { migrateWidgetPositions } from "@/widgets/migration";
@@ -213,6 +216,9 @@ export default function App() {
   const session$ = useSolveSession(currentScramble, {
     onSolve: handleComplete,
     keyboardDisabledRef,
+    // Phase A5: the timer consumes the active event's WCA rules profile
+    // (inspection window, penalties) — not a single global 3×3 set.
+    rules: getEventForCategory(puzzle)?.rules,
   });
 
   // Stable member functions (memoized inside useSolveSession) — destructured

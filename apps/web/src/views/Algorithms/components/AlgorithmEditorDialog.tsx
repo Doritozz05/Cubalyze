@@ -69,7 +69,7 @@ interface DiagramVariant {
 }
 
 function detectDiagramVariant(caseData: AlgorithmCase): DiagramVariant {
-  const is2x2 = caseData.puzzleType === "2x2x2";
+  const is2x2 = caseData.puzzleType === "222";
   const is3D =
     caseData.diagramType === "3d-isometric" ||
     caseData.diagramType === "3d";
@@ -149,7 +149,7 @@ export function AlgorithmEditorDialog({
   // ── Diagram variant ──────────────────────────────────────────────────
   const variant = useMemo(() => detectDiagramVariant(caseData), [caseData]);
   const is3D = variant.type.startsWith("3d");
-  const is2x2 = caseData.puzzleType === "2x2x2";
+  const is2x2 = caseData.puzzleType === "222";
 
   // ── Seed algorithm moves are notation only; setupScramble remains canonical ──
   const seedAlgMoves = useMemo(
