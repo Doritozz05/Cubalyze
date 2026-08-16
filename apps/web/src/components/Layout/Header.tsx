@@ -98,8 +98,6 @@ export interface HeaderProps {
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
-  /** Lock the puzzle selector (Cube tab is 3×3-only today). */
-  puzzleLocked?: boolean;
   /** Active session solves (newest-first) — feeds the live stats/chart dock pieces. */
   solves?: Solve[];
   className?: string;
@@ -124,7 +122,6 @@ export function Header({
   onOpenProfile,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
-  puzzleLocked,
   solves,
   className,
 }: HeaderProps) {
@@ -257,7 +254,6 @@ export function Header({
           setPuzzle(p);
           onPuzzleChange?.(p);
         }}
-        puzzleLocked={puzzleLocked}
         variant="tray"
       />
     );
@@ -270,7 +266,7 @@ export function Header({
     all["spacer"] = <SpacerPiece />;
     all["separator"] = <SeparatorPiece />;
     return all;
-  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, puzzle, puzzleLocked, onPuzzleChange, solves]);
+  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, puzzle, onPuzzleChange, solves]);
 
   // Filter to only areas that exist in dockAreaOrder (so removed areas don't
   // render). Repeatable instances are suffixed ("separator-0"), so look up
@@ -423,7 +419,6 @@ export function Header({
               setPuzzle(p);
               onPuzzleChange?.(p);
             }}
-            puzzleLocked={puzzleLocked}
             variant="chip"
           />
         </div>

@@ -7,6 +7,7 @@ import {
   expandWideMoves,
   OrientationTable,
   SOLVED_FACELETS,
+  SOLVED_FACELETS_2X2,
   type OrientationEntry,
 } from "@cubeforge/math-core";
 import type {
@@ -107,6 +108,11 @@ export interface UseVirtualCubeSessionOptions {
    * equivalent of the smart cube's gyroscope.
    */
   gripRef?: React.MutableRefObject<OrientationEntry>;
+  /**
+   * Cube order (2 or 3). Default 3. Picks the solved-facelet regex: 2×2
+   * cubes push 24-char facelets (SOLVED_FACELETS_2X2), 3×3 pushes 54-char.
+   */
+  order?: number;
 }
 
 /**
@@ -347,18 +353,20 @@ export function useVirtualCubeSession(
   }, [adapter, engine, orientationFromGrip, syntheticCubeTimestamp]);
 
   // ── Solved detection (same mechanism as the real timer's facelets$) ───
+  const solvedFaceletsRegex =
+    options.order === 2 ? SOLVED_FACELETS_2X2 : SOLVED_FACELETS;
   useEffect(() => {
     if (!adapter.facelets$) return;
     const sub = adapter.facelets$.subscribe((facelets) => {
       if (
-        SOLVED_FACELETS.test(facelets) &&
+        solvedFaceletsRegex.test(facelets) &&
         engine.getState() === EngineState.RUNNING
       ) {
         engine.handleSmartCubeStop();
       }
     });
     return () => sub.unsubscribe();
-  }, [adapter, engine]);
+  }, [adapter, engine, solvedFaceletsRegex]);
 
   const notifyTurn = useCallback(
     (face: CubeFace, direction: 1 | -1, displayNotation?: string) => {

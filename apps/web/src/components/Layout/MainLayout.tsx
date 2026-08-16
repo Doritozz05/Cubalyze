@@ -76,8 +76,6 @@ export interface MainLayoutProps {
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
-  /** Lock the puzzle selector to its current value (Cube tab: 3×3 only). */
-  puzzleLocked?: boolean;
   /** Active session solves (newest-first) — forwarded to the header dock pieces. */
   solves?: Solve[];
   className?: string;
@@ -108,7 +106,6 @@ export function MainLayout({
   hideHeader,
   puzzle,
   onPuzzleChange,
-  puzzleLocked,
   solves,
   className,
 }: MainLayoutProps) {
@@ -333,7 +330,6 @@ export function MainLayout({
               onOpenProfile={onOpenProfile}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
-              puzzleLocked={puzzleLocked}
               solves={solves}
             />
           )}

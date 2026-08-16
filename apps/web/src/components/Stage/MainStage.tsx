@@ -203,7 +203,7 @@ export function MainStage(props: MainStageProps) {
   if (activeView === "cube") {
     return (
       <Suspense fallback={<ViewFallback />}>
-        <CubeSimulatorView onVirtualSolveComplete={onVirtualSolveComplete} />
+        <CubeSimulatorView puzzle={puzzle} onVirtualSolveComplete={onVirtualSolveComplete} />
       </Suspense>
     );
   }

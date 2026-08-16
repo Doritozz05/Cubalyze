@@ -64,6 +64,7 @@
     "keys": {
       "title": "Controls",
       "subtitle": "The csTimer layout: your index fingers rest on U (F = U', J = U). Clockwise and counterclockwise are separate keys. The cube starts solved and you perform the scramble yourself (or use the Scramble button); the turn speed changes each move's animation.",
+      "subtitle2x2": "2×2 has no middle layer, so only face turns (U/D/R/L/F/B) and whole-cube rotations (x/y/z) exist — slices (M/E/S) and wide moves (r/l/u/d/f/b) are not available.",
       "gestures": "Gestures",
       "gestureSwipe": "Drag a face — the layer turns with an animated move at your turn speed and lands at exactly 90°, without following the pointer. The drag is read as if the grabbed face faced you: on the front face vertical drags turn columns R/M/L and horizontal drags rows U/E/D; on the top face horizontal drags turn F/S/B; on the side faces vertical drags turn F/S/B",
       "gestureOrbit": "Drag the background — one 90° rotation per drag, with the camera locked isometric",

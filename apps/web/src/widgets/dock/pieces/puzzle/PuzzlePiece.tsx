@@ -14,7 +14,6 @@ import type { PuzzleCategory } from "@/types";
 export interface PuzzlePieceProps {
   puzzle: PuzzleCategory;
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
-  puzzleLocked?: boolean;
   variant?: "tray" | "chip";
 }
 
@@ -22,7 +21,6 @@ export interface PuzzlePieceProps {
 export function PuzzlePiece({
   puzzle,
   onPuzzleChange,
-  puzzleLocked,
   variant = "tray",
 }: PuzzlePieceProps) {
   const { t } = useTranslation("shell");
@@ -31,7 +29,6 @@ export function PuzzlePiece({
     <Select value={puzzle} onValueChange={(v) => onPuzzleChange?.(v as PuzzleCategory)}>
       <SelectTrigger
         size="sm"
-        disabled={puzzleLocked}
         className={
           variant === "tray"
             ? "h-8 justify-center gap-1.5 rounded-full border-transparent bg-transparent px-2.5 py-0 text-xs font-medium leading-none text-ink-2 shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"

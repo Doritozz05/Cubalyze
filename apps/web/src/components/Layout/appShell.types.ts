@@ -49,9 +49,6 @@ export interface AppShellProps {
   displayScramble: string;
   scrambleIndex: number;
   onPuzzleChange: (puzzle: PuzzleCategory) => void;
-  /** True while the Cube tab is active — the simulator is 3×3-only today,
-   *  so the header puzzle selector is forced to 3×3 and disabled. */
-  puzzleLocked?: boolean;
   /** End-of-solve pipeline for the virtual cube simulator (source "virtual"). */
   onVirtualSolveComplete?: VirtualSolveComplete;
   onRegenerate: () => void;

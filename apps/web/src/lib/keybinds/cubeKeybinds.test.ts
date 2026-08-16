@@ -11,6 +11,7 @@ import {
   actionToMoves,
   actionToNotation,
   actionToValidatorEvents,
+  isActionAllowedForOrder,
 } from "./cubeKeybinds";
 
 const notationFor = (code: string) => actionToNotation(CUBE_KEYMAP[code]);
@@ -137,6 +138,41 @@ describe("actionToMoves", () => {
 
   it("compacts repeated notation (U + U = U2)", () => {
     expect(actionToNotation(CUBE_KEYMAP.KeyJ)).toBe("U");
+  });
+});
+
+describe("isActionAllowedForOrder", () => {
+  it("allows the full keymap on orders > 2 (3×3 unchanged)", () => {
+    for (const code of Object.keys(CUBE_KEYMAP)) {
+      expect(isActionAllowedForOrder(CUBE_KEYMAP[code], 3)).toBe(true);
+    }
+  });
+
+  it("keeps face turns and whole-cube rotations on 2×2", () => {
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyJ, 2)).toBe(true); // U
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyI, 2)).toBe(true); // R
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyW, 2)).toBe(true); // B
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyT, 2)).toBe(true); // x
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Semicolon, 2)).toBe(true); // y
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.ArrowLeft, 2)).toBe(true); // y
+  });
+
+  it("blocks slice moves (M/E/S) on 2×2", () => {
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Digit5, 2)).toBe(false); // M
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Digit6, 2)).toBe(false); // M'
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Digit2, 2)).toBe(false); // E
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Digit9, 2)).toBe(false); // E'
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Digit1, 2)).toBe(false); // S'
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Digit0, 2)).toBe(false); // S
+  });
+
+  it("blocks wide moves on 2×2", () => {
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyU, 2)).toBe(false); // r
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyM, 2)).toBe(false); // r'
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyV, 2)).toBe(false); // l
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Comma, 2)).toBe(false); // u
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.KeyZ, 2)).toBe(false); // d
+    expect(isActionAllowedForOrder(CUBE_KEYMAP.Slash, 2)).toBe(false); // d'
   });
 });
 

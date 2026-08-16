@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Observable } from 'rxjs';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
 import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS, SOLVED_FACELETS_2X2 } from '@cubeforge/math-core';
 import { orientationStore } from '@cubeforge/state';
 
 /**
@@ -334,7 +334,12 @@ export function useScrambleValidator(
 
     function handleFacelets(f: string): void {
       const s = stateRef.current;
-      const isSolved = SOLVED_FACELETS.test(f);
+      // 2×2 pushes 24-char facelets (SOLVED_FACELETS_2X2), 3×3 pushes 54-char
+      // (SOLVED_FACELETS). The regexes are disjoint (4×6 vs 9×6 groups), so
+      // OR-ing them adds 2×2 without changing 3×3 behavior. The 2×2 scramble
+      // is face-turn-only (U/R/F), so the 3×3 CubeState math used by
+      // computeExpected/processToken stays self-consistent for both orders.
+      const isSolved = SOLVED_FACELETS.test(f) || SOLVED_FACELETS_2X2.test(f);
 
       if (!s.initialCheckDone) {
         s.initialCheckDone = true;

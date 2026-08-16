@@ -261,3 +261,26 @@ export function actionToNotation(action: CubeKeyAction): string {
       return `${action.axis}${action.direction < 0 ? "'" : ""}`;
   }
 }
+
+/**
+ * Whether a key action is meaningful for the given cube order.
+ *
+ * The 2×2 has no middle layer, so slice moves (M/E/S) and wide moves
+ * (r/l/u/d/f/b) do not exist; face turns and whole-cube rotations (x/y/z)
+ * remain valid. Orders > 2 keep the full keymap. Used by the Cube tab to
+ * ignore meaningless keys and to filter the on-screen keyboard help.
+ */
+export function isActionAllowedForOrder(
+  action: CubeKeyAction,
+  order: number,
+): boolean {
+  if (order !== 2) return true;
+  if (action.kind === "wide") return false;
+  if (
+    action.kind === "turn" &&
+    (action.face === "M" || action.face === "E" || action.face === "S")
+  ) {
+    return false;
+  }
+  return true;
+}

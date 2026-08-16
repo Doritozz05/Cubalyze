@@ -64,6 +64,7 @@
     "keys": {
       "title": "Controles",
       "subtitle": "Diseño de csTimer: tus índices descansan en U (F = U', J = U). En el sentido horario y antihorario son teclas separadas. El cubo empieza resuelto y realizas el scramble tú mismo (o usas el botón Mezclar); la velocidad de giro cambia la animación de cada movimiento.",
+      "subtitle2x2": "El 2×2 no tiene capa central, así que solo existen giros de cara (U/D/R/L/F/B) y rotaciones del cubo (x/y/z). Los slices (M/E/S) y los movimientos wide (r/l/u/d/f/b) no están disponibles.",
       "gestures": "Gestos",
       "gestureSwipe": "Arrastra una cara — la capa gira con la animación a tu velocidad de giro y aterriza exactamente en 90°, sin seguir el puntero. El gesto se lee como si la cara tocada te mirara: en la frontal, los arrastres verticales giran columnas R/M/L y los horizontales filas U/E/D; en la superior, los horizontales giran F/S/B; en las laterales, los verticales giran F/S/B",
       "gestureOrbit": "Arrastra el fondo — una rotación de 90° por arrastre, con la cámara fija en isométrica",

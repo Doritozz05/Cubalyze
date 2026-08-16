@@ -2,8 +2,8 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AnimatePresence, motion } from "framer-motion";
-import { HelpCircle, RotateCcw, Shuffle, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { HelpCircle, RotateCcw, Shuffle } from "lucide-react";
 import { useStore } from "zustand";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   actionToMoves,
   actionToNotation,
   actionToValidatorEvents,
+  isActionAllowedForOrder,
   type CubeKeyAction,
 } from "@/lib/keybinds/cubeKeybinds";
 import type {
@@ -24,9 +25,9 @@ import type {
   CubeOrientation,
   OrientationTimeline,
 } from "@cubeforge/types";
-import type { Penalty } from "@/types";
+import type { Penalty, PuzzleCategory } from "@/types";
 import { scrambleMoveDurationMs } from "@cubeforge/cube-3d-engine";
-import { generateScrambleFor } from "@/utils/puzzleUtils";
+import { generateScrambleFor, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
 import {
   useVirtualCubeSession,
@@ -34,30 +35,35 @@ import {
 } from "@/hooks/useVirtualCubeSession";
 import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
 import {
+  Cube2x2FaceletConverter,
+  Cube2x2State,
   CubeState,
   FaceletStringConverter,
   MoveTransformer,
   OrientationTable,
+  SOLVED_FACELETS_2X2,
   type OrientationEntry,
 } from "@cubeforge/math-core";
 import { preferencesStore } from "@cubeforge/state";
 import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
+import { CubeHelpOverlay, type CubeTurnSpeed } from "./CubeHelpOverlay";
 
-/** The simulator currently supports 3×3 (architecture ready for more puzzles). */
-const CUBE_ORDER = 3;
+/** The logical state of the active simulator cube (3×3 or 2×2). */
+type SimulatorState = CubeState | Cube2x2State;
 
 /**
- * Canonical solved facelet string — the ONLY facelet state the virtual cube
+ * Canonical solved facelet strings — the ONLY facelet state the virtual cube
  * ever pushes to the session. Math-core keeps the centers FIXED (they never
  * permute), so a solved-but-rotated mirror serializes to faces with a
  * mismatched center sticker (e.g. "BBBBRBBBB") that FAILS the SOLVED_FACELETS
  * regex — the timer would never stop and the validator would never reset
- * after a rotated solve/undo. The canonical string matches SOLVED_FACELETS
+ * after a rotated solve/undo. The canonical string matches the solved regex
  * and tells both consumers "cube back at the solved start" regardless of
- * frame.
+ * frame. 2×2 uses the 24-char form (SOLVED_FACELETS_2X2).
  */
-const SOLVED_CANONICAL = FaceletStringConverter.toFaceletString(new CubeState());
+const SOLVED_CANONICAL_3X3 = FaceletStringConverter.toFaceletString(new CubeState());
+const SOLVED_CANONICAL_2X2 = Cube2x2FaceletConverter.toFaceletString(new Cube2x2State());
 
 /**
  * End-of-solve pipeline prop (wired by App via the same useSolveCompletion
@@ -66,6 +72,7 @@ const SOLVED_CANONICAL = FaceletStringConverter.toFaceletString(new CubeState())
  * pipeline and replay work identically to smart-cube solves.
  */
 export interface CubeSimulatorViewProps {
+  puzzle: PuzzleCategory;
   onVirtualSolveComplete?: (
     time: number,
     penalty: Penalty,
@@ -76,8 +83,6 @@ export interface CubeSimulatorViewProps {
   ) => void;
 }
 
-type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
-
 /** Base animation duration (ms) per turn speed. `instant` disables animation. */
 const TURN_SPEED_BASE_MS: Record<CubeTurnSpeed, number> = {
   slow: 260,
@@ -85,69 +90,6 @@ const TURN_SPEED_BASE_MS: Record<CubeTurnSpeed, number> = {
   fast: 70,
   instant: 0,
 };
-
-const TURN_SPEED_OPTIONS: CubeTurnSpeed[] = ["slow", "normal", "fast", "instant"];
-
-/** i18n key for each turn-speed label (typed literals — no dynamic keys). */
-const TURN_SPEED_LABEL_KEY: Record<
-  CubeTurnSpeed,
-  "keys.speedSlow" | "keys.speedNormal" | "keys.speedFast" | "keys.speedInstant"
-> = {
-  slow: "keys.speedSlow",
-  normal: "keys.speedNormal",
-  fast: "keys.speedFast",
-  instant: "keys.speedInstant",
-};
-
-/**
- * QWERTY layout of the physical keyboard, in order, for the on-screen key
- * map (mirrors virtual-cube.net's "Show Keyboard Map").
- */
-const KEYBOARD_ROWS: string[][] = [
-  ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-  ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";"],
-  ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
-];
-
-const PUNCT_CODES: Record<string, string> = {
-  ";": "Semicolon",
-  ",": "Comma",
-  ".": "Period",
-  "/": "Slash",
-};
-
-const labelToCode = (label: string): string =>
-  /^[a-z]$/.test(label)
-    ? `Key${label.toUpperCase()}`
-    : /^\d$/.test(label)
-      ? `Digit${label}`
-      : (PUNCT_CODES[label] ?? "");
-
-/** Arrow cluster (whole-cube rotations, like virtual-cube's bottom row). */
-const ARROW_KEYS: { code: string; label: string }[] = [
-  { code: "ArrowLeft", label: "←" },
-  { code: "ArrowUp", label: "↑" },
-  { code: "ArrowRight", label: "→" },
-  { code: "ArrowDown", label: "↓" },
-];
-
-/** A single keycap in the on-screen keyboard: key label on top, move below. */
-function KeyCap({ label, notation, dim }: { label: string; notation?: string; dim?: boolean }) {
-  return (
-    <div
-      className={cn(
-        "flex w-8 shrink-0 select-none flex-col items-center rounded-md border border-line bg-surface px-0.5 py-1 shadow-xs",
-        dim && "opacity-25",
-      )}
-    >
-      <span className="text-[0.55rem] leading-none font-medium text-ink-3">{label}</span>
-      <span className="mt-1 font-mono text-[0.62rem] leading-none font-semibold text-ink">
-        {notation ?? "·"}
-      </span>
-    </div>
-  );
-}
 
 /**
  * Virtual cube simulator — a csTimer-style keyboard/touch cube.
@@ -189,9 +131,39 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
  * Whole-cube rotations never start/stop it, and reset/regenerate return to
  * IDLE without starting anything (inspection is the next step).
  */
+interface CubeSimulatorCoreProps {
+  puzzle: PuzzleCategory;
+  onVirtualSolveComplete?: CubeSimulatorViewProps["onVirtualSolveComplete"];
+}
+
+/**
+ * The Cube tab supports 2×2 and 3×3. The puzzle comes from the global dock
+ * selector (single source of truth, already selectable in the header); the
+ * core remounts on change (`key={puzzle}`) so each order gets a clean engine
+ * + logical state + scramble lifecycle — no shared-state races between the
+ * two mirrors.
+ */
 export const CubeSimulatorView = memo(function CubeSimulatorView({
+  puzzle,
   onVirtualSolveComplete,
 }: CubeSimulatorViewProps) {
+  return (
+    <CubeSimulatorCore
+      key={puzzle}
+      puzzle={puzzle}
+      onVirtualSolveComplete={onVirtualSolveComplete}
+    />
+  );
+});
+
+const CubeSimulatorCore = memo(function CubeSimulatorCore({
+  puzzle,
+  onVirtualSolveComplete,
+}: CubeSimulatorCoreProps) {
+  const order = puzzle === "2x2" ? 2 : 3;
+  const puzzleType = puzzleCategoryToType(puzzle);
+  const solvedCanonical =
+    order === 2 ? SOLVED_CANONICAL_2X2 : SOLVED_CANONICAL_3X3;
   const { t } = useTranslation("cube");
 
   const {
@@ -202,18 +174,17 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
     contextEvicted,
     zoomCamera,
     engineRef,
-  } = useCube3D({ order: CUBE_ORDER, connectSmartCube: false });
+  } = useCube3D({ order, connectSmartCube: false });
 
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
-  const setCubeTurnSpeed = useStore(preferencesStore, (s) => s.setCubeTurnSpeed);
   // "Rotate scramble with cube" (Settings → Scramble): remap the scramble
   // notation to the virtual cube's current orientation, like the real timer
   // does with the physical cube's gyroscope.
   const scrambleFollowsCube = useStore(preferencesStore, (s) => s.scrambleFollowsCube);
 
   const [scramble, setScramble] = useState(() => {
-    const initial = generateScrambleFor("3x3");
+    const initial = generateScrambleFor(puzzle);
     // Publish to the widget host immediately so the scramble-2d widget never
     // flashes a solved cube on first visit to the Cube tab (the store write
     // inside the lazy view's render happens before StageOverlays' next
@@ -236,8 +207,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
   const gripRef = useRef(grip);
   gripRef.current = grip;
 
-  const stateRef = useRef<CubeState | null>(null);
-  if (stateRef.current === null) stateRef.current = new CubeState();
+  const stateRef = useRef<SimulatorState | null>(null);
+  if (stateRef.current === null) {
+    stateRef.current = order === 2 ? new Cube2x2State() : new CubeState();
+  }
   // One-time init once the engine is ready (initial solved facelets + camera).
   const didInitRef = useRef(false);
 
@@ -262,17 +235,23 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
     // reading the view's grip at each move gives exact per-move
     // orientations — the equivalent of a smart cube's gyroscope.
     gripRef,
+    order,
     onSolve: (time, penalty, moves, orientations, orientationTimeline) =>
       virtualSolveRef.current(time, penalty, moves, orientations, orientationTimeline),
   });
 
-  /** Push the CubeState to the 3D engine (instant facelet sync — used for
+  /** Push the logical state to the 3D engine (instant facelet sync — used for
    *  scramble apply and reset, whose frames are always canonical). */
   const syncState = useCallback(() => {
     const engine = engineRef.current;
-    if (!engine || !stateRef.current) return;
-    engine.syncFacelets(FaceletStringConverter.toFaceletString(stateRef.current));
-  }, [engineRef]);
+    const state = stateRef.current;
+    if (!engine || !state) return;
+    engine.syncFacelets(
+      order === 2
+        ? Cube2x2FaceletConverter.toFaceletString(state as Cube2x2State)
+        : FaceletStringConverter.toFaceletString(state as CubeState),
+    );
+  }, [engineRef, order]);
 
   /** Return the camera to the locked isometric view (same as the algorithms
    *  3D: theta/phi = 30°, tilted right for the best perspective). */
@@ -310,26 +289,41 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
     // Warm up the turn-sound sample pool so the first turn clicks immediately.
     cubeTurnSounds.preload();
     // The virtual cube only ever pushes CANONICAL solved facelets (see
-    // SOLVED_CANONICAL) — every push tells both consumers "cube at the
+    // solvedCanonical) — every push tells both consumers "cube at the
     // solved start" regardless of frame.
-    pushFacelets(SOLVED_CANONICAL);
-  }, [isReady, pushFacelets]);
+    pushFacelets(solvedCanonical);
+  }, [isReady, pushFacelets, solvedCanonical]);
 
   /**
    * Reset the cube to SOLVED (visual + logical CubeState) and lock the
    * isometric camera. Used by regenerate/reset/scramble-now.
    */
   const resetCube = useCallback(() => {
-    stateRef.current = new CubeState();
+    stateRef.current = order === 2 ? new Cube2x2State() : new CubeState();
     engineRef.current?.resetCube();
     resetCamera();
     setGrip(OrientationTable.IDENTITY);
-  }, [engineRef, resetCamera]);
+  }, [engineRef, order, resetCamera]);
+
+  /** True when the logical state is solved up to a whole-cube rotation.
+   *  3×3 uses CubeState.isSolvedUpToRotation; 2×2 has no fixed centers, so
+   *  the rotation-invariant facelet regex (SOLVED_FACELETS_2X2) is the check. */
+  const isSolvedUpToRotation = useCallback(
+    (state: SimulatorState): boolean => {
+      if (order === 2) {
+        return SOLVED_FACELETS_2X2.test(
+          Cube2x2FaceletConverter.toFaceletString(state as Cube2x2State),
+        );
+      }
+      return (state as CubeState).isSolvedUpToRotation();
+    },
+    [order],
+  );
 
   /**
    * Single move pipeline (keyboard + drag): animate the move on the engine
    * at the configured turn speed (0ms = instant), mirror it into the
-   * CubeState, feed the validator + timer gate, and push a solved facelet
+   * logical state, feed the validator + timer gate, and push a solved facelet
    * the moment the cube is solved (the session stops the running clock).
    */
   const applyAction = useCallback(
@@ -338,8 +332,13 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
       const state = stateRef.current;
       if (!engine || !state) return;
 
+      // 2×2 has no middle layer: slice moves (M/E/S) and wide moves are
+      // meaningless, so they are ignored (drags cannot emit them on 2×2 —
+      // there is no middle cubie to grab — this guards the keyboard).
+      if (!isActionAllowedForOrder(action, order)) return;
+
       const baseMs = TURN_SPEED_BASE_MS[cubeTurnSpeed];
-      const moves = actionToMoves(action, CUBE_ORDER);
+      const moves = actionToMoves(action, order);
       for (const mv of moves) {
         // Fire-and-forget: the RotationEngine serializes overlapping layers
         // via its collision detector, so rapid input stays consistent.
@@ -406,16 +405,25 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
       // Solved up to rotation → the session stops the running timer (and the
       // validator resets its sticky error state on a solved cube). The pushed
       // facelets are the CANONICAL solved string, not the rotated mirror's
-      // (see SOLVED_CANONICAL above) — otherwise a rotated solve/undo would
-      // serialize to a facelet string that fails SOLVED_FACELETS.
-      if (state.isSolvedUpToRotation()) {
-        pushFacelets(SOLVED_CANONICAL);
+      // (see solvedCanonical above) — otherwise a rotated solve/undo would
+      // serialize to a facelet string that fails the solved regex.
+      if (isSolvedUpToRotation(state)) {
+        pushFacelets(solvedCanonical);
       }
     },
     // grip is intentionally NOT a dependency: applyAction reads gripRef,
     // which is always the latest rotation (a drag can commit between an
     // engine rotation and the React re-render flushing the new grip state).
-    [cubeTurnSpeed, engineRef, notifyTurn, notifyTurnToken, pushFacelets],
+    [
+      cubeTurnSpeed,
+      engineRef,
+      isSolvedUpToRotation,
+      notifyTurn,
+      notifyTurnToken,
+      order,
+      pushFacelets,
+      solvedCanonical,
+    ],
   );
 
   // Orientation-adapted scramble (Settings → Scramble → "Rotate scramble
@@ -463,12 +471,14 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
 
       const action: CubeKeyAction | undefined = CUBE_KEYMAP[e.code];
       if (!action) return;
+      // 2×2: ignore slice/wide keys (no middle layer).
+      if (!isActionAllowedForOrder(action, order)) return;
       e.preventDefault();
       performAction(action);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [performAction]);
+  }, [order, performAction]);
 
   /**
    * New scramble: fresh sequence + cube back to SOLVED (the user performs
@@ -476,9 +486,9 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
    * the clock when the scramble text changes.
    */
   const handleRegenerate = useCallback(() => {
-    setScramble(generateScrambleFor("3x3"));
+    setScramble(generateScrambleFor(puzzle));
     resetCube();
-  }, [resetCube]);
+  }, [puzzle, resetCube]);
 
   /**
    * Scramble NOW (the 3D widget's scramble button, moved into this view):
@@ -500,7 +510,8 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
     //    no scramble-change → the text stays identical on screen).
     resetScramble();
     // 3) Apply the scramble instantly to the logical state + engine.
-    const state = new CubeState();
+    const state: SimulatorState =
+      order === 2 ? new Cube2x2State() : new CubeState();
     try {
       state.applySequence(scramble);
     } catch {
@@ -519,7 +530,7 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
       notifyTurn(face, direction);
       if (token.includes("2")) notifyTurn(face, direction);
     }
-  }, [resetCube, resetSession, resetScramble, scramble, syncState, notifyTurn]);
+  }, [resetCube, resetSession, resetScramble, scramble, syncState, notifyTurn, order]);
 
   // ── Solve complete → save (pipeline) → next scramble ─────────────────────
   // Parity with the real timer: every solve is persisted with source
@@ -537,18 +548,22 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
       orientations,
       orientationTimeline,
     ) => {
+      // 2×2 has no analysis pipeline yet (runAnalysis is 3×3-only), so its
+      // solves are saved like manual solves: source "virtual", no moves, no
+      // orientation timeline → no analysis, no replay. The DB already
+      // accepts puzzleType "222" (ADR-002) — nothing to migrate.
       onVirtualSolveComplete?.(
         time,
         penalty,
-        moves,
-        orientations,
-        orientationTimeline,
+        order === 2 ? [] : moves,
+        order === 2 ? [] : orientations,
+        order === 2 ? undefined : orientationTimeline,
         {
           // Tag the solve so stats can filter it: manual / smart / virtual.
           source: "virtual",
-          // The virtual cube owns its scramble (3×3-only today).
+          // The virtual cube owns its scramble.
           scramble,
-          puzzleType: "333",
+          puzzleType,
           onNextScramble: () => setTimeout(handleRegenerate, 1200),
         },
       );
@@ -579,10 +594,10 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
     resetCube();
     resetSession();
     resetScramble();
-    // Canonical solved facelets (see SOLVED_CANONICAL) — the cube is solved
+    // Canonical solved facelets (see solvedCanonical) — the cube is solved
     // after resetCube, in the cube-fixed frame by definition.
-    pushFacelets(SOLVED_CANONICAL);
-  }, [pushFacelets, resetCube, resetSession, resetScramble]);
+    pushFacelets(solvedCanonical);
+  }, [pushFacelets, resetCube, resetSession, resetScramble, solvedCanonical]);
 
   // ── Timer display (session-driven: 0 while idle, live while running,
   //    frozen at the final time once stopped). ─────────────────────────────
@@ -758,118 +773,11 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
       </div>
 
       {/* Controls overlay (help) — on-screen keyboard map, like virtual-cube.net */}
-      <AnimatePresence>
-        {showHelp && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-0 z-40 flex items-center justify-center bg-background/60 p-4 backdrop-blur-sm"
-            onPointerDown={(e) => {
-              if (e.target === e.currentTarget) setShowHelp(false);
-            }}
-          >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="cube-help-title"
-              initial={{ scale: 0.96, opacity: 0, y: 8 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.96, opacity: 0, y: 8 }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-xl"
-            >
-              <div className="mb-1 flex items-start justify-between gap-4">
-                <div>
-                  <h3 id="cube-help-title" className="text-sm font-semibold text-ink">
-                    {t("keys.title")}
-                  </h3>
-                  <p className="mt-1 text-[0.68rem] leading-relaxed text-ink-3">{t("keys.subtitle")}</p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setShowHelp(false)} className="h-7 px-1.5" aria-label={t("keys.close")}>
-                  <X className="size-3.5" />
-                </Button>
-              </div>
-
-              {/* On-screen keyboard — each keycap shows its move */}
-              <div className="mt-4 flex flex-col items-center gap-1.5">
-                {KEYBOARD_ROWS.map((row) => (
-                  <div key={row[0]} className="flex gap-1">
-                    {row.map((label) => {
-                      const code = labelToCode(label);
-                      const action = CUBE_KEYMAP[code];
-                      return (
-                        <KeyCap
-                          key={label}
-                          label={label}
-                          notation={action ? actionToNotation(action) : undefined}
-                          dim={!action}
-                        />
-                      );
-                    })}
-                  </div>
-                ))}
-                {/* Arrow cluster — whole-cube rotations (camera stays locked) */}
-                <div className="mt-1 flex gap-1">
-                  {ARROW_KEYS.map((k) => {
-                    const action = CUBE_KEYMAP[k.code];
-                    return (
-                      <KeyCap
-                        key={k.code}
-                        label={k.label}
-                        notation={action ? actionToNotation(action) : undefined}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-4">
-                {/* Turn speed */}
-                <div>
-                  <h4 className="mb-1.5 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-ink-3">
-                    {t("keys.speed")}
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {TURN_SPEED_OPTIONS.map((speed) => (
-                      <button
-                        key={speed}
-                        type="button"
-                        onClick={() => setCubeTurnSpeed(speed)}
-                        className={cn(
-                          "rounded-lg border px-2.5 py-1 text-[0.68rem] font-medium transition-colors",
-                          cubeTurnSpeed === speed
-                            ? "border-primary bg-primary/10 text-ink"
-                            : "border-line bg-background/40 text-ink-3 hover:border-ink-2/50 hover:text-ink",
-                        )}
-                        aria-pressed={cubeTurnSpeed === speed}
-                      >
-                        {t(TURN_SPEED_LABEL_KEY[speed])}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Gestures */}
-                <div className="rounded-xl border border-line/60 bg-background/40 p-3">
-                  <h4 className="mb-1.5 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-ink-3">
-                    {t("keys.gestures")}
-                  </h4>
-                  <ul className="space-y-1 text-[0.7rem] leading-relaxed text-ink-2">
-                    <li>• {t("keys.gestureSwipe")}</li>
-                    <li>• {t("keys.gestureOrbit")}</li>
-                    <li>• {t("keys.gestureTap")}</li>
-                    <li>• {t("keys.gesturePinch")}</li>
-                  </ul>
-                </div>
-              </div>
-
-              <p className="mt-4 border-t border-line pt-3 text-[0.65rem] text-ink-3/80">{t("keys.footer")}</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CubeHelpOverlay
+        showHelp={showHelp}
+        order={order}
+        onClose={() => setShowHelp(false)}
+      />
     </div>
   );
 });
