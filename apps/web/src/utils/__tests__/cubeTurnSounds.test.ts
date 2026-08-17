@@ -6,6 +6,13 @@ import { CubeTurnSounds } from '../cubeTurnSounds';
  * Minimal Web Audio stand-ins: node has no AudioContext / AudioBuffer, and the
  * module only touches the Web Audio graph lazily, so fakes are enough to
  * assert fetch/decode/playback wiring without a browser.
+ *
+ * Lazy-context contract: `preload()` only warms the fetch of the sample
+ * bytes — the AudioContext is created on the FIRST user gesture (unlock),
+ * never on mount, because creating one before any interaction leaves it
+ * autoplay-blocked and Chrome logs "The AudioContext was not allowed to
+ * start". Tests that need a decoded context therefore dispatch the first
+ * gesture (`pointerdown`) as part of their setup.
  */
 class FakeAudioBuffer {
   duration = 0.3;
@@ -107,27 +114,6 @@ class FakeAudioContext {
   }
 }
 
-/** Minimal HTMLAudioElement stand-in used by the warm-keep loop. */
-class FakeAudioElement {
-  static instances: FakeAudioElement[] = [];
-  loop = false;
-  preload = 'none';
-  volume = 1;
-  src = '';
-  paused = true;
-  play = vi.fn(() => {
-    this.paused = false;
-    return Promise.resolve();
-  });
-  pause = vi.fn(() => {
-    this.paused = true;
-  });
-
-  constructor() {
-    FakeAudioElement.instances.push(this);
-  }
-}
-
 /** Minimal window/document stand-in that records listeners and can dispatch. */
 class FakeEventTarget {
   private listeners = new Map<string, Set<() => void>>();
@@ -176,6 +162,20 @@ const decodeAll = async () => {
   await vi.waitFor(() => expect(FakeAudioContext.decodedBuffers).toHaveLength(4));
 };
 
+/**
+ * Standard setup: warm the fetch, then fire the FIRST user gesture, which
+ * creates the AudioContext (autoplay policy forbids creating it on mount)
+ * and starts the decode of the pre-warmed bytes. Returns the player.
+ */
+const initWarmPlayer = async () => {
+  const player = new CubeTurnSounds();
+  player.preload();
+  windowTarget.dispatch('pointerdown');
+  await flushMicrotasks();
+  await decodeAll();
+  return player;
+};
+
 /** Flush the microtask queue so resume().then() / statechange drains settle. */
 const flushMicrotasks = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
@@ -186,9 +186,7 @@ describe('CubeTurnSounds', () => {
     FakeAudioContext.gains = [];
     FakeAudioContext.decodedBuffers = [];
     FakeAudioContext.decodeResolvers = [];
-    FakeAudioElement.instances = [];
     vi.stubGlobal('AudioContext', FakeAudioContext);
-    vi.stubGlobal('Audio', FakeAudioElement);
     windowTarget = new FakeEventTarget() as FakeEventTarget & {
       AudioContext: typeof FakeAudioContext;
       document: FakeEventTarget & { hidden: boolean };
@@ -233,12 +231,18 @@ describe('CubeTurnSounds', () => {
     expect(third).not.toBe(second);
   });
 
-  it('preload fetches and decodes every sample so the first turn is instant', async () => {
+  it('preload warms the fetch but does NOT create the AudioContext before a gesture', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    expect(FakeAudioContext.instances).toHaveLength(1);
+    // Autoplay policy: no context on mount (creating one would log "The
+    // AudioContext was not allowed to start") — only the bytes are fetched.
+    expect(FakeAudioContext.instances).toHaveLength(0);
     expect(fetchMock).toHaveBeenCalledTimes(4);
+    // First gesture creates the context and decodes the pre-warmed bytes.
+    windowTarget.dispatch('pointerdown');
+    await flushMicrotasks();
     await decodeAll();
+    expect(FakeAudioContext.instances).toHaveLength(1);
     // The first turn after decode fires a one-shot source immediately.
     player.play();
     expect(FakeAudioContext.sources).toHaveLength(1);
@@ -247,9 +251,7 @@ describe('CubeTurnSounds', () => {
   });
 
   it('never plays the same source twice in a row, even on rapid turns', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     for (let i = 0; i < 30; i++) player.play();
     expect(FakeAudioContext.sources).toHaveLength(30);
     const bufferIndexOf = (b: FakeAudioBuffer | null) =>
@@ -291,17 +293,13 @@ describe('CubeTurnSounds', () => {
 
   it('scales playback volume from the soundVolume preference', async () => {
     preferencesStore.getState().setSoundVolume(35);
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     player.play();
     expect(FakeAudioContext.gains[0]?.gain.value).toBeCloseTo(0.35);
   });
 
   it('resumes a suspended AudioContext when returning to the tab', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     // Simulate the background-tab freeze Chrome applies while the tab is hidden.
     ctx.setState('suspended');
@@ -313,13 +311,9 @@ describe('CubeTurnSounds', () => {
   });
 
   it('eagerly resumes the context when the tab becomes visible again, before the user acts', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
-    // The user has already used the app (a real gesture unlocked the context).
-    windowTarget.dispatch('pointerdown');
-    await flushMicrotasks(); // let the unlock resume settle
+    // The user has already used the app (the setup gesture unlocked it).
     expect(ctx.state).toBe('running');
     // Chrome suspended the context while the tab was hidden…
     ctx.setState('suspended');
@@ -336,25 +330,19 @@ describe('CubeTurnSounds', () => {
   });
 
   it('does not resume while the tab is still hidden', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     ctx.setState('suspended');
     documentTarget.hidden = true;
     documentTarget.dispatch('visibilitychange');
-    expect(ctx.resume).not.toHaveBeenCalled();
+    // No NEW resume from the hidden-tab hook (the setup unlock is the only one).
+    expect(ctx.resume).toHaveBeenCalledTimes(1);
     expect(ctx.state).toBe('suspended');
   });
 
   it('resumes the context when the window regains focus', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
-    // The user unlocked the context with a real gesture first.
-    windowTarget.dispatch('pointerdown');
-    await flushMicrotasks(); // let the unlock resume settle
     expect(ctx.resume).toHaveBeenCalledTimes(1);
     expect(ctx.state).toBe('running');
     // Leaves the tab → Chrome suspends the context.
@@ -369,13 +357,8 @@ describe('CubeTurnSounds', () => {
   });
 
   it('starts the device reopen on the first pointermove after returning (before the turn)', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
-    // The user unlocked the context with a real gesture first.
-    windowTarget.dispatch('pointerdown');
-    await flushMicrotasks(); // let the unlock resume settle
     expect(ctx.resume).toHaveBeenCalledTimes(1);
     expect(ctx.state).toBe('running');
     // Leaves the tab → Chrome suspends the context.
@@ -392,32 +375,26 @@ describe('CubeTurnSounds', () => {
     expect(ctx.resume).toHaveBeenCalledTimes(2);
   });
 
-  it('does not call resume() from non-gesture hooks before the first user gesture (autoplay)', async () => {
+  it('does not create a context or resume from non-gesture hooks before the first user gesture (autoplay)', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    await decodeAll();
-    const ctx = FakeAudioContext.instances[0];
-    // Fresh load: the context is autoplay-suspended and has never run. The
-    // non-gesture hooks fire (visibilitychange on load, window focus, mouse
-    // movement) but must NOT call resume() — Chrome rejects it and logs "The
-    // AudioContext was not allowed to start" for EVERY call (autoplay policy),
-    // which was the console flood seen on load.
+    // Fresh load: preload only warms the fetch — there is NO context yet.
+    expect(FakeAudioContext.instances).toHaveLength(0);
+    // The non-gesture hooks fire (visibilitychange on load, window focus,
+    // mouse movement) but have nothing to resume — and they never create the
+    // context either, so Chrome cannot log "The AudioContext was not allowed
+    // to start" before the user interacts.
     documentTarget.dispatch('visibilitychange');
     windowTarget.dispatch('focus');
     windowTarget.dispatch('pointermove');
     windowTarget.dispatch('mousemove');
-    expect(ctx.resume).not.toHaveBeenCalled();
-    expect(ctx.state).toBe('suspended');
+    expect(FakeAudioContext.instances).toHaveLength(0);
   });
 
   it('does not stack redundant resume() calls while one is in flight', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
-    // User unlocked the context, then left the tab (context suspended).
-    windowTarget.dispatch('pointerdown');
-    await flushMicrotasks(); // let the unlock resume settle
+    // The user left the tab (context suspended).
     ctx.setState('suspended');
     // The next device reopen is slow: the resume stays pending…
     let finishResume!: () => void;
@@ -443,9 +420,7 @@ describe('CubeTurnSounds', () => {
   });
 
   it('treats the interrupted state like suspended (iOS Safari backgrounding)', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     // iOS Safari moves the context to 'interrupted' when the user leaves the
     // page (tab switch / screen lock) — MDN documents resume() as the fix.
@@ -458,9 +433,7 @@ describe('CubeTurnSounds', () => {
   });
 
   it('never starts a source on a frozen clock — the cue plays when the context runs', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     // A suspended context whose resume completes LATER (real browsers resolve
     // the promise asynchronously). The turn must not fire into silence.
@@ -485,9 +458,7 @@ describe('CubeTurnSounds', () => {
   });
 
   it('does not fire a source on a running context whose clock is still frozen (device reopening)', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     // Chromium flips the context back to 'running' while the audio device is
     // still reopening after the tab was hidden — currentTime stays frozen for
@@ -506,9 +477,7 @@ describe('CubeTurnSounds', () => {
   });
 
   it('plays immediately when the audio clock is warm (no added latency)', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     // Warm device (default fake): currentTime advances on every read, so the
     // clock gate passes on the very first check — the turn is instant.
     expect(FakeAudioContext.instances[0].clockFrozen).toBe(false);
@@ -517,9 +486,7 @@ describe('CubeTurnSounds', () => {
   });
 
   it('a stale clock-wait poll never double-plays a newer cue', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     ctx.clockFrozen = true;
     player.play(); // cue A queued; its clock-wait poll starts (baseline 0)
@@ -537,32 +504,33 @@ describe('CubeTurnSounds', () => {
   it('keeps a cue queued when resume rejects (no user activation) and plays it on the next gesture', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    await decodeAll();
-    // Let the decode-completion drain settle (it is empty, but it also retries
-    // a rejected resume — keep the call count deterministic for this test).
-    await flushMicrotasks();
+    // The first turn creates the context (in a real browser a turn IS a
+    // gesture; the fake has no autoplay gate).
+    player.play();
     const ctx = FakeAudioContext.instances[0];
-    // visibilitychange fired while the page had no user activation → Chrome
-    // rejects the resume (NotAllowedError) — the old code dropped the click.
+    // Decode of the pre-warmed bytes completes and cue A plays (resume #1).
+    await decodeAll();
+    await flushMicrotasks();
+    expect(FakeAudioContext.sources).toHaveLength(1);
+    // The tab was hidden with no user activation → Chrome rejects the next
+    // resume (NotAllowedError) — the old code dropped the click.
     ctx.setState('suspended');
-    expect(ctx.resume).not.toHaveBeenCalled();
+    expect(ctx.resume).toHaveBeenCalledTimes(1);
     ctx.resume.mockRejectedValueOnce(new DOMException('', 'NotAllowedError'));
     player.play();
     await flushMicrotasks();
-    expect(FakeAudioContext.sources).toHaveLength(0);
+    // Cue B stays queued — only cue A has played, nothing was dropped.
+    expect(FakeAudioContext.sources).toHaveLength(1);
     // The next real gesture unlocks the autoplay-suspended context…
     windowTarget.dispatch('pointerdown');
-    expect(ctx.resume).toHaveBeenCalledTimes(2);
     expect(ctx.state).toBe('running');
     await flushMicrotasks();
     // …and the queued turn finally plays — nothing was lost.
-    expect(FakeAudioContext.sources).toHaveLength(1);
+    expect(FakeAudioContext.sources).toHaveLength(2);
   });
 
   it('drains queued cues when the browser itself brings the context back to running', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     const ctx = FakeAudioContext.instances[0];
     ctx.setState('suspended');
     ctx.resume.mockRejectedValue(new DOMException('', 'NotAllowedError'));
@@ -576,14 +544,14 @@ describe('CubeTurnSounds', () => {
     expect(FakeAudioContext.sources).toHaveLength(1);
   });
 
-  it('unlocks the autoplay-suspended context on the first user gesture and self-removes', async () => {
+  it('creates the context on the first user gesture and self-removes the unlock hooks', async () => {
     const player = new CubeTurnSounds();
     player.preload();
-    await decodeAll();
-    const ctx = FakeAudioContext.instances[0];
-    // Created by preload() before any interaction → autoplay keeps it suspended.
-    expect(ctx.state).toBe('suspended');
+    // Autoplay policy: NOTHING before the first gesture (not even a context).
+    expect(FakeAudioContext.instances).toHaveLength(0);
     windowTarget.dispatch('pointerdown');
+    expect(FakeAudioContext.instances).toHaveLength(1);
+    const ctx = FakeAudioContext.instances[0];
     expect(ctx.resume).toHaveBeenCalled();
     expect(ctx.state).toBe('running');
     // The one-time unlock listeners are removed after the first gesture.
@@ -593,59 +561,24 @@ describe('CubeTurnSounds', () => {
   });
 
   it('reuses the decoded buffers instead of refetching on every turn', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
+    const player = await initWarmPlayer();
     for (let i = 0; i < 25; i++) player.play();
     expect(fetchMock).toHaveBeenCalledTimes(4);
     // Every turn is a fresh one-shot node — fast turns overlap naturally.
     expect(FakeAudioContext.sources).toHaveLength(25);
   });
 
-  it('starts a warm-keep media loop on the first gesture to keep the OS device open', async () => {
+  it('plays turn sounds with no background audio loop', async () => {
+    // Regression: the old warm-keep loop played a real (low-volume) sample
+    // on repeat to keep the OS audio device open — users reported audible
+    // background sound at all times. It must be gone: playback is purely
+    // per-turn Web Audio, nothing loops between turns.
     const player = new CubeTurnSounds();
     player.preload();
-    await decodeAll();
-    // No gesture yet → no warm-keep loop (autoplay forbids unmuted media).
-    expect(FakeAudioElement.instances).toHaveLength(0);
-    // First real gesture starts the loop, looping the first sample at low volume.
     windowTarget.dispatch('pointerdown');
-    expect(FakeAudioElement.instances).toHaveLength(1);
-    const loop = FakeAudioElement.instances[0];
-    expect(loop.loop).toBe(true);
-    expect(loop.volume).toBeLessThan(0.05);
-    expect(loop.paused).toBe(false);
-    expect(loop.play).toHaveBeenCalled();
-    expect(loop.src).toBeTruthy();
-  });
-
-  it('restarts a paused warm-keep loop when returning to the tab', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
+    await flushMicrotasks();
     await decodeAll();
-    windowTarget.dispatch('pointerdown');
-    const loop = FakeAudioElement.instances[0];
-    expect(loop.play).toHaveBeenCalledTimes(1);
-    // The browser suspends the background media loop while the tab is hidden…
-    loop.pause();
-    expect(loop.paused).toBe(true);
-    // …and returning to the tab restarts it before the user turns the cube.
-    documentTarget.hidden = true;
-    documentTarget.dispatch('visibilitychange');
-    documentTarget.hidden = false;
-    documentTarget.dispatch('visibilitychange');
-    expect(loop.play).toHaveBeenCalledTimes(2);
-    expect(loop.paused).toBe(false);
-  });
-
-  it('does not start the warm-keep loop before the first gesture', async () => {
-    const player = new CubeTurnSounds();
-    player.preload();
-    await decodeAll();
-    // Non-gesture hooks fire on load but must not start unmuted media.
-    documentTarget.dispatch('visibilitychange');
-    windowTarget.dispatch('focus');
-    windowTarget.dispatch('pointermove');
-    expect(FakeAudioElement.instances).toHaveLength(0);
+    player.play();
+    expect(FakeAudioContext.sources).toHaveLength(1);
   });
 });

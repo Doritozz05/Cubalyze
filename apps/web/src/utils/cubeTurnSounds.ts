@@ -65,16 +65,16 @@
  *   • Playback is gated by the Audio preferences (Settings → Audio):
  *     `soundsEnabled` (audio master) + `cubeTurnSoundsEnabled` must be on,
  *     and the master `soundVolume` scales every sample — the same contract
- *     the inspection cues and PB fanfare use.
- *   • Fully lazy: no fetch / AudioContext work happens until the first play
- *     or an explicit `preload()`, so SSR, tests and users who never open the
- *     replay/virtual cube pay zero cost.
- *   • Diagnostics: the resume hooks log a one-time "armed" marker on load and
- *     every context resume with its measured latency, so a dev can confirm
- *     which build is running and see where the time goes when returning to
- *     the tab.
- *
- * Samples: "rubik cube turn" series by spacejoe on Freesound (see
+ *     the inspection cues and PB fanfare use.   *   • Fully lazy: no fetch / AudioContext work happens until the first play
+   *     or an explicit `preload()`, so SSR, tests and users who never open the
+   *     replay/virtual cube pay zero cost.
+   *   • The AudioContext itself is created lazily on the FIRST user gesture
+   *     (never on mount): creating one before any interaction leaves it
+   *     autoplay-blocked and Chrome logs "The AudioContext was not allowed to
+   *     start". `preload()` only warms the fetch of the sample bytes; the
+   *     context + decode happen the moment the user first interacts.
+   *
+   * Samples: "rubik cube turn" series by spacejoe on Freesound (see
  * `assets/sounds/README.md` for the attribution/rename table).
  */
 
@@ -91,23 +91,6 @@ import turn4Url from '@/assets/sounds/turn-4.wav';
  * The listeners self-remove after the first gesture.
  */
 const UNLOCK_GESTURES = ['pointerdown', 'mousedown', 'touchstart', 'keydown', 'click'] as const;
-
-/**
- * Playback volume of the warm-keep loop, as a fraction of the sample's own
- * level. The loop is a real (non-muted) turn sample so the OS audio device
- * stays open — see `ensureWarmKeep()`. Kept very low so it is essentially
- * inaudible; bump only if a given platform drops it below Chromium's silence
- * threshold and the device closes again.
- */
-const WARM_KEEP_VOLUME = 0.02;
-
-/**
- * Marker printed once per page load so a dev can confirm the deterministic
- * resume build is the one actually running (PWA service workers can serve a
- * stale bundle until a hard reload).
- */
-const ARMED_LOG =
-  '[CubeTurnSounds v6] deterministic resume armed: warm-keep media loop keeps the OS audio device open (YouTube-style) + clock-gated playback + gesture-gated hooks; state transitions + resume rejections are logged';
 
 /** Window/document shape used by the resume hooks (browser + test stubs). */
 type AudioRoot = {
@@ -128,8 +111,13 @@ export class CubeTurnSounds {
   private buffers: (AudioBuffer | null)[] = [];
   /** Index of the last source actually played (or picked by the test helper). */
   private lastSourceIndex = -1;
-  /** Whether the fetch + decode pass has already been kicked off. */
+  /** Whether the fetch pass has already been kicked off. */
   private loadingStarted = false;
+  /** Fetched sample bytes, in source order (null = fetch failed). Decoded
+   *  once the AudioContext exists (created on the first user gesture). */
+  private rawBuffers: (ArrayBuffer | null)[] = [];
+  /** Whether decode of every fetched sample has been started (idempotent). */
+  private decodeStarted = false;
   /** Whether the fetch + decode pass has settled (failed samples = null). */
   private decodeDone = false;
   /**
@@ -165,27 +153,22 @@ export class CubeTurnSounds {
   private resumeInFlight = false;
   /** Whether the one-time gesture listeners are already attached. */
   private resumeHooksArmed = false;
-  /** Last observed context state, for the state-transition diagnostic log. */
-  private lastState: AudioContextState | null = null;
-  /**
-   * A real (non-muted) media element looping a sample at very low volume.
-   * Keeps the OS audio device open for the whole session — the same mechanism
-   * YouTube relies on (media elements are NOT suspended when the tab is
-   * hidden, unlike Web Audio). With the device warm, the AudioContext resumes
-   * in ~30 ms instead of the ~0.5-1 s reopen Chromium performs after closing
-   * the device while the tab was hidden. Null until the first user gesture
-   * (autoplay policy forbids unmuted media before one).
-   */
-  private warmKeep: HTMLAudioElement | null = null;
 
   /**
-   * Create the AudioContext and start fetching + decoding every sample into
-   * an AudioBuffer. Safe to call repeatedly; the decode pass runs only once.
-   * No-op when the Web Audio API is unavailable (SSR / tests without a stub).
+   * Warm the samples: fetch every sample's bytes so the first turn after
+   * mounting never waits on the network. The AudioContext is deliberately
+   * NOT created here — creating one before any user gesture leaves it
+   * autoplay-blocked and Chrome logs "The AudioContext was not allowed to
+   * start". The context (and with it the decode) is created lazily on the
+   * first user gesture (see ensureContext / decodeBuffers). Safe to call
+   * repeatedly; the fetch pass runs only once. No-op in SSR / tests.
    */
   public preload(): void {
-    this.ensureContext();
     this.loadSamples();
+    // Attach the gesture/resume hooks NOW (they do not touch audio): the
+    // first user gesture must be able to create the context itself, so the
+    // unlock listeners cannot wait for ensureContext().
+    this.armResumeHooks();
   }
 
   /**
@@ -239,8 +222,7 @@ export class CubeTurnSounds {
    * interruption is ongoing REJECTS (and a not-allowed-to-start resume may
    * HANG — WebAudio spec #1759): the cues stay queued and the next
    * gesture / visibilitychange retries, so a click is never lost to a
-   * swallowed rejection. The successful path logs the measured latency so
-   * the audio-device reopen is visible in the console.
+   * swallowed rejection.
    */
   private resumeAndDrain(): Promise<void> {
     const ctx = this.ctx;
@@ -251,34 +233,22 @@ export class CubeTurnSounds {
     }
     // One resume at a time: while the device is reopening, further hooks and
     // turns just queue cues and wait for this settle (drainPending runs when
-    // it lands). Avoids stacking redundant resume() calls — and the autoplay
-    // console error they would each produce.
+    // it lands). Avoids stacking redundant resume() calls.
     if (this.resumeInFlight) return Promise.resolve();
     this.resumeInFlight = true;
-    const from = ctx.state;
-    const startedAt = Date.now();
     const finish = () => {
       this.resumeInFlight = false;
     };
     return ctx
       .resume()
       .then(() => {
-        console.info(
-          `[CubeTurnSounds] context resumed: ${from} → running in ${Date.now() - startedAt} ms`,
-        );
         this.drainPending();
         finish();
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         // Still blocked (no user activation) or still interrupted — the cue
-        // stays queued; the next gesture / visibilitychange retries. Log the
-        // rejection because it is the key diagnostic: 'interrupted' means JS
-        // CANNOT start the audio-device reopen (Chromium rejects resume()),
-        // so the page must wait for the browser's own auto-resume.
-        const name = error instanceof Error ? error.name : 'unknown';
-        console.warn(
-          `[CubeTurnSounds] resume() rejected while "${from}" (${name}) — cue queued, waiting for the browser to lift the interruption`,
-        );
+        // stays queued; the next gesture / visibilitychange retries, so a
+        // click is never lost to a swallowed rejection.
         finish();
       });
   }
@@ -302,8 +272,8 @@ export class CubeTurnSounds {
         source.disconnect();
         gain.disconnect();
       };
-    } catch (e) {
-      console.warn('[CubeTurnSounds] Could not play turn sound:', e);
+    } catch {
+      // A sample that failed to decode or start stays silent; the rest play.
     }
   }
 
@@ -365,19 +335,42 @@ export class CubeTurnSounds {
     poll();
   }
 
-  /** Fetch + decode every sample into an AudioBuffer (idempotent). */
+  /** Fetch every sample's bytes (idempotent); decode once a context exists. */
   private loadSamples(): void {
     if (this.loadingStarted) return;
     this.loadingStarted = true;
-    const ctx = this.ctx;
-    if (!ctx) return;
 
     void Promise.all(
       this.sources.map(async (url, i) => {
         try {
           const response = await fetch(url);
-          const arrayBuffer = await response.arrayBuffer();
-          this.buffers[i] = await ctx.decodeAudioData(arrayBuffer);
+          this.rawBuffers[i] = await response.arrayBuffer();
+        } catch {
+          this.buffers[i] = null; // a failed sample stays silent; the rest play
+        }
+      }),
+    ).then(() => {
+      this.decodeBuffers();
+    });
+  }
+
+  /**
+   * Decode every fetched sample into an AudioBuffer. No-op until the
+   * AudioContext exists — which only happens on the first user gesture, so
+   * the decode is never run before the browser allows audio. Idempotent.
+   */
+  private decodeBuffers(): void {
+    if (this.decodeStarted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (!this.rawBuffers.some((raw) => raw !== null && raw !== undefined)) return;
+    this.decodeStarted = true;
+
+    void Promise.all(
+      this.rawBuffers.map(async (raw, i) => {
+        if (!raw || this.buffers[i]) return;
+        try {
+          this.buffers[i] = await ctx.decodeAudioData(raw);
         } catch {
           this.buffers[i] = null; // a failed sample stays silent; the rest play
         }
@@ -419,11 +412,6 @@ export class CubeTurnSounds {
         // eager resume here starts the device reopen the moment the user
         // returns to the tab.
         if (!doc.hidden && this.everRan) {
-          // If the browser ever paused the warm-keep loop (some platforms
-          // suspend background media after a long idle), restart it so the
-          // device reopens immediately on return rather than on the first
-          // turn.
-          this.restartWarmKeepIfPaused();
           void this.resumeAndDrain();
         }
       });
@@ -442,11 +430,15 @@ export class CubeTurnSounds {
       root.addEventListener('mousemove', onMove, { passive: true });
 
       // The FIRST real gesture (pointer/key/touch/click) unlocks the
-      // autoplay-suspended context created by `preload()` before any
-      // interaction, starts the warm-keep loop (autoplay policy forbids
-      // unmuted media before a gesture), and self-removes afterwards.
+      // autoplay-suspended context and self-removes afterwards. (No
+      // warm-keep media loop: the background audio it played to keep the OS
+      // device open was audible and annoying — the turn sounds now simply
+      // wait for the clock-gated resume on the first turn after a pause.)
       const unlock = () => {
-        this.ensureWarmKeep();
+        // Create the context inside the gesture itself (autoplay policy —
+        // creating it on mount would leave it blocked and log a console
+        // warning), then decode the pre-warmed bytes.
+        this.ensureContext();
         void this.resumeAndDrain();
         for (const type of UNLOCK_GESTURES) {
           root.removeEventListener(type, unlock);
@@ -456,45 +448,6 @@ export class CubeTurnSounds {
         root.addEventListener(type, unlock, { passive: true });
       }
     }
-
-    console.info(ARMED_LOG);
-  }
-
-  /**
-   * Start the warm-keep loop: a real (non-muted) media element looping one of
-   * the turn samples at low volume. This keeps the OS audio device open for
-   * the whole session — media elements are NOT suspended when the tab is
-   * hidden (that is exactly why YouTube keeps playing in the background),
-   * whereas Web Audio's AudioContext IS suspended and Chromium closes the
-   * device, which is why returning to the tab and turning the cube used to
-   * pay a ~0.5-1 s reopen. With the device warm, resume() and the first cue
-   * are near-instant. Started on the first user gesture (autoplay policy
-   * forbids unmuted media before one); no-op where media elements are
-   * unavailable (SSR / tests without an Audio stub).
-   */
-  private ensureWarmKeep(): void {
-    if (this.warmKeep || typeof Audio === 'undefined') return;
-    // Reuse a decoded sample URL (bundled asset) as the loop source.
-    const el = new Audio();
-    el.loop = true;
-    el.preload = 'auto';
-    el.volume = WARM_KEEP_VOLUME;
-    el.src = this.sources[0];
-    this.warmKeep = el;
-    // Best effort: if the gesture is somehow not enough (or the element is
-    // evicted), the loop stays paused and the visibilitychange hook retries.
-    void el.play().catch(() => {});
-    console.info('[CubeTurnSounds] warm-keep audio loop started — OS device kept open');
-  }
-
-  /**
-   * Restart the warm-keep loop if the browser paused it (some platforms
-   * suspend background media after a long idle). Called on tab return, so the
-   * device reopen starts before the user reaches the cube.
-   */
-  private restartWarmKeepIfPaused(): void {
-    const el = this.warmKeep;
-    if (el && el.paused) void el.play().catch(() => {});
   }
 
   private getRoot(): AudioRoot {
@@ -514,26 +467,21 @@ export class CubeTurnSounds {
       // Context creation can fail (browser limit / unavailable) — stay silent.
       return null;
     }
-    // Log every state transition (low-frequency) so the suspended-vs-
-    // interrupted asymmetry is visible in the console, and drain any queued
-    // cues the moment the context comes back to `running` — via our
-    // resume(), a user-gesture unlock, or the browser's own auto-resume when
-    // the tab returns. drainPending itself is clock-gated, so firing into a
-    // frozen clock never happens.
-    this.lastState = this.ctx.state;
+    // Drain any queued cues the moment the context comes back to `running` —
+    // via our resume(), a user-gesture unlock, or the browser's own
+    // auto-resume when the tab returns. drainPending itself is clock-gated,
+    // so firing into a frozen clock never happens.
     this.ctx.onstatechange = () => {
-      const state = this.ctx?.state;
-      if (state && state !== this.lastState) {
-        console.info(`[CubeTurnSounds] context state: ${this.lastState} → ${state}`);
-        this.lastState = state;
-      }
-      if (state === 'running') {
+      if (this.ctx?.state === 'running') {
         // Reaching 'running' means a user gesture unlocked the context — from
         // then on the non-gesture hooks may resume eagerly.
         this.everRan = true;
         this.drainPending();
       }
     };
+    // The context exists only from the first user gesture, so the decode of
+    // the pre-warmed bytes can (and should) start right away.
+    this.decodeBuffers();
     this.armResumeHooks();
     return this.ctx;
   }
