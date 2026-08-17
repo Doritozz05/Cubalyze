@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { HelpCircle, RotateCcw, Shuffle } from "lucide-react";
@@ -183,15 +183,7 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
   // does with the physical cube's gyroscope.
   const scrambleFollowsCube = useStore(preferencesStore, (s) => s.scrambleFollowsCube);
 
-  const [scramble, setScramble] = useState(() => {
-    const initial = generateScrambleFor(puzzle);
-    // Publish to the widget host immediately so the scramble-2d widget never
-    // flashes a solved cube on first visit to the Cube tab (the store write
-    // inside the lazy view's render happens before StageOverlays' next
-    // read via its subscription).
-    useVirtualScrambleStore.getState().setScramble(initial);
-    return initial;
-  });
+  const [scramble, setScramble] = useState(() => generateScrambleFor(puzzle));
   const [showHelp, setShowHelp] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
@@ -268,8 +260,15 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
 
   // Share the current scramble with the floating widgets while the Cube view
   // is active — each view owns an independent scramble lifecycle, so the
-  // host reads THIS value (not the real timer's) on the Cube tab.
-  useEffect(() => {
+  // host reads THIS value (not the real timer's) on the Cube tab. Layout
+  // effect (not render, not passive): the scramble-2d widget must never
+  // flash a solved cube on first visit, and the old store write inside the
+  // useState initializer triggered React's "Cannot update a component
+  // (StageOverlays) while rendering a different component
+  // (CubeSimulatorCore)" warning — updating another component during render
+  // is forbidden. A layout effect publishes before the first paint with no
+  // warning.
+  useLayoutEffect(() => {
     useVirtualScrambleStore.getState().setScramble(scramble);
   }, [scramble]);
 
