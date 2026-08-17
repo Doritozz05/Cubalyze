@@ -276,6 +276,25 @@ export function useVirtualCubeSession(
     }
   }, [validation.isScrambled, engine]);
 
+  // ── Scramble-button re-seed re-arms the edge detector ──────────────────
+  // The Scramble button (handleScrambleNow) resets the validator and feeds
+  // every scramble move inside ONE synchronous event handler. React 18
+  // batches those renders, so on the SECOND press the auto-arm effect above
+  // only ever observes isScrambled true → true — the intermediate false dip
+  // is never rendered, `justScrambled` stays false, and the engine is never
+  // re-armed (first move after the second press finds IDLE, not
+  // READY_FOR_MOVE → the timer never starts). The physical timer never hits
+  // this: its scramble moves arrive over BLE with real async gaps between
+  // renders. The reset$ emission happens synchronously BEFORE the move feed,
+  // so clearing the edge detector here makes every press behave like the
+  // first. (The validator consumes the same signal to re-seed its state.)
+  useEffect(() => {
+    const sub = adapter.reset$?.subscribe(() => {
+      wasScrambledRef.current = false;
+    });
+    return () => sub?.unsubscribe();
+  }, [adapter]);
+
   // ── A fresh scramble (regenerate / scramble button) resets the timer ───
   useEffect(() => {
     engine.reset();
