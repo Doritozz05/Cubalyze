@@ -145,8 +145,50 @@ export function AppShell(props: AppShellProps) {
   // ── Global context menu: right-click anywhere opens the menu ────────
   // Generic items are always shown. Zone-specific items (e.g. "Editar dock"
   // when right-clicking on the dock) are merged based on data-context-zone.
+  //
+  // Touch long-press also fires `contextmenu` (while the finger is still
+  // down), so track active touch pointers to tell it apart from a real
+  // mouse right-click — long-press must NOT open the app menu on tablets.
+  //
+  // The pointer listeners run in the CAPTURE phase: capture listeners on
+  // `document` fire before any element handler, so inner onPointerDown
+  // stopPropagation (dock pieces, widget drag handles, timer buttons…) can't
+  // hide a touch press from us.
   useEffect(() => {
+    let touchPressed = false;
+    const CAPTURE = true;
+    const markTouch = (active: boolean) => (e: PointerEvent) => {
+      if (e.pointerType === "touch") touchPressed = active;
+    };
+    const onPointerDown = markTouch(true);
+    const onPointerUp = markTouch(false);
+    const onPointerCancel = markTouch(false);
+    document.addEventListener("pointerdown", onPointerDown, CAPTURE);
+    document.addEventListener("pointerup", onPointerUp, CAPTURE);
+    document.addEventListener("pointercancel", onPointerCancel, CAPTURE);
+
     const handler = (e: MouseEvent) => {
+      // Fallback: some engines fire `contextmenu` for a long-press without a
+      // reliable pointerdown (e.g. long-pressing selectable text). The event's
+      // own source capabilities flag a touch origin when supported.
+      const fromTouch =
+        touchPressed ||
+        (e as MouseEvent & { sourceCapabilities?: { firesTouchEvents?: boolean } })
+          .sourceCapabilities?.firesTouchEvents === true;
+      if (fromTouch) {
+        // Long-press on touch: never open the app menu. Editable fields
+        // keep their native menu (selection / paste); everywhere else the
+        // browser menu is suppressed too — long-press just does nothing.
+        const target = e.target as HTMLElement | null;
+        const editable =
+          !!target &&
+          (target.isContentEditable ||
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT");
+        if (!editable) e.preventDefault();
+        return;
+      }
       e.preventDefault();
       // Walk up from target to find a data-context-zone (up to document)
       let zone: string | null = null;
@@ -178,7 +220,12 @@ export function AppShell(props: AppShellProps) {
       contextMenuStore.open(e.clientX, e.clientY, items);
     };
     document.addEventListener("contextmenu", handler);
-    return () => document.removeEventListener("contextmenu", handler);
+    return () => {
+      document.removeEventListener("contextmenu", handler);
+      document.removeEventListener("pointerdown", onPointerDown, CAPTURE);
+      document.removeEventListener("pointerup", onPointerUp, CAPTURE);
+      document.removeEventListener("pointercancel", onPointerCancel, CAPTURE);
+    };
   }, []);
 
   const handleOpenCube = useCallback(() => {
