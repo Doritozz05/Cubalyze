@@ -128,19 +128,22 @@ export function Header({
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
   const isDockEditing = useIsDockEditing();
 
-  // Touch/coarse-pointer regimes (phones, large tablets) have no hover, so
-  // the hover-reveal auto-hide can never be brought back once it slides away.
-  // Those devices always keep the header pinned.
+  // Phones (<768px) use the compact touch header, which stays pinned — the
+  // desktop dock autohide doesn't apply there. Large tablets (iPad >=768px)
+  // get the desktop dock too: no hover exists, so the reveal/retract runs on
+  // taps instead (see the coarse-pointer listener below).
   const isTouch = useIsTouch();
   const isCoarsePointer = useIsCoarsePointer();
 
   // ── macOS-style dock auto-hide (headerMode === 'autohide') ─────────────
-  // The glass bar slides out of view and is revealed while the pointer hovers
-  // the top edge of the viewport (the whole desktop header row acts as the
-  // reveal band). Leaving the bar/band retracts it after a short delay;
-  // editing the dock keeps it pinned.
+  // The glass bar slides out of view. On hover-capable devices it is revealed
+  // while the pointer hovers the top edge of the viewport (the whole desktop
+  // header row acts as the reveal band); leaving the bar/band retracts it
+  // after a short delay. On coarse pointers (iPad) the top band is tap-to-
+  // reveal and a tap anywhere outside the header retracts it. Editing the
+  // dock keeps it pinned in both cases.
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
-  const dockAutoHide = headerMode === "autohide" && !isTouch && !isCoarsePointer;
+  const dockAutoHide = headerMode === "autohide" && !isTouch;
   const [dockRevealed, setDockRevealed] = useState(false);
   const retractTimerRef = useRef<number | null>(null);
   // True while a floating widget is being dragged near the top strip where
@@ -179,14 +182,16 @@ export function Header({
   // Drag-to-dock reveal: while a floating widget is dragged toward the top,
   // slide the (auto-hidden) dock back down; when the drag leaves the strip or
   // ends, fall back to the normal retract delay so the dock doesn't vanish
-  // the instant the drag stops.
+  // the instant the drag stops. On coarse pointers there is no hover to
+  // re-reveal, so a drag never schedules the 6s retract — retraction there is
+  // exclusively tap-outside (see the coarse-pointer listener below).
   useEffect(() => {
     if (dragRevealRequested) {
       revealDock();
-    } else {
+    } else if (!isCoarsePointer) {
       scheduleRetract();
     }
-  }, [dragRevealRequested, revealDock, scheduleRetract]);
+  }, [dragRevealRequested, revealDock, scheduleRetract, isCoarsePointer]);
 
   // Auto-hide off, revealed by hover, or dock editing → bar always visible.
   const dockVisible = !dockAutoHide || dockRevealed || isDockEditing;
@@ -201,11 +206,13 @@ export function Header({
   // Native enter/leave listeners (React's onPointerEnter/Leave are
   // synthesized from pointerover/out pairs and can't be driven reliably, so
   // attach native pointerenter/pointerleave to the reveal band and the dock
-  // wrapper instead — identical behavior for real pointers).
+  // wrapper instead — identical behavior for real pointers). Coarse pointers
+  // (iPad) have no hover: skip these and rely on the tap listener below.
   const bandRef = useRef<HTMLDivElement>(null);
   const dockWrapRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (!dockAutoHide) return;
+    if (!dockAutoHide || isCoarsePointer) return;
     const band = bandRef.current;
     const wrap = dockWrapRef.current;
     if (!band || !wrap) return;
@@ -222,6 +229,30 @@ export function Header({
       wrap.removeEventListener("pointerleave", onLeave);
     };
   }, [dockAutoHide, revealDock, scheduleRetract]);
+
+  // Coarse pointers (iPad): no hover, so the dock reveal/retract is tap-
+  // driven — deterministic, never stuck. Tapping the (hidden) top band
+  // reveals the dock and keeps it; tapping anywhere OUTSIDE the header
+  // retracts it. Taps on dock pieces (inside the header) keep it open. Runs
+  // in the capture phase so no inner stopPropagation can hide the tap.
+  useEffect(() => {
+    if (!dockAutoHide || !isCoarsePointer) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      const header = headerRef.current;
+      if (!target || !header) return;
+      if (dockRevealed) {
+        if (!header.contains(target)) {
+          cancelRetract();
+          setDockRevealed(false);
+        }
+      } else if (header.contains(target)) {
+        revealDock();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [dockAutoHide, isCoarsePointer, dockRevealed, revealDock, cancelRetract]);
 
   useEffect(() => {
     setPuzzle(puzzleProp);
@@ -301,6 +332,7 @@ export function Header({
 
   return (
     <motion.header
+      ref={headerRef}
       initial={{ y: "-100%", opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: "-100%", opacity: 0 }}

@@ -447,6 +447,33 @@ input[type="image"],
   padding-top: env(safe-area-inset-top);
 }
 
+/* ── Touch-only devices (no hover): pressed feedback & tap hygiene ──────
+   iPads in the desktop layout (>=768px) and phones both report
+   `(hover: none)` — Tailwind's hover: variants are already gated behind
+   (hover: hover), so on these devices there is no hover feedback at all.
+   Give interactive elements a pressed state instead, drop the browser's
+   gray tap highlight (the :active feedback replaces it), and remove the
+   double-tap-to-zoom delay via touch-action. Hover-capable devices skip
+   the whole block. */
+@media (hover: none) {
+  button:active,
+  [role="button"]:active,
+  a:active,
+  summary:active {
+    filter: brightness(0.94);
+  }
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 /* Touch regime (<768px): keep overscroll/rubber-banding from pulling the
    page past its edge (which fights the bottom tab bar and fixed sheets) and
    prevent double-tap-to-zoom delays on buttons. Desktop: untouched. */

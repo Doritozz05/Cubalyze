@@ -91,7 +91,10 @@ export function LeftSidebar({
   onCubeConnectorOpenChange,
 }: LeftSidebarProps) {
   // Touch regime (phones + small tablets <768px) renders the Sheet variant.
-  // Desktop (>=768px) keeps the hover-to-expand rail untouched.
+  // Desktop (>=768px) keeps the rail. The rail's touch interactions (tap-to-
+  // toggle, swipe open/close) are driven by the pointer TYPE (pointerType ===
+  // "touch"), not matchMedia — see the gesture block below — so they work on
+  // any touchscreen, even an iPad whose primary pointer reports as fine.
   const isTouch = useIsTouch();
   const { t } = useTranslation("nav");
   const { t: tCommon } = useTranslation();
@@ -146,6 +149,94 @@ export function LeftSidebar({
    *  - mouseenter → only expand when the last REAL pointer position is over
    *    the rail and we are outside the suppression window.
    */
+  const asideRef = useRef<HTMLElement>(null);
+
+  // ── Touch gestures on the rail (tap-to-toggle + swipe) ────────────────
+  // These are gated on the POINTER TYPE (pointerType === "touch"), NOT on
+  // matchMedia: an iPad with a trackpad/keyboard attached reports
+  // (pointer: coarse) === false, but the user still touches the screen — the
+  // gesture must work either way. Mouse pointers (desktop, trackpad) keep
+  // the hover behavior.
+  //
+  //  - swipe RIGHT (from the rail or the left edge of the screen) → open
+  //  - swipe LEFT (on the rail) → close
+  //  - tap on empty rail space → toggle
+  //  - vertical drags are left to the browser (the nav keeps scrolling)
+  // Tracking runs at the DOCUMENT level because the finger may drift off the
+  // 56px rail mid-gesture (implicit pointer capture isn't guaranteed), and a
+  // recognized swipe swallows the click that would otherwise fire on release.
+  const SWIPE_THRESHOLD = 48;
+  // Left-edge zone (px): a swipe right starting within this strip — the rail
+  // plus a small margin of the stage — opens the drawer, like a native
+  // edge-swipe drawer.
+  const SWIPE_EDGE_ZONE = 72;
+  const swipeStartRef = useRef<{ x: number; y: number; id: number } | null>(null);
+  const swipeConsumedRef = useRef(false);
+  // True when the last pointerdown ON THE RAIL was a touch (only touch taps
+  // toggle; a mouse click keeps the hover behavior).
+  const touchTapRef = useRef(false);
+  // Until this timestamp, synthetic mouseenter from a touch tap is ignored
+  // (a tap fires mouseenter too, which would re-expand a just-collapsed rail
+  // on devices whose primary pointer is fine, e.g. iPads with a trackpad).
+  const touchSuppressUntilRef = useRef(0);
+  const TOUCH_SUPPRESS_MS = 2000;
+
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      const target = e.target as Node | null;
+      const inRail = !!asideRef.current && !!target && asideRef.current.contains(target);
+      // Only gestures on the rail itself or the left edge of the screen.
+      if (!inRail && e.clientX >= SWIPE_EDGE_ZONE) return;
+      touchSuppressUntilRef.current = performance.now() + TOUCH_SUPPRESS_MS;
+      if (inRail) touchTapRef.current = true;
+      swipeStartRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      swipeConsumedRef.current = false;
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      const start = swipeStartRef.current;
+      if (!start || start.id !== e.pointerId) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      // Vertical-dominant or too short → keep letting the browser scroll.
+      if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
+      swipeStartRef.current = null;
+      swipeConsumedRef.current = true;
+      if (dx > 0) setIsHovered(true); // swipe right → open
+      else setIsHovered(false); // swipe left → close
+    };
+
+    const onPointerEnd = (e: PointerEvent) => {
+      if (swipeStartRef.current?.id === e.pointerId) swipeStartRef.current = null;
+    };
+
+    // Swallow the click after a recognized swipe anywhere in the page (the
+    // button under the finger, a stage element, the rail toggle).
+    const onClickCapture = (e: MouseEvent) => {
+      if (swipeConsumedRef.current) {
+        e.stopPropagation();
+        swipeConsumedRef.current = false;
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("pointermove", onPointerMove, true);
+    document.addEventListener("pointerup", onPointerEnd, true);
+    document.addEventListener("pointercancel", onPointerEnd, true);
+    document.addEventListener("click", onClickCapture, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("pointermove", onPointerMove, true);
+      document.removeEventListener("pointerup", onPointerEnd, true);
+      document.removeEventListener("pointercancel", onPointerEnd, true);
+      document.removeEventListener("click", onClickCapture, true);
+    };
+  }, []);
+
+  // Hover is impossible on touch without a cursor, but it must stay enabled
+  // for fine-pointer devices (desktop, iPads with a trackpad) — touch taps
+  // suppress the synthetic hover via touchSuppressUntilRef instead.
   useEffect(() => {
     if (isTouch) return;
 
@@ -179,8 +270,11 @@ export function LeftSidebar({
   }, [isTouch]);
 
   const handleMouseEnter = useCallback(() => {
-    // Suppress hover if a native dialog (e.g. Web Bluetooth) just closed.
+    // Suppress hover if a native dialog (e.g. Web Bluetooth) just closed, or
+    // if a touch interaction happened recently (its synthetic mouseenter
+    // must not re-expand the rail after a tap/swipe).
     if (performance.now() <= suppressExpandUntilRef.current) return;
+    if (performance.now() <= touchSuppressUntilRef.current) return;
 
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = setTimeout(() => setIsHovered(true), HOVER_DELAY);
@@ -189,6 +283,38 @@ export function LeftSidebar({
   const handleMouseLeave = useCallback(() => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = setTimeout(() => setIsHovered(false), UNHOVER_DELAY);
+  }, []);
+
+  // Tap-to-toggle: a TOUCH tap on the rail's empty area toggles the expanded
+  // state (a tap that lands on a nav/footer button is that button's own
+  // action — navigate, open dialog — and must not also collapse the rail).
+  // Mouse clicks never toggle: hover handles those. A just-recognized swipe
+  // must not toggle either (its click is swallowed at the document level).
+  const handleRailTap = useCallback((e: React.MouseEvent) => {
+    if (!touchTapRef.current) return; // mouse click — hover behavior applies
+    touchTapRef.current = false;
+    if (swipeConsumedRef.current) {
+      swipeConsumedRef.current = false;
+      return;
+    }
+    if ((e.target as HTMLElement).closest("button")) return;
+    setIsHovered((h) => !h);
+  }, []);
+
+  // Collapse when a touch tap lands outside the expanded rail (capture phase
+  // so no inner stopPropagation can hide the tap) — the touch equivalent of
+  // mouseleave. Pointer-type gated so trackpad clicks on fine-pointer devices
+  // keep the hover behavior.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      const target = e.target as Node | null;
+      if (target && asideRef.current && !asideRef.current.contains(target)) {
+        setIsHovered(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, []);
 
   const handleNavigateItem = useCallback(
@@ -236,7 +362,7 @@ export function LeftSidebar({
       <LayoutGroup>
         {/* Scrollbar hidden while the rail is collapsed (icons only) and
             shown again once it expands — see .scrollbar-none in index.css. */}
-        <nav className={cn("flex-1 overflow-y-auto px-2 py-3", !isHovered && "scrollbar-none")}>
+        <nav className={cn("flex-1 overflow-y-auto px-2 py-3 touch-pan-y", !isHovered && "scrollbar-none")}>
           {NAV_GROUPS.map((group) => (
             <div key={group.titleKey} className="mb-1">
               <SidebarGroupTitle label={t(group.titleKey)} labelVisible={labelVisible} />
@@ -373,13 +499,18 @@ export function LeftSidebar({
   return (
     <>
       <motion.aside
+        ref={asideRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={handleRailTap}
         initial={{ x: "-100%", opacity: 0 }}
         animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH, x: 0, opacity: 1 }}
         exit={{ x: "-100%", opacity: 0 }}
         transition={SIDEBAR_MOTION.panel}
-        className="fixed left-0 top-0 z-50 flex h-dvh flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
+        // touch-pan-y: the browser only owns vertical pans on the rail, so
+        // horizontal swipes (open/close) always reach the gesture handlers
+        // instead of being claimed as pans.
+        className="fixed left-0 top-0 z-50 flex h-dvh flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden touch-pan-y"
       >
         {sidebarContent}
       </motion.aside>
