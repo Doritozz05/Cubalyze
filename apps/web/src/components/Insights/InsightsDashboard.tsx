@@ -14,6 +14,7 @@ import type { SessionMeta } from "@/hooks/usePersistentSession";
 import { SolveListPanel } from "./SolveListPanel";
 import { OverviewPanel } from "./OverviewPanel";
 import { SolveAnalysisPanel } from "./SolveAnalysisPanel";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   Select,
   SelectContent,
@@ -179,6 +180,8 @@ export function InsightsDashboard({
 
   // ── Selection (synced to ?solve= URL param) ────────────────────────────
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Confirmation before deleting a solve (mirrors TimerContainer/TimesList).
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   // The ?solve= URL param is the source of truth until the data pool has
   // loaded. Before that point the URL-sync effect below must never write to
@@ -246,6 +249,10 @@ export function InsightsDashboard({
     },
     [onDeleteSolve],
   );
+
+  const handleDeleteRequest = useCallback(() => {
+    setConfirmDeleteOpen(true);
+  }, []);
 
   const handleBackToOverview = useCallback(() => {
     setSelectedId(null);
@@ -409,7 +416,7 @@ export function InsightsDashboard({
                 isLive={isLive}
                 onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
                 onReanalyze={() => onReanalyze(selected)}
-                onDeleteSolve={() => handleDelete(selected.id)}
+                onDeleteSolve={handleDeleteRequest}
                 onBackToOverview={handleBackToOverview}
               />
             ) : (
@@ -444,15 +451,16 @@ export function InsightsDashboard({
                 </button>
                 <span className="truncate text-xs text-ink-3">{t("dashboard.solveDetails")}</span>
               </div>
-              {/* Scrollable content */}
-              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-safe">
+              {/* Scrollable content — top padding separates the first panel
+                  card (timestamp / badges / delete) from the sticky header. */}
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-safe">
                 <SolveAnalysisPanel
                   solve={selected}
                   liveMetrics={liveMetrics}
                   isLive={isLive}
                   onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
                   onReanalyze={() => onReanalyze(selected)}
-                  onDeleteSolve={() => handleDelete(selected.id)}
+                  onDeleteSolve={handleDeleteRequest}
                   onBackToOverview={handleBackToOverview}
                   className="px-3"
                 />
@@ -461,6 +469,19 @@ export function InsightsDashboard({
           )}
         </AnimatePresence>
       )}
+
+      {/* Confirmation before deleting a solve — shared by the desktop panel
+          and the touch detail overlay. */}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title={t("analysis.confirmDeleteTitle")}
+        description={t("analysis.confirmDeleteDescription")}
+        confirmLabel={t("analysis.delete")}
+        onConfirm={() => {
+          if (selected) handleDelete(selected.id);
+        }}
+      />
     </div>
   );
 }

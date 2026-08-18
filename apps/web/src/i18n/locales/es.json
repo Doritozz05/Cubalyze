@@ -889,6 +889,8 @@
       "manual": "Manual",
       "virtualCube": "Cubo virtual",
       "delete": "Eliminar",
+      "confirmDeleteTitle": "¿Eliminar solve?",
+      "confirmDeleteDescription": "Esta acción no se puede deshacer.",
       "reanalyze": "Reanalizar",
       "reanalyzing": "Analizando…",
       "reanalyzeTooltip": "Volver a ejecutar el pipeline de análisis sobre esta resolución",

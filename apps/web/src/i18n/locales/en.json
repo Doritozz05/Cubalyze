@@ -889,6 +889,8 @@
       "manual": "Manual",
       "virtualCube": "Virtual cube",
       "delete": "Delete",
+      "confirmDeleteTitle": "Delete solve?",
+      "confirmDeleteDescription": "This action cannot be undone.",
       "reanalyze": "Re-analyze",
       "reanalyzing": "Analyzing…",
       "reanalyzeTooltip": "Re-run the analysis pipeline on this solve",
