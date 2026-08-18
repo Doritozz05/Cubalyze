@@ -460,6 +460,16 @@ input[type="image"],
   a {
     touch-action: manipulation;
   }
+  /* Hide scrollbars on touch: mobile scrolling is gesture-driven and native
+     overlays/scroll affordances replace the visible thumbs — the styled 6px
+     bars above would only clutter the stage. Scrolling still works. */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* legacy Edge/IE */
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ── Widget mount & expansion animations ────────────────────────────────
