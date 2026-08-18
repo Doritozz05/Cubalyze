@@ -352,6 +352,17 @@
   }
 }
 
+/* Hide scrollbars on the COLLAPSED sidebar rail (icons only) — a bar floating
+   on the narrow strip looks broken. The expanded rail (labels visible)
+   shows them again. Unlayered so it beats the styled base rules above. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Custom cursors ─────────────────────────────────────────────────────
    Classic DMZ cursor suite with inverted colors (white fill, black outline).
    Provides crisp contrast and affordances across all UI elements. */

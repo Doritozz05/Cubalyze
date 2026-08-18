@@ -234,7 +234,9 @@ export function LeftSidebar({
 
       {/* Nav items */}
       <LayoutGroup>
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
+        {/* Scrollbar hidden while the rail is collapsed (icons only) and
+            shown again once it expands — see .scrollbar-none in index.css. */}
+        <nav className={cn("flex-1 overflow-y-auto px-2 py-3", !isHovered && "scrollbar-none")}>
           {NAV_GROUPS.map((group) => (
             <div key={group.titleKey} className="mb-1">
               <SidebarGroupTitle label={t(group.titleKey)} labelVisible={labelVisible} />
@@ -377,7 +379,7 @@ export function LeftSidebar({
         animate={{ width: isHovered ? EXPANDED_WIDTH : COLLAPSED_WIDTH, x: 0, opacity: 1 }}
         exit={{ x: "-100%", opacity: 0 }}
         transition={SIDEBAR_MOTION.panel}
-        className="fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
+        className="fixed left-0 top-0 z-50 flex h-dvh flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden"
       >
         {sidebarContent}
       </motion.aside>
