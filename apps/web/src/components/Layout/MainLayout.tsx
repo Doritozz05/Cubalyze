@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
+import { useDockBarState } from "@/widgets/dock/dockZoneState";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { PuzzleCategory, Solve } from "@/types";
 
@@ -119,6 +120,11 @@ export function MainLayout({
   // header's z-60 can rise above the body-portaled edit backdrop (z-50);
   // otherwise the z-1 wrapper traps the header and the blur covers the dock.
   const isDockEditing = useIsDockEditing();
+  // Desktop dock bar visibility (auto-hide header). While the dock is
+  // retracted the reserved top padding collapses to zero so the stage flows
+  // up into the freed strip; it grows back when the dock slides down.
+  const dockBar = useDockBarState();
+  const dockBarHidden = dockBar.autohide && !dockBar.visible;
 
   // Track viewport width and height so the cube panel can derive responsive bounds
   const [vw, setVw] = useState(() =>
@@ -304,7 +310,14 @@ export function MainLayout({
         // iOS top safe-area so the header (which grows on iOS) never overlaps.
         // When the header is hidden, keep only the safe-area inset on touch so
         // content never sits under the iOS status bar.
-        !isFocused && !hideHeader && "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-14",
+        // In desktop auto-hide mode the reserved height animates with the
+        // dock: 3.5rem while revealed, 0 while retracted (content fills the
+        // strip instead of leaving an empty gap).
+        "transition-[padding-top] duration-500 ease-out",
+        !isFocused && !hideHeader && cn(
+          "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))]",
+          dockBarHidden ? "lg:pt-0" : "lg:pt-14",
+        ),
         !isFocused && hideHeader && "max-lg:pt-safe",
         // Rail padding only where the desktop rail actually renders (>=768px).
         // Phones + small tablets (<768px) use the touch regime with the bottom tab bar.
@@ -344,6 +357,12 @@ export function MainLayout({
             id="timer-section"
             className={cn(
               "flex min-h-0 flex-col min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-out",
+              // Mobile: when the timer stage (scramble + timer + bottom layout
+              // strip) is taller than the space between header and tab bar,
+              // let the stage scroll instead of clipping the strip into the
+              // bottom bar. Only the timer view — every other view owns its
+              // own scroll surface.
+              activeView === "timer" && "max-lg:overflow-y-auto",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
               hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
               isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50" : ""
@@ -368,7 +387,12 @@ export function MainLayout({
               }}
               className={cn(
                 "relative flex shrink-0 flex-col bg-surface overflow-hidden border-line border-t lg:border-l rounded-tl-xl max-lg:rounded-t-xl",
-                !isFocused && "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]",
+                // When the dock is retracted the stage runs edge-to-edge, so
+                // the cube panel stretches to the full viewport height too.
+                !isFocused &&
+                  (dockBarHidden
+                    ? "lg:sticky lg:top-0 lg:h-dvh"
+                    : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"),
                 cubeShown && "min-h-0",
                 !rightVisible && "pointer-events-none",
               )}

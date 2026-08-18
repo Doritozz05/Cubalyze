@@ -14,7 +14,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
-import { useIsTouch } from "@/hooks/use-mobile";
+import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimerContainerProps {
@@ -94,9 +94,13 @@ export function TimerContainer({
 }: TimerContainerProps) {
   const { t } = useTranslation("timer");
   const isTouch = useIsTouch();
+  const isCoarsePointer = useIsCoarsePointer();
   const hasBackgroundImage = !!useStore(preferencesStore, (s) => s.timerBackgroundImage);
-  // Touch devices always enable click/tap to start & stop because there is no keyboard.
-  const activeClickToStart = clickToStart || isTouch;
+  // Touch devices always enable click/tap to start & stop because there is no
+  // keyboard. The coarse-pointer check extends that to large tablets (iPads
+  // >=768px) that render the desktop layout — they have no hover either, so
+  // click-to-stop stays reachable. Fine-pointer desktops keep the setting.
+  const activeClickToStart = clickToStart || isTouch || isCoarsePointer;
 
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteInput, setNoteInput] = useState("");
@@ -200,9 +204,11 @@ export function TimerContainer({
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
         "group relative flex w-full flex-col items-center justify-center rounded-lg transition-all duration-300 select-none",
-        // Touch (<768px): taller timer so the numbers dominate the stage and
-        // stay thumb-friendly. Desktop formula unchanged.
-        "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(340px,48vh,520px)]",
+        // Touch (<768px): the timer stays thumb-friendly but compact enough
+        // that scramble + timer + bottom layout strip fit between the header
+        // and the bottom tab bar on small phones (the stage also scrolls as a
+        // fallback — see MainLayout). Desktop formula unchanged.
+        "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(280px,38vh,440px)]",
         // Kill double-tap zoom delay on touch; no effect on mouse.
         "touch-manipulation",
         !activeClickToStart && "cursor-default",

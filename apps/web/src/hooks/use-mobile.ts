@@ -34,3 +34,34 @@ export function useIsTouch() {
 
   return isTouch
 }
+
+/**
+ * True when the device's PRIMARY pointer is a coarse one (touchscreen) —
+ * regardless of viewport width.
+ *
+ * This is how we tell a large tablet (iPad >=768px, which gets the desktop
+ * layout) apart from a real desktop: an iPad reports `(pointer: coarse)`
+ * while a desktop with a mouse reports `(pointer: fine)`, so UI that needs
+ * a touch affordance (e.g. click-to-stop on the timer) can switch on for
+ * tablets without changing desktop behavior. OS sniffing is not used:
+ * iPadOS deliberately reports "MacIntel" in its user agent.
+ *
+ * Initialised synchronously so the first render already matches the device.
+ */
+export function useIsCoarsePointer() {
+  const [isCoarse, setIsCoarse] = React.useState<boolean>(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches
+  )
+
+  React.useEffect(() => {
+    const mql = window.matchMedia("(pointer: coarse)")
+    const onChange = () => setIsCoarse(mql.matches)
+    mql.addEventListener("change", onChange)
+    setIsCoarse(mql.matches)
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+
+  return isCoarse
+}

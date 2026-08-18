@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
-import { useDockRevealRequested } from "@/widgets/dock/dockZoneState";
+import { dockBarState, useDockRevealRequested } from "@/widgets/dock/dockZoneState";
 import { BatteryIcon } from "@/components/Hardware/BatteryIcon";
 import {
   BatteryPiece,
@@ -27,7 +27,7 @@ import {
 import { WidgetExplorer } from "@/widgets/explorer";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
-import { useIsTouch } from "@/hooks/use-mobile";
+import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { MobileSessionSheet } from "./MobileSessionSheet";
@@ -128,13 +128,19 @@ export function Header({
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(puzzleProp);
   const isDockEditing = useIsDockEditing();
 
+  // Touch/coarse-pointer regimes (phones, large tablets) have no hover, so
+  // the hover-reveal auto-hide can never be brought back once it slides away.
+  // Those devices always keep the header pinned.
+  const isTouch = useIsTouch();
+  const isCoarsePointer = useIsCoarsePointer();
+
   // ── macOS-style dock auto-hide (headerMode === 'autohide') ─────────────
   // The glass bar slides out of view and is revealed while the pointer hovers
   // the top edge of the viewport (the whole desktop header row acts as the
   // reveal band). Leaving the bar/band retracts it after a short delay;
   // editing the dock keeps it pinned.
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
-  const dockAutoHide = headerMode === "autohide";
+  const dockAutoHide = headerMode === "autohide" && !isTouch && !isCoarsePointer;
   const [dockRevealed, setDockRevealed] = useState(false);
   const retractTimerRef = useRef<number | null>(null);
   // True while a floating widget is being dragged near the top strip where
@@ -185,6 +191,13 @@ export function Header({
   // Auto-hide off, revealed by hover, or dock editing → bar always visible.
   const dockVisible = !dockAutoHide || dockRevealed || isDockEditing;
 
+  // Publish the bar's state to the shell so MainLayout can free the reserved
+  // top space while the dock is retracted (content fills the strip instead of
+  // leaving it empty) and grow it back when the dock slides down.
+  useEffect(() => {
+    dockBarState.set(dockAutoHide, dockVisible);
+  }, [dockAutoHide, dockVisible]);
+
   // Native enter/leave listeners (React's onPointerEnter/Leave are
   // synthesized from pointerover/out pairs and can't be driven reliably, so
   // attach native pointerenter/pointerleave to the reveal band and the dock
@@ -215,7 +228,6 @@ export function Header({
   }, [puzzleProp]);
   // Touch regime: the dock collapses into a single "Widgets" button that
   // opens the explorer (desktop uses the LeftSidebar-owned explorer).
-  const isTouch = useIsTouch();
   const { t } = useTranslation("shell");
   const { t: tCommon } = useTranslation();
   const [widgetsOpen, setWidgetsOpen] = useState(false);
@@ -304,6 +316,10 @@ export function Header({
         // bar stays crisp above the body-portaled edit backdrop (z-50).
         "fixed inset-x-0 lg:left-14 top-0 z-20",
         isDockEditing && "z-60",
+        // While retracted, the (transparent) header must not swallow clicks
+        // aimed at the stage content that now fills the top strip — only the
+        // thin reveal band below stays interactive.
+        dockAutoHide && !dockVisible && "pointer-events-none",
         "max-lg:border-b max-lg:bg-surface",
         "max-lg:h-[calc(3.5rem+env(safe-area-inset-top))] lg:h-14",
         className,
@@ -316,7 +332,17 @@ export function Header({
       {/* The desktop header row doubles as the reveal band when the dock is
           in auto-hide mode: hovering it (mostly empty while retracted)
           slides the bar back down. */}
-      <div ref={bandRef} className="relative hidden h-full w-full items-center lg:flex">
+      <div
+        ref={bandRef}
+        className={cn(
+          "relative hidden w-full items-center lg:flex",
+          // Retracted: collapse the hover zone to a thin strip along the top
+          // edge (the reveal line's band) so the rest of the header area lets
+          // clicks through to the stage. Revealed: the full row is the hover
+          // band, matching the pre-existing behavior.
+          dockAutoHide && !dockVisible ? "pointer-events-auto h-7" : "h-full",
+        )}
+      >
         <div className="absolute left-4 top-1/2 -translate-y-1/2 sm:left-6">
           <BatteryStatusChip />
         </div>

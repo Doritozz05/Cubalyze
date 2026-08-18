@@ -177,3 +177,62 @@ export function useDockRevealRequested(): boolean {
     dockRevealState.getSnapshot,
   );
 }
+
+// ── Dock bar visibility (auto-hide header) ─────────────────────────────
+
+/** Snapshot of the desktop dock bar's visibility state. */
+export interface DockBarState {
+  /** True when the header is in `autohide` mode (dock can slide away). */
+  autohide: boolean;
+  /** True when the dock bar is currently revealed/pinned. */
+  visible: boolean;
+}
+
+let _dockBar: DockBarState = { autohide: false, visible: true };
+const dockBarListeners = new Set<() => void>();
+
+function notifyDockBar() {
+  dockBarListeners.forEach((fn) => fn());
+}
+
+/**
+ * Lightweight signal from the Header to the shell layout.
+ *
+ * The Header knows whether the glass dock is auto-hiding (and whether it is
+ * currently revealed), but the reserved top padding lives on the shell
+ * wrapper in MainLayout. Publishing that here lets the shell collapse the
+ * padding to zero while the dock is retracted — the stage content flows up
+ * into the freed strip instead of leaving an empty 56px gap — and grow it
+ * back when the dock slides down. Defaults to a visible, non-auto-hiding
+ * bar so the first paint reserves the header space.
+ */
+export const dockBarState = {
+  get snapshot(): DockBarState {
+    return _dockBar;
+  },
+  set(autohide: boolean, visible: boolean) {
+    if (_dockBar.autohide === autohide && _dockBar.visible === visible) return;
+    _dockBar = { autohide, visible };
+    notifyDockBar();
+  },
+  subscribe(fn: () => void) {
+    dockBarListeners.add(fn);
+    return () => {
+      dockBarListeners.delete(fn);
+    };
+  },
+  getSnapshot() {
+    return _dockBar;
+  },
+};
+
+/**
+ * React hook: current dock bar visibility (auto-hide on + retracted?), used
+ * by MainLayout to reserve (or free) the header's vertical space.
+ */
+export function useDockBarState(): DockBarState {
+  return useSyncExternalStore(
+    dockBarState.subscribe,
+    dockBarState.getSnapshot,
+  );
+}
