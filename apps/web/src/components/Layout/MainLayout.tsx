@@ -312,8 +312,10 @@ export function MainLayout({
         // content never sits under the iOS status bar.
         // In desktop auto-hide mode the reserved height animates with the
         // dock: 3.5rem while revealed, 0 while retracted (content fills the
-        // strip instead of leaving an empty gap).
-        "transition-[padding-top] duration-500 ease-out",
+        // strip instead of leaving an empty gap). Focus mode, in contrast,
+        // collapses the header space DIRECTLY (no slide) so the timer snaps
+        // to its full size without any in-between animation.
+        !isFocused && "transition-[padding-top] duration-500 ease-out",
         !isFocused && !hideHeader && cn(
           "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))]",
           dockBarHidden ? "lg:pt-0" : "lg:pt-14",
