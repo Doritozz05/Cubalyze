@@ -365,7 +365,11 @@ export function MainLayout({
               activeView === "timer" && "max-lg:overflow-y-auto",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
               hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
-              isFocused ? "items-center justify-center h-screen w-screen absolute inset-0 z-50" : ""
+              // Keep the stage in normal flow while focused so the header
+              // padding collapse animates smoothly instead of snapping the
+              // section from static to absolute (position/auto-height are
+              // not animatable, so `absolute inset-0` teleported the timer).
+              isFocused ? "relative z-50 items-center justify-center" : ""
             )}
           >
             {main}

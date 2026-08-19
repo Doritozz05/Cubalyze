@@ -178,11 +178,14 @@ export function TimerStage(props: TimerStageProps) {
     <>
       <AnimatePresence mode="wait">
         {scrambleElement && !embedScramble ? (
+          // No exit animation: in focus mode the scramble must leave the
+          // layout instantly so the timer fills the stage immediately. An
+          // animated exit keeps its layout slot for ~250ms, which made the
+          // timer appear clipped at the top and then suddenly grow.
           <motion.div
             key="scramble-display-container"
             initial={{ y: "-100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-100%", opacity: 0 }}
             transition={SIDEBAR_MOTION.panel}
             className="w-full"
           >
