@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, MessageSquare, Check, Pencil, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
@@ -32,6 +32,8 @@ export interface SolveAnalysisPanelProps {
   /** Re-run the analysis pipeline on this solve (returns when finished). */
   onReanalyze?: () => Promise<void>;
   onDeleteSolve: () => void;
+  /** Open the "Move to another session" dialog for this solve. */
+  onMoveSolve?: () => void;
   onBackToOverview: () => void;
   className?: string;
 }
@@ -72,6 +74,7 @@ export function SolveAnalysisPanel({
   onUpdateSolve,
   onReanalyze,
   onDeleteSolve,
+  onMoveSolve,
   onBackToOverview,
   className,
 }: SolveAnalysisPanelProps) {
@@ -132,12 +135,12 @@ export function SolveAnalysisPanel({
       </button>
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-line bg-surface px-5 py-3">
-        <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 rounded-lg border border-line bg-surface px-5 py-3">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <span className="nums text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
             {formatTimestampFull(solve.timestamp)}
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -179,7 +182,7 @@ export function SolveAnalysisPanel({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {canReanalyze && (
             <Button
               variant="ghost"
@@ -191,6 +194,17 @@ export function SolveAnalysisPanel({
             >
               <RotateCcw className={cn("size-3", isReanalyzing && "animate-spin")} />
               {isReanalyzing ? t("analysis.reanalyzing") : t("analysis.reanalyze")}
+            </Button>
+          )}
+          {onMoveSolve && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMoveSolve}
+              className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-ink"
+            >
+              <FolderInput className="size-3" />
+              {t("analysis.moveToSession")}
             </Button>
           )}
           <Button

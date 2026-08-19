@@ -15,6 +15,7 @@ import { SolveListPanel } from "./SolveListPanel";
 import { OverviewPanel } from "./OverviewPanel";
 import { SolveAnalysisPanel } from "./SolveAnalysisPanel";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { MoveToSessionDialog } from "./MoveToSessionDialog";
 import {
   Select,
   SelectContent,
@@ -32,8 +33,6 @@ export interface InsightsDashboardProps {
   fetchSessionSolves: (sessionId: string) => Promise<Solve[]>;
   /** Active session ID — used to pre-select in the dropdown. */
   activeSessionId: string | null;
-  /** Switch the active session (selecting a non-active session in the dropdown). */
-  onSwitchSession?: (id: string) => void;
   /** Personal best across the active session. */
   pb?: number;
   /** Pending analysis from the just-completed live solve. */
@@ -44,6 +43,8 @@ export interface InsightsDashboardProps {
   /** Re-run the analysis pipeline on a stored solve. */
   onReanalyze: (solve: Solve) => Promise<void>;
   onDeleteSolve: (id: string) => void;
+  /** Move solves to another session (batch). */
+  onMoveSolves: (ids: string[], targetSessionId: string) => void;
   className?: string;
 }
 
@@ -69,13 +70,13 @@ export function InsightsDashboard({
   sessions,
   fetchSessionSolves,
   activeSessionId,
-  onSwitchSession,
   pb,
   pendingAnalysis,
   sessionId,
   onUpdateSolve,
   onReanalyze,
   onDeleteSolve,
+  onMoveSolves,
   className,
 }: InsightsDashboardProps) {
   const { t } = useTranslation("insights");
@@ -144,15 +145,18 @@ export function InsightsDashboard({
     };
   }, [selectedSession, sessions, fetchSessionSolves, activeSessionId, solves]);
 
-  // Determine the data pool to filter from
+  // Determine the data pool to filter from. Dedupes by id as a safety net:
+  // move+session-switch races could otherwise surface the same solve twice
+  // (the hook now guards the race itself; this keeps the UI honest anyway).
   const dataPool = useMemo(() => {
-    if (selectedSession === null) {
-      return allSessionSolves ?? [];
-    }
-    if (selectedSession === activeSessionId) {
-      return solves;
-    }
-    return specificSessionSolves ?? [];
+    const base =
+      selectedSession === null
+        ? (allSessionSolves ?? [])
+        : selectedSession === activeSessionId
+          ? solves
+          : (specificSessionSolves ?? []);
+    const seen = new Set<string>();
+    return base.filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
   }, [selectedSession, allSessionSolves, specificSessionSolves, solves, activeSessionId]);
 
   const { filters, setFilters, filtered, puzzleSolves, totalCount, filteredCount, reset } =
@@ -182,6 +186,14 @@ export function InsightsDashboard({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Confirmation before deleting a solve (mirrors TimerContainer/TimesList).
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  // ── Selection mode (touch: long-press a solve row to enter) ────────────
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [confirmBulkDeleteOpen, setConfirmBulkDeleteOpen] = useState(false);
+  // Destination picker for moving solve(s) to another session.
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveIds, setMoveIds] = useState<string[]>([]);
 
   // The ?solve= URL param is the source of truth until the data pool has
   // loaded. Before that point the URL-sync effect below must never write to
@@ -254,6 +266,73 @@ export function InsightsDashboard({
     setConfirmDeleteOpen(true);
   }, []);
 
+  // ── Selection-mode handlers ───────────────────────────────────────────
+  const handleLongPress = useCallback((id: string) => {
+    setSelectedId(null);
+    setSelection(new Set([id]));
+    setSelectionMode(true);
+  }, []);
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Leaving the mode when the last tick is removed keeps the UI from
+  // hanging in an empty selection state — but only after something was
+  // selected: the "Select" button enters with an empty selection on purpose.
+  const hadSelectionRef = useRef(false);
+  useEffect(() => {
+    if (selection.size > 0) hadSelectionRef.current = true;
+    if (selectionMode && selection.size === 0 && hadSelectionRef.current) {
+      hadSelectionRef.current = false;
+      setSelectionMode(false);
+    }
+  }, [selectionMode, selection]);
+
+  const handleEnterSelection = useCallback(() => {
+    hadSelectionRef.current = false;
+    setSelection(new Set());
+    setSelectionMode(true);
+  }, []);
+
+  const handleExitSelection = useCallback(() => {
+    hadSelectionRef.current = false;
+    setSelectionMode(false);
+    setSelection(new Set());
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selection.size === filtered.length) {
+      handleExitSelection();
+      return;
+    }
+    setSelection(new Set(filtered.map((s) => s.id)));
+  }, [selection.size, filtered, handleExitSelection]);
+
+  const handleBulkDeleteConfirm = useCallback(() => {
+    selection.forEach((id) => handleDelete(id));
+    handleExitSelection();
+  }, [selection, handleDelete, handleExitSelection]);
+
+  const handleMoveRequest = useCallback((ids: string[]) => {
+    setMoveIds(ids);
+    setMoveOpen(true);
+  }, []);
+
+  const handleMoveConfirm = useCallback(
+    (targetSessionId: string) => {
+      if (moveIds.length > 0) onMoveSolves(moveIds, targetSessionId);
+      handleExitSelection();
+      setMoveIds([]);
+    },
+    [moveIds, onMoveSolves, handleExitSelection],
+  );
+
   const handleBackToOverview = useCallback(() => {
     setSelectedId(null);
   }, []);
@@ -270,17 +349,12 @@ export function InsightsDashboard({
           <Select
             value={selectedSession ?? "all"}
             onValueChange={(v) => {
-              if (v === "all") {
-                setSelectedSession(null);
-                return;
-              }
-              // Selecting a non-active session switches the active session
-              // too — the session switcher lives in the header, so this
-              // keeps switching possible when the header is hidden. (The
-              // dashboard remounts on switch and resets to "All sessions",
-              // matching header-switch behavior.)
-              if (v !== activeSessionId) onSwitchSession?.(v);
-              setSelectedSession(v);
+              // PURE FILTER: selecting a session here only filters the list.
+              // It must NOT switch the active session — the dashboard remounts
+              // when the active session changes (keyed by sessionId) and would
+              // reset the filter to "All sessions", making the click look
+              // broken. Switching lives in the dock/header switcher.
+              setSelectedSession(v === "all" ? null : v);
             }}
           >
             <SelectTrigger
@@ -395,6 +469,15 @@ export function InsightsDashboard({
           filteredCount={filteredCount}
           totalCount={totalCount}
           reset={reset}
+          selectionMode={selectionMode}
+          selection={selection}
+          onToggleSelect={handleToggleSelect}
+          onSelectAll={handleSelectAll}
+          onExitSelection={handleExitSelection}
+          onLongPress={handleLongPress}
+          onEnterSelection={handleEnterSelection}
+          onDeleteSelected={() => setConfirmBulkDeleteOpen(true)}
+          onMoveSelected={() => handleMoveRequest(Array.from(selection))}
           className={cn(
             "lg:w-85 lg:shrink-0",
             // Touch: the list is the master page (hidden while in Stats).
@@ -417,6 +500,7 @@ export function InsightsDashboard({
                 onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
                 onReanalyze={() => onReanalyze(selected)}
                 onDeleteSolve={handleDeleteRequest}
+                onMoveSolve={() => handleMoveRequest([selected.id])}
                 onBackToOverview={handleBackToOverview}
               />
             ) : (
@@ -461,6 +545,7 @@ export function InsightsDashboard({
                   onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
                   onReanalyze={() => onReanalyze(selected)}
                   onDeleteSolve={handleDeleteRequest}
+                  onMoveSolve={() => handleMoveRequest([selected.id])}
                   onBackToOverview={handleBackToOverview}
                   className="px-3"
                 />
@@ -481,6 +566,25 @@ export function InsightsDashboard({
         onConfirm={() => {
           if (selected) handleDelete(selected.id);
         }}
+      />
+
+      {/* Confirmation before bulk-deleting the selection. */}
+      <ConfirmDialog
+        open={confirmBulkDeleteOpen}
+        onOpenChange={setConfirmBulkDeleteOpen}
+        title={t("list.confirmDeleteTitle", { count: selection.size })}
+        description={t("analysis.confirmDeleteDescription")}
+        confirmLabel={t("analysis.delete")}
+        onConfirm={handleBulkDeleteConfirm}
+      />
+
+      {/* Destination picker for "Move to another session". */}
+      <MoveToSessionDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        sessions={sessions}
+        count={moveIds.length}
+        onConfirm={handleMoveConfirm}
       />
     </div>
   );

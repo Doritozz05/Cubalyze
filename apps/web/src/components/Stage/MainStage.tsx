@@ -69,6 +69,8 @@ export interface MainStageProps {
   /** Re-run the analysis pipeline on a stored solve. */
   onReanalyze: (solve: Solve) => Promise<void>;
   onDeleteSolve: (id: string) => void;
+  /** Move solves to another session (batch). */
+  onMoveSolves: (ids: string[], targetSessionId: string) => void;
   puzzle: PuzzleCategory;
   onPuzzleChange: (puzzle: PuzzleCategory) => void;
   /** End-of-solve pipeline for the virtual cube simulator (source "virtual"). */
@@ -76,8 +78,6 @@ export interface MainStageProps {
   onNavigate: (view: ViewId) => void;
   /** Opens Settings pre-selected to the profile section. */
   onOpenSettings: () => void;
-  /** Switch the active session (also reachable from Insights). */
-  onSwitchSession: (id: string) => void;
   /** Rendered when `activeView === "timer"`. */
   timerStage: React.ReactNode;
 }
@@ -99,12 +99,12 @@ export function MainStage(props: MainStageProps) {
     onUpdateSolve,
     onReanalyze,
     onDeleteSolve,
+    onMoveSolves,
     puzzle,
     onPuzzleChange,
     onVirtualSolveComplete,
     onNavigate,
     onOpenSettings,
-    onSwitchSession,
     timerStage,
   } = props;
 
@@ -138,13 +138,13 @@ export function MainStage(props: MainStageProps) {
           sessions={sessions}
           fetchSessionSolves={fetchSessionSolves}
           activeSessionId={sessionId}
-          onSwitchSession={onSwitchSession}
           pb={currentPB ?? undefined}
           pendingAnalysis={lastAnalysis}
           sessionId={sessionId}
           onUpdateSolve={onUpdateSolve}
           onReanalyze={onReanalyze}
           onDeleteSolve={onDeleteSolve}
+          onMoveSolves={onMoveSolves}
         />
       </Suspense>
     );

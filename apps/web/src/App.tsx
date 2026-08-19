@@ -88,6 +88,7 @@ export default function App() {
     addSolve,
     updateSolve,
     deleteSolve,
+    moveSolveToSession,
     clearSession,
     importSolves,
     newSession,
@@ -235,6 +236,7 @@ export default function App() {
   const {
     handleUpdate,
     handleDelete,
+    handleMoveSolves,
     handleClear,
     handleNewSession,
     handleSwitchSession,
@@ -243,6 +245,7 @@ export default function App() {
   } = useSessionActions({
     updateSolve,
     deleteSolve,
+    moveSolveToSession,
     clearSession,
     importSolves,
     newSession,
@@ -436,6 +439,7 @@ export default function App() {
       onUpdateSolve={handleUpdate}
       onReanalyze={handleReanalyze}
       onDeleteSolve={handleDelete}
+      onMoveSolves={handleMoveSolves}
       onClear={handleClear}
       onAnalyze={handleAnalyzeSolve}
       onReplay={handleReplaySolve}

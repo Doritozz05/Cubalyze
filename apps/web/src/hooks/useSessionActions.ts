@@ -26,6 +26,8 @@ type ImportInputs = Array<{
 export interface SessionActionsDeps {
   updateSolve: (id: string, updates: { penalty?: Penalty; note?: string | null }) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
+  /** Move solves to another session. Returns the number actually moved. */
+  moveSolveToSession: (ids: string[], targetSessionId: string) => Promise<number>;
   clearSession: () => Promise<void>;
   importSolves: (inputs: ImportInputs) => Promise<number>;
   newSession: (name?: string, puzzle?: string) => Promise<void>;
@@ -50,6 +52,7 @@ export function useSessionActions(deps: SessionActionsDeps) {
   const {
     updateSolve,
     deleteSolve,
+    moveSolveToSession,
     clearSession,
     importSolves,
     newSession,
@@ -83,6 +86,21 @@ export function useSessionActions(deps: SessionActionsDeps) {
     resetTimer?.();
     clearSession().catch(() => toast.error(i18n.t("toast:clearSessionFailed")));
   }, [clearSession, resetTimer]);
+
+  const handleMoveSolves = useCallback(
+    (ids: string[], targetSessionId: string) => {
+      moveSolveToSession(ids, targetSessionId)
+        .then((moved) => {
+          if (moved <= 0) {
+            toast.info(i18n.t("toast:moveNone"));
+            return;
+          }
+          toast.success(i18n.t("toast:movedSolves", { count: moved }));
+        })
+        .catch(() => toast.error(i18n.t("toast:moveFailed")));
+    },
+    [moveSolveToSession],
+  );
 
   const handleNewSession = useCallback(() => {
     newSession(undefined, puzzleCategoryToType(puzzle))
@@ -124,6 +142,7 @@ export function useSessionActions(deps: SessionActionsDeps) {
   return {
     handleUpdate,
     handleDelete,
+    handleMoveSolves,
     handleClear,
     handleNewSession,
     handleSwitchSession,

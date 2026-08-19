@@ -58,6 +58,8 @@ export interface UsePersistentSessionResult {
   },
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
+  /** Move solves to another session. Returns the number actually moved. */
+  moveSolveToSession: (ids: string[], targetSessionId: string) => Promise<number>;
   clearSession: () => Promise<void>;
   /** Batch import solves. Returns the number of solves actually inserted. */
   importSolves: (inputs: Array<{
@@ -415,6 +417,66 @@ export function usePersistentSession(): UsePersistentSessionResult {
     ));
   }, [session]);
 
+  /**
+   * Move solves to another session (updates `session_id` in the DB and the
+   * session solve counts). Returns how many solves were actually moved —
+   * solves already in the target session are skipped.
+   */
+  const moveSolveToSession = useCallback(async (ids: string[], targetSessionId: string): Promise<number> => {
+    // IMPORTANT: read the CURRENT active session id through the ref, NOT the
+    // render-time `session` closure. The loop awaits the DB worker per solve,
+    // so the user can switch sessions mid-flight — comparing against the stale
+    // closure would push moved solves into the wrong session's live list and
+    // duplicate them (move + switch race).
+    const activeId = activeSessionIdRef.current;
+    if (!activeId || !reposRef.current || ids.length === 0) return 0;
+    const { solves: solvesRepo } = reposRef.current;
+
+    // Count deltas per source session + solves that enter/leave the ACTIVE
+    // session's live `solves` state.
+    const sourceDeltas = new Map<string, number>();
+    const movedFromActive: string[] = [];
+    const movedIntoActive: UISolve[] = [];
+    let moved = 0;
+
+    for (const id of ids) {
+      const existing = await solvesRepo.findById(id);
+      if (!existing || existing.sessionId === targetSessionId) continue;
+      const sourceId = existing.sessionId;
+      existing.sessionId = targetSessionId;
+      await solvesRepo.update(existing);
+      moved++;
+      sourceDeltas.set(sourceId, (sourceDeltas.get(sourceId) ?? 0) - 1);
+      // Re-read the active id each iteration: a session switch landing between
+      // two awaited DB ops must not corrupt the live-list bookkeeping.
+      const currentActiveId = activeSessionIdRef.current;
+      if (sourceId === currentActiveId) movedFromActive.push(id);
+      if (targetSessionId === currentActiveId) movedIntoActive.push(toUISolve(existing));
+    }
+
+    if (moved === 0) return 0;
+
+    // Keep the active-session list in sync: drop solves that left it, add
+    // solves that entered it (newest-first by timestamp, like the DB load).
+    if (movedFromActive.length > 0 || movedIntoActive.length > 0) {
+      const gone = new Set(movedFromActive);
+      setSolves(prev =>
+        [...movedIntoActive, ...prev.filter(s => !gone.has(s.id))].sort(
+          (a, b) => b.timestamp - a.timestamp,
+        ),
+      );
+    }
+
+    setSessions(prev => prev.map(s => {
+      const delta = sourceDeltas.get(s.id) ?? 0;
+      const inc = s.id === targetSessionId ? moved : 0;
+      if (delta === 0 && inc === 0) return s;
+      return { ...s, solveCount: Math.max(0, s.solveCount + delta + inc), updatedAt: Date.now() };
+    }));
+
+    return moved;
+  }, [session]);
+
   const importSolves = useCallback(async (
     inputs: Array<{
       time: number;
@@ -596,6 +658,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     addSolve,
     updateSolve,
     deleteSolve,
+    moveSolveToSession,
     clearSession,
     importSolves,
     newSession,

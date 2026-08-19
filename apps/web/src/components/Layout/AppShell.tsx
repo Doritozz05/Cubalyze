@@ -75,6 +75,7 @@ export function AppShell(props: AppShellProps) {
     onUpdateSolve,
     onReanalyze,
     onDeleteSolve,
+    onMoveSolves,
     onClear,
     onAnalyze,
     onReplay,
@@ -348,12 +349,12 @@ export function AppShell(props: AppShellProps) {
               onUpdateSolve={onUpdateSolve}
               onReanalyze={onReanalyze}
               onDeleteSolve={onDeleteSolve}
+              onMoveSolves={onMoveSolves}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               onVirtualSolveComplete={onVirtualSolveComplete}
               onNavigate={onNavigate}
               onOpenSettings={handleOpenSettingsProfile}
-              onSwitchSession={onSwitchSession}
               fetchSessionSolves={fetchSessionSolves}
               timerStage={timerStage}
             />

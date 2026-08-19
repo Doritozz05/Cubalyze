@@ -2,8 +2,9 @@
 
 import { memo, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search, X, ChevronDown, Check } from "lucide-react";
+import { Search, X, ChevronDown, Check, CheckSquare, FolderInput, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
@@ -92,6 +93,20 @@ export interface SolveListPanelProps {
   filteredCount: number;
   totalCount: number;
   reset: () => void;
+  /** Touch selection mode (iPad/mobile): rows show tick checkboxes. */
+  selectionMode: boolean;
+  /** Ids currently ticked in selection mode. */
+  selection: ReadonlySet<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: () => void;
+  onExitSelection: () => void;
+  /** Long-press on a row (touch) — enters selection mode with that solve. */
+  onLongPress: (id: string) => void;
+  /** Enter selection mode (header "Select" button — desktop + touch). */
+  onEnterSelection: () => void;
+  /** Bulk actions from the selection bar. */
+  onDeleteSelected: () => void;
+  onMoveSelected: () => void;
   className?: string;
 }
 
@@ -113,6 +128,15 @@ export const SolveListPanel = memo(function SolveListPanel({
   filteredCount,
   totalCount,
   reset,
+  selectionMode,
+  selection,
+  onToggleSelect,
+  onSelectAll,
+  onExitSelection,
+  onLongPress,
+  onEnterSelection,
+  onDeleteSelected,
+  onMoveSelected,
   className,
 }: SolveListPanelProps) {
   const { t } = useTranslation("insights");
@@ -167,6 +191,19 @@ export const SolveListPanel = memo(function SolveListPanel({
   const showNoSolvesState = totalCount === 0;
   const showNoMatchesState = totalCount > 0 && solves.length === 0;
 
+  // ── Touch long-press (selection mode) ─────────────────────────────────
+  // Shared across virtualized rows: only one press can be in flight, and a
+  // single ref also lets us swallow the click that follows the long-press
+  // (otherwise the tap-up would immediately untick the solve).
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressClickRef = useRef(false);
+  const clearPress = () => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -180,6 +217,15 @@ export const SolveListPanel = memo(function SolveListPanel({
         <div className="flex items-center justify-between px-3 py-2">
           <span className="text-[0.7rem] font-medium text-ink-2">{t("common.solves")}</span>
           <div className="flex items-center gap-2.5">
+            {!selectionMode && (
+              <button
+                onClick={onEnterSelection}
+                className="flex items-center gap-1 text-[0.62rem] text-ink-3 transition-colors hover:text-ink max-lg:h-8 max-lg:px-1"
+              >
+                <CheckSquare className="size-3" />
+                {t("list.select")}
+              </button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 text-[0.62rem] text-ink-3 transition-colors hover:text-ink">
@@ -325,6 +371,27 @@ export const SolveListPanel = memo(function SolveListPanel({
         />
       ) : (
         <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1">
+          {selectionMode && (
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface px-3 py-1.5">
+              <button
+                onClick={onExitSelection}
+                className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+              >
+                <X className="size-3.5" />
+                {i18n.t("common:cancel")}
+              </button>
+              <span className="nums text-xs tabular-nums text-ink-2">
+                {t("list.selected", { count: selection.size })}
+              </span>
+              <button
+                onClick={onSelectAll}
+                className="ml-auto flex h-8 items-center gap-1 rounded-md px-2 text-xs text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+              >
+                <Check className="size-3.5" />
+                {t("list.selectAll")}
+              </button>
+            </div>
+          )}
           <ul
             className="relative w-full"
             style={{ height: virtualizer.getTotalSize() }}
@@ -336,6 +403,7 @@ export const SolveListPanel = memo(function SolveListPanel({
               const isDnf = !Number.isFinite(eff);
               const isBest = bestTime !== null && eff === bestTime && !isDnf;
               const isSelected = s.id === selectedId;
+              const isChecked = selectionMode && selection.has(s.id);
               // Delta vs session average (only when meaningful).
               const delta = mean !== null ? eff - mean : 0;
               const showDelta =
@@ -352,12 +420,34 @@ export const SolveListPanel = memo(function SolveListPanel({
                   data-index={vi.index}
                   role="button"
                   tabIndex={0}
-                  onClick={() => onSelect(isSelected ? null : s.id)}
+                  onClick={() => {
+                    if (suppressClickRef.current) {
+                      suppressClickRef.current = false;
+                      return;
+                    }
+                    if (selectionMode) onToggleSelect(s.id);
+                    else onSelect(isSelected ? null : s.id);
+                  }}
+                  onPointerDown={(e) => {
+                    // Long-press (touch only) enters selection mode. Mouse
+                    // users keep click-to-open; fine pointers never arm.
+                    if (e.pointerType !== "touch") return;
+                    clearPress();
+                    pressTimerRef.current = setTimeout(() => {
+                      pressTimerRef.current = null;
+                      suppressClickRef.current = true;
+                      onLongPress(s.id);
+                    }, 450);
+                  }}
+                  onPointerUp={clearPress}
+                  onPointerLeave={clearPress}
+                  onPointerCancel={clearPress}
                   onFocus={() => virtualizer.scrollToIndex(vi.index)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      onSelect(isSelected ? null : s.id);
+                      if (selectionMode) onToggleSelect(s.id);
+                      else onSelect(isSelected ? null : s.id);
                     }
                   }}
                   aria-label={`${t("common.solveAria", {
@@ -366,7 +456,13 @@ export const SolveListPanel = memo(function SolveListPanel({
                   })}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
                     "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none transition-colors focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ink/30",
-                    isSelected ? "bg-surface-2" : "hover:bg-surface-2/60",
+                    selectionMode
+                      ? isChecked
+                        ? "bg-surface-2"
+                        : "hover:bg-surface-2/60"
+                      : isSelected
+                        ? "bg-surface-2"
+                        : "hover:bg-surface-2/60",
                     vi.index === solves.length - 1 && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
@@ -375,13 +471,31 @@ export const SolveListPanel = memo(function SolveListPanel({
                   <span
                     className={cn(
                       "absolute left-0 top-0 h-full w-0.5 transition-colors",
-                      isSelected ? "bg-ink" : "bg-transparent",
+                      selectionMode
+                        ? isChecked
+                          ? "bg-ink"
+                          : "bg-transparent"
+                        : isSelected
+                          ? "bg-ink"
+                          : "bg-transparent",
                     )}
                   />
 
                   <div className="px-3 pb-1.75 pt-1.75 max-lg:py-4">
                     {/* Line 1: index + time + delta + source + penalty */}
                     <div className="flex items-center gap-2.5">
+                      {selectionMode ? (
+                        <span
+                          className={cn(
+                            "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+                            isChecked
+                              ? "border-ink bg-ink text-surface"
+                              : "border-ink-3/40 bg-transparent",
+                          )}
+                        >
+                          {isChecked && <Check className="size-3" />}
+                        </span>
+                      ) : (
                       <span className="flex w-7 shrink-0 items-center justify-end gap-1.5">
                         {isBest ? (
                           <Tooltip>
@@ -397,6 +511,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                           {solves.length - i}
                         </span>
                       </span>
+                      )}
 
                       <span
                         className={cn(
@@ -435,6 +550,30 @@ export const SolveListPanel = memo(function SolveListPanel({
             })}
           </ul>
         </ScrollArea>
+      )}
+
+      {/* ── Selection action bar (bulk delete / move) ─────────────────── */}
+      {selectionMode && (
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-surface px-3 py-2 pb-safe">
+          <span className="nums text-xs tabular-nums text-ink-3">
+            {t("list.selected", { count: selection.size })}
+          </span>
+          <span className="flex-1" />
+          <button
+            onClick={onMoveSelected}
+            className="flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+          >
+            <FolderInput className="size-3.5" />
+            {t("list.moveToSession")}
+          </button>
+          <button
+            onClick={onDeleteSelected}
+            className="flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors hover:bg-surface-2 hover:text-dnf"
+          >
+            <Trash2 className="size-3.5" />
+            {i18n.t("common:delete")}
+          </button>
+        </div>
       )}
     </div>
   );

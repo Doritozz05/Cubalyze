@@ -74,6 +74,8 @@ export interface AppShellProps {
   /** Re-run the analysis pipeline on a stored solve. */
   onReanalyze: (solve: Solve) => Promise<void>;
   onDeleteSolve: (id: string) => void;
+  /** Move solves to another session (batch). */
+  onMoveSolves: (ids: string[], targetSessionId: string) => void;
   onClear: () => void;
   onAnalyze: (solve: Solve) => void;
   onReplay: (solve: Solve) => void;
