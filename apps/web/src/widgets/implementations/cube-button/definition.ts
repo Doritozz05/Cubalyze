@@ -14,7 +14,9 @@ export const cubeButtonDefinition: WidgetDefinition = {
   author: "cubeforge",
   version: "1.0.0",
   source: "built-in",
-  defaultActive: true,
+  // Off by default: the floating 3D cube launcher is a power-user extra,
+  // not part of the clean first-run workspace.
+  defaultActive: false,
   defaultPosition: { ...CUBE_BUTTON_SENTINEL },
   tags: ["3d", "launcher", "button", "smart", "cube"],
 };

@@ -25,6 +25,7 @@ export interface StageOverlaysProps {
   onOpenSettings: () => void;
   onOpenCubeConnector: () => void;
   onOpenProfile: () => void;
+  onOpenWidgets: () => void;
   // Manual solve sheet
   manualOpen: boolean;
   onManualClose: () => void;
@@ -74,6 +75,7 @@ export function StageOverlays(props: StageOverlaysProps) {
     onOpenSettings,
     onOpenCubeConnector,
     onOpenProfile,
+    onOpenWidgets,
     manualOpen,
     onManualClose,
     defaultMethod,
@@ -122,6 +124,7 @@ export function StageOverlays(props: StageOverlaysProps) {
         onOpenSettings={onOpenSettings}
         onOpenCubeConnector={onOpenCubeConnector}
         onOpenProfile={onOpenProfile}
+        onOpenWidgets={onOpenWidgets}
         onNavigate={onNavigate}
       />
 

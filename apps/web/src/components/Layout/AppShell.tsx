@@ -30,6 +30,7 @@ import { RefreshCw, Copy, Plus, Puzzle, Settings, LayoutGrid, TriangleAlert } fr
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
+import { WidgetExplorer } from "@/widgets/explorer";
 import { puzzleCategoryToOrder, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { AppShellProps } from "@/components/Layout/appShell.types";
 /**
@@ -347,6 +348,7 @@ export function AppShell(props: AppShellProps) {
           isFocused={isFocused}
           onAddManual={() => setManualOpen(true)}
           onOpenProfile={onOpenProfile}
+          onOpenMore={() => setMobileMoreOpen(true)}
           main={
             <MainStage
               activeView={activeView}
@@ -382,6 +384,7 @@ export function AppShell(props: AppShellProps) {
           onOpenSettings={() => setSettingsOpen(true)}
           onOpenCubeConnector={() => setCubeConnectorOpen(true)}
           onOpenProfile={onOpenProfile}
+          onOpenWidgets={() => setWidgetExplorerOpen(true)}
           manualOpen={manualOpen}
           onManualClose={() => setManualOpen(false)}
           defaultMethod={defaultMethod}
@@ -404,6 +407,16 @@ export function AppShell(props: AppShellProps) {
           onTourBack={onTourBack}
           onTourSkip={onTourSkip}
         />
+
+        {/* Touch widgets explorer — mounted here for the touch regime (the
+            mobile header's More sheet opens it); desktop uses the
+            LeftSidebar-owned explorer instead. */}
+        {isTouch && (
+          <WidgetExplorer
+            open={widgetExplorerOpen}
+            onOpenChange={setWidgetExplorerOpen}
+          />
+        )}
       </ThemeProvider>
 
       {/* Global context menu — resolves i18n keys internally */}

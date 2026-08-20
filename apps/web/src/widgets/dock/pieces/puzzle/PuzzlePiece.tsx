@@ -14,14 +14,21 @@ import type { PuzzleCategory } from "@/types";
 export interface PuzzlePieceProps {
   puzzle: PuzzleCategory;
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
-  variant?: "tray" | "chip";
+  variant?: "tray" | "chip" | "center";
+  /** Small caption shown under the puzzle (mobile "center" variant) — e.g. the session name. */
+  caption?: string;
 }
 
-/** Puzzle category selector — flat "tray" item in the desktop dock, bordered chip on touch. */
+/**
+ * Puzzle category selector — flat "tray" item in the desktop dock, bordered
+ * chip on touch, or a centered two-line label (puzzle + session caption)
+ * for the minimal mobile header. The select sheet still opens on tap.
+ */
 export function PuzzlePiece({
   puzzle,
   onPuzzleChange,
   variant = "tray",
+  caption,
 }: PuzzlePieceProps) {
   const { t } = useTranslation("shell");
 
@@ -32,11 +39,24 @@ export function PuzzlePiece({
         className={
           variant === "tray"
             ? "h-8 justify-center gap-1.5 rounded-full border-transparent bg-transparent px-2.5 py-0 text-xs font-medium leading-none text-ink-2 shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
-            : "w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
+            : variant === "center"
+              ? "h-11 justify-center rounded-xl border-transparent bg-transparent px-2.5 py-0 text-sm font-semibold leading-none text-ink shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 dark:bg-transparent dark:hover:bg-surface-2"
+              : "w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
         }
         aria-label={t("puzzleCategory")}
       >
-        <SelectValue />
+        {variant === "center" ? (
+          <span className="flex flex-col items-center gap-1 leading-none">
+            <SelectValue />
+            {caption ? (
+              <span className="max-w-36 truncate text-[0.62rem] font-medium text-ink-3">
+                {caption}
+              </span>
+            ) : null}
+          </span>
+        ) : (
+          <SelectValue />
+        )}
       </SelectTrigger>
       <SelectContent>
         {PUZZLE_SELECTOR.map((item) => (

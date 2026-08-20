@@ -64,8 +64,13 @@ describe("lazy widget registry integrity", () => {
   });
 
   it("all built-in widgets are default-active on first-ever load", () => {
+    // cube-button (the floating 3D cube launcher) is deliberately OFF by
+    // default — it is a power-user extra, not part of the clean first-run
+    // workspace. Everything else starts active.
     const defaultActive = BUILT_IN_WIDGETS.filter((w) => w.defaultActive);
-    expect(defaultActive.map((w) => w.id)).toEqual(BUILT_IN_WIDGETS.map((w) => w.id));
+    expect(defaultActive.map((w) => w.id)).toEqual(
+      BUILT_IN_WIDGETS.filter((w) => w.id !== "cube-button").map((w) => w.id),
+    );
   });
 });
 

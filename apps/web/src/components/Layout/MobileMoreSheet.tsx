@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon, User, Network, Box } from "lucide-react";
+import { Settings, Bluetooth, Sun, Moon, User, Network, Box, LayoutGrid } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
@@ -23,6 +23,7 @@ interface MobileMoreSheetProps {
   onOpenSettings: () => void;
   onOpenCubeConnector: () => void;
   onOpenProfile: () => void;
+  onOpenWidgets: () => void;
   onNavigate?: (view: ViewId) => void;
 }
 
@@ -40,6 +41,7 @@ export function MobileMoreSheet({
   onOpenSettings,
   onOpenCubeConnector,
   onOpenProfile,
+  onOpenWidgets,
   onNavigate,
 }: MobileMoreSheetProps) {
   const { resolvedTheme } = useTheme();
@@ -66,9 +68,18 @@ export function MobileMoreSheet({
     setStoreTheme(isDark ? "light" : "dark");
   };
 
-  // Actions are rendered as a 2×3 grid. Titles/subtitles are resolved with
-  // t() inside the component (render time) so they follow language changes.
+  // Actions are rendered as a 2-column grid. Titles/subtitles are resolved
+  // with t() inside the component (render time) so they follow language
+  // changes. Widgets live here too — the mobile header has no widgets
+  // button; everything opens from this sheet.
   const items: MoreItem[] = [
+    {
+      key: "widgets",
+      icon: LayoutGrid,
+      title: tCommon("widgets"),
+      subtitle: t("more.widgetsSubtitle"),
+      onClick: () => handleAction(onOpenWidgets),
+    },
     {
       key: "settings",
       icon: Settings,

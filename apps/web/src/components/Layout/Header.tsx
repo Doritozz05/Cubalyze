@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { History, Puzzle } from "lucide-react";
+import { History, Menu } from "lucide-react";
 import { useStore } from "zustand";
 import { connectionStore, preferencesStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
@@ -24,12 +24,10 @@ import {
   SessionStatsPiece,
   SessionChartPiece,
 } from "@/widgets/dock/pieces";
-import { WidgetExplorer } from "@/widgets/explorer";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory, Solve } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
@@ -94,6 +92,8 @@ export interface HeaderProps {
   onAddManual?: () => void;
   /** Open the user's profile view (dock profile pill). */
   onOpenProfile?: () => void;
+  /** Open the mobile "More" sheet (same as the bottom tab bar's More tab). */
+  onOpenMore?: () => void;
   /** Currently selected puzzle category. */
   puzzle?: PuzzleCategory;
   /** Callback when puzzle selection changes. */
@@ -107,8 +107,9 @@ export interface HeaderProps {
  * Top bar. On desktop (lg+) everything lives in ONE centered glass dock —
  * widget pills, quick actions, session and puzzle — Windows-taskbar style,
  * so the header reads as a single piece and nothing ever scrolls or clips.
- * On touch the dock collapses into a "Widgets" button and the compact
- * layout stays untouched.
+ * On touch the header is a minimal bar: the bottom-bar "More" button at
+ * top-left (widgets and app actions), the selected puzzle with the session
+ * name beneath it centered, and an icon-only session button at the right.
  */
 export function Header({
   sessionCount,
@@ -120,6 +121,7 @@ export function Header({
   onDeleteSession,
   onAddManual,
   onOpenProfile,
+  onOpenMore,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
   solves,
@@ -257,17 +259,13 @@ export function Header({
   useEffect(() => {
     setPuzzle(puzzleProp);
   }, [puzzleProp]);
-  // Touch regime: the dock collapses into a single "Widgets" button that
-  // opens the explorer (desktop uses the LeftSidebar-owned explorer).
+  // Touch regime: minimal bar — the bottom-bar "More" button at top-left
+  // (opens the shared More sheet, which also contains the widgets), the
+  // selected puzzle + session name centered, and an icon-only session
+  // button at the far right. No manual-solve button on touch.
   const { t } = useTranslation("shell");
-  const { t: tCommon } = useTranslation();
-  const [widgetsOpen, setWidgetsOpen] = useState(false);
+  const { t: tNav } = useTranslation("nav");
   const [sessionDrawerOpen, setSessionDrawerOpen] = useState(false);
-  // Number of widgets currently active — shown as a badge on the touch
-  // "Widgets" button so users can see how many are live (no dock on touch).
-  const activeWidgetCount = useWidgetStore(
-    (s) => Object.values(s.instances).filter((i) => i?.status !== "inactive").length,
-  );
   const dockAreaOrder = useWidgetStore((s) => s.dockAreaOrder);
 
   // Build trailingAreas dynamically from the store's dockAreaOrder.
@@ -324,7 +322,7 @@ export function Header({
     return result;
   }, [dockAreaOrder, trailingAreas]);
 
-  // Active session name for the touch header (shows "Name · count").
+  // Active session name — shown under the puzzle in the touch header.
   const activeSessionName = useMemo(
     () => sessions?.find((s) => s.id === activeSessionId)?.name ?? null,
     [sessions, activeSessionId],
@@ -416,47 +414,46 @@ export function Header({
         )}
       </div>
 
-      {/* Touch (<lg): compact layout — battery + widgets on the left,
-          quick actions (manual solve, session, puzzle) on the right.
-          No dock pills on touch. */}
-      <div className="flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6 lg:hidden">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <BatteryStatusChip />
-          <button
-            type="button"
-            onClick={() => setWidgetsOpen(true)}
-            aria-label={t("openWidgets")}
-            data-onboarding-target="widgets-entry"
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink max-[420px]:px-2"
-          >
-            <Puzzle className="size-3.5" />
-            <span className="nums max-[420px]:hidden">{tCommon("widgets")}</span>
-            {activeWidgetCount > 0 && (
-              <span className="nums grid h-4 min-w-4 place-items-center rounded-full bg-surface-2 px-1 text-[0.6rem] font-semibold text-ink-2 max-[420px]:hidden">
-                {activeWidgetCount}
-              </span>
-            )}
-          </button>
+      {/* Touch (<lg): minimal bar — More (bottom-bar icon) top-left, the
+          selected puzzle with the session name beneath it centered, and the
+          session icon-only at the far right. No manual solve on touch. */}
+      <div className="relative flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6 lg:hidden">
+        {/* Left: More button — same icon/action as the bottom tab bar */}
+        <button
+          type="button"
+          onClick={() => onOpenMore?.()}
+          aria-label={tNav("moreOptions")}
+          data-onboarding-target="widgets-entry"
+          className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
+        >
+          <Menu className="size-5" />
+        </button>
+
+        {/* Center: selected puzzle + session name below (tap to change puzzle) */}
+        <div className="absolute left-1/2 top-1/2 max-w-[46%] -translate-x-1/2 -translate-y-1/2">
+          <PuzzlePiece
+            puzzle={puzzle}
+            onPuzzleChange={(p) => {
+              setPuzzle(p);
+              onPuzzleChange?.(p);
+            }}
+            variant="center"
+            caption={activeSessionName ?? undefined}
+          />
         </div>
 
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <ManualSolvePiece onAddManual={onAddManual} variant="chip" />
-
+        {/* Right: session button — icon only, no name, no counter */}
+        <div className="flex min-w-0 items-center justify-end">
           {sessions && sessions.length > 0 ? (
             <>
-              <Button
-                variant="ghost"
+              <button
+                type="button"
                 onClick={() => setSessionDrawerOpen(true)}
-                className="h-8 gap-1.5 rounded-md border border-line bg-surface px-2.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink cursor-pointer"
                 aria-label={t("switchSession")}
+                className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
               >
-                <History className="size-3.5 shrink-0 text-ink-3" />
-                <span className="nums max-w-24 truncate font-medium leading-none text-ink-2">
-                  {activeSessionName ?? t("session")}
-                </span>
-                <span className="leading-none text-ink-3">·</span>
-                <span className="nums font-medium leading-none text-ink-3">{sessionCount ?? 0}</span>
-              </Button>
+                <History className="size-5" />
+              </button>
 
               <MobileSessionSheet
                 open={sessionDrawerOpen}
@@ -470,26 +467,8 @@ export function Header({
               />
             </>
           ) : null}
-
-          <PuzzlePiece
-            puzzle={puzzle}
-            onPuzzleChange={(p) => {
-              setPuzzle(p);
-              onPuzzleChange?.(p);
-            }}
-            variant="chip"
-          />
         </div>
       </div>
-
-      {/* Touch-only widgets explorer — mounted only in the touch regime
-          (desktop opens the LeftSidebar-owned explorer instead). */}
-      {isTouch && (
-        <WidgetExplorer
-          open={widgetsOpen}
-          onOpenChange={setWidgetsOpen}
-        />
-      )}
     </motion.header>
   );
 }

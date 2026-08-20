@@ -772,15 +772,16 @@
     "notFoundGoHome": "Volver al cronómetro",
     "resizeWidth": "Arrastra para ajustar el ancho (doble clic para restablecer)",
     "resizeHeight": "Arrastra para ajustar o cerrar (doble clic para restablecer)",
-    "more": {
-      "settingsSubtitle": "Preferencias y entradas",
-      "profileSubtitle": "Tu identidad y progreso",
-      "skillsSubtitle": "Gráfico interactivo del árbol de habilidades",
-      "reconstructionsSubtitle": "Base de datos de solves y reproducciones",
-      "virtualSubtitle": "Simulador de cubo 3D",
-      "smartCubeSubtitle": "Conecta un cubo bluetooth",
-      "themeSubtitle": "Cambia el tema de color"
-    }
+  "more": {
+    "settingsSubtitle": "Preferencias y entradas",
+    "profileSubtitle": "Tu identidad y progreso",
+    "skillsSubtitle": "Gráfico interactivo del árbol de habilidades",
+    "reconstructionsSubtitle": "Base de datos de solves y reproducciones",
+    "virtualSubtitle": "Simulador de cubo 3D",
+    "smartCubeSubtitle": "Conecta un cubo bluetooth",
+    "themeSubtitle": "Cambia el tema de color",
+    "widgetsSubtitle": "Paneles y herramientas flotantes"
+  }
   },
   "onboarding": {
     "skip": "Omitir",

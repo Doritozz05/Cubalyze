@@ -772,15 +772,16 @@
     "notFoundGoHome": "Back to the timer",
     "resizeWidth": "Drag to resize width (Double-click to reset)",
     "resizeHeight": "Drag to resize or close (Double-click to reset)",
-    "more": {
-      "settingsSubtitle": "Preferences & inputs",
-      "profileSubtitle": "Your identity & progress",
-      "skillsSubtitle": "Interactive skill tree graph",
-      "reconstructionsSubtitle": "Solve database & replays",
-      "virtualSubtitle": "3D cube simulator",
-      "smartCubeSubtitle": "Connect bluetooth cube",
-      "themeSubtitle": "Switch color theme"
-    }
+  "more": {
+    "settingsSubtitle": "Preferences & inputs",
+    "profileSubtitle": "Your identity & progress",
+    "skillsSubtitle": "Interactive skill tree graph",
+    "reconstructionsSubtitle": "Solve database & replays",
+    "virtualSubtitle": "3D cube simulator",
+    "smartCubeSubtitle": "Connect bluetooth cube",
+    "themeSubtitle": "Switch color theme",
+    "widgetsSubtitle": "Floating widgets & panels"
+  }
   },
   "onboarding": {
     "skip": "Skip",

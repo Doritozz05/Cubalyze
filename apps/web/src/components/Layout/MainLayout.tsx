@@ -8,7 +8,7 @@ import { Header } from "./Header";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { SIDEBAR_MOTION, type ViewId } from "./sidebar.constants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsTouch } from "@/hooks/use-mobile";
+import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
 import { useGlobalDragCursor } from "@/hooks/useGlobalDragCursor";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
 import { useDockBarState } from "@/widgets/dock/dockZoneState";
@@ -47,6 +47,8 @@ export interface MainLayoutProps {
   onAddManual?: () => void;
   /** Open the user's profile view (dock profile pill). */
   onOpenProfile?: () => void;
+  /** Open the mobile "More" sheet (top-left header button, touch regime). */
+  onOpenMore?: () => void;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
   cube3D?: React.ReactNode;
   /** Whether the 3D cube view is active (shows the split). */
@@ -103,6 +105,7 @@ export function MainLayout({
   onDeleteSession,
   activeView,
   onOpenProfile,
+  onOpenMore,
   isFocused,
   hideHeader,
   puzzle,
@@ -110,11 +113,15 @@ export function MainLayout({
   solves,
   className,
 }: MainLayoutProps) {
-  // Defer useIsTouch to post-mount to avoid SSR/hydration flash.
+  // Defer useIsTouch/useIsCoarsePointer to post-mount to avoid SSR/hydration flash.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const rawIsTouch = useIsTouch();
   const isTouch = mounted ? rawIsTouch : false;
+  // Touch tablets running the desktop layout (>=768px) still have a system
+  // gesture bar — used to reserve bottom clearance (see the wrapper padding).
+  const rawCoarse = useIsCoarsePointer();
+  const isCoarse = mounted ? rawCoarse : false;
   // True while the dock is being edited (right-click → "Editar dock…").
   // When editing, the wrapper below drops its `z-1` stacking context so the
   // header's z-60 can rise above the body-portaled edit backdrop (z-50);
@@ -329,6 +336,14 @@ export function MainLayout({
         // used height comes from flex layout, so an explicit height on it
         // would be ignored. Desktop has no bottom bar, so no padding.
         !isFocused && "max-lg:pb-[calc(3.5rem+env(safe-area-inset-bottom))]",
+        // Touch TABLETS (coarse pointer, >=768px — desktop layout, no bottom
+        // tab bar): the system gesture bar can overlay the bottom of the
+        // viewport, leaving the session bottom layout flush against it with
+        // no margin. Reserve env(safe-area-inset-bottom) plus a small base so
+        // the layout always clears the gesture bar. Real desktops (fine
+        // pointer) keep their exact current look (env() = 0 there).
+        isCoarse && !isFocused &&
+          "lg:pb-[calc(env(safe-area-inset-bottom)+1.25rem)]",
       )}>
         <AnimatePresence>
           {!isFocused && !hideHeader && (
@@ -343,6 +358,7 @@ export function MainLayout({
               onDeleteSession={onDeleteSession}
               onAddManual={onAddManual}
               onOpenProfile={onOpenProfile}
+              onOpenMore={onOpenMore}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               solves={solves}
