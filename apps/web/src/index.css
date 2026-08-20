@@ -454,59 +454,68 @@ input[type="image"],
    Give interactive elements a pressed state instead, drop the browser's
    gray tap highlight (the :active feedback replaces it), and remove the
    double-tap-to-zoom delay via touch-action. Hover-capable devices skip
-   the whole block. */
-@media (hover: none) {
-  button:active,
-  [role="button"]:active,
-  a:active,
-  summary:active {
-    filter: brightness(0.94);
-  }
-  button,
-  [role="button"],
-  a,
-  input,
-  select,
-  textarea,
-  label {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-}
+   the whole block.
 
-/* Touch regime (<768px): keep overscroll/rubber-banding from pulling the
-   page past its edge (which fights the bottom tab bar and fixed sheets) and
-   prevent double-tap-to-zoom delays on buttons. Desktop: untouched. */
-@media (max-width: 767px) {
-  html,
-  body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
+   These live in `@layer base` (NOT unlayered) so Tailwind's utilities
+   layer can override them: draggable elements set `touch-none`
+   (touch-action: none) and MUST win over this button default — an
+   unlayered rule would beat every utility and break touch dragging of
+   button-based draggables (e.g. the floating 3D cube launcher). */
+@layer base {
+  @media (hover: none) {
+    button:active,
+    [role="button"]:active,
+    a:active,
+    summary:active {
+      filter: brightness(0.94);
+    }
+    button,
+    [role="button"],
+    a,
+    input,
+    select,
+    textarea,
+    label {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
   }
-  input,
-  textarea,
-  [contenteditable="true"] {
-    user-select: text;
-    -webkit-user-select: text;
-  }
-  button,
-  [role="button"],
-  a {
-    touch-action: manipulation;
-  }
-  /* Hide scrollbars on touch: mobile scrolling is gesture-driven and native
-     overlays/scroll affordances replace the visible thumbs — the styled 6px
-     bars above would only clutter the stage. Scrolling still works. */
-  * {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* legacy Edge/IE */
-  }
-  *::-webkit-scrollbar {
-    display: none;
+
+  /* Touch regime (<768px): keep overscroll/rubber-banding from pulling the
+     page past its edge (which fights the bottom tab bar and fixed sheets) and
+     prevent double-tap-to-zoom delays on buttons. Desktop: untouched. Also in
+     @layer base so touch-none/touch-manipulation utilities still win. */
+  @media (max-width: 767px) {
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input,
+    textarea,
+    [contenteditable="true"] {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    button,
+    [role="button"],
+    a {
+      touch-action: manipulation;
+    }
+    /* Hide scrollbars on touch: mobile scrolling is gesture-driven and native
+       overlays/scroll affordances replace the visible thumbs — the styled 6px
+       bars above would only clutter the stage. Scrolling still works. */
+    * {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* legacy Edge/IE */
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
   }
 }
 

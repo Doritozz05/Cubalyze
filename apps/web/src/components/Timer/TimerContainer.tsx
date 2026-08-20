@@ -106,6 +106,21 @@ export function TimerContainer({
   const [noteInput, setNoteInput] = useState("");
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
+  /**
+   * Timestamp of the last pointerup/pointercancel that released a held touch.
+   * Browsers fire a synthetic `click` right after `pointerup`, and on some
+   * devices (old iPads) that echo can arrive ~200ms later. When the release
+   * just STARTED the timer (READY → RUNNING via hold-and-release), that
+   * stray click would hit the "running" branch of `onClick` and instantly
+   * stop the solve — the classic "timer always stops at 0.20 on my old
+   * iPad" bug. Genuine tap-to-stop is already handled by pointerdown (press
+   * → handleDown), so suppressing the echo window is safe.
+   */
+  const lastPointerUpAtRef = useRef(0);
+  // Covers the slowest click-echo delay seen on old iOS devices (~300ms)
+  // with margin; a real second tap is always >500ms after the first release.
+  const CLICK_ECHO_WINDOW_MS = 500;
+
   useEffect(() => {
     setIsEditingNote(false);
     setNoteInput(lastSolve?.note ?? "");
@@ -156,6 +171,7 @@ export function TimerContainer({
       const isTouchPointer = e.pointerType === "touch";
       if (!activeClickToStart && !isTouchPointer) return;
       e.preventDefault();
+      lastPointerUpAtRef.current = Date.now();
       onRelease();
     },
     [onRelease, activeClickToStart],
@@ -173,6 +189,13 @@ export function TimerContainer({
       const effectiveDelay = holdDelay > 0 ? holdDelay + 50 : 50;
       setTimeout(() => onRelease(), effectiveDelay);
     } else if (phase === "running") {
+      // Ignore the synthetic click that browsers fire right after the
+      // pointerup which STARTED the timer (hold-and-release). On old iPads
+      // this echo lands ~200ms later and would stop a just-started solve at
+      // 0.20s. Real tap-to-stop never reaches here: pointerdown already
+      // pressed (handleDown) and moved the engine to COOLDOWN before the
+      // click event is dispatched.
+      if (Date.now() - lastPointerUpAtRef.current < CLICK_ECHO_WINDOW_MS) return;
       onPress(); // stops the timer
     }
   }, [activeClickToStart, phase, onPress, onRelease, holdDelay]);
@@ -256,7 +279,10 @@ export function TimerContainer({
         hasLast={lastTime !== null}
         pb={pb}
         showPbDelta={showPbDelta}
-        hintCtx={hintCtx}
+        // Coarse-pointer devices (phones + large tablets) have no physical
+        // keyboard, so the hints drop the "press space"/"hold" wording and
+        // use the generic "press/tap" copy (see hintFor.ts).
+        hintCtx={{ ...hintCtx, coarsePointer: isTouch || isCoarsePointer }}
         className={timerClassName}
       />
 

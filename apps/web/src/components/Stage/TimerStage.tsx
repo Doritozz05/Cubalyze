@@ -18,6 +18,7 @@ import {
   templateHasCell,
 } from "@/bottom-layout/registry";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
+import { shortcutKeyLabel } from "@/utils/keyLabel";
 import { useSolveSession } from "@/hooks/useSolveSession";
 import type { Penalty, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
@@ -103,6 +104,7 @@ export function TimerStage(props: TimerStageProps) {
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
   const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
+  const startTimerKey = useStore(preferencesStore, (s) => s.shortcuts.startTimer);
   const isManualMode = inputMode === "manual";
 
   // Resolve the selected template so the stage knows whether it should render
@@ -130,6 +132,9 @@ export function TimerStage(props: TimerStageProps) {
     isScrambled: validation.isScrambled,
     isLastSolveDnf: timerLastTime !== null && solves[0]?.penalty === "DNF",
     lastSolvePenalty: timerLastTime !== null ? solves[0]?.penalty : "none",
+    // Show the user's configured start key in the hints (not a hardcoded
+    // "space"), e.g. "pulsa N para iniciar la inspección".
+    startKeyLabel: shortcutKeyLabel(startTimerKey),
   };
 
   const scrambleElement = scrambleDisplay && !isFocused ? (

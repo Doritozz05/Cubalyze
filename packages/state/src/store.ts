@@ -111,13 +111,15 @@ export interface PreferencesState {
   hardwareTimer: 'none' | 'stackmat' | 'gan';
   setHardwareTimer: (value: 'none' | 'stackmat' | 'gan') => void;
 
-  /** Keyboard shortcuts configuration. */
+  /** Keyboard shortcuts configuration. `startTimer` is the hold-to-start
+      timer key (default Space, `' '`). */
   shortcuts: {
     newScramble: string;
     copyScramble: string;
     cancelTimer: string;
+    startTimer: string;
   };
-  setShortcut: (key: 'newScramble' | 'copyScramble' | 'cancelTimer', value: string) => void;
+  setShortcut: (key: 'newScramble' | 'copyScramble' | 'cancelTimer' | 'startTimer', value: string) => void;
 
   /** Spacebar hold duration in milliseconds before timer is ready to start (e.g. 0, 300, 550, 1000). */
   spacebarHoldDelay: number;
@@ -264,6 +266,7 @@ const DEFAULT_VALUES = {
     newScramble: 'n',
     copyScramble: 'c',
     cancelTimer: 'escape',
+    startTimer: ' ',
   },
   spacebarHoldDelay: 300,
   showBpaWpa: true,
@@ -399,7 +402,8 @@ export const createPreferencesStore = () => {
         // selected template id was introduced (`bottomLayoutTemplate`).
         // v3: `showHeader`/`dockAutoHide` booleans were replaced by the
         // `headerMode` tri-state ('always' | 'hidden' | 'autohide').
-        version: 3,
+        // v4: `shortcuts.startTimer` (configurable timer start key) added.
+        version: 4,
         migrate: (persistedState, version) => {
           const raw = (persistedState ?? {}) as Record<string, unknown>;
           const migrated: Record<string, unknown> = { ...raw };
@@ -418,6 +422,18 @@ export const createPreferencesStore = () => {
             }
             delete migrated.showHeader;
             delete migrated.dockAutoHide;
+          }
+          if (version < 4) {
+            // Existing persisted shortcuts predate the configurable timer
+            // start key — keep the user's bindings, default the new one.
+            const sc = (raw.shortcuts ?? {}) as Record<string, unknown>;
+            migrated.shortcuts = {
+              newScramble: 'n',
+              copyScramble: 'c',
+              cancelTimer: 'escape',
+              startTimer: ' ',
+              ...sc,
+            };
           }
           return migrated;
         },

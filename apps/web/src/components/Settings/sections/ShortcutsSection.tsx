@@ -8,12 +8,13 @@ import { preferencesStore } from '@cubeforge/state';
 import { Keyboard } from 'lucide-react';
 
 interface ShortcutDef {
-  key: 'newScramble' | 'copyScramble' | 'cancelTimer';
+  key: 'newScramble' | 'copyScramble' | 'cancelTimer' | 'startTimer';
   labelKey: ParseKeys<'settings'>;
   descriptionKey: ParseKeys<'settings'>;
 }
 
 const SHORTCUT_DEFS: ShortcutDef[] = [
+  { key: 'startTimer', labelKey: 'shortcuts.startTimer', descriptionKey: 'shortcuts.startTimerDesc' },
   { key: 'newScramble', labelKey: 'shortcuts.newScramble', descriptionKey: 'shortcuts.newScrambleDesc' },
   { key: 'copyScramble', labelKey: 'shortcuts.copyScramble', descriptionKey: 'shortcuts.copyScrambleDesc' },
   { key: 'cancelTimer', labelKey: 'shortcuts.cancelTimer', descriptionKey: 'shortcuts.cancelTimerDesc' },
@@ -44,15 +45,15 @@ export function ShortcutsSection() {
     if (!capturing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore modifiers by themselves
+      // Ignore modifiers by themselves (Escape cancels capture — see below).
       if (['Alt', 'Control', 'Shift', 'Meta', 'Tab'].includes(e.key)) return;
-      // Space is reserved for the timer
-      if (e.key === ' ') return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      const capturedKey = e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
+      // Store the key canonically: lowercase letters/special names, literal
+      // ' ' for Space (matching useTimerKeyboard's e.key comparison).
+      const capturedKey = e.key === ' ' ? ' ' : e.key.toLowerCase();
       setShortcut(capturing as ShortcutDef['key'], capturedKey);
       setCapturing(null);
     };

@@ -412,6 +412,8 @@
     },
     "shortcuts": {
       "info": "Personaliza los atajos de teclado del cronómetro. Haz clic en un atajo y pulsa la tecla deseada para reasignarlo.",
+      "startTimer": "Iniciar cronómetro",
+      "startTimerDesc": "Tecla para mantener pulsada y arrancar/parar el cronómetro",
       "newScramble": "Nueva scramble",
       "newScrambleDesc": "Genera una scramble nueva",
       "copyScramble": "Copiar scramble",
@@ -551,10 +553,19 @@
       "makeMoveToStop": "haz un movimiento para parar",
       "pressToStop": "pulsa para parar",
       "completeScramble": "completa la scramble",
-      "pressSpaceInspection": "pulsa espacio para iniciar la inspección",
-      "tapOrSpaceStart": "toca o pulsa espacio para empezar",
-      "holdStartNext": "mantén para empezar la siguiente",
-      "pressHoldStart": "mantén pulsado para empezar"
+      "pressSpaceInspection": "pulsa {{key}} para iniciar la inspección",
+      "tapOrSpaceStart": "toca o pulsa {{key}} para empezar",
+      "holdStartNext": "mantén {{key}} para empezar la siguiente",
+      "pressHoldStart": "mantén pulsado {{key}} para empezar",
+      "pressInspection": "pulsa para iniciar la inspección",
+      "tapStart": "pulsa para empezar",
+      "tapStartNext": "pulsa para empezar la siguiente"
+    },
+    "key": {
+      "space": "Espacio",
+      "escape": "Esc",
+      "enter": "Intro",
+      "tab": "Tabulador"
     },
     "timerAriaClick": "Cronómetro. Clic para iniciar/parar.",
     "timerAriaSpace": "Cronómetro. Usa la barra espaciadora para iniciar/parar.",

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
+import { keyboardState } from "@/lib/keyboardState";
 
 export interface UseShortcutsOptions {
   /** New scramble. Ignored while the timer is running/stopped. */
@@ -38,9 +39,13 @@ export function useShortcuts({
     if (!enabled) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // Never intercept modifier combos or Space (timer owns it).
+      // While a modal (Settings) owns the keyboard, never fire shortcut
+      // actions — the user is interacting with the dialog, not the timer.
+      if (keyboardState.settingsOpen) return;
+      // Never intercept modifier combos or the timer's start key (the timer
+      // owns it, whichever key the user configured).
       if (e.altKey || e.ctrlKey || e.metaKey) return;
-      if (e.code === "Space") return;
+      if (e.key.toLowerCase() === shortcuts.startTimer.toLowerCase()) return;
 
       // Ignore when focus is in an editable element.
       const target = e.target as HTMLElement | null;

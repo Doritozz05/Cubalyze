@@ -129,6 +129,12 @@ export function FloatingCubeButton({
         top: 0,
         transform: `translate3d(${drag.position.x}px, ${drag.position.y}px, 0)`,
         transformOrigin: "0 0",
+        // Inline touch-action: none — NOT just the `touch-none` class. The
+        // app's touch-hygiene CSS sets touch-action: manipulation on every
+        // <button> (a base default); inline styles always win, so the
+        // browser never steals the drag gesture for panning/scroll on touch
+        // devices (which fires pointercancel and kills the drag).
+        touchAction: "none",
         willChange: drag.isDragging ? "transform" : undefined,
         animation: "widgetMount 0.2s ease-out",
       }}

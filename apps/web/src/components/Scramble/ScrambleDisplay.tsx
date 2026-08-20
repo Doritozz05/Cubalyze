@@ -71,15 +71,55 @@ export function ScrambleDisplay({
     Array.isArray(states) &&
     states.length > 0;
 
+  // Copy/New actions. Desktop/tablet (>=768px): inline in the header row,
+  // right-aligned above the scramble. Mobile (<768px): rendered again BELOW
+  // the scramble tokens as a centered row — the header copy is hidden and
+  // the #index counter is dropped, so the top of the timer stays clean.
+  const copyNewActions = (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={copy}
+        className="h-7 gap-1.5 px-2 text-xs text-ink-2 hover:text-ink"
+        aria-label={t("copyScramble")}
+      >
+        {copied ? (
+          <Check className="size-3.5 text-ready" />
+        ) : (
+          <Copy className="size-3.5" />
+        )}
+        <span className="max-lg:hidden">{copied ? t("copied") : t("copy")}</span>
+      </Button>
+      {onRegenerate ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRegenerate}
+          className="h-7 gap-1.5 px-2 text-xs text-ink-2 hover:text-ink"
+          aria-label={t("newScramble")}
+        >
+          <RefreshCw className="size-3.5" />
+          <span className="max-lg:hidden">{t("new")}</span>
+        </Button>
+      ) : null}
+    </>
+  );
+
   return (
     <div className="w-full" data-onboarding-target="timer">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ink-3">
+          {/* The "Scramble" label and #N counter are desktop/tablet-only — on
+              phones (<768px) the tokens stand alone above the timer, so the
+              whole top line is dropped to keep the stage clean. */}
+          <span className="max-lg:hidden text-[0.7rem] uppercase tracking-[0.2em] text-ink-3">
             Scramble
           </span>
           {indexLabel ? (
-            <span className="nums text-[0.7rem] text-ink-3">{indexLabel}</span>
+            <span className="nums text-[0.7rem] text-ink-3 max-lg:hidden">
+              {indexLabel}
+            </span>
           ) : null}
           {isScrambled ? (
             <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
@@ -87,34 +127,9 @@ export function ScrambleDisplay({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 max-lg:hidden">
           {focusModeAction}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={copy}
-            className="h-7 gap-1.5 px-2 text-xs text-ink-2 hover:text-ink"
-            aria-label={t("copyScramble")}
-          >
-            {copied ? (
-              <Check className="size-3.5 text-ready" />
-            ) : (
-              <Copy className="size-3.5" />
-            )}
-            <span className="max-lg:hidden">{copied ? t("copied") : t("copy")}</span>
-          </Button>
-          {onRegenerate ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRegenerate}
-              className="h-7 gap-1.5 px-2 text-xs text-ink-2 hover:text-ink"
-              aria-label={t("newScramble")}
-            >
-              <RefreshCw className="size-3.5" />
-              <span className="max-lg:hidden">{t("new")}</span>
-            </Button>
-          ) : null}
+          {copyNewActions}
         </div>
       </div>
 
@@ -176,6 +191,12 @@ export function ScrambleDisplay({
           })}
         </div>
       )}
+
+      {/* Mobile-only (<768px): Copy/New sit BELOW the scramble instead of
+          above it (the header row hides them at max-lg). Centered, icon-only. */}
+      <div className="mt-2.5 flex items-center justify-center gap-1 lg:hidden">
+        {copyNewActions}
+      </div>
     </div>
   );
 }

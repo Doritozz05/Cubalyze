@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { SettingsSidebar } from './SettingsSidebar';
 import { TOUCH_FULL_BLEED } from '@/lib/touch';
+import { keyboardState } from '@/lib/keyboardState';
 import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
 import { GeneralSection } from './sections/GeneralSection';
 import { AppearanceSection } from './sections/AppearanceSection';
@@ -100,6 +101,16 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
       prevSection.current = start;
     }
   }, [open, initialSection]);
+
+  // While the Settings dialog is open it owns the keyboard: the global
+  // timer/shortcut handlers yield (see keyboardState) so e.g. pressing Space
+  // to rebind a shortcut never arms/starts the timer underneath.
+  useEffect(() => {
+    keyboardState.settingsOpen = open;
+    return () => {
+      keyboardState.settingsOpen = false;
+    };
+  }, [open]);
 
   const activeIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === activeSection);
   const prevIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === prevSection.current);

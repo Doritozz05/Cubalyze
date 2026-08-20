@@ -412,6 +412,8 @@
     },
     "shortcuts": {
       "info": "Customize keyboard shortcuts for the timer. Click a shortcut and press the desired key to rebind.",
+      "startTimer": "Start timer",
+      "startTimerDesc": "Key to hold and release to start/stop the timer",
       "newScramble": "New scramble",
       "newScrambleDesc": "Generate a fresh scramble",
       "copyScramble": "Copy scramble",
@@ -551,10 +553,19 @@
       "makeMoveToStop": "make a move to stop",
       "pressToStop": "press to stop",
       "completeScramble": "complete the scramble",
-      "pressSpaceInspection": "press space to start inspection",
-      "tapOrSpaceStart": "tap or press space to start",
-      "holdStartNext": "hold to start next",
-      "pressHoldStart": "press & hold to start"
+      "pressSpaceInspection": "press {{key}} to start inspection",
+      "tapOrSpaceStart": "tap or press {{key}} to start",
+      "holdStartNext": "hold {{key}} to start next",
+      "pressHoldStart": "press & hold {{key}} to start",
+      "pressInspection": "press to start inspection",
+      "tapStart": "tap to start",
+      "tapStartNext": "tap to start next"
+    },
+    "key": {
+      "space": "Space",
+      "escape": "Esc",
+      "enter": "Enter",
+      "tab": "Tab"
     },
     "timerAriaClick": "Timer. Click to start/stop.",
     "timerAriaSpace": "Timer. Use spacebar to start/stop.",
