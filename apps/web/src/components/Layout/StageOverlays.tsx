@@ -18,7 +18,6 @@ export interface StageOverlaysProps {
   isFocused: boolean;
   activeView: ViewId;
   onNavigate: (view: ViewId) => void;
-  onOpenMore: () => void;
   // Mobile more sheet
   mobileMoreOpen: boolean;
   onMobileMoreOpenChange: (open: boolean) => void;
@@ -69,7 +68,6 @@ export function StageOverlays(props: StageOverlaysProps) {
     isFocused,
     activeView,
     onNavigate,
-    onOpenMore,
     mobileMoreOpen,
     onMobileMoreOpenChange,
     onOpenSettings,
@@ -109,12 +107,7 @@ export function StageOverlays(props: StageOverlaysProps) {
     <>
       {/* Bottom tab bar — touch regime only (phones + small tablets <768px). */}
       {!isFocused && (
-        <MobileTabBar
-          activeView={activeView}
-          onNavigate={onNavigate}
-          onOpenMore={onOpenMore}
-          mobileMoreOpen={mobileMoreOpen}
-        />
+        <MobileTabBar activeView={activeView} onNavigate={onNavigate} />
       )}
 
       {/* Mobile grid options bottom sheet (Settings, Profile, Reconstructions, Smart Cube, Theme) */}

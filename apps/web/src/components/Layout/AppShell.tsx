@@ -378,7 +378,6 @@ export function AppShell(props: AppShellProps) {
           isFocused={isFocused}
           activeView={activeView}
           onNavigate={onNavigate}
-          onOpenMore={() => setMobileMoreOpen(true)}
           mobileMoreOpen={mobileMoreOpen}
           onMobileMoreOpenChange={setMobileMoreOpen}
           onOpenSettings={() => setSettingsOpen(true)}
