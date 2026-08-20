@@ -33,6 +33,15 @@ const DEFAULT_CONFIG: TimerConfig = {
   rules: SPEED_RULES
 };
 
+/**
+ * Minimum recorded solve time (10 ms = 0.01 s).
+ *
+ * Prevents the timer from saving or displaying "0.00" when the user
+ * accidentally double-taps or when a browser race between `handleUp` /
+ * `handleDown` collapses the measured window to near-zero.
+ */
+const MIN_SOLVE_MS = 10;
+
 export interface TimerStopEventDetail {
   timeMs: number;
   penalty: Penalty;
@@ -215,7 +224,7 @@ export class TimerEngine {
 
     } else if (this.currentState === TimerState.RUNNING) {
       this.stopTickLoop();
-      this.solveTimeMs = Math.max(0, now - this.startTimestamp);
+      this.solveTimeMs = Math.max(MIN_SOLVE_MS, now - this.startTimestamp);
       const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
 
       this.setState(TimerState.COOLDOWN);
@@ -315,7 +324,7 @@ export class TimerEngine {
   public handleSmartCubeStop(): void {
     if (this.currentState === TimerState.RUNNING) {
       this.stopTickLoop();
-      this.solveTimeMs = Math.max(0, performance.now() - this.startTimestamp);
+      this.solveTimeMs = Math.max(MIN_SOLVE_MS, performance.now() - this.startTimestamp);
       const finalTimeMs = calculateFinalTime(this.solveTimeMs, this.currentPenalty);
 
       this.setState(TimerState.COOLDOWN);
