@@ -232,6 +232,12 @@ export function TimerContainer({
         // and the bottom tab bar on small phones (the stage also scrolls as a
         // fallback — see MainLayout). Desktop formula unchanged.
         "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(280px,38vh,440px)]",
+        // Touch tablets (coarse pointer, >=768px, desktop layout): the whole
+        // stage (scramble + timer + bottom layout) must fit between the
+        // header and the gesture bar WITHOUT scrolling, so the timer's
+        // minimum height is smaller than on real desktops. It still grows
+        // via flex-1 to fill any leftover space.
+        isCoarsePointer && "lg:min-h-[clamp(220px,30vh,360px)]",
         // Kill double-tap zoom delay on touch; no effect on mouse.
         "touch-manipulation",
         !activeClickToStart && "cursor-default",

@@ -119,7 +119,7 @@ export function MainLayout({
   const rawIsTouch = useIsTouch();
   const isTouch = mounted ? rawIsTouch : false;
   // Touch tablets running the desktop layout (>=768px) still have a system
-  // gesture bar — used to reserve bottom clearance (see the wrapper padding).
+  // gesture bar — used to reserve bottom clearance (see the section padding).
   const rawCoarse = useIsCoarsePointer();
   const isCoarse = mounted ? rawCoarse : false;
   // True while the dock is being edited (right-click → "Editar dock…").
@@ -336,14 +336,6 @@ export function MainLayout({
         // used height comes from flex layout, so an explicit height on it
         // would be ignored. Desktop has no bottom bar, so no padding.
         !isFocused && "max-lg:pb-[calc(3.5rem+env(safe-area-inset-bottom))]",
-        // Touch TABLETS (coarse pointer, >=768px — desktop layout, no bottom
-        // tab bar): the system gesture bar can overlay the bottom of the
-        // viewport, leaving the session bottom layout flush against it with
-        // no margin. Reserve env(safe-area-inset-bottom) plus a small base so
-        // the layout always clears the gesture bar. Real desktops (fine
-        // pointer) keep their exact current look (env() = 0 there).
-        isCoarse && !isFocused &&
-          "lg:pb-[calc(env(safe-area-inset-bottom)+1.25rem)]",
       )}>
         <AnimatePresence>
           {!isFocused && !hideHeader && (
@@ -382,6 +374,15 @@ export function MainLayout({
               // own scroll surface.
               activeView === "timer" && "max-lg:overflow-y-auto",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
+              // Touch tablets (coarse pointer, >=768px, desktop layout): no
+              // bottom tab bar, but the system gesture bar overlays the
+              // bottom of the viewport. A taller bottom padding keeps the
+              // session bottom layout above it with visible margin. Bonus:
+              // overflow:hidden clips at the padding box, so if the stage
+              // still overflows on a short viewport, the extra padding
+              // absorbs the overflow gracefully instead of cutting content
+              // flush against the screen edge.
+              isCoarse && !hideHeader && "lg:pb-12",
               hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
               // Keep the stage in normal flow while focused so the header
               // padding collapse animates smoothly instead of snapping the
