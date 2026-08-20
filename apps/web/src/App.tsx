@@ -174,14 +174,12 @@ export default function App() {
   // it without a temporal-dead-zone dependency.
   const smartCubeConnectedRef = useRef(false);
 
-  // Disable the practice timer's global space handler while a view owns the
-  // keyboard (training views + onboarding tour must never arm the timer).
+  // Disable the practice timer's global space handler on every view except
+  // the timer itself. Using an allowlist ("only timer") instead of a denylist
+  // makes this future-proof: any new view is automatically blocked.
   const keyboardDisabledRef = useRef(false);
   useEffect(() => {
-    // The cube simulator owns the keyboard while open (csTimer-layout moves);
-    // training views and the tour must also never arm the practice timer.
-    keyboardDisabledRef.current =
-      notFound || activeView === "training" || activeView === "cube" || tourActive;
+    keyboardDisabledRef.current = activeView !== "timer" || notFound || tourActive;
   }, [notFound, activeView, tourActive]);
 
   // ── PB Celebration banner state ────────────────────────────────────────
