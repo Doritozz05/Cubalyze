@@ -1,6 +1,8 @@
 "use client";
 
 import { memo, useMemo, useRef } from "react";
+import { motion, useReducedMotion, LayoutGroup } from "framer-motion";
+
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -392,6 +394,7 @@ export const SolveListPanel = memo(function SolveListPanel({
               </button>
             </div>
           )}
+        <LayoutGroup id="solve-list">
           <ul
             className="relative w-full"
             style={{ height: virtualizer.getTotalSize() }}
@@ -456,19 +459,20 @@ export const SolveListPanel = memo(function SolveListPanel({
                   })}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
                     "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none",
-                    "transition-[background-color,box-shadow] duration-150 ease-out",
+                    "transition-colors duration-150",
                     selectionMode
                       ? isChecked
-                        ? "bg-surface-2 ring-1 ring-inset ring-ink/20"
-                        : "hover:bg-surface-2/60"
+                        ? "text-sidebar-accent-foreground"
+                        : "hover:bg-sidebar-accent/50"
                       : isSelected
-                        ? "bg-surface-2 ring-1 ring-inset ring-ink/20"
-                        : "hover:bg-surface-2/60",
+                        ? "text-sidebar-accent-foreground"
+                        : "hover:bg-sidebar-accent/50",
                     vi.index === solves.length - 1 && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
-
+                  {/* Active-row pill — same spring + layoutId technique as the sidebar nav */}
+                  <ActivePill active={selectionMode ? isChecked : isSelected} />
 
                   <div className="px-3 pb-1.75 pt-1.75 max-lg:py-4">
                     {/* Line 1: index + time + delta + source + penalty */}
@@ -543,6 +547,7 @@ export const SolveListPanel = memo(function SolveListPanel({
               );
             })}
           </ul>
+        </LayoutGroup>
         </ScrollArea>
       )}
 
@@ -572,3 +577,27 @@ export const SolveListPanel = memo(function SolveListPanel({
     </div>
   );
 });
+
+// ─── Active row pill ────────────────────────────────────────────────────────
+// Mirrors the sidebar NavButton technique: a shared-layout motion.div that
+// animates between rows using the same spring config (stiffness 380, damping 30).
+// Because the list is virtualised the layoutId can't travel across unmounted
+// rows, but within the visible viewport the spring slide still looks great.
+
+const SOLVE_ACTIVE_SPRING = {
+  type: "spring" as const,
+  stiffness: 380,
+  damping: 30,
+};
+
+function ActivePill({ active }: { active: boolean }) {
+  const reduceMotion = useReducedMotion();
+  if (!active) return null;
+  return (
+    <motion.div
+      layoutId="solve-active-bg"
+      className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-sidebar-accent"
+      transition={reduceMotion ? { duration: 0 } : SOLVE_ACTIVE_SPRING}
+    />
+  );
+}
