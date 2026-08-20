@@ -8,6 +8,7 @@ import { preferencesStore, type HeaderMode } from '@cubeforge/state';
 import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
+import { SettingRow } from '@/components/Settings/components/SettingRow';
 import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
 import { Palette, Sun, Moon, Monitor, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -79,16 +80,12 @@ export function AppearanceSection() {
       </div>
 
       {/* Theme selector */}
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.theme')}</h4>
-          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
-            {t('appearance.themeHint')}
-          </p>
-        </div>
-        <div className="mt-0.5 shrink-0">
+      <SettingRow
+        title={t('appearance.theme')}
+        description={t('appearance.themeHint')}
+        control={
           <Select value={theme} onValueChange={setTheme}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40 max-lg:w-full">
               <SelectValue placeholder={t('appearance.selectTheme')} />
             </SelectTrigger>
             <SelectContent>
@@ -112,8 +109,8 @@ export function AppearanceSection() {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       {/* Header visibility — mobile keeps the simple on/off toggle; desktop
           gets the tri-state selector (always visible / hidden / auto-hide). */}
@@ -174,16 +171,12 @@ export function AppearanceSection() {
       </button>
 
       {/* Skin selector */}
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.appearance3d')}</h4>
-          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
-            {t('appearance.appearance3dHint')}
-          </p>
-        </div>
-        <div className="mt-0.5 shrink-0">
+      <SettingRow
+        title={t('appearance.appearance3d')}
+        description={t('appearance.appearance3dHint')}
+        control={
           <Select value={appearance3d} onValueChange={setAppearance3d}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40 max-lg:w-full">
               <SelectValue placeholder={t('appearance.selectAppearance')} />
             </SelectTrigger>
             <SelectContent>
@@ -194,8 +187,8 @@ export function AppearanceSection() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       {/* Custom sticker colors — only visible when 'custom' skin is selected */}
       {appearance3d === 'custom' && (

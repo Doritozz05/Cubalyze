@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 import { useTranslation } from "react-i18next";
 import { preferencesStore } from "@cubeforge/state";
 import { SettingToggle } from "../components/SettingToggle";
+import { SettingRow } from "../components/SettingRow";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -67,30 +68,30 @@ export function AudioSection() {
 
       <div className={cn("flex flex-col gap-5", !soundsEnabled && "pointer-events-none opacity-45")}>
         {/* ── Master volume ───────────────────────────────────────────── */}
-        <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-          <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+        <SettingRow
+          title={
+            <>
               <Volume2 className="size-3.5 text-ink-2" />
               {t("audio.volume")}
-            </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              {t("audio.volumeHint")}
-            </p>
-          </div>
-          <div className="mt-1 flex w-48 shrink-0 items-center gap-3">
-            <Slider
-              min={0}
-              max={100}
-              step={5}
-              value={[soundVolume]}
-              onValueChange={(val) => val[0] !== undefined && setSoundVolume(val[0])}
-              className="flex-1"
-            />
-            <span className="nums w-9 text-right text-[0.72rem] text-ink-2">
-              {soundVolume}%
-            </span>
-          </div>
-        </div>
+            </>
+          }
+          description={t("audio.volumeHint")}
+          control={
+            <div className="flex w-48 shrink-0 items-center gap-3 max-lg:w-full">
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[soundVolume]}
+                onValueChange={(val) => val[0] !== undefined && setSoundVolume(val[0])}
+                className="flex-1"
+              />
+              <span className="nums w-9 text-right text-[0.72rem] text-ink-2">
+                {soundVolume}%
+              </span>
+            </div>
+          }
+        />
 
         {/* ── Inspection voice cues ───────────────────────────────────── */}
         <SettingToggle
@@ -102,23 +103,21 @@ export function AudioSection() {
 
         {/* Voice type selector — only visible when audio cues are enabled */}
         {audioCues && (
-          <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-            <div className="min-w-0 flex-1">
-              <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+          <SettingRow
+            title={
+              <>
                 {voiceType === "male" ? (
                   <Mic className="size-3.5 text-ink-2" />
                 ) : (
                   <MicOff className="size-3.5 text-ink-2" />
                 )}
                 {t("audio.voice")}
-              </h4>
-              <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-                {t("audio.voiceHint")}
-              </p>
-            </div>
-            <div className="mt-0.5 shrink-0">
+              </>
+            }
+            description={t("audio.voiceHint")}
+            control={
               <Select value={voiceType} onValueChange={setVoiceType}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 max-lg:w-full">
                   <SelectValue placeholder={t("audio.selectVoice")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -130,8 +129,8 @@ export function AudioSection() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
+            }
+          />
         )}
 
         {/* ── Cube turn sounds (new) ──────────────────────────────────── */}

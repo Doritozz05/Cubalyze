@@ -5,6 +5,7 @@ import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
 import { SettingToggle } from '../components/SettingToggle';
+import { SettingRow } from '../components/SettingRow';
 import {
   Select,
   SelectContent,
@@ -63,19 +64,17 @@ export function TimerSection() {
       </div>
 
       {/* ── Input Mode: Timer vs Manual ──────────────────────────── */}
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+      <SettingRow
+        title={
+          <>
             <Keyboard className="size-3.5 text-ink-2" />
             {t('timer.manualEntry')}
-          </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            {t('timer.manualEntryHint')}
-          </p>
-        </div>
-        <div className="mt-0.5 shrink-0">
+          </>
+        }
+        description={t('timer.manualEntryHint')}
+        control={
           <Select value={inputMode} onValueChange={(v) => setInputMode(v as 'timer' | 'manual')}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 max-lg:w-full">
               <SelectValue placeholder={t('timer.inputModePlaceholder')} />
             </SelectTrigger>
             <SelectContent>
@@ -93,26 +92,24 @@ export function TimerSection() {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Time Precision: Centiseconds vs Milliseconds ────────── */}
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+      <SettingRow
+        title={
+          <>
             <Clock className="size-3.5 text-ink-2" />
             {t('timer.timePrecision')}
-          </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            {t('timer.timePrecisionHint')}
-          </p>
-        </div>
-        <div className="mt-0.5 shrink-0">
+          </>
+        }
+        description={t('timer.timePrecisionHint')}
+        control={
           <Select
             value={timePrecision}
             onValueChange={(val) => setTimePrecision(val as 'centiseconds' | 'milliseconds')}
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 max-lg:w-full">
               <SelectValue placeholder={t('timer.selectPrecision')} />
             </SelectTrigger>
             <SelectContent>
@@ -120,8 +117,8 @@ export function TimerSection() {
               <SelectItem value="milliseconds">{t('timer.milliseconds')}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Click to start/stop ───────────────────────────────────── */}
       <SettingToggle
@@ -132,21 +129,15 @@ export function TimerSection() {
       />
 
       {/* ── Spacebar Hold Delay ────────────────────────────────────── */}
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
-            {t('timer.holdDuration')}
-          </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            {t('timer.holdDurationHint')}
-          </p>
-        </div>
-        <div className="mt-0.5 shrink-0">
+      <SettingRow
+        title={t('timer.holdDuration')}
+        description={t('timer.holdDurationHint')}
+        control={
           <Select
             value={String(spacebarHoldDelay)}
             onValueChange={(val) => setSpacebarHoldDelay(Number(val))}
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 max-lg:w-full">
               <SelectValue placeholder={t('timer.selectHoldTime')} />
             </SelectTrigger>
             <SelectContent>
@@ -156,33 +147,35 @@ export function TimerSection() {
               <SelectItem value="1000">{t('timer.holdSecond')}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Hardware Timer ─────────────────────────────────────────── */}
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="min-w-0 flex-1">
-          <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+      <SettingRow
+        title={
+          <>
             <Cpu className="size-3.5 text-ink-2" />
             {t('timer.hardwareTimer')}
-          </h4>
-          <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-            {t('timer.hardwareTimerHint')}
-          </p>
-          {hardwareTimer === 'stackmat' && (
-            <p className="mt-1.5 text-[0.62rem] text-caution/70">
-              {t('timer.stackmatHint')}
-            </p>
-          )}
-          {hardwareTimer === 'gan' && (
-            <p className="mt-1.5 text-[0.62rem] text-caution/70">
-              {t('timer.ganHint')}
-            </p>
-          )}
-        </div>
-        <div className="mt-0.5 shrink-0">
+          </>
+        }
+        description={t('timer.hardwareTimerHint')}
+        extraHint={
+          <>
+            {hardwareTimer === 'stackmat' && (
+              <p className="mt-1.5 text-[0.62rem] text-caution/70">
+                {t('timer.stackmatHint')}
+              </p>
+            )}
+            {hardwareTimer === 'gan' && (
+              <p className="mt-1.5 text-[0.62rem] text-caution/70">
+                {t('timer.ganHint')}
+              </p>
+            )}
+          </>
+        }
+        control={
           <Select value={hardwareTimer} onValueChange={(v) => setHardwareTimer(v as 'none' | 'stackmat' | 'gan')}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 max-lg:w-full">
               <SelectValue placeholder={t('timer.selectTimer')} />
             </SelectTrigger>
             <SelectContent>
@@ -205,8 +198,8 @@ export function TimerSection() {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       <SettingToggle
         title={t('timer.inspection')}
@@ -230,19 +223,17 @@ export function TimerSection() {
       />
 
       {showBottomLayout && (
-        <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-          <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
+        <SettingRow
+          title={
+            <>
               <LayoutTemplate className="size-3.5 text-ink-2" />
               {t('timer.bottomLayoutTemplate')}
-            </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              {t('timer.bottomLayoutTemplateHint')}
-            </p>
-          </div>
-          <div className="mt-0.5 shrink-0">
+            </>
+          }
+          description={t('timer.bottomLayoutTemplateHint')}
+          control={
             <Select value={bottomLayoutTemplate} onValueChange={setBottomLayoutTemplate}>
-              <SelectTrigger className="w-44">
+              <SelectTrigger className="w-44 max-lg:w-full">
                 <SelectValue placeholder={t('timer.selectBottomLayoutTemplate')} />
               </SelectTrigger>
               <SelectContent>
@@ -253,8 +244,8 @@ export function TimerSection() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
+          }
+        />
       )}
 
       <SettingToggle
