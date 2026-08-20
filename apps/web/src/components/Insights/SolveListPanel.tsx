@@ -455,31 +455,20 @@ export const SolveListPanel = memo(function SolveListPanel({
                     time: isDnf ? "DNF" : formatTime(eff),
                   })}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
-                    "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none transition-colors focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ink/30",
+                    "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none",
+                    "transition-[background-color,box-shadow] duration-150 ease-out",
                     selectionMode
                       ? isChecked
-                        ? "bg-surface-2"
+                        ? "bg-surface-2 ring-1 ring-inset ring-ink/20"
                         : "hover:bg-surface-2/60"
                       : isSelected
-                        ? "bg-surface-2"
+                        ? "bg-surface-2 ring-1 ring-inset ring-ink/20"
                         : "hover:bg-surface-2/60",
                     vi.index === solves.length - 1 && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
-                  {/* Selection accent bar (no layout shift) */}
-                  <span
-                    className={cn(
-                      "absolute left-0 top-0 h-full w-0.5 transition-colors",
-                      selectionMode
-                        ? isChecked
-                          ? "bg-ink"
-                          : "bg-transparent"
-                        : isSelected
-                          ? "bg-ink"
-                          : "bg-transparent",
-                    )}
-                  />
+
 
                   <div className="px-3 pb-1.75 pt-1.75 max-lg:py-4">
                     {/* Line 1: index + time + delta + source + penalty */}
@@ -507,7 +496,12 @@ export const SolveListPanel = memo(function SolveListPanel({
                         ) : (
                           <span className="size-1.5 shrink-0" />
                         )}
-                        <span className="nums text-right text-xs tabular-nums text-ink-3">
+                        <span
+                          className={cn(
+                            "nums text-right text-xs tabular-nums transition-colors duration-150",
+                            isSelected ? "text-ink" : "text-ink-3",
+                          )}
+                        >
                           {solves.length - i}
                         </span>
                       </span>
