@@ -239,7 +239,7 @@ export interface PreferencesState {
 
 const DEFAULT_VALUES = {
   theme: 'light' as const,
-  headerMode: 'always' as const,
+  headerMode: 'autohide' as const,
   appearance3d: 'default',
   scrambleFollowsCube: true,
   inspection: true,

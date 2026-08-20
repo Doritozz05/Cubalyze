@@ -55,14 +55,14 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().showHints).toBe(true);
   });
 
-  it('cycles headerMode (default always)', () => {
+  it('cycles headerMode (default autohide)', () => {
+    expect(preferencesStore.getState().headerMode).toBe('autohide');
+    preferencesStore.getState().setHeaderMode('always');
     expect(preferencesStore.getState().headerMode).toBe('always');
     preferencesStore.getState().setHeaderMode('hidden');
     expect(preferencesStore.getState().headerMode).toBe('hidden');
     preferencesStore.getState().setHeaderMode('autohide');
     expect(preferencesStore.getState().headerMode).toBe('autohide');
-    preferencesStore.getState().setHeaderMode('always');
-    expect(preferencesStore.getState().headerMode).toBe('always');
   });
 
   it('handles spacebarHoldDelay, showBpaWpa, and timePrecision settings', () => {
