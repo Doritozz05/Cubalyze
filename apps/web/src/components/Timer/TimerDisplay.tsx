@@ -102,7 +102,15 @@ export function TimerDisplay({
         <div
           className={cn(
             "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
-            className ?? "text-[clamp(3.75rem,15vw,9.5rem)]",
+            // Cap the time by viewport HEIGHT too (not just width): on wide
+            // but short landscape tablets the old 15vw-only clamp produced a
+            // ~152px digit that, together with the min-height floor, pushed
+            // the session layout out of the clipped section.
+            // `/none` keeps line-height 1 (tailwind-merge would otherwise
+            // drop a separate `leading-none` next to a `text-*` size), so the
+            // digit box is exactly the glyph height and never inflates the
+            // stage on short viewports.
+            className ?? "text-[clamp(3rem,min(15vw,18vh),9.5rem)]/none",
             textColor,
             STATE_SCALE[state],
           )}

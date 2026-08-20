@@ -230,14 +230,21 @@ export function TimerContainer({
         // Touch (<768px): the timer stays thumb-friendly but compact enough
         // that scramble + timer + bottom layout strip fit between the header
         // and the bottom tab bar on small phones (the stage also scrolls as a
-        // fallback — see MainLayout). Desktop formula unchanged.
-        "min-h-[clamp(280px,42vh,460px)] max-lg:min-h-[clamp(280px,38vh,440px)]",
+        // fallback — see MainLayout).
+        //
+        // Desktop/tablet floor: keep it LOW and height-aware. A tall rigid
+        // floor here is what pushed the session layout out of an
+        // `overflow-hidden` section on short landscape tablets — the timer
+        // refused to shrink, so the last child (bottom layout) got clipped.
+        // The flex-1 container still grows to fill leftover space on tall
+        // screens; this is only the shrink floor.
+        "min-h-[clamp(150px,22vh,420px)] max-lg:min-h-[clamp(280px,38vh,440px)]",
         // Touch tablets (coarse pointer, >=768px, desktop layout): the whole
         // stage (scramble + timer + bottom layout) must fit between the
         // header and the gesture bar WITHOUT scrolling, so the timer's
         // minimum height is smaller than on real desktops. It still grows
         // via flex-1 to fill any leftover space.
-        isCoarsePointer && "lg:min-h-[clamp(220px,30vh,360px)]",
+        isCoarsePointer && "lg:min-h-[clamp(150px,22vh,360px)]",
         // Kill double-tap zoom delay on touch; no effect on mouse.
         "touch-manipulation",
         !activeClickToStart && "cursor-default",

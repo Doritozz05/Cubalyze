@@ -147,15 +147,17 @@ export function ScrambleDisplay({
         </div>
       ) : errorMoves.length > 0 ? (
         <div
-          // Touch (<768px): smaller tokens that wrap so the full scramble
-          // fits on screen with zero horizontal scroll. Desktop unchanged.
+          // Tokens scale with the viewport (width AND height) like the timer,
+          // so on short landscape tablets the scramble shrinks in step with
+          // the rest of the stage. Touch (<768px) keeps the smaller text-sm
+          // tokens that wrap with zero horizontal scroll.
           className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
           translate="no"
         >
           {errorMoves.map((m, i) => (
             <span
               key={`err-${i}`}
-              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100 max-lg:text-sm"
+              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100 text-[clamp(0.75rem,min(1.6vw,1.9vh),1rem)] max-lg:text-sm"
             >
               {m}
             </span>
@@ -163,8 +165,10 @@ export function ScrambleDisplay({
         </div>
       ) : (
         <div
-          // Touch (<768px): smaller tokens that wrap so the full scramble
-          // fits on screen with zero horizontal scroll. Desktop unchanged.
+          // Tokens scale with the viewport (width AND height) like the timer,
+          // so on short landscape tablets the scramble shrinks in step with
+          // the rest of the stage. Touch (<768px) keeps the smaller text-sm
+          // tokens that wrap with zero horizontal scroll.
           className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
           translate="no"
         >
@@ -177,7 +181,7 @@ export function ScrambleDisplay({
               <span
                 key={`${tok}-${i}`}
                 className={cn(
-                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 max-lg:text-sm",
+                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-[clamp(0.75rem,min(1.6vw,1.9vh),1rem)] max-lg:text-sm",
                   !isVerificationActive && "text-ink scale-100",
                   isVerificationActive && isCompleted && "text-ink-3 scale-110",
                   isVerificationActive && isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
