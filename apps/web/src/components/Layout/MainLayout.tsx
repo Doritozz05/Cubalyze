@@ -374,6 +374,10 @@ export function MainLayout({
               // own scroll surface.
               activeView === "timer" && "max-lg:overflow-y-auto",
               !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
+              // Short viewports (<700px tall): less air between the dock and
+              // the scramble than on tall desktops, where the stage can
+              // breathe. Overrides the lg top padding (py-8 → pt-4).
+              !hideHeader && "[@media(max-height:700px)]:lg:pt-4",
               // Touch tablets (coarse pointer, >=768px, desktop layout): no
               // bottom tab bar, but the system gesture bar overlays the
               // bottom of the viewport. A taller bottom padding keeps the
