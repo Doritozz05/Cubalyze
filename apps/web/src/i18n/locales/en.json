@@ -608,7 +608,9 @@
     "init3dShort": "Initializing...",
     "viewUnavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
     "viewUnavailableShort": "3D unavailable — too many 3D views open",
-    "close3d": "Close 3D view"
+    "close3d": "Close 3D view",
+    "scramblePreview": "Scramble preview",
+    "openScramblePreview": "Enlarge scramble"
   },
   "stats": {
     "best": "Best",

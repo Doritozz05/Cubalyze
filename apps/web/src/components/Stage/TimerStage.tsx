@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
@@ -11,6 +12,7 @@ import { Scramble2DNet } from "@/components/Scramble/Scramble2DNet";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomLayout } from "@/bottom-layout/BottomLayout";
 import {
   DEFAULT_BOTTOM_LAYOUT_TEMPLATE,
@@ -81,6 +83,9 @@ export function TimerStage(props: TimerStageProps) {
   } = props;
 
   const { t } = useTranslation("timer");
+
+  // Enlarged scramble dialog (opened by clicking the 2D net in the bottom layout).
+  const [scramblePreviewOpen, setScramblePreviewOpen] = useState(false);
 
   const {
     phase: timerPhase,
@@ -266,9 +271,30 @@ export function TimerStage(props: TimerStageProps) {
           onExpand={onExpand}
           puzzleFilter={puzzleFilter}
           scramble={embedScramble ? scrambleElement : undefined}
-          scramble2d={embedsScramble2d ? <Scramble2DNet scramble={currentScramble} compact /> : undefined}
+          scramble2d={
+            embedsScramble2d ? (
+              <button
+                type="button"
+                onClick={() => setScramblePreviewOpen(true)}
+                aria-label={t("openScramblePreview")}
+                className="grid cursor-pointer place-items-center rounded-md outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <Scramble2DNet scramble={currentScramble} compact />
+              </button>
+            ) : undefined
+          }
         />
       )}
+
+      <Dialog open={scramblePreviewOpen} onOpenChange={setScramblePreviewOpen}>
+        <DialogContent className="flex flex-col items-center gap-5 sm:max-w-md">
+          <DialogTitle className="sr-only">{t("scramblePreview")}</DialogTitle>
+          <Scramble2DNet scramble={currentScramble} className="mx-auto w-full" />
+          <p className="nums text-center text-xl leading-snug tracking-tight text-ink">
+            {currentScramble}
+          </p>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

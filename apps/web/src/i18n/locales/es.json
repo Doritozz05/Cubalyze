@@ -608,7 +608,9 @@
     "init3dShort": "Inicializando...",
     "viewUnavailable": "Vista 3D no disponible: hay demasiadas vistas 3D abiertas en este dispositivo. Cierra otra vista 3D y vuelve a abrirlo.",
     "viewUnavailableShort": "3D no disponible: hay demasiadas vistas 3D abiertas",
-    "close3d": "Cerrar vista 3D"
+    "close3d": "Cerrar vista 3D",
+    "scramblePreview": "Vista del scramble",
+    "openScramblePreview": "Ampliar scramble"
   },
   "stats": {
     "best": "Mejor",

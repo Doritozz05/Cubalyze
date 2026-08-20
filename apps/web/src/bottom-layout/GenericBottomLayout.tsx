@@ -31,10 +31,10 @@ function StatCell({ stat, value }: { stat: BottomLayoutStatId; value: string }) 
   const label = meta.literal ?? t(meta.key as never);
   return (
     <div className="flex min-w-0 items-baseline justify-between gap-3 max-lg:gap-1.5">
-      <span className="shrink-0 text-[0.62rem] uppercase tracking-[0.18em] text-ink-3 max-lg:text-[0.52rem] max-lg:tracking-[0.12em]">
+      <span className="shrink-0 text-[0.56rem] uppercase tracking-[0.18em] text-ink-3 max-lg:text-[0.5rem] max-lg:tracking-[0.12em]">
         {label}
       </span>
-      <span className="nums truncate text-sm tabular-nums text-ink max-lg:text-xs">{value}</span>
+      <span className="nums truncate text-[0.82rem] tabular-nums text-ink max-lg:text-[0.72rem]">{value}</span>
     </div>
   );
 }
@@ -82,7 +82,7 @@ export function GenericBottomLayout({
   return (
     <div
       className={cn(
-        "grid w-full items-stretch gap-4 rounded-lg border border-line bg-surface px-4 py-3 max-lg:gap-2 max-lg:px-2.5 max-lg:py-2",
+        "grid w-full items-stretch gap-3 rounded-lg border border-line bg-surface px-3 py-2 max-lg:gap-1.5 max-lg:px-2 max-lg:py-1.5",
         className,
       )}
       style={{ gridTemplateColumns }}
@@ -91,8 +91,8 @@ export function GenericBottomLayout({
         <div
           key={columnIndex}
           className={cn(
-            "flex min-w-0 flex-col justify-center gap-1.5 max-lg:gap-1",
-            columnIndex > 0 && "border-l border-line pl-4 max-lg:pl-2",
+            "flex min-w-0 flex-col justify-center gap-1 max-lg:gap-0.5",
+            columnIndex > 0 && "border-l border-line pl-3 max-lg:pl-1.5",
           )}
         >
           {column.cells.map((cell, cellIndex) => {
