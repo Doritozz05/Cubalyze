@@ -293,7 +293,15 @@ export function AppShell(props: AppShellProps) {
           sessions={sessions}
           solves={solves}
           activeSessionId={activeSessionId}
-          hideHeader={activeView === "skill-tree" || headerMode === "hidden"}
+          hideHeader={
+            activeView === "skill-tree" ||
+            activeView === "algorithms" ||
+            activeView === "reconstructions" ||
+            activeView === "insights" ||
+            activeView === "training" ||
+            activeView === "profile" ||
+            headerMode === "hidden"
+          }
           onSwitchSession={onSwitchSession}
           onNewSession={onNewSession}
           onRenameSession={onRenameSession}
