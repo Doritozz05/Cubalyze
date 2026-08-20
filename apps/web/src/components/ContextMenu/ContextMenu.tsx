@@ -81,12 +81,21 @@ export function ContextMenu() {
     <AnimatePresence>
       {state.open && (
         <>
-          {/* Invisible backdrop to catch clicks outside */}
+          {/* Invisible backdrop to catch clicks outside. pointer-events-auto
+              is CRITICAL: Radix modal dialogs (Settings, Widget Explorer, …)
+              set document.body { pointer-events: none } while open, and this
+              portal would INHERIT it — clicks would pass through and the menu
+              could never be closed by clicking outside.
+
+              stopPropagation on pointerdown keeps this outside click from
+              reaching Radix's document-level outside-interaction detection,
+              which would otherwise close the dialog underneath. */}
           <motion.div
-            className="fixed inset-0 z-[9998]"
+            className="pointer-events-auto fixed inset-0 z-[9998]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={handleBackdropClick}
           />
           <motion.div
@@ -103,9 +112,20 @@ export function ContextMenu() {
               zIndex: 9999,
             }}
             className={cn(
-              "min-w-[200px] rounded-xl border border-line/80 bg-surface/95 p-1 shadow-xl backdrop-blur-xl",
+              // pointer-events-auto: Radix modal dialogs set
+              // document.body { pointer-events: none } while open, which this
+              // portal would inherit — the menu must stay interactive over
+              // them (same fix as the backdrop).
+              //
+              // stopPropagation on pointerdown/click: interactions with the
+              // menu are portaled to <body> (outside the dialog's content), so
+              // without this Radix treats them as "outside" and closes the
+              // dialog when the menu is used.
+              "pointer-events-auto min-w-[200px] rounded-xl border border-line/80 bg-surface/95 p-1 shadow-xl backdrop-blur-xl",
               "select-none outline-none",
             )}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             {state.items.map((item) => (
               <div key={item.id}>
