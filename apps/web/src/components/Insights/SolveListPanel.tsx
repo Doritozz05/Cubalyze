@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useMemo, useRef } from "react";
-import { motion, useReducedMotion, LayoutGroup } from "framer-motion";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
@@ -394,7 +394,6 @@ export const SolveListPanel = memo(function SolveListPanel({
               </button>
             </div>
           )}
-        <LayoutGroup id="solve-list">
           <ul
             className="relative w-full"
             style={{ height: virtualizer.getTotalSize() }}
@@ -458,23 +457,18 @@ export const SolveListPanel = memo(function SolveListPanel({
                     time: isDnf ? "DNF" : formatTime(eff),
                   })}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
-                    "absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none",
+                    "group absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none",
                     "transition-colors duration-150",
-                    selectionMode
-                      ? isChecked
-                        ? "text-sidebar-accent-foreground"
-                        : "hover:bg-sidebar-accent/50"
-                      : isSelected
-                        ? "text-sidebar-accent-foreground"
-                        : "hover:bg-sidebar-accent/50",
                     vi.index === solves.length - 1 && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
-                  {/* Active-row pill — same spring + layoutId technique as the sidebar nav */}
+                  {/* Hover pill — subtle translucent inset card */}
+                  <div className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-surface-2/0 transition-colors duration-150 group-hover:bg-surface-2/50" />
+                  {/* Active-row card — Linear/Raycast style hairline inset card */}
                   <ActivePill active={selectionMode ? isChecked : isSelected} />
 
-                  <div className="px-3 pb-1.75 pt-1.75 max-lg:py-4">
+                  <div className="relative z-10 px-3 pb-1.75 pt-1.75 max-lg:py-4">
                     {/* Line 1: index + time + delta + source + penalty */}
                     <div className="flex items-center gap-2.5">
                       {selectionMode ? (
@@ -547,7 +541,6 @@ export const SolveListPanel = memo(function SolveListPanel({
               );
             })}
           </ul>
-        </LayoutGroup>
         </ScrollArea>
       )}
 
@@ -579,25 +572,24 @@ export const SolveListPanel = memo(function SolveListPanel({
 });
 
 // ─── Active row pill ────────────────────────────────────────────────────────
-// Mirrors the sidebar NavButton technique: a shared-layout motion.div that
-// animates between rows using the same spring config (stiffness 380, damping 30).
-// Because the list is virtualised the layoutId can't travel across unmounted
-// rows, but within the visible viewport the spring slide still looks great.
-
-const SOLVE_ACTIVE_SPRING = {
-  type: "spring" as const,
-  stiffness: 380,
-  damping: 30,
-};
+// Linear / Raycast style: Inset card with a crisp hairline border ring,
+// subtle surface-2 elevation, and a smooth micro-fade transition.
 
 function ActivePill({ active }: { active: boolean }) {
   const reduceMotion = useReducedMotion();
-  if (!active) return null;
   return (
-    <motion.div
-      layoutId="solve-active-bg"
-      className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-sidebar-accent"
-      transition={reduceMotion ? { duration: 0 } : SOLVE_ACTIVE_SPRING}
-    />
+    <AnimatePresence>
+      {active && (
+        <motion.div
+          key="active-pill"
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? {} : { opacity: 0 }}
+          transition={{ duration: 0.12, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-surface-2 border border-line/35 dark:border-white/[0.04]"
+        />
+      )}
+    </AnimatePresence>
   );
 }
+
