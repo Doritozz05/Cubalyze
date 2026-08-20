@@ -99,6 +99,17 @@ export function TimerDisplay({
   return (
     <div className="flex select-none flex-col items-center justify-center gap-7">
       <div className="flex items-baseline justify-center gap-3">
+        {/* Invisible mirror of the PB delta keeps the time perfectly centered
+            while the real delta renders on the right, baseline-aligned with
+            the time (it no longer pushes the time sideways). */}
+        {deltaMs != null && (
+          <span
+            aria-hidden="true"
+            className="nums invisible text-[clamp(1rem,3vw,1.8rem)] font-medium leading-none"
+          >
+            {deltaMs <= 0 ? "\u2212" : "+"}{formatTime(Math.abs(deltaMs))}
+          </span>
+        )}
         <div
           className={cn(
             "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
