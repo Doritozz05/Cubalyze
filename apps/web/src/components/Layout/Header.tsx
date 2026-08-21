@@ -161,6 +161,19 @@ export function Header({
     }
   }, []);
 
+  // ── Dropdown/popover guard ──────────────────────────────────────────
+  // When a Radix dropdown/select/popover is open its content lives in a
+  // portal OUTSIDE the header DOM, so the header's pointerleave fires and
+  // the dock retracts — leaving the dropdown floating over empty space.
+  // Check the document for any open Radix popper and, when one is open,
+  // cancel any pending retract and keep the dock pinned until it closes.
+  const anyPopoverOpen = useCallback((): boolean => {
+    // Radix marks open popper content with data-state="open". The trigger
+    // also carries data-state="open". Checking both covers dropdown menus,
+    // select content, and popovers.
+    return !!document.querySelector('[data-state="open"]');
+  }, []);
+
   const revealDock = useCallback(() => {
     cancelRetract();
     setDockRevealed(true);
@@ -195,18 +208,6 @@ export function Header({
     };
   }, []);
 
-  // ── Dropdown/popover guard ──────────────────────────────────────────
-  // When a Radix dropdown/select/popover is open its content lives in a
-  // portal OUTSIDE the header DOM, so the header's pointerleave fires and
-  // the dock retracts — leaving the dropdown floating over empty space.
-  // Check the document for any open Radix popper and, when one is open,
-  // cancel any pending retract and keep the dock pinned until it closes.
-  const anyPopoverOpen = useCallback((): boolean => {
-    // Radix marks open popper content with data-state="open". The trigger
-    // also carries data-state="open". Checking both covers dropdown menus,
-    // select content, and popovers.
-    return !!document.querySelector('[data-state="open"]');
-  }, []);
 
   // Drag-to-dock reveal: while a floating widget is dragged toward the top,
   // slide the (auto-hidden) dock back down; when the drag leaves the strip or
