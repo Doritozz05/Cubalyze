@@ -234,8 +234,8 @@ export function CreditsSection() {
             </p>
           </div>
         </div>
-        <code className="shrink-0 rounded-md border border-line bg-surface-2/60 px-2.5 py-1 font-mono text-[0.72rem] font-medium text-ink-2">
-          v{__APP_VERSION__}
+        <code className="shrink-0 whitespace-nowrap rounded-md border border-line bg-surface-2/60 px-2.5 py-1 font-mono text-[0.72rem] font-medium text-ink-2">
+          v{__APP_VERSION__} · {__BUILD_SHA__}
         </code>
       </section>
 

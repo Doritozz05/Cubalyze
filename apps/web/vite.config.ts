@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 import { readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { LIGHT_CANVAS } from './src/theme/themeColors.js'
 
 // App version for the UI (Settings → Credits → App version). Read from
@@ -13,9 +14,25 @@ import { LIGHT_CANVAS } from './src/theme/themeColors.js'
 // need resolveJsonModule in the node tsconfig and would inline the whole file.
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string }
 
+// Short build SHA for the same UI: VERCEL_GIT_COMMIT_SHA is set by Vercel
+// during the build; locally (dev/preview) fall back to the current git HEAD.
+// Changes with EVERY deploy, so users can always confirm they're on the
+// latest build — and it doubles as the auto-update test (a new SHA appears
+// without a hard refresh once the service worker update lands).
+function getBuildSha(): string {
+  const fromEnv = process.env.VERCEL_GIT_COMMIT_SHA
+  if (fromEnv) return fromEnv.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'dev'
+  }
+}
+
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_SHA__: JSON.stringify(getBuildSha()),
   },
   server: {
     host: true,
