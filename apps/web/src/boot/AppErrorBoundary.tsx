@@ -41,6 +41,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
 
     const { error } = this.state;
     const stack = (error.stack ?? "").slice(0, 900);
+    const isTranslationCrash = error.message.includes("removeChild");
 
     return (
       <div style={OVERLAY}>
@@ -52,6 +53,14 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
             tocado — esto solo afecta a la pantalla. Copia el informe con «Ver logs» y
             recarga para volver.
           </p>
+          {isTranslationCrash && (
+            <p style={{ ...DESCRIPTION, color: "#fbbf24" }}>
+              📖 Consejo: si el navegador está <strong>traduciendo la página</strong>
+              (Chrome/Safari), eso puede romper la interfaz. Añade este sitio a la lista
+              «Nunca traducir» o cambia el idioma del navegador al de la página, y vuelve
+              a cargar.
+            </p>
+          )}
           <pre style={STACK}>{error.message + (stack ? `\n\n${stack}` : "")}</pre>
           <div style={ACTIONS}>
             <button type="button" style={BUTTON_SECONDARY} onClick={this.handleOpenLogs}>
