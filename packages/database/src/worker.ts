@@ -1,5 +1,6 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { loadSnapshot, saveSnapshot } from './indexeddb-snapshot.js';
+import { loadSnapshot, saveSnapshot, clearSnapshot } from './indexeddb-snapshot.js';
+import { resetPushWatermarkForMigrated } from './migrated-upload.js';
 import * as Comlink from 'comlink';
 import { MIGRATIONS } from './migrations/index.js';
 import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL, backupHasDateColumnSql, backupCreatedAtTypeSql, restoreMissingCountSql } from './migrations/restore.js';
@@ -271,6 +272,224 @@ function runMigrations(): void {
 }
 
 /**
+ * Count non-demo solves in the CURRENT db (the UI's real data).
+ * Used to decide whether a tier migration should bring data over.
+ */
+function countRealSolves(): number {
+  if (!db) return 0;
+  try {
+    const rows = db.exec({
+      sql: 'SELECT COUNT(*) AS c FROM solves WHERE is_demo = 0',
+      rowMode: 'array',
+    }) as unknown[][];
+    return Number(rows?.[0]?.[0]) || 0;
+  } catch {
+    // Table may not exist yet (pre-migration) — treat as empty.
+    return 0;
+  }
+}
+
+/**
+ * If the freshly-opened backend is EMPTY but another storage tier holds real
+ * data (a stale IndexedDB snapshot, or the OTHER OPFS directory), bring those
+ * rows into the active tier BEFORE migrations run. This is the recovery path
+ * for the case where a device's backend changed (e.g. OPFS classic →
+ * opfs-sahpool after a browser update dropped cross-origin isolation): the
+ * solves are not lost, they just live in a directory sqlite-wasm considers
+ * invisible to the current one.
+ *
+ * Sources are tried in order (safest first):
+ *   1. IndexedDB byte-snapshot (memory tier's last-resort store) — restore
+ *      it into a throwaway in-memory handle and copy its sessions/solves.
+ *   2. The OTHER OPFS directory (classic `OpfsDb` if we are on sahnpool, and
+ *      vice-versa) — open it read-only and copy its sessions/solves.
+ *
+ * Only sessions + solves are migrated (the UI's data). Other tables
+ * (training catalog, profiles, app_meta) are re-seeded/migrated fresh on the
+ * active tier, so copying them would risk FK/id collisions. Idempotent:
+ * INSERT OR IGNORE + re-running is a no-op, and once the active tier holds
+ * data the gate (empty check) stops it.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function migrateFromOtherTier(sqlite3: any): Promise<void> {
+  if (!db) return;
+  // Only when the active tier is empty — never overwrite existing data.
+  if (countRealSolves() > 0) return;
+
+  // ── Source 1: IndexedDB snapshot (memory tier) ────────────────────────
+  const snapshot = await loadSnapshot();
+  if (snapshot && snapshot.byteLength > 0) {
+    try {
+      // Open a throwaway in-memory DB and deserialize the snapshot.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const src: any = new (sqlite3 as any).oo1.DB('/migration-source.sqlite3', 'c');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const capi = (sqlite3 as any).capi;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pData = (sqlite3 as any).wasm.allocFromTypedArray(snapshot);
+      const rc = capi.sqlite3_deserialize(
+        src.pointer,
+        'main',
+        pData,
+        snapshot.byteLength,
+        snapshot.byteLength,
+        capi.SQLITE_DESERIALIZE_RESIZEABLE | capi.SQLITE_DESERIALIZE_FREEONCLOSE,
+      );
+      if (rc === 0) {
+        const { sessions, solves } = readAndCopySessions(src);
+        console.log(
+          `[DB Worker] Migrated ${solves} solve(s) / ${sessions} session(s) from IndexedDB snapshot.`,
+        );
+        // If a real account is linked on this device, let the next sync
+        // re-upload the rescued rows (server-side LWW keeps the cloud safe
+        // from stale overwrites — see migrated-upload.ts).
+        if (sessions > 0 || solves > 0) {
+          await resetPushWatermarkForMigrated(dbExec);
+        }
+        // The snapshot is now consumed — drop it so a later downgrade can't
+        // resurrect it over the fresher active-tier copy.
+        await clearSnapshot();
+        try {
+          src.close();
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      try {
+        src.close();
+      } catch {
+        /* ignore */
+      }
+    } catch (e) {
+      console.warn('[DB Worker] snapshot migration failed (non-fatal):', e);
+    }
+  }
+
+  // ── Source 2: the OTHER OPFS directory ────────────────────────────────
+  const otherCtor = _storageType === 'sahpool' ? 'OpfsDb' : 'OpfsSAHPoolDb';
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const OtherCtor = (sqlite3 as any).oo1?.[otherCtor];
+    if (!OtherCtor) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const src: any = new OtherCtor('/cubeforge.sqlite3');
+    const { sessions, solves } = readAndCopySessions(src);
+    if (sessions > 0 || solves > 0) {
+      console.log(`[DB Worker] Migrated ${solves} solve(s) / ${sessions} session(s) from ${otherCtor} (other OPFS directory).`);
+      // Same rescue as the snapshot path: let the next sync re-upload.
+      await resetPushWatermarkForMigrated(dbExec);
+    }
+    try {
+      src.close();
+    } catch {
+      /* ignore */
+    }
+  } catch (e) {
+    // The other VFS may not be installed in this context (e.g. no COI → no
+    // classic OpfsDb) — expected and non-fatal.
+    console.warn(`[DB Worker] ${otherCtor} migration unavailable (non-fatal):`, e);
+  }
+}
+
+/**
+ * Read sessions/solves from a GIVEN source DB handle and copy them into the
+ * ACTIVE `db`, adapting to the source's schema. Returns the row counts
+ * copied (for logging).
+ *
+ * Schema-aware (the source may be a snapshot of an OLD tier that predates
+ * migration 022/026/027):
+ *  - `sessions.created_at` may be TEXT ISO (v1) or INTEGER ms (v2).
+ *  - `solves.timestamp` may be absent — v1 used `date TEXT` — and the other
+ *    columns have v1/v2 shapes. We detect the source shape ONCE and build
+ *    per-shape SELECTs; every row is INSERTed into the (already migrated)
+ *    v2 target with normalized values.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function readAndCopySessions(src: any): { sessions: number; solves: number } {
+  const hasTimestamp = src.exec({
+    sql: "SELECT COUNT(*) AS c FROM pragma_table_info('solves') WHERE name = 'timestamp'",
+    rowMode: 'array',
+  }) as unknown[][];
+  const isV2 = Number(hasTimestamp?.[0]?.[0]) > 0;
+
+  // Sessions always exist; their created_at may be TEXT (v1) or INTEGER (v2).
+  const sessionsSql = isV2
+    ? 'SELECT id, name, puzzle_type, created_at, updated_at, is_demo FROM sessions'
+    : "SELECT id, name, puzzle_type, CASE WHEN typeof(created_at) = 'text' THEN CAST((julianday(created_at) - 2440587.5) * 86400000 AS INTEGER) ELSE created_at END AS created_at, CASE WHEN typeof(updated_at) = 'text' THEN CAST((julianday(updated_at) - 2440587.5) * 86400000 AS INTEGER) ELSE updated_at END AS updated_at, COALESCE(is_demo, 0) AS is_demo FROM sessions";
+  const solvesSql = isV2
+    ? 'SELECT id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at FROM solves'
+    : "SELECT id, session_id, time_ms, CASE WHEN typeof(date) = 'text' THEN CAST((julianday(date) - 2440587.5) * 86400000 AS INTEGER) ELSE CAST(date AS INTEGER) END AS timestamp, scramble, penalty, method, source, note, moves, NULL AS orientation_timeline, NULL AS analysis_engine_version, NULL AS analysis, COALESCE(puzzle_type, '3x3x3') AS puzzle_type, COALESCE(is_demo, 0) AS is_demo, CASE WHEN typeof(created_at) = 'text' THEN CAST((julianday(created_at) - 2440587.5) * 86400000 AS INTEGER) ELSE created_at END AS created_at, CASE WHEN typeof(updated_at) = 'text' THEN CAST((julianday(updated_at) - 2440587.5) * 86400000 AS INTEGER) ELSE updated_at END AS updated_at FROM solves";
+
+  const sessions = src.exec({ sql: sessionsSql, rowMode: 'object' }) as Record<string, unknown>[];
+  for (const s of sessions) {
+    db.exec(
+      'INSERT OR IGNORE INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
+      {
+        bind: [
+          s.id,
+          s.name,
+          s.puzzle_type,
+          Number(s.created_at) || 0,
+          Number(s.updated_at) || 0,
+          Number(s.is_demo) || 0,
+        ],
+      },
+    );
+  }
+
+  const solves = src.exec({ sql: solvesSql, rowMode: 'object' }) as Record<string, unknown>[];
+  for (const r of solves) {
+    db.exec(
+      'INSERT OR IGNORE INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      {
+        bind: [
+          r.id,
+          r.session_id,
+          Number(r.time_ms) || 0,
+          Number(r.timestamp) || 0,
+          r.scramble ?? '',
+          r.penalty ?? 'none',
+          r.method ?? null,
+          r.source ?? 'manual',
+          r.note ?? null,
+          r.moves ?? '[]',
+          r.orientation_timeline ?? null,
+          r.analysis_engine_version ?? null,
+          r.analysis ?? null,
+          r.puzzle_type ?? '333',
+          Number(r.is_demo) || 0,
+          Number(r.created_at) || 0,
+          Number(r.updated_at) || 0,
+        ],
+      },
+    );
+  }
+  return { sessions: sessions.length, solves: solves.length };
+}
+
+/**
+ * Minimal executor adapter for the migrated-row upload helper
+ * (`resetPushWatermarkForMigrated`, see migrated-upload.ts): runs a
+ * statement against the active `db` and resolves with its rows. The helper
+ * is best-effort by design, so a failure resolves to an empty row list
+ * instead of throwing.
+ */
+function dbExec(sql: string, bind?: unknown[]): Promise<Record<string, unknown>[]> {
+  if (!db) return Promise.resolve([]);
+  try {
+    const rows = db.exec({
+      sql,
+      bind: (bind ?? []) as never[],
+      rowMode: 'object',
+    }) as Record<string, unknown>[];
+    return Promise.resolve(rows ?? []);
+  } catch {
+    return Promise.resolve([]);
+  }
+}
+
+/**
  * Open the OPFS-backed database, retrying transient failures (the cross-tab
  * WebLock is briefly held by another tab or by a Vite HMR reload). Only after
  * every attempt fails do we give up and let the caller fall back to the next
@@ -411,10 +630,10 @@ export const DBWorker = {
       }
 
       // NOTE: the legacy ad-hoc kv_store table was removed here — its role is
-      // now covered by the versioned app_meta table created in migration 020.
+      // covered by the versioned app_meta table created in migration 020.
       // Keeping schema changes inside migrations keeps the schema auditable.
 
-      // Use WAL where the backend supports it (OPFS does; in-memory falls
+      // Use WAL where the backend uses it (OPFS does; in-memory falls
       // back silently).
       try {
         db.exec('PRAGMA journal_mode = WAL;');
@@ -443,6 +662,20 @@ export const DBWorker = {
         restoreLegacyData();
       } catch (e) {
         console.warn('[DB Worker] v1→v2 restore failed (non-fatal, backups kept):', e);
+      }
+
+      // Recover data when the active tier opened EMPTY but another tier
+      // (IndexedDB snapshot or the other OPFS directory) still holds the
+      // user's sessions/solves — e.g. after the backend changed on a device
+      // (classic OPFS → opfs-sahpool, or a fresh install reusing a legacy
+      // snapshot). Runs AFTER migrations so `app_meta` (used by the monotonic
+      // clock) and the target tables exist; the rows are copied with their
+      // original timestamps, so they sync exactly like the data that was
+      // always there. Non-fatal: a failure must never block app startup.
+      try {
+        await migrateFromOtherTier(sqlite3);
+      } catch (e) {
+        console.warn('[DB Worker] cross-tier migration failed (non-fatal):', e);
       }
 
       // Enforce the FKs declared in the baseline schema for normal app

@@ -24,6 +24,10 @@ function installFakeIndexedDB() {
       storeData.set(key, new Uint8Array(value));
       return makeRequest(key);
     },
+    delete(key: string) {
+      storeData.delete(key);
+      return makeRequest(undefined);
+    },
   };
   const fakeDb = {
     objectStoreNames: { contains: () => true },
@@ -90,5 +94,15 @@ describe('indexeddb-snapshot', () => {
     expect(await loadSnapshot()).toBeNull();
     // saveSnapshot is best-effort and must not throw.
     await expect(saveSnapshot(new Uint8Array([9]))).resolves.toBeUndefined();
+  });
+
+  it('clearSnapshot removes the stored snapshot', async () => {
+    const data = installFakeIndexedDB();
+    const { saveSnapshot, loadSnapshot, clearSnapshot } = await import('../indexeddb-snapshot.js');
+    await saveSnapshot(new Uint8Array([7, 7, 7]));
+    expect(data.has('main')).toBe(true);
+    await clearSnapshot();
+    expect(data.has('main')).toBe(false);
+    expect(await loadSnapshot()).toBeNull();
   });
 });

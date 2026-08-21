@@ -268,6 +268,93 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     expect(all.map((s) => s.puzzleType)).toEqual(['222']);
   }, 30_000);
 
+  it('recovers sessions/solves from a pre-seeded IndexedDB snapshot on a fresh boot (memory tier restore)', async () => {
+    // In Node the worker ALWAYS lands on the memory tier, so the data comes
+    // back via openMemoryWithSnapshot (the IndexedDB byte-restore path) — the
+    // same snapshot machinery migrateFromOtherTier uses to bring data into an
+    // empty OPFS tier on a real device. Close the shared DB and re-init it
+    // with a pre-seeded snapshot to prove the round-trip end-to-end.
+    await DBWorker.close();
+
+    // Fake IndexedDB holding a snapshot with 2 sessions + 3 solves.
+    const fakeStore = new Map<string, Uint8Array>();
+    const makeReq = (result: unknown) => {
+      const req = {
+        result,
+        error: null as DOMException | null,
+        onupgradeneeded: null as ((ev: Event) => void) | null,
+        onsuccess: null as ((ev: Event) => void) | null,
+        onerror: null as ((ev: Event) => void) | null,
+      };
+      queueMicrotask(() => req.onsuccess?.({ target: req } as unknown as Event));
+      return req;
+    };
+    const makeStore = () => ({
+      get: (k: string) => makeReq(fakeStore.get(k)),
+      put: (v: Uint8Array, k: string) => {
+        fakeStore.set(k, new Uint8Array(v));
+        return makeReq(k);
+      },
+      delete: (k: string) => {
+        fakeStore.delete(k);
+        return makeReq(undefined);
+      },
+    }) as unknown as IDBObjectStore;
+    const fakeDb = {
+      objectStoreNames: { contains: () => true },
+      transaction: () => ({ objectStore: () => makeStore() }),
+      close: () => {},
+    } as unknown as IDBDatabase;
+    vi.stubGlobal('indexedDB', {
+      open: (_name: string, _version?: number) => {
+        const req = makeReq(fakeDb);
+        req.onupgradeneeded = () => {};
+        return req as unknown as IDBOpenDBRequest;
+      },
+    } as unknown as IDBFactory);
+
+    // Seed the snapshot EXACTLY as the worker produces it: a throwaway DB
+    // with ALL migrations applied (the worker writes the snapshot AFTER
+    // migrations, so it always carries the migrated v2 schema + _migrations
+    // marker), plus one real session and two solves. Export via
+    // capi.sqlite3_js_db_export (the same export the worker uses) and save it
+    // to IndexedDB BEFORE the fresh worker init.
+    const { saveSnapshot } = await import('../indexeddb-snapshot.js');
+    const sqlite3 = await import('@sqlite.org/sqlite-wasm');
+    const mod = await sqlite3.default();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tmp: any = new mod.oo1.DB('/tmp-snapshot-src.sqlite3', 'c');
+    const { MIGRATIONS } = await import('../migrations/index.js');
+    tmp.exec("CREATE TABLE IF NOT EXISTS _migrations (id TEXT PRIMARY KEY, applied_at TEXT DEFAULT (datetime('now')))");
+    for (const m of MIGRATIONS) {
+      tmp.exec('BEGIN');
+      tmp.exec(m.sql);
+      tmp.exec('INSERT OR IGNORE INTO _migrations (id) VALUES (?)', { bind: [m.id] });
+      tmp.exec('COMMIT');
+    }
+    tmp.exec(
+      "INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES ('sess-snapshot-a', 'Snapshot Session', '333', 1700000000000, 1700000000000, 0)"
+    );
+    tmp.exec(
+      "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ('solve-snapshot-1', 'sess-snapshot-a', 12345, 1700000000000, 'R U F', 'none', 'CFOP', 'manual', NULL, '[]', NULL, NULL, NULL, '333', 0, 1700000000000, 1700000000000)"
+    );
+    tmp.exec(
+      "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ('solve-snapshot-2', 'sess-snapshot-a', 999, 1700000000000, 'U R F', 'none', 'CFOP', 'manual', NULL, '[]', NULL, NULL, NULL, '333', 0, 1700000000000, 1700000000000)"
+    );
+    const exported = mod.capi.sqlite3_js_db_export(tmp.pointer);
+    expect(exported.byteLength).toBeGreaterThan(0);
+    await saveSnapshot(new Uint8Array(exported));
+    tmp.close();
+
+    // Fresh worker init: the memory tier must restore the seeded snapshot.
+    const ok = await DBWorker.init();
+    expect(ok).toBe(true);
+    const recoveredSessions = await sessionsRepo.findAllNonDemo();
+    expect(recoveredSessions.some((s) => s.id === 'sess-snapshot-a')).toBe(true);
+    const recoveredSolves = await solvesRepo.findAll('sess-snapshot-a');
+    expect(recoveredSolves.some((s) => s.id === 'solve-snapshot-2')).toBe(true);
+  }, 60_000);
+
   it('countBySession returns per-session counts in one query', async () => {
     const a = UUID(5);
     const b = UUID(6);

@@ -72,3 +72,23 @@ export async function saveSnapshot(bytes: Uint8Array): Promise<void> {
     // Best-effort: a failed snapshot must never break the app.
   }
 }
+
+/**
+ * Remove the stored snapshot. Best-effort, never throws.
+ *
+ * Used when the worker upgrades to a real OPFS backend and wants to drop the
+ * stale byte-snapshot so a later downgrade can't resurrect older data over
+ * the OPFS copy (which is now the source of truth).
+ */
+export async function clearSnapshot(): Promise<void> {
+  try {
+    const store = await openSnapshotStore();
+    await new Promise<void>((resolve, reject) => {
+      const del = store.delete(SNAPSHOT_KEY);
+      del.onsuccess = () => resolve();
+      del.onerror = () => reject(del.error);
+    });
+  } catch {
+    // Best-effort.
+  }
+}
