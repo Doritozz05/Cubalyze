@@ -40,6 +40,29 @@ export function AuthView() {
     }
   }, [loading, user, navigate]);
 
+  // OAuth failures (user cancels, email not in the test list, blocked
+  // consent…) land back on /auth with ?error=... — supabase-js only surfaces
+  // the SUCCESS side of the PKCE exchange, so without this the user would
+  // stare at a silent page. Show the provider's message, then scrub the URL
+  // so a refresh doesn't re-show a stale error.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get("error");
+    if (oauthError) {
+      const rawDesc = params.get("error_description") ?? "";
+      let desc = t("errorGeneric");
+      try {
+        if (rawDesc) {
+          desc = decodeURIComponent(rawDesc.replace(/\+/g, " "));
+        }
+      } catch {
+        // Malformed encoding — keep the generic message.
+      }
+      setError(desc);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [t]);
+
   const handleGoogle = async () => {
     setBusy(true);
     setError(null);

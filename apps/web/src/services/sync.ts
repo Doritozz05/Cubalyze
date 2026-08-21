@@ -23,6 +23,7 @@ import {
   SyncEngine,
 } from "@cubeforge/sync-engine";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { refreshProfile } from "@/hooks/useProfile";
 
 let engine: SyncEngine | null = null;
 let client: SupabaseClient | null = null;
@@ -62,7 +63,14 @@ export async function getSyncEngine(): Promise<SyncEngine | null> {
     await dbClient.execute(sql, bind);
   engine = new SyncEngine(dbExecutor, supabase, (status) => {
     syncStore.getState().setStatus(status);
-    if (status === "idle") syncStore.getState().setLastSyncedAt(Date.now());
+    if (status === "idle") {
+      syncStore.getState().setLastSyncedAt(Date.now());
+      // A completed sync may have pulled a newer profile from the cloud
+      // (name/country/avatar edited on another device). useProfile reads the
+      // row once at boot, so re-read it after every cycle — otherwise the UI
+      // keeps showing the stale identity until a hard reload.
+      void refreshProfile();
+    }
   });
   return engine;
 }
@@ -95,22 +103,24 @@ export function startSyncService(): void {
   if (pollerStarted) return;
   pollerStarted = true;
 
-  const poll = (force = false) => {
+  const poll = () => {
     void getSyncEngine().then((engine) => {
       if (!engine?.userId) return;
-      void (async () => {
-        if (force || (await engine.hasPendingChanges())) {
-          await engine.syncNow().catch(() => {
-            /* status already surfaced via the store */
-          });
-        }
-      })();
+      // Always run a full cycle on the tick. The local dirty flag cannot
+      // know about edits made on OTHER devices, so gating on it would mean
+      // this device never pulls their changes (stale profile, missing
+      // solves). The watermark pull is cheap, so unconditional polling is
+      // how multi-device freshness happens. `hasPendingChanges` remains
+      // useful for the UI's "Sync now" affordance.
+      void engine.syncNow().catch(() => {
+        /* status already surfaced via the store */
+      });
     });
   };
 
-  window.setInterval(() => poll(false), 45_000);
-  window.addEventListener("online", () => poll(true));
+  window.setInterval(() => poll(), 45_000);
+  window.addEventListener("online", () => poll());
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") poll(false);
+    if (document.visibilityState === "visible") poll();
   });
 }
