@@ -198,9 +198,26 @@ async function resolveClaim(mode: ClaimMode): Promise<void> {
   }
 }
 
-/** Defer the claim — data stays local-only until the user links it. */
+/**
+ * Defer the claim — data stays local-only until the user links it. The
+ * engine's claim gate stays closed (no upload, no download), and the UI
+ * keeps showing the "pending" state with a way back (reopenClaim).
+ */
 function dismissClaim(): void {
   setState({ claim: "none", pendingCounts: null });
+}
+
+/**
+ * Re-open the claim dialog after dismissing it (no logout needed).
+ * Re-reads the local counts so they are fresh, and re-gates the engine
+ * (idempotent — it was already gated by the dismiss).
+ */
+async function reopenClaim(): Promise<void> {
+  const engine = await getSyncEngine();
+  if (!engine || !state.user) return;
+  engine.setClaimPending();
+  const counts = await engine.getCounts();
+  setState({ claim: "pending", pendingCounts: counts });
 }
 
 async function signOut(): Promise<void> {
@@ -247,6 +264,7 @@ export function useAccount(): AccountState & {
   signInWithGoogle: () => Promise<void>;
   resolveClaim: (mode: ClaimMode) => Promise<void>;
   dismissClaim: () => void;
+  reopenClaim: () => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 } {
@@ -261,6 +279,7 @@ export function useAccount(): AccountState & {
     signInWithGoogle,
     resolveClaim,
     dismissClaim,
+    reopenClaim,
     signOut,
     deleteAccount,
   };

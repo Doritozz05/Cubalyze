@@ -780,16 +780,16 @@
     "notFoundGoHome": "Volver al cronómetro",
     "resizeWidth": "Arrastra para ajustar el ancho (doble clic para restablecer)",
     "resizeHeight": "Arrastra para ajustar o cerrar (doble clic para restablecer)",
-  "more": {
-    "settingsSubtitle": "Preferencias y entradas",
-    "profileSubtitle": "Tu identidad y progreso",
-    "skillsSubtitle": "Gráfico interactivo del árbol de habilidades",
-    "reconstructionsSubtitle": "Base de datos de solves y reproducciones",
-    "virtualSubtitle": "Simulador de cubo 3D",
-    "smartCubeSubtitle": "Conecta un cubo bluetooth",
-    "themeSubtitle": "Cambia el tema de color",
-    "widgetsSubtitle": "Paneles y herramientas flotantes"
-  }
+    "more": {
+      "settingsSubtitle": "Preferencias y entradas",
+      "profileSubtitle": "Tu identidad y progreso",
+      "skillsSubtitle": "Gráfico interactivo del árbol de habilidades",
+      "reconstructionsSubtitle": "Base de datos de solves y reproducciones",
+      "virtualSubtitle": "Simulador de cubo 3D",
+      "smartCubeSubtitle": "Conecta un cubo bluetooth",
+      "themeSubtitle": "Cambia el tema de color",
+      "widgetsSubtitle": "Paneles y herramientas flotantes"
+    }
   },
   "onboarding": {
     "skip": "Omitir",
@@ -1527,11 +1527,12 @@
         "Usa patrones M' U M' para orientar aristas con eficiencia",
         "Busca el EO en < 1.5s con ≤ 7 movimientos"
       ]
-    }, "review": {
-  "title": "Repaso",
-  "emptyTitle": "Nada que repasar",
-  "emptyBody": "Los casos que entrenes o falles aparecerán aquí para repaso espaciado.",
-  "reason": {
+    },
+    "review": {
+      "title": "Repaso",
+      "emptyTitle": "Nada que repasar",
+      "emptyBody": "Los casos que entrenes o falles aparecerán aquí para repaso espaciado.",
+      "reason": {
         "overdue": "Atrasado",
         "due": "Pendiente",
         "weak": "Débil",
@@ -1717,6 +1718,13 @@
         "EG": "CLL extendido: EG-1 (intercambio adyacente) y EG-2 (intercambio diagonal) cuando la primera cara está resuelta."
       },
       "phase": {
+        "222": {
+          "oll": "Orienta la cara superior: 7 casos por dominar.",
+          "pbl": "Permuta ambas capas: 6 casos para 2×2.",
+          "cll": "Esquinas de la última capa: 42 casos para 2×2.",
+          "eg1": "Intercambio adyacente en la capa inferior: 42 casos.",
+          "eg2": "Intercambio diagonal en la capa inferior: 42 casos."
+        },
         "333": {
           "cross": "Resuelve la cruz con eficiencia. Menos movimientos, soluciones más rápidas.",
           "f2l": "Primeras dos capas básicas: 41 pares algorítmicos.",
@@ -1735,16 +1743,17 @@
           "eo-petrus": "Orientación de aristas después de los bloques.",
           "f2l-petrus": "Termina el F2L después de EO.",
           "ll-petrus": "COLL + EPLL para la última capa de Petrus."
-        },
-        "222": {
-          "oll": "Orienta la cara superior: 7 casos por dominar.",
-          "pbl": "Permuta ambas capas: 6 casos para 2×2.",
-          "cll": "Esquinas de la última capa: 42 casos para 2×2.",
-          "eg1": "Intercambio adyacente en la capa inferior: 42 casos.",
-          "eg2": "Intercambio diagonal en la capa inferior: 42 casos."
         }
       },
       "subset": {
+        "222": {
+          "OLL": "Orienta la última cara (7 casos para 2×2).",
+          "PBL": "Permuta ambas capas: resuelve el cubo después de OLL.",
+          "CLL": "Esquinas de la última capa: 42 casos que orientan y permutan las esquinas cuando la primera capa está resuelta.",
+          "EG": "CLL extendido: 128 casos en total.",
+          "EG-1": "La capa inferior tiene un intercambio adyacente. 42 casos.",
+          "EG-2": "La capa inferior tiene un intercambio diagonal. 42 casos."
+        },
         "333": {
           "F2L": "Primeras dos capas: pares algorítmicos para cada ranura.",
           "Basic F2L": "41 casos F2L estándar (pares de fáciles a avanzados).",
@@ -1769,14 +1778,6 @@
           "2x2x2 Block": "Construcción del primer bloque 2x2x2.",
           "2x2x3 Block": "Ampliación a un bloque 2x2x3.",
           "EO": "Orientación de aristas para Petrus."
-        },
-        "222": {
-          "OLL": "Orienta la última cara (7 casos para 2×2).",
-          "PBL": "Permuta ambas capas: resuelve el cubo después de OLL.",
-          "CLL": "Esquinas de la última capa: 42 casos que orientan y permutan las esquinas cuando la primera capa está resuelta.",
-          "EG": "CLL extendido: 128 casos en total.",
-          "EG-1": "La capa inferior tiene un intercambio adyacente. 42 casos.",
-          "EG-2": "La capa inferior tiene un intercambio diagonal. 42 casos."
         }
       }
     }
@@ -3715,7 +3716,8 @@
       "deleteError": "No se pudo eliminar la cuenta",
       "pendingTitle": "Vincular los datos de este dispositivo",
       "pendingBody": "Este dispositivo tiene datos locales que aún no están vinculados a tu cuenta.",
-      "linkNow": "Vincular mis datos"
+      "linkNow": "Vincular mis datos",
+      "claimPending": "Vinculación pendiente"
     },
     "claim": {
       "title": "Hemos encontrado datos en este dispositivo",

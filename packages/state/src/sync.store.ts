@@ -12,6 +12,7 @@ export type SyncStatus =
   | 'idle'
   | 'syncing'
   | 'claim'
+  | 'claim_pending'
   | 'error';
 
 export interface SyncState {

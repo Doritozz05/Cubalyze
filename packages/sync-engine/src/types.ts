@@ -41,6 +41,7 @@ export type SyncStatus =
   | "idle"
   | "syncing"
   | "claim"
+  | "claim_pending"
   | "error";
 
 /** What a first-login device holds, shown in the claim dialog. */

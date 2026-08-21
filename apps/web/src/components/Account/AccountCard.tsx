@@ -54,6 +54,8 @@ export function AccountCard({ allowDelete = false }: AccountCardProps) {
       case "syncing":
       case "claim":
         return t("account.syncing");
+      case "claim_pending":
+        return t("account.claimPending");
       case "error":
         return t("account.errorStatus");
       case "idle":
@@ -62,6 +64,11 @@ export function AccountCard({ allowDelete = false }: AccountCardProps) {
         return t("account.signedOut");
     }
   };
+
+  // A signed-in account that never resolved the first-login claim: the
+  // engine is gated (nothing uploads, nothing downloads) until the user
+  // picks "combine" or "fresh" — surfaced clearly instead of a green idle.
+  const claimPending = !!account.user && !account.linked;
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -120,7 +127,9 @@ export function AccountCard({ allowDelete = false }: AccountCardProps) {
               className={`size-1.5 rounded-full ${
                 syncStatus === "error"
                   ? "bg-dnf"
-                  : syncStatus === "syncing" || syncStatus === "claim"
+                  : syncStatus === "syncing" ||
+                      syncStatus === "claim" ||
+                      syncStatus === "claim_pending"
                     ? "bg-caution animate-pulse"
                     : "bg-ready"
               }`}
@@ -130,6 +139,26 @@ export function AccountCard({ allowDelete = false }: AccountCardProps) {
           </span>
         )}
       </div>
+
+      {claimPending && (
+        <div className="flex flex-col gap-2 rounded-lg border border-caution/30 bg-caution/10 p-3">
+          <p className="text-[0.7rem] font-semibold text-caution">
+            {t("account.pendingTitle")}
+          </p>
+          <p className="text-[0.65rem] leading-relaxed text-ink-3">
+            {t("account.pendingBody")}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void account.reopenClaim()}
+            className="self-start"
+          >
+            {t("account.linkNow")}
+          </Button>
+        </div>
+      )}
 
       {account.user ? (
         <>
@@ -149,7 +178,11 @@ export function AccountCard({ allowDelete = false }: AccountCardProps) {
               onClick={() => {
                 void import("@/services/sync").then((m) => m.syncNow());
               }}
-              disabled={syncStatus === "syncing" || syncStatus === "claim"}
+              disabled={
+                syncStatus === "syncing" ||
+                syncStatus === "claim" ||
+                claimPending
+              }
             >
               {syncStatus === "syncing" || syncStatus === "claim" ? (
                 <Spinner size="xs" />

@@ -780,16 +780,16 @@
     "notFoundGoHome": "Back to the timer",
     "resizeWidth": "Drag to resize width (Double-click to reset)",
     "resizeHeight": "Drag to resize or close (Double-click to reset)",
-  "more": {
-    "settingsSubtitle": "Preferences & inputs",
-    "profileSubtitle": "Your identity & progress",
-    "skillsSubtitle": "Interactive skill tree graph",
-    "reconstructionsSubtitle": "Solve database & replays",
-    "virtualSubtitle": "3D cube simulator",
-    "smartCubeSubtitle": "Connect bluetooth cube",
-    "themeSubtitle": "Switch color theme",
-    "widgetsSubtitle": "Floating widgets & panels"
-  }
+    "more": {
+      "settingsSubtitle": "Preferences & inputs",
+      "profileSubtitle": "Your identity & progress",
+      "skillsSubtitle": "Interactive skill tree graph",
+      "reconstructionsSubtitle": "Solve database & replays",
+      "virtualSubtitle": "3D cube simulator",
+      "smartCubeSubtitle": "Connect bluetooth cube",
+      "themeSubtitle": "Switch color theme",
+      "widgetsSubtitle": "Floating widgets & panels"
+    }
   },
   "onboarding": {
     "skip": "Skip",
@@ -1527,11 +1527,12 @@
         "Use M' U M' patterns to flip edges efficiently",
         "Aim for EO in < 1.5s with ≤ 7 moves"
       ]
-    }, "review": {
-  "title": "Review",
-  "emptyTitle": "Nothing to review",
-  "emptyBody": "Cases you train or miss appear here for spaced review.",
-  "reason": {
+    },
+    "review": {
+      "title": "Review",
+      "emptyTitle": "Nothing to review",
+      "emptyBody": "Cases you train or miss appear here for spaced review.",
+      "reason": {
         "overdue": "Overdue",
         "due": "Due",
         "weak": "Weak",
@@ -1717,6 +1718,13 @@
         "EG": "Extended CLL: EG-1 (adjacent swap) and EG-2 (diagonal swap) when first face is solved."
       },
       "phase": {
+        "222": {
+          "oll": "Orient top face — 7 cases to master.",
+          "pbl": "Permute Both Layers — 6 cases for 2×2.",
+          "cll": "Corners of Last Layer — 42 cases for 2×2.",
+          "eg1": "Bottom layer adjacent swap — 42 cases.",
+          "eg2": "Bottom layer diagonal swap — 42 cases."
+        },
         "333": {
           "cross": "Solve the cross efficiently. Fewer moves, faster solutions.",
           "f2l": "Basic first two layers — 41 algorithmic pairs.",
@@ -1735,16 +1743,17 @@
           "eo-petrus": "Edge Orientation after blocks.",
           "f2l-petrus": "Finish F2L after EO.",
           "ll-petrus": "COLL + EPLL for Petrus last layer."
-        },
-        "222": {
-          "oll": "Orient top face — 7 cases to master.",
-          "pbl": "Permute Both Layers — 6 cases for 2×2.",
-          "cll": "Corners of Last Layer — 42 cases for 2×2.",
-          "eg1": "Bottom layer adjacent swap — 42 cases.",
-          "eg2": "Bottom layer diagonal swap — 42 cases."
         }
       },
       "subset": {
+        "222": {
+          "OLL": "Orient the last face (7 cases for 2×2).",
+          "PBL": "Permute Both Layers — solve the cube after OLL.",
+          "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
+          "EG": "Extended CLL — 128 cases total.",
+          "EG-1": "Bottom layer has adjacent swap. 42 cases.",
+          "EG-2": "Bottom layer has diagonal swap. 42 cases."
+        },
         "333": {
           "F2L": "First Two Layers — algorithmic pairs for each slot.",
           "Basic F2L": "41 standard F2L cases (easy to advanced pairs).",
@@ -1769,14 +1778,6 @@
           "2x2x2 Block": "Building the first 2x2x2 block.",
           "2x2x3 Block": "Extending to a 2x2x3 block.",
           "EO": "Edge orientation for Petrus."
-        },
-        "222": {
-          "OLL": "Orient the last face (7 cases for 2×2).",
-          "PBL": "Permute Both Layers — solve the cube after OLL.",
-          "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
-          "EG": "Extended CLL — 128 cases total.",
-          "EG-1": "Bottom layer has adjacent swap. 42 cases.",
-          "EG-2": "Bottom layer has diagonal swap. 42 cases."
         }
       }
     }
@@ -3715,7 +3716,8 @@
       "deleteError": "Couldn't delete the account",
       "pendingTitle": "Link this device's data",
       "pendingBody": "You have local data on this device that isn't linked to your account yet.",
-      "linkNow": "Link my data"
+      "linkNow": "Link my data",
+      "claimPending": "Link pending"
     },
     "claim": {
       "title": "Found data on this device",

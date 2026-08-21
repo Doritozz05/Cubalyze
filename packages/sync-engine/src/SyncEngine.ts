@@ -112,9 +112,14 @@ export class SyncEngine {
     if (uid && opts?.schedule !== false) this.scheduleSync(1500);
   }
 
-  /** Lock sync until the user resolves the first-login claim dialog. */
+  /**
+   * Lock sync until the user resolves the first-login claim dialog, and
+   * surface it as `claim_pending` so the UI never shows "idle" (green)
+   * while the device is silently paused. Opened inside claim()/unlink().
+   */
   setClaimPending(): void {
     this.claimPending = true;
+    this.setStatus("claim_pending");
   }
 
   /**
