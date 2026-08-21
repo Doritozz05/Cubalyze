@@ -187,7 +187,7 @@ export function Header({
       cancelRetract();
       return;
     }
-    cancelRettract();
+    cancelRetract();
     retractTimerRef.current = window.setTimeout(
       () => {
         // Re-check at fire time: a dropdown may have opened during the

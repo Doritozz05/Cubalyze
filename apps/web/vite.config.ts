@@ -88,6 +88,13 @@ export default defineConfig(({ mode }) => ({
     basicSsl(),
     react(),
     VitePWA({
+      // Disable the service worker in dev so it never caches or serves
+      // stale ESM modules during HMR. In dev, Vite's own transform pipeline
+      // must be the only thing serving /src/* — a stale SW precache entry
+      // for a module that was briefly broken (TDZ, syntax error) survives
+      // hard refreshes and blocks the dev server from loading. Production
+      // builds are unaffected (the SW only registers from the built output).
+      devOptions: { enabled: false },
       registerType: 'autoUpdate',
       // SW registration + update handling lives in src/main.tsx (it imports
       // `registerSW` from virtual:pwa-register). Using the virtual module —
