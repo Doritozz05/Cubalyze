@@ -1,5 +1,6 @@
 import type { Session } from './types.js';
 import { isDbPuzzleType } from '@cubeforge/events';
+import { nextLocalStamps } from './local-clock.js';
 
 export interface SessionRow {
   id: string;
@@ -121,27 +122,43 @@ export class SessionsRepository {
     // '333', never a legacy alias.
     const puzzleType = session.puzzleType ?? '333';
     assertValidSessionPuzzleType({ ...session, puzzleType });
+    const stamped =
+      session.updatedAt === undefined
+        ? {
+            ...session,
+            updatedAt: await nextLocalStamps(this.db, 'sessions'),
+          }
+        : session;
     await this.db(
       'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
-      [session.id, session.name, puzzleType, session.createdAt || Date.now(), session.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
+      [stamped.id, stamped.name, puzzleType, stamped.createdAt || Date.now(), stamped.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
     );
   }
 
   /**
    * Update a session, writing the EXACT `updated_at` the caller declared
    * (0/undefined = "now"). Same contract as SolvesRepository.update: the
-   * sync pull passes the cloud value (no re-selection on the next push); the
-   * UI edit path stamps `updatedAt = Date.now()` explicitly.
+   * sync pull passes the cloud value (no re-selection on the next push).
+   * Pass `{ local: true }` from local edit paths for a monotonic clock stamp
+   * (M9).
    */
-  async update(session: Session): Promise<void> {
+  async update(session: Session, opts?: { local?: boolean }): Promise<void> {
     assertValidSessionPuzzleType(session);
+    const stamped = opts?.local
+      ? {
+          ...session,
+          updatedAt: await nextLocalStamps(this.db, 'sessions', 1, {
+            floor: session.updatedAt ?? 0,
+          }),
+        }
+      : session;
     const updatedAt =
-      session.updatedAt && session.updatedAt > 0
-        ? session.updatedAt
+      stamped.updatedAt && stamped.updatedAt > 0
+        ? stamped.updatedAt
         : Date.now();
     await this.db(
       'UPDATE sessions SET name = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [session.name, session.puzzleType, updatedAt, session.id]
+      [stamped.name, stamped.puzzleType, updatedAt, stamped.id]
     );
   }
 
@@ -170,14 +187,25 @@ export class SessionsRepository {
     await this.db(
       `INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
        SELECT 'solves', id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
-       FROM solves WHERE session_id = ?`,
+       FROM solves WHERE session_id = ? AND is_demo = 0`,
       [id],
     );
     await this.db('DELETE FROM sessions WHERE id = ?', [id]);
   }
 
-  /** Delete every session (plus its cascade tombstones) — "start fresh" wipe. */
+  /**
+   * Delete every session. Session deletes cascade to solves, but SQLite row
+   * triggers do NOT fire on cascaded deletes — tombstone the child solves
+   * explicitly (M8) so the sync engine removes them on every other device
+   * too, exactly like the single-row delete(). Demo solves never tombstone
+   * (migration 030 / M7). The caller (wipe) purges the tombstones after.
+   */
   async deleteAll(): Promise<void> {
+    await this.db(
+      `INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+       SELECT 'solves', id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
+       FROM solves WHERE is_demo = 0`,
+    );
     await this.db('DELETE FROM sessions');
   }
 

@@ -100,6 +100,7 @@ describe('TrainingRepository — Attempts', () => {
       verdict: 'correct',
       playMode: 'manual',
       timestamp: 1700000000000,
+      updatedAt: 1700000000000,
     });
     expect(attempt.id).toBeDefined();
     expect(db.mock.calls[0][0]).toContain('INSERT INTO training_attempts');
@@ -132,6 +133,7 @@ describe('TrainingRepository — Attempts', () => {
       inspectionMs: 20000,
       reviewGrade: 'good',
       timestamp: 1700000000000,
+      updatedAt: 1700000000000,
     });
     const bind = db.mock.calls[0][1] as unknown[];
     // Column order in INSERT: id, exercise_id, method_id, phase_id, subset_id,
@@ -168,6 +170,7 @@ describe('TrainingRepository — Attempts', () => {
       verdict: 'correct',
       playMode: 'manual',
       timestamp: 1700000000000,
+      updatedAt: 1700000000000,
     });
     const bind = db.mock.calls[0][1] as unknown[];
     // Column order in INSERT: id(0), exercise_id(1), method_id(2), phase_id(3),
@@ -203,6 +206,7 @@ describe('TrainingRepository — Attempts', () => {
       playMode: 'manual',
       // intentionally omit timestamp
       timestamp: 0,
+      updatedAt: 1700000000000,
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[20]).toBeGreaterThanOrEqual(before); // timestamp

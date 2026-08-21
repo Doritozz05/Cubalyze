@@ -60,6 +60,12 @@ export class SyncEngine {
   private scheduleTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly onStatus?: (status: SyncStatus) => void;
   /**
+   * Called at the end of every completed sync cycle (and claim) with the
+   * totals, so the UI layer can react to "rows actually moved" (e.g. bump a
+   * data revision that other tabs pick up via BroadcastChannel).
+   */
+  private readonly onCycle?: (totals: SyncTotals) => void;
+  /**
    * Claim gate: while the first-login dialog is pending, NO data leaves the
    * device (push, scheduled syncs and the poller all no-op). Without this,
    * setUser's background sync uploads everything before the user picks
@@ -72,6 +78,7 @@ export class SyncEngine {
     db: DBExecutor,
     supabase: SupabaseClient,
     onStatus?: (status: SyncStatus) => void,
+    onCycle?: (totals: SyncTotals) => void,
   ) {
     this.ctx = {
       db,
@@ -85,6 +92,7 @@ export class SyncEngine {
       skills: new SkillProgressRepository(db),
     };
     this.onStatus = onStatus;
+    this.onCycle = onCycle;
   }
 
   get userId(): string | null {
@@ -228,11 +236,12 @@ export class SyncEngine {
           anonProfile ?? (await this.ctx.profiles.findById(uid));
         if (profile && profile.userId !== uid) {
           await this.ctx.meta.setIdenticonSeed(profile.userId);
-          await this.ctx.profiles.upsert({
-            ...profile,
-            userId: uid,
-            updatedAt: Date.now(),
-          });
+          // Local remap: { local: true } stamps updated_at with the
+          // monotonic clock so the remapped profile is pushed (M9).
+          await this.ctx.profiles.upsert(
+            { ...profile, userId: uid },
+            { local: true },
+          );
         } else if (!profile) {
           await this.ctx.profiles.getOrCreate(uid);
         }
@@ -246,9 +255,16 @@ export class SyncEngine {
       // 2. Full push + full pull + rebuild. Watermarks start at 0 for a new
       //    link, so merge pushes everything (in batches); fresh pushes
       //    nothing and pulls the cloud state (including the profile).
-      await pushChanges(this.ctx, uid);
-      await pullChanges(this.ctx, uid);
+      const pushed = await pushChanges(this.ctx, uid);
+      const pulled = await pullChanges(this.ctx, uid);
       await rebuildAggregates(this.ctx);
+      this.onCycle?.({
+        pushed: pushed.pushed,
+        pulled: pulled.pulled,
+        pushedTombstones: pushed.pushedTombstones,
+        appliedTombstones: pulled.appliedTombstones,
+        rebuilt: true,
+      });
 
       await this.ctx.meta.set(`sync_linked_${uid}`, "1");
 
@@ -368,6 +384,7 @@ export class SyncEngine {
         await rebuildAggregates(this.ctx);
         totals.rebuilt = true;
       }
+      this.onCycle?.(totals);
 
       this.setStatus("idle");
       if ((await this.ctx.meta.get("sync_dirty")) === "1") {

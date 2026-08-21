@@ -57,14 +57,33 @@ export async function pullChanges(
   };
 
   // ── Tombstones first (deletes before rows) ─────────────────────────
+  // M4: tombstones have their own pull watermark (like every table), so a
+  // device only downloads the deletes it has not seen yet — without it, every
+  // pull re-fetched the user's ENTIRE tombstone history forever (network +
+  // apply cost growing without bound).
+  const tombWm = await getWatermark(
+    ctx.meta,
+    pullWatermarkKey("sync_tombstones", uid),
+  );
   const tombResult = await ctx.supabase
     .from("sync_tombstones")
     .select("*")
-    .eq("user_id", uid);
+    .eq("user_id", uid)
+    .gt("deleted_at", tombWm)
+    .order("deleted_at", { ascending: true });
   if (tombResult.error) throw tombResult.error;
   const tombstones = (tombResult.data ?? []).filter(isCloudTombstone);
   if (tombstones.length > 0) {
     totals.appliedTombstones = await applyRemoteTombstones(ctx, tombstones);
+    const maxT = tombstones.reduce(
+      (max, t) => Math.max(max, Number(t.deleted_at) || 0),
+      tombWm,
+    );
+    await setWatermark(
+      ctx.meta,
+      pullWatermarkKey("sync_tombstones", uid),
+      maxT,
+    );
   }
 
   // ── Tables ─────────────────────────────────────────────────────────

@@ -248,7 +248,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       repo = new SolvesRepository(db);
       await repo.insert({
         id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
-        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '222',
+        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '222', updatedAt: 1767225600000,
       });
       const bind = db.mock.calls[0][1] as unknown[];
       // puzzle_type is at index 13 in the INSERT
@@ -300,7 +300,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
       repo = new SolvesRepository(db);
       await repo.insert({
         id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
-        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333',
+        scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333', updatedAt: 1767225600000,
       });
       expect(db).toHaveBeenCalledTimes(1);
     });
@@ -366,7 +366,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
         id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000,
         scramble: '', penalty: 'none', source: 'smart',
         moves: [{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }],
-        puzzleType: '333',
+        puzzleType: '333', updatedAt: 1767225600000,
       });
 
       // Verify moves was JSON stringified
@@ -390,7 +390,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
         scramble: '', penalty: 'none', source: 'smart',
         moves: [{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }],
         orientationTimeline: timeline,
-        puzzleType: '333',
+        puzzleType: '333', updatedAt: 1767225600000,
       });
 
       // Verify it was stored as a JSON array of tuples

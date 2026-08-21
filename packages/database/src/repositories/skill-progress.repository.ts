@@ -8,6 +8,8 @@
  * Follows the same pattern as TrainingRepository / SolvesRepository.
  */
 
+import { nextLocalStamps } from './local-clock.js';
+
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
 export interface SkillProgressRow {
@@ -50,17 +52,26 @@ export class SkillProgressRepository {
   }
 
   async setCompleted(skillId: string): Promise<void> {
+    // Monotonic clock stamp (M9): a toggle can never re-issue a completed_at
+    // that collides with the push watermark, and two rapid toggles stay
+    // strictly ordered.
+    const completedAt = await nextLocalStamps(this.db, "skill_progress");
     await this.db(
       "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
-      [skillId, Date.now()],
+      [skillId, completedAt],
     );
   }
 
-  /** Insert-or-replace preserving the CLOUD completion timestamp (pull). */
+  /**
+   * Insert-or-replace preserving the CLOUD completion timestamp (pull).
+   * `??` (not `||`): a cloud row that legitimately carries completed_at = 0
+   * must stay 0, never be re-sealed with a local Date.now() (M6) — the 0
+   * value is what the next push compares against.
+   */
   async setCompletedAt(skillId: string, completedAt: number): Promise<void> {
     await this.db(
       "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
-      [skillId, completedAt || Date.now()],
+      [skillId, completedAt ?? Date.now()],
     );
   }
 

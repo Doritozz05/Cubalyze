@@ -23,11 +23,19 @@ export interface SyncState {
   pendingCount: number;
   /** Human-readable last error (null when healthy). */
   error: string | null;
+  /**
+   * Bumped on every data change (local writes and sync cycles that moved
+   * rows), local or from another tab via BroadcastChannel. Data hooks
+   * subscribe to it to re-read the shared SQLite DB — the cross-tab live
+   * refresh signal.
+   */
+  dataRevision: number;
 
   setStatus: (status: SyncStatus) => void;
   setLastSyncedAt: (t: number) => void;
   setPendingCount: (n: number) => void;
   setError: (e: string | null) => void;
+  bumpDataRevision: () => void;
   reset: () => void;
 }
 
@@ -36,6 +44,7 @@ const initialState = {
   lastSyncedAt: null as number | null,
   pendingCount: 0,
   error: null as string | null,
+  dataRevision: 0,
 };
 
 export const createSyncStore = () => {
@@ -49,6 +58,8 @@ export const createSyncStore = () => {
     setPendingCount: (pendingCount) => set({ pendingCount }),
 
     setError: (error) => set({ error }),
+
+    bumpDataRevision: () => set((s) => ({ dataRevision: s.dataRevision + 1 })),
 
     reset: () => set(initialState),
   }));

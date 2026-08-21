@@ -8,6 +8,7 @@ import {
   type Profile,
 } from "@cubeforge/database";
 import { isDev } from "@/utils/env";
+import { syncStore } from "@cubeforge/state";
 
 /** Editable profile fields (identity keys are owned by the system). */
 export type ProfileUpdates = Partial<Omit<Profile, "userId" | "createdAt">>;
@@ -195,9 +196,11 @@ async function updateProfile(updates: ProfileUpdates): Promise<void> {
       ...current,
       ...updates,
       userId: id,
-      updatedAt: Date.now(),
     };
-    await reposRef!.profiles.upsert(next);
+    // local: true → the repo advances updated_at via the monotonic clock
+    // (M9), so an edit always moves past the push watermark; pulled rows
+    // keep the cloud timestamp as-is.
+    await reposRef!.profiles.upsert(next, { local: true });
     setState({ profile: next });
   });
 }
@@ -207,6 +210,18 @@ export function useProfile(): UseProfileResult {
 
   useEffect(() => {
     void ensureInitialized();
+
+    // Live cross-tab refresh: when the shared data revision bumps (a local
+    // write, a completed sync cycle, or another tab's change via
+    // BroadcastChannel), re-read the identity/profile row from the shared DB.
+    let lastRevision = syncStore.getState().dataRevision;
+    return syncStore.subscribe(() => {
+      const next = syncStore.getState().dataRevision;
+      if (next !== lastRevision) {
+        lastRevision = next;
+        void refresh();
+      }
+    });
   }, []);
 
   // Module-level functions are stable — callers can safely depend on them.

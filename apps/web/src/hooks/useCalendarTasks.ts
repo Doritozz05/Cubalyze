@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { initDB, CalendarRepository, type TrainingTask } from "@cubeforge/database";
+import { requestSync } from "@/services/sync";
+import { useDataRevision } from "@/hooks/useDataRevision";
 
 // Legacy localStorage key that this hook replaces (single source of truth = DB).
 const LEGACY_STORAGE_KEY = "cubeforge-training-calendar";
@@ -95,12 +97,40 @@ export function useCalendarTasks(): UseCalendarTasksResult {
     };
   }, []);
 
+  // Live cross-tab refresh: when the shared data revision bumps (a local
+  // write, a completed sync cycle, or another tab's change via
+  // BroadcastChannel), re-read the DB. Only sets state when the rows actually
+  // differ, so an identical reload neither re-renders nor re-triggers the
+  // persist effect (no loop).
+  const revision = useDataRevision();
+  useEffect(() => {
+    const repo = repoRef.current;
+    if (!repo || !dbLoadedRef.current) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const dbTasks = await repo.findAll();
+        if (cancelled) return;
+        setTasksState((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(dbTasks)) return prev;
+          return dbTasks;
+        });
+      } catch {
+        // DB read failed — keep the current state.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [revision]);
+
   // Persist every change to DB + cache as a DIFF (never replaceAll): a
   // wholesale clear+reinsert would fire the migration-028 DELETE triggers and
   // fabricate tombstones for unchanged tasks — the sync engine would then
   // delete those tasks from the cloud on every other device. New tasks are
   // inserted, changed tasks upserted (bumping only their updated_at), deleted
-  // tasks removed.
+  // tasks removed. `requestSync` runs only when something was actually
+  // written (a reload that matches the DB writes nothing and stays silent).
   useEffect(() => {
     saveToLocalStorage(tasks);
     const repo = repoRef.current;
@@ -109,8 +139,12 @@ export function useCalendarTasks(): UseCalendarTasksResult {
         try {
           const existing = await repo.findAll();
           const nextIds = new Set(tasks.map((t) => t.id));
+          let wrote = false;
           for (const t of existing) {
-            if (!nextIds.has(t.id)) await repo.delete(t.id);
+            if (!nextIds.has(t.id)) {
+              await repo.delete(t.id);
+              wrote = true;
+            }
           }
           for (const t of tasks) {
             const prev = existing.find((e) => e.id === t.id);
@@ -122,8 +156,15 @@ export function useCalendarTasks(): UseCalendarTasksResult {
               prev.repeat !== t.repeat ||
               prev.color !== t.color ||
               JSON.stringify(prev.daysOfWeek) !== JSON.stringify(t.daysOfWeek);
-            if (changed) await repo.upsert(t);
+            if (changed) {
+              // local: true → the repo stamps updated_at with the monotonic
+              // clock, so an edit always advances past the push watermark
+              // (M9).
+              await repo.upsert(t, { local: true });
+              wrote = true;
+            }
           }
+          if (wrote) void requestSync();
         } catch {
           // DB write failed — cache still holds the data; next DB init re-migrates.
         }

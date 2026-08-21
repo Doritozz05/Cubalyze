@@ -4,6 +4,7 @@ import { connectionStore, createConnectionStore } from '../connection.store.js';
 import { timerStore } from '../timer.store.js';
 import { sessionStore } from '../session.store.js';
 import type { SolveData } from '../session.store.js';
+import { createSyncStore } from '../sync.store.js';
 
 describe('PreferencesStore', () => {
   beforeEach(() => {
@@ -246,6 +247,45 @@ describe('TimerStore', () => {
     expect(state.elapsedMs).toBe(0);
     expect(state.penalty).toBe('none');
     expect(state.isInspecting).toBe(false);
+  });
+});
+
+describe('SyncStore dataRevision (cross-tab live refresh signal)', () => {
+  it('starts at revision 0', () => {
+    expect(createSyncStore().getState().dataRevision).toBe(0);
+  });
+
+  it('bumpDataRevision increments monotonically', () => {
+    const store = createSyncStore();
+    store.getState().bumpDataRevision();
+    store.getState().bumpDataRevision();
+    store.getState().bumpDataRevision();
+    expect(store.getState().dataRevision).toBe(3);
+  });
+
+  it('notifies subscribers when bumped (hooks re-read the DB)', () => {
+    const store = createSyncStore();
+    let seen: number | null = null;
+    store.subscribe(() => {
+      seen = store.getState().dataRevision;
+    });
+    store.getState().bumpDataRevision();
+    expect(seen).toBe(1);
+  });
+
+  it('an unrelated status change leaves the revision untouched', () => {
+    const store = createSyncStore();
+    store.getState().bumpDataRevision();
+    const before = store.getState().dataRevision;
+    store.getState().setStatus('syncing');
+    expect(store.getState().dataRevision).toBe(before); // revision unchanged
+  });
+
+  it('reset restores revision to 0', () => {
+    const store = createSyncStore();
+    store.getState().bumpDataRevision();
+    store.getState().reset();
+    expect(store.getState().dataRevision).toBe(0);
   });
 });
 

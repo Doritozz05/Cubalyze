@@ -13,6 +13,7 @@ import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { attachDemoDataHelpers } from "@/utils/seedDemoData";
 import { attachDataIntegrityHelpers } from "@/utils/dataIntegrity";
 import { requestSync } from "@/services/sync";
+import { useDataRevision } from "@/hooks/useDataRevision";
 
 /**
  * Wrap a mutating hook function so every write nudges the sync engine
@@ -147,6 +148,45 @@ export function usePersistentSession(): UsePersistentSessionResult {
   const activeSessionIdRef = useRef(activeSessionId);
   activeSessionIdRef.current = activeSessionId;
 
+  /**
+   * Re-read sessions, per-session solve counts and the active session's
+   * solves from the DB into React state (the shared SQLite worker means a
+   * write in another tab is already visible at the DB level). Keeps the
+   * current active session; never re-seeds or touches localStorage.
+   */
+  const reloadAll = useCallback(async (preferredSessionId?: string) => {
+    const repos = reposRef.current;
+    if (!repos) return;
+    const activeId =
+      preferredSessionId ?? activeSessionIdRef.current ?? null;
+    // Fetch counts in one GROUP BY query instead of N findAll() calls
+    // (startup cost no longer scales with the number of sessions).
+    const allSessions = await repos.sessions.findAllNonDemo();
+    const sessionCounts = await repos.solves.countBySession();
+    const metaSessions: SessionMeta[] = allSessions.map((s) => ({
+      id: s.id,
+      name: s.name,
+      puzzle: s.puzzleType,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt ?? s.createdAt,
+      solveCount: sessionCounts.get(s.id) ?? 0,
+    }));
+    setSessions(metaSessions);
+    if (activeId) {
+      const activeSolves = await repos.solves.findAll(activeId);
+      setSolves(activeSolves.map(toUISolve).reverse());
+    }
+  }, []);
+
+  // Live cross-tab refresh: whenever the shared data revision bumps (a local
+  // write, a completed sync cycle, or a BroadcastChannel message from another
+  // tab), re-read the DB. Read-only — never writes, so it cannot re-trigger
+  // the revision itself (no loop).
+  const revision = useDataRevision();
+  useEffect(() => {
+    if (reposRef.current) void reloadAll();
+  }, [revision, reloadAll]);
+
   // Initialize DB and load data
   useEffect(() => {
     let isMounted = true;
@@ -239,25 +279,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
         }
 
         if (!isMounted) return;
-
-        // Fetch counts in one GROUP BY query instead of N findAll() calls
-        // (startup cost no longer scales with the number of sessions).
-        const sessionCounts = await solvesRepo.countBySession();
-        const metaSessions: SessionMeta[] = allSessions.map((s) => ({
-          id: s.id,
-          name: s.name,
-          puzzle: s.puzzleType,
-          createdAt: s.createdAt,
-          updatedAt: s.updatedAt ?? s.createdAt,
-          solveCount: sessionCounts.get(s.id) ?? 0,
-        }));
-        
-        setSessions(metaSessions);
         setActiveSessionId(lastActive);
-        
-        // Load solves for active
-        const activeSolves = await solvesRepo.findAll(lastActive);
-        setSolves(activeSolves.map(toUISolve).reverse());
+        await reloadAll(lastActive);
       } catch (err) {
         console.error("Failed to init DB:", err);
       } finally {
@@ -406,11 +429,11 @@ export function usePersistentSession(): UsePersistentSessionResult {
          existing.orientationTimeline = updates.orientationTimeline;
       }
 
-      // Real user edit: stamp the edit time explicitly (update() writes the
-      // declared value — the sync pull passes the cloud's timestamp instead,
-      // so a pulled row never gets re-selected by the push cursor).
-      existing.updatedAt = Date.now();
-      await solvesRepo.update(existing);
+      // Real user edit: { local: true } makes the repo take a monotonic
+      // clock stamp strictly newer than the row's previous one (M9). The
+      // sync pull passes the cloud's timestamp without the flag, so a pulled
+      // row never gets re-selected by the push cursor.
+      await solvesRepo.update(existing, { local: true });
       if (isDev()) {
         console.log(
           '%c[updateSolve] ✓ Persisted solve %s · moves=%d · analysis=%s',
@@ -469,10 +492,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
       if (!existing || existing.sessionId === targetSessionId) continue;
       const sourceId = existing.sessionId;
       existing.sessionId = targetSessionId;
-      // Moving a solve is an edit: stamp it so the move syncs (update()
-      // writes the declared value, never a silent Date.now()).
-      existing.updatedAt = Date.now();
-      await solvesRepo.update(existing);
+      // Moving a solve is an edit: { local: true } advances its updated_at
+      // via the monotonic clock so the move syncs (M9).
+      await solvesRepo.update(existing, { local: true });
       moved++;
       sourceDeltas.set(sourceId, (sourceDeltas.get(sourceId) ?? 0) - 1);
       // Re-read the active id each iteration: a session switch landing between
@@ -638,10 +660,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
     if (!existing) return;
     
     existing.name = name;
-    // Renaming is an edit: stamp it explicitly (update() writes the declared
-    // value so pulled rows keep the cloud timestamp).
-    existing.updatedAt = Date.now();
-    await sessionsRepo.update(existing);
+    // Renaming is an edit: { local: true } advances updated_at via the
+    // monotonic clock (M9); pulled rows keep the cloud timestamp as-is.
+    await sessionsRepo.update(existing, { local: true });
     
     setSessions(prev => prev.map(s => 
       s.id === id ? { ...s, name, updatedAt: Date.now() } : s

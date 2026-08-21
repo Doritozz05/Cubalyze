@@ -134,22 +134,41 @@ class FakeCloud {
   /** Number of sync_apply RPC calls made (batching assertions). */
   rpcCalls = 0;
 
+  /**
+   * When > 0, the next sync_apply reports this many skipped rows (M1) — the
+   * client must refuse to advance its watermark and throw.
+   */
+  skippedNext = 0;
+
   /** When set, table pulls (gt path) await this before answering. */
   pullGate: Promise<void> | null = null;
   pullStarted: (() => void) | null = null;
   pullStartedPromise: Promise<void> | null = null;
+
+  /** Find a cloud row by its entity id (composite-keyed maps). */
+  private findRow(
+    map: Map<string, Record<string, unknown>>,
+    id: string,
+    user?: string,
+  ): Record<string, unknown> | undefined {
+    return [...map.values()].find(
+      (r) =>
+        String(r.id) === id && (user === undefined || String(r.user_id) === user),
+    );
+  }
 
   rpc(name: string, args: { payload: Record<string, Record<string, unknown>[]> }) {
     if (name !== "sync_apply") throw new Error(`unexpected rpc ${name}`);
     this.rpcCalls += 1;
     const p = args.payload;
     // Rows first, tombstones last (same order as the production function).
-    this.applyLww("solves", p.solves ?? [], (r) => String(r.id), "updated_at", UID);
-    this.applyLww("sessions", p.sessions ?? [], (r) => String(r.id), "updated_at", UID);
+    // Composite keys (user_id, id) mirror the M2 cloud PKs.
+    this.applyLww("solves", p.solves ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
+    this.applyLww("sessions", p.sessions ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     this.applyLww("profiles", p.profiles ?? [], (r) => String(r.user_id), "updated_at", UID);
-    this.applyLww("training_attempts", p.training_attempts ?? [], (r) => String(r.id), "updated_at", UID);
-    this.applyLww("training_sessions", p.training_sessions ?? [], (r) => String(r.id), "updated_at", UID);
-    this.applyLww("training_tasks", p.training_tasks ?? [], (r) => String(r.id), "updated_at", UID);
+    this.applyLww("training_attempts", p.training_attempts ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
+    this.applyLww("training_sessions", p.training_sessions ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
+    this.applyLww("training_tasks", p.training_tasks ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     for (const r of p.skill_progress ?? []) {
       const key = `${r.user_id}:${r.skill_id}`;
       const cur = this.skill_progress.get(key);
@@ -165,48 +184,53 @@ class FakeCloud {
       }
       this.applyTombstone(t);
     }
-    return { error: null };
+    return {
+      data: { ok: true, skipped: this.skippedNext, applied: {} },
+      error: null,
+    };
   }
 
   /** Conditional physical delete mirroring the cloud function. */
   private applyTombstone(t: Record<string, unknown>): void {
     const deletedAt = Number(t.deleted_at);
     const id = String(t.entity_id);
+    const user = String(t.user_id);
     switch (t.entity) {
       case "solves": {
-        const row = this.solves.get(id);
-        if (row && Number(row.updated_at) <= deletedAt) this.solves.delete(id);
+        const row = this.findRow(this.solves, id, user);
+        if (row && Number(row.updated_at) <= deletedAt) this.solves.delete(`${user}:${id}`);
         break;
       }
       case "sessions": {
-        const row = this.sessions.get(id);
+        const row = this.findRow(this.sessions, id, user);
         const hasNewerChild = [...this.solves.values()].some(
           (s) =>
             String(s.session_id) === id &&
+            String(s.user_id) === user &&
             Number(s.updated_at) > deletedAt,
         );
         if (row && Number(row.updated_at) <= deletedAt && !hasNewerChild) {
-          this.sessions.delete(id);
+          this.sessions.delete(`${user}:${id}`);
         }
         break;
       }
       case "training_tasks": {
-        const row = this.training_tasks.get(id);
-        if (row && Number(row.updated_at) <= deletedAt) this.training_tasks.delete(id);
+        const row = this.findRow(this.training_tasks, id, user);
+        if (row && Number(row.updated_at) <= deletedAt) this.training_tasks.delete(`${user}:${id}`);
         break;
       }
       case "skill_progress": {
         const row = [...this.skill_progress.values()].find(
-          (r) => String(r.skill_id) === id,
+          (r) => String(r.skill_id) === id && String(r.user_id) === user,
         );
         if (row && Number(row.completed_at) <= deletedAt) {
-          this.skill_progress.delete(`${t.user_id}:${id}`);
+          this.skill_progress.delete(`${user}:${id}`);
         }
         break;
       }
       case "training_sessions": {
-        const row = this.training_sessions.get(id);
-        if (row && Number(row.updated_at) <= deletedAt) this.training_sessions.delete(id);
+        const row = this.findRow(this.training_sessions, id, user);
+        if (row && Number(row.updated_at) <= deletedAt) this.training_sessions.delete(`${user}:${id}`);
         break;
       }
       default:
@@ -366,7 +390,7 @@ describe("B) deleted data never resurrects on a fresh link", () => {
 
     // The tombstone PHYSICALLY deleted the cloud row.
     expect(cloud.sync_tombstones.size).toBe(1);
-    expect(cloud.solves.has("x1")).toBe(false);
+    expect(cloud.solves.has(`${UID}:x1`)).toBe(false);
 
     const c = makeDevice(cloud);
     await pullChanges(c.ctx, UID);
@@ -388,8 +412,8 @@ describe("B) deleted data never resurrects on a fresh link", () => {
     await a.ctx.sessions.delete("s1");
     await pushChanges(a.ctx, UID);
 
-    expect(cloud.sessions.has("s1")).toBe(false);
-    expect(cloud.solves.has("x1")).toBe(false);
+    expect(cloud.sessions.has(`${UID}:s1`)).toBe(false);
+    expect(cloud.solves.has(`${UID}:x1`)).toBe(false);
 
     const c = makeDevice(cloud);
     await pullChanges(c.ctx, UID);
@@ -440,7 +464,7 @@ describe("C) a newer offline edit beats an older delete (LWW)", () => {
     const afterSyncOnB = await b.ctx.solves.findById("x1");
     expect(afterSyncOnB).not.toBeNull();
     expect(Number(afterSyncOnB?.timeMs)).toBe(2500);
-    expect(cloud.solves.get("x1")?.time_ms).toBe(2500);
+    expect(cloud.solves.get(`${UID}:x1`)?.time_ms).toBe(2500);
 
     // And it propagates back to A (newer edit wins over A's delete).
     await runCycle(a.ctx);
@@ -536,8 +560,8 @@ describe("D) writes during claim() are preserved", () => {
     // The follow-up cycle uploads the write (its timestamp is above the
     // push watermark, which the old Date.now() ceiling used to swallow).
     await engine.syncNow();
-    expect(cloud.solves.has("x2")).toBe(true);
-    expect(cloud.sessions.has("s2")).toBe(true);
+    expect(cloud.solves.has(`${UID}:x2`)).toBe(true);
+    expect(cloud.sessions.has(`${UID}:s2`)).toBe(true);
     expect(await dev.ctx.meta.get("sync_dirty")).toBe("0");
   });
 });
@@ -634,5 +658,138 @@ describe("F) batched push correctness and scale", () => {
     const huge = new Array(200_000).fill(1700000000000);
     expect(maxOf(huge)).toBe(1700000000000);
     expect(maxOf([])).toBe(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// G) M4 — tombstones are pulled ONCE (watermarked), not re-applied forever.
+// ────────────────────────────────────────────────────────────────────────────
+describe("G) tombstone pull watermark (M4)", () => {
+  it("a tombstone is applied exactly once; only new ones arrive later", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+    await pushChanges(a.ctx, UID);
+    await a.ctx.solves.delete("x1");
+    await pushChanges(a.ctx, UID);
+    expect(cloud.sync_tombstones.size).toBe(1);
+
+    // First pull: the tombstone is applied.
+    const first = await pullChanges(b.ctx, UID);
+    expect(first.appliedTombstones).toBe(1);
+    expect(await b.ctx.solves.findById("x1")).toBeNull();
+
+    // Second pull: the watermark has advanced — nothing is re-applied
+    // (before M4 every pull re-fetched the whole tombstone history).
+    const second = await pullChanges(b.ctx, UID);
+    expect(second.appliedTombstones).toBe(0);
+
+    // A NEW tombstone still arrives on the next pull.
+    await a.ctx.sessions.delete("s1");
+    await pushChanges(a.ctx, UID);
+    const third = await pullChanges(b.ctx, UID);
+    expect(third.appliedTombstones).toBe(1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// H) M1 — sync_apply reporting skipped rows must make push throw instead of
+// silently advancing the watermark.
+// ────────────────────────────────────────────────────────────────────────────
+describe("H) sync_apply skip feedback (M1)", () => {
+  it("push refuses to advance the watermark when the cloud reports skips", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+
+    cloud.skippedNext = 2;
+    await expect(pushChanges(dev.ctx, UID)).rejects.toThrow(/rejected/);
+
+    // Watermark untouched → the rows are retried on the next cycle.
+    const wm = await dev.ctx.meta.get(`sync_watermark_push_solves_${UID}`);
+    expect(Number(wm)).toBe(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// I) M9 — local writes take strictly-increasing monotonic clock stamps, so
+// two writes in the same millisecond (or after a backwards clock jump) can
+// never collide with the push watermark and be skipped forever.
+// ────────────────────────────────────────────────────────────────────────────
+describe("I) monotonic local clock (M9)", () => {
+  it("back-to-back inserts never share an updated_at", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    const base = {
+      sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
+      penalty: "none" as const, source: "manual" as const, moves: [],
+      puzzleType: "333", createdAt: 1000,
+    };
+    await dev.ctx.solves.insert({ id: "x1", ...base });
+    await dev.ctx.solves.insert({ id: "x2", ...base });
+    const r1 = await dev.ctx.solves.findById("x1");
+    const r2 = await dev.ctx.solves.findById("x2");
+    expect(Number(r2?.updatedAt)).toBeGreaterThan(Number(r1?.updatedAt));
+    expect(Number(r1?.updatedAt)).toBeGreaterThanOrEqual(Date.now() - 5000);
+  });
+
+  it("a local edit (update { local: true }) advances past the previous stamp", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+    const before = await dev.ctx.solves.findById("x1");
+    await dev.ctx.solves.update(
+      {
+        id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
+        penalty: "+2", source: "manual", moves: [], puzzleType: "333", createdAt: 1000,
+        updatedAt: before?.updatedAt ?? 0,
+      },
+      { local: true },
+    );
+    const after = await dev.ctx.solves.findById("x1");
+    expect(Number(after?.updatedAt)).toBeGreaterThan(Number(before?.updatedAt));
+    // And the edit is pushed (above the watermark) and converges.
+    await pushChanges(dev.ctx, UID);
+    expect(cloud.solves.get(`${UID}:x1`)?.penalty).toBe("+2");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// J) M5 — float time_ms is normalized to integer ms at the write boundary so
+// the cloud bigint never silently changes the stored value.
+// ────────────────────────────────────────────────────────────────────────────
+describe("J) float time normalization (M5)", () => {
+  it("a sub-ms time is rounded consistently at insert", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 112.729, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+    const row = await dev.ctx.solves.findById("x1");
+    expect(row?.timeMs).toBe(113);
+    // And the cloud receives the same rounded integer.
+    await pushChanges(dev.ctx, UID);
+    expect(cloud.solves.get(`${UID}:x1`)?.time_ms).toBe(113);
   });
 });

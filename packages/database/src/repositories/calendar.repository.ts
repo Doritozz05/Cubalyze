@@ -8,6 +8,8 @@
  * Follows the same pattern as TrainingRepository / SolvesRepository.
  */
 
+import { nextLocalStamps } from './local-clock.js';
+
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
 // ─── Row Types (snake_case, matching SQL schema) ──────────────────────────
@@ -129,8 +131,23 @@ export class CalendarRepository {
     return rowToTask(rows[0] as unknown as TrainingTaskRow);
   }
 
-  async upsert(task: TrainingTask): Promise<void> {
-    const row = taskToRow(task);
+  /**
+   * Upsert a training task. The sync pull passes the cloud timestamp (kept
+   * as-is); pass `{ local: true }` from local edit paths so the repo takes a
+   * monotonic clock stamp strictly newer than the task's previous stamp (M9)
+   * — without it, an edit that keeps the task's old updated_at would never
+   * be re-selected by the push cursor.
+   */
+  async upsert(task: TrainingTask, opts?: { local?: boolean }): Promise<void> {
+    const stamped = opts?.local
+      ? {
+          ...task,
+          updatedAt: await nextLocalStamps(this.db, 'training_tasks', 1, {
+            floor: task.updatedAt ?? 0,
+          }),
+        }
+      : task;
+    const row = taskToRow(stamped);
     await this.db(
       `INSERT INTO training_tasks (id, title, description, start_date, repeat, days_of_week, color, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

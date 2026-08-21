@@ -44,6 +44,21 @@ export function maxOf(values: number[]): number {
   return max === -Infinity ? 0 : max;
 }
 
+/**
+ * M1: `sync_apply` reports rows it skipped (validation mismatches). Any skip
+ * is a silent-loss hazard — the row was dropped server-side while the client
+ * would otherwise advance its watermark and never re-send it. Throw instead:
+ * the cycle surfaces an error and the watermark stays put for a fix.
+ */
+function assertNoSkipped(data: unknown, table: string): void {
+  const skipped = Number((data as { skipped?: unknown })?.skipped ?? 0);
+  if (skipped > 0) {
+    throw new Error(
+      `sync_apply rejected ${skipped} ${table} row(s) (user_id validation) — watermark NOT advanced`, 
+    );
+  }
+}
+
 export async function pushChanges(
   ctx: SyncContext,
   uid: string,
@@ -159,7 +174,7 @@ export async function pushChanges(
 
   // ── Tombstones (final RPC, then purge) ────────────────────────────────
   if (tombstones.length > 0) {
-    const { error } = await ctx.supabase.rpc("sync_apply", {
+    const { data, error } = await ctx.supabase.rpc("sync_apply", {
       payload: {
         tombstones: tombstones.map((t) => ({
           user_id: uid,
@@ -170,6 +185,7 @@ export async function pushChanges(
       },
     });
     if (error) throw error;
+    assertNoSkipped(data, "tombstones");
     totals.pushedTombstones = tombstones.length;
     await purgeLocalTombstones(ctx.db);
   }
@@ -209,10 +225,11 @@ async function pushPageable<T extends PageableRow>(
     });
     if (page.length === 0) break;
     const payload = page.map((row) => toRow(row));
-    const { error } = await ctx.supabase.rpc("sync_apply", {
+    const { data, error } = await ctx.supabase.rpc("sync_apply", {
       payload: { [table]: payload },
     });
     if (error) throw error;
+    assertNoSkipped(data, table);
 
     const pageMax = maxOf(page.map(stamp));
     await setWatermark(ctx.meta, wmKey, pageMax);
@@ -235,10 +252,11 @@ async function pushSingle(
   rows: Record<string, unknown>[],
   maxUpdatedAt: number,
 ): Promise<void> {
-  const { error } = await ctx.supabase.rpc("sync_apply", {
+  const { data, error } = await ctx.supabase.rpc("sync_apply", {
     payload: { [table]: rows },
   });
   if (error) throw error;
+  assertNoSkipped(data, table);
   await setWatermark(ctx.meta, wmKey, maxUpdatedAt);
   totals.pushed[table] = (totals.pushed[table] ?? 0) + rows.length;
 }

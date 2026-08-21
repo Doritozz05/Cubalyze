@@ -1024,4 +1024,33 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '030_no_demo_tombstones',
+    description: 'Demo rows never tombstone: solves/sessions DELETE triggers now skip is_demo=1 rows so clearDemoData() and demo-session deletes cannot fabricate tombstones that get pushed to the cloud (demo rows are never pushed, so their tombstones are pure noise + unbounded cloud growth)',
+    sql: `
+      -- A demo solve/session never existed in the cloud (demo rows are
+      -- excluded from every push cursor), so deleting one must not create a
+      -- tombstone: the tombstone would be pushed, inserted into
+      -- sync_tombstones forever (the target row never exists → no-op) and
+      -- count against the user's unbounded tombstone accumulation (M7).
+      DROP TRIGGER IF EXISTS trg_tombstone_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves
+      AFTER DELETE ON solves
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('solves', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions
+      AFTER DELETE ON sessions
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('sessions', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+    `,
+  },
 ];

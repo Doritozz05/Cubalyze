@@ -17,6 +17,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
     source: 'manual' as const,
     moves: [] as never[],
     puzzleType: '333',
+    updatedAt: 1767225600000,
   };
 
   it('insert without options binds is_demo = 0', async () => {
@@ -65,7 +66,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
 });
 
 describe('SessionsRepository — demo session isolation (is_demo)', () => {
-  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '333', createdAt: 1767225600000 };
+  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '333', createdAt: 1767225600000, updatedAt: 1767225600000 };
 
   it('insert without options binds is_demo = 0', async () => {
     const db = mockDb();

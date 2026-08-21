@@ -15,6 +15,7 @@ import type {
   TrainingSessionProgressRecord,
 } from "@cubeforge/training";
 import { withTransaction } from "./transaction.js";
+import { nextLocalStamps } from "./local-clock.js";
 
 /** Generate a unique ID without external dependencies */
 function generateId(): string {
@@ -317,6 +318,16 @@ export class TrainingRepository {
     attempt: TrainingAttempt,
     verb: "INSERT INTO" | "INSERT OR IGNORE INTO",
   ): Promise<TrainingAttempt> {
+    // Local attempts (no declared timestamp) take a monotonic clock stamp
+    // (M9); pulled attempts always carry the cloud timestamp and are written
+    // as-is. time_ms / inspection_ms are normalized to integer ms at the
+    // write boundary (M5) — the cloud stores bigint, so floats would be
+    // rounded by Postgres and silently changed on the way back down.
+    const updatedAt =
+      attempt.updatedAt ??
+      (await nextLocalStamps(this.db, "training_attempts", 1, {
+        floor: attempt.timestamp ?? 0,
+      }));
     const row: TrainingAttemptRow = {
       id: attempt.id,
       exercise_id: attempt.exerciseId,
@@ -325,7 +336,7 @@ export class TrainingRepository {
       subset_id: attempt.subsetId ?? null,
       case_id: attempt.caseId ?? null,
       scramble: attempt.scramble,
-      time_ms: attempt.timeMs,
+      time_ms: Math.round(attempt.timeMs),
       verdict: attempt.verdict,
       play_mode: attempt.playMode,
       expected_moves: attempt.expectedMoves ? JSON.stringify(attempt.expectedMoves) : null,
@@ -334,12 +345,13 @@ export class TrainingRepository {
       move_count: attempt.moveCount ?? null,
       optimal_moves: attempt.optimalMoves ?? null,
       rotation_count: attempt.rotationCount ?? null,
-      inspection_ms: attempt.inspectionMs ?? null,
+      inspection_ms:
+        attempt.inspectionMs == null ? null : Math.round(attempt.inspectionMs),
       review_grade: attempt.reviewGrade ?? null,
       session_id: attempt.sessionId ?? null,
       metric_kind: attempt.metricKind ?? "execution",
       timestamp: attempt.timestamp || Date.now(),
-      updated_at: attempt.updatedAt ?? (attempt.timestamp || Date.now()),
+      updated_at: updatedAt,
     };
 
     await this.db(
