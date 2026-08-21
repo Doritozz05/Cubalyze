@@ -506,8 +506,70 @@ export class Cube3DEngine {
     const hits = raycaster.intersectObjects(cubieGroups, true);
     if (hits.length === 0) return null;
 
-    const hit = hits[0];
-    if (!hit.face) return null;
+    // The raycaster intersects EVERY mesh the ray crosses, including stickers
+    // on the FAR side of the cube that are visible through the transparent
+    // core (translucent skin: DoubleSide stickers + opacity-0 core +
+    // depthWrite:false). Without filtering, hits[0] can be a back-face
+    // sticker the user never touched, producing the wrong move.
+    //
+    // Keep only hits whose world-space face normal points TOWARD the camera
+    // (dot with the ray direction is negative — the face is front-facing).
+    // This also filters back-face hits on DoubleSide sticker geometry.
+    const rayDir = raycaster.ray.direction.clone().normalize();
+
+    // Determine whether this skin has visible stickers (stickered /
+    // translucent) or not (stickerless / coreless). When stickers exist,
+    // they are the ONLY valid drag surface — the RoundedBoxGeometry core
+    // has rounded edges that curve outward past the flat sticker panels,
+    // and a ray that clips the core's top/side edge (just above a
+    // sticker) resolves to the WRONG face (e.g. hitting the core's +X
+    // face while aiming at the front sticker → resolveDragMove produces
+    // an F move instead of the intended R/L). Ignoring core hits when
+    // stickers are present eliminates that dead zone. Stickerless skins
+    // have no stickers, so the core IS the interaction surface.
+    const style = this.factory?.getStyle();
+    const skinType = style?.skinType ?? 'stickered';
+    const hasStickers = skinType !== 'stickerless' && skinType !== 'coreless';
+
+    let hit: typeof hits[0] | null = null;
+    let coreFallback: typeof hits[0] | null = null;
+    for (const h of hits) {
+      if (!h.face) continue;
+      // World-space normal of the hit face. Three.js populates
+      // h.face.normal in LOCAL space; transform it by the object's
+      // world matrix (rotation part only — normalScale = 1 for uniform
+      // scale, which is the case for cubie groups).
+      const localNormal = new Vector3(h.face.normal.x, h.face.normal.y, h.face.normal.z);
+      const worldNormal = localNormal.clone();
+      h.object.updateWorldMatrix(true, false);
+      worldNormal.transformDirection(h.object.matrixWorld);
+      // Front-facing: the normal points AGAINST the ray (toward the camera).
+      if (worldNormal.dot(rayDir) >= -0.01) continue;
+      // Distinguish sticker meshes from core meshes. Sticker meshes use
+      // MeshBasicMaterial (flat, unlit); core meshes use MeshStandardMaterial
+      // (lit, with roughness/metalness). The stickerless skin's core uses
+      // an array of MeshBasicMaterial, but hasStickers is false there so
+      // the check below never runs for it.
+      const mat = (h.object as Mesh).material;
+      // Core meshes use MeshStandardMaterial (lit, with roughness/metalness);
+      // sticker meshes use MeshBasicMaterial (flat, unlit). The type string
+      // is always available and avoids the need for type narrowing.
+      const matType = Array.isArray(mat) ? '' : (mat as Material).type;
+      const isCoreMesh = matType === 'MeshStandardMaterial';
+      if (hasStickers && isCoreMesh) {
+        // Remember the first front-facing core hit as a FALLBACK — only
+        // used if no sticker hit is found (e.g. a gap between stickers on
+        // the coreless skin, or a grazing angle that misses every sticker).
+        if (!coreFallback) coreFallback = h;
+        continue;
+      }
+      hit = h;
+      break;
+    }
+    // No sticker hit found — fall back to the core (or the first
+    // front-facing hit for stickerless/coreless skins).
+    if (!hit) hit = coreFallback;
+    if (!hit || !hit.face) return null;
 
     // Walk up from the hit mesh (sticker / core) to its cubie Group.
     let obj: Object3D | null = hit.object;

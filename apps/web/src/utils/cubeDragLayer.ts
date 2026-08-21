@@ -113,6 +113,18 @@ export function resolveDragMove(input: {
   const [axisA, axisB] = PLANE_AXES[normal];
   const compA = Math.abs(worldDrag[axisA]);
   const compB = Math.abs(worldDrag[axisB]);
+  // Dead zone for diagonal drags: when the two in-plane components are nearly
+  // equal (ratio within 1.35:1) the drag is ambiguous — a tiny change in the
+  // drag angle flips which axis wins, producing the wrong move. Rather than
+  // guessing (the ~10% error rate), refuse to resolve until the drag
+  // clearly commits to one axis. The caller's dead zone (14px) already
+  // ensures this only delays the resolution by a few px for truly diagonal
+  // gestures — straight drags (which are the vast majority) pass through.
+  const total = compA + compB;
+  if (total > 0) {
+    const ratio = Math.max(compA, compB) / Math.min(compA, compB);
+    if (ratio < 1.35) return null;
+  }
   // The dominant in-plane component is the drag axis; the turn axis is the
   // OTHER one (same rule as the front face: vertical → columns, horizontal →
   // rows — applied to the face's own orientation).
