@@ -167,18 +167,45 @@ export function Header({
   }, [cancelRetract]);
 
   const scheduleRetract = useCallback(() => {
-    cancelRetract();
+    // Don't retract while a dropdown/select/popover is open — its portal
+    // lives outside the header, so the pointerleave already fired. The
+    // dock must stay visible until the user closes the dropdown.
+    if (anyPopoverOpen()) {
+      cancelRetract();
+      return;
+    }
+    cancelRettract();
     retractTimerRef.current = window.setTimeout(
-      () => setDockRevealed(false),
+      () => {
+        // Re-check at fire time: a dropdown may have opened during the
+        // delay window.
+        if (anyPopoverOpen()) {
+          return;
+        }
+        setDockRevealed(false);
+      },
       DOCK_RETRACT_DELAY_MS,
     );
-  }, [cancelRetract]);
+  }, [cancelRetract, anyPopoverOpen]);
 
   // Clear any pending retract on unmount.
   useEffect(() => {
     return () => {
       if (retractTimerRef.current !== null) window.clearTimeout(retractTimerRef.current);
     };
+  }, []);
+
+  // ── Dropdown/popover guard ──────────────────────────────────────────
+  // When a Radix dropdown/select/popover is open its content lives in a
+  // portal OUTSIDE the header DOM, so the header's pointerleave fires and
+  // the dock retracts — leaving the dropdown floating over empty space.
+  // Check the document for any open Radix popper and, when one is open,
+  // cancel any pending retract and keep the dock pinned until it closes.
+  const anyPopoverOpen = useCallback((): boolean => {
+    // Radix marks open popper content with data-state="open". The trigger
+    // also carries data-state="open". Checking both covers dropdown menus,
+    // select content, and popovers.
+    return !!document.querySelector('[data-state="open"]');
   }, []);
 
   // Drag-to-dock reveal: while a floating widget is dragged toward the top,
@@ -244,7 +271,10 @@ export function Header({
       const header = headerRef.current;
       if (!target || !header) return;
       if (dockRevealed) {
-        if (!header.contains(target)) {
+        // Don't retract when tapping inside an open dropdown/popover —
+        // its portal lives outside the header, so header.contains() is
+        // false, but the user is still interacting with dock content.
+        if (!header.contains(target) && !anyPopoverOpen()) {
           cancelRetract();
           setDockRevealed(false);
         }
@@ -254,7 +284,7 @@ export function Header({
     };
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [dockAutoHide, isCoarsePointer, dockRevealed, revealDock, cancelRetract]);
+  }, [dockAutoHide, isCoarsePointer, dockRevealed, revealDock, cancelRetract, anyPopoverOpen]);
 
   useEffect(() => {
     setPuzzle(puzzleProp);
