@@ -489,94 +489,105 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-4 py-6 sm:px-6">
       <h1 className="mb-4 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
         {i18n.t("common:profile")}
       </h1>
 
-      <ProfileHero
-        profile={profile}
-        loading={profileLoading}
-        onEdit={onOpenSettings}
-        badges={badges}
-        seed={identiconSeed ?? profile?.userId}
-      />
+      {/* Desktop (lg+): 2-column layout — identity sidebar (sticky) +
+          content area with tabs. Mobile: single column (unchanged). */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,380px)_1fr] lg:gap-6">
+        {/* ── Identity sidebar (sticky on desktop) ────────────────────── */}
+        <div className="lg:sticky lg:top-6 lg:self-start lg:space-y-4">
+          <ProfileHero
+            profile={profile}
+            loading={profileLoading}
+            onEdit={onOpenSettings}
+            badges={badges}
+            seed={identiconSeed ?? profile?.userId}
+          />
 
-      <div className="mt-4">
-        <StatStrip stats={stats} loading={statsLoading} />
-      </div>
+          <StatStrip stats={stats} loading={statsLoading} />
 
-      <Tabs defaultValue="overview" className="mt-5">
-        <TabsList
-          aria-label={t("tabs.aria")}
-          className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5"
-        >
-          {(
-            [
-              ["overview", t("tabs.overview")],
-              ["stats", i18n.t("nav:stats")],
-              ["training", i18n.t("nav:training")],
-              ["algorithms", i18n.t("nav:algorithms")],
-              ["skills", i18n.t("nav:skills")],
-            ] as const
-          ).map(([value, label]) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
-            >
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4">
-          <OverviewTab stats={stats} />
-        </TabsContent>
-        <TabsContent value="stats" className="mt-4">
-          <StatsTab stats={stats} />
-        </TabsContent>
-        <TabsContent value="training" className="mt-4">
-          <TrainingTab />
-        </TabsContent>
-        <TabsContent value="algorithms" className="mt-4">
-          <AlgorithmsTab />
-        </TabsContent>
-        <TabsContent value="skills" className="mt-4">
-          <SkillsTab />
-        </TabsContent>
-      </Tabs>
-
-      <section className="mt-6">
-        <h2 className="mb-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
-          {t("quick.title")}
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {QUICK_ACTIONS.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
-            const label = i18n.t(`nav:${labelKey}` as never);
-            const description = t(descriptionKey);
-            return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onNavigate?.(id)}
-              aria-label={`${label} — ${description}`}
-              className="group flex flex-col items-start gap-2 rounded-xl border border-line bg-surface p-3.5 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
-            >
-              <div className="grid size-8 place-items-center rounded-lg border border-line bg-surface-2/60 text-ink-2 transition-colors group-hover:text-ink">
-                <Icon className="size-4" aria-hidden="true" />
-              </div>
-              <span className="text-xs font-semibold text-ink">{label}</span>
-              <span className="text-[0.6rem] leading-tight text-ink-3">{description}</span>
-            </button>
-            );
-          })}
+          {/* Quick actions — in the sidebar on desktop, inline on mobile */}
+          <section className="mt-4 lg:mt-0">
+            <h2 className="mb-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
+              {t("quick.title")}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+              {QUICK_ACTIONS.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
+                const label = i18n.t(`nav:${labelKey}` as never);
+                const description = t(descriptionKey);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => onNavigate?.(id)}
+                    aria-label={`${label} — ${description}`}
+                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-3 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+                  >
+                    <div className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-surface-2/60 text-ink-2 transition-colors group-hover:text-ink">
+                      <Icon className="size-4" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="block text-xs font-semibold text-ink">{label}</span>
+                      <span className="block text-[0.6rem] leading-tight text-ink-3">{description}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         </div>
-      </section>
 
-      <section className="mt-6">
-        <AccountCard />
-      </section>
+        {/* ── Content area: tabs + account ────────────────────────────── */}
+        <div className="mt-5 lg:mt-0">
+          <Tabs defaultValue="overview">
+            <TabsList
+              aria-label={t("tabs.aria")}
+              className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5"
+            >
+              {(
+                [
+                  ["overview", t("tabs.overview")],
+                  ["stats", i18n.t("nav:stats")],
+                  ["training", i18n.t("nav:training")],
+                  ["algorithms", i18n.t("nav:algorithms")],
+                  ["skills", i18n.t("nav:skills")],
+                ] as const
+              ).map(([value, label]) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+                >
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value="overview" className="mt-4">
+              <OverviewTab stats={stats} />
+            </TabsContent>
+            <TabsContent value="stats" className="mt-4">
+              <StatsTab stats={stats} />
+            </TabsContent>
+            <TabsContent value="training" className="mt-4">
+              <TrainingTab />
+            </TabsContent>
+            <TabsContent value="algorithms" className="mt-4">
+              <AlgorithmsTab />
+            </TabsContent>
+            <TabsContent value="skills" className="mt-4">
+              <SkillsTab />
+            </TabsContent>
+          </Tabs>
+
+          <section className="mt-6">
+            <AccountCard />
+          </section>
+        </div>
+      </div>
 
       <section
         aria-label={t("localNoticeAria")}
