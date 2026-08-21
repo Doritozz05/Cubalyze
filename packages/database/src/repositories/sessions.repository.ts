@@ -51,12 +51,28 @@ export class SessionsRepository {
   /**
    * All NON-demo sessions edited strictly after `updatedAt` (epoch ms) — the
    * sync push cursor. A fresh link passes 0 so every real session is pushed.
+   * Optional (updated_at, id) keyset pagination (see SolvesRepository
+   * findAllSince) so batched pushes never skip rows that share a timestamp.
    */
-  async findAllSince(updatedAt: number): Promise<Session[]> {
-    const rows = await this.db(
-      'SELECT * FROM sessions WHERE is_demo = 0 AND updated_at > ? ORDER BY updated_at ASC',
-      [updatedAt],
-    );
+  async findAllSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<Session[]> {
+    let sql = 'SELECT * FROM sessions WHERE is_demo = 0';
+    const bind: unknown[] = [];
+    if (opts?.afterUpdatedAt !== undefined && opts.afterId !== undefined) {
+      sql += ' AND (updated_at > ? OR (updated_at = ? AND id > ?))';
+      bind.push(opts.afterUpdatedAt, opts.afterUpdatedAt, opts.afterId);
+    } else {
+      sql += ' AND updated_at > ?';
+      bind.push(updatedAt);
+    }
+    sql += ' ORDER BY updated_at ASC, id ASC';
+    if (opts?.limit !== undefined) {
+      sql += ' LIMIT ?';
+      bind.push(opts.limit);
+    }
+    const rows = await this.db(sql, bind);
     return rows.map((r) => rowToSession(r as unknown as SessionRow));
   }
 
@@ -111,11 +127,37 @@ export class SessionsRepository {
     );
   }
 
+  /**
+   * Update a session, writing the EXACT `updated_at` the caller declared
+   * (0/undefined = "now"). Same contract as SolvesRepository.update: the
+   * sync pull passes the cloud value (no re-selection on the next push); the
+   * UI edit path stamps `updatedAt = Date.now()` explicitly.
+   */
   async update(session: Session): Promise<void> {
     assertValidSessionPuzzleType(session);
+    const updatedAt =
+      session.updatedAt && session.updatedAt > 0
+        ? session.updatedAt
+        : Date.now();
     await this.db(
       'UPDATE sessions SET name = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [session.name, session.puzzleType, Date.now(), session.id]
+      [session.name, session.puzzleType, updatedAt, session.id]
+    );
+  }
+
+  /**
+   * Versioned delete for remote tombstones (LWW): the session is removed
+   * only when it was not edited after the tombstone AND no child solve was
+   * edited after it (a newer solve added offline protects the session — the
+   * FK cascade would otherwise orphan it).
+   */
+  async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    await this.db(
+      `DELETE FROM sessions WHERE id = ? AND updated_at <= ?
+         AND NOT EXISTS (
+           SELECT 1 FROM solves WHERE session_id = ? AND updated_at > ?
+         )`,
+      [id, deletedAt, id, deletedAt],
     );
   }
 
@@ -123,9 +165,11 @@ export class SessionsRepository {
     // Session deletes cascade to solves, but SQLite row triggers do NOT fire
     // on cascaded deletes — tombstone the child solves explicitly (migration
     // 028) so the sync engine removes them on every other device too.
+    // Millisecond precision (migration 029) so tombstone LWW comparisons
+    // against row updated_at are exact.
     await this.db(
       `INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
-       SELECT 'solves', id, CAST(strftime('%s','now') AS INTEGER) * 1000
+       SELECT 'solves', id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
        FROM solves WHERE session_id = ?`,
       [id],
     );

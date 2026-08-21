@@ -471,6 +471,20 @@ export class TrainingRepository {
     await this.db("DELETE FROM training_sessions WHERE id = ?", [id]);
   }
 
+  /**
+   * Versioned delete for remote tombstones (LWW): only removes the training
+   * session when it was not edited after the tombstone.
+   */
+  async deleteTrainingSessionIfNotNewer(
+    id: string,
+    deletedAt: number,
+  ): Promise<void> {
+    await this.db(
+      "DELETE FROM training_sessions WHERE id = ? AND updated_at <= ?",
+      [id, deletedAt],
+    );
+  }
+
   /** One training session by id (pull LWW check). */
   async findTrainingSessionById(id: string): Promise<TrainingSessionRecord | null> {
     const rows = await this.db(
@@ -570,12 +584,31 @@ export class TrainingRepository {
     return rows.map((r) => rowToAttempt(r as unknown as TrainingAttemptRow));
   }
 
-  /** Attempts edited strictly after `updatedAt` — the sync push cursor. */
-  async findAttemptsSince(updatedAt: number): Promise<TrainingAttempt[]> {
-    const rows = await this.db(
-      "SELECT * FROM training_attempts WHERE updated_at > ? ORDER BY updated_at ASC, timestamp ASC",
-      [updatedAt],
-    );
+  /**
+   * Attempts edited strictly after `updatedAt` — the sync push cursor.
+   * Optional (updated_at, id) keyset pagination (see
+   * SolvesRepository.findAllSince) so batched pushes never skip rows that
+   * share a timestamp.
+   */
+  async findAttemptsSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<TrainingAttempt[]> {
+    let sql = "SELECT * FROM training_attempts";
+    const bind: unknown[] = [];
+    if (opts?.afterUpdatedAt !== undefined && opts.afterId !== undefined) {
+      sql += " WHERE (updated_at > ? OR (updated_at = ? AND id > ?))";
+      bind.push(opts.afterUpdatedAt, opts.afterUpdatedAt, opts.afterId);
+    } else {
+      sql += " WHERE updated_at > ?";
+      bind.push(updatedAt);
+    }
+    sql += " ORDER BY updated_at ASC, id ASC";
+    if (opts?.limit !== undefined) {
+      sql += " LIMIT ?";
+      bind.push(opts.limit);
+    }
+    const rows = await this.db(sql, bind);
     return rows.map((r) => rowToAttempt(r as unknown as TrainingAttemptRow));
   }
 

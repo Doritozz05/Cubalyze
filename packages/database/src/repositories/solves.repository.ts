@@ -168,12 +168,33 @@ export class SolvesRepository {
    * sync push cursor. A fresh link passes 0 so every real solve is pushed.
    * Solves are immutable-ish (penalty/method/note/analysis edits bump
    * updated_at), so LWW on updated_at is the conflict rule.
+   *
+   * Optional (updated_at, id) keyset pagination: when `opts` is given the
+   * cursor continues after `(afterUpdatedAt, afterId)` — rows that share the
+   * exact same `updated_at` are NEVER skipped (a plain `> wm` boundary would
+   * silently drop every row beyond the first page that shares the max
+   * timestamp, which bulk imports routinely produce).
    */
-  async findAllSince(updatedAt: number): Promise<Solve[]> {
-    const rows = await this.db(
-      'SELECT * FROM solves WHERE is_demo = 0 AND updated_at > ? ORDER BY updated_at ASC',
-      [updatedAt],
-    );
+  async findAllSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<Solve[]> {
+    let sql = 'SELECT * FROM solves WHERE is_demo = 0';
+    const bind: unknown[] = [];
+    if (opts?.afterUpdatedAt !== undefined && opts.afterId !== undefined) {
+      sql +=
+        ' AND (updated_at > ? OR (updated_at = ? AND id > ?))';
+      bind.push(opts.afterUpdatedAt, opts.afterUpdatedAt, opts.afterId);
+    } else {
+      sql += ' AND updated_at > ?';
+      bind.push(updatedAt);
+    }
+    sql += ' ORDER BY updated_at ASC, id ASC';
+    if (opts?.limit !== undefined) {
+      sql += ' LIMIT ?';
+      bind.push(opts.limit);
+    }
+    const rows = await this.db(sql, bind);
     return rows.map((r) => rowToSolve(r as unknown as SolveRow));
   }
 
@@ -265,11 +286,31 @@ export class SolvesRepository {
     return count;
   }
 
+  /**
+   * Update a solve, writing the EXACT `updated_at` the caller declared
+   * (0/undefined = "now"). The sync pull passes the cloud's value so a
+   * pulled row never gets a fresh local timestamp (which would re-select it
+   * on the next push and trigger an eternal re-sync ping-pong); the UI edit
+   * path stamps `updatedAt = Date.now()` explicitly before calling.
+   */
   async update(solve: Solve): Promise<void> {
     const row = solveToRow(solve);
+    const updatedAt = row.updated_at > 0 ? row.updated_at : Date.now();
     await this.db(
       'UPDATE solves SET session_id = ?, time_ms = ?, timestamp = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, Date.now(), row.id]
+      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, updatedAt, row.id]
+    );
+  }
+
+  /**
+   * Versioned delete for remote tombstones (LWW): only removes the row when
+   * it was NOT edited after the tombstone. A newer edit survives locally and
+   * is re-pushed, resurrecting the row — deletes only win against older data.
+   */
+  async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    await this.db(
+      'DELETE FROM solves WHERE id = ? AND updated_at <= ?',
+      [id, deletedAt],
     );
   }
 

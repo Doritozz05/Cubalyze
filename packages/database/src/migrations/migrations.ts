@@ -989,4 +989,39 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '029_tombstone_lww',
+    description: 'Tombstone LWW: re-create the DELETE triggers with millisecond-precision deleted_at so a tombstone can be compared exactly against row updated_at (the sync engine now applies deletes conditionally — a delete only wins when the row was not edited after it, and the cloud row is physically removed when the delete wins)',
+    sql: `
+      -- Millisecond-precision delete timestamps: strftime('%s','now')*1000
+      -- truncates to the second, which would make a delete look older than an
+      -- edit that happened in the same second (breaking LWW). julianday gives
+      -- ms since the Unix epoch.
+      DROP TRIGGER IF EXISTS trg_tombstone_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves AFTER DELETE ON solves BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('solves', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions AFTER DELETE ON sessions BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('sessions', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_training_tasks;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_tasks AFTER DELETE ON training_tasks BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('training_tasks', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_skill_progress;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_skill_progress AFTER DELETE ON skill_progress BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('skill_progress', OLD.skill_id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_training_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_sessions AFTER DELETE ON training_sessions BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('training_sessions', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+    `,
+  },
 ];

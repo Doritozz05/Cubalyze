@@ -98,13 +98,28 @@ export class CalendarRepository {
 
   /**
    * All tasks edited strictly after `updatedAt` (epoch ms) — the sync push
-   * cursor. A fresh link passes 0 so every task is pushed.
+   * cursor. A fresh link passes 0 so every task is pushed. Optional
+   * (updated_at, id) keyset pagination (see SolvesRepository.findAllSince).
    */
-  async findAllSince(updatedAt: number): Promise<TrainingTask[]> {
-    const rows = await this.db(
-      "SELECT * FROM training_tasks WHERE updated_at > ? ORDER BY updated_at ASC",
-      [updatedAt],
-    );
+  async findAllSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<TrainingTask[]> {
+    let sql = "SELECT * FROM training_tasks";
+    const bind: unknown[] = [];
+    if (opts?.afterUpdatedAt !== undefined && opts.afterId !== undefined) {
+      sql += " AND (updated_at > ? OR (updated_at = ? AND id > ?))";
+      bind.push(opts.afterUpdatedAt, opts.afterUpdatedAt, opts.afterId);
+    } else {
+      sql += " WHERE updated_at > ?";
+      bind.push(updatedAt);
+    }
+    sql += " ORDER BY updated_at ASC, id ASC";
+    if (opts?.limit !== undefined) {
+      sql += " LIMIT ?";
+      bind.push(opts.limit);
+    }
+    const rows = await this.db(sql, bind);
     return rows.map((r) => rowToTask(r as unknown as TrainingTaskRow));
   }
 
@@ -139,6 +154,17 @@ export class CalendarRepository {
 
   async delete(id: string): Promise<void> {
     await this.db("DELETE FROM training_tasks WHERE id = ?", [id]);
+  }
+
+  /**
+   * Versioned delete for remote tombstones (LWW): only removes the task when
+   * it was not edited after the tombstone.
+   */
+  async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    await this.db(
+      "DELETE FROM training_tasks WHERE id = ? AND updated_at <= ?",
+      [id, deletedAt],
+    );
   }
 
   async clear(): Promise<void> {

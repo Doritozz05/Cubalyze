@@ -45,9 +45,11 @@ export interface CloudTombstone extends CloudRow {
 }
 
 /**
- * Apply remote tombstones locally. The deletes fire the local triggers and
- * re-create tombstones — that is fine: they are idempotent and the natural
- * termination (a second apply deletes nothing) prevents any loop.
+ * Apply remote tombstones locally with LWW: a tombstone only deletes a row
+ * when the row was NOT edited after the tombstone's deleted_at (a newer
+ * offline edit survives and is re-pushed, resurrecting the row). The deletes
+ * fire the local triggers and re-create tombstones — idempotent, and the
+ * natural termination (a second apply deletes nothing) prevents any loop.
  */
 export async function applyRemoteTombstones(
   ctx: SyncContext,
@@ -57,19 +59,22 @@ export async function applyRemoteTombstones(
   for (const t of rows) {
     switch (t.entity) {
       case "solves":
-        await ctx.solves.delete(t.entity_id);
+        await ctx.solves.deleteIfNotNewer(t.entity_id, t.deleted_at);
         break;
       case "sessions":
-        await ctx.sessions.delete(t.entity_id);
+        await ctx.sessions.deleteIfNotNewer(t.entity_id, t.deleted_at);
         break;
       case "training_tasks":
-        await ctx.calendar.delete(t.entity_id);
+        await ctx.calendar.deleteIfNotNewer(t.entity_id, t.deleted_at);
         break;
       case "skill_progress":
-        await ctx.skills.setIncomplete(t.entity_id);
+        await ctx.skills.setIncompleteIfNotNewer(t.entity_id, t.deleted_at);
         break;
       case "training_sessions":
-        await ctx.training.deleteTrainingSession(t.entity_id);
+        await ctx.training.deleteTrainingSessionIfNotNewer(
+          t.entity_id,
+          t.deleted_at,
+        );
         break;
       default:
         continue; // unknown entity — ignore defensively

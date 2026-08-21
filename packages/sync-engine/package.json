@@ -13,17 +13,18 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
+  "devDependencies": {
+    "@cubeforge/config-eslint": "workspace:*",
+    "@cubeforge/config-typescript": "workspace:*",
+    "@sqlite.org/sqlite-wasm": "3.53.0-build1",
+    "eslint": "^10.7.0",
+    "typescript": "~6.0.2",
+    "vitest": "^3.0.5"
+  },
   "dependencies": {
     "@cubeforge/database": "workspace:*",
     "@cubeforge/models": "workspace:*",
     "@cubeforge/training": "workspace:*",
     "@supabase/supabase-js": "^2.0.0"
-  },
-  "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
-    "eslint": "^10.7.0",
-    "typescript": "~6.0.2",
-    "vitest": "^3.0.5"
   }
 }

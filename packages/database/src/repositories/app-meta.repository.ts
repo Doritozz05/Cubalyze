@@ -78,6 +78,11 @@ export class AppMetaRepository {
     await this.db('INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)', [key, value]);
   }
 
+  /** Delete every key starting with `prefix` (e.g. all sync state via 'sync_'). */
+  async deleteByPrefix(prefix: string): Promise<void> {
+    await this.db('DELETE FROM app_meta WHERE key LIKE ?', [`${prefix}%`]);
+  }
+
   /**
    * Returns the stable anonymous local user id, generating and persisting one
    * on first launch. Idempotent and race-safe: concurrent calls converge on a

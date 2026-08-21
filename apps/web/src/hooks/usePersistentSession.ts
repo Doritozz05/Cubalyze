@@ -406,6 +406,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
          existing.orientationTimeline = updates.orientationTimeline;
       }
 
+      // Real user edit: stamp the edit time explicitly (update() writes the
+      // declared value — the sync pull passes the cloud's timestamp instead,
+      // so a pulled row never gets re-selected by the push cursor).
+      existing.updatedAt = Date.now();
       await solvesRepo.update(existing);
       if (isDev()) {
         console.log(
@@ -465,6 +469,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
       if (!existing || existing.sessionId === targetSessionId) continue;
       const sourceId = existing.sessionId;
       existing.sessionId = targetSessionId;
+      // Moving a solve is an edit: stamp it so the move syncs (update()
+      // writes the declared value, never a silent Date.now()).
+      existing.updatedAt = Date.now();
       await solvesRepo.update(existing);
       moved++;
       sourceDeltas.set(sourceId, (sourceDeltas.get(sourceId) ?? 0) - 1);
@@ -631,6 +638,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
     if (!existing) return;
     
     existing.name = name;
+    // Renaming is an edit: stamp it explicitly (update() writes the declared
+    // value so pulled rows keep the cloud timestamp).
+    existing.updatedAt = Date.now();
     await sessionsRepo.update(existing);
     
     setSessions(prev => prev.map(s => 

@@ -21,7 +21,8 @@ import {
   getSyncEngine,
   isSupabaseConfigured,
 } from "@/services/sync";
-import { refreshProfile } from "@/hooks/useProfile";
+import { wipeAccountLocalData } from "@/services/accountCleanup";
+import { refreshProfile, resetIdentity } from "@/hooks/useProfile";
 import type { LocalDataCounts } from "@cubeforge/sync-engine";
 import type { User } from "@supabase/supabase-js";
 import type { SyncEngine } from "@cubeforge/sync-engine";
@@ -69,17 +70,35 @@ function getSnapshot(): AccountState {
   return state;
 }
 
+/** Coalesces concurrent handleUser calls (getSession + INITIAL_SESSION race). */
+let handlingUser: Promise<boolean> | null = null;
+
 /**
  * After a session/user change: decide link vs silent claim vs dialog.
  * Returns true when the claim dialog is now pending (sync must stay gated
  * until the user resolves it), false when the account is linked or the
- * claim resolved silently.
+ * claim resolved silently. Concurrent calls share one in-flight decision so
+ * the claim flow can never run twice for the same login.
  */
-async function handleUser(user: User, engine: SyncEngine | null): Promise<boolean> {
+async function handleUser(
+  user: User,
+  engine: SyncEngine | null,
+): Promise<boolean> {
   if (!engine) {
     setState({ user, linked: false, claim: "none", pendingCounts: null });
     return false;
   }
+  if (handlingUser) return handlingUser;
+  handlingUser = runHandleUser(user, engine).finally(() => {
+    handlingUser = null;
+  });
+  return handlingUser;
+}
+
+async function runHandleUser(
+  user: User,
+  engine: SyncEngine,
+): Promise<boolean> {
   if (await engine.wasLinked(user.id)) {
     setState({ user, linked: true, claim: "none", pendingCounts: null });
     return false;
@@ -148,14 +167,9 @@ function ensureInitialized(): Promise<void> {
       engine.setUser(null);
     }
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
-      if (user) {
-        engine.setUser(user.id, { schedule: false });
-        void handleUser(user, engine).then((pending) => {
-          if (!pending) engine.scheduleSync(1500);
-        });
-      } else {
+      if (event === "SIGNED_OUT") {
         engine.unlink();
         setState({
           user: null,
@@ -163,7 +177,22 @@ function ensureInitialized(): Promise<void> {
           claim: "none",
           pendingCounts: null,
         });
+        return;
       }
+      if (!user) return;
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
+        engine.setUser(user.id, { schedule: false });
+        void handleUser(user, engine).then((pending) => {
+          if (!pending) engine.scheduleSync(1500);
+        });
+      } else if (event === "USER_UPDATED") {
+        // Identity metadata changed — refresh the store copy only. Never
+        // re-run the claim decision on profile updates.
+        setState({ user });
+      }
+      // TOKEN_REFRESHED: identity unchanged; sync keeps running via the
+      // poller. Running handleUser here would re-open a dismissed claim
+      // dialog every ~hour.
     });
 
     setState({ loading: false });
@@ -239,7 +268,12 @@ async function signOut(): Promise<void> {
 /**
  * Permanently delete the account: the edge function (service role) removes
  * the auth user; the RLS `ON DELETE CASCADE` removes every cloud row.
- * Local data is deliberately left in place (local-first).
+ *
+ * The local-first copy is deliberately NOT left behind: without a wipe, the
+ * next account on this device would silently claim (auto-merge) the deleted
+ * account's data. Deleting the account therefore also wipes the local
+ * database and resets the device to a fresh anonymous identity (the
+ * confirmation dialog states this explicitly).
  */
 async function deleteAccount(): Promise<void> {
   const supabase = getSupabaseClient();
@@ -259,6 +293,18 @@ async function deleteAccount(): Promise<void> {
   });
   if (!res.ok) {
     throw new Error(`Delete account failed (${res.status})`);
+  }
+  // Server-side deletion confirmed. Wipe the local copy so the data can
+  // never leak into a future account on this device; if the local wipe
+  // fails the account is already gone, so surface it but keep going.
+  try {
+    await wipeAccountLocalData();
+    resetIdentity();
+  } catch (err) {
+    console.error(
+      "[useAccount] local wipe failed (account already deleted server-side):",
+      err,
+    );
   }
   await signOut();
 }

@@ -42,7 +42,6 @@ import type {
   SyncTotals,
 } from "./types";
 import { SYNCABLE_TABLES } from "./types";
-import { pullWatermarkKey, pushWatermarkKey, setWatermark } from "./watermarks";
 
 const EMPTY_TOTALS: SyncTotals = {
   pushed: {},
@@ -57,6 +56,7 @@ export class SyncEngine {
   private uid: string | null = null;
   private status: SyncStatus = "signed_out";
   private syncPromise: Promise<SyncTotals> | null = null;
+  private claimPromise: Promise<void> | null = null;
   private scheduleTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly onStatus?: (status: SyncStatus) => void;
   /**
@@ -171,39 +171,71 @@ export class SyncEngine {
    * First-login link: park the CubeMark seed, remap identity, then either
    * upload the local history (`merge`) or replace the device with the cloud
    * state (`fresh`). Ends with a full pull + aggregate rebuild.
+   *
+   * Serialized: concurrent callers share the in-flight promise.
+   *
+   * Watermarks are NOT stamped here: push/pull already advanced their own
+   * cursors to the values actually exchanged, so a write landing while the
+   * claim runs stays above the push watermark and is uploaded by the
+   * rescheduled cycle (the dirty flag is preserved, never erased).
    */
-  async claim(mode: ClaimMode): Promise<void> {
+  claim(mode: ClaimMode): Promise<void> {
+    if (this.claimPromise) return this.claimPromise;
+    this.claimPromise = this.doClaim(mode).finally(() => {
+      this.claimPromise = null;
+    });
+    return this.claimPromise;
+  }
+
+  private async doClaim(mode: ClaimMode): Promise<void> {
     if (!this.uid) throw new Error("Not signed in");
     const uid = this.uid;
-    // Open the gate: the claim itself performs the full push/pull, and any
-    // sync scheduled afterwards is safe to run.
-    this.claimPending = false;
+    // Keep the claim gate CLOSED for the whole claim: the poller and any
+    // scheduled sync must no-op until the claim finished (a mid-claim sync
+    // could push the local history before a "fresh" choice discards it, or
+    // interleave with the wipe). The claim itself performs its own
+    // push/pull, which is not subject to the gate.
+    this.setClaimPending();
     this.setStatus("claim");
     try {
-      // 1. Identity remap: profiles.user_id becomes the account uid. The old
-      //    anonymous id is parked as the identicon seed so the CubeMark never
-      //    changes (D2 — the mark is generated from a stable seed).
+      // 1. Identity: park the CubeMark seed, then follow the account.
       //
-      //    On the FIRST claim the edited local profile is still keyed by the
-      //    anonymous id (USER_ID_KEY has not been remapped yet), so it is
-      //    read via that id and re-keyed to the account — otherwise an edited
-      //    name/bio would be orphaned and never uploaded.
+      //    merge: the edited local profile (still keyed by the anonymous id
+      //    — USER_ID_KEY has not been remapped yet) is read via that id and
+      //    re-keyed to the account so an edited name/bio is uploaded.
+      //
+      //    fresh: the local profile is DISCARDED — the cloud replaces this
+      //    device including identity, so nothing local may overwrite the
+      //    account's cloud profile (the signup/default row that a fresh
+      //    start is supposed to keep).
       const anonId = await this.ctx.meta.get(USER_ID_KEY);
       const anonProfile =
         anonId && anonId !== uid
           ? await this.ctx.profiles.findById(anonId)
           : null;
-      const profile =
-        anonProfile ?? (await this.ctx.profiles.findById(uid));
-      if (profile && profile.userId !== uid) {
-        await this.ctx.meta.setIdenticonSeed(profile.userId);
-        await this.ctx.profiles.upsert({
-          ...profile,
-          userId: uid,
-          updatedAt: Date.now(),
-        });
-      } else if (!profile) {
-        await this.ctx.profiles.getOrCreate(uid);
+
+      if (mode === "fresh") {
+        if (anonProfile) {
+          // D2: the CubeMark seed stays stable even though the identity is
+          // replaced by the account's.
+          await this.ctx.meta.setIdenticonSeed(anonProfile.userId);
+        }
+        await this.wipeLocal();
+        await this.ctx.profiles.delete(anonId ?? uid);
+        await this.ctx.profiles.delete(uid);
+      } else {
+        const profile =
+          anonProfile ?? (await this.ctx.profiles.findById(uid));
+        if (profile && profile.userId !== uid) {
+          await this.ctx.meta.setIdenticonSeed(profile.userId);
+          await this.ctx.profiles.upsert({
+            ...profile,
+            userId: uid,
+            updatedAt: Date.now(),
+          });
+        } else if (!profile) {
+          await this.ctx.profiles.getOrCreate(uid);
+        }
       }
       // The local identity now follows the account: useProfile re-reads
       // USER_ID_KEY on refresh, so the UI keeps tracking the linked profile
@@ -211,28 +243,27 @@ export class SyncEngine {
       // seed under identicon_seed).
       await this.ctx.meta.set(USER_ID_KEY, uid);
 
-      // 2. "Start fresh": the cloud replaces this device.
-      if (mode === "fresh") {
-        await this.wipeLocal();
-      }
-
-      // 3. Full push (merge) + full pull + rebuild. Watermarks start at 0 for
-      //    a new link, so merge pushes everything; fresh pushes nothing.
+      // 2. Full push + full pull + rebuild. Watermarks start at 0 for a new
+      //    link, so merge pushes everything (in batches); fresh pushes
+      //    nothing and pulls the cloud state (including the profile).
       await pushChanges(this.ctx, uid);
       await pullChanges(this.ctx, uid);
       await rebuildAggregates(this.ctx);
 
-      // 4. Ceiling: never re-push or re-pull what we just exchanged.
-      const ceiling = Date.now();
-      for (const table of SYNCABLE_TABLES) {
-        await setWatermark(this.ctx.meta, pushWatermarkKey(table, uid), ceiling);
-        await setWatermark(this.ctx.meta, pullWatermarkKey(table, uid), ceiling);
-      }
-      await this.ctx.meta.set("sync_dirty", "0");
       await this.ctx.meta.set(`sync_linked_${uid}`, "1");
+
+      // 3. Never erase a concurrent dirty flag: if a write landed during the
+      //    claim it stays above the push watermark and must be uploaded by a
+      //    follow-up cycle, not swallowed by a stamp.
+      if ((await this.ctx.meta.get("sync_dirty")) === "1") {
+        this.scheduleSync(250);
+      }
+      this.claimPending = false;
       this.setStatus("idle");
     } catch (err) {
       console.error("[sync-engine] claim failed:", err);
+      // Reopen the gate so the UI can retry the claim.
+      this.claimPending = false;
       this.setStatus("error");
       throw err;
     }
@@ -242,10 +273,30 @@ export class SyncEngine {
   syncNow(): Promise<SyncTotals> {
     if (!this.uid || this.claimPending) return Promise.resolve(EMPTY_TOTALS);
     if (this.syncPromise) return this.syncPromise;
-    this.syncPromise = this.doSync();
+    this.syncPromise = this.doSyncSerialized();
     return this.syncPromise.finally(() => {
       this.syncPromise = null;
     });
+  }
+
+  /**
+   * Serialize the sync loop across TABS with the Web Locks API. Every tab
+   * runs a poller against the shared SQLite worker, but only one tab may
+   * push/pull at a time: the others skip (`ifAvailable`) and retry on their
+   * next tick — the watermarks make a skipped cycle a harmless no-op.
+   * Without this, two tabs would race the watermark cursors and fire
+   * duplicate sync_apply RPCs every cycle.
+   */
+  private async doSyncSerialized(): Promise<SyncTotals> {
+    const locks =
+      typeof navigator !== "undefined" ? navigator.locks : undefined;
+    if (!locks?.request) return this.doSync();
+    const result = await locks.request(
+      "cubeforge-sync",
+      { ifAvailable: true },
+      () => this.doSync(),
+    );
+    return result ?? EMPTY_TOTALS;
   }
 
   /** Debounced sync — the write hooks call this after every mutation. */

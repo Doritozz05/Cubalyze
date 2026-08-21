@@ -69,6 +69,17 @@ export class SkillProgressRepository {
   }
 
   /**
+   * Versioned un-completion for remote tombstones (LWW): only removes the
+   * skill when it was not re-completed after the tombstone.
+   */
+  async setIncompleteIfNotNewer(skillId: string, deletedAt: number): Promise<void> {
+    await this.db(
+      "DELETE FROM skill_progress WHERE skill_id = ? AND completed_at <= ?",
+      [skillId, deletedAt],
+    );
+  }
+
+  /**
    * Replace the whole completion set atomically-ish (delete + insert).
    * Used to sync the full list from the UI or during localStorage migration.
    */

@@ -3711,7 +3711,7 @@
       "signOut": "Cerrar sesión",
       "deleteAccount": "Eliminar cuenta",
       "deleteConfirmTitle": "¿Eliminar tu cuenta?",
-      "deleteConfirmBody": "Todos tus datos en la nube se eliminarán permanentemente. Los datos de este dispositivo se conservan.",
+      "deleteConfirmBody": "Esto elimina permanentemente tu cuenta, todos tus datos en la nube Y todos los datos de este dispositivo. No se puede deshacer.",
       "deleteConfirmAction": "Eliminar cuenta",
       "deleteError": "No se pudo eliminar la cuenta",
       "pendingTitle": "Vincular los datos de este dispositivo",

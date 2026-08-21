@@ -1007,6 +1007,9 @@ importers:
       '@cubeforge/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
+      '@sqlite.org/sqlite-wasm':
+        specifier: 3.53.0-build1
+        version: 3.53.0-build1
       eslint:
         specifier: ^10.7.0
         version: 10.7.0(jiti@2.7.0)

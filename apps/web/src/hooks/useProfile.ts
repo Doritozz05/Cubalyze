@@ -153,6 +153,20 @@ async function refresh(): Promise<void> {
 export { refresh as refreshProfile };
 
 /**
+ * Full identity reset (used after account deletion): forget the cached
+ * identity and re-initialize from the DB. The DB is expected to already
+ * hold a fresh anonymous identity (wipeAccountLocalData).
+ */
+export function resetIdentity(): void {
+  reposRef = null;
+  userIdRef = null;
+  initPromise = null;
+  state = { userId: null, identiconSeed: null, profile: null, loading: true };
+  for (const listener of listeners) listener();
+  void ensureInitialized();
+}
+
+/**
  * Serializes read→merge→write so two concurrent edits (e.g. an avatar upload
  * racing a profile save) can never interleave and lose an update.
  */

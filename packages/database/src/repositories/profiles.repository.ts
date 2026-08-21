@@ -127,4 +127,9 @@ export class ProfilesRepository {
   async delete(userId: string): Promise<void> {
     await this.db('DELETE FROM profiles WHERE user_id = ?', [userId]);
   }
+
+  /** Delete every profile row (account-deletion wipe). */
+  async deleteAll(): Promise<void> {
+    await this.db('DELETE FROM profiles');
+  }
 }

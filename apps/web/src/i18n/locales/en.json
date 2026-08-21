@@ -3711,7 +3711,7 @@
       "signOut": "Sign out",
       "deleteAccount": "Delete account",
       "deleteConfirmTitle": "Delete your account?",
-      "deleteConfirmBody": "All your data in the cloud will be permanently deleted. Data on this device stays.",
+      "deleteConfirmBody": "This permanently deletes your account, all your data in the cloud, AND all data on this device. This cannot be undone.",
       "deleteConfirmAction": "Delete account",
       "deleteError": "Couldn't delete the account",
       "pendingTitle": "Link this device's data",
