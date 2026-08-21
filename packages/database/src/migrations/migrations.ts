@@ -1053,4 +1053,97 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '031_tombstone_clock_floor',
+    description:
+      'Tombstone LWW clock fix: re-create the DELETE triggers so deleted_at is MAX(wall_clock_ms, OLD.updated_at + 1). The monotonic write clock (local-clock.ts) can advance updated_at PAST the wall-clock (each write in a burst takes prev+1), so a tombstone stamped with bare julianday(now) can be OLDER than the row it deletes. When that tombstone reaches another device, deleteIfNotNewer sees updated_at > deleted_at and the tombstone LOSES — the deleted row resurrects in its old session. Flooring deleted_at at OLD.updated_at + 1 guarantees the tombstone always wins LWW against the very row being deleted (the only row whose vote matters — a NEWER edit on another device should still survive, and will, because it carries an even higher updated_at).',
+    sql: `
+      -- The deleted_at must be strictly greater than the row's own updated_at
+      -- so deleteIfNotNewer (WHERE updated_at <= deleted_at) always applies
+      -- for the row being deleted. A newer edit made AFTER this delete on
+      -- another device carries an even higher updated_at and still survives
+      -- (its updated_at > deleted_at) — LWW is preserved for real conflicts.
+      DROP TRIGGER IF EXISTS trg_tombstone_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves
+      AFTER DELETE ON solves
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'solves',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions
+      AFTER DELETE ON sessions
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'sessions',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_training_tasks;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_tasks
+      AFTER DELETE ON training_tasks
+      FOR EACH ROW
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'training_tasks',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_skill_progress;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_skill_progress
+      AFTER DELETE ON skill_progress
+      FOR EACH ROW
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'skill_progress',
+          OLD.skill_id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.completed_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_training_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_sessions
+      AFTER DELETE ON training_sessions
+      FOR EACH ROW
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'training_sessions',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+    `,
+  },
 ];

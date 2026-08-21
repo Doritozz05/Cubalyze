@@ -182,11 +182,17 @@ export class SessionsRepository {
     // Session deletes cascade to solves, but SQLite row triggers do NOT fire
     // on cascaded deletes — tombstone the child solves explicitly (migration
     // 028) so the sync engine removes them on every other device too.
-    // Millisecond precision (migration 029) so tombstone LWW comparisons
-    // against row updated_at are exact.
+    // Migration 031 fix: floor deleted_at at each child's updated_at + 1 so
+    // the tombstone always wins LWW against the very row being deleted (the
+    // monotonic clock can advance updated_at past the wall-clock during
+    // bursts of moves/edits, which would otherwise make a bare julianday(now)
+    // tombstone LOSE and the deleted solve resurrect in its old session).
     await this.db(
       `INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
-       SELECT 'solves', id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
+       SELECT 'solves', id, MAX(
+         CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+         updated_at + 1
+       )
        FROM solves WHERE session_id = ? AND is_demo = 0`,
       [id],
     );

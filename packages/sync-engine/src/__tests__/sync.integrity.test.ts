@@ -793,3 +793,106 @@ describe("J) float time normalization (M5)", () => {
     expect(cloud.solves.get(`${UID}:x1`)?.time_ms).toBe(113);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// K) 031 — tombstone deleted_at is floored at OLD.updated_at + 1 so a delete
+// always wins LWW against the very row being deleted, even when the monotonic
+// clock advanced updated_at past the wall-clock (bursts of moves/edits).
+// ────────────────────────────────────────────────────────────────────────────
+describe("K) tombstone clock floor (031)", () => {
+  it("a delete after a burst of moves produces a tombstone that wins LWW on the other device", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    // Seed: A creates a session + solve.
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 5000, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+
+    // Simulate a burst of moves/edits that advances the monotonic clock
+    // past the wall-clock (each local edit takes prev+1).
+    const before = await a.ctx.solves.findById("x1");
+    const burstCount = 5;
+    for (let i = 0; i < burstCount; i++) {
+      const cur = await a.ctx.solves.findById("x1");
+      await a.ctx.solves.update(
+        {
+          id: "x1", sessionId: "s1", timeMs: 5000 + i, timestamp: 1000, scramble: "R",
+          penalty: "none", source: "manual", moves: [], puzzleType: "333",
+          createdAt: 1000, updatedAt: cur?.updatedAt ?? 0,
+        },
+        { local: true },
+      );
+    }
+    const after = await a.ctx.solves.findById("x1");
+    const movedUpdatedAt = Number(after?.updatedAt);
+
+    // The monotonic clock should have advanced updated_at significantly.
+    expect(movedUpdatedAt).toBeGreaterThan(Number(before?.updatedAt));
+
+    // Now delete the solve on A and push the tombstone.
+    await a.ctx.solves.delete("x1");
+    await pushChanges(a.ctx, UID);
+
+    // The tombstone's deleted_at must be > the solve's updated_at.
+    const tomb = [...cloud.sync_tombstones.values()].find(
+      (t) => String(t.entity) === "solves" && String(t.entity_id) === "x1",
+    );
+    expect(tomb).toBeDefined();
+    const deletedAt = Number(tomb?.deleted_at);
+    expect(deletedAt).toBeGreaterThan(movedUpdatedAt);
+
+    // B pulls the tombstone — the solve must be deleted (tombstone wins LWW).
+    await pullChanges(b.ctx, UID);
+    expect(await b.ctx.solves.findById("x1")).toBeNull();
+  });
+
+  it("a NEWER edit on another device still survives the delete (LWW preserved)", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 5000, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+
+    // A deletes the solve (tombstone deleted_at = max(now, updated_at+1)).
+    await a.ctx.solves.delete("x1");
+    await pushChanges(a.ctx, UID);
+    const tomb = [...cloud.sync_tombstones.values()].find(
+      (t) => String(t.entity) === "solves" && String(t.entity_id) === "x1",
+    );
+    const deletedAt = Number(tomb?.deleted_at);
+
+    // B edits the solve AFTER A's delete — the edit's updated_at must be
+    // even higher than the tombstone's deleted_at (monotonic clock floors at
+    // the row's previous updated_at + 1, and the tombstone used that same
+    // floor). The edit wins LWW and resurrects the row.
+    await sleep(5);
+    await b.ctx.solves.update(
+      {
+        id: "x1", sessionId: "s1", timeMs: 9999, timestamp: 1000, scramble: "R",
+        penalty: "+2", source: "manual", moves: [], puzzleType: "333",
+        createdAt: 1000, updatedAt: 0,
+      },
+      { local: true },
+    );
+    const edited = await b.ctx.solves.findById("x1");
+    expect(Number(edited?.updatedAt)).toBeGreaterThan(deletedAt);
+
+    // B syncs: push the newer edit, then pull the tombstone.
+    // The edit wins (updated_at > deleted_at), the tombstone is a no-op.
+    await runCycle(b.ctx);
+    expect(await b.ctx.solves.findById("x1")).not.toBeNull();
+    expect(cloud.solves.get(`${UID}:x1`)?.time_ms).toBe(9999);
+  });
+});

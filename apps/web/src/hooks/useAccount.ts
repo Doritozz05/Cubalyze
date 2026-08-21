@@ -148,29 +148,54 @@ function ensureInitialized(): Promise<void> {
 
   initPromise = (async () => {
     const supabase = getSupabaseClient();
-    const engine = await getSyncEngine();
-    if (!supabase || !engine) {
+    if (!supabase) {
       setState({ loading: false, configured: false });
       return;
     }
 
+    // The auth session is independent of the local SQLite DB — resolve it
+    // first and unblock the UI (the Google sign-in button) without waiting
+    // for the SyncEngine/worker to boot. The engine is only needed for the
+    // claim flow, which runs after login, not before. A worker hang must
+    // never freeze the sign-in button.
     const {
       data: { session },
     } = await supabase.auth.getSession();
     if (session?.user) {
-      // Don't schedule yet: handleUser decides whether the claim dialog
-      // gates the engine (pending) or the account is ready to sync.
-      engine.setUser(session.user.id, { schedule: false });
-      const pending = await handleUser(session.user, engine);
-      if (!pending) engine.scheduleSync(1500);
+      setState({ user: session.user, loading: false });
     } else {
-      engine.setUser(null);
+      setState({ loading: false });
+    }
+
+    // Boot the sync engine in the background — never blocks auth. If it
+    // throws (worker hang, OPFS unavailable) the user is still signed in
+    // (just without sync) and the Google button stays clickable.
+    let engine: SyncEngine | null = null;
+    try {
+      engine = await getSyncEngine();
+      if (engine) {
+        if (session?.user) {
+          engine.setUser(session.user.id, { schedule: false });
+          const pending = await handleUser(session.user, engine);
+          if (!pending) engine.scheduleSync(1500);
+        } else {
+          engine.setUser(null);
+        }
+      }
+    } catch (err) {
+      console.warn('[useAccount] SyncEngine init failed (auth still works):', err);
     }
 
     supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
       if (event === "SIGNED_OUT") {
-        engine.unlink();
+        // The engine may be null if the worker never booted; unlink is
+        // safe to skip then.
+        try {
+          engine?.unlink();
+        } catch (err) {
+          console.warn('[useAccount] engine.unlink on sign-out failed:', err);
+        }
         setState({
           user: null,
           linked: false,
@@ -181,10 +206,20 @@ function ensureInitialized(): Promise<void> {
       }
       if (!user) return;
       if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
-        engine.setUser(user.id, { schedule: false });
-        void handleUser(user, engine).then((pending) => {
-          if (!pending) engine.scheduleSync(1500);
-        });
+        // Update the user immediately so the UI reflects the login, then
+        // run the claim flow if the engine is available. A worker hang
+        // must never leave the user in an unauthed-looking state.
+        setState({ user });
+        if (engine) {
+          try {
+            engine.setUser(user.id, { schedule: false });
+            void handleUser(user, engine).then((pending) => {
+              if (!pending) engine.scheduleSync(1500);
+            });
+          } catch (err) {
+            console.warn('[useAccount] engine.setUser on auth change failed:', err);
+          }
+        }
       } else if (event === "USER_UPDATED") {
         // Identity metadata changed — refresh the store copy only. Never
         // re-run the claim decision on profile updates.
@@ -194,8 +229,6 @@ function ensureInitialized(): Promise<void> {
       // poller. Running handleUser here would re-open a dismissed claim
       // dialog every ~hour.
     });
-
-    setState({ loading: false });
   })();
 
   return initPromise;

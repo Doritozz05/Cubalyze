@@ -442,31 +442,33 @@ export function Header({
           />
         </div>
 
-        {/* Right: session button — icon only, no name, no counter */}
+        {/* Right: session button — icon only, no name, no counter.
+            Always rendered on touch: even with zero sessions (DB still
+            booting, or a fresh install before the seed lands) the user
+            needs a way to open the sheet and create one. Hiding the
+            button entirely when `sessions` is empty left mobile users
+            stranded with no session switcher if the DB init was slow
+            or failed. */}
         <div className="flex min-w-0 items-center justify-end">
-          {sessions && sessions.length > 0 ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setSessionDrawerOpen(true)}
-                aria-label={t("switchSession")}
-                className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
-              >
-                <History className="size-5" />
-              </button>
+          <button
+            type="button"
+            onClick={() => setSessionDrawerOpen(true)}
+            aria-label={t("switchSession")}
+            className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
+          >
+            <History className="size-5" />
+          </button>
 
-              <MobileSessionSheet
-                open={sessionDrawerOpen}
-                onOpenChange={setSessionDrawerOpen}
-                sessions={sessions}
-                activeSessionId={activeSessionId}
-                onSwitchSession={onSwitchSession}
-                onNewSession={onNewSession}
-                onRenameSession={onRenameSession}
-                onDeleteSession={onDeleteSession}
-              />
-            </>
-          ) : null}
+          <MobileSessionSheet
+            open={sessionDrawerOpen}
+            onOpenChange={setSessionDrawerOpen}
+            sessions={sessions ?? []}
+            activeSessionId={activeSessionId}
+            onSwitchSession={onSwitchSession}
+            onNewSession={onNewSession}
+            onRenameSession={onRenameSession}
+            onDeleteSession={onDeleteSession}
+          />
         </div>
       </div>
     </motion.header>
