@@ -77,6 +77,26 @@ export class SessionsRepository {
   }
 
   /**
+   * Which of the given ids exist locally (chunked IN query). The sync pull
+   * uses this to drop orphaned solves — a solve whose session no longer
+   * exists must be skipped, not crash the whole pull with an FK violation.
+   */
+  async findExistingIds(ids: string[]): Promise<Set<string>> {
+    const found = new Set<string>();
+    const BATCH = 500;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const chunk = ids.slice(i, i + BATCH);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = await this.db(
+        `SELECT id FROM sessions WHERE id IN (${placeholders})`,
+        chunk,
+      );
+      for (const r of rows) found.add(String(r.id));
+    }
+    return found;
+  }
+
+  /**
    * Insert a session. Pass `{ isDemo: true }` for the seeded "Demo Session" so
    * it stays hidden from the UI and removable via deleteDemoSessions().
    */

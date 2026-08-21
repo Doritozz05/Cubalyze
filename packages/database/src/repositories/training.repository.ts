@@ -385,6 +385,28 @@ export class TrainingRepository {
     );
   }
 
+  /**
+   * Which case ids exist in the local algorithm catalog (chunked IN query).
+   * training_attempts.case_id has a real FK to algorithm_cases(id) — but the
+   * catalog is bundled per app version, so a pull can receive an attempt for
+   * a case this device doesn't know. The sync engine unlinks such attempts
+   * (keeps the data, drops the case) instead of failing the whole pull.
+   */
+  async findExistingCaseIds(ids: string[]): Promise<Set<string>> {
+    const found = new Set<string>();
+    const BATCH = 500;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const chunk = ids.slice(i, i + BATCH);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = await this.db(
+        `SELECT id FROM algorithm_cases WHERE id IN (${placeholders})`,
+        chunk,
+      );
+      for (const r of rows) found.add(String(r.id));
+    }
+    return found;
+  }
+
   /** Look up one attempt by id (pull LWW check). */
   async findAttemptById(id: string): Promise<TrainingAttempt | null> {
     const rows = await this.db(

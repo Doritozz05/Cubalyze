@@ -30,11 +30,16 @@ interface TableDef {
 
 /** Watermark column per table (the LWW field the pull cursor uses). */
 const TABLE_DEFS: Record<string, TableDef> = {
-  solves: { watermarkColumn: "updated_at" },
+  // Order matters: SQLite enforces FKs (PRAGMA foreign_keys ON), and
+  // solves.session_id references sessions(id) — so sessions MUST be inserted
+  // before the solves pointing at them. Pulling solves first made every
+  // first-login pull fail with SQLITE_CONSTRAINT_FOREIGNKEY and blocked sync
+  // forever (the pull re-failed on the same rows each cycle).
   sessions: { watermarkColumn: "updated_at" },
+  solves: { watermarkColumn: "updated_at" },
   profiles: { watermarkColumn: "updated_at" },
-  training_attempts: { watermarkColumn: "updated_at" },
   training_sessions: { watermarkColumn: "updated_at" },
+  training_attempts: { watermarkColumn: "updated_at" },
   training_tasks: { watermarkColumn: "updated_at" },
   skill_progress: { watermarkColumn: "completed_at" },
 };
@@ -96,7 +101,7 @@ async function applyRows(
 ): Promise<void> {
   switch (table) {
     case "solves": {
-      const toInsert: ReturnType<typeof cloudRowToSolve>[] = [];
+      let toInsert: ReturnType<typeof cloudRowToSolve>[] = [];
       const toUpdate: ReturnType<typeof cloudRowToSolve>[] = [];
       const existing = await ctx.solves.findUpdatedAts(
         rows.map((r) => String(r.id)),
@@ -106,6 +111,27 @@ async function applyRows(
         const localUpdated = existing.get(solve.id) ?? 0;
         if (localUpdated === 0) toInsert.push(solve);
         else if (localUpdated < (solve.updatedAt ?? 0)) toUpdate.push(solve);
+      }
+      if (toInsert.length > 0) {
+        // Drop orphaned solves: the cloud has NO solves.session_id FK, so a
+        // solve can legitimately reference a session that was deleted
+        // cloud-side. Locally the FK is enforced, and one bad row would
+        // fail the whole insertMany and block sync forever. Sessions are
+        // pulled first (TABLE_DEFS order), so a solve only ends up here when
+        // its session genuinely no longer exists anywhere — skip it. The
+        // watermark still advances past it (computed over all rows), so it
+        // never re-pulls.
+        const sessionIds = [
+          ...new Set(toInsert.map((s) => s.sessionId)),
+        ];
+        const existingSessions = await ctx.sessions.findExistingIds(sessionIds);
+        const before = toInsert.length;
+        toInsert = toInsert.filter((s) => existingSessions.has(s.sessionId));
+        if (toInsert.length < before) {
+          console.warn(
+            `[sync-engine] pull: skipped ${before - toInsert.length} orphaned solve(s) whose session no longer exists`,
+          );
+        }
       }
       if (toInsert.length > 0) await ctx.solves.insertMany(toInsert);
       for (const solve of toUpdate) await ctx.solves.update(solve);
@@ -138,11 +164,36 @@ async function applyRows(
       break;
     }
     case "training_attempts": {
+      // Local FK guard: training_attempts.case_id references algorithm_cases(id),
+      // but the catalog is bundled per app version — a pull can receive an
+      // attempt for a case this device doesn't know (or hasn't seeded yet).
+      // Unlink those attempts (keep the data, drop the case) instead of
+      // failing the whole pull on one unknown case.
+      const caseIds = [
+        ...new Set(
+          rows
+            .map((r) => cloudRowToAttempt(r).caseId)
+            .filter((id): id is string => id != null),
+        ),
+      ];
+      const existingCases =
+        caseIds.length > 0
+          ? await ctx.training.findExistingCaseIds(caseIds)
+          : new Set<string>();
+      let unlinked = 0;
       for (const row of rows) {
         const attempt = cloudRowToAttempt(row);
         const local = await ctx.training.findAttemptById(attempt.id);
         if (!local) {
-          await ctx.training.insertAttemptWithId(attempt);
+          if (attempt.caseId != null && !existingCases.has(attempt.caseId)) {
+            unlinked += 1;
+            await ctx.training.insertAttemptWithId({
+              ...attempt,
+              caseId: undefined,
+            });
+          } else {
+            await ctx.training.insertAttemptWithId(attempt);
+          }
         } else if ((local.updatedAt ?? 0) < (attempt.updatedAt ?? 0)) {
           await ctx.training.updateAttemptFromCloud(
             attempt.id,
@@ -150,6 +201,11 @@ async function applyRows(
             attempt.updatedAt ?? 0,
           );
         }
+      }
+      if (unlinked > 0) {
+        console.warn(
+          `[sync-engine] pull: unlinked ${unlinked} training attempt(s) referencing cases unknown to this device`,
+        );
       }
       break;
     }
