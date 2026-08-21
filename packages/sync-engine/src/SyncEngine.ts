@@ -59,6 +59,14 @@ export class SyncEngine {
   private syncPromise: Promise<SyncTotals> | null = null;
   private scheduleTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly onStatus?: (status: SyncStatus) => void;
+  /**
+   * Claim gate: while the first-login dialog is pending, NO data leaves the
+   * device (push, scheduled syncs and the poller all no-op). Without this,
+   * setUser's background sync uploads everything before the user picks
+   * "combine" vs "fresh" — silently defeating the choice (a fresh start
+   * would already have pushed the local history it was meant to discard).
+   */
+  private claimPending = false;
 
   constructor(
     db: DBExecutor,
@@ -92,11 +100,21 @@ export class SyncEngine {
     this.onStatus?.(status);
   }
 
-  /** The auth layer calls this on every session change. */
-  setUser(uid: string | null): void {
+  /**
+   * The auth layer calls this on every session change. Pass
+   * `{ schedule: false }` when the caller still has to decide whether the
+   * claim dialog will show (the claim gate must win over the background
+   * sync) — the caller re-schedules once it knows the claim resolved.
+   */
+  setUser(uid: string | null, opts?: { schedule?: boolean }): void {
     this.uid = uid;
     this.setStatus(uid ? "idle" : "signed_out");
-    if (uid) this.scheduleSync(1500);
+    if (uid && opts?.schedule !== false) this.scheduleSync(1500);
+  }
+
+  /** Lock sync until the user resolves the first-login claim dialog. */
+  setClaimPending(): void {
+    this.claimPending = true;
   }
 
   /**
@@ -140,6 +158,9 @@ export class SyncEngine {
   async claim(mode: ClaimMode): Promise<void> {
     if (!this.uid) throw new Error("Not signed in");
     const uid = this.uid;
+    // Open the gate: the claim itself performs the full push/pull, and any
+    // sync scheduled afterwards is safe to run.
+    this.claimPending = false;
     this.setStatus("claim");
     try {
       // 1. Identity remap: profiles.user_id becomes the account uid. The old
@@ -202,7 +223,7 @@ export class SyncEngine {
 
   /** One full sync cycle. Serialized: concurrent callers share the promise. */
   syncNow(): Promise<SyncTotals> {
-    if (!this.uid) return Promise.resolve(EMPTY_TOTALS);
+    if (!this.uid || this.claimPending) return Promise.resolve(EMPTY_TOTALS);
     if (this.syncPromise) return this.syncPromise;
     this.syncPromise = this.doSync();
     return this.syncPromise.finally(() => {
@@ -212,7 +233,7 @@ export class SyncEngine {
 
   /** Debounced sync — the write hooks call this after every mutation. */
   scheduleSync(delayMs = 2000): void {
-    if (!this.uid) return;
+    if (!this.uid || this.claimPending) return;
     if (this.scheduleTimer !== null) clearTimeout(this.scheduleTimer);
     this.scheduleTimer = setTimeout(() => {
       this.scheduleTimer = null;
@@ -232,7 +253,7 @@ export class SyncEngine {
    * Used by the UI poller to avoid empty network round-trips every tick.
    */
   async hasPendingChanges(): Promise<boolean> {
-    if (!this.uid) return false;
+    if (!this.uid || this.claimPending) return false;
     if ((await this.ctx.meta.get("sync_dirty")) === "1") return true;
     const rows = await this.ctx.db(
       "SELECT COUNT(*) AS cnt FROM sync_tombstones",
@@ -247,6 +268,7 @@ export class SyncEngine {
       this.scheduleTimer = null;
     }
     this.uid = null;
+    this.claimPending = false;
     this.setStatus("signed_out");
   }
 

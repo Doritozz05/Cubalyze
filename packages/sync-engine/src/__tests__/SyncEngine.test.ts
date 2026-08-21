@@ -4,17 +4,25 @@ import type { DBExecutor } from "../types";
 
 const UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
-/** Minimal supabase-js shape for the `head:true` count chain. */
+/**
+ * Minimal supabase-js shape covering the three call chains the engine uses:
+ *  - head:true count (hasCloudData) → { count, error }
+ *  - full select for tombstones and pulls → { data, error }
+ *  - rpc sync_apply → { error }
+ */
 function mockSupabase(
-  counts: Record<string, number>,
+  counts: Record<string, number> = {},
   error: unknown = null,
 ): unknown {
+  const countChain = (table: string) => ({ count: counts[table] ?? 0, error });
+  const pullChain = { gt: () => ({ order: () => ({ data: [], error }) }) };
   return {
     from: (table: string) => ({
-      select: (_cols: string, _opts: { count?: string; head?: boolean }) => ({
-        eq: () => ({ count: counts[table] ?? 0, error }),
+      select: (_cols: string, opts?: { head?: boolean }) => ({
+        eq: () => (opts?.head ? countChain(table) : pullChain),
       }),
     }),
+    rpc: () => ({ error }),
   };
 }
 
@@ -53,5 +61,64 @@ describe("SyncEngine.hasCloudData", () => {
     );
     engine.setUser(UID);
     await expect(engine.hasCloudData()).rejects.toThrow("boom");
+  });
+});
+
+describe("claim gate", () => {
+  it("no-ops syncNow while a claim is pending (nothing touches the DB)", async () => {
+    let calls = 0;
+    const db: DBExecutor = async () => {
+      calls += 1;
+      return [];
+    };
+    const engine = new SyncEngine(db, mockSupabase({}) as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    engine.setClaimPending();
+    await engine.syncNow();
+    await engine.syncNow();
+    expect(calls).toBe(0);
+  });
+
+  it("no-ops scheduleSync while a claim is pending", async () => {
+    let calls = 0;
+    const db: DBExecutor = async () => {
+      calls += 1;
+      return [];
+    };
+    const engine = new SyncEngine(db, mockSupabase({}) as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    engine.setClaimPending();
+    engine.scheduleSync(10);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(calls).toBe(0);
+  });
+
+  it("reports no pending changes while a claim is pending", async () => {
+    let calls = 0;
+    const db: DBExecutor = async () => {
+      calls += 1;
+      return [];
+    };
+    const engine = new SyncEngine(db, mockSupabase({}) as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    engine.setClaimPending();
+    expect(await engine.hasPendingChanges()).toBe(false);
+    expect(calls).toBe(0);
+  });
+
+  it("opens the gate after claim resolves", async () => {
+    let calls = 0;
+    const db: DBExecutor = async () => {
+      calls += 1;
+      return [];
+    };
+    const engine = new SyncEngine(db, mockSupabase({}) as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    engine.setClaimPending();
+    await engine.syncNow();
+    expect(calls).toBe(0);
+    await engine.claim("merge");
+    await engine.syncNow();
+    expect(calls).toBeGreaterThan(0);
   });
 });

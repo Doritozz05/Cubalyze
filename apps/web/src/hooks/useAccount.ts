@@ -69,15 +69,20 @@ function getSnapshot(): AccountState {
   return state;
 }
 
-/** After a session/user change: decide link vs silent claim vs dialog. */
-async function handleUser(user: User, engine: SyncEngine | null): Promise<void> {
+/**
+ * After a session/user change: decide link vs silent claim vs dialog.
+ * Returns true when the claim dialog is now pending (sync must stay gated
+ * until the user resolves it), false when the account is linked or the
+ * claim resolved silently.
+ */
+async function handleUser(user: User, engine: SyncEngine | null): Promise<boolean> {
   if (!engine) {
     setState({ user, linked: false, claim: "none", pendingCounts: null });
-    return;
+    return false;
   }
   if (await engine.wasLinked(user.id)) {
     setState({ user, linked: true, claim: "none", pendingCounts: null });
-    return;
+    return false;
   }
   const counts = await engine.getCounts();
   const hasData =
@@ -90,7 +95,7 @@ async function handleUser(user: User, engine: SyncEngine | null): Promise<void> 
   if (!hasData) {
     await engine.claim("merge");
     setState({ user, linked: true, claim: "none", pendingCounts: null });
-    return;
+    return false;
   }
   // Local data exists. A brand-new account has an EMPTY cloud (the signup
   // trigger only creates the profile row) — there is nothing to merge with,
@@ -106,9 +111,14 @@ async function handleUser(user: User, engine: SyncEngine | null): Promise<void> 
   if (!cloudHasData) {
     await engine.claim("merge");
     setState({ user, linked: true, claim: "none", pendingCounts: null });
-    return;
+    return false;
   }
+  // Real merge-vs-replace decision: lock the engine until the user picks,
+  // so the background sync can't upload the local history first (which
+  // would make "start fresh" silently impossible).
+  engine.setClaimPending();
   setState({ user, linked: false, claim: "pending", pendingCounts: counts });
+  return true;
 }
 
 function ensureInitialized(): Promise<void> {
@@ -126,8 +136,11 @@ function ensureInitialized(): Promise<void> {
       data: { session },
     } = await supabase.auth.getSession();
     if (session?.user) {
-      engine.setUser(session.user.id);
-      await handleUser(session.user, engine);
+      // Don't schedule yet: handleUser decides whether the claim dialog
+      // gates the engine (pending) or the account is ready to sync.
+      engine.setUser(session.user.id, { schedule: false });
+      const pending = await handleUser(session.user, engine);
+      if (!pending) engine.scheduleSync(1500);
     } else {
       engine.setUser(null);
     }
@@ -135,8 +148,10 @@ function ensureInitialized(): Promise<void> {
     supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user ?? null;
       if (user) {
-        engine.setUser(user.id);
-        void handleUser(user, engine);
+        engine.setUser(user.id, { schedule: false });
+        void handleUser(user, engine).then((pending) => {
+          if (!pending) engine.scheduleSync(1500);
+        });
       } else {
         engine.unlink();
         setState({
