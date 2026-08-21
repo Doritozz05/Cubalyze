@@ -108,8 +108,11 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
   });
 
   it('boots the real engine and applies migrations (memory backend in Node)', async () => {
-    // OPFS is browser-only — the worker must fall back to the in-memory DB.
-    expect(DBWorker.getStorageType()).toBe('memory');
+    // OPFS is browser-only — the worker must fall back to the memory tier.
+    // In Node there is no IndexedDB either, so the fallback reports itself
+    // as the snapshot tier (the snapshot write fails silently, which is
+    // exactly the graceful degradation we want outside the browser).
+    expect(['memory-snapshot', 'memory']).toContain(DBWorker.getStorageType());
     // The real migrations ran: the core tables exist and queries work
     // (array check only — order-independent within this shared-DB suite).
     expect(Array.isArray(await solvesRepo.findAll())).toBe(true);

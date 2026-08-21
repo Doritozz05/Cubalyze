@@ -37,6 +37,8 @@ import { isDev, isTauri, isLocalhost } from "@/utils/env";
 /** Storage-type → i18n key. Unknown types fall back to the raw id. */
 const STORAGE_LABEL_KEY: Partial<Record<string, ParseKeys<"settings">>> = {
   opfs: "advanced.storage.opfs",
+  sahpool: "advanced.storage.sahpool",
+  "memory-snapshot": "advanced.storage.memorySnapshot",
   desktop: "advanced.storage.desktop",
   memory: "advanced.storage.memory",
   unknown: "advanced.storage.unknown",
@@ -191,6 +193,9 @@ export function AdvancedSection() {
     }
     if (storageType === "memory") {
       return { key: "advanced.persistenceStatus.memory", tone: "text-dnf", Icon: TriangleAlert } as const;
+    }
+    if (storageType === "memory-snapshot") {
+      return { key: "advanced.persistenceStatus.snapshot", tone: "text-caution", Icon: TriangleAlert } as const;
     }
     switch (persistence) {
       case "granted":

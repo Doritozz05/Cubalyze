@@ -203,9 +203,10 @@ export function usePersistentSession(): UsePersistentSessionResult {
           const storageType = await dbClient.getStorageType();
           useStorageStatusStore.getState().setStorageType(storageType);
           // Ask the browser to protect the OPFS DB from automatic eviction
-          // (ADR-011). Only OPFS is eligible: desktop is already file-backed
-          // and memory is volatile regardless of the browser's answer.
-          if (storageType === "opfs") {
+          // (ADR-011). Only OPFS-backed tiers are eligible: desktop is already
+          // file-backed and plain memory is volatile regardless of the
+          // browser's answer.
+          if (storageType === "opfs" || storageType === "sahpool") {
             void requestPersistentStorage();
           }
         } catch {

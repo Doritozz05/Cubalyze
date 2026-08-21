@@ -2,13 +2,26 @@
 
 import { create } from "zustand";
 
-export type StorageType = "opfs" | "desktop" | "memory" | "unknown";
+export type StorageType =
+  | "opfs"
+  | "sahpool"
+  | "memory-snapshot"
+  | "desktop"
+  | "memory"
+  | "unknown";
 
 /**
  * Outcome of `navigator.storage.persist()` (ADR-011): whether the browser has
  * agreed to protect this origin's storage from automatic eviction.
  */
 export type StoragePersistence = "granted" | "denied" | "unsupported" | "unknown";
+// Storage backend ids that are persistent (data survives reloads).
+const PERSISTENT_TYPES: ReadonlySet<StorageType> = new Set(["opfs", "sahpool", "desktop"]);
+
+/** True when the storage backend persists across reloads. */
+export function isPersistentStorage(t: StorageType): boolean {
+  return PERSISTENT_TYPES.has(t);
+}
 
 interface StorageStatusState {
   /** opfs/desktop = persistent, memory = data lost on reload, unknown = not checked yet. */

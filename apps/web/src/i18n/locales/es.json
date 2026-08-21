@@ -473,6 +473,8 @@
       "footer": "Los cambios aquí solo afectan a este dispositivo. Restablecer opciones es seguro: nunca borra resoluciones, perfil ni progreso de entrenamiento.",
       "storage": {
         "opfs": "Persistente (OPFS)",
+        "sahpool": "Persistente (pool OPFS)",
+        "memorySnapshot": "Persistente (memoria + snapshot)",
         "desktop": "Escritorio (archivo)",
         "memory": "En memoria (volátil)",
         "unknown": "Desconocido"
@@ -484,7 +486,8 @@
         "unsupported": "No soportado",
         "unknown": "Comprobando…",
         "desktop": "Archivo local",
-        "memory": "Volátil"
+        "memory": "Volátil",
+        "snapshot": "Vía snapshots de bytes"
       },
       "persistenceRisk": "Sin protección contra el borrado automático: exporta con regularidad."
     },

@@ -1,4 +1,5 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
+import { loadSnapshot, saveSnapshot } from './indexeddb-snapshot.js';
 import * as Comlink from 'comlink';
 import { MIGRATIONS } from './migrations/index.js';
 import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL, backupHasDateColumnSql, backupCreatedAtTypeSql, restoreMissingCountSql } from './migrations/restore.js';
@@ -9,8 +10,76 @@ import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_
 // cover the OPFS-backed OpfsDb constructor or the oo1 namespace.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null;
-/** Whether the database is backed by OPFS (persistent) or memory (volatile). */
-let _storageType: 'opfs' | 'memory' = 'memory';
+/** Which storage backend the database is backed by. */
+let _storageType: 'opfs' | 'sahpool' | 'memory-snapshot' = 'memory-snapshot';
+
+/** The sqlite3 factory result (module-level so snapshot helpers can reach capi). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sqlite: any = null;
+
+/**
+ * Export the whole SQLite database as bytes.
+ *
+ * NOTE: the oo1 DB API of sqlite-wasm 3.53 does NOT have an `export()`
+ * method — the export lives in `capi.sqlite3_js_db_export(db.pointer)`, which
+ * returns a fresh Uint8Array owned by JS (no wasm memory cleanup needed).
+ */
+function exportDbBytes(): Uint8Array {
+  if (!db || !sqlite) return new Uint8Array(0);
+  const out = sqlite.capi.sqlite3_js_db_export(db.pointer);
+  return out instanceof Uint8Array ? out : new Uint8Array(0);
+}
+
+/** Debounce timer for the memory-snapshot persistence. */
+let snapshotTimer: ReturnType<typeof setTimeout> | null = null;
+let snapshotPromise: Promise<void> | null = null;
+let snapshotNeedsSave = false;
+let snapshotSaveFailed = false;
+
+/**
+ * Queue a full-DB snapshot write to IndexedDB (memory-snapshot tier only).
+ * Debounced so bursts of writes coalesce into one snapshot. A failed snapshot
+ * is re-queued on the next write (never silently lost).
+ */
+function scheduleSnapshot(): void {
+  if (_storageType !== 'memory-snapshot' || !db) return;
+  snapshotNeedsSave = true;
+  if (snapshotPromise || snapshotTimer || snapshotSaveFailed) return;
+  snapshotTimer = setTimeout(() => {
+    snapshotTimer = null;
+    snapshotNeedsSave = false;
+    snapshotPromise = (async () => {
+      if (!db) return;
+      const bytes = exportDbBytes();
+      if (bytes.byteLength > 0) await saveSnapshot(bytes);
+    })().catch((err) => {
+      console.warn('[DB Worker] snapshot save failed (will retry on next write):', err);
+      // Re-queue: the dirty flag stays set so the next write retries.
+      snapshotSaveFailed = true;
+      snapshotNeedsSave = true;
+    }).finally(() => {
+      snapshotPromise = null;
+      if (!snapshotSaveFailed && snapshotNeedsSave) scheduleSnapshot();
+      snapshotSaveFailed = false;
+    });
+  }, 500);
+}
+
+/** Flush any pending snapshot immediately (used on close). */
+async function flushSnapshot(): Promise<void> {
+  if (snapshotTimer) {
+    clearTimeout(snapshotTimer);
+    snapshotTimer = null;
+  }
+  if (snapshotPromise) await snapshotPromise;
+  if (snapshotNeedsSave) {
+    snapshotNeedsSave = false;
+    if (db) {
+      const bytes = exportDbBytes();
+      if (bytes.byteLength > 0) await saveSnapshot(bytes);
+    }
+  }
+}
 
 /**
  * Data safety net for the baseline v2 wipe (migration 022): before the
@@ -204,27 +273,94 @@ function runMigrations(): void {
 /**
  * Open the OPFS-backed database, retrying transient failures (the cross-tab
  * WebLock is briefly held by another tab or by a Vite HMR reload). Only after
- * every attempt fails do we give up and let the caller fall back to memory —
- * a fresh in-memory DB silently loses everything written to it on reload.
+ * every attempt fails do we give up and let the caller fall back to the next
+ * tier (sahpool → memory+IndexedDB).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function openOpfsDbWithRetry(sqlite3: any): Promise<any | null> {
+async function openOpfsDbWithRetry(sqlite3: any, ctorName: 'OpfsDb' | 'OpfsSAHPoolDb'): Promise<any | null> {
   const attempts = 3;
   let lastError: unknown = null;
   for (let i = 0; i < attempts; i++) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new (sqlite3 as any).oo1.OpfsDb('/cubeforge.sqlite3');
+      return new (sqlite3 as any).oo1[ctorName]('/cubeforge.sqlite3');
     } catch (e) {
       lastError = e;
       if (i < attempts - 1) {
-        console.warn(`[DB Worker] OPFS open failed (attempt ${i + 1}/${attempts}) — retrying…`, e);
+        console.warn(`[DB Worker] ${ctorName} open failed (attempt ${i + 1}/${attempts}) — retrying…`, e);
         await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
       }
     }
   }
-  console.warn(`[DB Worker] OPFS open failed after ${attempts} attempts — falling back to memory (data lost on reload).`, lastError);
+  console.warn(`[DB Worker] ${ctorName} open failed after ${attempts} attempts — falling back to the next storage tier.`, lastError);
   return null;
+}
+
+/**
+ * Try the "opfs-sahpool" VFS — an OPFS-backed store which, unlike the
+ * classic "opfs" VFS, does NOT require SharedArrayBuffer / COOP-COEP
+ * cross-origin isolation. It only needs the File System Access API
+ * (createSyncAccessHandle), which every Chromium/Firefox/Safari >= 16.4
+ * worker provides. sqlite-wasm exposes it via `sqlite3.installOpfsSAHPoolVfs()`
+ * and registers `oo1.OpfsSAHPoolDb` on success.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function tryOpenSahpoolDb(sqlite3: any): Promise<any | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const poolUtil = await (sqlite3 as any).installOpfsSAHPoolVfs?.();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Ctor = poolUtil?.OpfsSAHPoolDb ?? (sqlite3 as any).oo1?.OpfsSAHPoolDb;
+    if (!Ctor) return null;
+    return await openOpfsDbWithRetry(sqlite3, 'OpfsSAHPoolDb');
+  } catch (e) {
+    console.warn('[DB Worker] opfs-sahpool unavailable; falling back to memory+IndexedDB:', e);
+    return null;
+  }
+}
+
+/**
+ * Restore a full-database byte snapshot (from IndexedDB) into a fresh
+ * in-memory SQLite handle using sqlite3_deserialize. Returns the new handle
+ * or null when there is nothing to restore (first run).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function openMemoryWithSnapshot(sqlite3: any): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db: any = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
+  const snapshot = await loadSnapshot();
+  if (snapshot && snapshot.byteLength > 0) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const capi = (sqlite3 as any).capi;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pData = (sqlite3 as any).wasm.allocFromTypedArray(snapshot);
+      const rc = capi.sqlite3_deserialize(
+        db.pointer,
+        'main',
+        pData,
+        snapshot.byteLength,
+        snapshot.byteLength,
+        capi.SQLITE_DESERIALIZE_RESIZEABLE | capi.SQLITE_DESERIALIZE_FREEONCLOSE,
+      );
+      if (rc !== 0) {
+        console.warn('[DB Worker] snapshot restore failed; starting empty.', rc);
+        db.close();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
+      }
+    } catch (e) {
+      console.warn('[DB Worker] snapshot restore threw; starting empty.', e);
+      try {
+        db.close();
+      } catch {
+        /* ignore */
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
+    }
+  }
+  return db;
 }
 
 export const DBWorker = {
@@ -233,30 +369,45 @@ export const DBWorker = {
 
     try {
       const sqlite3 = await sqlite3InitModule();
+      sqlite = sqlite3;
 
       // NOTE: sqlite-wasm 3.53.0 DELETES sqlite3.opfs during internal
       // asyncPostInit cleanup (line 4405 of index.mjs). Therefore checking
       // `(sqlite3 as any).opfs` ALWAYS returns undefined, even when OPFS
       // IS available. The correct availability check is:
-      //   sqlite3.oo1?.OpfsDb  ← only set if OPFS VFS was installed
+      //   sqlite3.oo1?.OpfsDb  ← only exists if OPFS VFS was installed
+      //
+      // ── Storage tiers (best → last resort) ─────────────────────────────
+      //   1. classic "opfs" VFS (OpfsDb)   — needs SharedArrayBuffer/COI
+      //   2. "opfs-sahpool" VFS            — OPFS WITHOUT COI
+      //   3. memory + IndexedDB snapshot   — works everywhere
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((sqlite3 as any).oo1?.OpfsDb) {
-        console.log('[DB Worker] OPFS is available. Using OpfsDb (PERSISTENT).');
-        const opfsDb = await openOpfsDbWithRetry(sqlite3);
+      if ((sqlite3 as any).oo1?.OpfsDb && !(sqlite3 as any).config?.disable?.vfs?.['opfs']) {
+        console.log('[DB Worker] OPFS VFS available. Using OpfsDb (PERSISTENT).');
+        const opfsDb = await openOpfsDbWithRetry(sqlite3, 'OpfsDb');
         if (opfsDb) {
           db = opfsDb;
           _storageType = 'opfs';
         } else {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
-          _storageType = 'memory';
+          const sahpoolDb = await tryOpenSahpoolDb(sqlite3);
+          if (sahpoolDb) {
+            db = sahpoolDb;
+            _storageType = 'sahpool';
+          } else {
+            db = await openMemoryWithSnapshot(sqlite3);
+            _storageType = 'memory-snapshot';
+          }
         }
       } else {
-        // Fallback to memory — DATA WILL BE LOST ON RELOAD
-        console.warn('[DB Worker] OPFS NOT available. Using in-memory DB (DATA LOST ON RELOAD).');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        db = new (sqlite3 as any).oo1.DB('/memory.sqlite3', 'c');
-        _storageType = 'memory';
+        // No OPFS VFS installed: try the no-COI sahpools, then memory+snapshot.
+        const sahpoolDb = await tryOpenSahpoolDb(sqlite3);
+        if (sahpoolDb) {
+          db = sahpoolDb;
+          _storageType = 'sahpool';
+        } else {
+          db = await openMemoryWithSnapshot(sqlite3);
+          _storageType = 'memory-snapshot';
+        }
       }
 
       // NOTE: the legacy ad-hoc kv_store table was removed here — its role is
@@ -294,10 +445,21 @@ export const DBWorker = {
         console.warn('[DB Worker] v1→v2 restore failed (non-fatal, backups kept):', e);
       }
 
-      // Enforce the FKs declared in the baseline v2 schema for normal app
+      // Enforce the FKs declared in the baseline schema for normal app
       // operation. `foreign_keys` is a per-connection pragma — must be set on
       // every open, and only after the migration DDL has finished (see above).
       db.exec('PRAGMA foreign_keys = ON;');
+
+      // The LAST-RESORT tier (memory + IndexedDB snapshot) must capture the
+      // freshly-migrated DB so a reload restores it instead of starting empty.
+      if (_storageType === 'memory-snapshot') {
+        try {
+          const bytes = exportDbBytes();
+          if (bytes.byteLength > 0) await saveSnapshot(bytes);
+        } catch (e) {
+          console.warn('[DB Worker] initial snapshot save failed (non-fatal):', e);
+        }
+      }
 
       return true;
     } catch (err) {
@@ -317,14 +479,20 @@ export const DBWorker = {
       rowMode: 'object',
       resultRows: results,
     });
+    // Trace the memory-snapshot tier after every write (writes imply dirty).
+    if (_storageType === 'memory-snapshot' && /\b(insert|update|delete|create|drop|begin|commit|rollback)\b/i.test(sql)) {
+      scheduleSnapshot();
+    }
     return results;
   },
 
   async close() {
     if (db) {
+      await flushSnapshot();
       db.close();
       db = null;
     }
+    sqlite = null;
   },
 
   /** Returns the storage backend type so the UI can warn if data won't persist. */
@@ -334,35 +502,18 @@ export const DBWorker = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// Comlink wiring — dedicated AND shared workers.
+// Comlink wiring — dedicated worker only.
 //
-// comlink >= 4.4 dropped SharedWorker support: `expose(obj, ep = globalThis)`
-// wires `globalThis.addEventListener("message")`, which NEVER fires inside a
-// SharedWorkerGlobalScope — connections arrive as `connect` events carrying a
-// MessagePort, never as a global message event. Without explicit wiring the
-// SharedWorker boots but never answers the main thread's `init()` request:
-// the `await proxied.init()` in client.ts hangs forever (no error, no
-// fallback, empty console, app stuck on skeletons).
+// IMPORTANT (root cause of the production regression): sqlite-wasm's OPFS
+// VFS is deliberately supported ONLY in dedicated workers ("The OPFS features
+// used here are only available in dedicated Worker threads" — dist/index.mjs
+// of @sqlite.org/sqlite-wasm). A SharedWorker pulls the whole storage layer
+// back to volatile memory. So we always boot a DEDICATED worker here and
+// never a SharedWorker.
 //
-// Detect the context via `onconnect` (SharedWorker-only) and expose on the
-// per-connection port instead of globalThis. Dedicated workers keep the
-// plain expose (globalThis receives message events directly).
-// ─────────────────────────────────────────────────────────────────────────
-// `typeof self !== 'undefined'` guards the Node/test environment, where
-// the module is imported without a worker global.
-if (typeof self !== 'undefined' && 'onconnect' in self) {
-  // SharedWorker: one `connect` per tab; each port gets its own exposed
-  // instance over the SAME shared SQLite handle (`db` is module state), so
-  // every tab reads/writes one persistent database.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (self as any).onconnect = (event: MessageEvent & { ports: MessagePort[] }) => {
-    const port = event.ports[0];
-    Comlink.expose(DBWorker, port);
-    // Adding the message listener above already starts the port implicitly;
-    // make it explicit so it is robust across engines.
-    port.start();
-  };
-} else {
+// `typeof self !== 'undefined'` guards the Node/test environment, where the
+// module is imported without a worker global.
+if (typeof self !== 'undefined') {
   // Dedicated worker: `self` receives `message` events directly.
   Comlink.expose(DBWorker);
 }

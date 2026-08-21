@@ -3,19 +3,19 @@ import { SolvesRepository } from '../repositories/solves.repository.js';
 import { SessionsRepository } from '../repositories/sessions.repository.js';
 import { AlgorithmsRepository } from '../repositories/algorithms.repository.js';
 
-vi.mock('comlink', () => ({
-  wrap: vi.fn(() => ({
-    init: vi.fn().mockResolvedValue(true),
-    execute: vi.fn().mockImplementation((sql: string) => {
-      if (sql.includes('SELECT')) return [{ key: 'theme', value: 'dark' }];
-      return [];
-    }),
-    getStorageType: vi.fn().mockResolvedValue('opfs'),
-    close: vi.fn().mockResolvedValue(undefined),
-    [Symbol.for('comlink.releaseProxy')]: vi.fn(),
-  })),
-  releaseProxy: Symbol.for('comlink.releaseProxy'),
-}));
+// Keep the REAL Comlink implementation (wrap/expose/releaseProxy) so the
+// SharedWorker-fallback test can run a genuine handshake over an in-thread
+// MessageChannel. Nothing needs a fake proxy anymore: the client wraps real
+// ports, and the exposed target responds 'opfs' or 'memory' per test.
+vi.mock('comlink', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('comlink')>();
+  return {
+    ...actual,
+    wrap: actual.wrap,
+    releaseProxy: actual.releaseProxy,
+    expose: actual.expose,
+  };
+});
 
 vi.mock('../worker.js', () => ({ DBWorker: {} }));
 
@@ -275,9 +275,38 @@ describe('AlgorithmsRepository', () => {
 });
 
 describe('Database Client', () => {
+  /**
+   * Install a DEDICATED worker stub whose `postMessage`-style endpoint is a
+   * REAL MessagePort wired to a Comlink `expose()`d target in this thread.
+   * This is the honest way to exercise client.ts's dedicated-worker branch
+   * under vitest: Comlink needs genuine MessagePort semantics.
+   */
+  async function installDedicatedWorker(exposed: Record<string, unknown>) {
+    const { expose } = await import('comlink');
+    const channel = new MessageChannel();
+    expose(exposed, channel.port2);
+    const workerStub = Object.assign(channel.port1, { terminate: vi.fn() });
+    const ctor = vi.fn(() => workerStub as unknown as Worker);
+    const originalWorker = globalThis.Worker;
+    globalThis.Worker = ctor as unknown as typeof Worker;
+    return { originalWorker, ctor, workerStub };
+  }
+
   it('initializes db correctly', async () => {
     globalThis.window = {} as unknown as Window & typeof globalThis;
-    globalThis.Worker = vi.fn(() => ({ terminate: vi.fn() })) as unknown as typeof Worker;
+    const { originalWorker } = await installDedicatedWorker({
+      async init() {
+        return true;
+      },
+      async getStorageType() {
+        return 'opfs';
+      },
+      async execute(sql: string) {
+        if (sql.includes('SELECT')) return [{ key: 'theme', value: 'dark' }];
+        return [];
+      },
+      async close() {},
+    });
 
     const { initDB, getDB, closeDB } = await import('../client.js');
     const db = await initDB();
@@ -287,6 +316,37 @@ describe('Database Client', () => {
     const results = await db.execute('SELECT * FROM app_meta;');
     expect(results).toEqual([{ key: 'theme', value: 'dark' }]);
 
+    await closeDB();
+    globalThis.Worker = originalWorker;
+  });
+
+  it('boots a DEDICATED worker (never a SharedWorker) and reports storage', async () => {
+    const { originalWorker, ctor } = await installDedicatedWorker({
+      async init() {
+        return true;
+      },
+      async getStorageType() {
+        return 'memory-snapshot';
+      },
+      async execute() {
+        return [];
+      },
+      async close() {},
+    });
+    const originalSharedWorker = globalThis.SharedWorker;
+    globalThis.SharedWorker = vi.fn(() => {
+      throw new Error('must not construct a SharedWorker');
+    }) as unknown as typeof SharedWorker;
+
+    const { initDB, getStorageType, closeDB } = await import('../client.js');
+    await initDB();
+
+    expect(ctor).toHaveBeenCalledTimes(1);
+    expect(await getStorageType()).toBe('memory-snapshot');
+    expect(globalThis.SharedWorker).not.toHaveBeenCalled();
+
+    globalThis.Worker = originalWorker;
+    globalThis.SharedWorker = originalSharedWorker;
     await closeDB();
   });
 });

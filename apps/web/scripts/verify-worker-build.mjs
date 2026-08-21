@@ -1,28 +1,27 @@
 #!/usr/bin/env node
 /**
- * Post-build guard for the SQLite SharedWorker (packages/database).
+ * Post-build guard for the SQLite dedicated worker (packages/database).
  *
- * The app boots its database through `new SharedWorker(...)` in
- * packages/database/src/client.ts. The worker chunk MUST wire its per-tab
- * connection port (`self.onconnect` → `Comlink.expose(DBWorker, port)`) or
- * the main thread's `init()` request is never answered and the WHOLE app
- * hangs on skeletons with an empty console — which shipped exactly once and
- * only surfaced in production, because bundlers can silently drop or mangle
- * worker wiring without any error (tree-shaking, minifier renames, comlink's
- * `expose` not handling SharedWorker out of the box...).
+ * The app boots its database through `new Worker(...)` in client.ts.
+ * sqlite-wasm's OPFS persistence is DEDICATED-worker only (SharedWorker
+ * silently downgrades to volatile memory), so the bundle must (a) never
+ * construct a SharedWorker for the DB, (b) keep the init timeout guard, and
+ * (c) keep the storage-tier fallbacks (opfs → opfs-sahpool → memory+snapshot)
+ * that keep data on disk even without cross-origin isolation.
  *
- * This script scans the freshly built chunks for the wiring invariants and
- * fails the build with a clear message if any of them regresses:
+ * Bundlers can silently drop/mangle this wiring without any error, which
+ * is exactly how the app once shipped broken and only surfaced in prod.
  *
- *   1. A chunk must construct the SharedWorker (the DB worker entry).
- *   2. That client chunk must still contain the handshake-timeout fallback
- *      (client.ts) — a silent worker hang must degrade to the dedicated
- *      worker instead of freezing the app.
+ * Invariants checked:
+ *   1. A chunk must construct the dedicated worker (the DB worker entry).
+ *   2. That client chunk must NOT construct a SharedWorker.
+ *   2b. It must keep the 'Database worker init timed out' timeout guard.
  *   3. The referenced worker chunk must exist.
- *   4. The worker chunk must contain the `onconnect` wiring.
- *   5. The worker chunk must access `event.ports[0]` (the per-tab port).
- *   6. The worker chunk must be OUR DB worker (`_migrations` marker), not
- *      some other chunk the URL happened to point at.
+ *   4. It must be OUR DB worker ('_migrations' marker).
+ *   5. It must keep the opfs-sahpool VFS fallback (OpfsSAHPoolDb).
+ *   6. It must keep the memory+IndexedDB snapshot tier ('memory-snapshot').
+ *      (sqlite-wasm's internal sqlite3-worker1-*.js chunk is excluded — it
+ *      is constructed the same way but is not our DB worker.)
  *
  * Usage: node scripts/verify-worker-build.mjs [distDir]   (default: ./dist)
  */
@@ -56,9 +55,9 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-// 1. Find every chunk that constructs the SharedWorker and the file it points to.
-//    Minified output looks like:  new SharedWorker(new URL(`/assets/worker-XXX.js`,``+import.meta.url)
-const workerUrlRef = /new SharedWorker\(new URL\([`'"](\/assets\/[^`'"]+\.js)[`'"]/;
+// 1. Find the chunk that boots the database DEDICATED worker. Minified
+//    output looks like:  new Worker(new URL(`/assets/worker-XXX.js`,``+import.meta.url)
+const workerUrlRef = /new Worker\(new URL\([`'"](\/assets\/[^`'"]+\.js)[`'"]/;
 
 const hits = [];
 for (const f of files) {
@@ -67,16 +66,34 @@ for (const f of files) {
   if (m) hits.push({ clientFile: f, workerFile: m[1].slice('/assets/'.length) });
 }
 
-if (hits.length === 0) {
-  fail('no chunk constructs `new SharedWorker(...)` — the DB worker wiring was removed, renamed, or the URL format changed.');
-} else {
-  for (const { clientFile, workerFile } of hits) {
-    console.log(`  \u2713 ${clientFile} \u2192 SharedWorker ${workerFile}`);
+// sqlite-wasm ships its own internal worker (sqlite3-worker1-*.js) which is
+// ALSO constructed via new Worker(new URL(...)). It is not ours: it has no
+// `_migrations` marker and never needs the storage-tier guards. Filter it out
+// so the invariants below only apply to the REAL database worker.
+const isInternalSqliteWorker = (name) => /sqlite3-worker1-/.test(name);
 
-    // 2. Client-side timeout fallback must still exist.
+const dbHits = hits.filter((h) => !isInternalSqliteWorker(h.workerFile));
+const internalHits = hits.filter((h) => isInternalSqliteWorker(h.workerFile));
+
+if (hits.length === 0) {
+  fail('no chunk constructs `new Worker(...)` — the DB worker wiring was removed, renamed, or the URL format changed.');
+} else {
+  for (const { clientFile, workerFile } of internalHits) {
+    console.log(`  (skip) ${clientFile} \u2192 ${workerFile} is sqlite-wasm's internal worker, not the DB worker.`);
+  }
+  for (const { clientFile, workerFile } of dbHits) {
+    console.log(`  \u2713 ${clientFile} \u2192 dedicated Worker ${workerFile}`);
+
+    // 2. The client must NO LONGER boot a SharedWorker (sqlite-wasm OPFS is
+    //    dedicated-only; a SharedWorker silently downgrades to memory).
     const clientCode = readFileSync(join(assetsDir, clientFile), 'utf8');
-    if (!clientCode.includes('SharedWorker init timed out')) {
-      fail(`${clientFile} lost the 'SharedWorker init timed out' fallback (client.ts timeout guard was removed).`);
+    if (clientCode.includes('new SharedWorker(')) {
+      fail(`${clientFile} still constructs a SharedWorker — the DB layer must use a dedicated worker only (OPFS is not supported in SharedWorker).`);
+    }
+
+    // 2b. The init timeout guard must still exist.
+    if (!clientCode.includes('Database worker init timed out')) {
+      fail(`${clientFile} lost the 'Database worker init timed out' timeout guard.`);
     }
 
     // 3. Worker chunk must exist.
@@ -88,25 +105,26 @@ if (hits.length === 0) {
       continue;
     }
 
-    // 4. The onconnect wiring — the core invariant that was missing in prod.
-    if (!workerCode.includes('onconnect')) {
-      fail(`${workerFile} has NO 'onconnect' — the SharedWorker will never answer init() and the app will hang on skeletons. Fix packages/database/src/worker.ts.`);
-    }
-
-    // 5. The per-tab connection port must be unwired (comlink never auto-wires it).
-    if (!workerCode.includes('ports[0]')) {
-      fail(`${workerFile} never accesses 'event.ports[0]' — the per-tab port is not exposed.`);
-    }
-
-    // 6. Sanity: make sure the URL points at OUR worker, not a lookalike chunk.
+    // 4. Sanity: make sure the URL points at OUR worker, not a lookalike chunk.
     if (!workerCode.includes('_migrations')) {
-      fail(`${workerFile} is not our DB worker (missing '_migrations') — the SharedWorker URL may point at the wrong chunk.`);
+      fail(`${workerFile} is not our DB worker (missing '_migrations') — the Worker URL may point at the wrong chunk.`);
+    }
+
+    // 5. The storage-tier fallback must still exist: opfs-sahpool is the
+    //    no-COOP/COEP persistence path that fixes browsers without COI.
+    if (!workerCode.includes('OpfsSAHPoolDb')) {
+      fail(`${workerFile} lost the opfs-sahpool VFS fallback (OpfsSAHPoolDb) — browsers without cross-origin isolation would silently lose data.`);
+    }
+
+    // 6. The memory+snapshot tier (IndexedDB) must still exist.
+    if (!workerCode.includes('memory-snapshot')) {
+      fail(`${workerFile} lost the memory+IndexedDB snapshot tier — no persistence left when OPFS is entirely unavailable.`);
     }
   }
 }
 
 if (failed) {
-  console.error('\n[verify-worker-build] FAILED \u2014 the database SharedWorker wiring regressed. Fix packages/database/src/worker.ts (self.onconnect \u2192 Comlink.expose(DBWorker, port)) and rebuild.');
+  console.error('\n[verify-worker-build] FAILED \u2014 the database persistence wiring regressed. Dedicated worker + OPFS tiers are required.');
   process.exit(1);
 }
-console.log(`\n[verify-worker-build] OK \u2014 SharedWorker wiring present (${hits.length} client chunk(s)).`);
+console.log(`\n[verify-worker-build] OK \u2014 dedicated worker + OPFS tiers present (${dbHits.length} client chunk(s)).`);

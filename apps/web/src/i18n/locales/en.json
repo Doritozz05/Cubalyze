@@ -473,6 +473,8 @@
       "footer": "Changes here affect only this device. Reset options is safe — it never deletes solves, profile or training progress.",
       "storage": {
         "opfs": "Persistent (OPFS)",
+        "sahpool": "Persistent (OPFS pool)",
+        "memorySnapshot": "Persistent (memory + snapshot)",
         "desktop": "Desktop (file)",
         "memory": "In-memory (volatile)",
         "unknown": "Unknown"
@@ -484,7 +486,8 @@
         "unsupported": "Not supported",
         "unknown": "Checking…",
         "desktop": "File-backed",
-        "memory": "Volatile"
+        "memory": "Volatile",
+        "snapshot": "Via byte-snapshots"
       },
       "persistenceRisk": "Not protected from automatic eviction — export regularly."
     },
