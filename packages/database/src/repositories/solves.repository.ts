@@ -164,6 +164,39 @@ export class SolvesRepository {
   }
 
   /**
+   * All NON-demo solves edited strictly after `updatedAt` (epoch ms) — the
+   * sync push cursor. A fresh link passes 0 so every real solve is pushed.
+   * Solves are immutable-ish (penalty/method/note/analysis edits bump
+   * updated_at), so LWW on updated_at is the conflict rule.
+   */
+  async findAllSince(updatedAt: number): Promise<Solve[]> {
+    const rows = await this.db(
+      'SELECT * FROM solves WHERE is_demo = 0 AND updated_at > ? ORDER BY updated_at ASC',
+      [updatedAt],
+    );
+    return rows.map((r) => rowToSolve(r as unknown as SolveRow));
+  }
+
+  /**
+   * Existing updated_at values for a batch of ids (pull LWW check).
+   * Chunked IN query — returns a Map<id, updated_at>.
+   */
+  async findUpdatedAts(ids: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    const BATCH = 500;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const chunk = ids.slice(i, i + BATCH);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = await this.db(
+        `SELECT id, updated_at FROM solves WHERE id IN (${placeholders})`,
+        chunk,
+      );
+      for (const r of rows) map.set(String(r.id), Number(r.updated_at) || 0);
+    }
+    return map;
+  }
+
+  /**
    * Insert a solve. Pass `{ isDemo: true }` to flag seeded/demo solves so they
    * stay isolated from the user's real statistics (see countNonDemo / deleteDemoData).
    */
@@ -242,6 +275,11 @@ export class SolvesRepository {
 
   async delete(id: string): Promise<void> {
     await this.db('DELETE FROM solves WHERE id = ?', [id]);
+  }
+
+  /** Delete every solve — "start fresh" wipe (tombstones are purged by the caller). */
+  async deleteAll(): Promise<void> {
+    await this.db('DELETE FROM solves');
   }
 
   async count(): Promise<number> {

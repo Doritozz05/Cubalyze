@@ -95,15 +95,39 @@ export function useCalendarTasks(): UseCalendarTasksResult {
     };
   }, []);
 
-  // Persist every change to DB + cache. Mirrors the legacy
-  // `useEffect(() => saveTasks(tasks), [tasks])` behavior.
+  // Persist every change to DB + cache as a DIFF (never replaceAll): a
+  // wholesale clear+reinsert would fire the migration-028 DELETE triggers and
+  // fabricate tombstones for unchanged tasks — the sync engine would then
+  // delete those tasks from the cloud on every other device. New tasks are
+  // inserted, changed tasks upserted (bumping only their updated_at), deleted
+  // tasks removed.
   useEffect(() => {
     saveToLocalStorage(tasks);
     const repo = repoRef.current;
     if (repo && dbLoadedRef.current) {
-      void repo.replaceAll(tasks).catch(() => {
-        // DB write failed — cache still holds the data; next DB init re-migrates.
-      });
+      void (async () => {
+        try {
+          const existing = await repo.findAll();
+          const nextIds = new Set(tasks.map((t) => t.id));
+          for (const t of existing) {
+            if (!nextIds.has(t.id)) await repo.delete(t.id);
+          }
+          for (const t of tasks) {
+            const prev = existing.find((e) => e.id === t.id);
+            const changed =
+              !prev ||
+              prev.title !== t.title ||
+              prev.description !== t.description ||
+              prev.startDate !== t.startDate ||
+              prev.repeat !== t.repeat ||
+              prev.color !== t.color ||
+              JSON.stringify(prev.daysOfWeek) !== JSON.stringify(t.daysOfWeek);
+            if (changed) await repo.upsert(t);
+          }
+        } catch {
+          // DB write failed — cache still holds the data; next DB init re-migrates.
+        }
+      })();
     }
   }, [tasks]);
 

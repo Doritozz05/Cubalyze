@@ -38,6 +38,7 @@ import { ScrambleSection } from './sections/ScrambleSection';
 import { ShortcutsSection } from './sections/ShortcutsSection';
 import { DataSection } from './sections/DataSection';
 import { ProfileSection } from './sections/ProfileSection';
+import { AccountSection } from './sections/AccountSection';
 import { NotificationsSection } from './sections/NotificationsSection';
 import { AdvancedSection } from './sections/AdvancedSection';
 import { CreditsSection } from './sections/CreditsSection';
@@ -125,6 +126,8 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
+      case 'account':
+        return <AccountSection />;
       case 'profile':
         return <ProfileSection />;
       case 'general':

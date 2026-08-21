@@ -15,6 +15,7 @@ import {
   UserRound,
   Heart,
   AudioLines,
+  Cloud,
 } from 'lucide-react';
 
 /**
@@ -30,6 +31,12 @@ export interface SettingsSection {
 }
 
 export const SETTINGS_SECTIONS: SettingsSection[] = [
+  {
+    id: 'account',
+    labelKey: 'sections.account.label',
+    icon: Cloud,
+    descriptionKey: 'sections.account.description',
+  },
   {
     id: 'profile',
     labelKey: 'sections.profile.label',

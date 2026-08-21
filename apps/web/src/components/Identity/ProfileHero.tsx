@@ -41,6 +41,12 @@ export interface ProfileHeroProps {
   onEdit?: () => void;
   /** Sub-X milestone badges derived from the PB per puzzle (e.g. "Sub 5 · 3×3"). */
   badges?: SubBadge[];
+  /**
+   * CubeMark seed — the ORIGINAL anonymous id even after an account links
+   * the device (parked in app_meta as identicon_seed). Falls back to the
+   * profile's userId so the mark never changes on login.
+   */
+  seed?: string;
   className?: string;
 }
 
@@ -63,6 +69,7 @@ export function ProfileHero({
   loading,
   onEdit,
   badges = [],
+  seed,
   className,
 }: ProfileHeroProps) {
   const { t, i18n } = useTranslation("profile");
@@ -125,7 +132,7 @@ export function ProfileHero({
         />
       ) : (
         <IdenticonAvatar
-          seed={profile.userId}
+          seed={seed ?? profile.userId}
           size={avatarSize}
           className="shrink-0 rounded-2xl ring-1 ring-line"
         />

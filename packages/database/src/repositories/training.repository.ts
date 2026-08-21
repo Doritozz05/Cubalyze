@@ -45,6 +45,7 @@ export interface TrainingAttemptRow {
   session_id: string | null;
   metric_kind: string | null;
   timestamp: number;
+  updated_at: number;
 }
 
 export interface AlgorithmProgressRow {
@@ -127,6 +128,8 @@ export interface TrainingAttempt {
   /** Logical training session grouping this attempt. */
   sessionId?: string;
   timestamp: number;
+  /** Epoch ms of the last edit — the LWW/sync watermark (migration 028). */
+  updatedAt?: number;
 }
 
 
@@ -158,6 +161,7 @@ function rowToAttempt(row: TrainingAttemptRow): TrainingAttempt {
     metricKind: row.metric_kind === "recognition" ? "recognition" : "execution",
     sessionId: row.session_id ?? undefined,
     timestamp: row.timestamp,
+    updatedAt: Number(row.updated_at) || 0,
   };
 }
 
@@ -210,6 +214,7 @@ function rowToTrainingSession(row: Record<string, unknown>): TrainingSessionReco
     correctCount,
     accuracy: totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0,
     avgTimeMs: Math.round(Number(row.avg_time_ms) || 0),
+    updatedAt: Number(row.updated_at) || 0,
   };
 }
 
@@ -296,8 +301,24 @@ export class TrainingRepository {
 
   async insertAttempt(attempt: Omit<TrainingAttempt, "id">): Promise<TrainingAttempt> {
     const id = generateId();
+    return this.insertAttemptRow({ ...attempt, id } as TrainingAttempt, "INSERT INTO");
+  }
+
+  /**
+   * Insert an attempt with an EXISTING id (pull from the cloud, or replay
+   * writes). Used by the sync engine so a pulled attempt never gets a new
+   * identity (INSERT OR IGNORE keeps the row idempotent across re-pulls).
+   */
+  async insertAttemptWithId(attempt: TrainingAttempt): Promise<TrainingAttempt> {
+    return this.insertAttemptRow(attempt, "INSERT OR IGNORE INTO");
+  }
+
+  private async insertAttemptRow(
+    attempt: TrainingAttempt,
+    verb: "INSERT INTO" | "INSERT OR IGNORE INTO",
+  ): Promise<TrainingAttempt> {
     const row: TrainingAttemptRow = {
-      id,
+      id: attempt.id,
       exercise_id: attempt.exerciseId,
       method_id: attempt.methodId,
       phase_id: attempt.phaseId ?? null,
@@ -318,21 +339,22 @@ export class TrainingRepository {
       session_id: attempt.sessionId ?? null,
       metric_kind: attempt.metricKind ?? "execution",
       timestamp: attempt.timestamp || Date.now(),
+      updated_at: attempt.updatedAt ?? (attempt.timestamp || Date.now()),
     };
 
     await this.db(
-      `INSERT INTO training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, review_grade, session_id, metric_kind, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `${verb} training_attempts (id, exercise_id, method_id, phase_id, subset_id, case_id, scramble, time_ms, verdict, play_mode, expected_moves, executed_moves, tps, move_count, optimal_moves, rotation_count, inspection_ms, review_grade, session_id, metric_kind, timestamp, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id, row.exercise_id, row.method_id, row.phase_id, row.subset_id,
         row.case_id, row.scramble, row.time_ms, row.verdict, row.play_mode,
         row.expected_moves, row.executed_moves, row.tps, row.move_count,
         row.optimal_moves, row.rotation_count, row.inspection_ms, row.review_grade,
-        row.session_id, row.metric_kind, row.timestamp,
+        row.session_id, row.metric_kind, row.timestamp, row.updated_at,
       ],
     );
 
-    return { ...attempt, id };
+    return { ...attempt, id: attempt.id };
   }
 
   /**
@@ -343,10 +365,34 @@ export class TrainingRepository {
    */
   async updateAttemptReviewGrade(caseId: string, reviewGrade: string): Promise<void> {
     await this.db(
-      `UPDATE training_attempts SET review_grade = ?
+      `UPDATE training_attempts SET review_grade = ?, updated_at = ?
        WHERE id = (SELECT id FROM training_attempts WHERE case_id = ? ORDER BY timestamp DESC LIMIT 1)`,
-      [reviewGrade, caseId],
+      [reviewGrade, Date.now(), caseId],
     );
+  }
+
+  /**
+   * Apply a cloud-side attempt edit (LWW pull): only the editable field
+   * (review_grade) plus the edit watermark are written. INSERT OR IGNORE in
+   * insertAttemptWithId keeps plain pulls idempotent; this handles the case
+   * where the SAME attempt was graded on another device and the cloud row is
+   * newer.
+   */
+  async updateAttemptFromCloud(id: string, reviewGrade: string | null, updatedAt: number): Promise<void> {
+    await this.db(
+      `UPDATE training_attempts SET review_grade = ?, updated_at = ? WHERE id = ?`,
+      [reviewGrade, updatedAt, id],
+    );
+  }
+
+  /** Look up one attempt by id (pull LWW check). */
+  async findAttemptById(id: string): Promise<TrainingAttempt | null> {
+    const rows = await this.db(
+      "SELECT * FROM training_attempts WHERE id = ?",
+      [id],
+    );
+    if (rows.length === 0) return null;
+    return rowToAttempt(rows[0] as unknown as TrainingAttemptRow);
   }
 
   async createTrainingSession(session: Omit<TrainingSessionRecord, "completedAt" | "durationMs" | "status" | "totalAttempts" | "correctCount" | "accuracy" | "avgTimeMs">): Promise<TrainingSessionRecord> {
@@ -360,11 +406,57 @@ export class TrainingRepository {
       avgTimeMs: 0,
     };
     await this.db(
-      `INSERT OR IGNORE INTO training_sessions (id, exercise_id, method_id, phase_id, subset_id, started_at, smart_cube_used, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [record.id, record.exerciseId, record.methodId, record.phaseId ?? null, record.subsetId ?? null, record.startedAt, record.smartCubeUsed ? 1 : 0, record.status],
+      `INSERT OR IGNORE INTO training_sessions (id, exercise_id, method_id, phase_id, subset_id, started_at, smart_cube_used, status, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [record.id, record.exerciseId, record.methodId, record.phaseId ?? null, record.subsetId ?? null, record.startedAt, record.smartCubeUsed ? 1 : 0, record.status, record.startedAt],
     );
     return record;
+  }
+
+  /**
+   * Insert a training session from the cloud during a pull (full replace).
+   * The domain record already carries every column, including `updated_at`.
+   */
+  async upsertTrainingSession(record: TrainingSessionRecord): Promise<void> {
+    const updatedAt = record.updatedAt ?? record.startedAt ?? Date.now();
+    await this.db(
+      `INSERT OR REPLACE INTO training_sessions
+        (id, exercise_id, method_id, phase_id, subset_id, started_at, completed_at, duration_ms, smart_cube_used, status, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        record.id,
+        record.exerciseId,
+        record.methodId,
+        record.phaseId ?? null,
+        record.subsetId ?? null,
+        record.startedAt,
+        record.completedAt ?? null,
+        record.durationMs ?? 0,
+        record.smartCubeUsed ? 1 : 0,
+        record.status,
+        updatedAt,
+      ],
+    );
+  }
+
+  /** All training sessions (newest first) — used by the sync engine. */
+  async findTrainingSessionsAll(): Promise<TrainingSessionRecord[]> {
+    const rows = await this.db("SELECT * FROM training_sessions ORDER BY started_at ASC");
+    return rows.map((r) => rowToTrainingSession(r));
+  }
+
+  async deleteTrainingSession(id: string): Promise<void> {
+    await this.db("DELETE FROM training_sessions WHERE id = ?", [id]);
+  }
+
+  /** One training session by id (pull LWW check). */
+  async findTrainingSessionById(id: string): Promise<TrainingSessionRecord | null> {
+    const rows = await this.db(
+      "SELECT * FROM training_sessions WHERE id = ?",
+      [id],
+    );
+    if (rows.length === 0) return null;
+    return rowToTrainingSession(rows[0]);
   }
 
   async completeTrainingSession(id: string, completedAt = Date.now()): Promise<TrainingSessionRecord | null> {
@@ -372,8 +464,8 @@ export class TrainingRepository {
     // so a session can never be closed without its final stats.
     return withTransaction(this.db, async () => {
       await this.db(
-        `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed' WHERE id = ?`,
-        [completedAt, completedAt, id],
+        `UPDATE training_sessions SET completed_at = ?, duration_ms = ? - started_at, status = 'completed', updated_at = ? WHERE id = ?`,
+        [completedAt, completedAt, completedAt, id],
       );
       const rows = await this.db(
         `SELECT ts.*, COUNT(ta.id) AS total_attempts,
@@ -442,6 +534,32 @@ export class TrainingRepository {
       [startTimestamp, endTimestamp],
     );
     return rows.map((r) => rowToAttempt(r as unknown as TrainingAttemptRow));
+  }
+
+  /**
+   * Every attempt in timestamp order — the sync push cursor and the raw
+   * material for the aggregate rebuild (replay). Immutable rows: the
+   * watermark is the attempt timestamp itself.
+   */
+  async findAttemptsAll(): Promise<TrainingAttempt[]> {
+    const rows = await this.db(
+      "SELECT * FROM training_attempts ORDER BY timestamp ASC",
+    );
+    return rows.map((r) => rowToAttempt(r as unknown as TrainingAttemptRow));
+  }
+
+  /** Attempts edited strictly after `updatedAt` — the sync push cursor. */
+  async findAttemptsSince(updatedAt: number): Promise<TrainingAttempt[]> {
+    const rows = await this.db(
+      "SELECT * FROM training_attempts WHERE updated_at > ? ORDER BY updated_at ASC, timestamp ASC",
+      [updatedAt],
+    );
+    return rows.map((r) => rowToAttempt(r as unknown as TrainingAttemptRow));
+  }
+
+  /** Delete every training attempt (used by the "start fresh" claim path). */
+  async deleteAllAttempts(): Promise<void> {
+    await this.db("DELETE FROM training_attempts");
   }
 
   // ── Algorithm Progress ─────────────────────────────────────────────
@@ -704,6 +822,65 @@ export class TrainingRepository {
   async getMethodMastery(methodId: string): Promise<number> {
     const progress = await this.getMethodProgress(methodId);
     return progress?.mastery ?? 0;
+  }
+
+  // ── Aggregate replacement (sync rebuild) ───────────────────────────
+  // The rebuild recomputes algorithm_progress / exercise_progress from the
+  // attempt log, so the sync engine REPLACES the tables wholesale instead of
+  // merging (the normal upsert path is read-modify-write and would fight the
+  // rebuild with stale state).
+
+  /** Replace every algorithm_progress row with the recomputed set (batched). */
+  async replaceAlgorithmProgress(records: AlgorithmProgressRecord[]): Promise<void> {
+    return withTransaction(this.db, async () => {
+      await this.db("DELETE FROM algorithm_progress");
+      const BATCH = 40; // 24 cols × 40 = 960 vars <= SQLite's 999 limit
+      for (let i = 0; i < records.length; i += BATCH) {
+        const chunk = records.slice(i, i + BATCH);
+        const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+        const sql =
+          "INSERT INTO algorithm_progress (id, algorithm_id, mastery, accuracy, best_time_ms, avg_time_ms, total_attempts, exec_attempts, exec_correct, correct_streak, last_practiced_at, srs_next_review_at, srs_interval_days, srs_ease_factor, recognition_accuracy, recognition_attempts, recognition_correct, recognition_streak, srs_stability, srs_difficulty, srs_state, srs_lapses, srs_review_count, last_review_at) VALUES " +
+          placeholders;
+        const bind: unknown[] = [];
+        for (const p of chunk) {
+          const id = generateId();
+          bind.push(
+            id, p.algorithmId, p.mastery, p.accuracy, p.bestTimeMs, p.avgTimeMs,
+            p.totalAttempts, p.execAttempts, p.execCorrect, p.correctStreak,
+            p.lastPracticedAt, p.srsNextReviewAt, p.srsIntervalDays, p.srsEaseFactor,
+            p.recognitionAccuracy, p.recognitionAttempts, p.recognitionCorrect,
+            p.recognitionStreak, p.srsStability, p.srsDifficulty, p.srsState,
+            p.srsLapses, p.srsReviewCount, p.lastReviewAt,
+          );
+        }
+        await this.db(sql, bind);
+      }
+    });
+  }
+
+  /** Replace every exercise_progress row with the recomputed set (batched). */
+  async replaceExerciseProgress(records: ExerciseProgressRecord[]): Promise<void> {
+    return withTransaction(this.db, async () => {
+      await this.db("DELETE FROM exercise_progress");
+      const BATCH = 40; // 13 cols × 40 = 520 vars <= SQLite's 999 limit
+      for (let i = 0; i < records.length; i += BATCH) {
+        const chunk = records.slice(i, i + BATCH);
+        const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+        const sql =
+          "INSERT INTO exercise_progress (id, exercise_id, method_id, phase_id, total_sessions, total_attempts, exec_attempts, exec_time_attempts, exec_correct, best_accuracy, best_time_ms, avg_time_ms, last_practiced_at) VALUES " +
+          placeholders;
+        const bind: unknown[] = [];
+        for (const p of chunk) {
+          bind.push(
+            generateId(), p.exerciseId, p.methodId, p.phaseId ?? null,
+            p.totalSessions, p.totalAttempts, p.execAttempts,
+            p.execTimeAttempts ?? p.execAttempts, p.execCorrect, p.bestAccuracy,
+            p.bestTimeMs, p.avgTimeMs, p.lastPracticedAt,
+          );
+        }
+        await this.db(sql, bind);
+      }
+    });
   }
 
   // ── Reset / Maintenance ────────────────────────────────────────────

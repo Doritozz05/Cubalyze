@@ -21,6 +21,7 @@ export interface TrainingTaskRow {
   days_of_week: string; // JSON array of weekday indices
   color: string;
   created_at: number;
+  updated_at: number;
 }
 
 // ─── Domain Types (camelCase, for consumers) ──────────────────────────────
@@ -37,6 +38,8 @@ export interface TrainingTask {
   daysOfWeek: number[];
   color: TaskColor;
   createdAt: string; // ISO timestamp
+  /** Epoch ms of the last edit — the LWW/sync watermark (migration 028). */
+  updatedAt?: number;
 }
 
 // ─── Row ↔ Domain converters ──────────────────────────────────────────────
@@ -60,10 +63,12 @@ function rowToTask(row: TrainingTaskRow): TrainingTask {
     daysOfWeek: safeParseDaysOfWeek(row.days_of_week),
     color: row.color as TaskColor,
     createdAt: row.created_at > 0 ? new Date(row.created_at).toISOString() : "",
+    updatedAt: row.updated_at > 0 ? row.updated_at : row.created_at,
   };
 }
 
 function taskToRow(task: TrainingTask): TrainingTaskRow {
+  const now = Date.now();
   return {
     id: task.id,
     title: task.title,
@@ -72,7 +77,8 @@ function taskToRow(task: TrainingTask): TrainingTaskRow {
     repeat: task.repeat,
     days_of_week: JSON.stringify(task.daysOfWeek),
     color: task.color,
-    created_at: task.createdAt ? new Date(task.createdAt).getTime() : Date.now(),
+    created_at: task.createdAt ? new Date(task.createdAt).getTime() : now,
+    updated_at: task.updatedAt ?? now,
   };
 }
 
@@ -90,6 +96,18 @@ export class CalendarRepository {
     return rows.map((r) => rowToTask(r as unknown as TrainingTaskRow));
   }
 
+  /**
+   * All tasks edited strictly after `updatedAt` (epoch ms) — the sync push
+   * cursor. A fresh link passes 0 so every task is pushed.
+   */
+  async findAllSince(updatedAt: number): Promise<TrainingTask[]> {
+    const rows = await this.db(
+      "SELECT * FROM training_tasks WHERE updated_at > ? ORDER BY updated_at ASC",
+      [updatedAt],
+    );
+    return rows.map((r) => rowToTask(r as unknown as TrainingTaskRow));
+  }
+
   async findById(id: string): Promise<TrainingTask | null> {
     const rows = await this.db("SELECT * FROM training_tasks WHERE id = ?", [id]);
     if (rows.length === 0) return null;
@@ -99,16 +117,17 @@ export class CalendarRepository {
   async upsert(task: TrainingTask): Promise<void> {
     const row = taskToRow(task);
     await this.db(
-      `INSERT INTO training_tasks (id, title, description, start_date, repeat, days_of_week, color, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO training_tasks (id, title, description, start_date, repeat, days_of_week, color, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          title = excluded.title,
          description = excluded.description,
          start_date = excluded.start_date,
          repeat = excluded.repeat,
          days_of_week = excluded.days_of_week,
-         color = excluded.color`,
-      [row.id, row.title, row.description, row.start_date, row.repeat, row.days_of_week, row.color, row.created_at],
+         color = excluded.color,
+         updated_at = excluded.updated_at`,
+      [row.id, row.title, row.description, row.start_date, row.repeat, row.days_of_week, row.color, row.created_at, row.updated_at],
     );
   }
 

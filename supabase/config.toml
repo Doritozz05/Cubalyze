@@ -1,0 +1,17 @@
+# CubeForge — Supabase local dev config.
+# Generated for `supabase start` / `supabase db push`. If `supabase init`
+# regenerates this file with a newer schema, keep the project_id and the
+# auth redirect settings below.
+
+project_id = "cubeforge"
+
+[auth]
+enabled = true
+site_url = "https://cubeforge-phi.vercel.app"
+additional_redirect_urls = ["https://cubeforge-phi.vercel.app/auth", "https://localhost:5173/auth"]
+
+# [auth.external.google]
+# enabled = true
+# client_id = ""
+# client_secret = ""
+# redirect_uri = ""

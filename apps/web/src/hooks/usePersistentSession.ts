@@ -12,6 +12,27 @@ import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforg
 import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
 import { attachDemoDataHelpers } from "@/utils/seedDemoData";
 import { attachDataIntegrityHelpers } from "@/utils/dataIntegrity";
+import { requestSync } from "@/services/sync";
+
+/**
+ * Wrap a mutating hook function so every write nudges the sync engine
+ * (debounced). The engine's dirty triggers (migration 028) are the safety
+ * net — this just makes the common paths sync within seconds.
+ */
+function syncAfter<A extends unknown[], R>(
+  fn: (...args: A) => R,
+): (...args: A) => R {
+  return (...args: A) => {
+    const result = fn(...args);
+    const maybePromise = result as Promise<unknown> | undefined;
+    if (maybePromise && typeof maybePromise.then === "function") {
+      void maybePromise.catch(() => undefined).then(() => void requestSync());
+    } else {
+      void requestSync();
+    }
+    return result;
+  };
+}
 
 /** Session metadata returned by the API. */
 export interface SessionMeta {
@@ -655,16 +676,16 @@ export function usePersistentSession(): UsePersistentSessionResult {
     sessions,
     solves,
     loading,
-    addSolve,
-    updateSolve,
-    deleteSolve,
-    moveSolveToSession,
-    clearSession,
-    importSolves,
-    newSession,
+    addSolve: syncAfter(addSolve),
+    updateSolve: syncAfter(updateSolve),
+    deleteSolve: syncAfter(deleteSolve),
+    moveSolveToSession: syncAfter(moveSolveToSession),
+    clearSession: syncAfter(clearSession),
+    importSolves: syncAfter(importSolves),
+    newSession: syncAfter(newSession),
     switchSession,
-    renameSession,
-    deleteSession,
+    renameSession: syncAfter(renameSession),
+    deleteSession: syncAfter(deleteSession),
     fetchSessionSolves,
   };
 }

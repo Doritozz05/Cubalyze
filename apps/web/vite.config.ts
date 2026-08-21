@@ -36,6 +36,11 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     host: true,
+    // Pin the dev port so the OAuth redirect config stays stable: if 5173 is
+    // busy, fail loudly instead of silently bumping to 5174/5175 (which would
+    // need yet another URL in Supabase's allowed-redirect list).
+    port: 5173,
+    strictPort: true,
     // Cross-origin isolation headers REQUIRED for OPFS (persistent SQLite).
     // Without these, SharedArrayBuffer is unavailable and the DB falls back
     // to in-memory storage — losing all data on page reload.

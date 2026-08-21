@@ -142,6 +142,10 @@
       "credits": {
         "label": "Créditos",
         "description": "Fuentes de datos, librerías y contribuciones de la comunidad."
+      },
+      "account": {
+        "label": "Cuenta",
+        "description": "Inicio de sesión con Google y sincronización en la nube entre tus dispositivos."
       }
     },
     "general": {
@@ -3679,5 +3683,60 @@
     "openWidgets": "Abrir widgets…",
     "settings": "Ajustes…",
     "editDock": "Editar dock…"
+  },
+  "auth": {
+    "eyebrow": "CubeForge",
+    "title": "Inicia sesión en CubeForge",
+    "subtitle": "Conecta tu cuenta de Google para sincronizar tu perfil, solves y entrenamiento entre dispositivos.",
+    "continueWithGoogle": "Continuar con Google",
+    "privacyNote": "Solo se usa Google para iniciar sesión. Tus datos viven en tu dispositivo y se sincronizan con tu cuenta cuando quieras.",
+    "backToTimer": "Volver al temporizador",
+    "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+    "errorNotConfigured": "La sincronización de cuenta no está configurada en esta versión.",
+    "alreadySignedIn": "Ya has iniciado sesión — te llevamos a tu perfil…",
+    "account": {
+      "cardTitle": "Cuenta",
+      "signedOut": "Tus datos se quedan en este dispositivo.",
+      "syncCta": "Conecta tu cuenta para sincronizar entre dispositivos y respaldar tu progreso.",
+      "signIn": "Iniciar sesión con Google",
+      "signedInAs": "Sesión iniciada como {{email}}",
+      "syncStatus": "Sincronización",
+      "syncing": "Sincronizando…",
+      "idle": "Al día",
+      "errorStatus": "Error de sincronización",
+      "never": "Nunca",
+      "lastSync": "Última sincronización: {{time}}",
+      "syncNow": "Sincronizar ahora",
+      "signOut": "Cerrar sesión",
+      "deleteAccount": "Eliminar cuenta",
+      "deleteConfirmTitle": "¿Eliminar tu cuenta?",
+      "deleteConfirmBody": "Todos tus datos en la nube se eliminarán permanentemente. Los datos de este dispositivo se conservan.",
+      "deleteConfirmAction": "Eliminar cuenta",
+      "deleteError": "No se pudo eliminar la cuenta",
+      "pendingTitle": "Vincular los datos de este dispositivo",
+      "pendingBody": "Este dispositivo tiene datos locales que aún no están vinculados a tu cuenta.",
+      "linkNow": "Vincular mis datos"
+    },
+    "claim": {
+      "title": "Hemos encontrado datos en este dispositivo",
+      "body": "Este dispositivo ya tenía datos antes de iniciar sesión. ¿Qué hacemos con ellos?",
+      "solves": "{{count}} solve",
+      "solves_other": "{{count}} solves",
+      "sessions": "{{count}} sesión",
+      "sessions_other": "{{count}} sesiones",
+      "attempts": "{{count}} intento de entrenamiento",
+      "attempts_other": "{{count}} intentos de entrenamiento",
+      "tasks": "{{count}} tarea de calendario",
+      "tasks_other": "{{count}} tareas de calendario",
+      "skills": "{{count}} habilidad",
+      "skills_other": "{{count}} habilidades",
+      "merge": "Subir y combinar",
+      "mergeDesc": "Sube todo lo de este dispositivo a tu cuenta y combínalo con la nube.",
+      "fresh": "Empezar de cero con la nube",
+      "freshDesc": "Reemplaza este dispositivo con los datos de tu cuenta. Los datos locales se eliminan.",
+      "inProgress": "Vinculando tus datos…",
+      "later": "Más tarde",
+      "error": "No se pudieron vincular tus datos. Inténtalo de nuevo."
+    }
   }
 }

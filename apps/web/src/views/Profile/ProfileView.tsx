@@ -18,6 +18,7 @@ import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useSkillProgress } from "@/hooks/useSkillProgress";
 import { ProfileHero } from "@/components/Identity/ProfileHero";
+import { AccountCard } from "@/components/Account/AccountCard";
 import { StatStrip } from "@/components/Identity/StatStrip";
 import { computeSubBadges } from "@/utils/subBadges";
 import { ActivityHeatmap } from "@/components/Insights/atoms/ActivityHeatmap";
@@ -478,7 +479,7 @@ export interface ProfileViewProps {
  */
 export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
   const { t, i18n } = useTranslation("profile");
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, identiconSeed, loading: profileLoading } = useProfile();
   const { stats, loading: statsLoading } = useProfileStats();
 
   // Sub-X milestone badges ("Sub 5 · 3×3"…) derived from each puzzle's PB.
@@ -498,6 +499,7 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
         loading={profileLoading}
         onEdit={onOpenSettings}
         badges={badges}
+        seed={identiconSeed ?? profile?.userId}
       />
 
       <div className="mt-4">
@@ -572,9 +574,13 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
         </div>
       </section>
 
+      <section className="mt-6">
+        <AccountCard />
+      </section>
+
       <section
         aria-label={t("localNoticeAria")}
-        className="mt-8 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
+        className="mt-4 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
       >
         <CheckCircle2 className="size-3 text-ready" aria-hidden="true" />
         <span>{t("localNotice")}</span>

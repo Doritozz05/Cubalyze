@@ -4,6 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import { initDB, AlgorithmsRepository, TrainingRepository } from "@cubeforge/database";
 import type { ITrainingProgressRepo, AlgorithmProgressRecord, ExerciseProgressRecord, PhaseStatsRecord, MetricKind, QueueItem, SRSGrade, SRSInsights, TrainingSessionProgressRecord, AttemptVerdict, PlayMode } from "@cubeforge/training";
 import type { TrainingAttempt } from "@cubeforge/database";
+import { requestSync } from "@/services/sync";
+
+/** Wrap a mutating hook function so writes nudge the sync engine (debounced). */
+function syncAfter<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+  return (...args: A) => {
+    const result = fn(...args);
+    const maybePromise = result as Promise<unknown> | undefined;
+    if (maybePromise && typeof maybePromise.then === "function") {
+      void maybePromise.catch(() => undefined).then(() => void requestSync());
+    } else {
+      void requestSync();
+    }
+    return result;
+  };
+}
 // `@cubeforge/training` statically imports @cubeforge/algorithm-db's barrel,
 // which pulls the entire ~3 MB seed catalog (CFOP F2L/OLL/PLL tables) into the
 // initial bundle. The VALUES are only needed once the tracker actually boots
@@ -387,8 +402,8 @@ export function useTrainingProgress(): UseTrainingProgressResult {
   return {
     ready,
     error,
-    recordAttempt,
-    recordReview,
+    recordAttempt: syncAfter(recordAttempt),
+    recordReview: syncAfter(recordReview),
     getCaseProgress,
     getSubsetProgress,
     getMethodMastery,
@@ -399,8 +414,8 @@ export function useTrainingProgress(): UseTrainingProgressResult {
     getMethodExerciseProgress,
     getPhaseStats,
     createTrainingSession,
-    completeTrainingSession,
+    completeTrainingSession: syncAfter(completeTrainingSession),
     getTrainingSessions,
-    updateAttemptReviewGrade,
+    updateAttemptReviewGrade: syncAfter(updateAttemptReviewGrade),
   };
 }

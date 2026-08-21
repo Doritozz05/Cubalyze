@@ -33,10 +33,34 @@ export class SkillProgressRepository {
     return rows.length > 0;
   }
 
+  /**
+   * Every completed skill with its completion timestamp (oldest first) — the
+   * sync push/pull shape. `completed_at` doubles as the LWW watermark: a
+   * re-completion bumps it, an un-completion is captured by the DELETE
+   * trigger tombstone (migration 028).
+   */
+  async findAllRows(): Promise<Array<{ skillId: string; completedAt: number }>> {
+    const rows = await this.db(
+      "SELECT skill_id, completed_at FROM skill_progress ORDER BY completed_at ASC",
+    );
+    return rows.map((r) => ({
+      skillId: String((r as unknown as SkillProgressRow).skill_id),
+      completedAt: Number((r as unknown as SkillProgressRow).completed_at) || 0,
+    }));
+  }
+
   async setCompleted(skillId: string): Promise<void> {
     await this.db(
       "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
       [skillId, Date.now()],
+    );
+  }
+
+  /** Insert-or-replace preserving the CLOUD completion timestamp (pull). */
+  async setCompletedAt(skillId: string, completedAt: number): Promise<void> {
+    await this.db(
+      "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
+      [skillId, completedAt || Date.now()],
     );
   }
 

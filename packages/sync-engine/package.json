@@ -1,8 +1,29 @@
 {
   "name": "@cubeforge/sync-engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "Offline-first cloud sync engine for CubeForge — Supabase row-sync with LWW, tombstones and aggregate replay",
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "echo no sources"
+    "lint": "eslint .",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cubeforge/database": "workspace:*",
+    "@cubeforge/models": "workspace:*",
+    "@cubeforge/training": "workspace:*",
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@cubeforge/config-eslint": "workspace:*",
+    "@cubeforge/config-typescript": "workspace:*",
+    "eslint": "^10.7.0",
+    "typescript": "~6.0.2",
+    "vitest": "^3.0.5"
   }
 }

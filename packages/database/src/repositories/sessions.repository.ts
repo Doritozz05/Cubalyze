@@ -49,6 +49,34 @@ export class SessionsRepository {
   }
 
   /**
+   * All NON-demo sessions edited strictly after `updatedAt` (epoch ms) — the
+   * sync push cursor. A fresh link passes 0 so every real session is pushed.
+   */
+  async findAllSince(updatedAt: number): Promise<Session[]> {
+    const rows = await this.db(
+      'SELECT * FROM sessions WHERE is_demo = 0 AND updated_at > ? ORDER BY updated_at ASC',
+      [updatedAt],
+    );
+    return rows.map((r) => rowToSession(r as unknown as SessionRow));
+  }
+
+  /** Existing updated_at values for a batch of ids (pull LWW check). */
+  async findUpdatedAts(ids: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    const BATCH = 500;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const chunk = ids.slice(i, i + BATCH);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = await this.db(
+        `SELECT id, updated_at FROM sessions WHERE id IN (${placeholders})`,
+        chunk,
+      );
+      for (const r of rows) map.set(String(r.id), Number(r.updated_at) || 0);
+    }
+    return map;
+  }
+
+  /**
    * Insert a session. Pass `{ isDemo: true }` for the seeded "Demo Session" so
    * it stays hidden from the UI and removable via deleteDemoSessions().
    */
@@ -72,7 +100,21 @@ export class SessionsRepository {
   }
 
   async delete(id: string): Promise<void> {
+    // Session deletes cascade to solves, but SQLite row triggers do NOT fire
+    // on cascaded deletes — tombstone the child solves explicitly (migration
+    // 028) so the sync engine removes them on every other device too.
+    await this.db(
+      `INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+       SELECT 'solves', id, CAST(strftime('%s','now') AS INTEGER) * 1000
+       FROM solves WHERE session_id = ?`,
+      [id],
+    );
     await this.db('DELETE FROM sessions WHERE id = ?', [id]);
+  }
+
+  /** Delete every session (plus its cascade tombstones) — "start fresh" wipe. */
+  async deleteAll(): Promise<void> {
+    await this.db('DELETE FROM sessions');
   }
 
   /** Delete every demo session (is_demo = 1). Returns how many were removed. */

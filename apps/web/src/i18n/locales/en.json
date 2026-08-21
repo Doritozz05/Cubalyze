@@ -142,6 +142,10 @@
       "credits": {
         "label": "Credits",
         "description": "Data sources, libraries, and community contributions."
+      },
+      "account": {
+        "label": "Account",
+        "description": "Google sign-in and cloud sync between your devices."
       }
     },
     "general": {
@@ -3679,5 +3683,60 @@
     "openWidgets": "Open widgets…",
     "settings": "Settings…",
     "editDock": "Edit dock…"
+  },
+  "auth": {
+    "eyebrow": "CubeForge",
+    "title": "Sign in to CubeForge",
+    "subtitle": "Connect your Google account to sync your profile, solves and training across devices.",
+    "continueWithGoogle": "Continue with Google",
+    "privacyNote": "Only Google is used to sign in. Your data lives on your device and syncs to your account whenever you want.",
+    "backToTimer": "Back to the timer",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "errorNotConfigured": "Account sync is not configured on this build.",
+    "alreadySignedIn": "You're signed in — taking you to your profile…",
+    "account": {
+      "cardTitle": "Account",
+      "signedOut": "Your data stays on this device.",
+      "syncCta": "Connect your account to sync between devices and back up your progress.",
+      "signIn": "Sign in with Google",
+      "signedInAs": "Signed in as {{email}}",
+      "syncStatus": "Sync",
+      "syncing": "Syncing…",
+      "idle": "Up to date",
+      "errorStatus": "Sync error",
+      "never": "Never",
+      "lastSync": "Last sync: {{time}}",
+      "syncNow": "Sync now",
+      "signOut": "Sign out",
+      "deleteAccount": "Delete account",
+      "deleteConfirmTitle": "Delete your account?",
+      "deleteConfirmBody": "All your data in the cloud will be permanently deleted. Data on this device stays.",
+      "deleteConfirmAction": "Delete account",
+      "deleteError": "Couldn't delete the account",
+      "pendingTitle": "Link this device's data",
+      "pendingBody": "You have local data on this device that isn't linked to your account yet.",
+      "linkNow": "Link my data"
+    },
+    "claim": {
+      "title": "Found data on this device",
+      "body": "This device already has data before signing in. What should we do with it?",
+      "solves": "{{count}} solve",
+      "solves_other": "{{count}} solves",
+      "sessions": "{{count}} session",
+      "sessions_other": "{{count}} sessions",
+      "attempts": "{{count}} training attempt",
+      "attempts_other": "{{count}} training attempts",
+      "tasks": "{{count}} calendar task",
+      "tasks_other": "{{count}} calendar tasks",
+      "skills": "{{count}} skill",
+      "skills_other": "{{count}} skills",
+      "merge": "Upload and combine",
+      "mergeDesc": "Push everything on this device to your account and merge with the cloud.",
+      "fresh": "Start fresh from the cloud",
+      "freshDesc": "Replace this device with your account's data. Local data is removed.",
+      "inProgress": "Linking your data…",
+      "later": "Later",
+      "error": "Couldn't link your data. Please try again."
+    }
   }
 }

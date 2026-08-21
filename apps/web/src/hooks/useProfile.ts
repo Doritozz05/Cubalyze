@@ -15,6 +15,12 @@ export type ProfileUpdates = Partial<Omit<Profile, "userId" | "createdAt">>;
 export interface UseProfileResult {
   /** Stable anonymous local identity (persisted in app_meta). null until DB ready. */
   userId: string | null;
+  /**
+   * The CubeMark seed: the ORIGINAL anonymous id, parked in app_meta when an
+   * account claims the device (identicon_seed). Falls back to userId. The
+   * mark never changes when the identity is linked to an account (D2).
+   */
+  identiconSeed: string | null;
   /** The user's identity row. null until DB ready. */
   profile: Profile | null;
   /** True while the identity is being ensured on first launch. */
@@ -46,11 +52,17 @@ export interface UseProfileResult {
 
 interface ProfileState {
   userId: string | null;
+  identiconSeed: string | null;
   profile: Profile | null;
   loading: boolean;
 }
 
-let state: ProfileState = { userId: null, profile: null, loading: true };
+let state: ProfileState = {
+  userId: null,
+  identiconSeed: null,
+  profile: null,
+  loading: true,
+};
 const listeners = new Set<() => void>();
 
 let reposRef: {
@@ -93,9 +105,10 @@ function ensureInitialized(): Promise<void> {
       // First launch: generate (or re-read) the anonymous identity.
       const id = await reposRef.meta.getOrCreateUserId();
       const row = await reposRef.profiles.getOrCreate(id);
+      const seed = await reposRef.meta.getIdenticonSeed();
 
       userIdRef = id;
-      setState({ userId: id, profile: row, loading: false });
+      setState({ userId: id, identiconSeed: seed, profile: row, loading: false });
       if (isDev()) {
         console.log(
           "%c[useProfile]%c Identity ready: %s",
@@ -115,15 +128,29 @@ function ensureInitialized(): Promise<void> {
   return initPromise;
 }
 
-/** Re-read the profile row from the DB. */
+/**
+ * Re-read the identity + profile row from the DB. Also re-reads the current
+ * user id (the claim flow remaps profiles.user_id to the account uid and
+ * rewrites USER_ID_KEY), so after an account link the UI follows the new
+ * identity instead of showing an empty profile.
+ */
 async function refresh(): Promise<void> {
-  if (!reposRef || !userIdRef) {
+  if (!reposRef) {
     await ensureInitialized();
     return;
   }
-  const row = await reposRef.profiles.findById(userIdRef);
-  if (row) setState({ profile: row });
+  const id = await reposRef.meta.getOrCreateUserId();
+  const seed = await reposRef.meta.getIdenticonSeed();
+  const row = await reposRef.profiles.findById(id);
+  userIdRef = id;
+  setState({
+    userId: id,
+    identiconSeed: seed,
+    profile: row ?? state.profile,
+  });
 }
+
+export { refresh as refreshProfile };
 
 /**
  * Serializes read→merge→write so two concurrent edits (e.g. an avatar upload
@@ -171,6 +198,7 @@ export function useProfile(): UseProfileResult {
   // Module-level functions are stable — callers can safely depend on them.
   return {
     userId: snapshot.userId,
+    identiconSeed: snapshot.identiconSeed,
     profile: snapshot.profile,
     loading: snapshot.loading,
     refresh,

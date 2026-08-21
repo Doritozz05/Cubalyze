@@ -7,7 +7,7 @@ export type { TrainingAttempt, AlgorithmProgress, ExerciseProgress } from './tra
 export { CalendarRepository } from './calendar.repository.js';
 export type { TrainingTask, TaskRepeat, TaskColor } from './calendar.repository.js';
 export { SkillProgressRepository } from './skill-progress.repository.js';
-export { AppMetaRepository, USER_ID_KEY, ONBOARDING_KEY, generateUuid } from './app-meta.repository.js';
+export { AppMetaRepository, USER_ID_KEY, ONBOARDING_KEY, DEVICE_ID_KEY, IDENTICON_SEED_KEY, generateUuid } from './app-meta.repository.js';
 export type { AppMetaRow } from './app-meta.repository.js';
 export { ProfilesRepository } from './profiles.repository.js';
 export type { ProfileRow } from './profiles.repository.js';

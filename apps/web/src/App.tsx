@@ -5,6 +5,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AppShell } from "@/components/Layout/AppShell";
 import { NotFoundView } from "@/components/Stage/NotFoundView";
+import { AuthView } from "@/views/Auth/AuthView";
+import { useAccount } from "@/hooks/useAccount";
+import { refreshProfile } from "@/hooks/useProfile";
+import { startSyncService } from "@/services/sync";
 import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, reanalyzeSolve } from "@/hooks/useSolveSession";
@@ -78,7 +82,29 @@ function viewFromPath(pathname: string): ViewId | null {
 export default function App() {
   // Anonymous local identity (docs/plan_profile F0): `userId` is the stable
   // seed for the CubeMark identicon shown in the header chip and Profile view.
-  const { userId: profileSeed, profile, loading: profileLoading } = useProfile();
+  // After an account link the identicon seed is parked separately, so the
+  // mark never changes (D2).
+  const {
+    userId: profileSeed,
+    identiconSeed,
+    profile,
+    loading: profileLoading,
+  } = useProfile();
+
+  // Supabase auth + claim flow (module singleton). Safe to mount always:
+  // with no env vars configured it resolves to "unconfigured" and stays inert.
+  const account = useAccount();
+
+  // Background sync: dirty-flag poller + online/visibility listeners.
+  useEffect(() => {
+    startSyncService();
+  }, []);
+
+  // After the claim remaps the identity to the account, re-read the profile
+  // row + seed so the UI follows the new identity immediately.
+  useEffect(() => {
+    if (account.linked) void refreshProfile();
+  }, [account.linked]);
 
   const {
     session,
@@ -394,6 +420,12 @@ export default function App() {
     [updateSolve],
   );
 
+  // /auth is the standalone sign-in page (Google OAuth redirect target) —
+  // rendered OUTSIDE the shell like the 404.
+  if (location.pathname === "/auth") {
+    return <AuthView />;
+  }
+
   // Unknown paths (e.g. /settings, /foo): full standalone page — no shell,
   // no widgets, nothing but the 404 and a way back home.
   if (notFound) {
@@ -407,7 +439,7 @@ export default function App() {
       activeSessionId={session?.id ?? null}
       sessionName={session?.name}
       activeView={activeView}
-      profileSeed={profileSeed}
+      profileSeed={identiconSeed ?? profileSeed}
       profile={profile}
       puzzle={puzzle}
       currentScramble={currentScramble}

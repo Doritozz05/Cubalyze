@@ -21,6 +21,19 @@ export const USER_ID_KEY = 'user_id';
  */
 export const ONBOARDING_KEY = 'onboarding_completed';
 
+/**
+ * Stable per-install device id (UUID, generated on first sync use). Used to
+ * namespace sync watermarks per (account, device) and to label tombstones.
+ */
+export const DEVICE_ID_KEY = 'device_id';
+
+/**
+ * When an anonymous local identity is claimed by a real account, the old
+ * anonymous user_id is parked here so the CubeMark identicon seed stays
+ * stable forever (D2: the mark never changes when identity metadata does).
+ */
+export const IDENTICON_SEED_KEY = 'identicon_seed';
+
 export interface AppMetaRow {
   key: string;
   value: string;
@@ -79,6 +92,28 @@ export class AppMetaRepository {
 
     const stored = await this.get(USER_ID_KEY);
     return stored ?? generated;
+  }
+
+  /**
+   * Returns the stable per-install device id, generating and persisting one
+   * on first use. Race-safe (INSERT OR IGNORE + re-read), like user_id.
+   */
+  async getOrCreateDeviceId(): Promise<string> {
+    const existing = await this.get(DEVICE_ID_KEY);
+    if (existing) return existing;
+    const generated = generateUuid();
+    await this.insertIfAbsent(DEVICE_ID_KEY, generated);
+    return (await this.get(DEVICE_ID_KEY)) ?? generated;
+  }
+
+  /** The parked anonymous identity seed (see IDENTICON_SEED_KEY), or null. */
+  async getIdenticonSeed(): Promise<string | null> {
+    return this.get(IDENTICON_SEED_KEY);
+  }
+
+  /** Park the anonymous identity so the CubeMark seed never changes. */
+  async setIdenticonSeed(seed: string): Promise<void> {
+    await this.set(IDENTICON_SEED_KEY, seed);
   }
 
   /** True once the first-load onboarding tour has been seen or skipped. */
