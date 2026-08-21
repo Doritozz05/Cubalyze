@@ -57,11 +57,26 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // External registerSW.js instead of an inline <script> so the strict
-      // Content-Security-Policy (script-src 'self', no 'unsafe-inline') works.
-      injectRegister: 'script',
+      // SW registration + update handling lives in src/main.tsx (it imports
+      // `registerSW` from virtual:pwa-register). Using the virtual module —
+      // instead of the generated bare registerSW.js that `injectRegister:
+      // 'script'` emits — is what makes autoUpdate actually work: it wires
+      // workbox-window so the page reloads automatically once a new service
+      // worker takes over. injectRegister: false keeps the plugin from also
+      // emitting/registering a second, update-less registerSW.js. (No inline
+      // script is used, so the strict Content-Security-Policy with
+      // script-src 'self' and no 'unsafe-inline' keeps working.)
+      injectRegister: false,
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Activate the newly-installed service worker immediately and take
+        // control of all open clients. Without these the new SW sits in
+        // "waiting" forever and keeps serving the old precached index.html —
+        // which is why users only saw updates after a hard refresh (Ctrl+
+        // Shift+R). With them, the next page load after a deploy picks up the
+        // new precache automatically (and main.tsx reloads the page once).
+        skipWaiting: true,
+        clientsClaim: true,
       },
       manifest: {
         name: 'CubeForge',

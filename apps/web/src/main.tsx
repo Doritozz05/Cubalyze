@@ -3,7 +3,17 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
+import { registerSW } from 'virtual:pwa-register'
 import { appReady, appDataReady, markAppReady, markAppDataReady } from './boot/appReady'
+
+// PWA service worker with auto-update (registerType: 'autoUpdate' in
+// vite.config.ts). Registered immediately, not on window load, so the update
+// check happens as early as possible. On a new deploy the browser installs the
+// new service worker (skipWaiting + clientsClaim), it activates, and
+// workbox-window reloads the page — users always land on the latest version
+// without a hard refresh. Only Cache Storage (app assets) is replaced; OPFS /
+// IndexedDB / localStorage data is never touched.
+registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
