@@ -333,4 +333,36 @@ export const DBWorker = {
   },
 };
 
-Comlink.expose(DBWorker);
+// ─────────────────────────────────────────────────────────────────────────
+// Comlink wiring — dedicated AND shared workers.
+//
+// comlink >= 4.4 dropped SharedWorker support: `expose(obj, ep = globalThis)`
+// wires `globalThis.addEventListener("message")`, which NEVER fires inside a
+// SharedWorkerGlobalScope — connections arrive as `connect` events carrying a
+// MessagePort, never as a global message event. Without explicit wiring the
+// SharedWorker boots but never answers the main thread's `init()` request:
+// the `await proxied.init()` in client.ts hangs forever (no error, no
+// fallback, empty console, app stuck on skeletons).
+//
+// Detect the context via `onconnect` (SharedWorker-only) and expose on the
+// per-connection port instead of globalThis. Dedicated workers keep the
+// plain expose (globalThis receives message events directly).
+// ─────────────────────────────────────────────────────────────────────────
+// `typeof self !== 'undefined'` guards the Node/test environment, where
+// the module is imported without a worker global.
+if (typeof self !== 'undefined' && 'onconnect' in self) {
+  // SharedWorker: one `connect` per tab; each port gets its own exposed
+  // instance over the SAME shared SQLite handle (`db` is module state), so
+  // every tab reads/writes one persistent database.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (self as any).onconnect = (event: MessageEvent & { ports: MessagePort[] }) => {
+    const port = event.ports[0];
+    Comlink.expose(DBWorker, port);
+    // Adding the message listener above already starts the port implicitly;
+    // make it explicit so it is robust across engines.
+    port.start();
+  };
+} else {
+  // Dedicated worker: `self` receives `message` events directly.
+  Comlink.expose(DBWorker);
+}

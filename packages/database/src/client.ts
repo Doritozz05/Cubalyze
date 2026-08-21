@@ -28,6 +28,31 @@ async function logStorageType(dbClient: Comlink.Remote<typeof DBWorker>): Promis
   }
 }
 
+/**
+ * Race a promise against a hard timeout. A worker that boots but never
+ * answers its init request (silent hang — no rejection, no error event)
+ * would otherwise freeze initDB forever: no fallback, empty console, app
+ * stuck on skeletons. The timeout converts that hang into a rejection so
+ * the caller can degrade to the dedicated worker.
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  message: string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const initDB = async () => {
   if (initPromise) return initPromise;
 
@@ -42,13 +67,21 @@ export const initDB = async () => {
     // second tab fall back to a volatile in-memory DB — silently losing
     // everything written there on reload and diverging its sync state.
     if (typeof SharedWorker !== 'undefined') {
+      let sharedWorker: SharedWorker | null = null;
       try {
-        const sharedWorker = new SharedWorker(
+        sharedWorker = new SharedWorker(
           new URL('./worker.ts', import.meta.url),
           { type: 'module', name: 'cubeforge-db' },
         );
         const proxied = Comlink.wrap<typeof DBWorker>(sharedWorker.port);
-        const success = await proxied.init();
+        // Timeout guard: a booted-but-silent worker (e.g. a misbundled
+        // worker that never wires its message port) must degrade to the
+        // dedicated worker instead of hanging the whole app on skeletons.
+        const success = await withTimeout(
+          proxied.init(),
+          15_000,
+          'SharedWorker init timed out (no response)' ,
+        );
         if (success) {
           worker = sharedWorker;
           shared = true;
@@ -58,10 +91,12 @@ export const initDB = async () => {
         }
         console.warn('[Database] SharedWorker init reported failure; retrying with a dedicated worker.');
       } catch (err) {
-        // e.g. the browser refuses SharedWorker for this origin — fall back
-        // to a dedicated worker (previous behavior).
+        // e.g. the browser refuses SharedWorker for this origin, or the
+        // worker booted but never answered (timeout) — fall back to a
+        // dedicated worker (previous behavior).
         console.warn('[Database] SharedWorker unavailable; using a dedicated worker:', err);
       }
+      sharedWorker = null;
       worker = null;
       shared = false;
       db = null;
