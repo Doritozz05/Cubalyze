@@ -123,17 +123,29 @@ export class SyncEngine {
   }
 
   /**
-   * True when the linked account already holds real data in the cloud (any
-   * data table). `profiles` is excluded — the signup trigger always creates
-   * one row, so it can never signal "has data". Used to skip the claim
-   * dialog on a brand-new account: with an empty cloud the local history
-   * simply becomes the account's data (auto-merge), and "start fresh" would
-   * only destroy data for nothing.
+   * True when the linked account already holds real data in the cloud.
+   *
+   * Scaffolding tables are excluded because they can never signal "has
+   * data": `profiles` (the signup trigger always creates one row), and
+   * `sessions` / `training_sessions` — a session only has meaning through
+   * its solves/attempts, and if the cloud has zero solves then every
+   * session is empty.
+   *
+   * Counting empty sessions would make a brand-new account look occupied:
+   * the claim dialog would appear, and "start fresh" could wipe real local
+   * solves to keep nothing. Used to skip the dialog on a new account — with
+   * an empty cloud the local history simply becomes the account's data
+   * (auto-merge), and "start fresh" stays unreachable.
    */
   async hasCloudData(): Promise<boolean> {
     if (!this.uid) return false;
     for (const table of SYNCABLE_TABLES) {
-      if (table === "profiles") continue;
+      if (
+        table === "profiles" ||
+        table === "sessions" ||
+        table === "training_sessions"
+      )
+        continue;
       const { count, error } = await this.ctx.supabase
         .from(table)
         .select("*", { count: "exact", head: true })

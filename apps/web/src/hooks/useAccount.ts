@@ -85,9 +85,12 @@ async function handleUser(user: User, engine: SyncEngine | null): Promise<boolea
     return false;
   }
   const counts = await engine.getCounts();
+  // Only REAL data justifies the merge dialog. An empty session (zero
+  // solves) is scaffolding, not data — asking to merge it is pure noise
+  // (the user has nothing to upload). Solves, training attempts/tasks and
+  // skills are the only things that make a device worth merging.
   const hasData =
     counts.solves +
-      counts.sessions +
       counts.trainingAttempts +
       counts.trainingTasks +
       counts.skills >

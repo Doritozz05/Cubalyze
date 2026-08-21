@@ -50,6 +50,24 @@ describe("SyncEngine.hasCloudData", () => {
     expect(await engine.hasCloudData()).toBe(false);
   });
 
+  it("is false when the cloud holds only empty sessions (a session without solves is not data)", async () => {
+    const engine = makeEngine(mockSupabase({ sessions: 3 }));
+    engine.setUser(UID);
+    expect(await engine.hasCloudData()).toBe(false);
+  });
+
+  it("is false when the cloud holds only training session metadata (no attempts)", async () => {
+    const engine = makeEngine(mockSupabase({ training_sessions: 2 }));
+    engine.setUser(UID);
+    expect(await engine.hasCloudData()).toBe(false);
+  });
+
+  it("counts solves as data even when every session is empty", async () => {
+    const engine = makeEngine(mockSupabase({ sessions: 3, solves: 1 }));
+    engine.setUser(UID);
+    expect(await engine.hasCloudData()).toBe(true);
+  });
+
   it("is false when signed out", async () => {
     const engine = makeEngine(mockSupabase({ solves: 5 }));
     expect(await engine.hasCloudData()).toBe(false);
