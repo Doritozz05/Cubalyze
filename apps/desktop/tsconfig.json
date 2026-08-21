@@ -22,5 +22,10 @@
       "@cubeforge/hardware-hal": ["./src/hardware-hal-override.ts"]
     }
   },
-  "include": ["src", "../web/src"]
+  "include": ["src", "../web/src"],
+  // web/src/main.tsx is the PWA-only entry (it imports virtual:pwa-register,
+  // a module only vite-plugin-pwa provides). The desktop app has its own
+  // src/main.tsx entry — compiling the web one here would fail on that
+  // virtual import.
+  "exclude": ["../web/src/main.tsx"]
 }

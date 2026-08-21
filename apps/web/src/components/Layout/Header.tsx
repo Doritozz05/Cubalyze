@@ -230,7 +230,7 @@ export function Header({
       wrap.removeEventListener("pointerenter", onEnter);
       wrap.removeEventListener("pointerleave", onLeave);
     };
-  }, [dockAutoHide, revealDock, scheduleRetract]);
+  }, [dockAutoHide, isCoarsePointer, revealDock, scheduleRetract]);
 
   // Coarse pointers (iPad): no hover, so the dock reveal/retract is tap-
   // driven — deterministic, never stuck. Tapping the (hidden) top band

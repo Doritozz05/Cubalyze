@@ -485,6 +485,8 @@
       "persistenceRisk": "Sin protección contra el borrado automático: exporta con regularidad."
     },
     "credits": {
+      "version": "Versión de la app",
+      "versionHint": "La versión que estás ejecutando actualmente.",
       "introTitle": "Hecho posible por la comunidad",
       "introBody": "CubeForge se construye sobre el trabajo de la comunidad de speedcubing y una amplia gama de proyectos de código abierto: {{linked}} fuentes con enlaces y {{total}} créditos en total. Estamos agradecidos con todos los que comparten algoritmos, reconstrucciones y conocimiento.",
       "builtWithTitle": "Construido con",

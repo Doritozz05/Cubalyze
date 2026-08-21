@@ -25,6 +25,10 @@ const ALLOWLIST = [
   "apps/web/src/components/Insights/SolveAnalysisPanel.tsx",
   "apps/web/src/utils/importSolves.ts",
   "packages/cube-3d-engine/src/core/Cube3DEngine.ts",
+  // Cohesive async replay engine (grip pre-roll, mid-solve chaining, seek/step
+  // gates): 1055 lines after the grip-rotation fix (3df0562). Splitting it in
+  // a cleanup commit would risk replay behavior — needs a dedicated refactor.
+  "packages/cube-3d-engine/src/replay/ReplayEngine.ts",
   "packages/gan-protocol/src/gan-cube-protocol.ts",
   // Generated algorithm-catalog DATA (pruebas/scripts/generate_seed_catalog.py,
   // "DO NOT edit by hand"): flat tables of thousands of algorithm rows. Not

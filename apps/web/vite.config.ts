@@ -4,9 +4,19 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
+import { readFileSync } from 'node:fs'
 import { LIGHT_CANVAS } from './src/theme/themeColors.js'
 
+// App version for the UI (Settings → Credits → App version). Read from
+// package.json at build time (single source of truth) and exposed to the app
+// through the __APP_VERSION__ define — importing package.json directly would
+// need resolveJsonModule in the node tsconfig and would inline the whole file.
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string }
+
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     host: true,
     // Cross-origin isolation headers REQUIRED for OPFS (persistent SQLite).

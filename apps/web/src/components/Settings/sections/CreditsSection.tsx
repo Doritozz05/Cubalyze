@@ -13,6 +13,7 @@ import {
   Layers,
   Package,
   ScanSearch,
+  Tag,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -217,6 +218,26 @@ export function CreditsSection() {
           </p>
         </div>
       </div>
+
+      {/* ── App version ──────────────────────────────────────────────── */}
+      <section className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4 transition-shadow duration-200 hover:shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-ink-2">
+            <Tag className="size-3.5" />
+          </span>
+          <div className="min-w-0">
+            <h4 className="text-[0.8rem] font-semibold leading-5 text-ink">
+              {t("credits.version")}
+            </h4>
+            <p className="text-[0.7rem] leading-snug text-ink-3">
+              {t("credits.versionHint")}
+            </p>
+          </div>
+        </div>
+        <code className="shrink-0 rounded-md border border-line bg-surface-2/60 px-2.5 py-1 font-mono text-[0.72rem] font-medium text-ink-2">
+          v{__APP_VERSION__}
+        </code>
+      </section>
 
       {/* ── Built with (tech stack chips) ────────────────────────────── */}
       <section className="rounded-xl border border-line bg-surface p-4 transition-shadow duration-200 hover:shadow-sm">

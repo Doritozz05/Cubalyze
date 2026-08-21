@@ -475,7 +475,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     }));
 
     return moved;
-  }, [session]);
+  }, []);
 
   const importSolves = useCallback(async (
     inputs: Array<{

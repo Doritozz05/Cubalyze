@@ -485,6 +485,8 @@
       "persistenceRisk": "Not protected from automatic eviction — export regularly."
     },
     "credits": {
+      "version": "App version",
+      "versionHint": "The build you're currently running.",
       "introTitle": "Made possible by the community",
       "introBody": "CubeForge is built on the work of the speedcubing community and a wide range of open-source projects — {{linked}} sources with links, {{total}} credits in total. We are grateful to everyone who shares algorithms, reconstructions and knowledge.",
       "builtWithTitle": "Built with",

@@ -74,7 +74,7 @@ export function hintFor(
         : i18n.t("timer:hint.pressToStop");
     case "stopped":
     case "idle":
-    default:
+    default: {
       // The user's configured start key, localized ("Space"/"Espacio", "N", …).
       const keyLabel = ctx.startKeyLabel ?? i18n.t("timer:key.space");
 
@@ -118,5 +118,6 @@ export function hintFor(
       return hasLast
         ? i18n.t("timer:hint.holdStartNext", { key: keyLabel })
         : i18n.t("timer:hint.pressHoldStart", { key: keyLabel });
+    }
   }
 }
